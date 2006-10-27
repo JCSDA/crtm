@@ -34,15 +34,11 @@ end
 
 
 # Initialise fdefmod tag switches
-dim   =false
-scalar=false
-array =false
+dim,scalar,array = false,false,false
 
 # Initialise fdefmod data structures
 structName=""
-dimList   =[]
-scalarList=[]
-arrayList =[]
+dimList,scalarList,arrayList = [],[],[]
 
 # Define regular expressions
 structBeginRegexp=%r{
@@ -114,23 +110,17 @@ File.open("test.type","r").readlines.each do |line|
   
   # Match fdefmod tags and set switches
   if line =~ /!\s*Dimensions/i
-    dim=true
-    scalar=false
-    array=false
+    dim,scalar,array=true,false,false
     #puts("Dimensions")
     next
   end
   if line =~ /!\s*Scalars/i
-    dim=false
-    scalar=true
-    array=false
+    dim,scalar,array=false,true,false
     #puts("Scalar components")
     next
   end
   if line =~ /!\s*Arrays/i
-    dim=false
-    scalar=false
-    array=true
+    dim,scalar,array=false,false,true
     #puts("Array components")
     next
   end
@@ -195,18 +185,18 @@ end
 
 
 # Check that all array component dimensions are valid
-arrayList.each do |ac|
-  ac[:dims].each do |d|
-    raise(StandardError, "Invalid dimension, #{d}, specified for #{ac[:name]}") unless dimList.include?(d)
+arrayList.each do |a|
+  a[:dims].each do |d|
+    raise(StandardError, "Invalid dimension, #{d}, specified for #{a[:name]}") unless dimList.include?(d)
   end
 end
+
 
 # -------------------------------
 # Create the structure definition
 # -------------------------------
 # Preamble
 structDef = <<EOF
-
   TYPE :: #{structName}_type
     INTEGER :: n_Allocates=0
 EOF
