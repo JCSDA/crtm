@@ -1,0 +1,84 @@
+#==============================================================================
+#
+# Include file for CRTM test/examples program builds that contains all
+# the common definitions and targets.
+#
+#==============================================================================
+
+# -------------
+# Define macros
+# -------------
+include ../make.macros
+
+# This makefile
+MAKE_FILE = Makefile
+
+# OBJ_FILES
+OBJ_FILES = Timing_Utility.o CRTM_Test_Utility.o \
+            $(EXE_FILE).o
+
+# Library and include macros
+# *** MODIFY THESE TO THE LOCATION OF THE CRTM LIBRARY ON YOUR SYSTEM ***
+INCLUDES = -I$(HOME)/local/CRTM/include
+LIBRARIES = -L$(HOME)/local/CRTM/lib -lCRTM
+
+
+# ------------------
+# Define dependecies
+# ------------------
+# Make based on OS type
+all:
+	@echo "OS type detected: "`uname -s`
+	@case `uname -s` in \
+	  "SunOS")  make -f $(MAKE_FILE) build $(SUNOS_FLAGS) ;; \
+	  "AIX")    make -f $(MAKE_FILE) build $(AIX_FLAGS) ;; \
+	  "IRIX64") make -f $(MAKE_FILE) build $(IRIX64_FLAGS) ;; \
+	  "Linux")  make -f $(MAKE_FILE) build $(LINUX_FLAGS) ;; \
+	  *) echo "This system is not supported" ;; \
+       esac
+
+# Targets for specific Linux compilers.
+intel_debug:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_INTEL_DEBUG)
+
+intel:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_INTEL_PROD)
+
+lahey_debug:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_LAHEY_DEBUG)
+
+lahey:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_LAHEY_PROD)
+
+pgi_debug:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_PGI_DEBUG)
+
+pgi:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_PGI_PROD)
+
+g95_debug:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_G95_DEBUG)
+
+g95:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_G95_PROD)
+
+
+# Build the program
+build: $(OBJ_FILES)
+	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
+
+
+# Clean up
+clean:
+	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD *.stb
+
+# Source dependency list
+Timing_Utility.o : Timing_Utility.f90
+CRTM_Test_Utility.o : CRTM_Test_Utility.f90
+$(EXE_FILE).o : $(EXE_FILE).f90 Timing_Utility.o CRTM_Test_Utility.o
+
+
+# --------------------
+# Define default rules
+# --------------------
+include ../make.rules

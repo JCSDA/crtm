@@ -1,0 +1,172 @@
+#==============================================================================
+#
+# Makefile for Convolve_TauSpc_with_SRF program
+#
+#==============================================================================
+
+#-----------------------------------------------------------------------------
+#                          -- Define macros --
+#-----------------------------------------------------------------------------
+
+include make.macros
+
+
+# -------------
+# This makefile
+# -------------
+
+MAKEFILE = makefile
+
+
+# ----------------
+# Executable files
+# ----------------
+
+EXE_FILE = Convolve_TauSpc_with_SRF
+
+
+# ------------
+# Object files
+# ------------
+
+UTILITY_OBJ_FILES = Type_Kinds.o \
+                    File_Utility.o \
+                    Error_Handler.o \
+                    Compare_Float_Numbers.o
+INTERPOLATE_OBJ_FILES = Interpolate.o
+INTEGRATE_OBJ_FILES = Integrate.o
+SRF_OBJ_FILES = SRF_Define.o \
+                SRF_netCDF_IO.o
+TAUPROFILE_OBJ_FILES = TauProfile_Define.o \
+                       TauProfile_netCDF_IO.o
+NETCDF_OBJ_FILES = netCDF_Utility.o \
+                   netCDF_Dimension_Utility.o \
+                   netCDF_Attribute_Utility.o \
+                   netCDF_Variable_Utility.o
+LBLRTM_OBJ_FILES = LBLRTM_Parameters.o \
+                   LBLRTM_netCDF_IO.o
+TAU_PRODUCTION_OBJ_FILES = Tau_Production_Parameters.o \
+                           Tau_Production_Utility.o
+PROCESSCONTROL_OBJ_FILES = ProcessControl_Define.o \
+                           ProcessControl_IO.o
+
+OBJ_FILES = $(UTILITY_OBJ_FILES) \
+            $(INTERPOLATE_OBJ_FILES) \
+            $(INTEGRATE_OBJ_FILES) \
+            $(SRF_OBJ_FILES) \
+            $(TAUPROFILE_OBJ_FILES) \
+            $(NETCDF_OBJ_FILES) \
+            $(LBLRTM_OBJ_FILES) \
+            $(TAU_PRODUCTION_OBJ_FILES) \
+            $(PROCESSCONTROL_OBJ_FILES) \
+            $(EXE_FILE).o
+
+
+# -------------------------------
+# Include and library definitions
+# -------------------------------
+
+INCLUDES = -I$(HOME)/local/netcdf/include
+LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+
+
+
+#-----------------------------------------------------------------------------
+#                          -- Define dependecies --
+#-----------------------------------------------------------------------------
+
+# ---------------------
+# Make based on OS type
+# ---------------------
+
+all:
+	@echo "OS type detected: "`uname -s`
+	@case `uname -s` in \
+	  "SunOS")  make -f $(MAKEFILE) the_program $(SUNOS_FLAGS) ;; \
+	  "AIX")    make -f $(MAKEFILE) the_program $(AIX_FLAGS) ;; \
+	  "IRIX64") make -f $(MAKEFILE) the_program $(IRIX64_FLAGS) ;; \
+	  "Linux")  make -f $(MAKEFILE) the_program $(LINUX_FLAGS) ;; \
+	  *) echo "This system is not supported" ;; \
+	esac
+
+
+# ---------------------
+# Make the test program
+# ---------------------
+
+the_program: $(OBJ_FILES)
+	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
+
+
+# --------
+# Clean up
+# --------
+
+clean:
+	$(REMOVE) $(OBJ_FILES) *.mod *.MOD *.stb
+
+
+# ----------
+# Install it
+# ----------
+
+install:
+	@if [ -d $(HOME)/bin ]; then \
+	  $(MOVE) $(EXE_FILE) $(HOME)/bin; \
+	fi
+
+
+# ---------------
+# Dependency list
+# ---------------
+
+Type_Kinds.o : Type_Kinds.f90
+File_Utility.o : File_Utility.f90
+Error_Handler.o : Error_Handler.f90 File_Utility.o
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o
+
+Interpolate.o : Interpolate.f90 Type_Kinds.o Error_Handler.o 
+Integrate.o : Integrate.f90 Type_Kinds.o Error_Handler.o Interpolate.o 
+
+ProcessControl_Define.o : ProcessControl_Define.f90 Type_Kinds.o Error_Handler.o
+ProcessControl_IO.o : ProcessControl_IO.f90 Type_Kinds.o File_Utility.o Error_Handler.o ProcessControl_Define.o
+ 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Error_Handler.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Error_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Error_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Error_Handler.o Type_Kinds.o 
+
+SRF_Define.o : SRF_Define.f90 Type_Kinds.o Error_Handler.o Integrate.o 
+SRF_netCDF_IO.o : SRF_netCDF_IO.f90 Type_Kinds.o Error_Handler.o SRF_Define.o netCDF_Utility.o 
+
+TauProfile_Define.o : TauProfile_Define.f90 Type_Kinds.o Error_Handler.o Compare_Float_Numbers.o
+TauProfile_netCDF_IO.o : TauProfile_netCDF_IO.f90 Type_Kinds.o Error_Handler.o TauProfile_Define.o netCDF_Utility.o 
+
+LBLRTM_Parameters.o : LBLRTM_Parameters.f90 Type_Kinds.o 
+LBLRTM_netCDF_IO.o : LBLRTM_netCDF_IO.f90 Type_Kinds.o Error_Handler.o netCDF_Utility.o 
+
+Tau_Production_Parameters.o : Tau_Production_Parameters.f90 Type_Kinds.o LBLRTM_Parameters.o 
+Tau_Production_Utility.o : Tau_Production_Utility.f90 Type_Kinds.o File_Utility.o Error_Handler.o Compare_Float_Numbers.o Tau_Production_Parameters.o
+
+$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o Error_Handler.o SRF_Define.o SRF_netCDF_IO.o ProcessControl_Define.o ProcessControl_IO.o LBLRTM_netCDF_IO.o TauProfile_Define.o TauProfile_netCDF_IO.o Tau_Production_Parameters.o Tau_Production_Utility.o
+
+
+# -------------------------------
+# Create tarball for distribution
+# -------------------------------
+
+TAR_FILE = $(EXE_FILE)_software.tar
+
+tar:
+	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
+	$(TARBALL_APPEND) $(TAR_FILE) makefile
+	$(TARBALL_APPEND) $(TAR_FILE) make.macros make.rules
+
+
+
+#-----------------------------------------------------------------------------
+#                          -- Define default rules --
+#-----------------------------------------------------------------------------
+
+include make.rules
+

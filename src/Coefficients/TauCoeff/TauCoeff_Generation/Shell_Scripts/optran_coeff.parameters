@@ -1,0 +1,38 @@
+# BATCH 		== "yes", batch process mode. Jobs are distributed over
+#                          N (= MAX_CPUs) batch scripts, executed simultaneously.
+#			   A job is to process for $ChInt channels.
+#                          A shortcome of this method is that if different jobs take
+#                          different execution times, some of the batch scripts may finish
+#                          before others, which means the assigned number of CPUs are not 
+#                          used efficiently.
+#			== "no", send a job to a job queue, and if all the assigned number (MAX_CPUs) of
+#                          CUPs are running, jobs in the queue are on the waiting status until there
+#                          are freed CPUs.  Note that the job queue is not provided by the OS system,
+#                          but rather is coded in this script using the sleep mechanism with one second
+#                          interval between the polling times for the number of CPUS that are currently
+#                          running. Also note that the script is terminated if the waiting time exceeds
+#                          one-day, a situation most likely caused by errors if anticipated execution time
+#                          of a job is much less than 24 hours.
+# MAX_CPUs		== the number of CPUs to use
+# CH_INT                == channel increment, i.e the number of channles for a job to process. Default=1
+# EXE_FILE 		== exe file to search a set of best predictors
+# WORK_DIR 		== top directory holding execution directory. results, and etc.
+# PROF_SET 		== profile set tag, i.g "umbc48101" or "cimss32101"
+# GAS_NAME_LIST		== list of gas names with delimitator ":"; for example "dry:wet:ozo"
+# SPC_COEFF_DIR 	== directory holding *.SpcCoeff.nc files
+# TAU_PROFILE_DIR 	== directory hodling *.TauProfile.nc files
+# ATM_PROFLE_FILE	== file containing atmospheric profile set (netCDF), should match
+#			   with $PROF_SET
+#----------------------------------------------------------------------------------------
+
+:BATCH:no
+:MAX_CPUs:32
+:CH_INT:1
+:EXE_FILE:/disk4/pub/yhan/gen_tau_coeff_varyingOrder/bin/gencoef
+:WORK_DIR:/disk5/pub/yhan/TransCoeff_work_test3
+:PROF_SET:umbc48101
+:GAS_NAME_LIST:wet,dry,ozo
+:SPC_COEFF_DIR:/disk4/pub/yhan/Transmittances/seninfo
+:TAU_PROFILE_DIR:/disk5/pub/yhan/transmittance/UMBC
+:ATM_PROFLE_FILE:/disk4/pub/yhan/Transmittances/Atm_Profiles/UMBC48101/AtmProfile.nc
+

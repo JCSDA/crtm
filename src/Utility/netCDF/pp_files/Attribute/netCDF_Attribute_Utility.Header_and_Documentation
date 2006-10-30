@@ -1,0 +1,236 @@
+!
+! netCDF_Attribute_Utility
+!
+! Module containing some utility routines for netCDF file attribute access.
+!
+!
+! CREATION HISTORY:
+!       Written by:   Paul van Delst, CIMSS/SSEC, 11-Feb-2003
+!                     paul.vandelst@ssec.wisc.edu
+!
+
+MODULE netCDF_Attribute_Utility
+
+  ! ------------------
+  ! Environment set up
+  ! ------------------
+  ! Modules used
+  USE Type_Kinds,      ONLY: Byte, Short, Long, Single, Double
+  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
+  USE netcdf
+  ! Disable implicit typing
+  IMPLICIT NONE
+
+
+  ! ----------
+  ! Visibility
+  ! ----------
+  PRIVATE
+  PUBLIC :: Get_netCDF_Attribute
+  PUBLIC :: Put_netCDF_Attribute
+
+
+  ! ---------------------
+  ! Procedure overloading
+  ! ---------------------
+  ! Functions to get attributes
+  INTERFACE Get_netCDF_Attribute
+    MODULE PROCEDURE get_scalar_Character
+    MODULE PROCEDURE get_scalar_Byte
+    MODULE PROCEDURE get_scalar_Short
+    MODULE PROCEDURE get_scalar_Long
+    MODULE PROCEDURE get_scalar_Single
+    MODULE PROCEDURE get_scalar_Double
+    MODULE PROCEDURE get_rank1_Byte
+    MODULE PROCEDURE get_rank1_Short
+    MODULE PROCEDURE get_rank1_Long
+    MODULE PROCEDURE get_rank1_Single
+    MODULE PROCEDURE get_rank1_Double
+  END INTERFACE Get_netCDF_Attribute
+
+  ! Functions to put attributes
+  INTERFACE Put_netCDF_Attribute
+    MODULE PROCEDURE put_scalar_Character
+    MODULE PROCEDURE put_scalar_Byte
+    MODULE PROCEDURE put_scalar_Short
+    MODULE PROCEDURE put_scalar_Long
+    MODULE PROCEDURE put_scalar_Single
+    MODULE PROCEDURE put_scalar_Double
+    MODULE PROCEDURE put_rank1_Byte
+    MODULE PROCEDURE put_rank1_Short
+    MODULE PROCEDURE put_rank1_Long
+    MODULE PROCEDURE put_rank1_Single
+    MODULE PROCEDURE put_rank1_Double
+  END INTERFACE Put_netCDF_Attribute
+
+
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Module RCS Id string
+  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+    '$Id: netCDF_Attribute_Utility.Header_and_Documentation,v 1.1 2006/06/08 21:47:55 wd20pd Exp $'
+
+
+CONTAINS
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       Get_netCDF_Attribute
+!
+! PURPOSE:
+!       Function to retrieve a netCDF variable attribute by name.
+!
+!       This function is simply a wrapper for some of the NetCDF library
+!       functions to simplify the retrieval of an attribute with error checking.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Get_netCDF_Attribute( NC_FileID,                     &  ! Input
+!                                            Attribute_Name,                &  ! Input
+!                                            Attribute_Value,               &  ! Output
+!                                            Variable_Name = Variable_Name, &  ! Optional input
+!                                            Message_Log   = Message_Log    )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       NC_FileID:       File ID of a netCDF format file returned from an
+!                        netCDF library OPEN call.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( IN )
+!
+!       Attribute_Name:  Name of the netCDF attribute to retrieve.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( IN )
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Variable_Name:   Name of the variable with which the requested
+!                        attribute is associated. If not included, the
+!                        attribute is assumed to be GLOBAL.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                        
+!       Message_Log:     Character string specifying a filename in which any
+!                        messages will be logged. If not specified, or if an
+!                        error occurs opening the log file, the default action
+!                        is to output messages to the screen.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: OPTIONAL, INTENT( IN )
+!
+! OUTPUT ARGUMENTS:
+!       Attribute_Value: Value of the requested attribute.
+!                        The integer and real kind types are defined in
+!                        the TYPE_KINDS module.
+!                        UNITS:      Variable
+!                        TYPE:       CHARACTER         or
+!                                    INTEGER( Byte )   or
+!                                    INTEGER( Short )  or
+!                                    INTEGER( Long )   or
+!                                    REAL( Single )    or
+!                                    REAL( Double )
+!                        DIMENSION:  Scalar or Rank-1 array
+!                                    Scalar *only* for CHARACTER 
+!                        ATTRIBUTES: INTENT( OUT )
+!
+! FUNCTION RESULT
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the netCDF attribute retrieval was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+!Insert_Get_netCDF_Attribute
+
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       Put_netCDF_Attribute
+!
+! PURPOSE:
+!       Function to write a netCDF attribute by name.
+!
+!       This function is simply a wrapper for some of the NetCDF library
+!       functions to simplify the writing of an attribute with error checking.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Put_netCDF_Attribute ( NC_FileID,                     &  ! Input
+!                                             Attribute_Name,                &  ! Input
+!                                             Attribute_Value,               &  ! Input
+!                                             Variable_Name = Variable_Name, &  ! Optional input
+!                                             Message_Log   = Message_Log    )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       NC_FileID:       File ID of a netCDF format file.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( IN )
+!
+!       Attribute_Name:  Name of the netCDF attribute to write.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( IN )
+!
+!       Attribute_Value: Value of the attribute.
+!                        The integer and real kind types are defined in
+!                        the TYPE_KINDS module.
+!                        UNITS:      Variable
+!                        TYPE:       CHARACTER         or
+!                                    INTEGER( Byte )   or
+!                                    INTEGER( Short )  or
+!                                    INTEGER( Long )   or
+!                                    REAL( Single )    or
+!                                    REAL( Double )
+!                        DIMENSION:  Scalar or Rank-1 array
+!                                    Scalar *only* for CHARACTER 
+!                        ATTRIBUTES: INTENT( IN )
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Variable_Name:   Name of the variable with which the requested
+!                        attribute is associated. If not included, the
+!                        attribute is assumed to be GLOBAL.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                        
+!       Message_Log:     Character string specifying a filename in which any
+!                        messages will be logged. If not specified, or if an
+!                        error occurs opening the log file, the default action
+!                        is to output messages to the screen.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: OPTIONAL, INTENT( IN )
+!
+! FUNCTION RESULT
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the netCDF attribute write was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+!Insert_Put_netCDF_Attribute
+
+
+
+END MODULE netCDF_Attribute_Utility

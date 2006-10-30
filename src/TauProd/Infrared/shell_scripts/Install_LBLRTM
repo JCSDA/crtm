@@ -1,0 +1,188 @@
+#!/bin/sh
+
+SCRIPT_NAME="`basename $0`"
+
+
+
+#-------------------------------------------------------------------------------#
+#                           -- DEFINE DIRECTORY NAMES --                        #
+#-------------------------------------------------------------------------------#
+
+# -------------------------------------------
+# The root directory/filesystem where all the
+# LBLRTM software and fixed data is archived.
+# -------------------------------------------
+
+if [ -z "${ARCHIVE_ROOT_DIR}" ]; then
+  ARCHIVE_ROOT_DIR=hanfs1:/g01.1/weather/wx20pd
+fi
+
+
+# ----------------------------------------
+# The root directory/filesystem where the
+# LBLRTM code and datafiles will be stored
+# ----------------------------------------
+
+if [ -z "${HOME_ROOT_DIR}" ]; then
+  HOME_ROOT_DIR=/nbns/global/wx20pd
+fi
+
+
+# ---------------------------------------
+# The root directory/filesystem where the
+# LBLRTM code will be run
+# ---------------------------------------
+
+if [ -z "${RUN_ROOT_DIR}" ]; then
+  RUN_ROOT_DIR=/ptmp/wx20pd
+fi
+
+
+# ----------------------------------
+# The generic LBLRTM directory names
+# ----------------------------------
+
+LBLRTM_ROOT_DIRECTORY=lblrtm
+LBLRTM_HITRAN_DIRECTORY=hitran
+LBLRTM_BIN_DIRECTORY=bin
+LBLRTM_RUN_DIRECTORY=lblrtm_scratch
+
+
+
+#-------------------------------------------------------------------------------#
+#                     -- SAVE CURRENT DIRECTORY LOCATION --                     #
+#-------------------------------------------------------------------------------#
+
+CURRENT_DIRECTORY=${PWD}
+
+
+
+#-------------------------------------------------------------------------------#
+#                   -- CREATE LBLRTM SCRATCH/RUN DIRECTORY --                   #
+#-------------------------------------------------------------------------------#
+
+# ----------------------------------------
+# Change to the directory/filesystem where
+# the LBLRTM software will be run.
+# ----------------------------------------
+
+cd ${RUN_ROOT_DIR}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${RUN_ROOT_DIR} directory from ${PWD}"
+  exit 2
+fi
+
+
+# --------------------------------
+# Create the scratch run directory
+# --------------------------------
+
+if [ ! -d ${LBLRTM_RUN_DIRECTORY} ]; then
+  mkdir ${LBLRTM_RUN_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error creating ${LBLRTM_RUN_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+fi
+
+
+#-------------------------------------------------------------------------------#
+#                -- COPY ARCHIVED LBLRTM SOFTWARE/DATA TO HOME --               #
+#-------------------------------------------------------------------------------#
+
+# ------------------------------------------
+# Change to the root directory/filesystem on
+# which the LBLRTM software will be copied
+# ------------------------------------------
+
+cd ${HOME_ROOT_DIR}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${HOME_ROOT_DIR} directory from ${PWD}"
+  exit 2
+fi
+
+
+# ---------------------------------------------------
+# Create LBLRTM directory if it doesn't already exist
+# ---------------------------------------------------
+
+if [ ! -d ${LBLRTM_ROOT_DIRECTORY} ]; then
+  mkdir ${LBLRTM_ROOT_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error creating ${LBLRTM_ROOT_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+fi
+
+cd ${LBLRTM_ROOT_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${LBLRTM_ROOT_DIRECTORY} directory from ${PWD}"
+  exit 2
+fi
+
+
+# ---------------------------
+# Copy over HITRAN TAPE3 data
+# ---------------------------
+
+# -- Create hitran subdirectory
+if [ ! -d ${LBLRTM_HITRAN_DIRECTORY} ]; then
+  mkdir ${LBLRTM_HITRAN_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo " Error creating ${LBLRTM_HITRAN_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+fi
+
+# -- Define the source and destination directories
+FROM_DIRECTORY=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}/${LBLRTM_HITRAN_DIRECTORY}
+TO_DIRECTORY=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}/${LBLRTM_HITRAN_DIRECTORY}
+
+echo
+echo " Copying HITRAN data from ${FROM_DIRECTORY} to ${TO_DIRECTORY}..."
+
+# -- Copy the cross-section data
+rcp -r ${FROM_DIRECTORY}/xs ${TO_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIRECTORY}/xs directory data"
+  exit 2
+fi
+
+rcp ${FROM_DIRECTORY}/FSCDXS ${TO_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIRECTORY}/FSCDXS file"
+  exit 2
+fi
+
+rcp ${FROM_DIRECTORY}/tape3* ${TO_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIRECTORY}/tape3 files"
+  exit 2
+fi
+
+
+# --------------------------
+# Copy over executable files
+# --------------------------
+
+# -- Define the source and destination directories
+FROM_DIRECTORY=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}/${LBLRTM_BIN_DIRECTORY}
+TO_DIRECTORY=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}
+
+echo
+echo " Copying executables from ${FROM_DIRECTORY} to ${TO_DIRECTORY}..."
+
+rcp -r ${FROM_DIRECTORY} ${TO_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_BIN_DIRECTORY} directory files"
+  exit 2
+fi
+
+
+
+# -----------------------------
+# Return to the start directory
+# -----------------------------
+
+cd ${CURRENT_DIRECTORY}
+

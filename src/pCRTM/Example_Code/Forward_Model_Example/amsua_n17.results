@@ -1,0 +1,38 @@
+
+     **********************************************************
+                        Forward_Model_Example
+
+      Example program showing how to call the pCRTM Forward
+        Component.
+
+      $Revision: 1.8 $
+     **********************************************************
+
+     Enter the SpcCoeff filename:      Enter the TauCoeff filename: 
+     Initializing the pCRTM...
+ Read_TauCoeff_Binary(INFORMATION) : FILE: amsua_n17.TauCoeff.bin.Little_Endian; 
+ TauCoeff RELEASE.VERSION:  5.03  N_ORDERS=10  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=  15  N_SENSORS= 1
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: amsua_n17.SpcCoeff.bin.Little_Endian; 
+ SpcCoeff RELEASE.VERSION:  4.02  N_CHANNELS=  15  N_SENSORS= 1
+
+     Enter the number of channels to skip [1==process all]: 
+     Calling the pCRTM Forward component...
+
+     Results for ECMWF Profile #1...
+          Channel index:    1     Tb = 304.570 K
+          Channel index:    2     Tb = 307.561 K
+          Channel index:    3     Tb = 294.194 K
+          Channel index:    4     Tb = 271.434 K
+          Channel index:    5     Tb = 252.001 K
+          Channel index:    6     Tb = 231.760 K
+          Channel index:    7     Tb = 219.650 K
+          Channel index:    8     Tb = 211.143 K
+          Channel index:    9     Tb = 208.831 K
+          Channel index:   10     Tb = 217.695 K
+          Channel index:   11     Tb = 227.886 K
+          Channel index:   12     Tb = 235.521 K
+          Channel index:   13     Tb = 244.962 K
+          Channel index:   14     Tb = 255.283 K
+          Channel index:   15     Tb = 302.591 K
+
+     Destroying the pCRTM space...

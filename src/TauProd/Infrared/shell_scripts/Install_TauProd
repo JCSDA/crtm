@@ -1,0 +1,389 @@
+#!/bin/sh
+
+#
+# The following directory structure is created:
+#
+#  Transmittance_Production
+#    |
+#    |-- SRF_Data (*1)
+#    |
+#    `-- Data_Runs
+#          |
+#          |-- UMBC
+#          |     |
+#          |     |-- SRF_Data (link to *1)
+#          |     `-- TAPE5_files
+#          |
+#          |-- CIMSS
+#          |     |
+#          |     |-- SRF_Data (link to *1)
+#          |     `-- TAPE5_files
+#          |
+#          `-- ECMWF
+#                |
+#                |-- SRF_Data (link to *1)
+#                `-- TAPE5_files
+#
+
+
+
+SCRIPT_NAME="`basename $0`"
+
+
+#-------------------------------------------------------------------------------#
+#                               -- SOME DEFINITIONS --                          #
+#-------------------------------------------------------------------------------#
+
+# ---------------------------------------
+# The root directory/filesystem where all
+# the software and fixed data is kept
+# ---------------------------------------
+
+if [ -z "${ARCHIVE_ROOT_DIR}" ]; then
+  ARCHIVE_ROOT_DIR=hanfs1:/g01.1/weather/wx20pd
+fi
+
+
+# ---------------------------------------
+# The root directory/filesystem where the
+# TauProd datafiles will be stored
+# ---------------------------------------
+
+if [ -z "${HOME_ROOT_DIR}" ]; then
+  HOME_ROOT_DIR=/nbns/global/wx20pd
+fi
+
+
+# ---------------------------------------
+# The root directory/filesystem where the
+# TauProd code will be run
+# ---------------------------------------
+
+if [ -z "${RUN_ROOT_DIR}" ]; then
+  RUN_ROOT_DIR=/ptmp/wx20pd
+fi
+
+
+# ------------------
+# Subdirectory names
+# ------------------
+
+# -- The transmittance production directory
+TAUPROD_ROOT_DIRECTORY=Transmittance_Production
+
+# -- Other directory names
+SRF_DATA_DIRECTORY=SRF_Data
+DATA_RUNS_DIRECTORY=Data_Runs
+TAPE5_DIRECTORY=TAPE5_files
+
+# -- The SensorInfo filename and directory
+SENSORINFO_DIRECTORY=f90/Instrument_Information/SensorInfo
+SENSORINFO_FILE=SensorInfo
+
+
+# --------------------------------
+# Define the profile set tag names
+# --------------------------------
+
+PROFILE_SET_TAGS="UMBC CIMSS ECMWF"
+
+
+#-------------------------------------------------------------------------------#
+#                     -- SAVE CURRENT DIRECTORY LOCATION --                     #
+#-------------------------------------------------------------------------------#
+
+CURRENT_DIRECTORY=${PWD}
+
+
+
+#-------------------------------------------------------------------------------#
+#                -- MAKE AND INSTALL ALL THE FORTRAN SOFTWARE --                #
+#-------------------------------------------------------------------------------#
+
+cd ${HOME}/f90/${TAUPROD_ROOT_DIRECTORY}
+make
+make install
+
+cd ${CURRENT_DIRECTORY}
+
+
+
+#-------------------------------------------------------------------------------#
+#                             -- INSTALL LBLRTM --                              #
+#-------------------------------------------------------------------------------#
+
+Install_LBLRTM
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error installing LBLRTM"
+  exit 2
+fi
+
+
+#-------------------------------------------------------------------------------#
+#                       -- INSTALL TAUPROD ON HOME_ROOT --                      #
+#-------------------------------------------------------------------------------#
+
+# ------------------------------------------
+# Change to the root directory/filesystem on
+# which the TauProd data will be stored
+# ------------------------------------------
+
+cd ${HOME_ROOT_DIR}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${HOME_ROOT_DIR} directory from ${PWD}"
+  exit 2
+fi
+
+
+# ----------------------------------------------------
+# Create TauProd directory if it doesn't already exist
+# ----------------------------------------------------
+
+if [ ! -d ${TAUPROD_ROOT_DIRECTORY} ]; then
+  mkdir ${TAUPROD_ROOT_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error creating ${TAUPROD_ROOT_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+fi
+
+cd ${TAUPROD_ROOT_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${TAUPROD_ROOT_DIRECTORY} directory from ${PWD}"
+  exit 2
+fi
+
+
+# ------------------------
+# Copy over SRF data files
+# ------------------------
+
+echo
+echo " Copying SRF data to ${PWD}/${SRF_DATA_DIRECTORY}..."
+
+rcp -r ${ARCHIVE_ROOT_DIR}/${SRF_DATA_DIRECTORY} .
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error copying SRF data directory"
+  exit 2
+fi
+
+
+# -------------------------------------
+# Copy over Master SensorInfo data file
+# -------------------------------------
+
+echo
+echo " Copying SensorInfo datafile to ${PWD}..."
+
+if [ ! -f ${SENSORINFO_FILE} ]; then
+  rcp ${ARCHIVE_ROOT_DIR}/${SENSORINFO_DIRECTORY}/${SENSORINFO_FILE} .
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error copying ${SENSORINFO_FILE}"
+    exit 2
+  fi
+fi
+
+
+# --------------------------
+# Copy over TAPE5 data files
+# --------------------------
+
+echo
+echo " Copying TAPE5 data..."
+
+# -- Create the Data_Runs directory if it doesn't exist
+if [ ! -d ${DATA_RUNS_DIRECTORY} ]; then
+  mkdir ${DATA_RUNS_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error creating ${DATA_RUNS_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+
+fi
+
+
+# -- Enter Data_Runs directory
+cd ${DATA_RUNS_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${DATA_RUNS_DIRECTORY} root directory from ${PWD}"
+  exit 2
+fi
+
+
+# -- Loop over the different profile sets
+for PROFILE_SET in ${PROFILE_SET_TAGS}; do
+
+  # -- Create the profile set directory if it doesn't exist
+  if [ ! -d ${PROFILE_SET} ]; then
+    mkdir ${PROFILE_SET}
+    if [ $? -ne 0 ]; then
+      echo "${SCRIPT_NAME}: Error creating ${PROFILE_SET} directory in ${PWD}"
+      exit 2
+    fi
+  fi
+
+
+  # -- Enter the profile set directory
+  cd ${PROFILE_SET}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error changing to ${PROFILE_SET} directory from ${PWD}"
+    exit 2
+  fi
+
+
+  # -- Create the TAPE5 files directory if it doesn't exist
+  if [ ! -d ${TAPE5_DIRECTORY} ]; then
+    mkdir ${TAPE5_DIRECTORY}
+    if [ $? -ne 0 ]; then
+      echo "${SCRIPT_NAME}: Error creating ${TAPE5_DIRECTORY} directory in ${PWD}"
+      exit 2
+    fi
+  fi
+
+
+  # -- Enter the TAPE5 directory
+  cd ${TAPE5_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error changing to ${TAPE5_DIRECTORY} directory from ${PWD}"
+    exit 2
+  fi
+
+
+  # -- Copy over TAPE5 data files
+  rcp ${ARCHIVE_ROOT_DIR}/f90/${TAUPROD_ROOT_DIRECTORY}/Create_LBLRTM_Input_Files/${TAPE5_DIRECTORY}/${PROFILE_SET}_fixed/TAPE5.* .
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error copying ${PROFILE_SET} TAPE5 files to ${PWD}"
+    exit 2
+  fi
+
+
+  # -- Return to Data_Runs directory
+  cd ../..
+
+done
+
+
+
+#-------------------------------------------------------------------------------#
+#                        -- INSTALL TAUPROD ON RUN_ROOT --                      #
+#-------------------------------------------------------------------------------#
+
+# ------------------------------------------
+# Change to the root directory/filesystem on
+# which the TauProd software will be run
+# ------------------------------------------
+
+cd ${RUN_ROOT_DIR}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${RUN_ROOT_DIR} root directory from ${PWD}"
+  exit 2
+fi
+
+
+# ----------------------------------------------------
+# Create TauProd directory if it doesn't already exist
+# ----------------------------------------------------
+
+if [ ! -d ${TAUPROD_ROOT_DIRECTORY} ]; then
+  mkdir ${TAUPROD_ROOT_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error creating ${TAUPROD_ROOT_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+fi
+
+
+cd ${TAUPROD_ROOT_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${TAUPROD_ROOT_DIRECTORY} root directory from ${PWD}"
+  exit 2
+fi
+
+
+
+# -----------------------------------------------
+# Link in the necessary data files from HOME_ROOT
+# -----------------------------------------------
+
+echo
+echo " Linking datafiles from ${HOME_ROOT_DIR}..."
+
+
+# -- Create the Data_Runs directory if it doesn't exist
+if [ ! -d ${DATA_RUNS_DIRECTORY} ]; then
+  mkdir ${DATA_RUNS_DIRECTORY}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error creating ${DATA_RUNS_DIRECTORY} directory in ${PWD}"
+    exit 2
+  fi
+
+fi
+
+
+# -- Enter Data_Runs directory
+cd ${DATA_RUNS_DIRECTORY}
+if [ $? -ne 0 ]; then
+  echo "${SCRIPT_NAME}: Error changing to ${DATA_RUNS_DIRECTORY} root directory from ${PWD}"
+  exit 2
+fi
+
+
+# -- Loop over the different profile sets
+for PROFILE_SET in ${PROFILE_SET_TAGS}; do
+
+  # -- Create the profile set directory if it doesn't exist
+  if [ ! -d ${PROFILE_SET} ]; then
+    mkdir ${PROFILE_SET}
+    if [ $? -ne 0 ]; then
+      echo "${SCRIPT_NAME}: Error creating ${PROFILE_SET} directory in ${PWD}"
+      exit 2
+    fi
+  fi
+
+
+  # -- Enter the profile set directory
+  cd ${PROFILE_SET}
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error changing to ${PROFILE_SET} directory from ${PWD}"
+    exit 2
+  fi
+
+
+  # -- Link in the SensorInfo file
+  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIRECTORY}/${SENSORINFO_FILE} .
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error linking SensorInfo file in ${PROFILE_SET} directory"
+    exit 2
+  fi
+
+
+  # -- Link in the TAPE5 file directory
+  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIRECTORY}/${DATA_RUNS_DIRECTORY}/${PROFILE_SET}/${TAPE5_DIRECTORY} .
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Error linking ${TAPE5_DIRECTORY} directory in ${PROFILE_SET} directory"
+    exit 2
+  fi
+
+
+  # -- Create the SRF data directory if it doesn't exist
+  if [ ! -d ${SRF_DATA_DIRECTORY} ]; then
+    mkdir ${SRF_DATA_DIRECTORY}
+    if [ $? -ne 0 ]; then
+      echo "${SCRIPT_NAME}: Error creating ${SRF_DATA_DIRECTORY} directory in ${PWD}"
+      exit 2
+    fi
+  fi
+
+
+  # -- Return to Data_Runs directory
+  cd ..
+
+done
+
+
+# -----------------------------
+# Return to the start directory
+# -----------------------------
+
+cd ${CURRENT_DIRECTORY}
+

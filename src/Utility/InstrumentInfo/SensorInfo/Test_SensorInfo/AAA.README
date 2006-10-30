@@ -1,0 +1,52 @@
+Make the executable
+===================
+
+The supplied makefile has entries for SunOS, AIX, IRIX64, and Linux operating
+systems based on the output from the unix command "uname -s". Simply typing
+
+  make
+
+should invoke the required compiler definitions and rules in the make.macros
+and make.rules files respectively if you use one of those systems.
+
+For systems other than those listed above, both the makefile and make.macros
+will need to be edited. For the former, a case for your system will need to be
+added to the "all" target, and compiler definitions will need to be added to 
+the latter. You can use other system entries as a template.
+
+In the case of Linux, the compiler defintions are for the Portland Group pgf90
+compiler. For other compilers, the make.macros file will need to be edited and
+the required compiler flags added (use the PGI setup as a template.)
+
+The compiler flag definitions use all possible error checking/trapping that I
+could find. Some systems will output a lot of stuff during compilation. Others
+may not. My rule of thumb is that a CAUTION type of message from the compiler
+can usually be ignored _based on context_. But a WARNING message should be
+addressed. I don't get WARNING messages on my test platformsm but the SGI system
+does produce CAUTION messages (which I think is a bug, but the compiler I use
+is a bit long in the tooth.)
+
+
+Run the executable
+==================
+
+Run the test program executable by typing
+
+  SensorInfo_Test
+
+This will cause the supplied input file SensorInfo.input_test to be read. For
+every sensor listed in the file, an information line will be output, e.g.
+
+.....
+ Read_SensorInfo(INFORMATION) : SENSOR/PLATFORM: HIRS/3 NOAA-16, N_CHANNELS=  19
+ Read_SensorInfo(INFORMATION) : SENSOR/PLATFORM: AMSU-A NOAA-16, N_CHANNELS=  15
+ Read_SensorInfo(INFORMATION) : SENSOR/PLATFORM: AMSU-B NOAA-16, N_CHANNELS=   5
+.....etc...
+
+The data read in is then written to a file called SensorInfo.output_test. This
+file should be identical to the input file *apart* from the input file's header
+comments (lines containing a "!" in column 1).
+
+
+Paul van Delst
+paul.vandelst@ssec.wisc.edu

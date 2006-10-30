@@ -1,0 +1,148 @@
+#!/bin/sh
+
+if [ $# -lt 2 ]; then
+  exit 2
+fi
+
+# ---------------------------------
+# Assign input and output filenames
+# ---------------------------------
+
+FILE=$1
+OUTFILE=$2
+rm -f ${OUTFILE} 2>/dev/null
+
+
+# ---------------------------------------------------
+# Create the temporary sed and intermediate filenames
+# ---------------------------------------------------
+
+SED_FILE=".${FILE}.sed"
+INTERMEDIATE_FILE=".${OUTFILE}.tmp"
+rm -f ${INTERMEDIATE_FILE} 2>/dev/null
+
+
+# ----------------------------------
+# Define the various kinds and ranks
+# ----------------------------------
+
+INTEGER_KINDS="Byte Short Long"
+REAL_KINDS="Single Double"
+CHARACTER_LEN="*"
+
+RANK_LIST="1 2 3 4 5 6 7"
+DIMLIST=":"
+
+CHAR="no"
+if [ $# -eq 3 ]; then
+  CHAR="yes"
+fi
+  
+
+# -----------------------
+# Process the array ranks
+# -----------------------
+
+# -- Are there any rank-specific lines in this file?
+N_RANK_LINES=`grep "#RANK#" ${FILE} | wc -l`
+echo "Number of RANK lines: ${N_RANK_LINES}"
+
+# -- Only process file if rank lines present
+if [ ${N_RANK_LINES} -gt 0 ]; then
+
+  # -- Loop over ranks
+  for RANK in ${RANK_LIST}; do
+    echo "     Processing RANK # ${RANK}"
+
+    # -- Replace RANK and DIMLIST keywords
+    echo "s/#RANK#/${RANK}/g" > ${SED_FILE}
+    echo "s/#DIMLIST#/${DIMLIST}/g" >> ${SED_FILE}
+    sed -f ${SED_FILE} ${FILE} >> ${INTERMEDIATE_FILE}
+
+    # -- Update the assumed shape dimension specifier.
+    DIMLIST="${DIMLIST}, :"
+  done
+else
+  cp ${FILE} ${INTERMEDIATE_FILE}
+fi
+
+
+# ----------------------
+# Process the type kinds
+# ----------------------
+
+# -- Are there any kind-specific lines in this file?
+N_KIND_LINES=`grep "#KIND#" ${FILE} | wc -l`
+echo "Number of KIND lines: ${N_KIND_LINES}"
+
+# -- Only process file if kind lines present
+if [ ${N_KIND_LINES} -gt 0 ]; then
+
+  if [ ${CHAR} = "yes" ]; then
+
+    # -- Do characters
+    echo "     Processing CHARACTER"
+    echo "s/#KIND#/${CHARACTER_LEN}/g" > ${SED_FILE}
+    echo "s/#TYPE#/CHARACTER/g" >> ${SED_FILE}
+    sed -f ${SED_FILE} ${INTERMEDIATE_FILE} >> ${OUTFILE}
+
+  else
+
+    # -- Loop over integer kinds
+    for KIND in ${INTEGER_KINDS}; do
+      echo "     Processing INTEGER KIND ${KIND}"
+
+      # -- Replace KIND and TYPE keywords
+      echo "s/#KIND#/${KIND}/g" > ${SED_FILE}
+      echo "s/#TYPE#/INTEGER/g" >> ${SED_FILE}
+      sed -f ${SED_FILE} ${INTERMEDIATE_FILE} >> ${OUTFILE}
+    done
+
+    # -- Loop over real kinds
+    for KIND in ${REAL_KINDS}; do
+      echo "     Processing REAL KIND ${KIND}"
+
+      # -- Replace KIND and TYPE keywords
+      echo "s/#KIND#/${KIND}/g" > ${SED_FILE}
+      echo "s/#TYPE#/REAL/g" >> ${SED_FILE}
+      sed -f ${SED_FILE} ${INTERMEDIATE_FILE} >> ${OUTFILE}
+    done
+  fi
+fi
+
+
+# -----------------
+# Remove work files
+# -----------------
+
+rm -f ${SED_FILE} 2>/dev/null
+rm -f ${INTERMEDIATE_FILE} 2>/dev/null
+
+
+#-------------------------------------------------------------------------------
+#                          -- MODIFICATION HISTORY --
+#-------------------------------------------------------------------------------
+#
+# $Id: pp,v 1.1 2006/06/08 21:47:55 wd20pd Exp $
+#
+# $Date: 2006/06/08 21:47:55 $
+#
+# $Revision: 1.1 $
+#
+# $Name:  $
+#
+# $State: Exp $
+#
+# $Log: pp,v $
+# Revision 1.1  2006/06/08 21:47:55  wd20pd
+# Initial checkin.
+#
+# Revision 1.2  2003/02/14 20:55:12  paulv
+# - Added character processing capability
+#
+# Revision 1.1  2002/05/20 17:56:01  paulv
+# Initial checkin.
+#
+#
+#
+#

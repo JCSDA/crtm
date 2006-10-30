@@ -1,0 +1,222 @@
+#!/bin/sh
+#==============================================================================
+#
+# Shell script to tag CRTM related software with a release tag.
+#
+#==============================================================================
+
+# -----
+# Usage
+# -----
+usage()
+{
+  echo
+  echo " Usage: tag_CRTM  Tag"
+  echo
+}
+
+
+# -----------
+# Code tagger
+# -----------
+tag_code()
+{
+  TAG=$1
+  DIR=$2
+  shift 2
+  FILES=$*
+
+  CURRENT_DIR=${PWD}
+  cd ${DIR}
+  echo "In ${DIR}..."
+  for FILE in ${FILES}; do
+    if [ -f ${FILE} ]; then
+      echo "  Tagging file ${FILE} with tag ${TAG}"
+      cvs tag ${TAG} ${FILE}
+    else
+      echo "  File ${FILE} not found in ${DIR}! Continuing..."
+    fi
+  done
+  cd ${CURRENT_DIR}
+}
+
+
+# -----------
+# Main script
+# -----------
+# Set up
+SCRIPT_NAME="`basename $0`"
+
+# Verify tag argument and set
+if [ $# -ne 1 ]; then
+  usage
+  exit 1
+fi
+TAG=$1
+
+# Check the repository directory definition
+if [ -z "${CRTM_SOURCE_ROOT}" ]; then
+  echo "  REPOSITORY_SOURCE_ROOT environment variable is not defined. Exiting."
+  exit 1
+fi
+
+# Utility code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Utility"
+SRC_FILES="Type_Kinds.f90 File_Utility.f90 Message_Handler.f90 Fundamental_Constants.o "\
+"Compare_Float_Numbers.f90 Endian_Utility.f90 Binary_File_Utility.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# Sort Utility code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Utility/Sort_Utility"
+SRC_FILES="Sort_Utility.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# Spectral Utility code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Utility/Spectral_Utility"
+SRC_FILES="Spectral_Units_Conversion.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# SpcCoeff code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Utility/InstrumentInfo/SpcCoeff"
+SRC_FILES="SpcCoeff_Define.f90 SpcCoeff_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# TauCoeff code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Coefficients/TauCoeff"
+SRC_FILES="TauCoeff_Define.f90 TauCoeff_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# AerosolCoeff code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Coefficients/AerosolCoeff"
+SRC_FILES=" AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CloudCoeff code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Coefficients/CloudCoeff"
+SRC_FILES="CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM EmisCoeff files
+SRC_DIR="${CRTM_SOURCE_ROOT}/Coefficients/EmisCoeff/Spectral"
+SRC_FILES="EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM Utility code
+SRC_DIR="${CRTM_SOURCE_ROOT}/CRTM_Utility"
+SRC_FILES="CRTM_Utility.f90 CRTM_Interpolation.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM Coeff code
+SRC_DIR="${CRTM_SOURCE_ROOT}/Coefficients"
+SRC_FILES="CRTM_SpcCoeff.f90 CRTM_TauCoeff.f90 CRTM_AerosolCoeff.f90 CRTM_CloudCoeff.f90 CRTM_EmisCoeff.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM Atmosphere files
+SRC_DIR="${CRTM_SOURCE_ROOT}/Atmosphere"
+SRC_FILES="CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90 "\
+"CRTM_Atmosphere_Binary_IO.f90 CRTM_Cloud_Binary_IO.f90 CRTM_Aerosol_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM Surface files
+SRC_DIR="${CRTM_SOURCE_ROOT}/Surface"
+SRC_FILES="CRTM_Surface_Define.f90 CRTM_SensorData_Define.f90 CRTM_Surface_Binary_IO.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM ChannelInfo files
+SRC_DIR="${CRTM_SOURCE_ROOT}/ChannelInfo"
+SRC_FILES="CRTM_ChannelInfo_Define.f90 CRTM_ChannelInfo.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM GeometryInfo files
+SRC_DIR="${CRTM_SOURCE_ROOT}/GeometryInfo"
+SRC_FILES="CRTM_GeometryInfo_Define.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM AtmAbsorption files
+SRC_DIR="${CRTM_SOURCE_ROOT}/AtmAbsorption"
+SRC_FILES="CRTM_AtmAbsorption_IntAbsorber.f90 CRTM_AtmAbsorption_Predictor.f90 "\
+"CRTM_AtmAbsorption_Define.f90 CRTM_AtmAbsorption.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM AtmScatter files
+SRC_DIR="${CRTM_SOURCE_ROOT}/AtmScatter"
+SRC_FILES="CRTM_AtmScatter_Define.f90 CRTM_AerosolScatter.f90 CRTM_CloudScatter.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM SfcOptics Driver files
+SRC_DIR="${CRTM_SOURCE_ROOT}/SfcOptics"
+SRC_FILES="CRTM_SfcOptics_Define.f90 CRTM_SfcOptics.f90 "\
+"CRTM_IR_Ice_SfcOptics.f90 "\
+"CRTM_IR_Land_SfcOptics.f90 "\
+"CRTM_IR_Snow_SfcOptics.f90 "\
+"CRTM_IR_Water_SfcOptics.f90 "\
+"CRTM_MW_Ice_SfcOptics.f90 "\
+"CRTM_MW_Land_SfcOptics.f90 "\
+"CRTM_MW_Snow_SfcOptics.f90 "\
+"CRTM_MW_Water_SfcOptics.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM IRSSE files
+SRC_DIR="${CRTM_SOURCE_ROOT}/SfcOptics/IRSSEM/Spectral"
+SRC_FILES="CRTM_IRSSEM.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM IRLSE files
+SRC_DIR="${CRTM_SOURCE_ROOT}/SfcOptics/IRLSEM"
+SRC_FILES="CRTM_surface_ir_emissivity.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# NESDIS MW emissivity files
+SRC_DIR="${CRTM_SOURCE_ROOT}/SfcOptics/NESDIS_Emissivity"
+SRC_FILES="NESDIS_AMSRE_SICEEM_Module.f90 "\
+"NESDIS_AMSRE_SNOWEM_Module.f90 "\
+"NESDIS_AMSU_SICEEM_Module.f90 "\
+"NESDIS_AMSU_SnowEM_Module.f90 "\
+"NESDIS_LandEM_Module.f90 "\
+"NESDIS_OCEANEM_Module.f90 "\
+"NESDIS_SEAICE_PHYEM_MODULE.f90 "\
+"NESDIS_SnowEM_Parameters.f90 "\
+"NESDIS_SSMI_Module.f90 "\
+"NESDIS_SSMI_SIceEM_Module.f90 "\
+"NESDIS_SSMI_SnowEM_Module.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# FASTEM MW emissivity files
+SRC_DIR="${CRTM_SOURCE_ROOT}/SfcOptics/FASTEM"
+SRC_FILES="CRTM_Fastem1.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM AtmOptics files
+SRC_DIR="${CRTM_SOURCE_ROOT}/AtmOptics"
+SRC_FILES="CRTM_AtmOptics.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM RTSolution files
+SRC_DIR="${CRTM_SOURCE_ROOT}/RTSolution"
+SRC_FILES="CRTM_RTSolution_Define.f90 CRTM_RTSolution.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM Source functions
+SRC_DIR="${CRTM_SOURCE_ROOT}/Source_Functions"
+SRC_FILES="CRTM_Planck_Functions.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# CRTM Options files
+SRC_DIR="${CRTM_SOURCE_ROOT}/Options"
+SRC_FILES="CRTM_Options_Define.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+# Main CRTM files
+SRC_DIR="${CRTM_SOURCE_ROOT}"
+SRC_FILES="CRTM_Parameters.f90 "\
+"CRTM_SensorInfo.f90 "\
+"CRTM_LifeCycle.f90 "\
+"CRTM_Forward_Module.f90 "\
+"CRTM_Tangent_Linear_Module.f90 "\
+"CRTM_Adjoint_Module.f90 "\
+"CRTM_K_Matrix_Module.f90 "\
+"CRTM_Module.f90"
+tag_code ${TAG} ${SRC_DIR} ${SRC_FILES}
+
+
+

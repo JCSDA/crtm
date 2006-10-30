@@ -1,0 +1,43 @@
+
+     **********************************************************
+                       K_Matrix_Model_Example
+
+      Example program showing how to call the pCRTM K-Matrix
+        Component.
+
+      $Revision: 1.2 $
+     **********************************************************
+
+     Enter the SpcCoeff filename:      Enter the TauCoeff filename: 
+     Initializing the pCRTM...
+ Read_TauCoeff_Binary(INFORMATION) : FILE: hirs3_n17.TauCoeff.bin.Little_Endian; 
+ TauCoeff RELEASE.VERSION:  5.01  N_ORDERS=10  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=  19  N_SENSORS= 1
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: hirs3_n17.SpcCoeff.bin.Little_Endian; 
+ SpcCoeff RELEASE.VERSION:  4.01  N_CHANNELS=  19  N_SENSORS= 1
+
+     Enter the number of channels to skip [1==process all]: 
+     Calling the pCRTM K-Matrix component...
+
+     Results for ECMWF Profile #1...
+     Surface emissivity = 0.600
+     Channel index:    1  Tb = 235.032 K  d(Tb)/d(esfc) =   0.000 K  d(Tb)/d(Tsfc) =   0.000 K
+     Channel index:    2  Tb = 222.110 K  d(Tb)/d(esfc) =   0.000 K  d(Tb)/d(Tsfc) =   0.000 K
+     Channel index:    3  Tb = 218.941 K  d(Tb)/d(esfc) =   0.000 K  d(Tb)/d(Tsfc) =   0.000 K
+     Channel index:    4  Tb = 224.909 K  d(Tb)/d(esfc) =   0.002 K  d(Tb)/d(Tsfc) =   0.000 K
+     Channel index:    5  Tb = 240.433 K  d(Tb)/d(esfc) =   0.222 K  d(Tb)/d(Tsfc) =   0.001 K
+     Channel index:    6  Tb = 253.825 K  d(Tb)/d(esfc) =   0.471 K  d(Tb)/d(Tsfc) =   0.003 K
+     Channel index:    7  Tb = 267.795 K  d(Tb)/d(esfc) =   3.977 K  d(Tb)/d(Tsfc) =   0.028 K
+     Channel index:    8  Tb = 293.025 K  d(Tb)/d(esfc) =  45.427 K  d(Tb)/d(Tsfc) =   0.373 K
+     Channel index:    9  Tb = 269.309 K  d(Tb)/d(esfc) =  25.179 K  d(Tb)/d(Tsfc) =   0.235 K
+     Channel index:   10  Tb = 289.990 K  d(Tb)/d(esfc) =  19.485 K  d(Tb)/d(Tsfc) =   0.144 K
+     Channel index:   11  Tb = 258.482 K  d(Tb)/d(esfc) =   0.000 K  d(Tb)/d(Tsfc) =   0.000 K
+     Channel index:   12  Tb = 244.765 K  d(Tb)/d(esfc) =   0.000 K  d(Tb)/d(Tsfc) =   0.000 K
+     Channel index:   13  Tb = 286.827 K  d(Tb)/d(esfc) =  11.379 K  d(Tb)/d(Tsfc) =   0.223 K
+     Channel index:   14  Tb = 266.808 K  d(Tb)/d(esfc) =   3.177 K  d(Tb)/d(Tsfc) =   0.063 K
+     Channel index:   15  Tb = 254.761 K  d(Tb)/d(esfc) =   1.479 K  d(Tb)/d(Tsfc) =   0.030 K
+     Channel index:   16  Tb = 246.714 K  d(Tb)/d(esfc) =   0.560 K  d(Tb)/d(Tsfc) =   0.011 K
+     Channel index:   17  Tb = 294.273 K  d(Tb)/d(esfc) =  16.557 K  d(Tb)/d(Tsfc) =   0.359 K
+     Channel index:   18  Tb = 297.869 K  d(Tb)/d(esfc) =  32.229 K  d(Tb)/d(Tsfc) =   0.729 K
+     Channel index:   19  Tb = 298.876 K  d(Tb)/d(esfc) =  27.712 K  d(Tb)/d(Tsfc) =   0.661 K
+
+     Destroying the pCRTM space...

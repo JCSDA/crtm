@@ -1,0 +1,147 @@
+#==============================================================================
+#
+# Makefile for LBLRTM Read Test program
+#
+#==============================================================================
+
+#-----------------------------------------------------------------------------
+#                          -- Define macros --
+#-----------------------------------------------------------------------------
+
+include make.macros
+
+# -------------
+# This makefile
+# -------------
+
+MAKEFILE = makefile
+
+
+# ----------------
+# Executable files
+# ----------------
+
+EXE_FILE = lblrtm_read_test
+
+
+# ------------
+# Object files
+# ------------
+
+GENERAL_OBJ_FILES = type_kinds.o
+UTILITY_OBJ_FILES = file_utility.o \
+                    error_handler.o
+INTERPOLATE_OBJ_FILES = interpolate.o
+MATH_OBJ_FILES = integrate.o
+SPECTRAL_OBJ_FILES = spectral.o
+LBLRTM_OBJ_FILES = lblrtm_utility.o
+
+OBJ_FILES = $(GENERAL_OBJ_FILES) \
+            $(UTILITY_OBJ_FILES) \
+            $(INTERPOLATE_OBJ_FILES) \
+            $(MATH_OBJ_FILES) \
+            $(SPECTRAL_OBJ_FILES) \
+            $(LBLRTM_OBJ_FILES) \
+            $(EXE_FILE).o
+
+
+
+
+#-----------------------------------------------------------------------------
+#                          -- Define dependecies --
+#-----------------------------------------------------------------------------
+
+
+
+# ---------------------
+# Make based on OS type
+# ---------------------
+
+all:
+	@echo "OS type detected: "`uname -s`
+	@case `uname -s` in \
+	  "SunOS")    make -f $(MAKEFILE) read_test $(SUNOS_FLAGS) ;; \
+	   "AIX")     make -f $(MAKEFILE) read_test $(AIX_FLAGS) ;; \
+	   "IRIX64" ) make -f $(MAKEFILE) read_test $(IRIX64_FLAGS) ;; \
+	   "Linux" )  make -f $(MAKEFILE) read_test $(Linux_FLAGS_PGI) ;; \
+	   *) echo "This system is not supported" ;; \
+	esac
+
+
+# -----------------------------
+# Make the LBLRTM test programs
+# -----------------------------
+
+read_test: create_datafile_links $(OBJ_FILES)
+	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
+
+
+# --------
+# Clean up
+# --------
+
+clean:
+	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD
+
+realclean: remove_datafile_links clean
+
+
+# ----------------------------
+# Create links for compilation
+# ----------------------------
+
+LBLRTM_DATA_FILES = upwelling_tau.band001 upwelling_tau.band002
+
+create_datafile_links:
+	@if [ -n "$(ENDIAN)" ]; then \
+	  for data_file in $(LBLRTM_DATA_FILES); do \
+	    if [ ! -f $$data_file ]; then \
+	      $(LINK) $$data_file.$(ENDIAN) $$data_file ; \
+	    fi ; \
+	  done ; \
+	else \
+	  echo $@": nothing done. ENDIAN not defined." ; \
+	fi
+
+remove_datafile_links:
+	@for data_file in $(LBLRTM_DATA_FILES); do \
+	  $(REMOVE) $$data_file ; \
+	done
+
+# ---------------
+# Dependency list
+# ---------------
+
+type_kinds.o : type_kinds.f90 
+spectral.o : spectral.f90 type_kinds.o error_handler.o file_utility.o interpolate.o integrate.o 
+lblrtm_utility.o : lblrtm_utility.f90 type_kinds.o file_utility.o error_handler.o spectral.o 
+$(EXE_FILE).o : $(EXE_FILE).f90 type_kinds.o error_handler.o lblrtm_utility.o 
+interpolate.o : interpolate.f90 type_kinds.o error_handler.o 
+integrate.o : integrate.f90 type_kinds.o error_handler.o interpolate.o 
+file_utility.o : file_utility.f90 
+error_handler.o : error_handler.f90 file_utility.o 
+
+
+
+# -------------------------------
+# Create tarball for distribution
+# -------------------------------
+
+TAR_FILE = $(EXE_FILE)_software.tar
+
+tar:
+	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
+	$(TARBALL_APPEND) $(TAR_FILE) makefile
+	$(TARBALL_APPEND) $(TAR_FILE) make.macros make.rules
+	@for data_file in $(LBLRTM_DATA_FILES); do \
+	 $(TARBALL_APPEND) $(TAR_FILE) $$data_file.*endian ; \
+	done ; \
+	compress $(TAR_FILE)
+
+
+#-----------------------------------------------------------------------------
+#                          -- Define default rules --
+#-----------------------------------------------------------------------------
+
+include make.rules
+

@@ -1,0 +1,261 @@
+#!/bin/sh
+
+
+#-------------------------------------------------------------------------------
+#                        -- USAGE DESCRIPTION FUNCTION --
+#-------------------------------------------------------------------------------
+
+usage()
+{
+  echo " Usage: run_SpcCoeff_NC2BIN -l|b[fhs] [-v 4|5|6]"
+  echo
+  echo "   Convert any netCDF format SpcCoeff files in the current"
+  echo "   directory to Binary format. File with the suffix *.SpcCoeff.nc"
+  echo "   are converted into *.SpcCoeff.bin files."
+  echo
+  echo "     -l       Produce little-endian binary output files"
+  echo
+  echo "     -b       Produce big-endian binary output files"
+  echo
+  echo "     -f       Force overwrite of output file if it already exists."
+  echo "              Default behaviour is to skip conversion if the output"
+  echo "              file is already present."
+  echo
+  echo "     -h       Print this message and exit"
+  echo
+  echo "     -s       Convert SPECTRAL file type. Default is to convert"
+  echo "              SENSOR file type."
+  echo
+  echo "     -r       SpcCoeff Release number. If not specified, the default"
+  echo "              value is the latest Release."
+  echo "              Note that not all SpcCoeff releases are valid for SPECTRAL"
+  echo "              file types. The SPECTRAL file type is only valid for"
+  echo "              Release 6 and higher."
+  echo
+}
+
+
+#-------------------------------------------------------------------------------
+#                    -- THE SCRIPT NAME FOR ERROR MESSAGES --
+#-------------------------------------------------------------------------------
+
+SCRIPT_NAME="`basename $0`"
+
+
+
+#-------------------------------------------------------------------------------
+#                              -- DEFINE DEFAULTS --
+#-------------------------------------------------------------------------------
+
+  ENDIAN_TYPE="NONE"
+  ENDIAN_RUNTIME_ARG=""
+  OVERWRITE="NO"
+  FILE_TYPE="SENSOR"
+  RELEASE_NUMBER="6"
+
+
+
+#-------------------------------------------------------------------------------
+#                       -- PARSE THE COMMAND LINE OPTIONS --
+#-------------------------------------------------------------------------------
+
+  while getopts :hlbfs:r: OPTVAL; do
+
+
+    # --------------------------------------------
+    # If option argument looks like another option
+    # exit the loop
+    # --------------------------------------------
+
+    case ${OPTARG} in
+      -*) break;;
+    esac
+
+
+    # ----------------------------
+    # Parse the valid options here
+    # ----------------------------
+
+    case ${OPTVAL} in
+      l)  ENDIAN_TYPE="little";;
+      b)  ENDIAN_TYPE="big";;
+      f)  OVERWRITE="YES";;
+      h)  usage
+          exit 0;;
+      s)  FILE_TYPE="SPECTRAL";;
+      r)  RELEASE_NUMBER=${OPTARG};;
+      :|\?) OPTVAL=${OPTARG}
+            break;;
+    esac
+
+  done
+
+
+  # ----------------------------
+  # Remove the options processed
+  # ----------------------------
+
+  shift `expr ${OPTIND} - 1`
+
+
+  # ------------------------------------------
+  # Now output invalidities based on OPTVAL
+  # Need to do this as getopts does not handle
+  # the situations where an option is passed
+  # as an argument to another option.
+  # ------------------------------------------
+
+  case ${OPTVAL} in
+
+
+    # --------------------------------------------
+    # If OPTVAL contains nothing, then all options
+    # have been successfully parsed
+    # --------------------------------------------
+
+    \?) if [ $# -ne 0 ]; then
+          ( echo "${SCRIPT_NAME}: Invalid argument(s) $*" ; echo ; usage ) | more
+          exit 2
+        fi;;
+
+
+    # ------------------------------------
+    # Valid options, but missing arguments
+    # ------------------------------------
+
+    r) ( echo "${SCRIPT_NAME}: '-${OPTVAL}' option requires an argument" ; usage ) | more
+       exit 2;;
+
+
+    # --------------
+    # Invalid option
+    # --------------
+
+    ?) ( echo "${SCRIPT_NAME}: Invalid option '-${OPTARG}'" ; usage ) | more
+       exit 2;;
+
+  esac
+
+
+  # ---------------------------------------
+  # Check that an endian type was specified
+  # ---------------------------------------
+
+  if [ ${ENDIAN_TYPE} = "NONE" ]; then
+    ( echo "${SCRIPT_NAME}: Must specify and endian type, -l or -b" ; echo ; usage ) | more
+    exit 2
+  fi
+
+
+  # -----------------------------------------------
+  # Check that a valid Release number was specified
+  # -----------------------------------------------
+
+  case ${RELEASE_NUMBER} in
+    4|5|6) ;;
+    *) ( echo "${SCRIPT_NAME}: Invalid Release number specified" ; echo ; usage ) | more
+       exit 2;;
+  esac
+
+  # -------------------------------------------------------------------
+  # Check that a valid Release number and file type combo was specified
+  # -------------------------------------------------------------------
+
+  MIN_SPECTRAL_RELEASE=6
+  if [ ${RELEASE_NUMBER} -lt ${MIN_SPECTRAL_RELEASE} -a "${FILE_TYPE}" = "SPECTRAL" ]; then
+    ( echo "${SCRIPT_NAME}: Spectral file type only valid for Release ${MIN_SPECTRAL_RELEASE} and higher" ; echo ; usage ) | more
+    exit 2
+  fi
+
+
+#------------------------------------------------------------------------------#
+#                       -- ASSIGN PROCESSING PARAMETERS --                     #
+#------------------------------------------------------------------------------#
+
+  # -- Lahey Linux compiler-specific run time option
+  if [ ${ENDIAN_TYPE} = "big" ]; then
+    ENDIAN_RUNTIME_ARG="-Wl,-T"
+  fi
+
+  EXE_FILE="SpcCoeff_NC2BIN.R${RELEASE_NUMBER}"
+  LOG_FILE="${EXE_FILE}.log"
+
+
+
+#------------------------------------------------------------------------------#
+#                  -- BEGIN LOOP OVER netCDF SpcCoeff FILES --                 #
+#------------------------------------------------------------------------------#
+
+  for NC_FILE in `ls *.SpcCoeff.nc`; do
+
+
+    # ----------------------
+    # Create binary filename
+    # ----------------------
+
+    BIN_FILE="`basename ${NC_FILE} .nc`.bin"
+
+
+    # --------------------------------------
+    # Check to see if the output file exists
+    # --------------------------------------
+
+    if [ -f ${BIN_FILE} -a ${OVERWRITE} = "NO" ]; then
+      echo " Output file ${BIN_FILE} already exists. Skipping to next file..."
+      continue
+    fi
+
+
+    # ----------------
+    # Convert the file
+    # ----------------
+
+    echo " Converting Release ${RELEASE_NUMBER} ${NC_FILE} to ${ENDIAN_TYPE} endian binary format file ${BIN_FILE}..."
+    ${EXE_FILE} ${ENDIAN_RUNTIME_ARG} <<-NoMoreInput >> ${LOG_FILE}
+	${NC_FILE}
+	${BIN_FILE}
+	${FILE_TYPE}
+	NoMoreInput
+  done
+
+exit
+
+
+#-------------------------------------------------------------------------------
+#                          -- MODIFICATION HISTORY --
+#-------------------------------------------------------------------------------
+#
+# $Id: run_SpcCoeff_NC2BIN,v 2.4 2006/02/02 19:31:28 paulv Exp $
+#
+# $Date: 2006/02/02 19:31:28 $
+#
+# $Revision: 2.4 $
+#
+# $Name:  $
+#
+# $State: Exp $
+#
+# $Log: run_SpcCoeff_NC2BIN,v $
+# Revision 2.4  2006/02/02 19:31:28  paulv
+# - Corrected bug in default specification of release number.
+#
+# Revision 2.3  2006/01/31 18:25:09  paulv
+# - Corrected inconsistency in EXE_FILE definition.
+#
+# Revision 2.2  2006/01/31 16:14:12  paulv
+# - Added capability to run different versions of the SpcCoeff_NC2BIN code
+#   to create different Releases of the SpcCoeff data files.
+# - Now using Lahey runtime options to switch between little- and big-endian
+#   output.
+#
+# Revision 2.1  2005/07/06 17:07:51  paulv
+# - Added switch, -s, to allow user to select the file type to convert. The
+#   default is to convert SENSOR type files.
+#
+# Revision 2.0  2004/03/09 17:26:48  paulv
+# - New version that uses command line options for arguments.
+#
+#
+#
+#
+

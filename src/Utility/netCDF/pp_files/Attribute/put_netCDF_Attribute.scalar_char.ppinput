@@ -1,0 +1,134 @@
+
+
+  FUNCTION put_scalar_#TYPE#( &
+    NC_fileID,       &  ! Input
+    Attribute_Name,  &  ! Input
+    Attribute_Value, &  ! Input
+    Variable_Name,   &  ! Optional input
+    Message_Log )    &  ! Error messaging
+  RESULT ( Error_Status )
+
+
+    !#--------------------------------------------------------------------------#
+    !#                       -- TYPE DECLARATIONS --                            #
+    !#--------------------------------------------------------------------------#
+
+    ! ---------
+    ! Arguments
+    ! ---------
+
+    ! -- Input
+    INTEGER,                  INTENT( IN )  :: NC_fileID
+    CHARACTER( * ),           INTENT( IN )  :: Attribute_Name
+    #TYPE#( #KIND# ), INTENT( IN ) :: Attribute_Value
+
+    ! -- Optional input
+    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Variable_Name
+
+    ! -- Error messaging
+    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
+
+
+    ! ---------------
+    ! Function result
+    ! ---------------
+
+    INTEGER :: Error_Status
+
+
+    ! ----------------
+    ! Local parameters
+    ! ----------------
+
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Put_netCDF_Attribute(scalar #TYPE#)'
+
+
+    ! ---------------
+    ! Local variables
+    ! ---------------
+
+    INTEGER :: NF90_Status
+
+    INTEGER :: varID
+    CHARACTER( 256 ) :: varNAME
+
+
+
+    !#--------------------------------------------------------------------------#
+    !#                  -- ASSIGN A SUCCESSFUL RETURN STATUS --                 #
+    !#--------------------------------------------------------------------------#
+
+    Error_Status = SUCCESS
+
+
+
+    !#--------------------------------------------------------------------------#
+    !#                 -- BRANCH ON PRESCENCE OF VARIABLE NAME --               #
+    !#--------------------------------------------------------------------------#
+
+    IF ( PRESENT( Variable_Name ) ) THEN
+
+
+      ! ---------------------------
+      ! Attribute is for a variable
+      ! ---------------------------
+
+      ! -- Get the variable ID
+      NF90_Status = NF90_INQ_VARID( NC_fileID, &
+                                    TRIM( Variable_Name ), &
+                                    varID )
+
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error inquiring variable ID for '// &
+                                TRIM( Variable_Name )// &
+                                ' - '// &
+                                TRIM( NF90_STRERROR( NF90_Status ) ), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+      ! -- Assign a generic descriptor
+      varNAME = TRIM( Variable_Name )
+
+    ELSE
+
+
+      ! -------------------
+      ! Attribute is global
+      ! -------------------
+
+      ! -- Assign a "variable" id
+      varID = NF90_GLOBAL
+
+      ! -- Assign a generic descriptor
+      varNAME = 'global'
+
+    END IF
+
+
+
+    !#--------------------------------------------------------------------------#
+    !#                   -- PUT THE REQUESTED ATTRIBUTE --                      #
+    !#--------------------------------------------------------------------------#
+
+    NF90_Status = NF90_PUT_ATT( NC_fileID, &
+                                varID, &
+                                TRIM( Attribute_Name ), &
+                                Attribute_Value )
+
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//TRIM( varNAME )//' attribute '// &
+                              TRIM( Attribute_Name )// &
+                              ' - '// &
+                              TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+  END FUNCTION put_scalar_#TYPE#

@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if [ $# -ne 1 ]; then
+  echo " Usage: diff_Test_Baseline Forward|Tangent_Linear|Adjoint|K_Matrix|All"
+  echo "   Arguments are case-sensitive"
+  echo "   'All' updates every test case."
+  exit 1
+fi
+
+ALL_TEST_TYPES="Forward Tangent_Linear Adjoint K_Matrix"
+
+if [ $1 = "All" ]; then
+  TEST_TYPE=${ALL_TEST_TYPES}
+else
+  TEST_TYPE=$1
+fi
+
+FILE_TAGS="amsua_n17 hirs3_n17 ssmis_f16 imgr_g11"
+
+for TEST in ${TEST_TYPE}; do
+  if [ -d ${TEST} ]; then
+    cd ${TEST}
+    for TAG in ${FILE_TAGS}; do
+      FILE_ROOT=${TAG}.CRTM_Test_${TEST}.output
+      if [ -f "${FILE_ROOT}.Baseline" -a -f "${FILE_ROOT}" ]; then
+        echo "Diff'ing ${FILE_ROOT}.Baseline and ${FILE_ROOT}..."
+        diff ${FILE_ROOT}.Baseline ${FILE_ROOT} | tee ${FILE_ROOT}.diff
+      fi
+    done
+    cd ..
+  fi
+done

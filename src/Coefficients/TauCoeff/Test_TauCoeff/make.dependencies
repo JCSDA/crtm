@@ -1,0 +1,15 @@
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
+Type_Kinds.o : Type_Kinds.f90 
+Test_TauCoeff.o : Test_TauCoeff.f90 Type_Kinds.o Message_Handler.o TauCoeff_Define.o TauCoeff_Binary_IO.o TauCoeff_netCDF_IO.o 
+TauCoeff_netCDF_IO.o : TauCoeff_netCDF_IO.f90 Type_Kinds.o Message_Handler.o TauCoeff_Define.o netCDF_Utility.o 
+TauCoeff_Define.o : TauCoeff_Define.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o Sort_Utility.o 
+TauCoeff_Binary_IO.o : TauCoeff_Binary_IO.f90 Type_Kinds.o File_Utility.o Message_Handler.o Binary_File_Utility.o TauCoeff_Define.o 
+Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+File_Utility.o : File_Utility.f90 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Binary_File_Utility.o : Binary_File_Utility.f90 Type_Kinds.o File_Utility.o Message_Handler.o Endian_Utility.o 

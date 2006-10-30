@@ -1,0 +1,26 @@
+! This is test character list file
+!
+Message_Handler.f90
+Message_Handler.o
+File_Utility.f90
+
+File_Utility.o
+List_File_Utility.f90
+List_File_Utility.o
+Makefile
+
+
+
+Test_List_File_Utility
+Test_List_File_Utility.f90
+Test_List_File_Utility.o
+Type_Kinds.f90
+Type_Kinds.o
+!
+! interspersed with comment and blank lines
+!
+error_handler.mod
+file_utility.mod
+list_file_utility.mod
+type_kinds.mod
+

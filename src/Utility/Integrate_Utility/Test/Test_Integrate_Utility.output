@@ -1,0 +1,37 @@
+
+     Function to be integrated:
+( 400.0)x^5 + (-900.0)x^4 + ( 675.0)x^3 + (-200.0)x^2 + (  25.0)x^1 +    0.2
+
+     Simpsons integration UNEVEN dx test: 
+     X-values for which function is defined:
+ 0.0000 0.1200 0.2200 0.3200 0.3600 0.4400 0.4500 0.5400
+ 0.6400 0.7000 0.8000
+          Order  1 result  :  1.5961916620E+00
+          Order  3 result  :  1.6371253405E+00
+          Order  5 result  :  1.6403726207E+00
+          Order  7 result  :  1.6403726207E+00
+          Exact result     :  1.6405333333E+00
+          Summation result :  1.5961916620E+00
+
+     Simpsons integration EVEN dx test: 
+     X-range for which function is defined:
+     100 points over [0.0000,0.8000]
+          Order  1 result  :  1.6402721469E+00
+          Order  3 result  :  1.6405334515E+00
+          Order  5 result  :  1.6405333305E+00
+          Order  7 result  :  1.6405333305E+00
+          Exact result     :  1.6405333333E+00
+          Summation result :  1.6402721469E+00
+
+     Gauss_Legendre integration test: 
+     X-range for which function is defined: [0.0000,0.8000]
+          n=  2 result :  1.8225777778E+00
+          n=  3 result :  1.6405333333E+00
+          n=  4 result :  1.6405333333E+00
+          n=  5 result :  1.6405333333E+00
+          n=  6 result :  1.6405333333E+00
+          n=  7 result :  1.6405333333E+00
+          n=  8 result :  1.6405333333E+00
+          n=  9 result :  1.6405333333E+00
+          n= 10 result :  1.6405333333E+00
+          Exact result :  1.6405333333E+00

@@ -1,0 +1,334 @@
+#!/bin/sh
+
+#-------------------------------------------------------------------------------
+#                        -- USAGE DESCRIPTION FUNCTION --
+#-------------------------------------------------------------------------------
+
+Usage()
+{
+  echo
+  echo " Usage: TauProd_Cleanup [-hn]"
+  echo "                        [-a angle_begin[:angle_end]]"
+  echo "                        [-p profile_begin[:profile_end]]"
+  echo "                        [-t TAPE3_index_list]"
+  echo
+  echo "   -h           Print this message and exit"
+  echo
+  echo "   -n           Execute this script, but do not actually delete anything"
+  echo
+  echo "   -a           Use this option to specify the begin and end angle limits"
+  echo "                for checking."
+  echo "                Valid values are:"
+  echo "                  1 == SEC(z)=1.00, z= 0.000"
+  echo "                  2 == SEC(z)=1.25, z=36.870"
+  echo "                  3 == SEC(z)=1.50, z=48.190"
+  echo "                  4 == SEC(z)=1.75, z=55.150"
+  echo "                  5 == SEC(z)=2.00, z=60.000"
+  echo "                  6 == SEC(z)=2.25, z=63.612"
+  echo "                  7 == SEC(z)=3.00, z=70.529"
+  echo "                Default action is determined by defaults file."
+  echo
+  echo "   -p           Use this option to specify the begin and end profile limits"
+  echo "                for checking."
+  echo "                Default action is determined by defaults file."
+  echo
+  echo "   -t           Use this option to specify the LBLRTM TAPE3 index list"
+  echo "                to process."
+  echo "                Valid TAPE3 indices are:"
+  echo "                   1-7 == individual molecule numbers (no continua)"
+  echo "                   8   == all first seven molecules (no continua)"
+  echo "                   9   == continua only"
+  echo "                  10   == all first seven molecules (and their continua)"
+  echo "                  11   == water vapor + ozone only (and their continua)"
+  echo "                  12   == water vapor only (and it's continua)"
+  echo "                  13   == dry gases. Everything but h2o and o3 (and their continua)"
+  echo "                  14   == ozone only (and it's continua)"
+  echo "                  15   == water vapor continua only"
+  echo "                If specifying more than one index, the list *must* be enclosed"
+  echo "                in quotes."
+  echo "                Default action is determined by defaults file."
+  echo
+}
+
+
+#-------------------------------------------------------------------------------
+#                              -- DEFINE DEFAULTS --
+#-------------------------------------------------------------------------------
+
+  # -- Defaults file and required quantities
+  DEFAULTS_FILE="Transmittance_Production.processing_defaults"
+  DEFAULTS_LIST="TAPE3_LIST PROFILE1 PROFILE2 ANGLE1 ANGLE2"
+
+  # -- Check existence of defaults file
+  if [ ! -f ${DEFAULTS_FILE} ]; then
+    echo "${DEFAULTS_FILE} file not found."
+    exit 1
+  fi
+
+  # -- Get defaults from file
+  for ITEM_NAME in ${DEFAULTS_LIST}; do
+
+    ITEM_VALUE=`grep ":${ITEM_NAME}:" ${DEFAULTS_FILE} | cut -d":" -f3`
+
+    case "${ITEM_NAME}" in
+
+      # -- The TAPE3 list
+      TAPE3_LIST) TAPE3_LIST=${ITEM_VALUE};;
+
+      # -- Default PROFILE limits and ID
+      PROFILE1) PROFILE1=${ITEM_VALUE};;
+      PROFILE2) PROFILE2=${ITEM_VALUE};;
+
+      # -- Default zenith angle limits
+      ANGLE1) ANGLE1=${ITEM_VALUE};;
+      ANGLE2) ANGLE2=${ITEM_VALUE};;
+
+      *) ;; # Ignore invalid default
+    esac
+
+  done
+
+  # -- Default action is to delete
+  DELETE_FLAG="yes"
+
+
+
+#-------------------------------------------------------------------------------
+#                       -- PARSE THE COMMAND LINE OPTIONS --
+#-------------------------------------------------------------------------------
+
+  while getopts :hna:p:t: OPTVAL; do
+
+
+    # --------------------------------------------
+    # If option argument looks like another option
+    # exit the loop
+    # --------------------------------------------
+
+    case ${OPTARG} in
+      -*) break;;
+    esac
+
+
+    # ----------------------------
+    # Parse the valid options here
+    # ----------------------------
+
+    case ${OPTVAL} in
+      a)  ANGLE_LIMITS=${OPTARG}
+          ANGLE1=`echo ${ANGLE_LIMITS} | cut -d: -f1`
+          ANGLE2=`echo ${ANGLE_LIMITS} | cut -d: -f2`;;
+      p)  PROFILE_LIMITS=${OPTARG}
+          PROFILE1=`echo ${PROFILE_LIMITS} | cut -d: -f1`
+          PROFILE2=`echo ${PROFILE_LIMITS} | cut -d: -f2`;;
+      t)  TAPE3_LIST=${OPTARG};;
+      n)  DELETE_FLAG="no";;
+      h)  Usage
+          exit 0;;
+      :|\?) OPTVAL=${OPTARG}
+            break;;
+    esac
+
+  done
+
+
+  # ----------------------------
+  # Remove the options processed
+  # ----------------------------
+
+  shift `expr ${OPTIND} - 1`
+
+
+  # ------------------------------------------
+  # Now output invalidities based on OPTVAL
+  # Need to do this as getopts does not handle
+  # the situations where an option is passed
+  # as an argument to another option.
+  # ------------------------------------------
+
+  case ${OPTVAL} in
+
+
+    # --------------------------------------------
+    # If OPTVAL contains nothing, then all options
+    # have been successfully parsed
+    # --------------------------------------------
+
+    \?) if [ $# -ne 0 ]; then
+          ( echo " Invalid argument(s) $*" ; Usage ) | more
+          #Usage | more
+          exit 2
+        fi;;
+
+
+    # ------------------------------------
+    # Valid options, but missing arguments
+    # ------------------------------------
+
+    a|p|t) ( echo " '-${OPTVAL}' option requires an argument" ; Usage ) | more
+                 exit 2;;
+
+
+    # --------------
+    # Invalid option
+    # --------------
+
+    ?) ( echo " Invalid option '-${OPTARG}'" ; Usage ) | more
+       exit 2;;
+
+  esac
+
+
+
+#-------------------------------------------------------------------------------
+#                     -- CONSTRUCT profile AND angle LISTS --
+#-------------------------------------------------------------------------------
+
+  # -----------------------
+  # The profile number list
+  # -----------------------
+
+  PROFILE_LIST=""
+  PROFILE=${PROFILE1}
+
+  # -- Loop over profiles
+  while [ ${PROFILE} -le ${PROFILE2} ]; do
+
+    # -- Define the profile ID tag
+    if [ ${PROFILE} -lt 10 ]; then
+      PROFILE_NUMBER="0${PROFILE}"
+    else
+      PROFILE_NUMBER="${PROFILE}"
+    fi
+
+    # -- Construct the list
+    PROFILE_LIST="${PROFILE_LIST} ${PROFILE_NUMBER}"
+
+    # -- Increment profile number
+    PROFILE=`expr ${PROFILE} + 1`
+
+  done
+
+
+  # ---------------------
+  # The angle number list
+  # ---------------------
+
+  ANGLE_LIST=""
+  ANGLE=${ANGLE1}
+
+  # -- Loop over angles
+  while [ ${ANGLE} -le ${ANGLE2} ]; do
+
+    # -- Construct the list
+    ANGLE_LIST="${ANGLE_LIST} ${ANGLE}"
+
+    # -- Increment angle number
+    ANGLE=`expr ${ANGLE} + 1`
+
+  done
+
+
+
+#-------------------------------------------------------------------------------
+#               -- DESCEND INTO THE profile DIRECTORY HEIRARCHY --
+#-------------------------------------------------------------------------------
+
+  # ------------------
+  # Loop over profiles
+  # ------------------
+
+  for PROFILE in ${PROFILE_LIST}; do
+
+    # -- Create the profile directory name
+    PROFILE_DIR="profile${PROFILE}"
+
+    # -- Enter the profile directory
+    if [ -d ${PROFILE_DIR} ]; then
+      echo " Entering ${PROFILE_DIR} directory tree..."
+      cd ${PROFILE_DIR}
+      if [ $? -ne 0 ]; then
+        echo "   Error entering ${PROFILE_DIR} directory. Skipping..."
+        continue
+      fi
+    else
+      echo "   ${PROFILE_DIR} directory not found. Skipping..."
+      continue
+    fi
+
+
+    # ----------------
+    # Loop over angles
+    # ----------------
+
+    for ANGLE in ${ANGLE_LIST}; do
+
+      # -- Create the angle directory name
+      ANGLE_DIR="angle${ANGLE}"
+
+      # -- Enter the angle directory
+      if [ -d ${ANGLE_DIR} ]; then
+        echo "     Entering ${PROFILE_DIR}/${ANGLE_DIR} directory tree..."
+        cd ${ANGLE_DIR}
+        if [ $? -ne 0 ]; then
+          echo "     Error entering ${PROFILE_DIR}/${ANGLE_DIR} directory. Skipping..."
+          continue
+        fi
+      else
+        echo "     ${PROFILE_DIR}/${ANGLE_DIR} directory not found. Skipping..."
+        continue
+      fi
+
+
+      # -----------------------
+      # Loop over molecule sets
+      # -----------------------
+
+      for MOLECULE in ${TAPE3_LIST}; do
+
+        # -- Construct the molecule directory name
+        MOLECULE_DIR=`Define_Molecule_Tag ${MOLECULE}`
+        if [ $? -ne 0 ]; then
+          echo "       Error constructing molecule tag name for molecule index ${MOLECULE}"
+          continue
+        fi
+
+        # -- Remove the molecule directory
+        if [ -d ${MOLECULE_DIR} ]; then
+          echo "       Removing ${PROFILE_DIR}/${ANGLE_DIR}/${MOLECULE_DIR} directory..."
+          if [ "${DELETE_FLAG}" = "yes" ]; then
+            rm -fr ${MOLECULE_DIR} 2>/dev/null
+          fi
+        fi
+
+      done
+
+      # -- Exit the angle directory
+      cd ..
+
+      # -- Remove the angle directory
+      if [ "${DELETE_FLAG}" = "yes" ]; then
+        rmdir ${ANGLE_DIR} 2>/dev/null
+      fi
+
+    done
+
+    # -- Exit the profile directory
+    cd ..
+
+    # -- Remove the profile directory
+    if [ "${DELETE_FLAG}" = "yes" ]; then
+      rmdir ${PROFILE_DIR} 2>/dev/null
+    fi
+
+  done
+
+
+
+#-------------------------------------------------------------------------------
+#                      -- REMOVE THE BATCH LOG FILES --
+#-------------------------------------------------------------------------------
+
+  if [ "${DELETE_FLAG}" = "yes" ]; then
+    Remove_Batch_Log_Files -p ${PROFILE1}:${PROFILE2} -a ${ANGLE1}:${ANGLE2} -t "${TAPE3_LIST}"
+  fi
