@@ -20,7 +20,7 @@
 !       Type_Kinds:                  Module containing definitions for kinds
 !                                    of variable types.
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:               Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -83,7 +83,7 @@ MODULE Model_Profile_Set
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE Profile_Utility_Parameters
   USE Units_Conversion
@@ -110,7 +110,7 @@ MODULE Model_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Model_Profile_Set.f90,v 1.1 2005/01/04 22:03:12 paulv Exp $'
+    '$Id: Model_Profile_Set.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Private dimensions.
   INTEGER, PRIVATE, PARAMETER :: N_MODEL_LEVELS    = 50
@@ -1786,17 +1786,20 @@ END MODULE Model_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Model_Profile_Set.f90,v 1.1 2005/01/04 22:03:12 paulv Exp $
+! $Id: Model_Profile_Set.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/01/04 22:03:12 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.1 $
+! $Revision: 1.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Model_Profile_Set.f90,v $
+! Revision 1.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.1  2005/01/04 22:03:12  paulv
 ! Initial checkin.
 !

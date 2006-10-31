@@ -20,7 +20,7 @@
 !       File_Utility:               Module containing generic file utility
 !                                   routines
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -98,7 +98,7 @@ PROGRAM AtmProfile_NC2BIN
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE AtmProfile_Define
   USE AtmProfile_Binary_IO
@@ -118,7 +118,7 @@ PROGRAM AtmProfile_NC2BIN
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'AtmProfile_NC2BIN'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: AtmProfile_NC2BIN.f90,v 2.2 2005/01/03 14:06:22 paulv Exp $'
+  '$Id: AtmProfile_NC2BIN.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -153,7 +153,7 @@ PROGRAM AtmProfile_NC2BIN
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to convert netCDF format AtmProfile files to")' )
   WRITE( *, '( 5x, "   Binary format.                                    ")' )
-  WRITE( *, '(/5x, " $Revision: 2.2 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.3 $")' )
   WRITE( *, '(/5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -306,17 +306,20 @@ END PROGRAM AtmProfile_NC2BIN
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AtmProfile_NC2BIN.f90,v 2.2 2005/01/03 14:06:22 paulv Exp $
+! $Id: AtmProfile_NC2BIN.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/01/03 14:06:22 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: AtmProfile_NC2BIN.f90,v $
+! Revision 2.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.2  2005/01/03 14:06:22  paulv
 ! - Corrected document header delimiters
 !

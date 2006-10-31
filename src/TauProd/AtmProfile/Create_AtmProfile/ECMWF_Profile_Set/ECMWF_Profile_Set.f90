@@ -23,7 +23,7 @@
 !       File_Utility:       Module containing generic file utility
 !                           routines
 !
-!       Error_Handler:      Module to define simple error codes and
+!       Message_Handler:      Module to define simple error codes and
 !                           handle error conditions
 !                           USEs: FILE_UTILITY module
 !
@@ -81,7 +81,7 @@ MODULE ECMWF_Profile_Set
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE Units_Conversion
 
@@ -107,7 +107,7 @@ MODULE ECMWF_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ECMWF_Profile_Set.f90,v 2.8 2005/01/04 22:04:19 paulv Exp $'
+  '$Id: ECMWF_Profile_Set.f90,v 2.9 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- The ECMWF data file name
   CHARACTER( * ), PRIVATE, PARAMETER :: ECMWF_DATA_FILE = './ECMWF_Profile_Set/diverse_52profiles_101L.dat'
@@ -870,17 +870,20 @@ END MODULE ECMWF_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: ECMWF_Profile_Set.f90,v 2.8 2005/01/04 22:04:19 paulv Exp $
+! $Id: ECMWF_Profile_Set.f90,v 2.9 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/01/04 22:04:19 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 2.8 $
+! $Revision: 2.9 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: ECMWF_Profile_Set.f90,v $
+! Revision 2.9  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.8  2005/01/04 22:04:19  paulv
 ! - Updated header documentation.
 ! - Removed unused variable declarations.

@@ -2,7 +2,7 @@
 #
 # Makefile for Compare_MW_Attenuation program
 #
-# $Id: Makefile,v 1.1 2004/12/16 18:39:02 paulv Exp $
+# $Id: Makefile,v 1.2 2006/06/30 16:47:16 dgroff Exp $
 #
 #==============================================================================
 
@@ -35,7 +35,7 @@ EXE_FILE = Compare_MW_Attenuation
 
 UTILITY_OBJ_FILES = Type_Kinds.o \
                     File_Utility.o \
-                    Error_Handler.o \
+                    Message_Handler.o \
                     Compare_Float_Numbers.o \
                     Fundamental_Constants.o
 NETCDF_OBJ_FILES = netCDF_Utility.o \
@@ -196,36 +196,36 @@ remove_links:
 
 Type_Kinds.o : Type_Kinds.f90 
 File_Utility.o : File_Utility.f90 
-Error_Handler.o : Error_Handler.f90 File_Utility.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
 Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
 
-netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Error_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
 
 Profile_Utility_Parameters.o : Profile_Utility_Parameters.f90 Type_Kinds.o Fundamental_Constants.o 
-Units_Conversion.o : Units_Conversion.f90 Type_Kinds.o Error_Handler.o Profile_Utility_Parameters.o Atmospheric_Properties.o 
-Atmospheric_Properties.o : Atmospheric_Properties.f90 Type_Kinds.o Error_Handler.o Profile_Utility_Parameters.o 
-Geopotential.o : Geopotential.f90 Type_Kinds.o Error_Handler.o Fundamental_Constants.o Atmospheric_Properties.o 
+Units_Conversion.o : Units_Conversion.f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o Atmospheric_Properties.o 
+Atmospheric_Properties.o : Atmospheric_Properties.f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o 
+Geopotential.o : Geopotential.f90 Type_Kinds.o Message_Handler.o Fundamental_Constants.o Atmospheric_Properties.o 
 
-MWLBL_Liebe93.o : MWLBL_Liebe93.f90 Type_Kinds.o Error_Handler.o Liebe92_Coefficients.o 
-MWLBL_Liebe89.o : MWLBL_Liebe89.f90 Type_Kinds.o Error_Handler.o Liebe89_Coefficients.o 
-MWLBL_Rosenkranz03.o : MWLBL_Rosenkranz03.f90 Type_Kinds.o Error_Handler.o Fundamental_Constants.o Units_Conversion.o Rosenkranz03_Coefficients.o 
+MWLBL_Liebe93.o : MWLBL_Liebe93.f90 Type_Kinds.o Message_Handler.o Liebe92_Coefficients.o 
+MWLBL_Liebe89.o : MWLBL_Liebe89.f90 Type_Kinds.o Message_Handler.o Liebe89_Coefficients.o 
+MWLBL_Rosenkranz03.o : MWLBL_Rosenkranz03.f90 Type_Kinds.o Message_Handler.o Fundamental_Constants.o Units_Conversion.o Rosenkranz03_Coefficients.o 
 
 Liebe93_Coefficients.o : Liebe93_Coefficients.f90 Type_Kinds.o 
 Liebe92_Coefficients.o : Liebe92_Coefficients.f90 Type_Kinds.o 
 Liebe89_Coefficients.o : Liebe89_Coefficients.f90 Type_Kinds.o 
 Rosenkranz03_Coefficients.o : Rosenkranz03_Coefficients.f90 Type_Kinds.o 
 
-Spectra_Define.o : Spectra_Define.f90 Type_Kinds.o Error_Handler.o
-Spectra_netCDF_IO.o : Spectra_netCDF_IO.f90 Type_Kinds.o Error_Handler.o Spectra_Define.o netCDF_Utility.o 
+Spectra_Define.o : Spectra_Define.f90 Type_Kinds.o Message_Handler.o
+Spectra_netCDF_IO.o : Spectra_netCDF_IO.f90 Type_Kinds.o Message_Handler.o Spectra_Define.o netCDF_Utility.o 
 
-AtmProfile_Define.o : AtmProfile_Define.f90 Type_Kinds.o Error_Handler.o Compare_Float_Numbers.o
-AtmProfile_netCDF_IO.o : AtmProfile_netCDF_IO.f90 Type_Kinds.o Error_Handler.o AtmProfile_Define.o netCDF_Utility.o 
+AtmProfile_Define.o : AtmProfile_Define.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o
+AtmProfile_netCDF_IO.o : AtmProfile_netCDF_IO.f90 Type_Kinds.o Message_Handler.o AtmProfile_Define.o netCDF_Utility.o 
 
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o Error_Handler.o Profile_Utility_Parameters.o Units_Conversion.o AtmProfile_Define.o AtmProfile_netCDF_IO.o Spectra_Define.o Spectra_netCDF_IO.o MWLBL_Liebe89.o MWLBL_Liebe93.o MWLBL_Rosenkranz03.o
+$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o Units_Conversion.o AtmProfile_Define.o AtmProfile_netCDF_IO.o Spectra_Define.o Spectra_netCDF_IO.o MWLBL_Liebe89.o MWLBL_Liebe93.o MWLBL_Rosenkranz03.o
 
 
 

@@ -19,7 +19,7 @@
 !       File_Utility:           Module containing generic file utility
 !                               routines.
 !
-!       Error_Handler:          Module to define simple error codes and
+!       Message_Handler:          Module to define simple error codes and
 !                               handle error conditions
 !                               USEs: FILE_UTILITY module
 !
@@ -90,7 +90,7 @@ PROGRAM Test_AtmProfile
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE AtmProfile_Define
   USE AtmProfile_Binary_IO
@@ -110,7 +110,7 @@ PROGRAM Test_AtmProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Test_AtmProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Test_AtmProfile.f90,v 1.2 2004/08/27 14:15:14 paulv Exp $'
+  '$Id: Test_AtmProfile.f90,v 1.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -154,7 +154,7 @@ PROGRAM Test_AtmProfile
   WRITE( *, '(/5x, a )' ) PROGRAM_HEADER
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to test AtmProfile definition and I/O routines. ")' )
-  WRITE( *, '(/5x, " $Revision: 1.2 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.3 $")' )
   WRITE( *, '(/5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -498,17 +498,20 @@ END PROGRAM Test_AtmProfile
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_AtmProfile.f90,v 1.2 2004/08/27 14:15:14 paulv Exp $
+! $Id: Test_AtmProfile.f90,v 1.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/08/27 14:15:14 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.2 $
+! $Revision: 1.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Test_AtmProfile.f90,v $
+! Revision 1.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.2  2004/08/27 14:15:14  paulv
 ! - Added call to Equal_AtmProfile() function to determine if the I/O functions
 !   somehow modify the numbers.

@@ -23,7 +23,7 @@
 !       AIRS_SRF_Define:          Module defining the SRF data structure and
 !                                 containing routines to manipulate it.
 !                                 USEs: TYPE_KINDS module
-!                                       ERROR_HANDLER module
+!                                       Message_Handler module
 !
 !       netcdf:                   Module supplied with the Fortran 90 version
 !                                 of the netCDF libraries (at least v3.5.0).
@@ -112,7 +112,7 @@ MODULE AIRS_SRF_netCDF_Reader
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: AIRS_SRF_netCDF_Reader.f90,v 2.3 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: AIRS_SRF_netCDF_Reader.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $'
 
   ! -- Invalid flag
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -276,7 +276,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       The return value is an integer defining the error status. The
-!       error status codes are defined in the ERROR_HANDLER module.
+!       error status codes are defined in the Message_Handler module.
 !
 !       If result = SUCCESS the netCDF file inquiry was successful
 !                 = FAILURE, an error occurred.
@@ -301,7 +301,7 @@ CONTAINS
 !                                   SOURCE: NETCDF_UTILITY module
 !
 !       display_message:            Subroutine to output messages
-!                                   SOURCE: error_handler module
+!                                   SOURCE: Message_Handler module
 !
 !       NF90_CLOSE:                 Function to close a netCDF file.
 !                                   SOURCE: netCDF library
@@ -733,7 +733,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       The return value is an integer defining the error status. The
-!       error status codes are defined in the ERROR_HANDLER module.
+!       error status codes are defined in the Message_Handler module.
 !
 !       If result = SUCCESS, the AIRS SRF data read was successful
 !                 = FAILURE, an error occurred.
@@ -758,7 +758,7 @@ CONTAINS
 !                                   SOURCE: AIRS_SRF_DEFINE module.
 !
 !       display_message:            Subroutine to output messages
-!                                   SOURCE: ERROR_HANDLER module
+!                                   SOURCE: Message_Handler module
 !
 !       NF90_CLOSE:                 Function to close a netCDF file.
 !                                   SOURCE: netCDF library
@@ -1097,17 +1097,20 @@ END MODULE AIRS_SRF_netCDF_Reader
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_SRF_netCDF_Reader.f90,v 2.3 2006/05/02 16:58:02 dgroff Exp $
+! $Id: AIRS_SRF_netCDF_Reader.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 2.3 $
+! $Revision: 2.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: AIRS_SRF_netCDF_Reader.f90,v $
+! Revision 2.4  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 2.3  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

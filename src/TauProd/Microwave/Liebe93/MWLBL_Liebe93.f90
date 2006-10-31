@@ -20,7 +20,7 @@
 !       Type_Kinds:            Module containing definitions for kinds
 !                              of variable types.
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:         Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
@@ -87,7 +87,7 @@ MODULE MWLBL_Liebe93
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   ! -- Use the Liebe92 coefficients....
   USE Liebe92_Coefficients
@@ -127,7 +127,7 @@ MODULE MWLBL_Liebe93
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: MWLBL_Liebe93.f90,v 2.1 2005/01/25 21:34:18 paulv Exp $'
+    '$Id: MWLBL_Liebe93.f90,v 2.3 2006/07/05 15:18:10 wd20pd Exp $'
 
   ! -- Numerical constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO           = 0.0_fp_kind
@@ -520,21 +520,16 @@ CONTAINS
     ! ---------------
 
     CHARACTER( 256 ) :: Message
-
     LOGICAL :: Compute_WetLine
     LOGICAL :: Compute_WetContinuum
     LOGICAL :: Compute_DryLine
     LOGICAL :: Compute_DryContinuum
     LOGICAL :: Noisy
-
     INTEGER :: n_Frequencies, l
-
     REAL( fp_kind ) :: Theta
     REAL( fp_kind ) :: O2_s1, Common_s1, O2_g1, O2_d1, H2O_s1
-
     REAL( fp_kind ) :: H2O_Line_Absorption
-    REAL( fp_kind ) :: WetContinuum_Absorption
-
+!    REAL( fp_kind ) :: WetContinuum_Absorption
     REAL( fp_kind ) :: O2_Line_Absorption
     REAL( fp_kind ) :: DryContinuum_Absorption
 
@@ -1061,21 +1056,16 @@ CONTAINS
     ! ---------------
 
     CHARACTER( 256 ) :: Message
-
     LOGICAL :: Compute_WetLine
     LOGICAL :: Compute_WetContinuum
     LOGICAL :: Compute_DryLine
     LOGICAL :: Compute_DryContinuum
     LOGICAL :: Noisy
-
     INTEGER :: n_Layers, k
-
     REAL( fp_kind ) :: Theta
     REAL( fp_kind ) :: O2_s1, Common_s1, O2_g1, O2_d1, H2O_s1
-
     REAL( fp_kind ) :: H2O_Line_Absorption
-    REAL( fp_kind ) :: WetContinuum_Absorption
-
+!    REAL( fp_kind ) :: WetContinuum_Absorption
     REAL( fp_kind ) :: O2_Line_Absorption
     REAL( fp_kind ) :: DryContinuum_Absorption
 
@@ -2316,17 +2306,24 @@ END MODULE MWLBL_Liebe93
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: MWLBL_Liebe93.f90,v 2.1 2005/01/25 21:34:18 paulv Exp $
+! $Id: MWLBL_Liebe93.f90,v 2.3 2006/07/05 15:18:10 wd20pd Exp $
 !
-! $Date: 2005/01/25 21:34:18 $
+! $Date: 2006/07/05 15:18:10 $
 !
-! $Revision: 2.1 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: MWLBL_Liebe93.f90,v $
+! Revision 2.3  2006/07/05 15:18:10  wd20pd
+! Commented out (currently) unused WetContinuum_Absorption variable to
+! prevent some compilers issuing warning messages during compilation.
+!
+! Revision 2.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.1  2005/01/25 21:34:18  paulv
 ! - Removed type declarations of unused variables.
 !

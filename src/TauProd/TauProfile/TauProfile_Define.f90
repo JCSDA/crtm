@@ -20,7 +20,7 @@
 !       Type_Kinds:             Module containing definitions for kinds
 !                               of variable types.
 !
-!       Error_Handler:          Module to define simple error codes and
+!       Message_Handler:          Module to define simple error codes and
 !                               handle error conditions
 !                               USEs: FILE_UTILITY module
 !
@@ -210,7 +210,7 @@ MODULE TauProfile_Define
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
   USE Compare_Float_Numbers
 
 
@@ -250,7 +250,7 @@ MODULE TauProfile_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauProfile_Define.f90,v 1.10 2004/09/14 17:19:58 paulv Exp $'
+  '$Id: TauProfile_Define.f90,v 1.11 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- TauProfile invalid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -2237,17 +2237,20 @@ END MODULE TauProfile_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauProfile_Define.f90,v 1.10 2004/09/14 17:19:58 paulv Exp $
+! $Id: TauProfile_Define.f90,v 1.11 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/09/14 17:19:58 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.10 $
+! $Revision: 1.11 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: TauProfile_Define.f90,v $
+! Revision 1.11  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.10  2004/09/14 17:19:58  paulv
 ! - Upgraded to Fortran95.
 ! - Derived type component initialisation is now done in the defintion block.

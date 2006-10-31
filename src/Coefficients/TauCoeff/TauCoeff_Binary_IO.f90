@@ -46,7 +46,7 @@ MODULE TauCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauCoeff_Binary_IO.f90,v 5.9 2006/06/15 16:53:18 wd20pd Exp $'
+    '$Id: TauCoeff_Binary_IO.f90,v 5.10 2006/06/23 23:16:43 wd20pd Exp $'
 
 
 CONTAINS
@@ -300,7 +300,7 @@ CONTAINS
 !                           If QUIET = 0, INFORMATION messages are OUTPUT.
 !                              QUIET = 1, INFORMATION messages are SUPPRESSED.
 !                           UNITS:      N/A
-!                           TYPE:       Integer
+!                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
@@ -310,7 +310,7 @@ CONTAINS
 !                           If MPI is not being used, ignore this argument.
 !                           This argument is ignored if the Quiet argument is set.
 !                           UNITS:      N/A
-!                           TYPE:       Integer
+!                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
@@ -321,7 +321,7 @@ CONTAINS
 !                           This argument is ignored if the Quiet argument
 !                           is set.
 !                           UNITS:      N/A
-!                           TYPE:       Integer
+!                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
@@ -683,7 +683,7 @@ CONTAINS
 !                     If QUIET = 0, information Messages are OUTPUT.
 !                        QUIET = 1, information Messages are SUPPRESSED.
 !                     UNITS:      N/A
-!                     TYPE:       Integer
+!                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: OPTIONAL, INTENT(IN)
 !

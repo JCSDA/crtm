@@ -144,7 +144,7 @@ MODULE netCDF_Attribute_Utility
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: netCDF_Attribute_Utility.f90,v 1.1 2006/06/08 21:47:55 wd20pd Exp $'
+    '$Id: netCDF_Attribute_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $'
 
 
 CONTAINS
@@ -226,7 +226,7 @@ CONTAINS
 !                          
 ! FUNCTION RESULT
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF attribute retrieval was successful
 !                        == FAILURE an unrecoverable error occurred.
 !                     UNITS:      N/A
@@ -244,7 +244,7 @@ CONTAINS
 !                               SOURCE: netCDF module and library.
 !
 !       Display_Message:        Subroutine to output messages
-!                               SOURCE: ERROR_HANDLER module
+!                               SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -2369,7 +2369,7 @@ CONTAINS
 !                          
 ! FUNCTION RESULT
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF attribute write was successful
 !                        == FAILURE an unrecoverable error occurred.
 !                     UNITS:      N/A
@@ -2384,7 +2384,7 @@ CONTAINS
 !                               SOURCE: netCDF module and library.
 !
 !       Display_Message:        Subroutine to output messages
-!                               SOURCE: ERROR_HANDLER module
+!                               SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       Attribute values can be overwritten if they already exist in the
@@ -3885,17 +3885,21 @@ END MODULE netCDF_Attribute_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: netCDF_Attribute_Utility.f90,v 1.1 2006/06/08 21:47:55 wd20pd Exp $
+! $Id: netCDF_Attribute_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $
 !
-! $Date: 2006/06/08 21:47:55 $
+! $Date: 2006/07/26 21:39:05 $
 !
-! $Revision: 1.1 $
+! $Revision: 1.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: netCDF_Attribute_Utility.f90,v $
+! Revision 1.2  2006/07/26 21:39:05  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
 ! Revision 1.1  2006/06/08 21:47:55  wd20pd
 ! Initial checkin.
 !

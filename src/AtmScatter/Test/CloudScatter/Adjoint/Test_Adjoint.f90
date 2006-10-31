@@ -52,7 +52,7 @@ PROGRAM Test_Adjoint
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Adjoint'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Adjoint.f90,v 1.3 2006/05/02 14:58:34 dgroff Exp $'
+    '$Id: Test_Adjoint.f90,v 1.4 2006/06/29 15:19:49 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -61,9 +61,7 @@ PROGRAM Test_Adjoint
   CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   INTEGER,      PARAMETER :: N_PROFILES = 52
 
-  INTEGER, PARAMETER :: UNSET = 0
-  INTEGER, PARAMETER ::   SET = 1
-
+  
   INTEGER, PARAMETER :: N_PERTURBATIONS = 1
 
   INTEGER, PARAMETER :: N_INPUT_VARIABLES = 4
@@ -167,7 +165,7 @@ PROGRAM Test_Adjoint
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to test the CRTM CloudScatter Adjoint component")' )
   WRITE( *, '( 5x, "   with respect to the Tangent-linear component.")' )
-  WRITE( *, '(/5x, " $Revision: 1.3 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.4 $")' )
   WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
 
 
@@ -235,7 +233,7 @@ PROGRAM Test_Adjoint
 
   ComponentTest_File   = TRIM( File_Prefix )//'.CRTM_CloudScatter.ComponentTest.nc'
 
-  New_File = SET
+  New_File = 1
 
 
 
@@ -651,7 +649,7 @@ PROGRAM Test_Adjoint
     ! Reset the new file flag
     ! -----------------------
 
-    IF ( New_File == SET ) New_File = UNSET
+    IF ( New_File == 1 ) New_File = 0
 
 
 

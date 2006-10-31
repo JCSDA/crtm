@@ -16,11 +16,11 @@
 !       USE LBLRTM_input
 !
 ! MODULES:
-!       type_kinds:         Module with data type kind definitions.
+!       Type_Kinds:         Module with data type kind definitions.
 !
-!       file_utility:       Module containing generic file utility routines
+!       File_Utility:       Module containing generic file utility routines
 !
-!       error_handler:      Module containing error handling definitions and
+!       Message_Handler:    Module containing error handling definitions and
 !                           routines.
 !                           USEs: FILE_UTILITY module
 !
@@ -60,11 +60,11 @@ MODULE LBLRTM_Input
   ! Module usage
   ! ------------
 
-  USE type_kinds
-  USE file_utility
-  USE error_handler
+  USE Type_Kinds
+  USE File_Utility
+  USE Message_Handler
 
-  USE string_processing
+  USE String_Utility
 
 
   ! -----------------------
@@ -169,44 +169,40 @@ MODULE LBLRTM_Input
   INTEGER,         PRIVATE, PARAMETER ::     MAX_CLIMATOLOGY_MODEL = 6
 
   ! -- Default calculation flags
-  TYPE( Calculation_Flags_type ), &
-                   PUBLIC,  PARAMETER :: DEFAULT_CALCULATION_FLAGS = &
-                                           Calculation_Flags_type( &
-                                             1, & ! hirac       - Voight profile
-                                             1, & ! lblf4       - LBL bound is 25cm-1 for all layers
-                                             0, & ! continuum   - No continua
-                                             0, & ! aerosol     - No aerosols
-                                             0, & ! emit        - Optical depth calc.
-                                             0, & ! scan_flag   - No scanning function
-                                             0, & ! filter      - No filter function
-                                             0, & ! plot_out    - No plot output
-                                             0, & ! test        - No test option
-                                             1, & ! atm         - Call LBLATM
-                                             1, & ! merge_flag  - OD output for each layer
-                                             0, & ! laser       - No laser option
-                                             0, & ! od_layer    - Normal layering in OD calculation
-                                             0, & ! xsection    - No Xsections
-                                             0, & ! od_mpts     - No convolution OD output to TAPE6
-                                             0  ) ! od_npts     - No merge OD output to TAPE6
+  TYPE( Calculation_Flags_type ), PUBLIC, PARAMETER :: DEFAULT_CALCULATION_FLAGS = &
+    Calculation_Flags_type( 1, & ! hirac       - Voight profile
+                            1, & ! lblf4       - LBL bound is 25cm-1 for all layers
+                            0, & ! continuum   - No continua
+                            0, & ! aerosol     - No aerosols
+                            0, & ! emit        - Optical depth calc.
+                            0, & ! scan_flag   - No scanning function
+                            0, & ! filter      - No filter function
+                            0, & ! plot_out    - No plot output
+                            0, & ! test        - No test option
+                            1, & ! atm         - Call LBLATM
+                            1, & ! merge_flag  - OD output for each layer
+                            0, & ! laser       - No laser option
+                            0, & ! od_layer    - Normal layering in OD calculation
+                            0, & ! xsection    - No Xsections
+                            0, & ! od_mpts     - No convolution OD output to TAPE6
+                            0  ) ! od_npts     - No merge OD output to TAPE6
 
   ! -- Default LBLATM calculation flags
-  TYPE( LBLATM_Flags_type ), &
-                   PRIVATE, PARAMETER :: DEFAULT_LBLATM_FLAGS = &
-                                           LBLATM_Flags_type( &
-                                             0, & ! profile_type       - User supplied
-                                             2, & ! path type          - Slant path from H1->H2
-                                             0, & ! n_layer_boundaries - Generated internally (not yet at least)
-                                             1, & ! no_zero            - Suppress zeroing of absorber amounts which are less than 0.1% of totalNo aerosols
-                                             1, & ! no_print           - Short print out to TAPE6 (no refractive index information)
-                               MIN_N_ABSORBERS, & ! n_molecules        - Number of molecular species
-                                             1, & ! i_punch            - Layer data written to TAPE7
-                                             0, & ! i_fixtype          - Suppresses some output to TAPE7
-                                             0, & ! units              - Output molecules/cm^2) to TAPE7
-                                   0.0_fp_kind, & ! earth_radius       - Use default
-                                   0.0_fp_kind, & ! altitude of space  - Use default (100km)
-                                   0.0_fp_kind, & ! average frequency  - Use default calculation
-                              DEFAULT_CO2_PPMV, & ! CO2 ppmv to use
-                                   0.0_fp_kind  ) ! Reference latitude - Use default
+  TYPE( LBLATM_Flags_type ), PRIVATE, PARAMETER :: DEFAULT_LBLATM_FLAGS = &
+    LBLATM_Flags_type(                0, & ! profile_type       - User supplied
+                                      2, & ! path type          - Slant path from H1->H2
+                                      0, & ! n_layer_boundaries - Generated internally (not yet at least)
+                                      1, & ! no_zero            - Suppress zeroing of absorber amounts < 0.1% of total
+                                      1, & ! no_print           - Short print out to TAPE6 (no refractive index information)
+                        MIN_N_ABSORBERS, & ! n_molecules        - Number of molecular species
+                                      1, & ! i_punch            - Layer data written to TAPE7
+                                      0, & ! i_fixtype          - Suppresses some output to TAPE7
+                                      0, & ! units              - Output molecules/cm^2) to TAPE7
+                            0.0_fp_kind, & ! earth_radius       - Use default
+                            0.0_fp_kind, & ! altitude of space  - Use default (100km)
+                            0.0_fp_kind, & ! average frequency  - Use default calculation
+                       DEFAULT_CO2_PPMV, & ! CO2 ppmv to use
+                            0.0_fp_kind  ) ! Reference latitude - Use default
 
 
   ! -- Valid ranges for calculation flags
@@ -255,29 +251,6 @@ MODULE LBLRTM_Input
 
   ! -- No place holder output
   LOGICAL, PRIVATE :: no_placeholder
-
-
-  ! ----------
-  ! Intrinsics
-  ! ----------
-
-  INTRINSIC ABS,            &
-            ALLOCATED,      &
-            ANY,            &
-            ASSOCIATED,     &
-            CEILING,        &
-            DATE_AND_TIME,  &
-            FLOOR,          &
-            INDEX,          &
-            MIN,    MAX,    &
-            MINLOC, MAXLOC, &
-            MINVAL, MAXVAL, &
-            MOD,            &
-            PRESENT,        &
-            REAL,           &
-            SIZE,           &
-            TRIM
-
 
 
 CONTAINS
@@ -669,9 +642,9 @@ CONTAINS
 !         == FAILURE   => error occurred
 !
 ! MODULES:
-!       type_kinds:     Module with data type kind definitions.
+!       Type_Kinds:     Module with data type kind definitions.
 !
-!       error_handler:  Module containing error handling definitions and
+!       Message_Handler:Module containing error handling definitions and
 !                       routines.
 !
 ! CONTAINS:
@@ -1920,14 +1893,6 @@ logical :: terminator
                                  absorber_number, &  ! Input
                                  message_log )    &  ! Error messaging
                                RESULT ( error_status )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- USE DECLARATIONS --                            #
-    !#--------------------------------------------------------------------------#
-
-    USE string_processing, ONLY: strupcase
-
 
 
     !#--------------------------------------------------------------------------#
@@ -3325,17 +3290,25 @@ END MODULE LBLRTM_Input
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Input.f90,v 2.5 2003/12/01 17:55:22 paulv Exp $
+! $Id: LBLRTM_Input.f90,v 2.7 2006/07/26 21:43:58 wd20pd Exp $
 !
-! $Date: 2003/12/01 17:55:22 $
+! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 2.5 $
+! $Revision: 2.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_Input.f90,v $
+! Revision 2.7  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
+! Revision 2.6  2006/07/25 19:33:58  paulv
+! - Updated to use new Utility modules.
+! - Cosmetic changes to structure parameter declarations.
+!
 ! Revision 2.5  2003/12/01 17:55:22  paulv
 ! - Added optional Placeholder argument to Write_Record_3p2() function call
 !   to allow zenith angle specification to be replaced with "AAA.AAA" for

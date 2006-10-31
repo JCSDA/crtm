@@ -20,7 +20,7 @@
 !       Type_Kinds:            Module containing definitions for kinds
 !                              of variable types.
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:         Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
@@ -90,7 +90,7 @@ MODULE AtmProfile_netCDF_IO
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE AtmProfile_Define
 
@@ -122,7 +122,7 @@ MODULE AtmProfile_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AtmProfile_netCDF_IO.f90,v 4.2 2005/01/03 14:39:09 paulv Exp $'
+    '$Id: AtmProfile_netCDF_IO.f90,v 4.3 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER,        PRIVATE, PARAMETER :: UNSET = 0
@@ -4261,17 +4261,20 @@ END MODULE AtmProfile_netCDF_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AtmProfile_netCDF_IO.f90,v 4.2 2005/01/03 14:39:09 paulv Exp $
+! $Id: AtmProfile_netCDF_IO.f90,v 4.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/01/03 14:39:09 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 4.2 $
+! $Revision: 4.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: AtmProfile_netCDF_IO.f90,v $
+! Revision 4.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 4.2  2005/01/03 14:39:09  paulv
 ! - Removed header documentation delimiters from PRIVATE routines.
 !

@@ -16,7 +16,7 @@
 !       Type_Kinds:                 Module containing definitions for kinds
 !                                   of variable types.
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -84,7 +84,7 @@ PROGRAM Example_AtmProfile_Binary
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE AtmProfile_Define
   USE AtmProfile_Binary_IO
@@ -184,17 +184,20 @@ END PROGRAM Example_AtmProfile_Binary
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Example_AtmProfile_Binary.f90,v 1.1 2004/08/27 20:12:21 paulv Exp $
+! $Id: Example_AtmProfile_Binary.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/08/27 20:12:21 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.1 $
+! $Revision: 1.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Example_AtmProfile_Binary.f90,v $
+! Revision 1.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.1  2004/08/27 20:12:21  paulv
 ! Initial checkin.
 !

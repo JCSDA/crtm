@@ -20,7 +20,7 @@
 !
 !       File_Utility:       Module containing generic file utility routines
 !
-!       Error_Handler:      Module containing error handling definitions and
+!       Message_Handler:    Module containing error handling definitions and
 !                           routines.
 !                           USEs: FILE_UTILITY module
 !
@@ -75,7 +75,7 @@ MODULE LBLRTM_Utility
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE LBLRTM_Parameters
 
@@ -103,7 +103,7 @@ MODULE LBLRTM_Utility
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Utility.f90,v 1.5 2005/05/08 15:13:24 paulv Exp $'
+  '$Id: LBLRTM_Utility.f90,v 1.6 2006/07/26 21:43:58 wd20pd Exp $'
 
   ! -- Keyword set values
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -182,7 +182,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the LBLRTM file open was successful
 !                        == FAILURE an unrecoverable error occurred
 !                     UNITS:      N/A
@@ -603,7 +603,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the LBLRTM file EOL write was successful
 !                        == FAILURE an unrecoverable error occurred
 !                     UNITS:      N/A
@@ -752,17 +752,21 @@ END MODULE LBLRTM_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Utility.f90,v 1.5 2005/05/08 15:13:24 paulv Exp $
+! $Id: LBLRTM_Utility.f90,v 1.6 2006/07/26 21:43:58 wd20pd Exp $
 !
-! $Date: 2005/05/08 15:13:24 $
+! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.5 $
+! $Revision: 1.6 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_Utility.f90,v $
+! Revision 1.6  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
 ! Revision 1.5  2005/05/08 15:13:24  paulv
 ! - Upgraded to Fortran-95
 ! - Added optional RCS_Id argument to public procedures.

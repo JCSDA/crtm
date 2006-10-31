@@ -55,13 +55,13 @@ PROGRAM Test_Tangent_Linear
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Tangent_Linear'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Tangent_Linear.f90,v 1.6 2006/05/26 20:34:39 dgroff Exp $'
+    '$Id: Test_Tangent_Linear.f90,v 1.7 2006/06/26 18:31:01 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
   INTEGER, PARAMETER :: SL = 512
 
-  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin.Big_Endian'
+  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   INTEGER,      PARAMETER :: N_PROFILES = 52
 
   
@@ -184,7 +184,7 @@ PROGRAM Test_Tangent_Linear
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to test the CRTM AtmOptics Tangent-Linear '//&
                         'components with respect to the Forward components.', &
-                        '$Revision: 1.6 $' )
+                        '$Revision: 1.7 $' )
 
 
 
@@ -251,11 +251,11 @@ PROGRAM Test_Tangent_Linear
   ! Create the filenames
   ! --------------------
 
-  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin.Big_Endian'
-  TauCoeff_File     = TRIM( File_Prefix )//'.TauCoeff.bin.Big_Endian'
-  CloudCoeff_File   = 'CloudCoeff.bin.Big_Endian'
-  AerosolCoeff_File = 'AerosolCoeff.bin.Big_Endian'
-  EmisCoeff_File    = 'EmisCoeff.bin.Big_Endian'
+  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin'
+  TauCoeff_File     = TRIM( File_Prefix )//'.TauCoeff.bin'
+  CloudCoeff_File   = 'CloudCoeff.bin'
+  AerosolCoeff_File = 'AerosolCoeff.bin'
+  EmisCoeff_File    = 'EmisCoeff.bin'
 
   ComponentTest_File   = TRIM( File_Prefix )//'.CRTM_AtmOptics.ComponentTest.nc'
 

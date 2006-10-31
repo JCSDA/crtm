@@ -1,0 +1,6 @@
+Type_Kinds.o : Type_Kinds.f90 
+Planck_Functions_Test.o : Planck_Functions_Test.f90 Type_Kinds.o Message_Handler.o Planck_Functions.o 
+Planck_Functions.o : Planck_Functions.f90 Type_Kinds.o Fundamental_Constants.o Message_Handler.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 

@@ -80,6 +80,11 @@ MODULE CRTM_Cloud_Define
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
+  INTERFACE CRTM_Associated_Cloud
+    MODULE PROCEDURE Associated_Scalar
+    MODULE PROCEDURE Associated_Rank1
+  END INTERFACE CRTM_Associated_Cloud
+
   INTERFACE CRTM_Destroy_Cloud
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
@@ -130,7 +135,7 @@ MODULE CRTM_Cloud_Define
 
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Cloud_Define.f90,v 1.17 2006/05/25 19:33:27 wd20pd Exp $'
+  '$Id: CRTM_Cloud_Define.f90,v 1.18 2006/06/29 19:42:11 wd20pd Exp $'
 
 
 
@@ -255,9 +260,9 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_Cloud( Cloud,     & ! Input
-                                  ANY_Test ) & ! Optional input
-                                RESULT( Association_Status )
+  FUNCTION Associated_Scalar( Cloud,     & ! Input
+                              ANY_Test ) & ! Optional input
+                            RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
     INTEGER,     OPTIONAL, INTENT(IN) :: ANY_Test
@@ -296,7 +301,24 @@ CONTAINS
       END IF
     END IF
 
-  END FUNCTION CRTM_Associated_Cloud
+  END FUNCTION Associated_Scalar
+
+  FUNCTION Associated_Rank1( Cloud,     & ! Input
+                             ANY_Test ) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN) :: Cloud
+    INTEGER,               OPTIONAL,     INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL, DIMENSION(SIZE(Cloud)) :: Association_Status
+    ! Local variables
+    INTEGER :: n
+
+    DO n = 1, SIZE(Cloud)
+      Association_Status(n) = Associated_Scalar(Cloud(n), ANY_Test=ANY_Test)
+    END DO
+
+  END FUNCTION Associated_Rank1
 
 
 !--------------------------------------------------------------------------------

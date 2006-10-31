@@ -22,7 +22,7 @@
 !
 !       File_Utility:               Module containing generic file utility routines
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -99,7 +99,7 @@ MODULE Tau_Production_Utility
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
   USE Compare_Float_Numbers
 
   USE Tau_Production_Parameters
@@ -184,7 +184,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error
 !                     status. The error codes are defined in the
-!                     ERROR_HANDLER module.
+!                     Message_Handler module.
 !                     If == SUCCESS the signal file creation was successful
 !                        == FAILURE an unrecoverable error occured
 !                     UNITS:      N/A
@@ -197,7 +197,7 @@ CONTAINS
 !                           SOURCE: FILE_UTILITY module
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       If the signal file already exists, it is overwritten.
@@ -745,7 +745,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error
 !                     status. The error codes are defined in the
-!                     ERROR_HANDLER module.
+!                     Message_Handler module.
 !                     If == SUCCESS the TRUE value index search was successful
 !                        == FAILURE the number of TRUE values in the input MASK
 !                                   array and the size of the output INDICES
@@ -756,7 +756,7 @@ CONTAINS
 !                     DIMENSION:  Scalar
 ! CALLS:
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -872,53 +872,3 @@ CONTAINS
   END FUNCTION Find_Indices
 
 END MODULE Tau_Production_Utility
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Tau_Production_Utility.f90,v 1.7 2005/09/21 19:40:55 paulv Exp $
-!
-! $Date: 2005/09/21 19:40:55 $
-!
-! $Revision: 1.7 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Tau_Production_Utility.f90,v $
-! Revision 1.7  2005/09/21 19:40:55  paulv
-! - In the Compute_dF_Index() routine, the ULP value used to compare the
-!   the frequency interval values was increased from 100 to 1000.
-!
-! Revision 1.6  2005/09/16 20:24:45  paulv
-! - In the Compute_dF_Index() routine, the ULP value used to compare the
-!   the frequency interval values was increased from 10 to 100.
-!
-! Revision 1.5  2005/05/15 23:25:00  paulv
-! - Updated header documentation.
-!
-! Revision 1.4  2005/05/09 19:34:08  paulv
-! - Added USE statement for Compare_Float_Numbers module.
-! - Updated header documentation.
-!
-! Revision 1.3  2005/05/08 15:33:27  paulv
-! - Upgraded to Fortran-95
-! - Added header documentation for all the contained procedures.
-! - Added Compute_dF_Index() function.
-! - Modified Compute_LBL_Band() function interface to accept the frequency
-!   interval.
-! - Added call to Compute_dF_Index() function in Compute_LBL_Band() function.
-!
-! Revision 1.2  2002/06/07 18:33:28  paulv
-! - Updated documentation.
-! - Added Compute_LBL_Band, Compute_Frequency_Index, and Find_Indices
-!   functions.
-!
-! Revision 1.1  2002/05/15 19:28:45  paulv
-! initial checkin.
-!
-!
-!

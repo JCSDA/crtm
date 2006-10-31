@@ -88,7 +88,7 @@ MODULE AIRS_SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AIRS_SRF_Define.f90,v 1.5 2006/05/02 16:58:02 dgroff Exp $'
+    '$Id: AIRS_SRF_Define.f90,v 1.6 2006/08/15 20:51:04 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -275,7 +275,7 @@ CONTAINS
 !
 ! CALLS:
 !       display_message:      Subroutine to output Messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -549,14 +549,14 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       The return value is an integer defining the error status. The
-!       error status codes are defined in the ERROR_HANDLER module.
+!       error status codes are defined in the Message_Handler module.
 !
 !       If result = SUCCESS the structure re-initialisation was successful
 !                 = FAILURE an error occurred
 !
 ! CALLS:
 !       display_message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -799,14 +799,14 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       The return value is an integer defining the error status. The
-!       error status codes are defined in the ERROR_HANDLER module.
+!       error status codes are defined in the Message_Handler module.
 !
 !       If result = SUCCESS the structure pointer allocations were successful
 !                 = FAILURE an error occurred
 !
 ! CALLS:
 !       display_message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1053,7 +1053,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       The return value is an integer defining the error status. The
-!       error status codes are defined in the ERROR_HANDLER module.
+!       error status codes are defined in the Message_Handler module.
 !
 !       If result = SUCCESS the AIRS_SRF structure assignment was successful
 !                 = FAILURE an error occurred
@@ -1063,7 +1063,7 @@ CONTAINS
 !                             the AIRS_SRF data structure.
 !
 !       display_message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1229,15 +1229,18 @@ END MODULE AIRS_SRF_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_SRF_Define.f90,v 1.5 2006/05/02 16:58:02 dgroff Exp $
+! $Id: AIRS_SRF_Define.f90,v 1.6 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.5 $
+! $Revision: 1.6 $
 !
 ! $State: Exp $
 !
 ! $Log: AIRS_SRF_Define.f90,v $
+! Revision 1.6  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 1.5  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

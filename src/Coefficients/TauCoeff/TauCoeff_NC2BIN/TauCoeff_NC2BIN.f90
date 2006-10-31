@@ -31,23 +31,23 @@ PROGRAM TauCoeff_NC2BIN
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'TauCoeff_NC2BIN'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: TauCoeff_NC2BIN.f90,v 1.8 2006/06/14 21:58:54 wd20pd Exp $'
+  '$Id: TauCoeff_NC2BIN.f90,v 1.9 2006/06/23 23:17:57 wd20pd Exp $'
 
   ! ---------
   ! Variables
   ! ---------
   INTEGER :: Error_Status
-  CHARACTER( 256 ) :: NC_Filename
-  CHARACTER( 256 ) :: BIN_Filename
-  TYPE( TauCoeff_type ) :: TauCoeff
-  TYPE( TauCoeff_type ) :: TauCoeff_Test
+  CHARACTER(256) :: NC_Filename
+  CHARACTER(256) :: BIN_Filename
+  TYPE(TauCoeff_type) :: TauCoeff
+  TYPE(TauCoeff_type) :: TauCoeff_Test
 
 
   ! Output prgram header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to convert netCDF format TauCoeff files to '//&
                         'their CRTM Binary format.', &
-                        '$Revision: 1.8 $' )
+                        '$Revision: 1.9 $' )
 
   ! Get the input and output filenames
   WRITE( *, FMT     = '( /5x, "Enter the INPUT netCDF TauCoeff file: " )', &
@@ -78,7 +78,7 @@ PROGRAM TauCoeff_NC2BIN
   WRITE( *, '( /5x, "Reading netCDF TauCoeff data ..." )' )
   Error_Status = Read_TauCoeff_netCDF( NC_Filename, TauCoeff )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'Error reading netCDF TauCoeff file '//&
                           TRIM( NC_Filename ), &
                           Error_Status )
@@ -89,7 +89,7 @@ PROGRAM TauCoeff_NC2BIN
   WRITE( *, '( /5x, "Writing Binary TauCoeff data ..." )' )
   Error_Status = Write_TauCoeff_Binary( BIN_Filename, TauCoeff )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'Error writing Binary TauCoeff file '//&
                           TRIM( BIN_Filename ), &
                           Error_Status )
@@ -100,7 +100,7 @@ PROGRAM TauCoeff_NC2BIN
   WRITE( *, '( /5x, "Test reading the Binary TauCoeff data file ..." )' )
   Error_Status = Read_TauCoeff_Binary( BIN_Filename, TauCoeff_Test )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'Error reading Binary TauCoeff file '//&
                           TRIM( BIN_Filename ), &
                           Error_Status )
@@ -111,12 +111,12 @@ PROGRAM TauCoeff_NC2BIN
   WRITE( *, '( /5x, "Comparing the netCDF and Binary TauCoeff structures ..." )' )
   Error_Status = Equal_TauCoeff( TauCoeff_Test, TauCoeff )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'Differences found in netCDF and Binary '//&
                           'file TauCoeff structure comparison.', &
                           Error_Status )
   ELSE
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'netCDF and Binary file TauCoeff structures are equal.', &
                           INFORMATION )
   END IF
@@ -124,14 +124,14 @@ PROGRAM TauCoeff_NC2BIN
   ! Destroy the structures
   Error_Status = Destroy_TauCoeff( TauCoeff )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'Error destroying TauCoeff structure.', &
                           WARNING )
   END IF
 
   Error_Status = Destroy_TauCoeff( TauCoeff_Test )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL display_message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME, &
                           'Error destroying TauCoeff_Test structure.', &
                           WARNING )
   END IF

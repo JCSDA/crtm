@@ -17,7 +17,7 @@
 !       Type_Kinds:                  Module containing definitions for kinds
 !                                    of variable types.
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:               Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -114,7 +114,7 @@ PROGRAM Check_TauProfile_Data
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE ProcessControl_Define
   USE ProcessControl_IO
@@ -138,7 +138,7 @@ PROGRAM Check_TauProfile_Data
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_TauProfile_Data'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_TauProfile_Data.f90,v 1.5 2006/02/09 16:56:25 paulv Exp $'
+  '$Id: Check_TauProfile_Data.f90,v 1.6 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -200,7 +200,7 @@ PROGRAM Check_TauProfile_Data
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to check the individual TauProfile datafiles  ")' )
   WRITE( *, '( 5x, "   for complete data.                                ")' )
-  WRITE( *, '(/5x, " $Revision: 1.5 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.6 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -653,17 +653,20 @@ END PROGRAM Check_TauProfile_Data
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Check_TauProfile_Data.f90,v 1.5 2006/02/09 16:56:25 paulv Exp $
+! $Id: Check_TauProfile_Data.f90,v 1.6 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2006/02/09 16:56:25 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.5 $
+! $Revision: 1.6 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Check_TauProfile_Data.f90,v $
+! Revision 1.6  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.5  2006/02/09 16:56:25  paulv
 ! - Removed all user input pauses.
 !

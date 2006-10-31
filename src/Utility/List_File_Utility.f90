@@ -187,7 +187,7 @@ MODULE List_File_Utility
   ! -----------------
 
   CHARACTER( * ), PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: List_File_Utility.f90,v 2.2 2006/05/02 16:58:03 dgroff Exp $'
+  '$Id: List_File_Utility.f90,v 2.3 2006/07/26 21:37:50 wd20pd Exp $'
 
   INTEGER, PRIVATE, PARAMETER :: SET = 1
   INTEGER, PRIVATE, PARAMETER :: STRLEN = 5000
@@ -580,7 +580,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
 !                        == FAILURE - an error occurred, or
 !                                   - the structure internal allocation counter
@@ -594,7 +594,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -951,7 +951,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure pointer allocations were
 !                                   successful
 !                        == FAILURE - an error occurred, or
@@ -972,7 +972,7 @@ CONTAINS
 !                             members of List data structures.
 !
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1369,7 +1369,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the
 !                        error status. The error codes are defined in
-!                        the ERROR_HANDLER module. Values returned by
+!                        the Message_Handler module. Values returned by
 !                        this function are:
 !                          SUCCESS == file open was successful
 !                          FAILURE == an error occurred opening the file.
@@ -1379,7 +1379,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:  Subroutine to output Messages
-!                        SOURCE: ERROR_HANDLER module
+!                        SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -1598,7 +1598,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the
 !                        error status. The error codes are defined in
-!                        the ERROR_HANDLER module. Values returned by
+!                        the Message_Handler module. Values returned by
 !                        this function are:
 !                          SUCCESS == the list file entry count was successful.
 !                          FAILURE == an unrecoverable error occurred.
@@ -1608,7 +1608,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output Messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -1856,7 +1856,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the
 !                        error status. The error codes are defined in
-!                        the ERROR_HANDLER module. Values returned by
+!                        the Message_Handler module. Values returned by
 !                        this function are:
 !                          SUCCESS == the list file read was successful.
 !                          FAILURE == an unrecoverable error occurred.
@@ -1866,7 +1866,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -2474,7 +2474,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the
 !                        error status. The error codes are defined in
-!                        the ERROR_HANDLER module. Values returned by
+!                        the Message_Handler module. Values returned by
 !                        this function are:
 !                          SUCCESS == the list structure retrieval was successful.
 !                          FAILURE == an unrecoverable error occurred.
@@ -2484,7 +2484,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -2688,17 +2688,21 @@ END MODULE List_File_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: List_File_Utility.f90,v 2.2 2006/05/02 16:58:03 dgroff Exp $
+! $Id: List_File_Utility.f90,v 2.3 2006/07/26 21:37:50 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:03 $
+! $Date: 2006/07/26 21:37:50 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: List_File_Utility.f90,v $
+! Revision 2.3  2006/07/26 21:37:50  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
 ! Revision 2.2  2006/05/02 16:58:03  dgroff
 ! *** empty log message ***
 !

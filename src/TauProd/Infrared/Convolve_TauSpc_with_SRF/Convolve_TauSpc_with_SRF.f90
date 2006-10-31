@@ -20,7 +20,7 @@
 !       File_Utility:                Module containing generic file utility
 !                                    routines
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:               Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -193,7 +193,7 @@ PROGRAM Convolve_TauSpc_with_SRF
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE ProcessControl_Define
   USE ProcessControl_IO
@@ -223,7 +223,7 @@ PROGRAM Convolve_TauSpc_with_SRF
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Convolve_TauSpc_with_SRF'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Convolve_TauSpc_with_SRF.f90,v 3.2 2005/09/16 20:27:43 paulv Exp $'
+  '$Id: Convolve_TauSpc_with_SRF.f90,v 3.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -382,7 +382,7 @@ PROGRAM Convolve_TauSpc_with_SRF
   WRITE( *, '(/5x, " Program to convolve LBLRTM transmittance spectra with")' )
   WRITE( *, '( 5x, "   spectrally corresponding SRFs defined in the ")' )
   WRITE( *, '( 5x, "   ProcessControl file.")' )
-  WRITE( *, '(/5x, " $Revision: 3.2 $")' )
+  WRITE( *, '(/5x, " $Revision: 3.3 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -1806,17 +1806,20 @@ END PROGRAM Convolve_TauSpc_with_SRF
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Convolve_TauSpc_with_SRF.f90,v 3.2 2005/09/16 20:27:43 paulv Exp $
+! $Id: Convolve_TauSpc_with_SRF.f90,v 3.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/09/16 20:27:43 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 3.2 $
+! $Revision: 3.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Convolve_TauSpc_with_SRF.f90,v $
+! Revision 3.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 3.2  2005/09/16 20:27:43  paulv
 ! - Updates made to reflect changes in ProcessControl structure name and
 !   components.

@@ -17,17 +17,17 @@
 !       USE SRF_Define
 !
 ! MODULES:
-!       Type_Kinds:      Module containing definitions for kinds
-!                        of variable types.
+!       Type_Kinds:        Module containing definitions for kinds
+!                          of variable types.
 !
-!       Message_Handler: Module to define simple error codes and
-!                        handle error conditions
-!                        USEs: FILE_UTILITY module
+!       Message_Handler:   Module to define simple error codes and
+!                          handle error conditions
+!                          USEs: FILE_UTILITY module
 !
-!       Integrate:       Module containing integration routines.
-!                        USEs: TYPE_KINDS module
-!                              ERROR_HANDLER module
-!                              INTERPOLATE module
+!       Integrate_Utility: Module containing integration routines.
+!                          USEs: TYPE_KINDS module
+!                                Message_Handler module
+!                                INTERPOLATE module
 !
 ! CONTAINS:
 !       Associated_SRF:  Function to test the association status
@@ -198,8 +198,7 @@ MODULE SRF_Define
 
   USE Type_Kinds
   USE Message_Handler
-
-  USE Integrate
+  USE Integrate_Utility
 
 
   ! -----------------------
@@ -238,7 +237,7 @@ MODULE SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SRF_Define.f90,v 2.9 2006/05/02 16:58:02 dgroff Exp $'
+    '$Id: SRF_Define.f90,v 2.10 2006/08/15 20:32:27 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -446,7 +445,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:      Subroutine to output Messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -591,7 +590,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
 !                        == FAILURE - an error occurred, or
 !                                   - the structure internal allocation counter
@@ -605,7 +604,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -946,7 +945,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
 !                        == FAILURE - an error occurred, or
 !                                   - the structure internal allocation counter
@@ -966,7 +965,7 @@ CONTAINS
 !                           members of SRF data structures.
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1225,7 +1224,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure assignment was successful
 !                        == FAILURE an error occurred
 !                     UNITS:      N/A
@@ -1240,7 +1239,7 @@ CONTAINS
 !                             the SRF data structure.
 !
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1471,7 +1470,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the frequency grid calculation was successful
 !                        == FAILURE an error occurred processing the input
 !                     UNITS:      N/A
@@ -1480,7 +1479,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       The FREQUENCY field of the input SRF structure is filled.
@@ -1657,7 +1656,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the integration was successful
 !                        == FAILURE an error occurred processing the input
 !                     UNITS:      N/A
@@ -1666,7 +1665,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       The INTEGRATED_SRF and SUMMATION_SRF fields of the input SRF structure
@@ -1953,17 +1952,21 @@ END MODULE SRF_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_Define.f90,v 2.9 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SRF_Define.f90,v 2.10 2006/08/15 20:32:27 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:32:27 $
 !
-! $Revision: 2.9 $
+! $Revision: 2.10 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SRF_Define.f90,v $
+! Revision 2.10  2006/08/15 20:32:27  wd20pd
+! Altered USE Integrate to USE Integrate_Utility to reflect changes in
+! CRTM repository heirarchy.
+!
 ! Revision 2.9  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

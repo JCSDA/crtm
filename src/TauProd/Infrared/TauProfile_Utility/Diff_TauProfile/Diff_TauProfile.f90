@@ -1,93 +1,14 @@
-!------------------------------------------------------------------------------
-!P+
-! NAME:
-!       Diff_TauProfile
 !
-! PURPOSE:
-!       Program to compare values in two TauProfile files and report the
-!       location of the differences.
+! Diff_TauProfile
 !
-! CATEGORY:
-!       Transmittance Production
+! Program to compare values in two TauProfile files and report the
+! location of the differences.
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:                 Module containing definitions for kinds
-!                                   of variable types.
-!
-!       File_Utility:               Module containing generic file utility routines
-!
-!       Error_Handler:              Module to define simple error codes and
-!                                   handle error conditions
-!                                   USEs: FILE_UTILITY module
-!
-!       Compare_Float_Numbers:      Module containing routines to perform equality
-!                                   and relational comparisons on floating point
-!                                   numbers.
-!
-!       String_Utility:             Module containing string utility routines
-!
-!       TauProfile_Define:          Module defining the TauProfile data
-!                                   structure and containing routines to
-!                                   manipulate it.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
-!
-!       TauProfile_netCDF_IO:       Module containing routines to read and
-!                                   write TauProfile netCDF format files.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
-!                                         ATMPROFILE_DEFINE module
-!                                         NETCDF module
-!                                         NETCDF_UTILITY module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       Input: - netCDF TauProfile data file #1
-!              - netCDF TauProfile data file #2
-!
-!       Output: None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 06-Feb-2006
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2006 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!P-
-!------------------------------------------------------------------------------
 
 PROGRAM Diff_TauProfile
 
@@ -98,7 +19,7 @@ PROGRAM Diff_TauProfile
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
   USE Compare_Float_Numbers
   USE String_Utility
 
@@ -119,9 +40,7 @@ PROGRAM Diff_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Diff_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Diff_TauProfile.f90,v 1.1 2006/02/06 23:27:09 paulv Exp $'
-  CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
-  '**********************************************************'
+  '$Id: Diff_TauProfile.f90,v 1.3 2006/07/27 21:58:58 wd20pd Exp $'
 
 
   ! ---------
@@ -129,21 +48,12 @@ PROGRAM Diff_TauProfile
   ! ---------
 
   CHARACTER( 256 ) :: Message
-
-  INTEGER         :: pn_pos
-  CHARACTER( 80 ) :: pn_fmt
-
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-
-  INTEGER :: n_Sensors, iDir, i, j, m, n
-
-  CHARACTER( 256 ) :: Path
+  INTEGER :: i, j, m
   CHARACTER( 256 ) :: InFile1
   CHARACTER( 256 ) :: InFile2
-
   REAL( fp_kind ), DIMENSION(:,:), ALLOCATABLE :: Tau1, Tau2
-
   INTEGER :: nK1, nL1, nI1, nM1, nJ1
   INTEGER :: NCEP_Sensor_ID1
   CHARACTER( 80 ) :: ID_Tag1, Sensor_Name1, Platform_Name1
@@ -152,7 +62,6 @@ PROGRAM Diff_TauProfile
   REAL( fp_kind ), DIMENSION(:), POINTER :: Angle_List1
   INTEGER,         DIMENSION(:), POINTER :: Profile_List1
   INTEGER,         DIMENSION(:), POINTER :: Molecule_Set_List1
-
   INTEGER :: nK2, nL2, nI2, nM2, nJ2
   INTEGER :: NCEP_Sensor_ID2
   CHARACTER( 80 ) :: ID_Tag2, Sensor_Name2, Platform_Name2
@@ -162,24 +71,11 @@ PROGRAM Diff_TauProfile
   INTEGER,         DIMENSION(:), POINTER :: Profile_List2
   INTEGER,         DIMENSION(:), POINTER :: Molecule_Set_List2
 
-
-
-  !#----------------------------------------------------------------------------#
-  !#                       -- OUTPUT DESCRIPTIVE HEADER --                      #
-  !#----------------------------------------------------------------------------#
-
-  pn_pos = ( LEN( PROGRAM_HEADER ) / 2 ) - &
-           ( LEN( PROGRAM_NAME ) / 2 )
-  pn_pos = MAX( pn_pos, 0 ) + 5
-  WRITE( pn_fmt, '( "( ",i2,"x, a )" )' ) pn_pos
-
-  WRITE( *, '(/5x, a)' ) PROGRAM_HEADER
-  WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
-  WRITE( *, '(/5x, " Program to compare values in two TauProfile files and ", &
-             &/5x, "   report the location of the differences.")' )
-  WRITE( *, '(/5x, " $Revision: 1.1 $")' )
-  WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
-
+  ! Output program header
+  CALL Program_Message( PROGRAM_NAME, &
+                       'Program to compare values in two TauProfile files and '//&
+                       'report the location of the differences.', &
+                       '$Revision: 1.3 $' )
 
 
   !#----------------------------------------------------------------------------#
@@ -563,26 +459,3 @@ CONTAINS
   END SUBROUTINE Get_TauProfile_DimData
 
 END PROGRAM Diff_TauProfile
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Diff_TauProfile.f90,v 1.1 2006/02/06 23:27:09 paulv Exp $
-!
-! $Date: 2006/02/06 23:27:09 $
-!
-! $Revision: 1.1 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Diff_TauProfile.f90,v $
-! Revision 1.1  2006/02/06 23:27:09  paulv
-! Initial checkin.
-!
-!
-!
-!

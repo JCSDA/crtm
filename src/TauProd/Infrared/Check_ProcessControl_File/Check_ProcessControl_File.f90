@@ -19,7 +19,7 @@
 !
 !       File_Utility:              Module containing generic file utility routines
 !
-!       Error_Handler:             Module to define simple error codes and
+!       Message_Handler:             Module to define simple error codes and
 !                                  handle error conditions
 !                                  USEs: FILE_UTILITY module
 !
@@ -100,7 +100,7 @@ PROGRAM Check_ProcessControl_File
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE ProcessControl_Define
   USE ProcessControl_IO
@@ -122,7 +122,7 @@ PROGRAM Check_ProcessControl_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_ProcessControl_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_ProcessControl_File.f90,v 1.8 2005/09/16 20:27:06 paulv Exp $'
+  '$Id: Check_ProcessControl_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -164,7 +164,7 @@ PROGRAM Check_ProcessControl_File
   WRITE( *, '(/5x, " Program to read a process control file to determine what ")' )
   WRITE( *, '( 5x, " channels have been processed and delete the LBL data     ")' )
   WRITE( *, '( 5x, " files associated with those channels.                    ")' )
-  WRITE( *, '(/5x, " $Revision: 1.8 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.9 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -381,17 +381,20 @@ END PROGRAM Check_ProcessControl_File
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Check_ProcessControl_File.f90,v 1.8 2005/09/16 20:27:06 paulv Exp $
+! $Id: Check_ProcessControl_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/09/16 20:27:06 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.8 $
+! $Revision: 1.9 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Check_ProcessControl_File.f90,v $
+! Revision 1.9  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.8  2005/09/16 20:27:06  paulv
 ! - Updated to reflect changes in the ProcessControl structure name and
 !   components.

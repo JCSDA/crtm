@@ -19,7 +19,7 @@
 !
 !       File_Utility:           Module containing generic file utility routines
 !
-!       Error_Handler:          Module to define simple error codes and
+!       Message_Handler:          Module to define simple error codes and
 !                               handle error conditions
 !                               USEs: FILE_UTILITY module
 !
@@ -96,7 +96,7 @@ PROGRAM TauProfile_NC2BIN
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE TauProfile_Define
   USE TauProfile_Binary_IO
@@ -116,7 +116,7 @@ PROGRAM TauProfile_NC2BIN
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'TauProfile_NC2BIN'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: TauProfile_NC2BIN.f90,v 1.6 2004/12/16 18:21:47 paulv Exp $'
+  '$Id: TauProfile_NC2BIN.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
 
   REAL( fp_kind ), PARAMETER :: TOLERANCE = EPSILON( 1.0_fp_kind )
 
@@ -160,7 +160,7 @@ PROGRAM TauProfile_NC2BIN
   WRITE( *, '( 5x, " Program to convert netCDF format TauProfile files to a   ")' )
   WRITE( *, '( 5x, "   simple binary format.                                  ")' )
   WRITE( *, * )
-  WRITE( *, '( 5x, " $Revision: 1.6 $")' )
+  WRITE( *, '( 5x, " $Revision: 1.7 $")' )
   WRITE( *, '( 5x, "**********************************************************")' )
   WRITE( *, * )
 
@@ -432,17 +432,20 @@ END PROGRAM TauProfile_NC2BIN
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauProfile_NC2BIN.f90,v 1.6 2004/12/16 18:21:47 paulv Exp $
+! $Id: TauProfile_NC2BIN.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/12/16 18:21:47 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.6 $
+! $Revision: 1.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: TauProfile_NC2BIN.f90,v $
+! Revision 1.7  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.6  2004/12/16 18:21:47  paulv
 ! - Converted to Fortran-95
 ! - Removed structure initialisation calls.

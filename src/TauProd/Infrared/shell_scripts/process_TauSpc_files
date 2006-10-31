@@ -644,7 +644,7 @@ SCRIPT_NAME="`basename $0`"
 
           echo "${FILE_TAG} for profile ${PROFILE_NUMBER}"
           if [ "${QUEUE_SUBMIT}" = "yes" ]; then
-            sub -q ${QUEUE} -t 00:30:00 ${SCRIPT_FILE}
+            sub -q ${QUEUE} -a GDAS-T2O -t 00:30:00 ${SCRIPT_FILE}
           fi
 
         done   # DIRECTION_NUMBER loop
@@ -682,95 +682,3 @@ SCRIPT_NAME="`basename $0`"
   # ---------------------
 
   exit 0
-
-
-#-------------------------------------------------------------------------------
-#                          -- MODIFICATION HISTORY --
-#-------------------------------------------------------------------------------
-#
-# $Id: process_TauSpc_files,v 1.13 2006/01/26 18:35:13 paulv Exp $
-#
-# $Date: 2006/01/26 18:35:13 $
-#
-# $Revision: 1.13 $
-#
-# $Name:  $
-#
-# $State: Exp $
-#
-# $Log: process_TauSpc_files,v $
-# Revision 1.13  2006/01/26 18:35:13  paulv
-# - Added molecule set list as an option. Script can now loop over molecule
-#   sets rather than process one at a time.
-#
-# Revision 1.12  2005/12/19 22:01:31  paulv
-# - Updated to use new ProcessControl software.
-#
-# Revision 1.11  2004/04/08 17:37:58  paulv
-# - Changes made to do the calculations by angle.
-#
-# Revision 1.10  2003/11/14 19:32:47  paulv
-# - Altered user inputs for Create_ProcessControl_File program to reflect
-#   changes to code, i.e. input of SensorInfo data file.
-#
-# Revision 1.9  2003/09/09 18:42:48  paulv
-# - Added 2-hour time limit to TauSpc batch job submission. This should
-#   queue the jobs faster on the SP LoadLeveler.
-#
-# Revision 1.8  2003/07/22 17:54:36  paulv
-# - Removed convoluted resubmission code.
-# - Corrected error in specification of SRF data file directory.
-#
-# Revision 1.7  2003/07/22 15:18:13  paulv
-# - Made all queue submissions use "sub" rather than "bsub". The latter is
-#   the command for teh origin while the former is for the SP.
-#
-# Revision 1.6  2003/07/21 13:47:20  paulv
-# - Added water continua only molecule set option.
-# - Added an email address variable rather than specifying the actual email
-#   address on every line that emails an error message.
-#
-# Revision 1.5  2002/10/08 14:22:34  paulv
-# - Added a "do not submit to batch queue" command line option, -n.
-# - Changed order of molecular sets from
-#     10   == water vapor + ozone only (and their continua)"
-#     11   == water vapor only (and it's continua)"
-#     12   == all first seven molecules (and their continua)"
-#   to
-#     10   == all first seven molecules (and their continua)"
-#     11   == water vapor + ozone only (and their continua)"
-#     12   == water vapor only (and it's continua)"
-# - Added read of Transmittance_Production.processing_defaults file.
-# - A check for the existence of an SRF file is made before a symbolic link
-#   is established.
-# - Added the PROFILE_SET_NUMBER output to the script file for input to the
-#   Convolve_TauSpc_with_SRF and Check_Process_Control_File executables.
-# - Tidied up definitions of MINUTE and HOUR variables.
-#
-# Revision 1.4  2002/06/13 18:35:23  paulv
-# - Added documentation to usage function.
-# - Added command line option parsing.
-# - Corrected bug in the determination of when a Process Control file needs to
-#   be created. The test needed to be changed from:
-#     if [ ! -f ${PROCESS_CONTROL_FILE}.signal -o ! -f ${PROCESS_CONTROL_FILE}.lock ]; then
-#   to
-#     if [ ! -f ${PROCESS_CONTROL_FILE}.signal -a ! -f ${PROCESS_CONTROL_FILE}.lock ]; then
-#   i.e. from OR to AND.
-# - Added band data deletion section.
-# - Corrected bug in the determination of what condition will cause the script to
-#   be resubmitted. The filename of the signal file was incorrect.
-# - Now computing the batch queue submission time explicitly rather than using
-#   the "at now + 30 minutes" command.
-#
-# Revision 1.3  2002/06/11 15:51:49  paulv
-# - Added script file creation and submission.
-#
-# Revision 1.2  2002/06/07 18:37:34  paulv
-# - New version.
-#
-# Revision 1.1  2002/06/05 18:36:33  paulv
-# Initial checkin.
-#
-#
-#
-#

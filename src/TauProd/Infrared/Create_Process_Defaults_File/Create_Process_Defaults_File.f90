@@ -19,7 +19,7 @@
 !
 !       File_Utility:               Module containing generic file utility routines
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -87,7 +87,7 @@ PROGRAM Create_Process_Defaults_File
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE Tau_Production_Parameters
   USE Tau_Production_Utility
@@ -106,7 +106,7 @@ PROGRAM Create_Process_Defaults_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_Process_Defaults_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_Process_Defaults_File.f90,v 1.8 2005/12/19 18:52:56 paulv Exp $'
+  '$Id: Create_Process_Defaults_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -151,7 +151,7 @@ PROGRAM Create_Process_Defaults_File
   WRITE( *, '( 5x, "   production shell scripts. The created file links the   ")' )
   WRITE( *, '( 5x, "   shell script defaults to those specified in the        ")' )
   WRITE( *, '( 5x, "   Tau_Production_Parameters module.                      ")' )
-  WRITE( *, '(/5x, " $Revision: 1.8 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.9 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -560,17 +560,20 @@ END PROGRAM Create_Process_Defaults_File
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Create_Process_Defaults_File.f90,v 1.8 2005/12/19 18:52:56 paulv Exp $
+! $Id: Create_Process_Defaults_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/12/19 18:52:56 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.8 $
+! $Revision: 1.9 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Create_Process_Defaults_File.f90,v $
+! Revision 1.9  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.8  2005/12/19 18:52:56  paulv
 ! - Added output of the default CO2 mixing ratio. This value is used in the
 !   process_tape5_files script.

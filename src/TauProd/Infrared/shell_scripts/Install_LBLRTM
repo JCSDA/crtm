@@ -14,7 +14,7 @@ SCRIPT_NAME="`basename $0`"
 # -------------------------------------------
 
 if [ -z "${ARCHIVE_ROOT_DIR}" ]; then
-  ARCHIVE_ROOT_DIR=hanfs1:/g01.1/weather/wx20pd
+  ARCHIVE_ROOT_DIR="hanfs1:/nfsuser/g01.1/weather/wx20pd"
 fi
 
 
@@ -24,7 +24,7 @@ fi
 # ----------------------------------------
 
 if [ -z "${HOME_ROOT_DIR}" ]; then
-  HOME_ROOT_DIR=/nbns/global/wx20pd
+  HOME_ROOT_DIR="/nbns/global/wx20pd"
 fi
 
 
@@ -34,7 +34,8 @@ fi
 # ---------------------------------------
 
 if [ -z "${RUN_ROOT_DIR}" ]; then
-  RUN_ROOT_DIR=/ptmp/wx20pd
+#  RUN_ROOT_DIR="/ptmp/wx20pd"
+  RUN_ROOT_DIR=${HOME_ROOT_DIR}
 fi
 
 
@@ -42,10 +43,10 @@ fi
 # The generic LBLRTM directory names
 # ----------------------------------
 
-LBLRTM_ROOT_DIRECTORY=lblrtm
-LBLRTM_HITRAN_DIRECTORY=hitran
-LBLRTM_BIN_DIRECTORY=bin
-LBLRTM_RUN_DIRECTORY=lblrtm_scratch
+LBLRTM_ROOT_DIR="lblrtm"
+LBLRTM_HITRAN_DIR="hitran"
+LBLRTM_BIN_DIR="bin"
+LBLRTM_RUN_DIR="lblrtm_scratch"
 
 
 
@@ -53,7 +54,7 @@ LBLRTM_RUN_DIRECTORY=lblrtm_scratch
 #                     -- SAVE CURRENT DIRECTORY LOCATION --                     #
 #-------------------------------------------------------------------------------#
 
-CURRENT_DIRECTORY=${PWD}
+CURRENT_DIR=${PWD}
 
 
 
@@ -77,10 +78,10 @@ fi
 # Create the scratch run directory
 # --------------------------------
 
-if [ ! -d ${LBLRTM_RUN_DIRECTORY} ]; then
-  mkdir ${LBLRTM_RUN_DIRECTORY}
+if [ ! -d ${LBLRTM_RUN_DIR} ]; then
+  mkdir ${LBLRTM_RUN_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error creating ${LBLRTM_RUN_DIRECTORY} directory in ${PWD}"
+    echo "${SCRIPT_NAME}: Error creating ${LBLRTM_RUN_DIR} directory in ${PWD}"
     exit 2
   fi
 fi
@@ -106,17 +107,17 @@ fi
 # Create LBLRTM directory if it doesn't already exist
 # ---------------------------------------------------
 
-if [ ! -d ${LBLRTM_ROOT_DIRECTORY} ]; then
-  mkdir ${LBLRTM_ROOT_DIRECTORY}
+if [ ! -d ${LBLRTM_ROOT_DIR} ]; then
+  mkdir ${LBLRTM_ROOT_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error creating ${LBLRTM_ROOT_DIRECTORY} directory in ${PWD}"
+    echo "${SCRIPT_NAME}: Error creating ${LBLRTM_ROOT_DIR} directory in ${PWD}"
     exit 2
   fi
 fi
 
-cd ${LBLRTM_ROOT_DIRECTORY}
+cd ${LBLRTM_ROOT_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error changing to ${LBLRTM_ROOT_DIRECTORY} directory from ${PWD}"
+  echo "${SCRIPT_NAME}: Error changing to ${LBLRTM_ROOT_DIR} directory from ${PWD}"
   exit 2
 fi
 
@@ -125,38 +126,38 @@ fi
 # Copy over HITRAN TAPE3 data
 # ---------------------------
 
-# -- Create hitran subdirectory
-if [ ! -d ${LBLRTM_HITRAN_DIRECTORY} ]; then
-  mkdir ${LBLRTM_HITRAN_DIRECTORY}
+# Create hitran subdirectory
+if [ ! -d ${LBLRTM_HITRAN_DIR} ]; then
+  mkdir ${LBLRTM_HITRAN_DIR}
   if [ $? -ne 0 ]; then
-    echo " Error creating ${LBLRTM_HITRAN_DIRECTORY} directory in ${PWD}"
+    echo " Error creating ${LBLRTM_HITRAN_DIR} directory in ${PWD}"
     exit 2
   fi
 fi
 
-# -- Define the source and destination directories
-FROM_DIRECTORY=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}/${LBLRTM_HITRAN_DIRECTORY}
-TO_DIRECTORY=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}/${LBLRTM_HITRAN_DIRECTORY}
+# Define the source and destination directories
+FROM_DIR=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_HITRAN_DIR}
+TO_DIR=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_HITRAN_DIR}
 
 echo
-echo " Copying HITRAN data from ${FROM_DIRECTORY} to ${TO_DIRECTORY}..."
+echo " Copying HITRAN data from ${FROM_DIR} to ${TO_DIR}..."
 
-# -- Copy the cross-section data
-rcp -r ${FROM_DIRECTORY}/xs ${TO_DIRECTORY}
+# Copy the cross-section data
+rcp -r ${FROM_DIR}/xs ${TO_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIRECTORY}/xs directory data"
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIR}/xs directory data"
   exit 2
 fi
 
-rcp ${FROM_DIRECTORY}/FSCDXS ${TO_DIRECTORY}
+rcp ${FROM_DIR}/FSCDXS ${TO_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIRECTORY}/FSCDXS file"
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIR}/FSCDXS file"
   exit 2
 fi
 
-rcp ${FROM_DIRECTORY}/tape3* ${TO_DIRECTORY}
+rcp ${FROM_DIR}/tape3* ${TO_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIRECTORY}/tape3 files"
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_HITRAN_DIR}/tape3 files"
   exit 2
 fi
 
@@ -165,16 +166,16 @@ fi
 # Copy over executable files
 # --------------------------
 
-# -- Define the source and destination directories
-FROM_DIRECTORY=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}/${LBLRTM_BIN_DIRECTORY}
-TO_DIRECTORY=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIRECTORY}
+# Define the source and destination directories
+FROM_DIR=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_BIN_DIR}
+TO_DIR=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIR}
 
 echo
-echo " Copying executables from ${FROM_DIRECTORY} to ${TO_DIRECTORY}..."
+echo " Copying executables from ${FROM_DIR} to ${TO_DIR}..."
 
-rcp -r ${FROM_DIRECTORY} ${TO_DIRECTORY}
+rcp -r ${FROM_DIR} ${TO_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_BIN_DIRECTORY} directory files"
+  echo "${SCRIPT_NAME}: Error copying ${LBLRTM_BIN_DIR} directory files"
   exit 2
 fi
 
@@ -184,5 +185,5 @@ fi
 # Return to the start directory
 # -----------------------------
 
-cd ${CURRENT_DIRECTORY}
+cd ${CURRENT_DIR}
 

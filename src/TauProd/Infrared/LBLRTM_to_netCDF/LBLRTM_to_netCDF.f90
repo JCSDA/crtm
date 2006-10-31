@@ -24,7 +24,7 @@
 !       File_Utility:               Module containing generic file utility
 !                                   routines
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:            Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -132,7 +132,7 @@ PROGRAM LBLRTM_to_netCDF
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
   USE Compare_Float_Numbers
 
   USE LBLRTM_Parameters
@@ -159,7 +159,7 @@ PROGRAM LBLRTM_to_netCDF
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'LBLRTM_to_netCDF'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: LBLRTM_to_netCDF.f90,v 2.1 2005/05/08 15:37:40 paulv Exp $'
+  '$Id: LBLRTM_to_netCDF.f90,v 2.3 2006/07/26 22:44:02 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -191,7 +191,7 @@ PROGRAM LBLRTM_to_netCDF
   CHARACTER( 256 ) :: Id_Tag
 
   INTEGER :: Error_Status
-  INTEGER :: EOF
+  INTEGER :: LBLRTM_EOF
   INTEGER :: k, n
 
   TYPE( LBLRTM_Fhdr_type )  :: LBLRTM_Fhdr
@@ -219,7 +219,7 @@ PROGRAM LBLRTM_to_netCDF
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to read LBLRTM format data files and write")' )
   WRITE( *, '( 5x, "   netCDF format output files.")' )
-  WRITE( *, '(/5x, " $Revision: 2.1 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.3 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -286,7 +286,7 @@ PROGRAM LBLRTM_to_netCDF
  
   Error_Status = Read_LBLRTM_Fhdr( LBLRTM_FileID, &
                                    LBLRTM_Fhdr, &
-                                   EOF )
+                                   LBLRTM_EOF )
 
   IF ( Error_Status /= SUCCESS ) THEN
     WRITE( Message, '( "Error reading layer #1 file header from file ", a )' ) &
@@ -393,7 +393,7 @@ PROGRAM LBLRTM_to_netCDF
     Error_Status = Read_LBLRTM_Layer( LBLRTM_FileID,    &
                                       LBLRTM_FILE_TYPE, &
                                       LBLRTM_Layer,     &
-                                      EOF               )
+                                      LBLRTM_EOF               )
 
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message, '( "Error reading layer #", i3, " from file ", a )' ) &
@@ -480,17 +480,24 @@ END PROGRAM LBLRTM_to_netCDF
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_to_netCDF.f90,v 2.1 2005/05/08 15:37:40 paulv Exp $
+! $Id: LBLRTM_to_netCDF.f90,v 2.3 2006/07/26 22:44:02 wd20pd Exp $
 !
-! $Date: 2005/05/08 15:37:40 $
+! $Date: 2006/07/26 22:44:02 $
 !
-! $Revision: 2.1 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_to_netCDF.f90,v $
+! Revision 2.3  2006/07/26 22:44:02  wd20pd
+! Changed EOF variable name to LBLRTM_EOF so as not to clash with the module
+! variable EOF from Message_Handler.
+!
+! Revision 2.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.1  2005/05/08 15:37:40  paulv
 ! - Upgraded to Fortran-95
 ! - Added USE of Compare_Float_Numbers utility module.

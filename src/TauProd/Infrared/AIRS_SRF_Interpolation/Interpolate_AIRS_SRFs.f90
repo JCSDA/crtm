@@ -1,5 +1,4 @@
-!------------------------------------------------------------------------------
-!M+
+!
 ! NAME:
 !       Interpolate_AIRS_SRFs
 !
@@ -10,114 +9,11 @@
 !       are output in netCDF format by module based upon the SensorInfo
 !       file.
 !
-! CATEGORY:
-!       Transmittance Production
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:              Module containing definitions for kinds
-!                                of variable types.
-!
-!       File_Utility:            Module containing generic file utility routines
-!
-!       Error_Handler:           Module to define simple error codes and
-!                                handle error conditions
-!                                USEs: FILE_UTILITY module
-!
-!       Interpolate:             Module containing interpolation routines
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!
-!       SensorInfo_Define:       Module defining the SensorInfo data
-!                                structure and containing routines to
-!                                manipulate it.
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!
-!       SensorInfo_LinkedList:   Module defining the SensorInfo Linked
-!                                List data structure and containing
-!                                routines to manipulate it.
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!                                      SENSORINFO_DEFINE module
-!
-!       SensorInfo_IO:           Module continaing routines to read and
-!                                write ASCII SensorInfo format files.
-!                                USEs: TYPE_KINDS module
-!                                      FILE_UTILITY module
-!                                      ERROR_HANDLER module
-!                                      SensorInfo_DEFINE module
-!
-!       AIRS_SRF_Define:         Module defining the AIRS SRF data structure and
-!                                its manipulation routines.
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!
-!       AIRS_SRF_netCDF_Reader:  Module to provide read access to the netCDF format
-!                                AIRS SRF data file.
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!                                      AIRS_SRF_DEFINE module
-!                                      NETCDF module
-!                                      NETCDF_UTILITY module
-!
-!       SRF_Define:              Module defining the generic SRF data structure
-!                                and its manipulation routines.
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!                                      INTEGRATE module
-!
-!       SRF_netCDF_IO:           Module containing routines to read and write
-!                                netCDF format SRF files.
-!                                USEs: TYPE_KINDS module
-!                                      ERROR_HANDLER module
-!                                      SRF_DEFINE module
-!                                      NETCDF module
-!                                      NETCDF_UTILITY module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       - Input netCDF AIRS SRF file.
-!       - Output netCDF file for interpolated SRF data.
-!
-! SIDE EFFECTS:
-!       If the interpolated output netCDF format SRF file already
-!       exists, it is overwritten.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2002
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2002 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 PROGRAM Interpolate_AIRS_SRFs
 
@@ -128,20 +24,15 @@ PROGRAM Interpolate_AIRS_SRFs
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
-
-  USE Interpolate
-
+  USE Message_Handler
+  USE Interpolate_Utility
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
   USE SensorInfo_IO
-
   USE AIRS_SRF_Define
   USE AIRS_SRF_netCDF_Reader
-
   USE SRF_Define
   USE SRF_netCDF_IO
-
   USE Tau_Production_Parameters
 
 
@@ -158,9 +49,7 @@ PROGRAM Interpolate_AIRS_SRFs
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Interpolate_AIRS_SRFs'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Interpolate_AIRS_SRFs.f90,v 2.1 2005/05/08 19:22:37 paulv Exp $'
-  CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
-  '**********************************************************'
+  '$Id: Interpolate_AIRS_SRFs.f90,v 2.3 2006/07/25 20:38:08 wd20pd Exp $'
 
   ! -- Input AIRS SRF filename
   CHARACTER( * ),  PARAMETER ::  AIRS_SRF_FILENAME = 'airs_srf.nc'
@@ -222,19 +111,11 @@ PROGRAM Interpolate_AIRS_SRFs
   !#                       -- OUTPUT DESCRIPTIVE HEADER --                      #
   !#----------------------------------------------------------------------------#
 
-  pn_pos = ( LEN( PROGRAM_HEADER ) / 2 ) - &
-           ( LEN( PROGRAM_NAME ) / 2 )
-  pn_pos = MAX( pn_pos, 0 ) + 5
-  WRITE( pn_fmt, '( "( ",i2,"x, a )" )' ) pn_pos
-
-  WRITE( *, '(/5x, a)' ) PROGRAM_HEADER
-  WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
-  WRITE( *, '(/5x, " Program to read the netCDF format AIRS SRF data files and ")' )
-  WRITE( *, '( 5x, "   interpolate the requested SRFs to the same frequency    ")' )
-  WRITE( *, '( 5x, "   grid used in the line-by-line transmittance data files. ")' )
-  WRITE( *, '(/5x, " $Revision: 2.1 $")' )
-  WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
-
+  CALL Program_Message(PROGRAM_NAME, &
+                       'Program to read the netCDF format AIRS SRF data files and '//&
+                       'interpolate the requested SRFs to the same frequency '//&
+                       'grid used in the line-by-line transmittance data files.', &
+                       '$Revision: 2.3 $' )
 
 
   !#----------------------------------------------------------------------------#
@@ -604,42 +485,3 @@ PROGRAM Interpolate_AIRS_SRFs
   END IF
 
 END PROGRAM Interpolate_AIRS_SRFs
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Interpolate_AIRS_SRFs.f90,v 2.1 2005/05/08 19:22:37 paulv Exp $
-!
-! $Date: 2005/05/08 19:22:37 $
-!
-! $Revision: 2.1 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Interpolate_AIRS_SRFs.f90,v $
-! Revision 2.1  2005/05/08 19:22:37  paulv
-! - Upgraded to Fortran-95
-! - Altered to use new SRF and SensorInfo modules. SRF and SensorInfo structure
-!   initialisation subroutine calls removed. SensorInfo linked list initialisation
-!   function replaced with New_SensorInfo_List() function.
-! - Interpolation frequency index added and fixed to the 0.0025cm-1 interval.
-!   Since this program is used for the AIRS sensor, the higher resolution
-!   is required.
-!
-! Revision 2.0  2003/09/04 15:13:21  paulv
-! - New version using new SRF definition and netCDF I/O modules and well
-!   as SensorInfo list modules.
-!
-! Revision 1.2  2002/05/31 23:04:35  paulv
-! - Added summation_SRF output.
-!
-! Revision 1.1  2002/05/09 20:25:45  paulv
-! Initial checkin.
-!
-!
-!
-!

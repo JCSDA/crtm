@@ -24,7 +24,8 @@ for TEST in ${TEST_TYPE}; do
       FILE_ROOT=${TAG}.CRTM_Test_${TEST}.output
       if [ -f "${FILE_ROOT}.Baseline" -a -f "${FILE_ROOT}" ]; then
         echo "Diff'ing ${FILE_ROOT}.Baseline and ${FILE_ROOT}..."
-        diff ${FILE_ROOT}.Baseline ${FILE_ROOT} | tee ${FILE_ROOT}.diff
+#        diff ${FILE_ROOT}.Baseline ${FILE_ROOT} | tee ${FILE_ROOT}.diff
+        tkdiff ${FILE_ROOT}.Baseline ${FILE_ROOT}
       fi
     done
     cd ..

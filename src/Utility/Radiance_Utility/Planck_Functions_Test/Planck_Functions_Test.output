@@ -3,10 +3,11 @@
                         Planck_Functions_Test
 
       Program to test the Planck functions module routines for 
-        scalar, rank-1, and rank-2 input.
+      scalar, rank-1, and rank-2 input.
 
-      $Revision: 1.4 $
+      $Revision: 1.6 $
      **********************************************************
+
 
 
                GENERIC INTERFACE CHECK

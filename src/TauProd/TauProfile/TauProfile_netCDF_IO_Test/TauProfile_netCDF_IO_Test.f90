@@ -16,7 +16,7 @@
 !       Type_Kinds:                 Module containing definitions for kinds
 !                                   of variable types.
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -87,7 +87,7 @@ PROGRAM TauProfile_netCDF_IO_Test
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE TauProfile_Define
   USE TauProfile_netCDF_IO
@@ -106,7 +106,7 @@ PROGRAM TauProfile_netCDF_IO_Test
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'TauProfile_netCDF_IO_Test'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: TauProfile_netCDF_IO_Test.f90,v 1.3 2004/09/14 17:27:07 paulv Exp $'
+  '$Id: TauProfile_netCDF_IO_Test.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -181,7 +181,7 @@ PROGRAM TauProfile_netCDF_IO_Test
   WRITE( *, '(/5x, a)' ) PROGRAM_HEADER
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to test read a netCDF format TauProfile file.    ")' )
-  WRITE( *, '(/5x, " $Revision: 1.3 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.4 $")' )
   WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
 
 
@@ -991,17 +991,20 @@ END PROGRAM TauProfile_netCDF_IO_Test
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauProfile_netCDF_IO_Test.f90,v 1.3 2004/09/14 17:27:07 paulv Exp $
+! $Id: TauProfile_netCDF_IO_Test.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/09/14 17:27:07 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.3 $
+! $Revision: 1.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: TauProfile_netCDF_IO_Test.f90,v $
+! Revision 1.4  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.3  2004/09/14 17:27:07  paulv
 ! - Upgraded to Fortran-95
 ! - Updated to use new TauProfile modules.

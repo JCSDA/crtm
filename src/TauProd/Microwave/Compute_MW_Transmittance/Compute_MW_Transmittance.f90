@@ -16,7 +16,7 @@
 !       Type_Kinds:                  Module containing definitions for kinds
 !                                    of variable types.
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:               Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -145,7 +145,7 @@ PROGRAM Compute_MW_Transmittance
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE Profile_Utility_Parameters, ONLY : ID_H2O, &
                                          PPMV_UNITS, &
@@ -183,7 +183,7 @@ PROGRAM Compute_MW_Transmittance
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Compute_MW_Transmittance'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Compute_MW_Transmittance.f90,v 2.2 2005/01/25 21:35:27 paulv Exp $'
+    '$Id: Compute_MW_Transmittance.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -344,7 +344,7 @@ PROGRAM Compute_MW_Transmittance
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to compute transmittance profiles for user-defined ")' )
   WRITE( *, '( 5x, "   microwave instruments.")' )
-  WRITE( *, '(/5x, " $Revision: 2.2 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.3 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -1251,17 +1251,20 @@ END PROGRAM Compute_MW_Transmittance
 !#                          -- MODIFICATION HISTORY --                          # 
 !#------------------------------------------------------------------------------#
 !
-! $Id: Compute_MW_Transmittance.f90,v 2.2 2005/01/25 21:35:27 paulv Exp $
+! $Id: Compute_MW_Transmittance.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/01/25 21:35:27 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Compute_MW_Transmittance.f90,v $
+! Revision 2.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.2  2005/01/25 21:35:27  paulv
 ! - Removed type declarations of unused variables.
 !

@@ -1,0 +1,23 @@
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
+Type_Kinds.o : Type_Kinds.f90 
+Spectral_Units_Conversion.o : Spectral_Units_Conversion.f90 Type_Kinds.o Fundamental_Constants.o 
+SpcCoeff_netCDF_IO.o : SpcCoeff_netCDF_IO.f90 Type_Kinds.o Message_Handler.o SpcCoeff_Define.o netCDF_Utility.o 
+SpcCoeff_Define.o : SpcCoeff_Define.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o 
+Solar_netCDF_IO.o : Solar_netCDF_IO.f90 Type_Kinds.o Message_Handler.o Solar_Define.o netCDF_Utility.o 
+Solar_Define.o : Solar_Define.f90 Type_Kinds.o Message_Handler.o 
+SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 Type_Kinds.o Message_Handler.o SensorInfo_Define.o 
+SensorInfo_IO.o : SensorInfo_IO.f90 Type_Kinds.o File_Utility.o Message_Handler.o SensorInfo_Define.o SensorInfo_LinkedList.o 
+SensorInfo_Define.o : SensorInfo_Define.f90 Type_Kinds.o Message_Handler.o 
+SRF_netCDF_IO.o : SRF_netCDF_IO.f90 Type_Kinds.o Message_Handler.o SRF_Define.o netCDF_Utility.o 
+SRF_Define.o : SRF_Define.f90 Type_Kinds.o Message_Handler.o 
+Planck_Functions.o : Planck_Functions.f90 Type_Kinds.o Fundamental_Constants.o Message_Handler.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Interpolate_Utility.o : Interpolate_Utility.f90 Type_Kinds.o Message_Handler.o 
+Integrate_Utility.o : Integrate_Utility.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o Interpolate_Utility.o 
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Create_IR_SpcCoeff_Sensor.o : Create_IR_SpcCoeff_Sensor.f90 Type_Kinds.o File_Utility.o Message_Handler.o Compare_Float_Numbers.o Fundamental_Constants.o Planck_Functions.o Interpolate_Utility.o Integrate_Utility.o Spectral_Units_Conversion.o SensorInfo_Define.o SensorInfo_LinkedList.o SensorInfo_IO.o SRF_Define.o SRF_netCDF_IO.o Solar_Define.o Solar_netCDF_IO.o SpcCoeff_Define.o SpcCoeff_netCDF_IO.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 

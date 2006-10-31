@@ -91,7 +91,7 @@ MODULE Date_Utility
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Date_Utility.f90,v 3.2 2006/05/02 16:58:03 dgroff Exp $'
+  '$Id: Date_Utility.f90,v 3.3 2006/07/26 21:37:50 wd20pd Exp $'
 
   ! -- Number of Months in a Year
   INTEGER, PRIVATE, PARAMETER :: N_MONTHS = 12
@@ -286,7 +286,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the date conversion was successful.
 !                        == FAILURE input data was invalid.
 !                     UNITS:      N/A
@@ -517,7 +517,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the date conversion was successful.
 !                        == FAILURE input data was invalid.
 !                     UNITS:      N/A
@@ -526,7 +526,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:  Subroutine to output messages
-!                         SOURCE: ERROR_HANDLER module
+!                         SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -717,15 +717,19 @@ END MODULE Date_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Date_Utility.f90,v 3.2 2006/05/02 16:58:03 dgroff Exp $
+! $Id: Date_Utility.f90,v 3.3 2006/07/26 21:37:50 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:03 $
+! $Date: 2006/07/26 21:37:50 $
 !
-! $Revision: 3.2 $
+! $Revision: 3.3 $
 !
 ! $State: Exp $
 !
 ! $Log: Date_Utility.f90,v $
+! Revision 3.3  2006/07/26 21:37:50  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
 ! Revision 3.2  2006/05/02 16:58:03  dgroff
 ! *** empty log message ***
 !

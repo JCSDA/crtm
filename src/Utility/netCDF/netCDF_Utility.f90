@@ -32,19 +32,19 @@
 !       netCDF_Dimension_Utility:  Module containing utility routines
 !                                  for netCDF file dimension access.
 !                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
+!                                        Message_Handler module
 !                                        netcdf module
 !
 !       netCDF_Variable_Utility:   Module containing utility routines
 !                                  for netCDF file variable access.
 !                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
+!                                        Message_Handler module
 !                                        netcdf module
 !
 !       netCDF_Attribute_Utility:  Module containing utility routines
 !                                  for netCDF file attribute access.
 !                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
+!                                        Message_Handler module
 !                                        netcdf module
 !
 ! CONTAINS:
@@ -299,7 +299,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF file open was successful
 !                        == FAILURE an unrecoverable error occurred.
 !                     UNITS:      N/A
@@ -311,7 +311,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None
@@ -494,7 +494,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF file close was successful
 !                        == FAILURE an unrecoverable error occurred.
 !                     UNITS:      N/A
@@ -506,7 +506,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None
@@ -596,17 +596,21 @@ END MODULE netCDF_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: netCDF_Utility.f90,v 1.1 2006/06/08 21:47:55 wd20pd Exp $
+! $Id: netCDF_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $
 !
-! $Date: 2006/06/08 21:47:55 $
+! $Date: 2006/07/26 21:39:05 $
 !
-! $Revision: 1.1 $
+! $Revision: 1.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: netCDF_Utility.f90,v $
+! Revision 1.2  2006/07/26 21:39:05  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
 ! Revision 1.1  2006/06/08 21:47:55  wd20pd
 ! Initial checkin.
 !

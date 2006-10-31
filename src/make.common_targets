@@ -1,0 +1,47 @@
+#------------------------------------------------------------------------------
+#
+# NAME:
+#       make.common_targets
+#
+# PURPOSE:
+#       Unix make utility include file for common targets used for builds.
+#       Note that this include file is intended for use with the make.macros
+#       and make.rules include files also.
+#
+# LANGUAGE:
+#       Unix make
+#
+# CALLING SEQUENCE:
+#       include make.common_targets
+#
+# CREATION HISTORY:
+#       Written by:     Paul van Delst, CIMSS/SSEC 30-Jun-2006
+#                       paul.vandelst@ssec.wisc.edu
+#
+#------------------------------------------------------------------------------
+
+# Make based on OS type
+all:
+	@echo "OS type detected: "`uname -s`
+	@case `uname -s` in \
+	  "SunOS")  make -f $(MAKE_FILE) build $(SUNOS_FLAGS) ;; \
+	  "AIX")    make -f $(MAKE_FILE) build $(AIX_FLAGS) ;; \
+	  "IRIX64") make -f $(MAKE_FILE) build $(IRIX64_FLAGS) ;; \
+	  "Linux"|"Darwin") make -f $(MAKE_FILE) build $(LINUX_FLAGS) ;; \
+	  *) echo "This system is not supported" ;; \
+       esac
+
+# Build the program
+build: $(OBJ_FILES)
+	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
+
+# Clean up
+clean:
+	$(REMOVE) $(OBJ_FILES) *.mod *.MOD
+
+# Install the executable
+install:
+	@if [ -d $(HOME)/bin ]; then \
+	  $(MOVE) $(EXE_FILE) $(HOME)/bin; \
+	fi
+

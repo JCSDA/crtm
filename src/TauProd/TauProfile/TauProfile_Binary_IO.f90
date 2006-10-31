@@ -22,7 +22,7 @@
 !
 !       File_Utility:          Module containing generic file utility routines
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:         Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
@@ -84,7 +84,7 @@ MODULE TauProfile_Binary_IO
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE TauProfile_Define
 
@@ -113,7 +113,7 @@ MODULE TauProfile_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauProfile_Binary_IO.f90,v 1.6 2004/12/16 18:20:34 paulv Exp $'
+    '$Id: TauProfile_Binary_IO.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER,        PRIVATE, PARAMETER :: SET = 1
@@ -1580,17 +1580,20 @@ END MODULE TauProfile_Binary_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauProfile_Binary_IO.f90,v 1.6 2004/12/16 18:20:34 paulv Exp $
+! $Id: TauProfile_Binary_IO.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/12/16 18:20:34 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.6 $
+! $Revision: 1.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: TauProfile_Binary_IO.f90,v $
+! Revision 1.7  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.6  2004/12/16 18:20:34  paulv
 ! - Restored software from Attic.
 ! - Tidied up the code. Added some more consistency checks.

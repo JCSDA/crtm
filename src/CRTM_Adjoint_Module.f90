@@ -67,7 +67,7 @@ MODULE CRTM_Adjoint_Module
   ! -----------------
   ! RCS Id for the module
   CHARACTER( * ), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Adjoint_Module.f90,v 1.8 2006/05/25 18:35:34 wd20pd Exp $'
+  '$Id: CRTM_Adjoint_Module.f90,v 1.9 2006/07/26 21:35:26 wd20pd Exp $'
 
 
 CONTAINS
@@ -200,7 +200,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the ERROR_HANDLER module.
+!                       The error codes are defined in the Message_Handler module.
 !                       If == SUCCESS the computation was sucessful
 !                          == FAILURE an unrecoverable error occurred
 !                       UNITS:      N/A

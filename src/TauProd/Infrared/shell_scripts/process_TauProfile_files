@@ -383,8 +383,7 @@ usage()
 
     echo "${FILE_TAG}"
     if [ "${QUEUE_SUBMIT}" = "yes" ]; then
-#      bsub -q ${QUEUE} -o ${LOG_FILE} ${SCRIPT_FILE}
-      sub -q ${QUEUE} -t 02:00:00 ${SCRIPT_FILE}
+      sub -q ${QUEUE} -a GDAS-T2O -t 02:00:00 ${SCRIPT_FILE}
     fi
 
   done   # DIRECTION_NUMBER loop
@@ -395,62 +394,3 @@ usage()
   # ---------------------
 
   exit 0
-
-
-#-------------------------------------------------------------------------------
-#                          -- MODIFICATION HISTORY --
-#-------------------------------------------------------------------------------
-#
-# $Id: process_TauProfile_files,v 2.9 2006/01/26 18:28:48 paulv Exp $
-#
-# $Date: 2006/01/26 18:28:48 $
-#
-# $Revision: 2.9 $
-#
-# $Name:  $
-#
-# $State: Exp $
-#
-# $Log: process_TauProfile_files,v $
-# Revision 2.9  2006/01/26 18:28:48  paulv
-# - Added check for existence of defaults file.
-#
-# Revision 2.8  2006/01/05 19:26:25  paulv
-# - Added 2-hour time limit on batch job submission.
-#
-# Revision 2.7  2005/12/19 22:02:57  paulv
-# - Now specifying the correct SRF directory.
-# - Added code to create output directory if it doesn't already exist.
-#
-# Revision 2.6  2003/07/22 15:18:13  paulv
-# - Made all queue submissions use "sub" rather than "bsub". The latter is
-#   the command for teh origin while the former is for the SP.
-#
-# Revision 2.5  2003/07/21 13:47:35  paulv
-# - Added an email address variable rather than specifying the actual email
-#   address on every line that emails an error message.
-#
-# Revision 2.4  2002/10/08 17:23:28  paulv
-# - Changed order of molecular sets from
-#     10   == water vapor + ozone only (and their continua)"
-#     11   == water vapor only (and it's continua)"
-#     12   == all first seven molecules (and their continua)"
-#   to
-#     10   == all first seven molecules (and their continua)"
-#     11   == water vapor + ozone only (and their continua)"
-#     12   == water vapor only (and it's continua)"
-# - TAPE3 list is now read in from the defaults file.
-#
-# Revision 2.3  2002/07/25 22:03:49  paulv
-# - Fixed signal file names.
-# - Made effective tau computation append to log file rather than overwrite it.
-#
-# Revision 2.2  2002/07/25 21:17:56  paulv
-# - Shortened mail subject strings if an error occurrs.
-#
-# Revision 2.1  2002/07/25 21:09:34  paulv
-# Initial checkin.
-#
-#
-#
-#

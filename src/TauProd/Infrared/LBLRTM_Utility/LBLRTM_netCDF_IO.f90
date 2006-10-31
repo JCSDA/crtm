@@ -20,7 +20,7 @@
 !       Type_Kinds:         Module containing definitions for kinds
 !                           of variable types.
 !
-!       Error_Handler:      Module to define simple error codes and
+!       Message_Handler:    Module to define simple error codes and
 !                           handle error conditions
 !                           USEs: FILE_UTILITY module
 !
@@ -88,7 +88,7 @@ MODULE LBLRTM_netCDF_IO
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE netcdf
   USE netCDF_Utility,  Open_LBLRTM_netCDF =>  Open_netCDF, &
@@ -119,7 +119,7 @@ MODULE LBLRTM_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: LBLRTM_netCDF_IO.f90,v 2.3 2005/05/08 15:19:46 paulv Exp $'
+    '$Id: LBLRTM_netCDF_IO.f90,v 2.4 2006/07/26 21:43:58 wd20pd Exp $'
 
    ! -- Global attribute names. Case sensitive
   CHARACTER( * ), PRIVATE, PARAMETER :: TITLE_GATTNAME   = 'title'
@@ -288,7 +288,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the global attribute write was successful
 !                        == WARNING an error occurred writing the global attributes
 !                     UNITS:      N/A
@@ -301,7 +301,7 @@ CONTAINS
 !                             SOURCE: NETCDF_ATTRIBUTE module
 !
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -627,7 +627,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the global attribute read was successful
 !                        == WARNING an error occurred reading the global attributes
 !                     UNITS:      N/A
@@ -640,7 +640,7 @@ CONTAINS
 !                             SOURCE: NETCDF_ATTRIBUTE module
 !
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -977,7 +977,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
-!                           ERROR_HANDLER module.
+!                           Message_Handler module.
 !                           If == SUCCESS the LBLRTM netCDF file creation was successful
 !                              == FAILURE an unrecoverable error occured
 !                           UNITS:      N/A
@@ -1016,7 +1016,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       If the output file already exists, it is overwritten.
@@ -1759,7 +1759,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
-!                           ERROR_HANDLER module.
+!                           Message_Handler module.
 !                           If == SUCCESS the LBLRTM netCDF file inquiry was
 !                                         successful
 !                              == FAILURE - an error occurred opening the
@@ -1791,7 +1791,7 @@ CONTAINS
 !                                SOURCE: NETCDF_UTILITY module
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 !       NF90_CLOSE:              Function to close a netCDF file.
 !                                SOURCE: netCDF library
@@ -2187,7 +2187,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the ERROR_HANDLER module.
+!                       The error codes are defined in the Message_Handler module.
 !                       If == SUCCESS the LBLRTM netCDF file write was successful
 !                          == FAILURE an unrecoverable error occurred
 !                       UNITS:      N/A
@@ -2211,7 +2211,7 @@ CONTAINS
 !                               SOURCE: netCDF library
 !
 !       Display_Message:        Subroutine to output messages
-!                               SOURCE: ERROR_HANDLER module
+!                               SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -2495,7 +2495,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the ERROR_HANDLER module.
+!                       The error codes are defined in the Message_Handler module.
 !                       If == SUCCESS the LBLRTM netCDF file read was successful
 !                          == FAILURE an unrecoverable error occurred
 !                       UNITS:      N/A
@@ -2521,7 +2521,7 @@ CONTAINS
 !                               SOURCE: netCDF library
 !
 !       Display_Message:        Subroutine to output messages
-!                               SOURCE: ERROR_HANDLER module
+!                               SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -2743,17 +2743,21 @@ END MODULE LBLRTM_netCDF_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_netCDF_IO.f90,v 2.3 2005/05/08 15:19:46 paulv Exp $
+! $Id: LBLRTM_netCDF_IO.f90,v 2.4 2006/07/26 21:43:58 wd20pd Exp $
 !
-! $Date: 2005/05/08 15:19:46 $
+! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 2.3 $
+! $Revision: 2.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_netCDF_IO.f90,v $
+! Revision 2.4  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
 ! Revision 2.3  2005/05/08 15:19:46  paulv
 ! - Upgraded to Fortran-95
 ! - Used separate status variables where required to prevent overwriting of

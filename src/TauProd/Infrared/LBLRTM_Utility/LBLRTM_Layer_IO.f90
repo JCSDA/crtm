@@ -21,7 +21,7 @@
 !
 !       File_Utility:       Module containing generic file utility routines
 !
-!       Error_Handler:      Module containing error handling definitions and
+!       Message_Handler:    Module containing error handling definitions and
 !                           routines.
 !                           USEs: FILE_UTILITY module
 !
@@ -32,28 +32,28 @@
 !       LBLRTM_Utility:     Module containing some utility routines.
 !                           USEs: TYPE_KINDS module
 !                                 FILE_UTILITY module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 LBLRTM_PARAMETERS module
 !
 !       LBLRTM_Fhdr_IO:     Module containing routines to read, write, and
 !                           manipulate an LBLRTM format file header
 !                           USEs: TYPE_KINDS module
 !                                 FILE_UTILITY module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 LBLRTM_PARAMETERS module
 !
 !       LBLRTM_Phdr_IO:     Module containing routines to read, write, and
 !                           manipulate an LBLRTM format panel header
 !                           USEs: TYPE_KINDS module
 !                                 FILE_UTILITY module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 LBLRTM_PARAMETERS module
 !
 !       LBLRTM_Panel_IO:    Module containing routines to read panel data from
 !                           and write panel data to an LBLRTM format file
 !                           USEs: TYPE_KINDS module
 !                                 FILE_UTILITY module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 LBLRTM_PARAMETERS module
 !
 ! CONTAINS:
@@ -167,7 +167,7 @@ MODULE LBLRTM_Layer_IO
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE LBLRTM_Parameters
   USE LBLRTM_Utility
@@ -202,7 +202,7 @@ MODULE LBLRTM_Layer_IO
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Layer_IO.f90,v 1.13 2005/09/15 16:54:47 paulv Exp $'
+  '$Id: LBLRTM_Layer_IO.f90,v 1.14 2006/07/26 21:43:58 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -524,7 +524,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
 !                        == FAILURE - an error occurred, or
 !                                   - the structure internal allocation counter
@@ -538,7 +538,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -771,7 +771,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure pointer allocations were
 !                                   successful
 !                        == FAILURE - an error occurred, or
@@ -786,7 +786,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1045,7 +1045,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the structure assignment was successful
 !                            == FAILURE an error occurred
 !                         UNITS:      N/A
@@ -1060,7 +1060,7 @@ CONTAINS
 !                                 the LBLRTM_Layer data structure.
 !
 !       Display_Message:          Subroutine to output messages
-!                                 SOURCE: ERROR_HANDLER module
+!                                 SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1315,7 +1315,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the LBLRTM layer data read was successful
 !                              == FAILURE an error occurred
 !                           UNITS:      N/A
@@ -1354,7 +1354,7 @@ CONTAINS
 !                                SOURCE: FILE_UTILITY module
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1930,7 +1930,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the LBLRTM layer data write was successful
 !                              == FAILURE an error occurred
 !                           UNITS:      N/A
@@ -1958,7 +1958,7 @@ CONTAINS
 !                                SOURCE: FILE_UTILITY module
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -2302,17 +2302,21 @@ END MODULE LBLRTM_Layer_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Layer_IO.f90,v 1.13 2005/09/15 16:54:47 paulv Exp $
+! $Id: LBLRTM_Layer_IO.f90,v 1.14 2006/07/26 21:43:58 wd20pd Exp $
 !
-! $Date: 2005/09/15 16:54:47 $
+! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.13 $
+! $Revision: 1.14 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_Layer_IO.f90,v $
+! Revision 1.14  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
 ! Revision 1.13  2005/09/15 16:54:47  paulv
 ! - Corrected misnamed construct name in EXIT statements for Read_Panel_Chunk loop.
 ! - Coorected misnamed invalid integer parameter name.

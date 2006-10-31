@@ -24,7 +24,7 @@ MODULE CRTM_CloudScatter
   ! -- CRTM modules
   USE CRTM_Parameters
   USE CRTM_SpcCoeff
-  USE CRTM_CloudCoeff
+  USE CRTM_CloudCoeff,          ONLY: CloudC
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type, &
                                       MAX_N_CLOUDS => N_VALID_CLOUD_TYPES, &
                                       WATER_CLOUD, &
@@ -79,7 +79,7 @@ MODULE CRTM_CloudScatter
 
   ! -- RCS Id for the module
   CHARACTER( * ), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_CloudScatter.f90,v 1.5 2006/05/25 19:27:59 wd20pd Exp $'
+  '$Id: CRTM_CloudScatter.f90,v 1.6 2006/06/23 23:20:10 wd20pd Exp $'
 
   ! -- Number of stream angle definitions
   INTEGER, PARAMETER :: TWO_STREAMS       =  2
@@ -308,7 +308,7 @@ CONTAINS
          CloudScatter%Asymmetry_Factor = ZERO
 
       IF(Atmosphere%n_Clouds == 0) RETURN
-         IF( ScatC%n_Phase_Elements > 0 ) CloudScatter%Phase_Coefficient = ZERO
+         IF( CloudC%n_Phase_Elements > 0 ) CloudScatter%Phase_Coefficient = ZERO
 !
     !#--------------------------------------------------------------------------#
     !#                -- LOOP OVER CLOUD TYPE --                                #
@@ -1075,28 +1075,28 @@ CONTAINS
     d1 = wavenumber -(L1-1) * FOUR - 102.0
  
 !  find index L2 and slope d2 on effective radius interpolation
-    call find_idx(ScatC%n_Size_IR,ScatC%Reff_IR,eff_radius,L2,d2)
+    call find_idx(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2)
     IF( Cloud_Type == WATER_CLOUD .OR. Cloud_Type == RAIN_CLOUD) THEN
 
-     ext = (ONE-d1)*(ONE-d2)*ScatC%ext_L_IR(L1,L2)  &
-         + (ONE-d1)*d2*ScatC%ext_L_IR(L1,L2+1)      &
-         + (ONE-d2)*d1*ScatC%ext_L_IR(L1+1,L2)      &
-         + d1*d2*ScatC%ext_L_IR(L1+1,L2+1)
-     w0  = (ONE-d1)*(ONE-d2)*ScatC%w_L_IR(L1,L2)  &
-         + (ONE-d1)*d2*ScatC%w_L_IR(L1,L2+1)      &
-         + (ONE-d2)*d1*ScatC%w_L_IR(L1+1,L2)      &
-         + d1*d2*ScatC%w_L_IR(L1+1,L2+1)
-     g   = (ONE-d1)*(ONE-d2)*ScatC%g_L_IR(L1,L2)  &
-         + (ONE-d1)*d2*ScatC%g_L_IR(L1,L2+1)      &
-         + (ONE-d2)*d1*ScatC%g_L_IR(L1+1,L2)      &
-         + d1*d2*ScatC%g_L_IR(L1+1,L2+1)
+     ext = (ONE-d1)*(ONE-d2)*CloudC%ext_L_IR(L1,L2)  &
+         + (ONE-d1)*d2*CloudC%ext_L_IR(L1,L2+1)      &
+         + (ONE-d2)*d1*CloudC%ext_L_IR(L1+1,L2)      &
+         + d1*d2*CloudC%ext_L_IR(L1+1,L2+1)
+     w0  = (ONE-d1)*(ONE-d2)*CloudC%w_L_IR(L1,L2)  &
+         + (ONE-d1)*d2*CloudC%w_L_IR(L1,L2+1)      &
+         + (ONE-d2)*d1*CloudC%w_L_IR(L1+1,L2)      &
+         + d1*d2*CloudC%w_L_IR(L1+1,L2+1)
+     g   = (ONE-d1)*(ONE-d2)*CloudC%g_L_IR(L1,L2)  &
+         + (ONE-d1)*d2*CloudC%g_L_IR(L1,L2+1)      &
+         + (ONE-d2)*d1*CloudC%g_L_IR(L1+1,L2)      &
+         + d1*d2*CloudC%g_L_IR(L1+1,L2+1)
 
      IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
        DO L = 0, n_Legendre_Terms
-        p_coef(L,1)=(ONE-d1)*(ONE-d2)*ScatC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm) &
-        +(ONE-d1)*d2*ScatC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm) &
-        +(ONE-d2)*d1*ScatC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm)   &
-        +d1*d2*ScatC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm)
+        p_coef(L,1)=(ONE-d1)*(ONE-d2)*CloudC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm) &
+        +(ONE-d1)*d2*CloudC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm) &
+        +(ONE-d2)*d1*CloudC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm)   &
+        +d1*d2*CloudC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm)
        ENDDO
      ENDIF
     ELSE IF(Cloud_Type==ICE_CLOUD .OR. Cloud_Type==SNOW_CLOUD .OR. &
@@ -1105,27 +1105,27 @@ CONTAINS
        IF(Cloud_Type == SNOW_CLOUD) m = 1
        IF(Cloud_Type == GRAUPEL_CLOUD) m = 2
        IF(Cloud_Type == HAIL_CLOUD) m = 3
-       ext = (ONE-d1)*(ONE-d2)*ScatC%ext_S_IR(L1,L2,m)  &
-           + (ONE-d1)*d2*ScatC%ext_S_IR(L1,L2+1,m)      &
-           + (ONE-d2)*d1*ScatC%ext_S_IR(L1+1,L2,m)      &
-           + d1*d2*ScatC%ext_S_IR(L1+1,L2+1,m)
+       ext = (ONE-d1)*(ONE-d2)*CloudC%ext_S_IR(L1,L2,m)  &
+           + (ONE-d1)*d2*CloudC%ext_S_IR(L1,L2+1,m)      &
+           + (ONE-d2)*d1*CloudC%ext_S_IR(L1+1,L2,m)      &
+           + d1*d2*CloudC%ext_S_IR(L1+1,L2+1,m)
                                                      
-       w0  = (ONE-d1)*(ONE-d2)*ScatC%w_S_IR(L1,L2,m)    &
-           + (ONE-d1)*d2*ScatC%w_S_IR(L1,L2+1,m)        &
-           + (ONE-d2)*d1*ScatC%w_S_IR(L1+1,L2,m)        &
-           + d1*d2*ScatC%w_S_IR(L1+1,L2+1,m)
+       w0  = (ONE-d1)*(ONE-d2)*CloudC%w_S_IR(L1,L2,m)    &
+           + (ONE-d1)*d2*CloudC%w_S_IR(L1,L2+1,m)        &
+           + (ONE-d2)*d1*CloudC%w_S_IR(L1+1,L2,m)        &
+           + d1*d2*CloudC%w_S_IR(L1+1,L2+1,m)
                                             
-       g   = (ONE-d1)*(ONE-d2)*ScatC%g_S_IR(L1,L2,m)    &
-           + (ONE-d1)*d2*ScatC%g_S_IR(L1,L2+1,m)        &
-           + (ONE-d2)*d1*ScatC%g_S_IR(L1+1,L2,m)        &
-           + d1*d2*ScatC%g_S_IR(L1+1,L2+1,m)
+       g   = (ONE-d1)*(ONE-d2)*CloudC%g_S_IR(L1,L2,m)    &
+           + (ONE-d1)*d2*CloudC%g_S_IR(L1,L2+1,m)        &
+           + (ONE-d2)*d1*CloudC%g_S_IR(L1+1,L2,m)        &
+           + d1*d2*CloudC%g_S_IR(L1+1,L2+1,m)
          
      IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
       DO L = 0, n_Legendre_Terms
-       p_coef(L,1)=(ONE-d1)*(ONE-d2)*ScatC%phase_coeff_S_IR(L1,L2,m,L+Offset_LegTerm)+ &
-              (ONE-d1)*d2*ScatC%phase_coeff_S_IR(L1,L2+1,m,L+Offset_LegTerm) &
-       +(ONE-d2)*d1*ScatC%phase_coeff_S_IR(L1+1,L2,m,L+Offset_LegTerm)      &
-       +d1*d2*ScatC%phase_coeff_S_IR(L1+1,L2+1,m,L+Offset_LegTerm)
+       p_coef(L,1)=(ONE-d1)*(ONE-d2)*CloudC%phase_coeff_S_IR(L1,L2,m,L+Offset_LegTerm)+ &
+              (ONE-d1)*d2*CloudC%phase_coeff_S_IR(L1,L2+1,m,L+Offset_LegTerm) &
+       +(ONE-d2)*d1*CloudC%phase_coeff_S_IR(L1+1,L2,m,L+Offset_LegTerm)      &
+       +d1*d2*CloudC%phase_coeff_S_IR(L1+1,L2+1,m,L+Offset_LegTerm)
       ENDDO
      ENDIF
                                   
@@ -1174,30 +1174,30 @@ CONTAINS
       d1 = wavenumber -(L1-1) * FOUR - 102.0
        
 !  find index L2 and slope d2 on effective radius interpolation
-      call find_idx(ScatC%n_Size_IR,ScatC%Reff_IR,eff_radius,L2,d2)
+      call find_idx(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2)
 
-      call find_idx_TL(ScatC%n_Size_IR,ScatC%Reff_IR,eff_radius,L2,eff_radius_TL,d2_TL)
+      call find_idx_TL(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,eff_radius_TL,d2_TL)
 
     IF( Cloud_Type == WATER_CLOUD .OR. Cloud_Type == RAIN_CLOUD) THEN
            
-       a1_TL = -d2_TL*ScatC%ext_L_IR(L1,L2) + d2_TL*ScatC%ext_L_IR(L1,L2+1)
-       a2_TL = -d2_TL*ScatC%ext_L_IR(L1+1,L2) + d2_TL*ScatC%ext_L_IR(L1+1,L2+1)
+       a1_TL = -d2_TL*CloudC%ext_L_IR(L1,L2) + d2_TL*CloudC%ext_L_IR(L1,L2+1)
+       a2_TL = -d2_TL*CloudC%ext_L_IR(L1+1,L2) + d2_TL*CloudC%ext_L_IR(L1+1,L2+1)
        ext_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
-       a1_TL = -d2_TL*ScatC%w_L_IR(L1,L2) + d2_TL*ScatC%w_L_IR(L1,L2+1)
-       a2_TL = -d2_TL*ScatC%w_L_IR(L1+1,L2) + d2_TL*ScatC%w_L_IR(L1+1,L2+1)
+       a1_TL = -d2_TL*CloudC%w_L_IR(L1,L2) + d2_TL*CloudC%w_L_IR(L1,L2+1)
+       a2_TL = -d2_TL*CloudC%w_L_IR(L1+1,L2) + d2_TL*CloudC%w_L_IR(L1+1,L2+1)
        w0_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
-       a1_TL = -d2_TL*ScatC%g_L_IR(L1,L2) + d2_TL*ScatC%g_L_IR(L1,L2+1)
-       a2_TL = -d2_TL*ScatC%g_L_IR(L1+1,L2) + d2_TL*ScatC%g_L_IR(L1+1,L2+1)
+       a1_TL = -d2_TL*CloudC%g_L_IR(L1,L2) + d2_TL*CloudC%g_L_IR(L1,L2+1)
+       a2_TL = -d2_TL*CloudC%g_L_IR(L1+1,L2) + d2_TL*CloudC%g_L_IR(L1+1,L2+1)
        g_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
        IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
          DO L = 0, n_Legendre_Terms
-          a1_TL=-d2_TL*ScatC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm) &
-            +d2_TL*ScatC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm) 
-          a2_TL=-d2_TL*ScatC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm) &
-            +d2_TL*ScatC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm) 
+          a1_TL=-d2_TL*CloudC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm) &
+            +d2_TL*CloudC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm) 
+          a2_TL=-d2_TL*CloudC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm) &
+            +d2_TL*CloudC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm) 
           p_coef_TL(L,1)=(ONE-d1)*a1_TL+d1*a2_TL
          ENDDO
        ENDIF
@@ -1210,25 +1210,25 @@ CONTAINS
        IF(Cloud_Type == GRAUPEL_CLOUD) m = 2
        IF(Cloud_Type == HAIL_CLOUD) m = 3
            
-       a1_TL = -d2_TL*ScatC%ext_S_IR(L1,L2,m) + d2_TL*ScatC%ext_S_IR(L1,L2+1,m)
-       a2_TL = -d2_TL*ScatC%ext_S_IR(L1+1,L2,m)+ d2_TL*ScatC%ext_S_IR(L1+1,L2+1,m)
+       a1_TL = -d2_TL*CloudC%ext_S_IR(L1,L2,m) + d2_TL*CloudC%ext_S_IR(L1,L2+1,m)
+       a2_TL = -d2_TL*CloudC%ext_S_IR(L1+1,L2,m)+ d2_TL*CloudC%ext_S_IR(L1+1,L2+1,m)
        ext_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
-       a1_TL = -d2_TL*ScatC%w_S_IR(L1,L2,m) + d2_TL*ScatC%w_S_IR(L1,L2+1,m)
-       a2_TL = -d2_TL*ScatC%w_S_IR(L1+1,L2,m)+ d2_TL*ScatC%w_S_IR(L1+1,L2+1,m)
+       a1_TL = -d2_TL*CloudC%w_S_IR(L1,L2,m) + d2_TL*CloudC%w_S_IR(L1,L2+1,m)
+       a2_TL = -d2_TL*CloudC%w_S_IR(L1+1,L2,m)+ d2_TL*CloudC%w_S_IR(L1+1,L2+1,m)
        w0_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
-       a1_TL = -d2_TL*ScatC%g_S_IR(L1,L2,m) + d2_TL*ScatC%g_S_IR(L1,L2+1,m)
-       a2_TL = -d2_TL*ScatC%g_S_IR(L1+1,L2,m)+ d2_TL*ScatC%g_S_IR(L1+1,L2+1,m)
+       a1_TL = -d2_TL*CloudC%g_S_IR(L1,L2,m) + d2_TL*CloudC%g_S_IR(L1,L2+1,m)
+       a2_TL = -d2_TL*CloudC%g_S_IR(L1+1,L2,m)+ d2_TL*CloudC%g_S_IR(L1+1,L2+1,m)
        g_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
        IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
        DO L = 0, n_Legendre_Terms
 
-       a1_TL = -d2_TL*ScatC%phase_coeff_S_IR(L1,L2,m,L+Offset_LegTerm) &
-          + d2_TL*ScatC%phase_coeff_S_IR(L1,L2+1,m,L+Offset_LegTerm)   
-       a2_TL = -d2_TL*ScatC%phase_coeff_S_IR(L1+1,L2,m,L+Offset_LegTerm) &
-          + d2_TL*ScatC%phase_coeff_S_IR(L1+1,L2+1,m,L+Offset_LegTerm)   
+       a1_TL = -d2_TL*CloudC%phase_coeff_S_IR(L1,L2,m,L+Offset_LegTerm) &
+          + d2_TL*CloudC%phase_coeff_S_IR(L1,L2+1,m,L+Offset_LegTerm)   
+       a2_TL = -d2_TL*CloudC%phase_coeff_S_IR(L1+1,L2,m,L+Offset_LegTerm) &
+          + d2_TL*CloudC%phase_coeff_S_IR(L1+1,L2+1,m,L+Offset_LegTerm)   
        p_coef_TL(L,1)=(ONE-d1)*a1_TL + d1*a2_TL
 
        ENDDO
@@ -1281,37 +1281,37 @@ CONTAINS
        L1 = ( wavenumber - 102 )/FOUR + 1
        d1 = wavenumber -(L1-1) * FOUR - 102.0
 !  find index L2 and slope d2 on effective radius interpolation
-       call find_idx(ScatC%n_Size_IR,ScatC%Reff_IR,eff_radius,L2,d2)
+       call find_idx(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2)
 
     IF( Cloud_Type == WATER_CLOUD .OR. Cloud_Type == RAIN_CLOUD) THEN
        IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
            DO L = 0, n_Legendre_Terms
            a2_AD=d1*p_coef_AD(L,1)
            a1_AD=(ONE-d1)*p_coef_AD(L,1)
-           d2_AD=d2_AD+a2_AD*ScatC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm)
-           d2_AD=d2_AD-a2_AD*ScatC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm)
-           d2_AD=d2_AD+a1_AD*ScatC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm)
-           d2_AD=d2_AD-a1_AD*ScatC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm)
+           d2_AD=d2_AD+a2_AD*CloudC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm)
+           d2_AD=d2_AD-a2_AD*CloudC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm)
+           d2_AD=d2_AD+a1_AD*CloudC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm)
+           d2_AD=d2_AD-a1_AD*CloudC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm)
            ENDDO
        ENDIF
        a2_AD = d1*g_AD
        a1_AD = (ONE-d1)*g_AD
-       d2_AD=d2_AD+a2_AD*ScatC%g_L_IR(L1+1,L2+1)
-       d2_AD=d2_AD-a2_AD*ScatC%g_L_IR(L1+1,L2)
-       d2_AD=d2_AD+a1_AD*ScatC%g_L_IR(L1,L2+1)
-       d2_AD=d2_AD-a1_AD*ScatC%g_L_IR(L1,L2)
+       d2_AD=d2_AD+a2_AD*CloudC%g_L_IR(L1+1,L2+1)
+       d2_AD=d2_AD-a2_AD*CloudC%g_L_IR(L1+1,L2)
+       d2_AD=d2_AD+a1_AD*CloudC%g_L_IR(L1,L2+1)
+       d2_AD=d2_AD-a1_AD*CloudC%g_L_IR(L1,L2)
        a2_AD=d1*w0_AD
        a1_AD=(ONE-d1)*w0_AD
-       d2_AD=d2_AD+a2_AD*ScatC%w_L_IR(L1+1,L2+1)
-       d2_AD=d2_AD-a2_AD*ScatC%w_L_IR(L1+1,L2)
-       d2_AD=d2_AD+a1_AD*ScatC%w_L_IR(L1,L2+1)
-       d2_AD=d2_AD-a1_AD*ScatC%w_L_IR(L1,L2)
+       d2_AD=d2_AD+a2_AD*CloudC%w_L_IR(L1+1,L2+1)
+       d2_AD=d2_AD-a2_AD*CloudC%w_L_IR(L1+1,L2)
+       d2_AD=d2_AD+a1_AD*CloudC%w_L_IR(L1,L2+1)
+       d2_AD=d2_AD-a1_AD*CloudC%w_L_IR(L1,L2)
        a2_AD=d1*ext_AD
        a1_AD=(ONE-d1)*ext_AD
-       d2_AD=d2_AD+a2_AD*ScatC%ext_L_IR(L1+1,L2+1)
-       d2_AD=d2_AD-a2_AD*ScatC%ext_L_IR(L1+1,L2)
-       d2_AD=d2_AD+a1_AD*ScatC%ext_L_IR(L1,L2+1)
-       d2_AD=d2_AD-a1_AD*ScatC%ext_L_IR(L1,L2)
+       d2_AD=d2_AD+a2_AD*CloudC%ext_L_IR(L1+1,L2+1)
+       d2_AD=d2_AD-a2_AD*CloudC%ext_L_IR(L1+1,L2)
+       d2_AD=d2_AD+a1_AD*CloudC%ext_L_IR(L1,L2+1)
+       d2_AD=d2_AD-a1_AD*CloudC%ext_L_IR(L1,L2)
  
     ELSE IF(Cloud_Type==ICE_CLOUD .OR. Cloud_Type==SNOW_CLOUD .OR. &
        Cloud_Type==GRAUPEL_CLOUD .OR. Cloud_Type==HAIL_CLOUD) THEN
@@ -1326,35 +1326,35 @@ CONTAINS
        DO L = 0, n_Legendre_Terms
        a2_AD=d1*p_coef_AD(L,1)
        a1_AD=(ONE-d1)*p_coef_AD(L,1)
-       d2_AD=d2_AD+a2_AD*ScatC%phase_coeff_S_IR(L1+1,L2+1,m,L+Offset_LegTerm)
-       d2_AD=d2_AD-a2_AD*ScatC%phase_coeff_S_IR(L1+1,L2,m,L+Offset_LegTerm)
-       d2_AD=d2_AD+a1_AD*ScatC%phase_coeff_S_IR(L1,L2+1,m,L+Offset_LegTerm)
-       d2_AD=d2_AD-a1_AD*ScatC%phase_coeff_S_IR(L1,L2,m,L+Offset_LegTerm)
+       d2_AD=d2_AD+a2_AD*CloudC%phase_coeff_S_IR(L1+1,L2+1,m,L+Offset_LegTerm)
+       d2_AD=d2_AD-a2_AD*CloudC%phase_coeff_S_IR(L1+1,L2,m,L+Offset_LegTerm)
+       d2_AD=d2_AD+a1_AD*CloudC%phase_coeff_S_IR(L1,L2+1,m,L+Offset_LegTerm)
+       d2_AD=d2_AD-a1_AD*CloudC%phase_coeff_S_IR(L1,L2,m,L+Offset_LegTerm)
        ENDDO
        ENDIF
 
        a2_AD=d1*g_AD
        a1_AD=(ONE-d1)*g_AD
-       d2_AD=d2_AD+a2_AD*ScatC%g_S_IR(L1+1,L2+1,m)
-       d2_AD=d2_AD-a2_AD*ScatC%g_S_IR(L1+1,L2,m)
-       d2_AD=d2_AD+a1_AD*ScatC%g_S_IR(L1,L2+1,m)
-       d2_AD=d2_AD-a1_AD*ScatC%g_S_IR(L1,L2,m)
+       d2_AD=d2_AD+a2_AD*CloudC%g_S_IR(L1+1,L2+1,m)
+       d2_AD=d2_AD-a2_AD*CloudC%g_S_IR(L1+1,L2,m)
+       d2_AD=d2_AD+a1_AD*CloudC%g_S_IR(L1,L2+1,m)
+       d2_AD=d2_AD-a1_AD*CloudC%g_S_IR(L1,L2,m)
        a2_AD=d1*w0_AD
        a1_AD=(ONE-d1)*w0_AD
-       d2_AD=d2_AD+a2_AD*ScatC%w_S_IR(L1+1,L2+1,m)
-       d2_AD=d2_AD-a2_AD*ScatC%w_S_IR(L1+1,L2,m)
-       d2_AD=d2_AD+a1_AD*ScatC%w_S_IR(L1,L2+1,m)
-       d2_AD=d2_AD-a1_AD*ScatC%w_S_IR(L1,L2,m)
+       d2_AD=d2_AD+a2_AD*CloudC%w_S_IR(L1+1,L2+1,m)
+       d2_AD=d2_AD-a2_AD*CloudC%w_S_IR(L1+1,L2,m)
+       d2_AD=d2_AD+a1_AD*CloudC%w_S_IR(L1,L2+1,m)
+       d2_AD=d2_AD-a1_AD*CloudC%w_S_IR(L1,L2,m)
        a2_AD=d1*ext_AD
        a1_AD=(ONE-d1)*ext_AD
-       d2_AD=d2_AD+a2_AD*ScatC%ext_S_IR(L1+1,L2+1,m)
-       d2_AD=d2_AD-a2_AD*ScatC%ext_S_IR(L1+1,L2,m)
-       d2_AD=d2_AD+a1_AD*ScatC%ext_S_IR(L1,L2+1,m)
-       d2_AD=d2_AD-a1_AD*ScatC%ext_S_IR(L1,L2,m)     
+       d2_AD=d2_AD+a2_AD*CloudC%ext_S_IR(L1+1,L2+1,m)
+       d2_AD=d2_AD-a2_AD*CloudC%ext_S_IR(L1+1,L2,m)
+       d2_AD=d2_AD+a1_AD*CloudC%ext_S_IR(L1,L2+1,m)
+       d2_AD=d2_AD-a1_AD*CloudC%ext_S_IR(L1,L2,m)     
 
     ENDIF
             
-      call find_idx_AD(ScatC%n_Size_IR,ScatC%Reff_IR,eff_radius,L2,d2_AD,eff_radius_AD)
+      call find_idx_AD(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2_AD,eff_radius_AD)
 
    RETURN
   END subroutine get_cloud_opt_IR_AD
@@ -1396,48 +1396,48 @@ CONTAINS
        w0=ZERO
        g=ZERO
 !  find index L1 and slope d1 on frequency interpolation
-       call find_idx(ScatC%n_Frequency,ScatC%frequency,Frequency,L1,d1)
+       call find_idx(CloudC%n_Frequencies,CloudC%frequency,Frequency,L1,d1)
 
 !  find index L2 and slope d2 on temperature interpolation
     IF( Cloud_Type == WATER_CLOUD ) THEN
-       call find_idx(ScatC%n_Temperature,ScatC%Temperature,Temperature,L2,d2)
+       call find_idx(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L2,d2)
 !  Rayleigh approximation for liquid water cloud (non-precipitation), 2-d interpolation
 
-         a1 = (ONE-d2)*ScatC%ext_L_MW(L1,1,L2) + d2*ScatC%ext_L_MW(L1,1,L2+1)
-         a2 = (ONE-d2)*ScatC%ext_L_MW(L1+1,1,L2)+ d2*ScatC%ext_L_MW(L1+1,1,L2+1)
+         a1 = (ONE-d2)*CloudC%ext_L_MW(L1,1,L2) + d2*CloudC%ext_L_MW(L1,1,L2+1)
+         a2 = (ONE-d2)*CloudC%ext_L_MW(L1+1,1,L2)+ d2*CloudC%ext_L_MW(L1+1,1,L2+1)
          ext = (ONE-d1)*a1 + d1*a2
 
     ELSE IF( Cloud_Type == ICE_CLOUD ) THEN
 !  Rayleigh approximation for fine ice cloud (small particles)
-       ext=(ONE-d1)*ScatC%ext_S_MW(L1,1,3)+d1*ScatC%ext_S_MW(L1+1,1,3)
+       ext=(ONE-d1)*CloudC%ext_S_MW(L1,1,3)+d1*CloudC%ext_S_MW(L1+1,1,3)
 
     ELSE IF( Cloud_Type == RAIN_CLOUD ) THEN
 !  find index L2 and slope d2 on temperature interpolation
-       call find_idx(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2)
-       call find_idx(ScatC%n_Temperature,ScatC%Temperature,Temperature,L3,d3)
+       call find_idx(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2)
+       call find_idx(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L3,d3)
 !  find index L3 and slope d3 on effective radius interpolation
      
-       call interp2(d2,d3,ScatC%ext_L_MW(L1,L2,L3),ScatC%ext_L_MW(L1,L2,L3+1), &
-                    ScatC%ext_L_MW(L1,L2+1,L3),ScatC%ext_L_MW(L1,L2+1,L3+1),a1)
+       call interp2(d2,d3,CloudC%ext_L_MW(L1,L2,L3),CloudC%ext_L_MW(L1,L2,L3+1), &
+                    CloudC%ext_L_MW(L1,L2+1,L3),CloudC%ext_L_MW(L1,L2+1,L3+1),a1)
 
-       call interp2(d2,d3,ScatC%ext_L_MW(L1+1,L2,L3),ScatC%ext_L_MW(L1+1,L2,L3+1), &
-                    ScatC%ext_L_MW(L1+1,L2+1,L3),ScatC%ext_L_MW(L1+1,L2+1,L3+1),a2)
+       call interp2(d2,d3,CloudC%ext_L_MW(L1+1,L2,L3),CloudC%ext_L_MW(L1+1,L2,L3+1), &
+                    CloudC%ext_L_MW(L1+1,L2+1,L3),CloudC%ext_L_MW(L1+1,L2+1,L3+1),a2)
 
        ext = (ONE-d1) * a1 + d1 * a2
                                                           
-       call interp2(d2,d3,ScatC%w_L_MW(L1,L2,L3),ScatC%w_L_MW(L1,L2,L3+1), &
-                    ScatC%w_L_MW(L1,L2+1,L3),ScatC%w_L_MW(L1,L2+1,L3+1),a1)
+       call interp2(d2,d3,CloudC%w_L_MW(L1,L2,L3),CloudC%w_L_MW(L1,L2,L3+1), &
+                    CloudC%w_L_MW(L1,L2+1,L3),CloudC%w_L_MW(L1,L2+1,L3+1),a1)
 
-       call interp2(d2,d3,ScatC%w_L_MW(L1+1,L2,L3),ScatC%w_L_MW(L1+1,L2,L3+1), &
-                    ScatC%w_L_MW(L1+1,L2+1,L3),ScatC%w_L_MW(L1+1,L2+1,L3+1),a2)
+       call interp2(d2,d3,CloudC%w_L_MW(L1+1,L2,L3),CloudC%w_L_MW(L1+1,L2,L3+1), &
+                    CloudC%w_L_MW(L1+1,L2+1,L3),CloudC%w_L_MW(L1+1,L2+1,L3+1),a2)
 
        w0 = (ONE-d1) * a1 + d1 * a2
                                    
-       call interp2(d2,d3,ScatC%g_L_MW(L1,L2,L3),ScatC%g_L_MW(L1,L2,L3+1), &
-                    ScatC%g_L_MW(L1,L2+1,L3),ScatC%g_L_MW(L1,L2+1,L3+1),a1)
+       call interp2(d2,d3,CloudC%g_L_MW(L1,L2,L3),CloudC%g_L_MW(L1,L2,L3+1), &
+                    CloudC%g_L_MW(L1,L2+1,L3),CloudC%g_L_MW(L1,L2+1,L3+1),a1)
 
-       call interp2(d2,d3,ScatC%g_L_MW(L1+1,L2,L3),ScatC%g_L_MW(L1+1,L2,L3+1), &
-                    ScatC%g_L_MW(L1+1,L2+1,L3),ScatC%g_L_MW(L1+1,L2+1,L3+1),a2)
+       call interp2(d2,d3,CloudC%g_L_MW(L1+1,L2,L3),CloudC%g_L_MW(L1+1,L2,L3+1), &
+                    CloudC%g_L_MW(L1+1,L2+1,L3),CloudC%g_L_MW(L1+1,L2+1,L3+1),a2)
 
        g = (ONE-d1) * a1 + d1 * a2
     
@@ -1445,15 +1445,15 @@ CONTAINS
           DO k = 1, n_Phase_Elements
            DO L = 0, n_Legendre_Terms
 
-       call interp2(d2,d3,ScatC%phase_coeff_L_MW(L1,L2,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2,L3+1,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2+1,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2+1,L3+1,L+Offset_LegTerm,k),a1)
+       call interp2(d2,d3,CloudC%phase_coeff_L_MW(L1,L2,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2,L3+1,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2+1,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2+1,L3+1,L+Offset_LegTerm,k),a1)
 
-       call interp2(d2,d3,ScatC%phase_coeff_L_MW(L1+1,L2,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2,L3+1,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2+1,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2+1,L3+1,L+Offset_LegTerm,k),a2)
+       call interp2(d2,d3,CloudC%phase_coeff_L_MW(L1+1,L2,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2,L3+1,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2+1,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2+1,L3+1,L+Offset_LegTerm,k),a2)
 
           p_coef(L,k)=(ONE-d1) * a1 + d1 * a2
 
@@ -1463,32 +1463,32 @@ CONTAINS
                                                        
     ELSE IF(Cloud_Type==SNOW_CLOUD.OR.Cloud_Type==GRAUPEL_CLOUD.OR.Cloud_Type==HAIL_CLOUD) THEN
 !  find index L2 and slope d2 on effective radius interpolation
-       call find_idx(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2)
+       call find_idx(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2)
 
        m = 1      ! Default
        IF(Cloud_Type == SNOW_CLOUD) m = 1
        IF(Cloud_Type == GRAUPEL_CLOUD) m = 2
        IF(Cloud_Type == HAIL_CLOUD) m = 3
-       a1 = (ONE-d2)*ScatC%ext_S_MW(L1,L2,m) + d2*ScatC%ext_S_MW(L1,L2+1,m)
-       a2 = (ONE-d2)*ScatC%ext_S_MW(L1+1,L2,m)+ d2*ScatC%ext_S_MW(L1+1,L2+1,m)
+       a1 = (ONE-d2)*CloudC%ext_S_MW(L1,L2,m) + d2*CloudC%ext_S_MW(L1,L2+1,m)
+       a2 = (ONE-d2)*CloudC%ext_S_MW(L1+1,L2,m)+ d2*CloudC%ext_S_MW(L1+1,L2+1,m)
        ext = (ONE-d1)*a1 + d1*a2
            
-       a1 = (ONE-d2)*ScatC%w_S_MW(L1,L2,m) + d2*ScatC%w_S_MW(L1,L2+1,m)
-       a2 = (ONE-d2)*ScatC%w_S_MW(L1+1,L2,m)+ d2*ScatC%w_S_MW(L1+1,L2+1,m)
+       a1 = (ONE-d2)*CloudC%w_S_MW(L1,L2,m) + d2*CloudC%w_S_MW(L1,L2+1,m)
+       a2 = (ONE-d2)*CloudC%w_S_MW(L1+1,L2,m)+ d2*CloudC%w_S_MW(L1+1,L2+1,m)
        w0 = (ONE-d1)*a1 + d1*a2
            
-       a1 = (ONE-d2)*ScatC%g_S_MW(L1,L2,m) + d2*ScatC%g_S_MW(L1,L2+1,m)
-       a2 = (ONE-d2)*ScatC%g_S_MW(L1+1,L2,m)+ d2*ScatC%g_S_MW(L1+1,L2+1,m)
+       a1 = (ONE-d2)*CloudC%g_S_MW(L1,L2,m) + d2*CloudC%g_S_MW(L1,L2+1,m)
+       a2 = (ONE-d2)*CloudC%g_S_MW(L1+1,L2,m)+ d2*CloudC%g_S_MW(L1+1,L2+1,m)
        g = (ONE-d1)*a1 + d1*a2
                                             
        IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO k = 1, n_Phase_Elements
            DO L = 0, n_Legendre_Terms
 
-       a1 = (ONE-d2)*ScatC%phase_coeff_S_MW(L1,L2,m,L+Offset_LegTerm,k) &
-          + d2*ScatC%phase_coeff_S_MW(L1,L2+1,m,L+Offset_LegTerm,k)   
-       a2 = (ONE-d2)*ScatC%phase_coeff_S_MW(L1+1,L2,m,L+Offset_LegTerm,k) &
-          + d2*ScatC%phase_coeff_S_MW(L1+1,L2+1,m,L+Offset_LegTerm,k)   
+       a1 = (ONE-d2)*CloudC%phase_coeff_S_MW(L1,L2,m,L+Offset_LegTerm,k) &
+          + d2*CloudC%phase_coeff_S_MW(L1,L2+1,m,L+Offset_LegTerm,k)   
+       a2 = (ONE-d2)*CloudC%phase_coeff_S_MW(L1+1,L2,m,L+Offset_LegTerm,k) &
+          + d2*CloudC%phase_coeff_S_MW(L1+1,L2+1,m,L+Offset_LegTerm,k)   
        p_coef(L,k)=(ONE-d1)*a1 + d1*a2
 
           ENDDO
@@ -1542,16 +1542,16 @@ CONTAINS
        g_TL=ZERO
        ext_TL=ZERO
 !  find index L1 and slope d1 on frequency interpolation
-       call find_idx(ScatC%n_Frequency,ScatC%frequency,Frequency,L1,d1)
+       call find_idx(CloudC%n_Frequencies,CloudC%frequency,Frequency,L1,d1)
 
 !  find index L2 and slope d2 on temperature interpolation
     IF( Cloud_Type == WATER_CLOUD ) THEN
-       call find_idx(ScatC%n_Temperature,ScatC%Temperature,Temperature,L2,d2)
-       call find_idx_TL(ScatC%n_Temperature,ScatC%Temperature,Temperature,L2,Temperature_TL,d2_TL)
+       call find_idx(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L2,d2)
+       call find_idx_TL(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L2,Temperature_TL,d2_TL)
 !  Rayleigh approximation for liquid water cloud (non-precipitation), 2-d interpolation
 
-         a1_TL = -d2_TL*ScatC%ext_L_MW(L1,1,L2) + d2_TL*ScatC%ext_L_MW(L1,1,L2+1)
-         a2_TL = -d2_TL*ScatC%ext_L_MW(L1+1,1,L2)+ d2_TL*ScatC%ext_L_MW(L1+1,1,L2+1)
+         a1_TL = -d2_TL*CloudC%ext_L_MW(L1,1,L2) + d2_TL*CloudC%ext_L_MW(L1,1,L2+1)
+         a2_TL = -d2_TL*CloudC%ext_L_MW(L1+1,1,L2)+ d2_TL*CloudC%ext_L_MW(L1+1,1,L2+1)
          ext_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
     ELSE IF( Cloud_Type == ICE_CLOUD ) THEN
@@ -1561,34 +1561,34 @@ CONTAINS
 
     ELSE IF( Cloud_Type == RAIN_CLOUD ) THEN
 !  find index L2 and slope d2 on temperature interpolation
-       call find_idx(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2)
-       call find_idx_TL(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,eff_radius_TL,d2_TL)
-       call find_idx(ScatC%n_Temperature,ScatC%Temperature,Temperature,L3,d3)
-       call find_idx_TL(ScatC%n_Temperature,ScatC%Temperature,Temperature,L3,Temperature_TL,d3_TL)
+       call find_idx(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2)
+       call find_idx_TL(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,eff_radius_TL,d2_TL)
+       call find_idx(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L3,d3)
+       call find_idx_TL(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L3,Temperature_TL,d3_TL)
 
 !  find index L3 and slope d3 on effective radius interpolation
      
-       call interp2_TL(d2,d3,ScatC%ext_L_MW(L1,L2,L3),ScatC%ext_L_MW(L1,L2,L3+1), &
-                    ScatC%ext_L_MW(L1,L2+1,L3),ScatC%ext_L_MW(L1,L2+1,L3+1),d2_TL,d3_TL,a1_TL)
+       call interp2_TL(d2,d3,CloudC%ext_L_MW(L1,L2,L3),CloudC%ext_L_MW(L1,L2,L3+1), &
+                    CloudC%ext_L_MW(L1,L2+1,L3),CloudC%ext_L_MW(L1,L2+1,L3+1),d2_TL,d3_TL,a1_TL)
                                                    
-       call interp2_TL(d2,d3,ScatC%ext_L_MW(L1+1,L2,L3),ScatC%ext_L_MW(L1+1,L2,L3+1), &
-                    ScatC%ext_L_MW(L1+1,L2+1,L3),ScatC%ext_L_MW(L1+1,L2+1,L3+1),d2_TL,d3_TL,a2_TL)
+       call interp2_TL(d2,d3,CloudC%ext_L_MW(L1+1,L2,L3),CloudC%ext_L_MW(L1+1,L2,L3+1), &
+                    CloudC%ext_L_MW(L1+1,L2+1,L3),CloudC%ext_L_MW(L1+1,L2+1,L3+1),d2_TL,d3_TL,a2_TL)
 
        ext_TL = (ONE-d1) * a1_TL + d1 * a2_TL
 
-       call interp2_TL(d2,d3,ScatC%w_L_MW(L1,L2,L3),ScatC%w_L_MW(L1,L2,L3+1), &
-                    ScatC%w_L_MW(L1,L2+1,L3),ScatC%w_L_MW(L1,L2+1,L3+1),d2_TL,d3_TL,a1_TL)
+       call interp2_TL(d2,d3,CloudC%w_L_MW(L1,L2,L3),CloudC%w_L_MW(L1,L2,L3+1), &
+                    CloudC%w_L_MW(L1,L2+1,L3),CloudC%w_L_MW(L1,L2+1,L3+1),d2_TL,d3_TL,a1_TL)
                                                    
-       call interp2_TL(d2,d3,ScatC%w_L_MW(L1+1,L2,L3),ScatC%w_L_MW(L1+1,L2,L3+1), &
-                    ScatC%w_L_MW(L1+1,L2+1,L3),ScatC%w_L_MW(L1+1,L2+1,L3+1),d2_TL,d3_TL,a2_TL)
+       call interp2_TL(d2,d3,CloudC%w_L_MW(L1+1,L2,L3),CloudC%w_L_MW(L1+1,L2,L3+1), &
+                    CloudC%w_L_MW(L1+1,L2+1,L3),CloudC%w_L_MW(L1+1,L2+1,L3+1),d2_TL,d3_TL,a2_TL)
 
        w0_TL = (ONE-d1) * a1_TL + d1 * a2_TL
                                    
-       call interp2_TL(d2,d3,ScatC%g_L_MW(L1,L2,L3),ScatC%g_L_MW(L1,L2,L3+1), &
-                    ScatC%g_L_MW(L1,L2+1,L3),ScatC%g_L_MW(L1,L2+1,L3+1),d2_TL,d3_TL,a1_TL)
+       call interp2_TL(d2,d3,CloudC%g_L_MW(L1,L2,L3),CloudC%g_L_MW(L1,L2,L3+1), &
+                    CloudC%g_L_MW(L1,L2+1,L3),CloudC%g_L_MW(L1,L2+1,L3+1),d2_TL,d3_TL,a1_TL)
                                                    
-       call interp2_TL(d2,d3,ScatC%g_L_MW(L1+1,L2,L3),ScatC%g_L_MW(L1+1,L2,L3+1), &
-                    ScatC%g_L_MW(L1+1,L2+1,L3),ScatC%g_L_MW(L1+1,L2+1,L3+1),d2_TL,d3_TL,a2_TL)
+       call interp2_TL(d2,d3,CloudC%g_L_MW(L1+1,L2,L3),CloudC%g_L_MW(L1+1,L2,L3+1), &
+                    CloudC%g_L_MW(L1+1,L2+1,L3),CloudC%g_L_MW(L1+1,L2+1,L3+1),d2_TL,d3_TL,a2_TL)
 
        g_TL = (ONE-d1) * a1_TL + d1 * a2_TL
 
@@ -1596,15 +1596,15 @@ CONTAINS
           DO k = 1, n_Phase_Elements
            DO L = 0, n_Legendre_Terms
 
-       call interp2_TL(d2,d3,ScatC%phase_coeff_L_MW(L1,L2,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2,L3+1,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2+1,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2+1,L3+1,L+Offset_LegTerm,k),d2_TL,d3_TL,a1_TL)
+       call interp2_TL(d2,d3,CloudC%phase_coeff_L_MW(L1,L2,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2,L3+1,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2+1,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2+1,L3+1,L+Offset_LegTerm,k),d2_TL,d3_TL,a1_TL)
 
-       call interp2_TL(d2,d3,ScatC%phase_coeff_L_MW(L1+1,L2,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2,L3+1,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2+1,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2+1,L3+1,L+Offset_LegTerm,k),d2_TL,d3_TL,a2_TL)
+       call interp2_TL(d2,d3,CloudC%phase_coeff_L_MW(L1+1,L2,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2,L3+1,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2+1,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2+1,L3+1,L+Offset_LegTerm,k),d2_TL,d3_TL,a2_TL)
 
           p_coef_TL(L,k)=(ONE-d1) * a1_TL + d1 * a2_TL
            ENDDO
@@ -1613,8 +1613,8 @@ CONTAINS
                                                        
     ELSE IF(Cloud_Type==SNOW_CLOUD.OR.Cloud_Type==GRAUPEL_CLOUD.OR.Cloud_Type==HAIL_CLOUD) THEN
 !  find index L2 and slope d2 on effective radius interpolation
-       call find_idx(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2)
-       call find_idx_TL(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,eff_radius_TL,d2_TL)
+       call find_idx(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2)
+       call find_idx_TL(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,eff_radius_TL,d2_TL)
 
        IF(eff_radius_TL == ZERO) RETURN
 
@@ -1623,26 +1623,26 @@ CONTAINS
        IF(Cloud_Type == GRAUPEL_CLOUD) m = 2
        IF(Cloud_Type == HAIL_CLOUD) m = 3
            
-       a1_TL = -d2_TL*ScatC%ext_S_MW(L1,L2,m) + d2_TL*ScatC%ext_S_MW(L1,L2+1,m)
-       a2_TL = -d2_TL*ScatC%ext_S_MW(L1+1,L2,m)+ d2_TL*ScatC%ext_S_MW(L1+1,L2+1,m)
+       a1_TL = -d2_TL*CloudC%ext_S_MW(L1,L2,m) + d2_TL*CloudC%ext_S_MW(L1,L2+1,m)
+       a2_TL = -d2_TL*CloudC%ext_S_MW(L1+1,L2,m)+ d2_TL*CloudC%ext_S_MW(L1+1,L2+1,m)
        ext_TL = (ONE-d1)*a1_TL + d1*a2_TL
 
-       a1_TL = -d2_TL*ScatC%w_S_MW(L1,L2,m) + d2_TL*ScatC%w_S_MW(L1,L2+1,m)
-       a2_TL = -d2_TL*ScatC%w_S_MW(L1+1,L2,m)+ d2_TL*ScatC%w_S_MW(L1+1,L2+1,m)
+       a1_TL = -d2_TL*CloudC%w_S_MW(L1,L2,m) + d2_TL*CloudC%w_S_MW(L1,L2+1,m)
+       a2_TL = -d2_TL*CloudC%w_S_MW(L1+1,L2,m)+ d2_TL*CloudC%w_S_MW(L1+1,L2+1,m)
        w0_TL = (ONE-d1)*a1_TL + d1*a2_TL
            
-       a1_TL = -d2_TL*ScatC%g_S_MW(L1,L2,m) + d2_TL*ScatC%g_S_MW(L1,L2+1,m)
-       a2_TL = -d2_TL*ScatC%g_S_MW(L1+1,L2,m)+ d2_TL*ScatC%g_S_MW(L1+1,L2+1,m)
+       a1_TL = -d2_TL*CloudC%g_S_MW(L1,L2,m) + d2_TL*CloudC%g_S_MW(L1,L2+1,m)
+       a2_TL = -d2_TL*CloudC%g_S_MW(L1+1,L2,m)+ d2_TL*CloudC%g_S_MW(L1+1,L2+1,m)
        g_TL = (ONE-d1)*a1_TL + d1*a2_TL
                                             
        IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO k = 1, n_Phase_Elements
            DO L = 0, n_Legendre_Terms
 
-       a1_TL = -d2_TL*ScatC%phase_coeff_S_MW(L1,L2,m,L+Offset_LegTerm,k) &
-          + d2_TL*ScatC%phase_coeff_S_MW(L1,L2+1,m,L+Offset_LegTerm,k)   
-       a2_TL = -d2_TL*ScatC%phase_coeff_S_MW(L1+1,L2,m,L+Offset_LegTerm,k) &
-          + d2_TL*ScatC%phase_coeff_S_MW(L1+1,L2+1,m,L+Offset_LegTerm,k)   
+       a1_TL = -d2_TL*CloudC%phase_coeff_S_MW(L1,L2,m,L+Offset_LegTerm,k) &
+          + d2_TL*CloudC%phase_coeff_S_MW(L1,L2+1,m,L+Offset_LegTerm,k)   
+       a2_TL = -d2_TL*CloudC%phase_coeff_S_MW(L1+1,L2,m,L+Offset_LegTerm,k) &
+          + d2_TL*CloudC%phase_coeff_S_MW(L1+1,L2+1,m,L+Offset_LegTerm,k)   
        p_coef_TL(L,k)=(ONE-d1)*a1_TL + d1*a2_TL
 
           ENDDO
@@ -1693,29 +1693,29 @@ CONTAINS
        d2_AD = ZERO
        d3_AD = ZERO
 !  find index L1 and slope d1 on frequency interpolation
-       call find_idx(ScatC%n_Frequency,ScatC%frequency,Frequency,L1,d1)
+       call find_idx(CloudC%n_Frequencies,CloudC%frequency,Frequency,L1,d1)
 
 !  find index L2 and slope d2 on temperature interpolation
     IF( Cloud_Type == WATER_CLOUD ) THEN
-       call find_idx(ScatC%n_Temperature,ScatC%Temperature,Temperature,L2,d2)
+       call find_idx(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L2,d2)
 !  Rayleigh approximation for liquid water cloud (non-precipitation), 2-d interpolation
 
          a2_AD=d1*ext_AD
          a1_AD=(ONE-d1)*ext_AD
-         d2_AD=a2_AD*ScatC%ext_L_MW(L1+1,1,L2+1)
-         d2_AD=d2_AD-a2_AD*ScatC%ext_L_MW(L1+1,1,L2)
-         d2_AD=d2_AD+a1_AD*ScatC%ext_L_MW(L1,1,L2+1)
-         d2_AD=d2_AD-a1_AD*ScatC%ext_L_MW(L1,1,L2)
+         d2_AD=a2_AD*CloudC%ext_L_MW(L1+1,1,L2+1)
+         d2_AD=d2_AD-a2_AD*CloudC%ext_L_MW(L1+1,1,L2)
+         d2_AD=d2_AD+a1_AD*CloudC%ext_L_MW(L1,1,L2+1)
+         d2_AD=d2_AD-a1_AD*CloudC%ext_L_MW(L1,1,L2)
 
-       call find_idx_AD(ScatC%n_Temperature,ScatC%Temperature,Temperature,L2,d2_AD,Temperature_AD)
+       call find_idx_AD(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L2,d2_AD,Temperature_AD)
     ELSE IF( Cloud_Type == ICE_CLOUD ) THEN
 !  Rayleigh approximation for fine ice cloud (small particles), constant optical parameters
 !!       ext_AD=ZERO
                                                  
     ELSE IF( Cloud_Type == RAIN_CLOUD ) THEN
 !  find index L2 and slope d2 on temperature interpolation
-       call find_idx(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2)
-       call find_idx(ScatC%n_Temperature,ScatC%Temperature,Temperature,L3,d3)
+       call find_idx(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2)
+       call find_idx(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L3,d3)
 !  find index L3 and slope d3 on effective radius interpolation
 
        IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
@@ -1725,15 +1725,15 @@ CONTAINS
          a2_AD=d1 * p_coef_AD(L,k)
          a1_AD=(ONE-d1) * p_coef_AD(L,k)
        
-       call interp2_AD(d2,d3,ScatC%phase_coeff_L_MW(L1+1,L2,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2,L3+1,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2+1,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1+1,L2+1,L3+1,L+Offset_LegTerm,k),a2_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%phase_coeff_L_MW(L1+1,L2,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2,L3+1,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2+1,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1+1,L2+1,L3+1,L+Offset_LegTerm,k),a2_AD,d2_AD,d3_AD)
 
-       call interp2_AD(d2,d3,ScatC%phase_coeff_L_MW(L1,L2,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2,L3+1,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2+1,L3,L+Offset_LegTerm,k), &
-           ScatC%phase_coeff_L_MW(L1,L2+1,L3+1,L+Offset_LegTerm,k),a1_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%phase_coeff_L_MW(L1,L2,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2,L3+1,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2+1,L3,L+Offset_LegTerm,k), &
+           CloudC%phase_coeff_L_MW(L1,L2+1,L3+1,L+Offset_LegTerm,k),a1_AD,d2_AD,d3_AD)
 
            ENDDO
           ENDDO
@@ -1742,37 +1742,37 @@ CONTAINS
      
         a2_AD = d1 * g_AD
         a1_AD = (ONE-d1) * g_AD
-       call interp2_AD(d2,d3,ScatC%g_L_MW(L1+1,L2,L3),ScatC%g_L_MW(L1+1,L2,L3+1), &
-                    ScatC%g_L_MW(L1+1,L2+1,L3),ScatC%g_L_MW(L1+1,L2+1,L3+1),a2_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%g_L_MW(L1+1,L2,L3),CloudC%g_L_MW(L1+1,L2,L3+1), &
+                    CloudC%g_L_MW(L1+1,L2+1,L3),CloudC%g_L_MW(L1+1,L2+1,L3+1),a2_AD,d2_AD,d3_AD)
 
-       call interp2_AD(d2,d3,ScatC%g_L_MW(L1,L2,L3),ScatC%g_L_MW(L1,L2,L3+1), &
-                    ScatC%g_L_MW(L1,L2+1,L3),ScatC%g_L_MW(L1,L2+1,L3+1),a1_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%g_L_MW(L1,L2,L3),CloudC%g_L_MW(L1,L2,L3+1), &
+                    CloudC%g_L_MW(L1,L2+1,L3),CloudC%g_L_MW(L1,L2+1,L3+1),a1_AD,d2_AD,d3_AD)
 
        a2_AD = d1 * w0_AD
        a1_AD = (ONE-d1) * w0_AD
 
-       call interp2_AD(d2,d3,ScatC%w_L_MW(L1+1,L2,L3),ScatC%w_L_MW(L1+1,L2,L3+1), &
-                    ScatC%w_L_MW(L1+1,L2+1,L3),ScatC%w_L_MW(L1+1,L2+1,L3+1),a2_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%w_L_MW(L1+1,L2,L3),CloudC%w_L_MW(L1+1,L2,L3+1), &
+                    CloudC%w_L_MW(L1+1,L2+1,L3),CloudC%w_L_MW(L1+1,L2+1,L3+1),a2_AD,d2_AD,d3_AD)
 
-       call interp2_AD(d2,d3,ScatC%w_L_MW(L1,L2,L3),ScatC%w_L_MW(L1,L2,L3+1), &
-                    ScatC%w_L_MW(L1,L2+1,L3),ScatC%w_L_MW(L1,L2+1,L3+1),a1_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%w_L_MW(L1,L2,L3),CloudC%w_L_MW(L1,L2,L3+1), &
+                    CloudC%w_L_MW(L1,L2+1,L3),CloudC%w_L_MW(L1,L2+1,L3+1),a1_AD,d2_AD,d3_AD)
 
        a2_AD = d1 * ext_AD
        a1_AD = (ONE-d1) * ext_AD
 
-       call interp2_AD(d2,d3,ScatC%ext_L_MW(L1+1,L2,L3),ScatC%ext_L_MW(L1+1,L2,L3+1), &
-                    ScatC%ext_L_MW(L1+1,L2+1,L3),ScatC%ext_L_MW(L1+1,L2+1,L3+1),a2_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%ext_L_MW(L1+1,L2,L3),CloudC%ext_L_MW(L1+1,L2,L3+1), &
+                    CloudC%ext_L_MW(L1+1,L2+1,L3),CloudC%ext_L_MW(L1+1,L2+1,L3+1),a2_AD,d2_AD,d3_AD)
 
-       call interp2_AD(d2,d3,ScatC%ext_L_MW(L1,L2,L3),ScatC%ext_L_MW(L1,L2,L3+1), &
-                    ScatC%ext_L_MW(L1,L2+1,L3),ScatC%ext_L_MW(L1,L2+1,L3+1),a1_AD,d2_AD,d3_AD)
+       call interp2_AD(d2,d3,CloudC%ext_L_MW(L1,L2,L3),CloudC%ext_L_MW(L1,L2,L3+1), &
+                    CloudC%ext_L_MW(L1,L2+1,L3),CloudC%ext_L_MW(L1,L2+1,L3+1),a1_AD,d2_AD,d3_AD)
 
-     call find_idx_AD(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2_AD,eff_radius_AD)
+     call find_idx_AD(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2_AD,eff_radius_AD)
 
-     call find_idx_AD(ScatC%n_Temperature,ScatC%Temperature,Temperature,L3,d3_AD,Temperature_AD)
+     call find_idx_AD(CloudC%n_Temperatures,CloudC%Temperature,Temperature,L3,d3_AD,Temperature_AD)
                                        
     ELSE IF(Cloud_Type==SNOW_CLOUD.OR.Cloud_Type==GRAUPEL_CLOUD.OR.Cloud_Type==HAIL_CLOUD) THEN
 !  find index L2 and slope d2 on effective radius interpolation
-       call find_idx(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2)
+       call find_idx(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2)
        m = 1   ! Default
 
        IF(Cloud_Type == SNOW_CLOUD) m = 1
@@ -1785,33 +1785,33 @@ CONTAINS
 
        a2_AD = d1 * p_coef_AD(L,k)
        a1_AD = (ONE-d1) * p_coef_AD(L,k)
-       d2_AD = d2_AD + a2_AD*ScatC%phase_coeff_S_MW(L1+1,L2+1,m,L+Offset_LegTerm,k)
-       d2_AD =  d2_AD - a2_AD*ScatC%phase_coeff_S_MW(L1+1,L2,m,L+Offset_LegTerm,k)
-       d2_AD = d2_AD + a1_AD*ScatC%phase_coeff_S_MW(L1,L2+1,m,L+Offset_LegTerm,k)
-       d2_AD = d2_AD - a1_AD*ScatC%phase_coeff_S_MW(L1,L2,m,L+Offset_LegTerm,k)
+       d2_AD = d2_AD + a2_AD*CloudC%phase_coeff_S_MW(L1+1,L2+1,m,L+Offset_LegTerm,k)
+       d2_AD =  d2_AD - a2_AD*CloudC%phase_coeff_S_MW(L1+1,L2,m,L+Offset_LegTerm,k)
+       d2_AD = d2_AD + a1_AD*CloudC%phase_coeff_S_MW(L1,L2+1,m,L+Offset_LegTerm,k)
+       d2_AD = d2_AD - a1_AD*CloudC%phase_coeff_S_MW(L1,L2,m,L+Offset_LegTerm,k)
           ENDDO
          ENDDO
        ENDIF
 
        a2_AD = d1 * g_AD
        a1_AD = (ONE-d1)*g_AD
-       d2_AD = d2_AD + a2_AD * ScatC%g_S_MW(L1+1,L2+1,m)
-       d2_AD = d2_AD - a2_AD*ScatC%g_S_MW(L1+1,L2,m)
-       d2_AD = d2_AD + a1_AD*ScatC%g_S_MW(L1,L2+1,m)
-       d2_AD = d2_AD - a1_AD*ScatC%g_S_MW(L1,L2,m)
+       d2_AD = d2_AD + a2_AD * CloudC%g_S_MW(L1+1,L2+1,m)
+       d2_AD = d2_AD - a2_AD*CloudC%g_S_MW(L1+1,L2,m)
+       d2_AD = d2_AD + a1_AD*CloudC%g_S_MW(L1,L2+1,m)
+       d2_AD = d2_AD - a1_AD*CloudC%g_S_MW(L1,L2,m)
        a2_AD = d1 * w0_AD
        a1_AD = (ONE-d1)* w0_AD
-       d2_AD = d2_AD + a2_AD * ScatC%w_S_MW(L1+1,L2+1,m)
-       d2_AD = d2_AD - a2_AD*ScatC%w_S_MW(L1+1,L2,m)
-       d2_AD = d2_AD + a1_AD*ScatC%w_S_MW(L1,L2+1,m)
-       d2_AD = d2_AD - a1_AD*ScatC%w_S_MW(L1,L2,m)
+       d2_AD = d2_AD + a2_AD * CloudC%w_S_MW(L1+1,L2+1,m)
+       d2_AD = d2_AD - a2_AD*CloudC%w_S_MW(L1+1,L2,m)
+       d2_AD = d2_AD + a1_AD*CloudC%w_S_MW(L1,L2+1,m)
+       d2_AD = d2_AD - a1_AD*CloudC%w_S_MW(L1,L2,m)
        a2_AD = d1 * ext_AD
        a1_AD = (ONE-d1)*ext_AD
-       d2_AD = d2_AD + a2_AD*ScatC%ext_S_MW(L1+1,L2+1,m)
-       d2_AD = d2_AD - a2_AD*ScatC%ext_S_MW(L1+1,L2,m)
-       d2_AD = d2_AD + a1_AD*ScatC%ext_S_MW(L1,L2+1,m)
-       d2_AD = d2_AD - a1_AD*ScatC%ext_S_MW(L1,L2,m)
-       call find_idx_AD(ScatC%n_Size_MW,ScatC%Reff_MW,eff_radius,L2,d2_AD,eff_radius_AD)
+       d2_AD = d2_AD + a2_AD*CloudC%ext_S_MW(L1+1,L2+1,m)
+       d2_AD = d2_AD - a2_AD*CloudC%ext_S_MW(L1+1,L2,m)
+       d2_AD = d2_AD + a1_AD*CloudC%ext_S_MW(L1,L2+1,m)
+       d2_AD = d2_AD - a1_AD*CloudC%ext_S_MW(L1,L2,m)
+       call find_idx_AD(CloudC%n_Reff_MW,CloudC%Reff_MW,eff_radius,L2,d2_AD,eff_radius_AD)
 
     ENDIF
    RETURN
@@ -1941,17 +1941,23 @@ END MODULE CRTM_CloudScatter
 !                          -- MODIFICATION HISTORY --
 !---------------------------------------------------------------------------------
 !
-! $Id: CRTM_CloudScatter.f90,v 1.5 2006/05/25 19:27:59 wd20pd Exp $
+! $Id: CRTM_CloudScatter.f90,v 1.6 2006/06/23 23:20:10 wd20pd Exp $
 !
-! $Date: 2006/05/25 19:27:59 $
+! $Date: 2006/06/23 23:20:10 $
 !
-! $Revision: 1.5 $
+! $Revision: 1.6 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: CRTM_CloudScatter.f90,v $
+! Revision 1.6  2006/06/23 23:20:10  wd20pd
+! - Changed shared data structure name from ScatC to CloudC to relfect changes
+!   in the CRTM_CloudCoeff module.
+! - Changed some of the CloudC component names (dimension values) to relfect
+!   changes in the CloudCoeff_Define module.
+!
 ! Revision 1.5  2006/05/25 19:27:59  wd20pd
 ! Removed redundant parameter definitions.
 !

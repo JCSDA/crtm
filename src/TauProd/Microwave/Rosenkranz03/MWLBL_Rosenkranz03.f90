@@ -20,7 +20,7 @@
 !       Type_Kinds:                 Module containing definitions for kinds
 !                                   of variable types.
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
@@ -90,7 +90,7 @@ MODULE MWLBL_Rosenkranz03
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
   USE Fundamental_Constants
   USE Units_Conversion
 
@@ -128,7 +128,7 @@ MODULE MWLBL_Rosenkranz03
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: MWLBL_Rosenkranz03.f90,v 1.4 2005/01/25 21:34:18 paulv Exp $'
+    '$Id: MWLBL_Rosenkranz03.f90,v 1.6 2006/07/05 15:21:28 wd20pd Exp $'
 
   ! -- Numerical constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO           =  0.0_fp_kind
@@ -695,23 +695,23 @@ CONTAINS
                                                            Theta )
  
         ! -- Check result
-!        IF ( H2O_Line_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative sum for H2O line absorption, ", es13.6, 1x, &
-!                              &"at Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            H2O_Line_Absorption, Frequency(l)
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          H2O_Line_Absorption = ZERO
-!
-!        END IF
+        IF ( H2O_Line_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative sum for H2O line absorption, ", es13.6, 1x, &
+                              &"at Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            H2O_Line_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          H2O_Line_Absorption = ZERO
+
+        END IF
 
 
 
@@ -751,23 +751,23 @@ CONTAINS
                                                          Theta )
 
         ! -- Check result
-!        IF ( WetContinuum_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative value for wet continuum absorption, ", es13.6, 1x, &
-!                              &"at Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            WetContinuum_Absorption, Frequency(l)
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          WetContinuum_Absorption = ZERO
-!
-!        END IF
+        IF ( WetContinuum_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative value for wet continuum absorption, ", es13.6, 1x, &
+                              &"at Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            WetContinuum_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          WetContinuum_Absorption = ZERO
+
+        END IF
 
 
 
@@ -808,23 +808,23 @@ CONTAINS
                                                          Theta )
 
         ! -- Check result
-!        IF ( O2_Line_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative sum for O2 line absorption, ", es13.6, 1x, &
-!                              &" at Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            O2_Line_Absorption, Frequency(l)
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          O2_Line_Absorption = ZERO
-!
-!        END IF
+        IF ( O2_Line_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative sum for O2 line absorption, ", es13.6, 1x, &
+                              &" at Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            O2_Line_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          O2_Line_Absorption = ZERO
+
+        END IF
 
 
         ! --------------------------------
@@ -863,23 +863,23 @@ CONTAINS
                                                          Theta )
 
         ! -- Check result
-!        IF ( DryContinuum_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative value for dry continuum absorption, ", es13.6, 1x, &
-!                              &" at Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            DryContinuum_Absorption, Frequency(l)
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          DryContinuum_Absorption = ZERO
-!
-!        END IF
+        IF ( DryContinuum_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative value for dry continuum absorption, ", es13.6, 1x, &
+                              &" at Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            DryContinuum_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          DryContinuum_Absorption = ZERO
+
+        END IF
 
 
         ! --------------------------------
@@ -961,20 +961,15 @@ CONTAINS
     ! ---------------
 
     CHARACTER( 256 ) :: Message
-
     LOGICAL :: Compute_WetLine
     LOGICAL :: Compute_WetContinuum
     LOGICAL :: Compute_DryLine
     LOGICAL :: Compute_DryContinuum
     LOGICAL :: Noisy
-
     INTEGER :: n_Layers, k
-
     REAL( fp_kind ) :: Theta
-
     REAL( fp_kind ) :: H2O_Line_Absorption
     REAL( fp_kind ) :: WetContinuum_Absorption
-
     REAL( fp_kind ) :: O2_Line_Absorption
     REAL( fp_kind ) :: DryContinuum_Absorption
 
@@ -1223,24 +1218,24 @@ CONTAINS
                                                            Theta )
  
         ! -- Check result
-!        IF ( H2O_Line_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative sum for H2O line absorption, ", es13.6, 1x, &
-!                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            H2O_Line_Absorption, k, Frequency
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          H2O_Line_Absorption = ZERO
-!
-!        END IF
+        IF ( H2O_Line_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative sum for H2O line absorption, ", es13.6, 1x, &
+                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            H2O_Line_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          H2O_Line_Absorption = ZERO
+
+        END IF
 
 
         ! --------------------------------
@@ -1270,23 +1265,23 @@ CONTAINS
                                                          Theta )
 
         ! -- Check result
-!        IF ( WetContinuum_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative value for wet continuum absorption, ", es13.6, 1x, &
-!                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            WetContinuum_Absorption, k, Frequency
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          WetContinuum_Absorption = ZERO
-!
-!        END IF
+        IF ( WetContinuum_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative value for wet continuum absorption, ", es13.6, 1x, &
+                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            WetContinuum_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          WetContinuum_Absorption = ZERO
+
+        END IF
 
 
         ! --------------------------------
@@ -1317,24 +1312,24 @@ CONTAINS
                                                          Theta )
 
         ! -- Check result
-!        IF ( O2_Line_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative sum for O2 line absorption, ", es13.6, 1x, &
-!                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            O2_Line_Absorption, k, Frequency
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          O2_Line_Absorption = ZERO
-!
-!        END IF
+        IF ( O2_Line_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative sum for O2 line absorption, ", es13.6, 1x, &
+                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            O2_Line_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          O2_Line_Absorption = ZERO
+
+        END IF
 
 
         ! --------------------------------
@@ -1364,23 +1359,23 @@ CONTAINS
                                                          Theta )
 
         ! -- Check result
-!        IF ( DryContinuum_Absorption < ZERO ) THEN
-!
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative value for dry continuum absorption, ", es13.6, 1x, &
-!                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            DryContinuum_Absorption, k, Frequency
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM( Message ), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!          END IF
-!
-!          DryContinuum_Absorption = ZERO
-!
-!        END IF
+        IF ( DryContinuum_Absorption < ZERO ) THEN
+
+          Error_Status = WARNING
+          IF ( Noisy ) THEN
+            WRITE( Message, '( "Negative value for dry continuum absorption, ", es13.6, 1x, &
+                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
+                              &"GHz. Setting to 0.0." )' ) &
+                            DryContinuum_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+          END IF
+
+          DryContinuum_Absorption = ZERO
+
+        END IF
 
 
         ! --------------------------------
@@ -2267,17 +2262,23 @@ END MODULE MWLBL_Rosenkranz03
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: MWLBL_Rosenkranz03.f90,v 1.4 2005/01/25 21:34:18 paulv Exp $
+! $Id: MWLBL_Rosenkranz03.f90,v 1.6 2006/07/05 15:21:28 wd20pd Exp $
 !
-! $Date: 2005/01/25 21:34:18 $
+! $Date: 2006/07/05 15:21:28 $
 !
-! $Revision: 1.4 $
+! $Revision: 1.6 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: MWLBL_Rosenkranz03.f90,v $
+! Revision 1.6  2006/07/05 15:21:28  wd20pd
+! Uncommented warning messages for negative absorption.
+!
+! Revision 1.5  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.4  2005/01/25 21:34:18  paulv
 ! - Removed type declarations of unused variables.
 !

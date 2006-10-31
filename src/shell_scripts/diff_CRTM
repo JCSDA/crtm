@@ -2,32 +2,25 @@
 
 DIRECTORY=$1
 
-CRTM_REPOSITORY="${HOME}/f90/CRTM"
-
-CURRENT_DIR=${PWD}
-cd ${CRTM_REPOSITORY}
-
 if [ "${DIRECTORY}" = "" ]; then
   echo " Must specify a CRTM directory"
   exit 2
 fi
-
 if [ ! -d ${DIRECTORY} ]; then
   echo " Invalid CRTM directory: ${DIRECTORY}"
   exit 2
 fi
 
+CURRENT_DIR=${PWD}
 cd ${DIRECTORY}
 SOURCE_FILES=`ls *.f90`
-cd ${CURRENT_DIR}
-
 for FILE in ${SOURCE_FILES}; do
   if [ -f ${FILE} ]; then
     echo; echo; \
     echo "###################################"; \
     echo ${FILE}; \
     echo "###################################"; \
-    diff ${CRTM_REPOSITORY}/${DIRECTORY}/${FILE} ${FILE}
+    diff ${CRTM_SOURCE_ROOT}/Build/src/${FILE} ${FILE}
   fi
 done
-
+cd ${CURRENT_DIR}

@@ -38,7 +38,7 @@ MODULE CRTM_LifeCycle
   ! Module parameters
   ! -----------------
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_LifeCycle.f90,v 1.11 2006/05/02 14:58:33 dgroff Exp $'
+  '$Id: CRTM_LifeCycle.f90,v 1.12 2006/07/26 21:35:26 wd20pd Exp $'
   ! -- Maximum string length for path+filenames
   INTEGER, PRIVATE, PARAMETER :: SL = 2000
 
@@ -219,7 +219,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
-!                           ERROR_HANDLER module.
+!                           Message_Handler module.
 !                           If == SUCCESS the CRTM initialisation was successful
 !                              == FAILURE an unrecoverable error occurred.
 !                           UNITS:      N/A
@@ -579,7 +579,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error
 !                     status. The error codes are defined in the
-!                     ERROR_HANDLER module.
+!                     Message_Handler module.
 !                     If == SUCCESS the CRTM deallocations were successful
 !                        == FAILURE an unrecoverable error occurred.
 !                     UNITS:      N/A

@@ -17,7 +17,7 @@
 !       Type_Kinds:                  Module containing definitions for kinds
 !                                    of variable types.
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:               Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -123,7 +123,7 @@ PROGRAM Compare_MW_Attenuation
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE Profile_Utility_Parameters
   USE Units_Conversion
@@ -152,7 +152,7 @@ PROGRAM Compare_MW_Attenuation
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Compare_MW_Attenuation'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Compare_MW_Attenuation.f90,v 1.1 2004/12/16 18:39:02 paulv Exp $'
+    '$Id: Compare_MW_Attenuation.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -242,7 +242,7 @@ PROGRAM Compare_MW_Attenuation
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to compare the Liebe89/93 and Rosenkranz03")' )
   WRITE( *, '( 5x, "   microwave atmospheric attenuation models.")' )
-  WRITE( *, '(/5x, " $Revision: 1.1 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.2 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -923,17 +923,20 @@ END PROGRAM Compare_MW_Attenuation
 !#                          -- MODIFICATION HISTORY --                          # 
 !#------------------------------------------------------------------------------#
 !
-! $Id: Compare_MW_Attenuation.f90,v 1.1 2004/12/16 18:39:02 paulv Exp $
+! $Id: Compare_MW_Attenuation.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/12/16 18:39:02 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.1 $
+! $Revision: 1.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Compare_MW_Attenuation.f90,v $
+! Revision 1.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.1  2004/12/16 18:39:02  paulv
 ! Initial checkin.
 !

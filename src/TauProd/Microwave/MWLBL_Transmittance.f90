@@ -20,7 +20,7 @@
 !       Type_Kinds:         Module containing definitions for kinds
 !                           of variable types.
 !
-!       Error_Handler:      Module to define simple error codes and
+!       Message_Handler:      Module to define simple error codes and
 !                           handle error conditions
 !                           USEs: FILE_UTILITY module
 !
@@ -98,7 +98,7 @@ MODULE MWLBL_Transmittance
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE MWLBL_Liebe89
   USE MWLBL_Liebe93
@@ -126,7 +126,7 @@ MODULE MWLBL_Transmittance
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: MWLBL_Transmittance.f90,v 3.2 2005/01/25 21:34:18 paulv Exp $'
+    '$Id: MWLBL_Transmittance.f90,v 3.4 2006/07/05 15:22:35 wd20pd Exp $'
 
   ! -- Numerical constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO      =  0.0_fp_kind
@@ -584,7 +584,7 @@ CONTAINS
     ! -- Frequency data
     IF ( ANY( Frequency < MIN_FREQUENCY ) .OR. ANY( Frequency > MAX_FREQUENCY ) ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Input frequencies must be ", f3.2, " < f < ", f6.1 )' ) &
+      WRITE( Message, '( "Input frequencies must be ", f6.1, " < f < ", f6.1 )' ) &
                       MIN_FREQUENCY, MAX_FREQUENCY
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM( Message ), &
@@ -868,17 +868,23 @@ END MODULE MWLBL_Transmittance
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: MWLBL_Transmittance.f90,v 3.2 2005/01/25 21:34:18 paulv Exp $
+! $Id: MWLBL_Transmittance.f90,v 3.4 2006/07/05 15:22:35 wd20pd Exp $
 !
-! $Date: 2005/01/25 21:34:18 $
+! $Date: 2006/07/05 15:22:35 $
 !
-! $Revision: 3.2 $
+! $Revision: 3.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: MWLBL_Transmittance.f90,v $
+! Revision 3.4  2006/07/05 15:22:35  wd20pd
+! Increased output frequency format specification to eliminate Intel compiler warning.
+!
+! Revision 3.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 3.2  2005/01/25 21:34:18  paulv
 ! - Removed type declarations of unused variables.
 !

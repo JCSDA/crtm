@@ -2,7 +2,7 @@
 #
 # Makefile to install CRTM scripts
 #
-# $Id: Makefile,v 1.4 2006/06/13 19:32:13 wd20pd Exp $
+# $Id: Makefile,v 1.5 2006/06/28 19:45:29 wd20pd Exp $
 #
 #==============================================================================
 
@@ -18,7 +18,11 @@ SHELL_SRC_DIR = $(CRTM_SOURCE_ROOT)/shell_scripts
 SHELL_SRC_FILES = diff_CRTM \
                   tag_CRTM \
                   linkfiles \
-                  unlinkfiles
+                  unlinkfiles \
+                  linkcoeffdata \
+                  unlinkcoeffdata \
+                  linktestdata \
+                  unlinktestdata
 
 # ------------
 # Install them

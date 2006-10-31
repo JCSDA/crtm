@@ -45,7 +45,7 @@ MODULE TauCoeff_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauCoeff_netCDF_IO.f90,v 5.8 2006/06/15 16:56:11 wd20pd Exp $'
+    '$Id: TauCoeff_netCDF_IO.f90,v 5.9 2006/06/23 23:17:32 wd20pd Exp $'
 
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: TITLE_GATTNAME         = 'title' 
@@ -294,7 +294,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_TauCoeff_GAtts'
     CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
     CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
-    INTEGER, PARAMETER :: nPutGAtts = 7
+    INTEGER, PARAMETER :: nPutGAtts = 8
     ! Local variables
     INTEGER :: Put_Status(nPutGAtts), n
     CHARACTER(8)  :: cdate
@@ -525,7 +525,7 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_TauCoeff_GAtts'
-    INTEGER, PARAMETER :: nGetGAtts = 5
+    INTEGER, PARAMETER :: nGetGAtts = 6
     ! Local variables
     INTEGER :: Get_Status(nGetGAtts), n
 
@@ -751,7 +751,7 @@ CONTAINS
 !                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the netCDF file creation was successful.
 !                              == FAILURE an unrecoverable error occurred.
-!                              == WARNING an error occurred reading any of the requested
+!                              == WARNING an error occurred writing any of the requested
 !                                         global file attributes.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
@@ -1743,7 +1743,7 @@ CONTAINS
       END IF
     END IF
 
-    !Get the global attributes
+    ! Get the global attributes
     Error_Status = Read_TauCoeff_GAtts( TRIM( NC_Filename ), &
                                         NC_FileID, &
                                         Title         = Title, &
@@ -1942,7 +1942,7 @@ CONTAINS
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Platform_Name
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
-    INTEGER,        OPTIONAL, INTENT(IN)  :: Quiet
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -2330,7 +2330,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: NC_Filename
     TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
-    INTEGER,        OPTIONAL, INTENT(IN)     :: Quiet
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Sensor_Name

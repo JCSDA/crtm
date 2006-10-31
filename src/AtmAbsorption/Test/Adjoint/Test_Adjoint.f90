@@ -89,18 +89,18 @@
 !                                        CRTM_ATMABSORPTION_INTABSORBER module
 !                                        CRTM_ATMABSORPTION_PREDICTOR module
 !
-!       TLADMtest_Define:          Module defining the structure to hold CRTM
+!       ComponentTest_Define:          Module defining the structure to hold CRTM
 !                                  Tangent-Linear/Adjoint model test results
 !                                  and containing routines to manipulate it.
 !                                  USEs: TYPE_KINDS module
 !                                        ERROR_HANDLER module
 !
-!       TLADMtest_netCDF_IO:       Module containing routines to read and write
-!                                  netCDF format TLADMtest files.
+!       ComponentTest_netCDF_IO:       Module containing routines to read and write
+!                                  netCDF format ComponentTest files.
 !                                  USEs: TYPE_KINDS module
 !                                        FILE_UTILITY module
 !                                        ERROR_HANDLER module
-!                                        TLADMTEST_DEFINE module
+!                                        ComponentTEST_DEFINE module
 !                                        NETCDF module
 !                                        NETCDF_UTILITY module
 ! CONTAINS:
@@ -159,9 +159,8 @@ PROGRAM Test_Adjoint
   USE CRTM_Atmosphere_Define
   USE CRTM_Atmosphere_Binary_IO
   USE CRTM_AtmAbsorption
-
-  USE TLADMtest_Define
-  USE TLADMtest_netCDF_IO
+  USE ComponentTest_Define
+  USE ComponentTest_netCDF_IO
 
 
   ! ---------------------------
@@ -177,28 +176,46 @@ PROGRAM Test_Adjoint
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Adjoint'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Adjoint.f90,v 1.7 2006/05/02 14:58:34 dgroff Exp $'
+    '$Id: Test_Adjoint.f90,v 1.8 2006/07/05 18:57:41 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
+  INTEGER, PARAMETER :: SL = 512
 
-  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin.Little_Endian'
+
+  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   INTEGER,      PARAMETER :: N_PROFILES = 52
 
-  INTEGER, PARAMETER :: UNSET = 0
-  INTEGER, PARAMETER ::   SET = 1
+  INTEGER, PARAMETER :: N_PERTURBATIONS = 1
 
-  INTEGER, PARAMETER :: N_VARIABLES = 5
-  INTEGER, PARAMETER :: NV_LEVEL_PRESSURE       = 1
-  INTEGER, PARAMETER :: NV_LAYER_PRESSURE       = 2
-  INTEGER, PARAMETER :: NV_LAYER_TEMPERATURE    = 3
-  INTEGER, PARAMETER :: NV_LAYER_WATER_VAPOR    = 4
-  INTEGER, PARAMETER :: NV_LAYER_OZONE          = 5
-  CHARACTER( * ), PARAMETER, DIMENSION( N_VARIABLES ) :: &
-    VARIABLE_NAME = (/ 'Level pressure   ', &
-                       'Layer pressure   ', &
-                       'Layer temperature', &
-                       'Layer water vapor', &
-                       'Layer ozone      ' /)
+  INTEGER, PARAMETER :: N_INPUT_VARIABLES = 4
+  INTEGER, PARAMETER :: NIV_P  = 1  ! Layer pressure
+  INTEGER, PARAMETER :: NIV_T  = 2  ! Layer temperature
+  INTEGER, PARAMETER :: NIV_W  = 3  ! Layer water vapor
+  INTEGER, PARAMETER :: NIV_O  = 4  ! Layer ozone
+  CHARACTER( * ), PARAMETER, DIMENSION( N_INPUT_VARIABLES ) :: &
+    INPUT_VARIABLE_NAME = (/ 'Layer pressure    ', &
+                             'Layer temperature ', &
+                             'Layer water vapor ', &
+                             'Layer ozone       ' /)
+
+   CHARACTER( * ), PARAMETER, DIMENSION( N_INPUT_VARIABLES ) :: &
+    INPUT_VARIABLE_UNITS = (/ 'hectoPascal  ', &
+                              'Kelvin       ', &
+                              'g/kg         ', &
+                              'ppmv         ' /)
+
+
+   INTEGER, PARAMETER :: N_OUTPUT_VARIABLES = 1
+   INTEGER, PARAMETER :: NOV_TAU = 1 ! Optical depth
+
+
+
+  CHARACTER( * ), PARAMETER, DIMENSION( N_OUTPUT_VARIABLES ) :: &
+    OUTPUT_VARIABLE_NAME = (/ 'Optical depth  ' /)
+
+  CHARACTER( * ), PARAMETER, DIMENSION( N_OUTPUT_VARIABLES ) :: &
+    OUTPUT_VARIABLE_UNITS = (/ 'Unitless' /)  ! Optical depth 
+  
 
   ! ---------
   ! Variables
@@ -213,22 +230,20 @@ PROGRAM Test_Adjoint
   INTEGER :: Error_Status_TL, Status_TL
   INTEGER :: Error_Status_AD, Status_AD
 
-  CHARACTER( 256 ) :: File_Prefix
-
-  CHARACTER( 256 ) :: SpcCoeff_File
-  CHARACTER( 256 ) :: TauCoeff_File
-  CHARACTER( 256 ) :: AerosolCoeff_File
-  CHARACTER( 256 ) :: ScatterCoeff_File
-  CHARACTER( 256 ) :: EmisCoeff_File
-
-  CHARACTER( 256 ) :: TLADMtest_File
+  CHARACTER( SL ) :: File_Prefix
+  CHARACTER( SL ) :: SpcCoeff_File
+  CHARACTER( SL ) :: TauCoeff_File
+  CHARACTER( SL ) :: AerosolCoeff_File
+  CHARACTER( SL ) :: CloudCoeff_File
+  CHARACTER( SL ) :: EmisCoeff_File
+  CHARACTER( SL ) :: ComponentTest_File
   INTEGER :: New_File
 
   INTEGER, DIMENSION( 1 ) :: Idx
   INTEGER :: H2O_Idx
   INTEGER :: O3_Idx
 
-  INTEGER :: j, k, l, m, nV
+  INTEGER :: j, k, l, m, n, nIV, nOV
 
   TYPE( CRTM_ChannelInfo_type )   :: ChannelInfo
   TYPE( CRTM_GeometryInfo_type )  :: GeometryInfo
@@ -239,7 +254,7 @@ PROGRAM Test_Adjoint
   TYPE( CRTM_Atmosphere_type ) :: Atmosphere_TL, &
                                   Atmosphere_AD
 
-  TYPE( LayerTLADMtest_type ) :: TLADMtest
+  TYPE( ComponentTest_type ) :: ComponentTest
 
 
 
@@ -257,7 +272,7 @@ PROGRAM Test_Adjoint
   WRITE( *, '(/5x, " Program to test the CRTM AtmAbsorption Adjoint")' )
   WRITE( *, '( 5x, "   components with respect to the Tangent-Linear")' )
   WRITE( *, '( 5x, "   components.")' )
-  WRITE( *, '(/5x, " $Revision: 1.7 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.8 $")' )
   WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
 
 
@@ -317,20 +332,20 @@ PROGRAM Test_Adjoint
   ! Create the filenames
   ! --------------------
 
-  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin.Little_Endian'
-  TauCoeff_File     = TRIM( File_Prefix )//'.TauCoeff.bin.Little_Endian'
-  AerosolCoeff_File = 'AerosolCoeff.bin.Little_Endian'
-  ScatterCoeff_File = 'ScatterCoeff.bin.Little_Endian'
-  EmisCoeff_File    = 'EmisCoeff.bin.Little_Endian'
+  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin'
+  TauCoeff_File     = TRIM( File_Prefix )//'.TauCoeff.bin'
+  AerosolCoeff_File = 'AerosolCoeff.bin'
+  CloudCoeff_File   = 'CloudCoeff.bin'
+  EmisCoeff_File    = 'EmisCoeff.bin'
 
-  TLADMtest_File = TRIM( File_Prefix )//'.CRTM_AtmAbsorption.TLADMtest.nc'
+  ComponentTest_File = TRIM( File_Prefix )//'.CRTM_AtmAbsorption.ComponentTest.nc'
 
-  New_File = SET
+  New_File = 1
 
 
 
   !#----------------------------------------------------------------------------#
-  !#                          -- INITIALISE THE CRTM --                         #
+  !#                          -- INITIALIZE THE CRTM --                         #
   !#----------------------------------------------------------------------------#
 
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
@@ -339,7 +354,7 @@ PROGRAM Test_Adjoint
                             SpcCoeff_File     = SpcCoeff_File, &
                             TauCoeff_File     = TauCoeff_File, &
                             AerosolCoeff_File = AerosolCoeff_File, &
-                            ScatterCoeff_File = ScatterCoeff_File, &
+                            CloudCoeff_File   = CloudCoeff_File, &
                             EmisCoeff_File    = EmisCoeff_File )
 
   IF ( Error_Status /= SUCCESS ) THEN 
@@ -352,35 +367,40 @@ PROGRAM Test_Adjoint
 
 
   !#----------------------------------------------------------------------------#
-  !#                      -- ALLOCATE TLADMtest STRUCTURE --                    #
+  !#                      -- ALLOCATE ComponentTest STRUCTURE --                #
   !#----------------------------------------------------------------------------#
 
-  Error_Status = Allocate_TLADMtest( Atmosphere(1)%n_Layers, &
-                                     ChannelInfo%n_Channels, &
-                                     N_VARIABLES, &
-                                     TLADMtest )
+  Error_Status = Allocate_ComponentTest( Atmosphere(1)%n_Layers, &
+                                         ChannelInfo%n_Channels, &
+                                         N_PERTURBATIONS, &
+                                         N_INPUT_VARIABLES, &
+                                         N_OUTPUT_VARIABLES, &
+                                         ComponentTest )
 
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error occurred allocating TLADMtest', &
+                          'Error occurred allocating ComponentTest', &
                            Error_Status )                           
     STOP
   END IF
 
 
-  ! -------------------------
-  ! Assign data to TLADMtest
-  ! -------------------------
+  ! ----------------------------
+  ! Assign data to ComponentTest
+  ! ----------------------------
 
-  TLADMtest%Output_Variable_Name  = 'Optical Depth'
-  TLADMtest%OUtput_Variable_Units = 'Unitless'
+  ComponentTest%TestType = COMPONENTTEST_TLAD_TESTTYPE
+  ComponentTest%DataType = COMPONENTTEST_POLY_DATATYPE
 
-  TLADMtest%DataType      = TLADMTEST_SENSOR_TYPE
-  TLADMtest%Pressure      = Atmosphere(1)%Pressure
-  TLADMtest%Channel       = ChannelInfo%Sensor_Channel
-  TLADMtest%Variable_Name = VARIABLE_NAME
+  ComponentTest%Pressure = Atmosphere(1)%Pressure
+  ComponentTest%Spectral = ChannelInfo%Sensor_Channel
 
+  ComponentTest%Input_Variable_Name = INPUT_VARIABLE_NAME
+  ComponentTest%Input_Variable_Units = INPUT_VARIABLE_UNITS
 
+  ComponentTest%Output_Variable_Name = OUTPUT_VARIABLE_NAME
+  ComponentTest%Output_Variable_Units = OUTPUT_VARIABLE_UNITS
+  
 
   !#----------------------------------------------------------------------------#
   !#                   -- LOOP OVER ATMOSPHERIC PROFILES --                     #
@@ -531,9 +551,10 @@ PROGRAM Test_Adjoint
       !#               -- BEGIN TANGENT-LINEAR VARIABLE LOOP --                 #
       !#------------------------------------------------------------------------#
 
-      TL_Variable_Loop: DO nV = 1, N_VARIABLES
+      TL_Variable_Loop: DO nIV = 1, N_INPUT_VARIABLES
 
-        WRITE( *, '( 10x, "Performing TL calculations for ", a, "...." )' ) TRIM( VARIABLE_NAME( nV ) )
+        WRITE( *, '( 10x, "Performing TL calculations for ", a, "...." )' ) &
+	TRIM( INPUT_VARIABLE_NAME( nIV ) )
 
 
 
@@ -548,30 +569,21 @@ PROGRAM Test_Adjoint
           ! Reinitialise all TL arrays
           ! --------------------------
 
-          Atmosphere_TL%Level_Pressure = ZERO
-          Atmosphere_TL%Pressure       = ZERO
-          Atmosphere_TL%Temperature    = ZERO
-          Atmosphere_TL%Absorber       = ZERO
-
-          AtmAbsorption_TL%IntAbsorber   = ZERO
-          AtmAbsorption_TL%Predictor     = ZERO
-          AtmAbsorption_TL%Optical_depth = ZERO
-
-
+          CALL CRTM_ZERO_Atmosphere( Atmosphere_TL )
+          AtmAbsorption_TL%Optical_depth = ZERO 
+        
           ! ------------------
           ! Perturb the inputs
           ! ------------------
 
-          SELECT CASE ( nV )
-            CASE ( NV_LEVEL_PRESSURE )
-              Atmosphere_TL%Level_Pressure(k)   = ONE
-            CASE ( NV_LAYER_PRESSURE )
+          SELECT CASE ( nIV )
+            CASE ( NIV_P )
               Atmosphere_TL%Pressure(k)         = ONE
-            CASE ( NV_LAYER_TEMPERATURE )
+            CASE ( NIV_T )
               Atmosphere_TL%Temperature(k)      = ONE
-            CASE ( NV_LAYER_WATER_VAPOR )
+            CASE ( NIV_W )
               Atmosphere_TL%Absorber(k,H2O_Idx) = ONE
-            CASE ( NV_LAYER_OZONE )
+            CASE ( NIV_O )
               Atmosphere_TL%Absorber(k,O3_Idx)  = ONE
           END SELECT
 
@@ -613,7 +625,7 @@ PROGRAM Test_Adjoint
           ! Save the data for this profile
           ! ------------------------------
 
-          TLADMtest%d_TL(k,l,nv) = AtmAbsorption_TL%Optical_Depth(k)
+          ComponentTest%d1(k,l,1, nIV, NOV_TAU) = AtmAbsorption_TL%Optical_Depth(k)
 
         END DO TL_Layer_Loop
 
@@ -627,29 +639,39 @@ PROGRAM Test_Adjoint
 
       WRITE( *, '( 10x, "Performing AD calculations...." )' )
 
-      AD_Variable_Loop: DO k = 1, Atmosphere(m)%n_Layers
+      AD_Variable_Loop: DO nOV = 1, N_OUTPUT_VARIABLES
+
+         WRITE( *, '(10x, "Performing AD calculations for ", a, "....")' ) &
+                   TRIM( OUTPUT_VARIABLE_NAME( nOV ) )
+
+
+        !#---------------------------------------------------------------------#
+        !#                   -- BEGIN THE LAYER LOOP --                        #
+        !#---------------------------------------------------------------------#
+        AD_Layer_Loop: DO k = 1, Atmosphere(m)%n_Layers
 
 
         ! --------------------------
-        ! Reinitialise all AD arrays
-        ! --------------------------
+        ! Reinitialize all AD arrays
+        ! -------------------------- 
 
-        Atmosphere_AD%Level_Pressure = ZERO
-        Atmosphere_AD%Pressure       = ZERO
-        Atmosphere_AD%Temperature    = ZERO
-        Atmosphere_AD%Absorber       = ZERO
+        CALL CRTM_Zero_Atmosphere( Atmosphere_AD )
 
-        AtmAbsorption_AD%IntAbsorber   = ZERO
-        AtmAbsorption_AD%Predictor     = ZERO
-        AtmAbsorption_AD%Optical_Depth = ZERO
+       
+        AtmAbsorption_AD%Optical_depth = ZERO
 
 
         ! ---------------------------------
         ! Perturb the adjoint optical depth
         ! ---------------------------------
 
-        AtmAbsorption_AD%Optical_Depth(k) = ONE
 
+        
+
+        SELECT CASE ( nOV )
+          CASE ( NOV_Tau ) 
+            AtmAbsorption_AD%Optical_Depth(k) = ONE
+        END SELECT 
 
         ! ---------------------------------
         ! Compute the adjoint AtmAbsorption
@@ -685,15 +707,16 @@ PROGRAM Test_Adjoint
         END IF
 
 
-        ! ------------------------------
-        ! Save the data for this profile
-        ! ------------------------------
+        ! -------------------------------
+        ! Save the data for this profile.
+        ! -------------------------------
 
-        TLADMtest%d_AD(k,l,NV_LEVEL_PRESSURE )    = Atmosphere_AD%Level_Pressure(k)
-        TLADMtest%d_AD(k,l,NV_LAYER_PRESSURE )    = Atmosphere_AD%Pressure(k)
-        TLADMtest%d_AD(k,l,NV_LAYER_TEMPERATURE ) = Atmosphere_AD%Temperature(k)
-        TLADMtest%d_AD(k,l,NV_LAYER_WATER_VAPOR ) = Atmosphere_AD%Absorber(k,H2O_Idx)
-        TLADMtest%d_AD(k,l,NV_LAYER_OZONE )       = Atmosphere_AD%Absorber(k,O3_Idx)
+        ComponentTest%d2(k,l,1,NIV_P, nOV) = Atmosphere_AD%Pressure(k)
+        ComponentTest%d2(k,l,1,NIV_T, nOV) = Atmosphere_AD%Temperature(k)
+        ComponentTest%d2(k,l,1,NIV_W, nOV) = Atmosphere_AD%Absorber(k, H2O_Idx)
+        ComponentTest%d2(k,l,1,NIV_O, nOV) = Atmosphere_AD%Absorber(k, O3_Idx)
+  
+        END DO AD_Layer_Loop
 
       END DO AD_Variable_Loop
 
@@ -712,16 +735,16 @@ PROGRAM Test_Adjoint
     ! Set the current dataset number in the output structure
     ! ------------------------------------------------------
 
-    TLADMtest%nM = m
-    WRITE( TLADMtest%nM_Name, '( "Profile # ", i3 )' ) m
+    ComponentTest%nM = m
+    WRITE( ComponentTest%nM_Name, '( "Profile # ", i3 )' ) m
 
 
     ! --------------
     ! Write the data
     ! --------------
 
-    Error_Status = Write_TLADMtest_netCDF( TRIM( TLADMtest_File ), &
-                                           TLADMtest, &
+    Error_Status = Write_ComponentTest_netCDF( TRIM( ComponentTest_File ), &
+                                           ComponentTest, &
                                            New_File      = New_File, &
                                            Title         = 'TL/AD CRTM AtmAbsorption test results for '//&
                                                            TRIM( File_Prefix ), &
@@ -732,8 +755,8 @@ PROGRAM Test_Adjoint
                                            ID_Tag        = 'ECMWF' )
 
     IF ( Error_Status /= SUCCESS ) THEN 
-      WRITE( Message, '( "Error writing TLADMtest structure for profile #", i5, " to ", a )' ) &
-                      m, TRIM( TLADMtest_File )
+      WRITE( Message, '( "Error writing ComponentTest structure for profile #", i5, " to ", a )' ) &
+                      m, TRIM( ComponentTest_File )
       CALL Display_Message( PROGRAM_NAME, &
                             TRIM( Message ), &
                             Error_Status )                           
@@ -745,7 +768,7 @@ PROGRAM Test_Adjoint
     ! Reset the new file flag
     ! -----------------------
 
-    IF ( New_File == SET ) New_File = UNSET
+    IF ( New_File == 1 ) New_File = 0
 
 
 
@@ -792,11 +815,11 @@ PROGRAM Test_Adjoint
   !#                       -- DESTROY TLADMtest STRUCTURE --                    #
   !#----------------------------------------------------------------------------#
 
-  Error_Status = Destroy_TLADMtest( TLADMtest )
+  Error_Status = Destroy_ComponentTest( ComponentTest )
 
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
-                           'Error occurred destroying TLADMtest for '//&
+                           'Error occurred destroying ComponentTest for '//&
                            TRIM( File_Prefix ), &
                             Error_Status )                           
    STOP
@@ -839,22 +862,26 @@ END PROGRAM Test_Adjoint
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_Adjoint.f90,v 1.7 2006/05/02 14:58:34 dgroff Exp $
+! $Id: Test_Adjoint.f90,v 1.8 2006/07/05 18:57:41 dgroff Exp $
 !
-! $Date: 2006/05/02 14:58:34 $
+! $Date: 2006/07/05 18:57:41 $
 !
-! $Revision: 1.7 $
+! $Revision: 1.8 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Test_Adjoint.f90,v $
+! Revision 1.8  2006/07/05 18:57:41  dgroff
+! The adjoint testing has been updated to use the ComponentTest modules instead of the
+! outdated TLADMtest modules.
+!
 ! Revision 1.7  2006/05/02 14:58:34  dgroff
 ! - Replaced all references of Error_Handler with Message_Handler
 !
 ! Revision 1.6  2005/08/12 20:56:07  paulv
-! - Now using new TLADMtest definition and I/O modules.
+! - Now using new ComponentTest definition and I/O modules.
 ! - Only layer variables are output.
 ! - Added the CRTM IRSSE emissivity coefficient file to the initialisation list.
 !
@@ -865,7 +892,7 @@ END PROGRAM Test_Adjoint
 ! - Updated to use new AerosolCoeff modules.
 !
 ! Revision 1.3  2005/02/16 15:49:07  paulv
-! - Updated to use new TLADMtest modules.
+! - Updated to use new ComponentTest modules.
 !
 ! Revision 1.2  2005/02/01 15:57:32  paulv
 ! - Replaced CRTM_SetUp_AtmAbsorption function calls with subroutine calls.

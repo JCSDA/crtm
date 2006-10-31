@@ -30,17 +30,17 @@
 !
 !       Interpolate:            Module containing interpolation routines.
 !                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !
 !       Integrate:              Module containing integration routines.
 !                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !                                     INTERPOLATE module
 !
 !       SRF_Define:             Module defining the SRF data structure and
 !                               containing routines to manipulate it.
 !                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !
 ! CONTAINS:
 !       Interpolate_SRF:        Function to interpolate input SRFs to another 
@@ -118,7 +118,7 @@ MODULE SRF_Utility
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SRF_Utility.f90,v 1.6 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: SRF_Utility.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -425,7 +425,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the SRF integration was successful
 !                        == FAILURE an error occurred
 !                     UNITS:      N/A
@@ -458,7 +458,7 @@ CONTAINS
 !                                   SOURCE: INTEGRATE module
 !
 !      Display_Message:             Subroutine to output messages
-!                                   SOURCE: ERROR_HANDLER module
+!                                   SOURCE: Message_Handler module
 !
 !      Compute_Frequency_Interval:  PRIVATE subroutine to compute the frequency
 !                                   spacing of the input frequency grid.
@@ -863,7 +863,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:        The return value is an integer defining the error status.
-!                            The error codes are defined in the ERROR_HANDLER module.
+!                            The error codes are defined in the Message_Handler module.
 !                            If == SUCCESS the spectrum convolution was successful
 !                               == FAILURE an error occurred
 !                            UNITS:      N/A
@@ -885,7 +885,7 @@ CONTAINS
 !                                   SOURCE: INTEGRATE module
 !
 !      Display_Message:             Subroutine to output messages
-!                                   SOURCE: ERROR_HANDLER module
+!                                   SOURCE: Message_Handler module
 !
 !      Compute_Frequency_Interval:  PRIVATE subroutine to compute the frequency
 !                                   spacing of the input frequency grid.
@@ -1177,17 +1177,20 @@ END MODULE SRF_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_Utility.f90,v 1.6 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SRF_Utility.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.6 $
+! $Revision: 1.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SRF_Utility.f90,v $
+! Revision 1.7  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 1.6  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

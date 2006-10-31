@@ -23,14 +23,14 @@
 !       SRF_Define:     Module defining the SRF data structure and
 !                       containing routines to manipulate it.
 !                       USEs: TYPE_KINDS module
-!                             ERROR_HANDLER module
+!                             Message_Handler module
 !                             INTEGRATE module
 !
 !       SRF_ASCII_IO:   Module containing routines to read and
 !                       write ASCII format SRF data files.
 !                       USEs: TYPE_KINDS module
 !                             FILE_UTILITY module
-!                             ERROR_HANDLER module
+!                             Message_Handler module
 !                             STRING_UTILITY module
 !                             SRF_DEFINE module
 ! CONTAINS:
@@ -105,7 +105,7 @@ PROGRAM SRF_ASCII_IO_Test
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_ASCII_IO_Test'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: SRF_ASCII_IO_Test.f90,v 1.4 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: SRF_ASCII_IO_Test.f90,v 1.5 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -148,7 +148,7 @@ PROGRAM SRF_ASCII_IO_Test
   WRITE( *, '(/5x, a )' ) PROGRAM_HEADER
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to test the ASCII SRF I/O functions  ")' )
-  WRITE( *, '(/5x, " $Revision: 1.4 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.5 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -264,17 +264,20 @@ END PROGRAM SRF_ASCII_IO_Test
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_ASCII_IO_Test.f90,v 1.4 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SRF_ASCII_IO_Test.f90,v 1.5 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.4 $
+! $Revision: 1.5 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SRF_ASCII_IO_Test.f90,v $
+! Revision 1.5  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 1.4  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

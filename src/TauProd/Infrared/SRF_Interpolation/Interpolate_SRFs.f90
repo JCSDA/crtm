@@ -21,11 +21,11 @@
 !       File_Utility:               Module containing generic file utility
 !                                   routines
 !
-!       Error_Handler:              Module to define simple error codes and
+!       Message_Handler:              Module to define simple error codes and
 !                                   handle error conditions
 !                                   USEs: FILE_UTILITY module
 !
-!       Interpolate:                Module containing interpolation routines
+!       Interpolate_Utility:        Module containing interpolation routines
 !                                   USEs: TYPE_KINDS module
 !                                         ERROR_HANDLER module
 !
@@ -121,9 +121,9 @@ PROGRAM Interpolate_SRFs
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
-  USE Interpolate
+  USE Interpolate_Utility
 
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
@@ -148,7 +148,7 @@ PROGRAM Interpolate_SRFs
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Interpolate_SRFs'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Interpolate_SRFs.f90,v 2.6 2006/01/26 23:40:30 paulv Exp $'
+  '$Id: Interpolate_SRFs.f90,v 2.8 2006/07/26 22:51:20 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -229,7 +229,7 @@ PROGRAM Interpolate_SRFs
   WRITE( *, '(/5x, " Program to read the netCDF SRF data files and interpolate ")' )
   WRITE( *, '( 5x, "   the SRFs to the same frequency grid used in the line-   ")' )
   WRITE( *, '( 5x, "   by-line transmittance data files                        ")' )
-  WRITE( *, '(/5x, " $Revision: 2.6 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.8 $")' )
   WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
 
 
@@ -651,17 +651,24 @@ END PROGRAM Interpolate_SRFs
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Interpolate_SRFs.f90,v 2.6 2006/01/26 23:40:30 paulv Exp $
+! $Id: Interpolate_SRFs.f90,v 2.8 2006/07/26 22:51:20 wd20pd Exp $
 !
-! $Date: 2006/01/26 23:40:30 $
+! $Date: 2006/07/26 22:51:20 $
 !
-! $Revision: 2.6 $
+! $Revision: 2.8 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Interpolate_SRFs.f90,v $
+! Revision 2.8  2006/07/26 22:51:20  wd20pd
+! Renamed Inteprolate module to Interpolate_Utility to reflect changes in
+! the CRTM Utility modules.
+!
+! Revision 2.7  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.6  2006/01/26 23:40:30  paulv
 ! - Added code to set to 0.0 any interpolated SRF points that are < 0.0.
 !

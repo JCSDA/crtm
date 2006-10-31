@@ -2,24 +2,15 @@
 #
 # Makefile to install Transmittance Production scripts
 #
-# $Id: Makefile,v 1.4 2006/01/05 19:23:30 paulv Exp $
-#
 #==============================================================================
 
-#-----------------------------------------------------------------------------
-#                          -- Define macros --
-#-----------------------------------------------------------------------------
+# -------------
+# Define macros
+# -------------
+include $(CRTM_SOURCE_ROOT)/make.macros
 
-F90_DIR = $(HOME)/f90
-
-include $(F90_DIR)/make.macros
-
-
-# ------------------------
 # Shell scripts to install
-# ------------------------
-
-SHELL_SOURCE_DIR = $(F90_DIR)/Transmittance_Production/shell_scripts
+SHELL_SOURCE_DIR = $(CRTM_SOURCE_ROOT)/TauProd/Infrared/shell_scripts
 
 SHELL_SCRIPT_FILES = Check_LBL_Run_Completion \
                      Check_TauSpc_Run_Completion \
@@ -36,10 +27,9 @@ SHELL_SCRIPT_FILES = Check_LBL_Run_Completion \
 
 
 
-# ----------
-# Install it
-# ----------
-
+# --------------
+# Define targets
+# --------------
 install:
 	@if [ -d $(HOME)/bin ]; then \
 	  cd $(HOME)/bin; \

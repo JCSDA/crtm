@@ -21,7 +21,7 @@
 !
 !       File_Utility:       Module containing generic file utility routines
 !
-!       Error_Handler:      Module containing error handling definitions and
+!       Message_Handler:    Module containing error handling definitions and
 !                           routines.
 !                           USEs: FILE_UTILITY module
 !
@@ -109,7 +109,7 @@ MODULE LBLRTM_Phdr_IO
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE LBLRTM_Parameters
 
@@ -137,7 +137,7 @@ MODULE LBLRTM_Phdr_IO
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Phdr_IO.f90,v 1.8 2005/05/08 15:11:03 paulv Exp $'
+  '$Id: LBLRTM_Phdr_IO.f90,v 1.9 2006/07/26 21:43:58 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -486,7 +486,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the LBLRTM panel header read was successful
 !                        == FAILURE an error occurred
 !                     UNITS:      N/A
@@ -698,7 +698,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the LBLRTM panel header write was successful
 !                        == FAILURE an error occurred
 !                     UNITS:      N/A
@@ -828,17 +828,21 @@ END MODULE LBLRTM_Phdr_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Phdr_IO.f90,v 1.8 2005/05/08 15:11:03 paulv Exp $
+! $Id: LBLRTM_Phdr_IO.f90,v 1.9 2006/07/26 21:43:58 wd20pd Exp $
 !
-! $Date: 2005/05/08 15:11:03 $
+! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.8 $
+! $Revision: 1.9 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_Phdr_IO.f90,v $
+! Revision 1.9  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
 ! Revision 1.8  2005/05/08 15:11:03  paulv
 ! - Upgraded to Fortran-95
 ! - Removed Initialization() subroutine. Structure initialisation is now done

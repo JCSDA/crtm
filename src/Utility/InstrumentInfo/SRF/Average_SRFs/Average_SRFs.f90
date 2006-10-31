@@ -29,22 +29,22 @@
 !                           character or integer data, one item per line.
 !                           USEs: TYPE_KINDS module
 !                                 FILE_UTILITY module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !
 !       Integrate:          Module containing integration routines.
 !                           USEs: TYPE_KINDS module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 INTERPOLATE module
 !
 !       SRF_Define:         Module defining the SRF data structure
 !                           and containing routines to manipulate it.
 !                           USEs: TYPE_KINDS module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !
 !       SRF_netCDF_IO:      Module containing routines to read and
 !                           write SRF netCDF format files.
 !                           USEs: TYPE_KINDS module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 SRF_DEFINE module
 !                                 NETCDF module
 !                                 NETCDF_UTILITY module
@@ -52,7 +52,7 @@
 !       SRF_Utility:        Module containing routines for application of
 !                           SRF data.
 !                           USEs: TYPE_KINDS module
-!                                 ERROR_HANDLER module
+!                                 Message_Handler module
 !                                 COMPARE_FLOAT_NUMBERS module
 !                                 INTERPOLATE module
 !                                 INTEGRATE module
@@ -135,7 +135,7 @@ PROGRAM Average_SRFs
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Average_SRFs'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Average_SRFs.f90,v 2.3 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: Average_SRFs.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -206,7 +206,7 @@ PROGRAM Average_SRFs
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to average SRFs read in from separate netCDF   ")' )
   WRITE( *, '( 5x, "   format SRF data files.                               ")' )
-  WRITE( *, '(/5x, " $Revision: 2.3 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.4 $")' )
   WRITE( *, '( 5x, a)' ) PROGRAM_HEADER
 
 
@@ -807,17 +807,20 @@ END PROGRAM Average_SRFs
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Average_SRFs.f90,v 2.3 2006/05/02 16:58:02 dgroff Exp $
+! $Id: Average_SRFs.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 2.3 $
+! $Revision: 2.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Average_SRFs.f90,v $
+! Revision 2.4  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 2.3  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

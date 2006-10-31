@@ -17,7 +17,7 @@
 !       Type_Kinds:            Module containing definitions for kinds
 !                              of variable types.
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:         Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
@@ -95,7 +95,7 @@ PROGRAM Create_LBLRTM_Input_Files
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE AtmProfile_Define
   USE AtmProfile_netCDF_IO
@@ -116,7 +116,7 @@ PROGRAM Create_LBLRTM_Input_Files
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_LBLRTM_Input_Files'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_LBLRTM_Input_Files.f90,v 1.6 2005/07/29 22:01:27 paulv Exp $'
+  '$Id: Create_LBLRTM_Input_Files.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -169,7 +169,7 @@ PROGRAM Create_LBLRTM_Input_Files
   WRITE( *, '(/5x, a )' ) PROGRAM_HEADER
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to create the LBLRTM TAPE5 input data files. ")' )
-  WRITE( *, '(/5x, " $Revision: 1.6 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.7 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -307,17 +307,20 @@ END PROGRAM Create_LBLRTM_Input_Files
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Create_LBLRTM_Input_Files.f90,v 1.6 2005/07/29 22:01:27 paulv Exp $
+! $Id: Create_LBLRTM_Input_Files.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/07/29 22:01:27 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.6 $
+! $Revision: 1.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Create_LBLRTM_Input_Files.f90,v $
+! Revision 1.7  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.6  2005/07/29 22:01:27  paulv
 ! - Upgraded to Fortran95
 !

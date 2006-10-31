@@ -27,40 +27,40 @@
 !                               and containing routines to manipulate it.
 !                               USEs: TYPE_KINDS module
 !                                     FILE_UTILITY module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !
 !       SensorInfo_LinkedList:  Module defining the SensorInfo Linked List
 !                               data structure and containing routines to
 !                               manipulate it.
 !                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !                                     SENSORINFO_DEFINE module
 !
 !       SensorInfo_IO:          Module continaing routines to read and write
 !                               ASCII SensorInfo format files.
 !                               USEs: TYPE_KINDS module
 !                                     FILE_UTILITY module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !                                     SensorInfo_DEFINE module
 !
 !       SRF_Define:             Module defining the generic SRF data structure
 !                               and its manipulation routines.
 !                               USEs: TYPE_KINDS module
 !                                     FILE_UTILITY module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !
 !       SRF_ASCII_IO:           Module containing routines to read and write
 !                               ASCII format SRF files.
 !                               USEs: TYPE_KINDS module
 !                                     FILE_UTILITY module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !                                     STRING_PROCESSING module
 !                                     SRF_DEFINE module
 !
 !       SRF_netCDF_IO:          Module containing routines to read and write
 !                               netCDF format SRF files.
 !                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
+!                                     Message_Handler module
 !                                     SRF_DEFINE module
 !                                     NETCDF module
 !                                     NETCDF_UTILITY module
@@ -143,7 +143,7 @@ PROGRAM SRF_ASCII2NC
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_ASCII2NC'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: SRF_ASCII2NC.f90,v 1.5 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: SRF_ASCII2NC.f90,v 1.6 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -203,7 +203,7 @@ PROGRAM SRF_ASCII2NC
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to read ASCII format SRF data files and write    ")' )
   WRITE( *, '( 5x, "   netCDF format SRF data files.                          ")' )
-  WRITE( *, '(/5x, " $Revision: 1.5 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.6 $")' )
   WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
 
 
@@ -488,17 +488,20 @@ END PROGRAM SRF_ASCII2NC
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_ASCII2NC.f90,v 1.5 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SRF_ASCII2NC.f90,v 1.6 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.5 $
+! $Revision: 1.6 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SRF_ASCII2NC.f90,v $
+! Revision 1.6  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 1.5  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

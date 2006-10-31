@@ -19,7 +19,7 @@
 !
 !       File_Utility:              Module containing generic file utility routines
 !
-!       Error_Handler:             Module to define simple error codes and
+!       Message_Handler:             Module to define simple error codes and
 !                                  handle error conditions
 !                                  USEs: FILE_UTILITY module
 !
@@ -138,7 +138,7 @@ PROGRAM Create_ProcessControl_File
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
@@ -167,7 +167,7 @@ PROGRAM Create_ProcessControl_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_ProcessControl_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_ProcessControl_File.f90,v 2.2 2005/09/15 20:40:05 paulv Exp $'
+  '$Id: Create_ProcessControl_File.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -241,7 +241,7 @@ PROGRAM Create_ProcessControl_File
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to create a transmittance production Process")' )
   WRITE( *, '( 5x, "   Control file from netCDF format SRF files.")' )
-  WRITE( *, '(/5x, " $Revision: 2.2 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.3 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -786,17 +786,20 @@ END PROGRAM Create_ProcessControl_File
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Create_ProcessControl_File.f90,v 2.2 2005/09/15 20:40:05 paulv Exp $
+! $Id: Create_ProcessControl_File.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/09/15 20:40:05 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Create_ProcessControl_File.f90,v $
+! Revision 2.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.2  2005/09/15 20:40:05  paulv
 ! - Renamed SRF frequency arrays to prevent namespace clash with USEd parameters.
 ! - Corrected calls to Compute_LBL_band.

@@ -2,189 +2,47 @@
 #
 # Makefile for Planck functions test program
 #
-# $Id: Makefile,v 1.4 2004/09/08 16:52:13 paulv Exp $
-#
 #==============================================================================
 
-#-----------------------------------------------------------------------------
-#                          -- Define macros --
-#-----------------------------------------------------------------------------
+# Define macros
+include $(CRTM_SOURCE_ROOT)/make.macros
 
-F90_DIR = $(HOME)/f90
-
-include $(F90_DIR)/make.macros
-
-
-# --------------
-# This make file
-# --------------
-
+# This makefile
 MAKE_FILE = Makefile
 
-
-# ---------------
 # Executable file
-# ---------------
-
 EXE_FILE = Planck_Functions_Test
 
+# Source files to link
+SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Message_Handler.f90 \
+            Fundamental_Constants.f90 \
+            Planck_Functions.f90
 
-# ------------
-# Object files
-# ------------
-
-UTILITY_OBJ_FILES = Type_Kinds.o \
-                    File_Utility.o \
-                    Error_Handler.o
-CONSTANTS_OBJ_FILES = Fundamental_Constants.o
-PLANCK_OBJ_FILES = Planck_Functions.o
-
-OBJ_FILES = $(UTILITY_OBJ_FILES) \
-            $(CONSTANTS_OBJ_FILES) \
-            $(PLANCK_OBJ_FILES) \
+# Obj files used in link phase
+OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
+# Include and library definitions
+INCLUDES = -I$(HOME)/local/netcdf/include
+LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 
+# Define common make targets (all, build, clean, install)
+include $(CRTM_SOURCE_ROOT)/make.common_targets
 
-#-----------------------------------------------------------------------------
-#                          -- Define dependecies --
-#-----------------------------------------------------------------------------
-
-# ---------------------
-# Make based on OS type
-# ---------------------
-
-all:
-	@echo "OS type detected: "`uname -s`
-	@case `uname -s` in \
-	  "SunOS")    make -f $(MAKE_FILE) test_program $(SUNOS_FLAGS) ;; \
-	   "AIX")     make -f $(MAKE_FILE) test_program $(AIX_FLAGS) ;; \
-	   "IRIX64" ) make -f $(MAKE_FILE) test_program $(IRIX64_FLAGS) ;; \
-	   "Linux" )  make -f $(MAKE_FILE) test_program $(Linux_FLAGS) ;; \
-	   *) echo "This system is not supported" ;; \
-       esac
-
-
-# ----------------------
-# Make the test programs
-# ----------------------
-
-test_program: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
-
-
-# --------
-# Clean up
-# --------
-
-clean:
-	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD *.stb
-
-realclean: remove_links clean
-	
-
-# ----------
-# Install it
-# ----------
-
-install:
-	@if [ -d $(HOME)/bin ]; then \
-	  $(MOVE) $(EXE_FILE) $(HOME)/bin; \
-	fi
-
-
-# ----------------------------
-# Create links for compilation
-# ----------------------------
-
-UTILITY_SOURCE_DIR = $(F90_DIR)/Utility
-UTILITY_SOURCE_FILES = ${UTILITY_OBJ_FILES:.o=.f90}
-
-CONSTANTS_SOURCE_DIR = $(F90_DIR)/Constants
-CONSTANTS_SOURCE_FILES = ${CONSTANTS_OBJ_FILES:.o=.f90}
-
-PLANCK_SOURCE_DIR = $(F90_DIR)/Radiance
-PLANCK_SOURCE_FILES = ${PLANCK_OBJ_FILES:.o=.f90}
-
+# Source link creation and removal
 create_links:
-	@for source_file in ${UTILITY_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${UTILITY_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-	@for source_file in ${CONSTANTS_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${CONSTANTS_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-	@for source_file in ${PLANCK_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${PLANCK_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
+	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-ALL_SOURCE_FILES = $(UTILITY_SOURCE_FILES) \
-                   $(CONSTANTS_SOURCE_FILES) \
-                   $(PLANCK_SOURCE_FILES)
-                   
 remove_links:
-	@for source_file in ${ALL_SOURCE_FILES}; do \
-	  $(REMOVE) $$source_file ; \
-	done
+	@unlinkfiles $(SRC_FILES)
 
+# Squeaky clean target
+realclean: clean remove_links
 
-# ---------------
-# Dedendency list
-# ---------------
+# Source dependency lists
+include make.dependencies
 
-Type_Kinds.o : Type_Kinds.f90 
-File_Utility.o : File_Utility.f90 
-Error_Handler.o : Error_Handler.f90 File_Utility.o 
-
-Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
-
-Planck_Functions.o : Planck_Functions.f90 Type_Kinds.o Fundamental_Constants.o Error_Handler.o 
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o Error_Handler.o Planck_Functions.o 
-
-
-# -------------------------------
-# Create tarball for distribution
-# -------------------------------
-
-TAR_FILE = $(EXE_FILE)_software.tar
-
-tar: create_links
-	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
-	@$(COPY) makefile.dist makefile
-	$(TARBALL_APPEND) $(TAR_FILE) makefile
-	@$(REMOVE) makefile
-	@$(COPY) $(F90_DIR)/make.macros .
-	@$(COPY) $(F90_DIR)/make.rules .
-	$(TARBALL_APPEND) $(TAR_FILE) make.macros make.rules
-	@$(REMOVE) make.macros make.rules
-	$(TARBALL_APPEND) $(TAR_FILE) $(EXE_FILE).output
-	compress $(TAR_FILE)
-	@make -f $(MAKE_FILE) realclean >/dev/null
-
-
-# -------------------------
-# Create html documentation
-# -------------------------
-
-PRO_FILE = main.pro
-
-html:
-	@echo "create_f90_html_doc,'${EXE_FILE}.f90'" > ${PRO_FILE}; \
-	echo "exit" >> ${PRO_FILE}; \
-	idl ${PRO_FILE}; \
-	$(REMOVE) $(PRO_FILE)
-
-
-
-#-----------------------------------------------------------------------------
-#                          -- Define default rules --
-#-----------------------------------------------------------------------------
-
-include $(F90_DIR)/make.rules
-
-
+# Define default rules
+include $(CRTM_SOURCE_ROOT)/make.rules

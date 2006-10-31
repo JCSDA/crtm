@@ -19,7 +19,7 @@
 !
 !       File_Utility:           Module containing generic file utility routines
 !
-!       Error_Handler:          Module to define simple error codes and
+!       Message_Handler:          Module to define simple error codes and
 !                               handle error conditions
 !                               USEs: FILE_UTILITY module
 !
@@ -114,7 +114,7 @@ PROGRAM Combine_TauProfile
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
@@ -137,7 +137,7 @@ PROGRAM Combine_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Combine_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Combine_TauProfile.f90,v 1.3 2004/09/14 18:13:43 paulv Exp $'
+  '$Id: Combine_TauProfile.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -208,7 +208,7 @@ PROGRAM Combine_TauProfile
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to assemble individual TauProfile datafiles  ")' )
   WRITE( *, '( 5x, "   into a single datafile.                            ")' )
-  WRITE( *, '(/5x, " $Revision: 1.3 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.4 $")' )
   WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
 
 
@@ -708,17 +708,20 @@ END PROGRAM Combine_TauProfile
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Combine_TauProfile.f90,v 1.3 2004/09/14 18:13:43 paulv Exp $
+! $Id: Combine_TauProfile.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/09/14 18:13:43 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.3 $
+! $Revision: 1.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Combine_TauProfile.f90,v $
+! Revision 1.4  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.3  2004/09/14 18:13:43  paulv
 ! - Upgraded to Fortran-95
 ! - Removed initialization functions.

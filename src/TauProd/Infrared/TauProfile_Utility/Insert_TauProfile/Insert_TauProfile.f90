@@ -1,93 +1,16 @@
-!------------------------------------------------------------------------------
-!P+
-! NAME:
-!       Insert_TauProfile
 !
-! PURPOSE:
-!       Program to insert TauProfile data from one file into another, e.g. from
-!       a TauProfile file for a single profile, angle, molecule set into a 
-!       "master" TauProfile file containing all profiles, angles, and molecule
-!       sets.
+! Insert_TauProfile
 !
-! CATEGORY:
-!       Transmittance Production
+! Program to insert TauProfile data from one file into another, e.g. from
+! a TauProfile file for a single profile, angle, molecule set into a 
+! "master" TauProfile file containing all profiles, angles, and molecule
+! sets.
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:                 Module containing definitions for kinds
-!                                   of variable types.
-!
-!       File_Utility:               Module containing generic file utility routines
-!
-!       Error_Handler:              Module to define simple error codes and
-!                                   handle error conditions
-!                                   USEs: FILE_UTILITY module
-!
-!       String_Utility:             Module containing string utility routines
-!
-!       TauProfile_Define:          Module defining the TauProfile data
-!                                   structure and containing routines to
-!                                   manipulate it.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
-!
-!       TauProfile_netCDF_IO:       Module containing routines to read and
-!                                   write TauProfile netCDF format files.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
-!                                         ATMPROFILE_DEFINE module
-!                                         NETCDF module
-!                                         NETCDF_UTILITY module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       Input: - ASCII SensorInfo file
-!              - netCDF TauProfile data file
-!
-!       Output: Existing netCDF TauProfile data file.
-!
-! SIDE EFFECTS:
-!       The TauProfile data from the input file is inserted into the 
-!       appropriate position in the output file. If the output file
-!       already contains data in the required "slot", it is overwritten.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Jan-2006
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2006 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!P-
-!------------------------------------------------------------------------------
 
 PROGRAM Insert_TauProfile
 
@@ -98,7 +21,7 @@ PROGRAM Insert_TauProfile
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
   USE String_Utility
 
   USE SensorInfo_Define
@@ -122,9 +45,7 @@ PROGRAM Insert_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Insert_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Insert_TauProfile.f90,v 1.5 2006/02/06 22:34:25 paulv Exp $'
-  CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
-  '**********************************************************'
+  '$Id: Insert_TauProfile.f90,v 1.7 2006/07/27 22:05:39 wd20pd Exp $'
 
   INTEGER, PARAMETER :: N_DIRECTIONS = 2
   CHARACTER( * ),  PARAMETER, DIMENSION( N_DIRECTIONS ) :: &
@@ -136,28 +57,18 @@ PROGRAM Insert_TauProfile
   ! ---------
 
   CHARACTER( 256 ) :: Message
-
-  INTEGER         :: pn_pos
-  CHARACTER( 80 ) :: pn_fmt
-
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-
   CHARACTER( 256 )             :: SensorInfo_Filename
   TYPE( SensorInfo_type )      :: SensorInfo
   TYPE( SensorInfo_List_type ) :: SensorInfo_List
-
   INTEGER :: n_Sensors, iDir, i, j, m, n
-
   CHARACTER( 256 ) :: Path
   CHARACTER( 256 ) :: InFile
   CHARACTER( 256 ) :: OutFile
-
   CHARACTER( 5000 ) :: History
   CHARACTER( 5000 ) :: Comment, New_Comment, Tmp_Comment
-
   TYPE( TauProfile_type ) :: TauProfile
-
   INTEGER :: i_nK, i_nL, i_nI, i_nM, i_nJ
   INTEGER :: i_NCEP_Sensor_ID
   CHARACTER( 80 ) :: i_ID_Tag, i_Sensor_Name, i_Platform_Name
@@ -165,7 +76,6 @@ PROGRAM Insert_TauProfile
   REAL( fp_kind ), DIMENSION(:), ALLOCATABLE :: i_Angle_List
   INTEGER,         DIMENSION(:), ALLOCATABLE :: i_Profile_List
   INTEGER,         DIMENSION(:), ALLOCATABLE :: i_Molecule_Set_List
-
   INTEGER :: o_nK, o_nL, o_nI, o_nM, o_nJ
   INTEGER :: o_NCEP_Sensor_ID
   CHARACTER( 80 ) :: o_ID_Tag, o_Sensor_Name, o_Platform_Name
@@ -174,25 +84,12 @@ PROGRAM Insert_TauProfile
   INTEGER,         DIMENSION(:), ALLOCATABLE :: o_Profile_List
   INTEGER,         DIMENSION(:), ALLOCATABLE :: o_Molecule_Set_List
 
-
-
-  !#----------------------------------------------------------------------------#
-  !#                       -- OUTPUT DESCRIPTIVE HEADER --                      #
-  !#----------------------------------------------------------------------------#
-
-  pn_pos = ( LEN( PROGRAM_HEADER ) / 2 ) - &
-           ( LEN( PROGRAM_NAME ) / 2 )
-  pn_pos = MAX( pn_pos, 0 ) + 5
-  WRITE( pn_fmt, '( "( ",i2,"x, a )" )' ) pn_pos
-
-  WRITE( *, '(/5x, a)' ) PROGRAM_HEADER
-  WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
-  WRITE( *, '(/5x, " Program to insert data from one (smaller) netCDF format", &
-             &/5x, "   TauProfile file into another (larger) netCDF format", &
-             &/5x, "   TauProfile file")' )
-  WRITE( *, '(/5x, " $Revision: 1.5 $")' )
-  WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
-
+  ! Output program header
+  CALL Program_Message(PROGRAM_NAME, &
+                       'Program to insert data from one (smaller) netCDF format '//&
+                       'TauProfile file into another (larger) netCDF format '//&
+                       'TauProfile file', &
+                       '$Revision: 1.7 $' )
 
 
   !#----------------------------------------------------------------------------#
@@ -650,41 +547,3 @@ PROGRAM Insert_TauProfile
   END IF
 
 END PROGRAM Insert_TauProfile
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Insert_TauProfile.f90,v 1.5 2006/02/06 22:34:25 paulv Exp $
-!
-! $Date: 2006/02/06 22:34:25 $
-!
-! $Revision: 1.5 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Insert_TauProfile.f90,v $
-! Revision 1.5  2006/02/06 22:34:25  paulv
-! - Cosmetic changes to output.
-!
-! Revision 1.4  2006/02/06 20:42:59  paulv
-! - Now using String_Utility functions in sensor and platform name comparisons.
-!
-! Revision 1.3  2006/02/06 20:34:17  paulv
-! - Altered code so that the TauProfile data to insert drives how much data
-!   get inserted. Now only the number of layers and channels needs to be the
-!   same.
-!
-! Revision 1.2  2006/01/26 21:26:08  paulv
-! - Also updated Title in TauProfile write.
-! - Added some info output.
-!
-! Revision 1.1  2006/01/26 21:16:01  paulv
-! Initial checkin.
-!
-!
-!
-!

@@ -49,9 +49,9 @@ MODULE AerosolCoeff_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: AerosolCoeff_Define.f90,v 1.4 2006/05/26 19:45:29 wd20pd Exp $'
+  '$Id: AerosolCoeff_Define.f90,v 1.5 2006/06/19 19:51:58 wd20pd Exp $'
   ! AerosolCoeff initialisation values
-  REAL(Double), PARAMETER :: DPZERO = 0.0_Double
+  REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Current valid release and version numbers
@@ -538,8 +538,8 @@ CONTAINS
     ! Assign the dimensions and initialise arrays
     ! -------------------------------------------
     AerosolCoeff%n_Channels = n_Channels
-    AerosolCoeff%Absorption = DPZERO
-    AerosolCoeff%Scattering = DPZERO
+    AerosolCoeff%Absorption = FP_INIT
+    AerosolCoeff%Scattering = FP_INIT
 
 
     ! -------------------------------------
@@ -816,6 +816,7 @@ CONTAINS
     INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: n
+    LOGICAL, DIMENSION(AerosolCoeff_LHS%n_Channels) :: Compare
 
 
     ! ------
@@ -907,9 +908,10 @@ CONTAINS
     ! Check pointer members
     ! ---------------------
     ! Absorption coefficient array
-    IF ( ANY( .NOT. ( Compare_Float( AerosolCoeff_LHS%Absorption, &
-                                     AerosolCoeff_RHS%Absorption, &
-                                     ULP = ULP                    ) ) ) ) THEN
+    Compare = Compare_Float( AerosolCoeff_LHS%Absorption, &
+                             AerosolCoeff_RHS%Absorption, &
+                             ULP = ULP                    )
+    IF ( ANY( .NOT. Compare ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Absorption coefficient values are different.', &
@@ -919,9 +921,10 @@ CONTAINS
     END IF
 
     ! Scattering coefficient array
-    IF ( ANY( .NOT. ( Compare_Float( AerosolCoeff_LHS%Scattering, &
-                                     AerosolCoeff_RHS%Scattering, &
-                                     ULP = ULP                    ) ) ) ) THEN
+    Compare = Compare_Float( AerosolCoeff_LHS%Scattering, &
+                             AerosolCoeff_RHS%Scattering, &
+                             ULP = ULP                    )
+    IF ( ANY( .NOT. Compare ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Scattering coefficient values are different.', &

@@ -28,7 +28,7 @@
 !                              containing routines to manipulate it.
 !                              USEs: TYPE_KINDS module
 !                                    FILE_UTILITY module
-!                                    ERROR_HANDLER module
+!                                    Message_Handler module
 !
 !       netcdf:                Module supplied with the Fortran 90 version 
 !                              of the netCDF libraries (at least v3.5.0).
@@ -127,7 +127,7 @@ MODULE SRF_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SRF_netCDF_IO.f90,v 3.8 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: SRF_netCDF_IO.f90,v 3.9 2006/08/15 20:51:04 wd20pd Exp $'
 
   ! -- Invalid flag
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -457,7 +457,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the global attribute write was successful
 !                            == FAILURE an error occurred writing the supplied
 !                                       global attributes.
@@ -471,7 +471,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -844,7 +844,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the global attribute read was successful
 !                            == FAILURE an error occurred reading the requested
 !                                       global attributes.
@@ -858,7 +858,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -1240,7 +1240,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the SRF netCDF file creation was successful
 !                              == FAILURE an unrecoverable error occurred 
 !                              == WARNING - an error occurred writing any of the
@@ -1282,7 +1282,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -2201,7 +2201,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
-!                           ERROR_HANDLER module.
+!                           Message_Handler module.
 !                           If == SUCCESS the netCDF file inquiry was successful
 !                              == FAILURE - an error occurred opening the netCDF file, or
 !                                         - an error occurred reading any of the
@@ -2231,7 +2231,7 @@ CONTAINS
 !                                SOURCE: NETCDF_UTILITY module
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 !       NF90_CLOSE:              Function to close a netCDF file.
 !                                SOURCE: netCDF library
@@ -2775,7 +2775,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error
 !                        status. The error codes are defined in the
-!                        ERROR_HANDLER module.
+!                        Message_Handler module.
 !                        If == SUCCESS the netCDF data write was successful
 !                           == FAILURE an unrecoverable error occurred
 !                        UNITS:      N/A
@@ -2820,7 +2820,7 @@ CONTAINS
 !                              SOURCE: netCDF library
 !
 !       Display_Message:       Subroutine to output messages
-!                              SOURCE: ERROR_HANDLER module
+!                              SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -3409,7 +3409,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error
 !                     status. The error codes are defined in the
-!                     ERROR_HANDLER module.
+!                     Message_Handler module.
 !                     If == SUCCESS the netCDF data read was successful
 !                        == FAILURE an unrecoverable error occurred
 !                     UNITS:      N/A
@@ -3437,7 +3437,7 @@ CONTAINS
 !                                SOURCE: NETCDF_UTILITY module
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -3844,17 +3844,20 @@ END MODULE SRF_netCDF_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_netCDF_IO.f90,v 3.8 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SRF_netCDF_IO.f90,v 3.9 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 3.8 $
+! $Revision: 3.9 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SRF_netCDF_IO.f90,v $
+! Revision 3.9  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 3.8  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

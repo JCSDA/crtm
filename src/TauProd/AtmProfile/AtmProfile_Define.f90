@@ -20,7 +20,7 @@
 !       Type_Kinds:             Module containing definitions for kinds
 !                               of variable types.
 !
-!       Error_Handler:          Module to define simple error codes and
+!       Message_Handler:          Module to define simple error codes and
 !                               handle error conditions
 !                               USEs: FILE_UTILITY module
 !
@@ -318,7 +318,7 @@ MODULE AtmProfile_Define
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
   USE Compare_Float_Numbers
 
 
@@ -348,7 +348,7 @@ MODULE AtmProfile_Define
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AtmProfile_Define.f90,v 4.1 2004/12/29 20:54:32 paulv Exp $'
+    '$Id: AtmProfile_Define.f90,v 4.2 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Maximum number of absorbers
   INTEGER, PUBLIC, PARAMETER :: ATMPROFILE_N_ABSORBERS = 32
@@ -2491,17 +2491,20 @@ CONTAINS
 !                          -- MODIFICATION HISTORY --
 !---------------------------------------------------------------------------------
 !
-! $Id: AtmProfile_Define.f90,v 4.1 2004/12/29 20:54:32 paulv Exp $
+! $Id: AtmProfile_Define.f90,v 4.2 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/12/29 20:54:32 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 4.1 $
+! $Revision: 4.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: AtmProfile_Define.f90,v $
+! Revision 4.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 4.1  2004/12/29 20:54:32  paulv
 ! - Updated header documentation.
 !

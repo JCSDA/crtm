@@ -1,89 +1,13 @@
-!------------------------------------------------------------------------------
-!P+
-! NAME:
-!       Check_TauProfile
 !
-! PURPOSE:
-!       Program to check TauProfile datafiles for invalid data.
+! Check_TauProfile
 !
-! CATEGORY:
-!       Transmittance Production
+! Program to check TauProfile datafiles for invalid data.
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:                 Module containing definitions for kinds
-!                                   of variable types.
-!
-!       File_Utility:               Module containing generic file utility routines
-!
-!       Error_Handler:              Module to define simple error codes and
-!                                   handle error conditions
-!                                   USEs: FILE_UTILITY module
-!
-!       Compare_Float_Numbers:      Module containing routines to perform equality
-!                                   and relational comparisons on floating point
-!                                   numbers.
-!
-!       TauProfile_Define:          Module defining the TauProfile data
-!                                   structure and containing routines to
-!                                   manipulate it.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
-!
-!       TauProfile_netCDF_IO:       Module containing routines to read and
-!                                   write TauProfile netCDF format files.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
-!                                         ATMPROFILE_DEFINE module
-!                                         NETCDF module
-!                                         NETCDF_UTILITY module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       Input:  netCDF TauProfile data file
-!
-!       Output: None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 09-Feb-2006
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2006 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!P-
-!------------------------------------------------------------------------------
 
 PROGRAM Check_TauProfile
 
@@ -94,7 +18,7 @@ PROGRAM Check_TauProfile
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
   USE Compare_Float_Numbers
 
   USE TauProfile_Define
@@ -114,13 +38,10 @@ PROGRAM Check_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_TauProfile.f90,v 1.1 2006/02/09 18:35:44 paulv Exp $'
-  CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
-  '**********************************************************'
+  '$Id: Check_TauProfile.f90,v 1.3 2006/07/27 20:23:15 wd20pd Exp $'
 
   REAL( fp_kind ), PARAMETER :: ZERO = 0.0_fp_kind
   REAL( fp_kind ), PARAMETER :: ONE  = 1.0_fp_kind
-
   REAL( fp_kind ), PARAMETER :: TOLERANCE     = EPSILON( ONE )
   REAL( fp_kind ), PARAMETER :: TAU_TOLERANCE = 100.0_fp_kind * TOLERANCE
 
@@ -132,15 +53,9 @@ PROGRAM Check_TauProfile
   ! ---------
 
   CHARACTER( 256 ) :: Message
-
-  INTEGER         :: pn_pos
-  CHARACTER( 80 ) :: pn_fmt
-
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-
   CHARACTER( 256 ) :: InFile
-
   INTEGER ::  l,  i,  m,  j
   INTEGER :: nL, nI, nM, nJ
   INTEGER,         DIMENSION(:), ALLOCATABLE :: L_List
@@ -148,26 +63,12 @@ PROGRAM Check_TauProfile
   INTEGER,         DIMENSION(:), ALLOCATABLE :: M_List
   INTEGER,         DIMENSION(:), ALLOCATABLE :: J_List
   CHARACTER(20) :: L_Tag, I_Tag, M_Tag, J_Tag
-
   REAL( fp_kind ), DIMENSION(N_LAYERS) :: Tau
 
-
-
-  !#----------------------------------------------------------------------------#
-  !#                       -- OUTPUT DESCRIPTIVE HEADER --                      #
-  !#----------------------------------------------------------------------------#
-
-  pn_pos = ( LEN( PROGRAM_HEADER ) / 2 ) - &
-           ( LEN( PROGRAM_NAME ) / 2 )
-  pn_pos = MAX( pn_pos, 0 ) + 5
-  WRITE( pn_fmt, '( "( ",i2,"x, a )" )' ) pn_pos
-
-  WRITE( *, '(/5x, a)' ) PROGRAM_HEADER
-  WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
-  WRITE( *, '(/5x, " Program to check TauProfile datafiles for invalid data.")' )
-  WRITE( *, '(/5x, " $Revision: 1.1 $")' )
-  WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
-
+  ! Display descriptive header
+  CALL Program_Message(PROGRAM_NAME, &
+                       'Program to check TauProfile datafiles for invalid data.', &
+                       '$Revision: 1.3 $' )
 
 
   !#----------------------------------------------------------------------------#
@@ -341,25 +242,3 @@ PROGRAM Check_TauProfile
   END DO J_Loop
 
 END PROGRAM Check_TauProfile
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Check_TauProfile.f90,v 1.1 2006/02/09 18:35:44 paulv Exp $
-!
-! $Date: 2006/02/09 18:35:44 $
-!
-! $Revision: 1.1 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Check_TauProfile.f90,v $
-! Revision 1.1  2006/02/09 18:35:44  paulv
-! Initial checkin.
-!
-!
-!

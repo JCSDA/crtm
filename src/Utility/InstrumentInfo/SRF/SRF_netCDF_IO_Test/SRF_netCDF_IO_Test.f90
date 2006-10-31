@@ -23,12 +23,12 @@
 !       SRF_Define:                 Module defining the SRF data structure
 !                                   and containing routines to manipulate it.
 !                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
+!                                         Message_Handler module
 !
 !       SRF_netCDF_IO:              Module containing routines to read and
 !                                   write SRF netCDF format files.
 !                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
+!                                         Message_Handler module
 !                                         SRF_DEFINE module
 !                                         NETCDF module
 !                                         NETCDF_UTILITY module
@@ -103,7 +103,7 @@ PROGRAM SRF_netCDF_IO_Test
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_netCDF_IO_Test'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: SRF_netCDF_IO_Test.f90,v 1.6 2006/05/02 16:58:02 dgroff Exp $'
+  '$Id: SRF_netCDF_IO_Test.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -161,7 +161,7 @@ PROGRAM SRF_netCDF_IO_Test
   WRITE( *, * )
   WRITE( *, '( 5x, " Program to test read netCDF SRF data files.")' )
   WRITE( *, * )
-  WRITE( *, '( 5x, " $Revision: 1.6 $")' )
+  WRITE( *, '( 5x, " $Revision: 1.7 $")' )
   WRITE( *, '( 5x, a)' ) PROGRAM_HEADER
 
 
@@ -373,17 +373,20 @@ END PROGRAM SRF_netCDF_IO_Test
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_netCDF_IO_Test.f90,v 1.6 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SRF_netCDF_IO_Test.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.6 $
+! $Revision: 1.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SRF_netCDF_IO_Test.f90,v $
+! Revision 1.7  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 1.6  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

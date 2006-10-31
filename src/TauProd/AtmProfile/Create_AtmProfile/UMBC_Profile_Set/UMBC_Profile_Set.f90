@@ -23,7 +23,7 @@
 !       File_Utility:                Module containing generic file utility
 !                                    routines
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:               Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -86,7 +86,7 @@ MODULE UMBC_Profile_Set
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE Profile_Utility_Parameters
   USE Units_Conversion
@@ -113,7 +113,7 @@ MODULE UMBC_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: UMBC_Profile_Set.f90,v 1.3 2003/08/13 21:21:02 paulv Exp $'
+  '$Id: UMBC_Profile_Set.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- The number of absorbers and profiles
   INTEGER, PUBLIC, PARAMETER :: N_UMBC_ABSORBERS = 5
@@ -930,17 +930,20 @@ END MODULE UMBC_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: UMBC_Profile_Set.f90,v 1.3 2003/08/13 21:21:02 paulv Exp $
+! $Id: UMBC_Profile_Set.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2003/08/13 21:21:02 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.3 $
+! $Revision: 1.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: UMBC_Profile_Set.f90,v $
+! Revision 1.4  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.3  2003/08/13 21:21:02  paulv
 ! - Conversion of H2O units from ppmv to g/kg is now done in this routine.
 ! - Updated header documentation.

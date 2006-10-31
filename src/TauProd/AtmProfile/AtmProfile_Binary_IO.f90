@@ -20,7 +20,7 @@
 !       Type_Kinds:            Module containing definitions for kinds
 !                              of variable types.
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:         Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
@@ -89,7 +89,7 @@ MODULE AtmProfile_Binary_IO
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
   USE Binary_File_Utility
 
   USE AtmProfile_Define
@@ -118,7 +118,7 @@ MODULE AtmProfile_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AtmProfile_Binary_IO.f90,v 4.0 2004/11/02 20:13:02 paulv Exp $'
+    '$Id: AtmProfile_Binary_IO.f90,v 4.1 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1232,17 +1232,20 @@ END MODULE AtmProfile_Binary_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AtmProfile_Binary_IO.f90,v 4.0 2004/11/02 20:13:02 paulv Exp $
+! $Id: AtmProfile_Binary_IO.f90,v 4.1 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2004/11/02 20:13:02 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 4.0 $
+! $Revision: 4.1 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: AtmProfile_Binary_IO.f90,v $
+! Revision 4.1  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 4.0  2004/11/02 20:13:02  paulv
 ! - New versions for modified AtmProfile structure.
 !

@@ -18,14 +18,14 @@
 !
 !       file_utility:          Module containing generic file utility routines
 !
-!       error_handler:         Module to define simple error codes and
+!       Message_Handler:       Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
 !       AIRS_SRF_Define:       Module defining the SRF data structure and
 !                              containing routines to manipulate it.
 !                              USEs: TYPE_KINDS module
-!                                    ERROR_HANDLER module
+!                                    Message_Handler module
 !
 !       hdf_utility:           Module to provide some less, uh, verbose
 !                              interfaces to HDF files
@@ -82,7 +82,7 @@ MODULE AIRS_SRF_HDF_Reader
   ! ----------
 
   USE type_kinds
-  USE error_handler
+  USE Message_Handler
 
   USE AIRS_SRF_Define
 
@@ -215,7 +215,7 @@ CONTAINS
 !                           SOURCE: HDF library
 !
 !       display_message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -371,7 +371,7 @@ CONTAINS
 !                           SOURCE: HDF library
 !
 !       display_message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -576,7 +576,7 @@ CONTAINS
 !                           SOURCE: hdf_utility module
 !
 !       display_message:    Subroutine to output messages
-!                           SOURCE: error_handler module
+!                           SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -882,7 +882,7 @@ CONTAINS
 !                              SOURCE: HDF library
 !
 !       display_message:       Subroutine to output messages
-!                              SOURCE: error_handler module
+!                              SOURCE: Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -1178,17 +1178,20 @@ END MODULE AIRS_SRF_HDF_Reader
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_SRF_HDF_Reader.f90,v 1.2 2003/11/19 15:26:26 paulv Exp $
+! $Id: AIRS_SRF_HDF_Reader.f90,v 1.3 2006/08/15 20:51:04 wd20pd Exp $
 !
-! $Date: 2003/11/19 15:26:26 $
+! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.2 $
+! $Revision: 1.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: AIRS_SRF_HDF_Reader.f90,v $
+! Revision 1.3  2006/08/15 20:51:04  wd20pd
+! Additional replacement of Error_Handler with Message_Handler.
+!
 ! Revision 1.2  2003/11/19 15:26:26  paulv
 ! - Updated header documentation.
 !

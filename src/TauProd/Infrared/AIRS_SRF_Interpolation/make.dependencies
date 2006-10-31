@@ -1,0 +1,20 @@
+AIRS_SRF_Define.o : AIRS_SRF_Define.f90 Message_Handler.o Type_Kinds.o 
+AIRS_SRF_netCDF_Reader.o : AIRS_SRF_netCDF_Reader.f90 netCDF_Utility.o AIRS_SRF_Define.o Message_Handler.o Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Integrate_Utility.o : Integrate_Utility.f90 Interpolate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Interpolate_AIRS_SRFs.o : Interpolate_AIRS_SRFs.f90 Tau_Production_Parameters.o SRF_netCDF_IO.o SRF_Define.o AIRS_SRF_netCDF_Reader.o AIRS_SRF_Define.o SensorInfo_IO.o SensorInfo_LinkedList.o SensorInfo_Define.o Interpolate_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Interpolate_Utility.o : Interpolate_Utility.f90 Message_Handler.o Type_Kinds.o 
+LBLRTM_Parameters.o : LBLRTM_Parameters.f90 Type_Kinds.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+SRF_Define.o : SRF_Define.f90 Integrate_Utility.o Message_Handler.o Type_Kinds.o 
+SRF_netCDF_IO.o : SRF_netCDF_IO.f90 netCDF_Utility.o SRF_Define.o Message_Handler.o Type_Kinds.o 
+SensorInfo_Define.o : SensorInfo_Define.f90 Message_Handler.o Type_Kinds.o 
+SensorInfo_IO.o : SensorInfo_IO.f90 SensorInfo_LinkedList.o SensorInfo_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
+SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 SensorInfo_Define.o Message_Handler.o Type_Kinds.o 
+Tau_Production_Parameters.o : Tau_Production_Parameters.f90 LBLRTM_Parameters.o Type_Kinds.o 
+Type_Kinds.o : Type_Kinds.f90 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 

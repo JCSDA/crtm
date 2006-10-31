@@ -52,17 +52,14 @@ PROGRAM Test_Tangent_Linear
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Tangent_Linear'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Tangent_Linear.f90,v 1.10 2006/05/05 14:56:54 dgroff Exp $'
+    '$Id: Test_Tangent_Linear.f90,v 1.11 2006/06/26 20:45:42 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
   INTEGER, PARAMETER :: SL = 512
 
-  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin.Big_Endian'
+  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   INTEGER,      PARAMETER :: N_PROFILES = 52
-
-  INTEGER, PARAMETER :: UNSET = 0
-  INTEGER, PARAMETER ::   SET = 1
 
   INTEGER,         PARAMETER :: N_PERTURBATIONS = 37
   REAL( fp_kind ), PARAMETER, DIMENSION(N_PERTURBATIONS) :: PERTURBATION_FRACTION = &
@@ -150,7 +147,7 @@ PROGRAM Test_Tangent_Linear
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to test the CRTM AtmAbsorption Tangent-Linear")' )
   WRITE( *, '( 5x, "   components with respect to the Forward components.")' )
-  WRITE( *, '(/5x, " $Revision: 1.10 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.11 $")' )
   WRITE( *, '( 5x, a, /)' ) PROGRAM_HEADER
 
 
@@ -210,15 +207,15 @@ PROGRAM Test_Tangent_Linear
   ! Create the filenames
   ! --------------------
 
-  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin.Big_Endian'
-  TauCoeff_File     = TRIM( File_Prefix )//'.TauCoeff.bin.Big_Endian'
-  CloudCoeff_File   = 'CloudCoeff.bin.Big_Endian'
-  AerosolCoeff_File = 'AerosolCoeff.bin.Big_Endian'
-  EmisCoeff_File    = 'EmisCoeff.bin.Big_Endian'
+  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin'
+  TauCoeff_File     = TRIM( File_Prefix )//'.TauCoeff.bin'
+  CloudCoeff_File   = 'CloudCoeff.bin'
+  AerosolCoeff_File = 'AerosolCoeff.bin'
+  EmisCoeff_File    = 'EmisCoeff.bin'
 
   ComponentTest_File   = TRIM( File_Prefix )//'.CRTM_AtmAbsorption.ComponentTest.nc'
 
-  New_File = SET
+  New_File = 1
 
 
 
@@ -610,7 +607,7 @@ PROGRAM Test_Tangent_Linear
     ! Reset the new file flag
     ! -----------------------
 
-    IF ( New_File == SET ) New_File = UNSET
+    IF ( New_File == 1 ) New_File = 0
 
 
 

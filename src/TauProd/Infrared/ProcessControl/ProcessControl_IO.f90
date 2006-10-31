@@ -22,7 +22,7 @@
 !       File_Utility:             Module containing generic file utility
 !                                 routines
 !
-!       Error_Handler:            Module to define simple error codes and
+!       Message_Handler:            Module to define simple error codes and
 !                                 handle error conditions
 !                                 USEs: FILE_UTILITY module
 !
@@ -77,7 +77,7 @@ MODULE ProcessControl_IO
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE ProcessControl_Define
 
@@ -967,17 +967,20 @@ END MODULE ProcessControl_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: ProcessControl_IO.f90,v 1.9 2005/09/15 20:43:09 paulv Exp $
+! $Id: ProcessControl_IO.f90,v 1.10 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/09/15 20:43:09 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.9 $
+! $Revision: 1.10 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: ProcessControl_IO.f90,v $
+! Revision 1.10  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.9  2005/09/15 20:43:09  paulv
 ! - Split file prefix and file dimension output.
 ! - Changed file dimension format string, removing string output. This allows

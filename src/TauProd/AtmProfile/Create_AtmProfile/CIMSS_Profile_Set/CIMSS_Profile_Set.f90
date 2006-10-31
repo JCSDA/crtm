@@ -20,7 +20,7 @@
 !       Type_Kinds:         Module containing definitions for kinds
 !                           of variable types.
 !
-!       Error_Handler:      Module to define simple error codes and
+!       Message_Handler:      Module to define simple error codes and
 !                           handle error conditions
 !                           USEs: FILE_UTILITY module
 !
@@ -70,7 +70,7 @@ MODULE CIMSS_Profile_Set
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
 
   ! ---------------------------
@@ -94,7 +94,7 @@ MODULE CIMSS_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CIMSS_Profile_Set.f90,v 2.2 2005/01/04 22:05:05 paulv Exp $'
+    '$Id: CIMSS_Profile_Set.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Private dimensions.
   ! -- Note the difference between N_PROFILE_MODEL_LEVELS and N_MODEL_LEVELS.
@@ -2432,17 +2432,20 @@ END MODULE CIMSS_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CIMSS_Profile_Set.f90,v 2.2 2005/01/04 22:05:05 paulv Exp $
+! $Id: CIMSS_Profile_Set.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/01/04 22:05:05 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: CIMSS_Profile_Set.f90,v $
+! Revision 2.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 2.2  2005/01/04 22:05:05  paulv
 ! - Cosmetic changes only.
 !

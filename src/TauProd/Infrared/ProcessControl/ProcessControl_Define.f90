@@ -20,7 +20,7 @@
 !       Type_Kinds:            Module containing definitions for kinds
 !                              of variable types.
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:         Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
@@ -188,7 +188,7 @@ MODULE ProcessControl_Define
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
 
   ! -----------------------
@@ -218,7 +218,7 @@ MODULE ProcessControl_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ProcessControl_Define.f90,v 1.6 2005/05/15 23:28:01 paulv Exp $'
+    '$Id: ProcessControl_Define.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1319,17 +1319,20 @@ END MODULE ProcessControl_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: ProcessControl_Define.f90,v 1.6 2005/05/15 23:28:01 paulv Exp $
+! $Id: ProcessControl_Define.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $
 !
-! $Date: 2005/05/15 23:28:01 $
+! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 1.6 $
+! $Revision: 1.7 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: ProcessControl_Define.f90,v $
+! Revision 1.7  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
 ! Revision 1.6  2005/05/15 23:28:01  paulv
 ! - Added dF_Index to PRocessControl structure definition.
 ! - Renamed Sensor_Platform_ID component of ProcessControl structure

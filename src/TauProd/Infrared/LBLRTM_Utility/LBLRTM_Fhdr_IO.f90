@@ -21,7 +21,7 @@
 !
 !       File_Utility:       Module containing generic file utility routines
 !
-!       Error_Handler:      Module containing error handling definitions and
+!       Message_Handler:    Module containing error handling definitions and
 !                           routines.
 !                           USEs: FILE_UTILITY module
 !
@@ -373,7 +373,7 @@ MODULE LBLRTM_Fhdr_IO
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE LBLRTM_Parameters, N_MOL => LBLRTM_MAX_N_MOLECULES
 
@@ -402,7 +402,7 @@ MODULE LBLRTM_Fhdr_IO
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Fhdr_IO.f90,v 1.10 2005/09/15 16:53:04 paulv Exp $'
+  '$Id: LBLRTM_Fhdr_IO.f90,v 1.11 2006/07/26 21:43:58 wd20pd Exp $'
 
   ! -- Scalar invalid values
   INTEGER,                PRIVATE, PARAMETER :: IP_INVALID = -1
@@ -855,7 +855,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the LBLRTM file header read was successful
 !                        == FAILURE an unrecoverable error occurred
 !                     UNITS:      N/A
@@ -1060,7 +1060,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the LBLRTM file header write was successful
 !                        == FAILURE an unrecoverable error occurred
 !                     UNITS:      N/A
@@ -1191,17 +1191,21 @@ END MODULE LBLRTM_Fhdr_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Fhdr_IO.f90,v 1.10 2005/09/15 16:53:04 paulv Exp $
+! $Id: LBLRTM_Fhdr_IO.f90,v 1.11 2006/07/26 21:43:58 wd20pd Exp $
 !
-! $Date: 2005/09/15 16:53:04 $
+! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.10 $
+! $Revision: 1.11 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: LBLRTM_Fhdr_IO.f90,v $
+! Revision 1.11  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
 ! Revision 1.10  2005/09/15 16:53:04  paulv
 ! - Corrected bug in maximum molecule parameter rename.
 ! - Corrected bug in file header print formats.

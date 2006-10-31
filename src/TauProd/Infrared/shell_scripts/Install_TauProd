@@ -40,7 +40,7 @@ SCRIPT_NAME="`basename $0`"
 # ---------------------------------------
 
 if [ -z "${ARCHIVE_ROOT_DIR}" ]; then
-  ARCHIVE_ROOT_DIR=hanfs1:/g01.1/weather/wx20pd
+  ARCHIVE_ROOT_DIR="hanfs1:/g01.1/weather/wx20pd"
 fi
 
 
@@ -50,7 +50,7 @@ fi
 # ---------------------------------------
 
 if [ -z "${HOME_ROOT_DIR}" ]; then
-  HOME_ROOT_DIR=/nbns/global/wx20pd
+  HOME_ROOT_DIR="/nbns/global/wx20pd"
 fi
 
 
@@ -60,7 +60,8 @@ fi
 # ---------------------------------------
 
 if [ -z "${RUN_ROOT_DIR}" ]; then
-  RUN_ROOT_DIR=/ptmp/wx20pd
+#  RUN_ROOT_DIR="/ptmp/wx20pd"
+  RUN_ROOT_DIR="${HOME_ROOT_DIR}/TauProd_scratch"
 fi
 
 
@@ -68,17 +69,19 @@ fi
 # Subdirectory names
 # ------------------
 
-# -- The transmittance production directory
-TAUPROD_ROOT_DIRECTORY=Transmittance_Production
+# The transmittance production directory
+TAUPROD_ROOT_DIR="TauProd"
 
-# -- Other directory names
-SRF_DATA_DIRECTORY=SRF_Data
-DATA_RUNS_DIRECTORY=Data_Runs
-TAPE5_DIRECTORY=TAPE5_files
+# Other directory names
+SRF_DATA_DIR="SRF_Data"
+DATA_RUNS_DIR="Data_Runs"
+TAPE5_DIR="TAPE5_files"
+SRC_DIR="src/CRTM/trunk"
+IR_TAUPROD_SRC_DIR="${SRC_DIR}/${TAUPROD_ROOT_DIR}/Infrared"
 
-# -- The SensorInfo filename and directory
-SENSORINFO_DIRECTORY=f90/Instrument_Information/SensorInfo
-SENSORINFO_FILE=SensorInfo
+# The SensorInfo filename and directory
+SENSORINFO_DIR="${SRC_DIR}/Utility/InstrumentInfo/SensorInfo"
+SENSORINFO_FILE="SensorInfo"
 
 
 # --------------------------------
@@ -92,7 +95,7 @@ PROFILE_SET_TAGS="UMBC CIMSS ECMWF"
 #                     -- SAVE CURRENT DIRECTORY LOCATION --                     #
 #-------------------------------------------------------------------------------#
 
-CURRENT_DIRECTORY=${PWD}
+CURRENT_DIR=${PWD}
 
 
 
@@ -100,11 +103,11 @@ CURRENT_DIRECTORY=${PWD}
 #                -- MAKE AND INSTALL ALL THE FORTRAN SOFTWARE --                #
 #-------------------------------------------------------------------------------#
 
-cd ${HOME}/f90/${TAUPROD_ROOT_DIRECTORY}
+cd ${HOME}/${IR_TAUPROD_SRC_DIR}
 make
 make install
 
-cd ${CURRENT_DIRECTORY}
+cd ${CURRENT_DIR}
 
 
 
@@ -139,17 +142,17 @@ fi
 # Create TauProd directory if it doesn't already exist
 # ----------------------------------------------------
 
-if [ ! -d ${TAUPROD_ROOT_DIRECTORY} ]; then
-  mkdir ${TAUPROD_ROOT_DIRECTORY}
+if [ ! -d ${TAUPROD_ROOT_DIR} ]; then
+  mkdir ${TAUPROD_ROOT_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error creating ${TAUPROD_ROOT_DIRECTORY} directory in ${PWD}"
+    echo "${SCRIPT_NAME}: Error creating ${TAUPROD_ROOT_DIR} directory in ${PWD}"
     exit 2
   fi
 fi
 
-cd ${TAUPROD_ROOT_DIRECTORY}
+cd ${TAUPROD_ROOT_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error changing to ${TAUPROD_ROOT_DIRECTORY} directory from ${PWD}"
+  echo "${SCRIPT_NAME}: Error changing to ${TAUPROD_ROOT_DIR} directory from ${PWD}"
   exit 2
 fi
 
@@ -159,9 +162,9 @@ fi
 # ------------------------
 
 echo
-echo " Copying SRF data to ${PWD}/${SRF_DATA_DIRECTORY}..."
+echo " Copying SRF data to ${PWD}/${SRF_DATA_DIR}..."
 
-rcp -r ${ARCHIVE_ROOT_DIR}/${SRF_DATA_DIRECTORY} .
+rcp -r ${ARCHIVE_ROOT_DIR}/${SRF_DATA_DIR} .
 if [ $? -ne 0 ]; then
   echo "${SCRIPT_NAME}: Error copying SRF data directory"
   exit 2
@@ -176,7 +179,7 @@ echo
 echo " Copying SensorInfo datafile to ${PWD}..."
 
 if [ ! -f ${SENSORINFO_FILE} ]; then
-  rcp ${ARCHIVE_ROOT_DIR}/${SENSORINFO_DIRECTORY}/${SENSORINFO_FILE} .
+  rcp ${ARCHIVE_ROOT_DIR}/${SENSORINFO_DIR}/${SENSORINFO_FILE} .
   if [ $? -ne 0 ]; then
     echo "${SCRIPT_NAME}: Error copying ${SENSORINFO_FILE}"
     exit 2
@@ -191,29 +194,29 @@ fi
 echo
 echo " Copying TAPE5 data..."
 
-# -- Create the Data_Runs directory if it doesn't exist
-if [ ! -d ${DATA_RUNS_DIRECTORY} ]; then
-  mkdir ${DATA_RUNS_DIRECTORY}
+# Create the Data_Runs directory if it doesn't exist
+if [ ! -d ${DATA_RUNS_DIR} ]; then
+  mkdir ${DATA_RUNS_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error creating ${DATA_RUNS_DIRECTORY} directory in ${PWD}"
+    echo "${SCRIPT_NAME}: Error creating ${DATA_RUNS_DIR} directory in ${PWD}"
     exit 2
   fi
 
 fi
 
 
-# -- Enter Data_Runs directory
-cd ${DATA_RUNS_DIRECTORY}
+# Enter Data_Runs directory
+cd ${DATA_RUNS_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error changing to ${DATA_RUNS_DIRECTORY} root directory from ${PWD}"
+  echo "${SCRIPT_NAME}: Error changing to ${DATA_RUNS_DIR} root directory from ${PWD}"
   exit 2
 fi
 
 
-# -- Loop over the different profile sets
+# Loop over the different profile sets
 for PROFILE_SET in ${PROFILE_SET_TAGS}; do
 
-  # -- Create the profile set directory if it doesn't exist
+  # Create the profile set directory if it doesn't exist
   if [ ! -d ${PROFILE_SET} ]; then
     mkdir ${PROFILE_SET}
     if [ $? -ne 0 ]; then
@@ -223,7 +226,7 @@ for PROFILE_SET in ${PROFILE_SET_TAGS}; do
   fi
 
 
-  # -- Enter the profile set directory
+  # Enter the profile set directory
   cd ${PROFILE_SET}
   if [ $? -ne 0 ]; then
     echo "${SCRIPT_NAME}: Error changing to ${PROFILE_SET} directory from ${PWD}"
@@ -231,33 +234,33 @@ for PROFILE_SET in ${PROFILE_SET_TAGS}; do
   fi
 
 
-  # -- Create the TAPE5 files directory if it doesn't exist
-  if [ ! -d ${TAPE5_DIRECTORY} ]; then
-    mkdir ${TAPE5_DIRECTORY}
+  # Create the TAPE5 files directory if it doesn't exist
+  if [ ! -d ${TAPE5_DIR} ]; then
+    mkdir ${TAPE5_DIR}
     if [ $? -ne 0 ]; then
-      echo "${SCRIPT_NAME}: Error creating ${TAPE5_DIRECTORY} directory in ${PWD}"
+      echo "${SCRIPT_NAME}: Error creating ${TAPE5_DIR} directory in ${PWD}"
       exit 2
     fi
   fi
 
 
-  # -- Enter the TAPE5 directory
-  cd ${TAPE5_DIRECTORY}
+  # Enter the TAPE5 directory
+  cd ${TAPE5_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error changing to ${TAPE5_DIRECTORY} directory from ${PWD}"
+    echo "${SCRIPT_NAME}: Error changing to ${TAPE5_DIR} directory from ${PWD}"
     exit 2
   fi
 
 
-  # -- Copy over TAPE5 data files
-  rcp ${ARCHIVE_ROOT_DIR}/f90/${TAUPROD_ROOT_DIRECTORY}/Create_LBLRTM_Input_Files/${TAPE5_DIRECTORY}/${PROFILE_SET}_fixed/TAPE5.* .
+  # Copy over TAPE5 data files
+  rcp ${ARCHIVE_ROOT_DIR}/${IR_TAUPROD_SRC_DIR}/Create_LBLRTM_Input_Files/${TAPE5_DIR}/${PROFILE_SET}_fixed/TAPE5.* .
   if [ $? -ne 0 ]; then
     echo "${SCRIPT_NAME}: Error copying ${PROFILE_SET} TAPE5 files to ${PWD}"
     exit 2
   fi
 
 
-  # -- Return to Data_Runs directory
+  # Return to Data_Runs directory
   cd ../..
 
 done
@@ -284,18 +287,18 @@ fi
 # Create TauProd directory if it doesn't already exist
 # ----------------------------------------------------
 
-if [ ! -d ${TAUPROD_ROOT_DIRECTORY} ]; then
-  mkdir ${TAUPROD_ROOT_DIRECTORY}
+if [ ! -d ${TAUPROD_ROOT_DIR} ]; then
+  mkdir ${TAUPROD_ROOT_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error creating ${TAUPROD_ROOT_DIRECTORY} directory in ${PWD}"
+    echo "${SCRIPT_NAME}: Error creating ${TAUPROD_ROOT_DIR} directory in ${PWD}"
     exit 2
   fi
 fi
 
 
-cd ${TAUPROD_ROOT_DIRECTORY}
+cd ${TAUPROD_ROOT_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error changing to ${TAUPROD_ROOT_DIRECTORY} root directory from ${PWD}"
+  echo "${SCRIPT_NAME}: Error changing to ${TAUPROD_ROOT_DIR} root directory from ${PWD}"
   exit 2
 fi
 
@@ -309,29 +312,29 @@ echo
 echo " Linking datafiles from ${HOME_ROOT_DIR}..."
 
 
-# -- Create the Data_Runs directory if it doesn't exist
-if [ ! -d ${DATA_RUNS_DIRECTORY} ]; then
-  mkdir ${DATA_RUNS_DIRECTORY}
+# Create the Data_Runs directory if it doesn't exist
+if [ ! -d ${DATA_RUNS_DIR} ]; then
+  mkdir ${DATA_RUNS_DIR}
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error creating ${DATA_RUNS_DIRECTORY} directory in ${PWD}"
+    echo "${SCRIPT_NAME}: Error creating ${DATA_RUNS_DIR} directory in ${PWD}"
     exit 2
   fi
 
 fi
 
 
-# -- Enter Data_Runs directory
-cd ${DATA_RUNS_DIRECTORY}
+# Enter Data_Runs directory
+cd ${DATA_RUNS_DIR}
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Error changing to ${DATA_RUNS_DIRECTORY} root directory from ${PWD}"
+  echo "${SCRIPT_NAME}: Error changing to ${DATA_RUNS_DIR} root directory from ${PWD}"
   exit 2
 fi
 
 
-# -- Loop over the different profile sets
+# Loop over the different profile sets
 for PROFILE_SET in ${PROFILE_SET_TAGS}; do
 
-  # -- Create the profile set directory if it doesn't exist
+  # Create the profile set directory if it doesn't exist
   if [ ! -d ${PROFILE_SET} ]; then
     mkdir ${PROFILE_SET}
     if [ $? -ne 0 ]; then
@@ -341,7 +344,7 @@ for PROFILE_SET in ${PROFILE_SET_TAGS}; do
   fi
 
 
-  # -- Enter the profile set directory
+  # Enter the profile set directory
   cd ${PROFILE_SET}
   if [ $? -ne 0 ]; then
     echo "${SCRIPT_NAME}: Error changing to ${PROFILE_SET} directory from ${PWD}"
@@ -349,33 +352,33 @@ for PROFILE_SET in ${PROFILE_SET_TAGS}; do
   fi
 
 
-  # -- Link in the SensorInfo file
-  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIRECTORY}/${SENSORINFO_FILE} .
+  # Link in the SensorInfo file
+  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIR}/${SENSORINFO_FILE} .
   if [ $? -ne 0 ]; then
     echo "${SCRIPT_NAME}: Error linking SensorInfo file in ${PROFILE_SET} directory"
     exit 2
   fi
 
 
-  # -- Link in the TAPE5 file directory
-  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIRECTORY}/${DATA_RUNS_DIRECTORY}/${PROFILE_SET}/${TAPE5_DIRECTORY} .
+  # Link in the TAPE5 file directory
+  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIR}/${DATA_RUNS_DIR}/${PROFILE_SET}/${TAPE5_DIR} .
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Error linking ${TAPE5_DIRECTORY} directory in ${PROFILE_SET} directory"
+    echo "${SCRIPT_NAME}: Error linking ${TAPE5_DIR} directory in ${PROFILE_SET} directory"
     exit 2
   fi
 
 
-  # -- Create the SRF data directory if it doesn't exist
-  if [ ! -d ${SRF_DATA_DIRECTORY} ]; then
-    mkdir ${SRF_DATA_DIRECTORY}
+  # Create the SRF data directory if it doesn't exist
+  if [ ! -d ${SRF_DATA_DIR} ]; then
+    mkdir ${SRF_DATA_DIR}
     if [ $? -ne 0 ]; then
-      echo "${SCRIPT_NAME}: Error creating ${SRF_DATA_DIRECTORY} directory in ${PWD}"
+      echo "${SCRIPT_NAME}: Error creating ${SRF_DATA_DIR} directory in ${PWD}"
       exit 2
     fi
   fi
 
 
-  # -- Return to Data_Runs directory
+  # Return to Data_Runs directory
   cd ..
 
 done
@@ -385,5 +388,5 @@ done
 # Return to the start directory
 # -----------------------------
 
-cd ${CURRENT_DIRECTORY}
+cd ${CURRENT_DIR}
 

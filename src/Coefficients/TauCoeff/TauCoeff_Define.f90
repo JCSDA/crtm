@@ -64,27 +64,20 @@ MODULE TauCoeff_Define
   PUBLIC :: Info_TauCoeff
 
 
-  ! -------------------------
-  ! PRIVATE Module parameters
-  ! -------------------------
+  ! -----------------
+  ! Module parameters
+  ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauCoeff_Define.f90,v 5.13 2006/06/15 16:51:11 wd20pd Exp $'
-  ! TauCoeff valid values
-  INTEGER, PARAMETER :: INVALID = -1
-  INTEGER, PARAMETER ::   VALID =  1
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
+  '$Id: TauCoeff_Define.f90,v 5.14 2006/06/23 23:16:19 wd20pd Exp $'
+  ! TauCoeff init values
+  REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
+  INTEGER,      PARAMETER :: IP_INIT = -1
   ! Sensor descriptor component string length
   INTEGER, PARAMETER :: DL = 20
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: TAUCOEFF_RELEASE = 5  ! This determines structure and file formats.
   INTEGER, PARAMETER :: TAUCOEFF_VERSION = 4  ! This is just the data version.
-
-
-  ! ------------------------
-  ! PUBLIC Module parameters
-  ! ------------------------
   ! Number of TauCoeff data items
   INTEGER(Long), PARAMETER :: N_TAUCOEFF_ITEMS = 12_Long
   ! Internal data type descriptors for the TauCoeff data
@@ -170,8 +163,6 @@ MODULE TauCoeff_Define
 CONTAINS
 
 
-
-
 !##################################################################################
 !##################################################################################
 !##                                                                              ##
@@ -216,9 +207,6 @@ CONTAINS
     TauCoeff%StrLen       = DL
     TauCoeff%n_Sensors = 0
   END SUBROUTINE Clear_TauCoeff
-
-
-
 
 
 !################################################################################
@@ -273,12 +261,6 @@ CONTAINS
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
 !
-! RESTRICTIONS:
-!       This function tests the association status of the TauCoeff
-!       structure pointer members. Therefore this function must only
-!       be called after the input TauCoeff structure has, at least,
-!       had its pointer members initialized.
-!
 !--------------------------------------------------------------------------------
 
   FUNCTION Associated_TauCoeff( TauCoeff,  & ! Input
@@ -297,7 +279,7 @@ CONTAINS
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
     IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
+      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
     END IF
 
     ! Test the structure associations
@@ -424,7 +406,7 @@ CONTAINS
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
+      IF ( No_Clear == 1 ) Clear = .FALSE.
     END IF
 
     ! Initialise the scalar members
@@ -578,10 +560,10 @@ CONTAINS
                               Message_Log ) &  ! Error messaging
                             RESULT( Error_Status )
     ! Arguments
-    INTEGER,                  INTENT(IN)     :: n_Orders
-    INTEGER,                  INTENT(IN)     :: n_Predictors
-    INTEGER,                  INTENT(IN)     :: n_Absorbers
-    INTEGER,                  INTENT(IN)     :: n_Channels
+    INTEGER,                INTENT(IN)     :: n_Orders
+    INTEGER,                INTENT(IN)     :: n_Predictors
+    INTEGER,                INTENT(IN)     :: n_Absorbers
+    INTEGER,                INTENT(IN)     :: n_Channels
     TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -612,9 +594,9 @@ CONTAINS
 
     ! Check if ANY pointers are already associated.
     ! If they are, deallocate them but leave scalars.
-    IF ( Associated_TauCoeff( TauCoeff, ANY_Test=SET ) ) THEN
+    IF ( Associated_TauCoeff( TauCoeff, ANY_Test=1 ) ) THEN
       Error_Status = Destroy_TauCoeff( TauCoeff, &
-                                       No_Clear = SET, &
+                                       No_Clear=1, &
                                        Message_Log = Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
@@ -655,6 +637,20 @@ CONTAINS
     TauCoeff%n_Predictors = n_Predictors
     TauCoeff%n_Absorbers  = n_Absorbers
     TauCoeff%n_Channels   = n_Channels
+
+    ! Initialise the arrays
+    TauCoeff%Sensor_Descriptor = ' '
+    TauCoeff%NCEP_Sensor_ID    = IP_INIT
+    TauCoeff%WMO_Satellite_ID  = IP_INIT
+    TauCoeff%WMO_Sensor_ID     = IP_INIT
+    TauCoeff%Sensor_Channel    = IP_INIT
+    TauCoeff%Absorber_ID       = IP_INIT
+    TauCoeff%Alpha             = FP_INIT
+    TauCoeff%Alpha_c1          = FP_INIT
+    TauCoeff%Alpha_c2          = FP_INIT
+    TauCoeff%Order_Index       = IP_INIT
+    TauCoeff%Predictor_Index   = IP_INIT
+    TauCoeff%C                 = FP_INIT
 
     ! Increment and test the allocation counter
     TauCoeff%n_Allocates = TauCoeff%n_Allocates + 1
@@ -764,11 +760,6 @@ CONTAINS
       RETURN
     END IF
 
-    ! Assign non-dimension scalar members
-    TauCoeff_out%Release   = TauCoeff_in%Release
-    TauCoeff_out%Version   = TauCoeff_in%Version
-    TauCoeff_out%n_Sensors = TauCoeff_in%n_Sensors
-
     ! Allocate data arrays
     Error_Status = Allocate_TauCoeff( TauCoeff_in%n_Orders    , &
                                       TauCoeff_in%n_Predictors, &
@@ -783,6 +774,11 @@ CONTAINS
                             Message_Log = Message_Log )
       RETURN
     END IF
+
+    ! Assign non-dimension scalar members
+    TauCoeff_out%Release   = TauCoeff_in%Release
+    TauCoeff_out%Version   = TauCoeff_in%Version
+    TauCoeff_out%n_Sensors = TauCoeff_in%n_Sensors
 
     ! Copy array data
     TauCoeff_out%Sensor_Descriptor = TauCoeff_in%Sensor_Descriptor
@@ -1429,7 +1425,7 @@ CONTAINS
     Check_Once = .TRUE.
     ! ...unless the Check_All argument is set
     IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Check_Once = .FALSE.
+      IF ( Check_All == 1 ) Check_Once = .FALSE.
     END IF
 
     ! Check the structure association status
@@ -1927,7 +1923,6 @@ CONTAINS
                          TauCoeff%n_Absorbers, &
                          TauCoeff%n_Channels, &
                          TauCoeff%n_Sensors
-
 
     ! Trim the output based on the
     ! dummy argument string length

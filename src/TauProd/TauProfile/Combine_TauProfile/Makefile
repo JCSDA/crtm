@@ -2,7 +2,7 @@
 #
 # Makefile for Combine_TauProfile program
 #
-# $Id: Makefile,v 1.2 2004/09/14 18:14:10 paulv Exp $
+# $Id: Makefile,v 1.3 2006/06/30 16:47:16 dgroff Exp $
 #
 #==============================================================================
 
@@ -35,7 +35,7 @@ EXE_FILE = Combine_TauProfile
 
 UTILITY_OBJ_FILES = Type_Kinds.o \
                     File_Utility.o \
-                    Error_Handler.o \
+                    Message_Handler.o \
                     Compare_Float_Numbers.o
 SENSORINFO_OBJ_FILES = SensorInfo_Define.o \
                        SensorInfo_LinkedList.o \
@@ -167,22 +167,22 @@ remove_links:
 
 Type_Kinds.o : Type_Kinds.f90
 File_Utility.o : File_Utility.f90
-Error_Handler.o : Error_Handler.f90 File_Utility.o
+Message_Handler.o : Message_Handler.f90 File_Utility.o
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
 
-netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Error_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
-netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Error_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
 
-SensorInfo_Define.o : SensorInfo_Define.f90 Type_Kinds.o Error_Handler.o
-SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 Type_Kinds.o Error_Handler.o SensorInfo_Define.o 
-SensorInfo_IO.o : SensorInfo_IO.f90 Type_Kinds.o Error_Handler.o File_Utility.o SensorInfo_Define.o
+SensorInfo_Define.o : SensorInfo_Define.f90 Type_Kinds.o Message_Handler.o
+SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 Type_Kinds.o Message_Handler.o SensorInfo_Define.o 
+SensorInfo_IO.o : SensorInfo_IO.f90 Type_Kinds.o Message_Handler.o File_Utility.o SensorInfo_Define.o
 
-TauProfile_Define.o : TauProfile_Define.f90 Type_Kinds.o Error_Handler.o Compare_Float_Numbers.o 
-TauProfile_netCDF_IO.o : TauProfile_netCDF_IO.f90 Type_Kinds.o Error_Handler.o TauProfile_Define.o netCDF_Utility.o 
+TauProfile_Define.o : TauProfile_Define.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o 
+TauProfile_netCDF_IO.o : TauProfile_netCDF_IO.f90 Type_Kinds.o Message_Handler.o TauProfile_Define.o netCDF_Utility.o 
 
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o File_Utility.o Error_Handler.o SensorInfo_Define.o SensorInfo_LinkedList.o SensorInfo_IO.o TauProfile_Define.o TauProfile_netCDF_IO.o 
+$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o File_Utility.o Message_Handler.o SensorInfo_Define.o SensorInfo_LinkedList.o SensorInfo_IO.o TauProfile_Define.o TauProfile_netCDF_IO.o 
 
 
 # -------------------------------
