@@ -1,7 +1,7 @@
 !
-! CRTM_AtmAbsorption_Define
+! CRTM_Predictor_Define
 !
-! Module defining the CRTM AtmAbsorption structure and containing
+! Module defining the CRTM Predictor structure and containing
 ! routines to manipulate it.
 !
 !
@@ -10,7 +10,7 @@
 !                       paul.vandelst@ssec.wisc.edu
 !
 
-MODULE CRTM_AtmAbsorption_Define
+MODULE CRTM_Predictor_Define
 
   ! -----------------
   ! Environment setup
@@ -28,13 +28,13 @@ MODULE CRTM_AtmAbsorption_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_AtmAbsorption data structure definition
-  PUBLIC :: CRTM_AtmAbsorption_type
-  ! CRTM_AtmAbsorption structure routines
-  PUBLIC :: CRTM_Associated_AtmAbsorption
-  PUBLIC :: CRTM_Destroy_AtmAbsorption
-  PUBLIC :: CRTM_Allocate_AtmAbsorption
-  PUBLIC :: CRTM_Assign_AtmAbsorption
+  ! CRTM_Predictor data structure definition
+  PUBLIC :: CRTM_Predictor_type
+  ! CRTM_Predictor structure routines
+  PUBLIC :: CRTM_Associated_Predictor
+  PUBLIC :: CRTM_Destroy_Predictor
+  PUBLIC :: CRTM_Allocate_Predictor
+  PUBLIC :: CRTM_Assign_Predictor
 
 
   ! -----------------
@@ -42,19 +42,25 @@ MODULE CRTM_AtmAbsorption_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_AtmAbsorption_Define.f90,v 1.12 2006/08/31 16:58:28 frpv Exp $'
+  '$Id: CRTM_Predictor_Define.f90,v 2.1 2006/08/31 16:54:29 frpv Exp $'
 
 
   ! ----------------------------------
-  ! AtmAbsorption data type definition
+  ! Predictor data type definition
   ! ----------------------------------
-  TYPE :: CRTM_AtmAbsorption_type
+  TYPE :: CRTM_Predictor_type
     INTEGER :: n_Allocates = 0
     ! Dimensions
-    INTEGER :: n_Layers = 0  ! K dimension
-    ! Structure members
-    REAL(fp), DIMENSION(:), POINTER :: Optical_Depth => NULL() ! K
-  END TYPE CRTM_AtmAbsorption_type
+    INTEGER :: n_Layers     = 0  ! K dimension
+    INTEGER :: n_Predictors = 0  ! I dimension
+    INTEGER :: n_Absorbers  = 0  ! J dimension
+    ! Components
+    REAL(fp) :: Secant_Sensor_Zenith = ZERO
+    ! Integrated absorber array
+    REAL(fp), DIMENSION(:,:), POINTER :: A => NULL()   ! 0:K x J
+    ! Predictor array
+    REAL(fp), DIMENSION(:,:), POINTER :: X => NULL()   ! I x K
+  END TYPE CRTM_Predictor_type
 
 
 CONTAINS
@@ -71,33 +77,36 @@ CONTAINS
 !----------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Clear_AtmAbsorption
+!       CRTM_Clear_Predictor
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_AtmAbsorption structure.
+!       Subroutine to clear the scalar members of a CRTM_Predictor structure.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Clear_AtmAbsorption( AtmAbsorption ) ! Output
+!       CALL CRTM_Clear_Predictor( Predictor ) ! Output
 !
 ! OUTPUT ARGUMENTS:
-!       AtmAbsorption:  CRTM_AtmAbsorption structure for which the scalar
-!                       members have been cleared.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmAbsorption_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
+!       Predictor:  CRTM_Predictor structure for which the scalar
+!                   members have been cleared.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Predictor_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption argument is IN OUT rather than
+!       Note the INTENT on the output Predictor argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !----------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Clear_AtmAbsorption( AtmAbsorption )
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
-    AtmAbsorption%n_Layers     = 0
-  END SUBROUTINE CRTM_Clear_AtmAbsorption
+  SUBROUTINE CRTM_Clear_Predictor( Predictor )
+    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor
+    Predictor%n_Layers     = 0
+    Predictor%n_Predictors = 0
+    Predictor%n_Absorbers  = 0
+    Predictor%Secant_Sensor_Zenith = ZERO
+  END SUBROUTINE CRTM_Clear_Predictor
 
 
 
@@ -114,27 +123,27 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Associated_AtmAbsorption
+!       CRTM_Associated_Predictor
 !
 ! PURPOSE:
 !       Function to test the association status of the pointer members of a
-!       AtmAbsorption structure.
+!       Predictor structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_AtmAbsorption( AtmAbsorption,      &  ! Input
-!                                                           ANY_Test = Any_Test )  ! Optional input
+!       Association_Status = CRTM_Associated_Predictor( Predictor,        &  ! Input
+!                                                       ANY_Test=Any_Test )  ! Optional input
 !
 ! INPUT ARGUMENTS:
-!       AtmAbsorption:       CRTM_AtmAbsorption structure which is to have its
+!       Predictor:           CRTM_Predictor structure which is to have its
 !                            pointer member's association status tested.
 !                            UNITS:      N/A
-!                            TYPE:       CRTM_AtmAbsorption_type
+!                            TYPE:       CRTM_Predictor_type
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       ANY_Test:            Set this argument to test if ANY of the
-!                            CRTM_AtmAbsorption structure pointer members are
+!                            CRTM_Predictor structure pointer members are
 !                            associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
@@ -149,14 +158,14 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating
-!                            the association status of the CRTM_AtmAbsorption
+!                            the association status of the CRTM_Predictor
 !                            pointer members.
-!                            .TRUE.  - if ALL the CRTM_AtmAbsorption pointer
+!                            .TRUE.  - if ALL the CRTM_Predictor pointer
 !                                      members are associated, or if the
 !                                      ANY_Test argument is set and ANY of the
-!                                      CRTM_AtmAbsorption pointer members are
+!                                      CRTM_Predictor pointer members are
 !                                      associated.
-!                            .FALSE. - some or all of the CRTM_AtmAbsorption
+!                            .FALSE. - some or all of the CRTM_Predictor
 !                                      pointer members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
@@ -164,17 +173,21 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_AtmAbsorption( AtmAbsorption, & ! Input
-                                          ANY_Test )     & ! Optional input
-                                        RESULT( Association_Status )
+  FUNCTION CRTM_Associated_Predictor( Predictor, & ! Input
+                                      ANY_Test ) & ! Optional input
+                                    RESULT( Association_Status )
     ! Arguments
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN) :: AtmAbsorption
-    INTEGER,             OPTIONAL, INTENT(IN) :: ANY_Test
+    TYPE(CRTM_Predictor_type), INTENT(IN) :: Predictor
+    INTEGER,         OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
     LOGICAL :: ALL_Test
 
+
+    ! ------
+    ! Set up
+    ! ------
     ! Default is to test ALL the pointer members
     ! for a true association status....
     ALL_Test = .TRUE.
@@ -184,42 +197,38 @@ CONTAINS
     END IF
 
 
+    ! ---------------------------------------------
     ! Test the structure pointer member association
-!    Association_Status = .FALSE.
-!    IF ( ALL_Test ) THEN
-!      IF ( ASSOCIATED( AtmAbsorption%Optical_Depth ) .AND. &
-!           ASSOCIATED( AtmAbsorption%othercomp1    ) .AND. &
-!           ASSOCIATED( AtmAbsorption%othercomp2    )       ) THEN
-!        Association_Status = .TRUE.
-!      END IF
-!    ELSE
-!      IF ( ASSOCIATED( AtmAbsorption%Optical_Depth ) .OR. &
-!           ASSOCIATED( AtmAbsorption%othercomp1    ) .OR. &
-!           ASSOCIATED( AtmAbsorption%othercomp2    )      ) THEN
-!        Association_Status = .TRUE.
-!      END IF
-!    END IF
-
-    ! Code for current single component test
+    ! ---------------------------------------------
     Association_Status = .FALSE.
-    IF ( ASSOCIATED( AtmAbsorption%Optical_Depth ) ) Association_Status = .TRUE.
+    IF ( ALL_Test ) THEN
+      IF (ASSOCIATED(Predictor%A) .AND. &
+          ASSOCIATED(Predictor%X)       ) THEN
+        Association_Status = .TRUE.
+      END IF
+    ELSE
+      IF (ASSOCIATED(Predictor%A) .OR. &
+          ASSOCIATED(Predictor%X)      ) THEN
+        Association_Status = .TRUE.
+      END IF
+    END IF
 
-  END FUNCTION CRTM_Associated_AtmAbsorption
+  END FUNCTION CRTM_Associated_Predictor
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Destroy_AtmAbsorption
+!       CRTM_Destroy_Predictor
 ! 
 ! PURPOSE:
 !       Function to re-initialize the scalar and pointer members of
-!       a CRTM_AtmAbsorption data structure.
+!       a CRTM_Predictor data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_AtmAbsorption( AtmAbsorption,            &  ! Output
-!                                                  RCS_Id = RCS_Id,          &  ! Revision control
-!                                                  Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Predictor( Predictor,              &  ! Output
+!                                              RCS_Id=RCS_Id,          &  ! Revision control
+!                                              Message_Log=Message_Log )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:    Character string specifying a filename in which any
@@ -232,9 +241,9 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       AtmAbsorption:  Re-initialized CRTM_AtmAbsorption structure.
+!       Predictor:      Re-initialized CRTM_Predictor structure.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmAbsorption_type
+!                       TYPE:       CRTM_Predictor_type
 !                       DIMENSION:  Scalar OR Rank-1 array
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -261,26 +270,26 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !
 ! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption argument is IN OUT rather than
+!       Note the INTENT on the output Predictor argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy_AtmAbsorption( AtmAbsorption, &  ! Output
-                                       No_Clear,      &  ! Optional input
-                                       RCS_Id,        &  ! Revision control
-                                       Message_Log )  &  ! Error messaging
-                                     RESULT( Error_Status )
+  FUNCTION CRTM_Destroy_Predictor( Predictor,    &  ! Output
+                                   No_Clear,     &  ! Optional input
+                                   RCS_Id,       &  ! Revision control
+                                   Message_Log ) &  ! Error messaging
+                                 RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
-    INTEGER,             OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor
+    INTEGER,         OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_AtmAbsorption'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Predictor'
     ! Local variables
     CHARACTER( 256 ) :: Message
     LOGICAL :: Clear
@@ -298,56 +307,74 @@ CONTAINS
     END IF
 
     ! Initialise the scalar members
-    IF ( Clear ) CALL CRTM_Clear_AtmAbsorption( AtmAbsorption )
+    IF (Clear) CALL CRTM_Clear_Predictor(Predictor)
 
     ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. CRTM_Associated_AtmAbsorption( AtmAbsorption ) ) RETURN
+    IF ( .NOT. CRTM_Associated_Predictor(Predictor) ) RETURN
+
 
     ! Deallocate the pointer members
-    DEALLOCATE( AtmAbsorption%Optical_Depth, &
-                STAT = Allocate_Status )
+    DEALLOCATE( Predictor%A, &
+                Predictor%X, &
+                STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating CRTM_AtmAbsorption structure. STAT = ", i5 )' ) &
+      WRITE( Message, '( "Error deallocating CRTM_Predictor structure. STAT = ", i5 )' ) &
                       Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,  &
+      CALL Display_Message( ROUTINE_NAME,    &
                             TRIM(Message), &
-                            Error_Status,  &
+                            Error_Status,    &
                             Message_Log=Message_Log )
     END IF
 
     ! Decrement and test allocation counter
-    AtmAbsorption%n_Allocates = AtmAbsorption%n_Allocates - 1
-    IF ( AtmAbsorption%n_Allocates /= 0 ) THEN
+    Predictor%n_Allocates = Predictor%n_Allocates - 1
+    IF ( Predictor%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-                      AtmAbsorption%n_Allocates
+                      Predictor%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
-  END FUNCTION CRTM_Destroy_AtmAbsorption
+  END FUNCTION CRTM_Destroy_Predictor
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Allocate_AtmAbsorption
+!       CRTM_Allocate_Predictor
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the CRTM_AtmAbsorption
+!       Function to allocate the pointer members of the CRTM_Predictor
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_AtmAbsorption( n_Layers,                 &  ! Input
-!                                                   AtmAbsorption,            &  ! Output
-!                                                   RCS_Id = RCS_Id,          &  ! Revision control
-!                                                   Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Predictor( n_Layers,               &  ! Input
+!                                               n_Predictors,           &  ! Input
+!                                               n_Absorbers,            &  ! Input
+!                                               Predictor,              &  ! Output
+!                                               RCS_Id=RCS_Id,          &  ! Revision control
+!                                               Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !         n_Layers:          Number of atmospheric layers.
+!                            Must be > 0
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
+!
+!         n_Predictors:      Number of absorption predictors.
+!                            Must be > 0
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
+!
+!         n_Absorbers:       Number of atmospheric absorbers.
 !                            Must be > 0
 !                            UNITS:      N/A
 !                            TYPE:       INTEGER
@@ -365,9 +392,9 @@ CONTAINS
 !                            ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       AtmAbsorption:       CRTM_AtmAbsorption structure with allocated pointer members
+!       Predictor:           CRTM_Predictor structure with allocated pointer members
 !                            UNITS:      N/A
-!                            TYPE:       CRTM_AtmAbsorption_type
+!                            TYPE:       CRTM_Predictor_type
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN OUT)
 !
@@ -395,28 +422,32 @@ CONTAINS
 !                            DIMENSION:  Scalar
 !
 ! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption argument is IN OUT rather than
+!       Note the INTENT on the output Predictor argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Allocate_AtmAbsorption( n_Layers,         &  ! Input
-                                        AtmAbsorption,    &  ! Output
-                                        RCS_Id,           &  ! Revision control
-                                        Message_Log )     &  ! Error messaging
-                                      RESULT( Error_Status )
+  FUNCTION CRTM_Allocate_Predictor( n_Layers,     &  ! Input
+                                    n_Predictors, &  ! Input
+                                    n_Absorbers,  &  ! Input
+                                    Predictor,    &  ! Output
+                                    RCS_Id,       &  ! Revision control
+                                    Message_Log ) &  ! Error messaging
+                                  RESULT( Error_Status )
     ! Arguments
-    INTEGER,                       INTENT(IN)     :: n_Layers
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,                   INTENT(IN)     :: n_Layers
+    INTEGER,                   INTENT(IN)     :: n_Predictors
+    INTEGER,                   INTENT(IN)     :: n_Absorbers
+    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_AtmAbsorption'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Predictor'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER( 256 ) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
@@ -424,81 +455,88 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
-    IF ( n_Layers < 1 ) THEN
+    IF ( n_Layers     < 1 .OR. &
+         n_Predictors < 1 .OR. &
+         n_Absorbers  < 1      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Layers must be > 0.', &
+                            'Input CRTM_Predictor dimensions must be > 0.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
     ! Check if ANY pointers are already associated
     ! If they are, deallocate them but leave scalars.
-    IF ( CRTM_Associated_AtmAbsorption( AtmAbsorption, ANY_Test = SET ) ) THEN
-      Error_Status = CRTM_Destroy_AtmAbsorption( AtmAbsorption, &
-                                                 No_Clear = SET, &
-                                                 Message_Log = Message_Log )
+    IF ( CRTM_Associated_Predictor(Predictor,ANY_Test=1) ) THEN
+      Error_Status = CRTM_Destroy_Predictor( Predictor, &
+                                             No_Clear=1, &
+                                             Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CRTM_AtmAbsorption pointer members.', &
+                              'Error deallocating CRTM_Predictor prior to allocation.', &
                               Error_Status,    &
                               Message_Log = Message_Log )
         RETURN
       END IF
     END IF
 
+
     ! Perform the allocation
-    ALLOCATE( AtmAbsorption%Optical_Depth( n_Layers ), &
+    ALLOCATE( Predictor%A(0:n_Layers,n_Absorbers), &
+              Predictor%X(n_Predictors,n_Layers) , &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating AtmAbsorption data arrays. STAT = ", i5 )' ) &
+      WRITE( Message, '( "Error allocating Predictor data arrays. STAT = ", i5 )' ) &
                       Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
     ! Assign the dimensions and initalise arrays
-    AtmAbsorption%n_Layers      = n_Layers
-    AtmAbsorption%Optical_Depth = ZERO
+    Predictor%n_Layers     = n_Layers
+    Predictor%n_Predictors = n_Predictors
+    Predictor%n_Absorbers  = n_Absorbers
+    Predictor%A            = ZERO
+    Predictor%X            = ZERO
 
     ! Increment and test allocation counter
-    AtmAbsorption%n_Allocates = AtmAbsorption%n_Allocates + 1
-    IF ( AtmAbsorption%n_Allocates /= 1 ) THEN
+    Predictor%n_Allocates = Predictor%n_Allocates + 1
+    IF ( Predictor%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
-                      AtmAbsorption%n_Allocates
+                      Predictor%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
                             Error_Status,    &
                             Message_Log = Message_Log )
     END IF
 
-  END FUNCTION CRTM_Allocate_AtmAbsorption
+  END FUNCTION CRTM_Allocate_Predictor
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Assign_AtmAbsorption
+!       CRTM_Assign_Predictor
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_AtmAbsorption structures.
+!       Function to copy valid CRTM_Predictor structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_AtmAbsorption( AtmAbsorption_in,       &  ! Input
-!                                                 AtmAbsorption_out,      &  ! Output
-!                                                 RCS_Id     =RCS_Id,     &  ! Revision control
-!                                                 Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Assign_Predictor( Predictor_in,             &  ! Input
+!                                             Predictor_out,            &  ! Output
+!                                             RCS_Id      = RCS_Id,     &  ! Revision control
+!                                             Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       AtmAbsorption_in:  CRTM_AtmAbsorption structure which is to be copied.
+!       Predictor_in:      CRTM_Predictor structure which is to be copied.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmAbsorption_type
+!                          TYPE:       CRTM_Predictor_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
@@ -513,9 +551,9 @@ CONTAINS
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       AtmAbsorption_out: Copy of the input structure, CRTM_AtmAbsorption_in.
+!       Predictor_out:     Copy of the input structure, CRTM_Predictor_in.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmAbsorption_type
+!                          TYPE:       CRTM_Predictor_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
@@ -544,56 +582,67 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Assign_AtmAbsorption( AtmAbsorption_in,  &  ! Input
-                                      AtmAbsorption_out, &  ! Output
-                                      RCS_Id,            &  ! Revision control
-                                      Message_Log )      &  ! Error messaging
-                                    RESULT( Error_Status )
+  FUNCTION CRTM_Assign_Predictor( Predictor_in,  &  ! Input
+                                  Predictor_out, &  ! Output
+                                  RCS_Id,        &  ! Revision control
+                                  Message_Log )  &  ! Error messaging
+                                RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN)     :: AtmAbsorption_in
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_out
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Predictor_type), INTENT(IN)     :: Predictor_in
+    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor_out
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_AtmAbsorption'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Predictor'
 
     ! Set up
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
-    ! If this test succeeds, then some or all of the
-    ! input pointers are NOT associated, so destroy
-    ! the output structure and return.
-    IF ( .NOT. CRTM_Associated_AtmAbsorption( AtmAbsorption_In ) ) THEN
-      Error_Status = CRTM_Destroy_AtmAbsorption( AtmAbsorption_Out, &
-                                                 Message_Log = Message_Log )
+    IF ( .NOT. CRTM_Associated_Predictor(Predictor_In) ) THEN
+      ! Destroy the output structure
+      Error_Status = CRTM_Destroy_Predictor(Predictor_Out, &
+                                            Message_Log=Message_Log)
       IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output CRTM_AtmAbsorption pointer members.', &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating output CRTM_Predictor pointer members.', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
       END IF
+      ! Inform user of unassociated inputs
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Some or all INPUT CRTM_Predictor pointer '//&
+                            'members are NOT associated.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
     ! Allocate the structure
-    Error_Status = CRTM_Allocate_AtmAbsorption( AtmAbsorption_in%n_Layers, &
-                                                AtmAbsorption_out, &
-                                                Message_Log = Message_Log )
+    Error_Status = CRTM_Allocate_Predictor( Predictor_in%n_Layers, &
+                                            Predictor_in%n_Predictors, &
+                                            Predictor_in%n_Absorbers, &
+                                            Predictor_out, &
+                                            Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output AtmAbsorption arrays.', &
+                            'Error allocating output CRTM_Predictor arrays.', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
     END IF
 
+    ! Assign non-dimension scalar members
+    Predictor_out%Secant_Sensor_Zenith = Predictor_in%Secant_Sensor_Zenith
+
     ! Assign array data
-    AtmAbsorption_out%Optical_Depth = AtmAbsorption_in%Optical_Depth
+    Predictor_out%A = Predictor_in%A
+    Predictor_out%X = Predictor_in%X
 
-  END FUNCTION CRTM_Assign_AtmAbsorption
+  END FUNCTION CRTM_Assign_Predictor
 
-END MODULE CRTM_AtmAbsorption_Define
+END MODULE CRTM_Predictor_Define

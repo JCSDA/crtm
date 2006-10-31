@@ -25,17 +25,44 @@ MODULE CRTM_Adjoint_Module
                                       MAX_N_LEGENDRE_TERMS, &
                                       MAX_N_STOKES, &
                                       MAX_N_ANGLES
-  USE CRTM_Atmosphere_Define
-  USE CRTM_Surface_Define
-  USE CRTM_GeometryInfo_Define
-  USE CRTM_ChannelInfo_Define
-  USE CRTM_Options_Define
-  USE CRTM_AtmAbsorption
-  USE CRTM_AerosolScatter
-  USE CRTM_CloudScatter
-  USE CRTM_SfcOptics
-  USE CRTM_AtmOptics
-  USE CRTM_RTSolution
+  USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type
+  USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type   , &
+                                      CRTM_Compute_GeometryInfo
+  USE CRTM_ChannelInfo_Define,  ONLY: CRTM_ChannelInfo_type
+  USE CRTM_Options_Define,      ONLY: CRTM_Options_type
+  USE CRTM_Predictor,           ONLY: CRTM_Predictor_type       , &
+                                      CRTM_APVariables_type     , &
+                                      CRTM_Allocate_Predictor   , &
+                                      CRTM_Destroy_Predictor    , &
+                                      CRTM_Compute_Predictors   , &
+                                      CRTM_Compute_Predictors_AD
+  USE CRTM_AtmAbsorption,       ONLY: CRTM_AtmAbsorption_type      , &
+                                      CRTM_Allocate_AtmAbsorption  , &
+                                      CRTM_Destroy_AtmAbsorption   , &
+                                      CRTM_Compute_AtmAbsorption   , &
+                                      CRTM_Compute_AtmAbsorption_AD
+  USE CRTM_AtmScatter_Define,   ONLY: CRTM_AtmScatter_type    , &
+                                      CRTM_Allocate_AtmScatter, &
+                                      CRTM_Destroy_AtmScatter
+  USE CRTM_AerosolScatter,      ONLY: CRTM_Compute_AerosolScatter   , &
+                                      CRTM_Compute_AerosolScatter_AD
+  USE CRTM_CloudScatter,        ONLY: CRTM_CSVariables_type       , &
+                                      CRTM_Compute_CloudScatter   , &
+                                      CRTM_Compute_CloudScatter_AD
+  USE CRTM_AtmOptics,           ONLY: CRTM_AOVariables_type    , &
+                                      CRTM_Combine_AtmOptics   , &
+                                      CRTM_Combine_AtmOptics_AD
+  USE CRTM_SfcOptics,           ONLY: CRTM_SfcOptics_type     , &
+                                      CRTM_Allocate_SfcOptics , &
+                                      CRTM_Destroy_SfcOptics  , &
+                                      CRTM_Compute_SurfaceT   , &
+                                      CRTM_Compute_SurfaceT_AD
+  USE CRTM_RTSolution,          ONLY: CRTM_RTSolution_type      , &
+                                      CRTM_RTVariables_type     , &
+                                      CRTM_Compute_n_Streams    , &
+                                      CRTM_Compute_RTSolution   , &
+                                      CRTM_Compute_RTSolution_AD
 
 
   ! -----------------------
@@ -66,8 +93,8 @@ MODULE CRTM_Adjoint_Module
   ! Module parameters
   ! -----------------
   ! RCS Id for the module
-  CHARACTER( * ), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Adjoint_Module.f90,v 1.9 2006/07/26 21:35:26 wd20pd Exp $'
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id: CRTM_Adjoint_Module.f90,v 1.10 2006/08/31 17:04:04 frpv Exp $'
 
 
 CONTAINS
@@ -84,17 +111,17 @@ CONTAINS
 !       profile or profile set and user specified satellites/channels.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Adjoint( Atmosphere,               &  ! Input, M
-!                                    Surface,                  &  ! Input, M
-!                                    RTSolution_AD,            &  ! Input, L x M 
-!                                    GeometryInfo,             &  ! Input, M
-!                                    ChannelInfo,              &  ! Input, Scalar
-!                                    Atmosphere_AD,            &  ! Output, M
-!                                    Surface_AD,               &  ! Output, M
-!                                    RTSolution,               &  ! Output, L x M
-!                                    Options     = Options,    &  ! Optional FWD input,  M
-!                                    RCS_Id      = RCS_Id,     &  ! Revision control
-!                                    Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Adjoint( Atmosphere,             &  ! FWD Input
+!                                    Surface,                &  ! FWD Input
+!                                    RTSolution_AD,          &  ! AD  Input
+!                                    GeometryInfo,           &  ! Input
+!                                    ChannelInfo,            &  ! Input
+!                                    Atmosphere_AD,          &  ! AD  Output
+!                                    Surface_AD,             &  ! AD  Output
+!                                    RTSolution,             &  ! FWD Output
+!                                    Options=Options,        &  ! Optional FWD input
+!                                    RCS_Id=RCS_Id,          &  ! Revision control
+!                                    Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     Structure containing the Atmosphere data.
@@ -104,14 +131,14 @@ CONTAINS
 !                                     or
 !                                   Rank-1 (M)
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN )
+!                       ATTRIBUTES: INTENT(IN)
 !
 !       Surface:        Structure containing the Surface data.
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_Surface_type
 !                       DIMENSION:  Same as input Atmosphere argument.
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN )
+!                       ATTRIBUTES: INTENT(IN)
 !
 !       RTSolution_AD:  Structure containing the RT solution adjoint inputs.
 !                       **NOTE: On EXIT from this function, the contents of
@@ -123,23 +150,23 @@ CONTAINS
 !                                     or
 !                                   Rank-2 (L x M)
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN OUT )
+!                       ATTRIBUTES: INTENT(IN OUT)
 !
 !       GeometryInfo:   Structure containing the view geometry
 !                       information.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE( CRTM_GeometryInfo_type )
+!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                       DIMENSION:  Same as input Atmosphere argument
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN )
+!                       ATTRIBUTES: INTENT(IN)
 !
 !       ChannelInfo:    Structure returned from the CRTM_Init() function
 !                       that contains the satellite/sesnor channel index
 !                       information.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE( CRTM_ChannelInfo_type )
+!                       TYPE:       TYPE(CRTM_ChannelInfo_type)
 !                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN )
+!                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Options:        Options structure containing the optional forward model
@@ -148,16 +175,16 @@ CONTAINS
 !                       TYPE:       CRTM_Options_type
 !                       DIMENSION:  Same as input Atmosphere structure
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:    Character string specifying a filename in which any
 !                       messages will be logged. If not specified, or if an
 !                       error occurs opening the log file, the default action
 !                       is to output messages to the screen.
 !                       UNITS:      N/A
-!                       TYPE:       CHARACTER( * )
+!                       TYPE:       CHARACTER(*)
 !                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !       Atmosphere_AD:  Structure containing the adjoint Atmosphere data.
@@ -169,7 +196,7 @@ CONTAINS
 !                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Same as input Atmosphere argument
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN OUT )
+!                       ATTRIBUTES: INTENT(IN OUT)
 !
 !       Surface_AD:     Structure containing the tangent-linear Surface data.
 !                       **NOTE: On ENTRY to this function, the contents of
@@ -180,7 +207,7 @@ CONTAINS
 !                       TYPE:       CRTM_Surface_type
 !                       DIMENSION:  Same as input Atmosphere argument
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN OUT )
+!                       ATTRIBUTES: INTENT(IN OUT)
 !
 !       RTSolution:     Structure containing the solution to the RT equation
 !                       for the given inputs.
@@ -188,7 +215,7 @@ CONTAINS
 !                       TYPE:       CRTM_RTSolution_type
 !                       DIMENSION:  Same as input RTSolution_AD argument
 !                                   See dimensionality table in COMMENTS below.
-!                       ATTRIBUTES: INTENT( IN OUT )
+!                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:         Character string containing the Revision Control
@@ -196,7 +223,7 @@ CONTAINS
 !                       UNITS:      N/A
 !                       TYPE:       CHARACTER(*)
 !                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
@@ -211,7 +238,7 @@ CONTAINS
 !      Note that the input adjoint arguments are modified upon exit, and
 !      the output adjoint arguments must be defined upon entry. This is
 !      a consequence of the adjoint formulation where, effectively, the
-!      chain rule is being used and this funtion could reside anywhere
+!      chain rule is being used and this function could reside anywhere
 !      in the chain of derivative terms.
 !
 ! COMMENTS:
@@ -244,7 +271,6 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-
   !#----------------------------------------------------------------------------#
   !#----------------------------------------------------------------------------#
   !#                -- RANK-1 (N_PROFILES) SPECIFIC FUNCTION --                 #
@@ -264,23 +290,23 @@ CONTAINS
                                Message_Log )  &  ! Error messaging
                              RESULT( Error_Status )
     ! Arguments
-    TYPE( CRTM_Atmosphere_type ),        DIMENSION( : ),   INTENT( IN OUT)  :: Atmosphere    ! M
-    TYPE( CRTM_Surface_type ),           DIMENSION( : ),   INTENT( IN )     :: Surface       ! M
-    TYPE( CRTM_RTSolution_type ),        DIMENSION( :,: ), INTENT( IN OUT ) :: RTSolution_AD ! L x M
-    TYPE( CRTM_GeometryInfo_type ),      DIMENSION( : ),   INTENT( IN OUT ) :: GeometryInfo  ! M
-    TYPE( CRTM_ChannelInfo_type ),                         INTENT( IN )     :: ChannelInfo   ! Scalar
-    TYPE( CRTM_Atmosphere_type ),        DIMENSION( : ),   INTENT( IN OUT ) :: Atmosphere_AD ! M
-    TYPE( CRTM_Surface_type ),           DIMENSION( : ),   INTENT( IN OUT ) :: Surface_AD    ! M
-    TYPE( CRTM_RTSolution_type ),        DIMENSION( :,: ), INTENT( IN OUT ) :: RTSolution    ! L x M
-    TYPE( CRTM_Options_type ), OPTIONAL, DIMENSION( : ),   INTENT( IN )     :: Options       ! M
-    CHARACTER( * ),            OPTIONAL,                   INTENT( OUT )    :: RCS_Id
-    CHARACTER( * ),            OPTIONAL,                   INTENT( IN )     :: Message_Log
+    TYPE(CRTM_Atmosphere_type),        DIMENSION(:),   INTENT(IN)     :: Atmosphere    ! M
+    TYPE(CRTM_Surface_type),           DIMENSION(:),   INTENT(IN)     :: Surface       ! M
+    TYPE(CRTM_RTSolution_type),        DIMENSION(:,:), INTENT(IN OUT) :: RTSolution_AD ! L x M
+    TYPE(CRTM_GeometryInfo_type),      DIMENSION(:),   INTENT(IN OUT) :: GeometryInfo  ! M
+    TYPE(CRTM_ChannelInfo_type),                       INTENT(IN)     :: ChannelInfo   ! Scalar
+    TYPE(CRTM_Atmosphere_type),        DIMENSION(:),   INTENT(IN OUT) :: Atmosphere_AD ! M
+    TYPE(CRTM_Surface_type),           DIMENSION(:),   INTENT(IN OUT) :: Surface_AD    ! M
+    TYPE(CRTM_RTSolution_type),        DIMENSION(:,:), INTENT(IN OUT) :: RTSolution    ! L x M
+    TYPE(CRTM_Options_type), OPTIONAL, DIMENSION(:),   INTENT(IN)     :: Options       ! M
+    CHARACTER(*),            OPTIONAL,                 INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,                 INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Adjoint(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Adjoint(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     CHARACTER( 10 )  :: Value_Input, Value_Allowed
     LOGICAL :: Options_Present
     INTEGER :: Status_AD
@@ -306,7 +332,7 @@ CONTAINS
                             'Inconsistent profile dimensionality for '//&
                             'Atmosphere input argument.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -323,7 +349,7 @@ CONTAINS
                             ') > maximum number of profiles allowed ('// &
                             TRIM( ADJUSTL( Value_Allowed ) )//').', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -336,7 +362,7 @@ CONTAINS
                             'Inconsistent profile dimensionality for '//&
                             'Surface input argument(s).', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
     
@@ -346,7 +372,7 @@ CONTAINS
                             'Inconsistent profile dimensionality for '//&
                             'GeomtryInfo input argument.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -357,7 +383,7 @@ CONTAINS
                             'Inconsistent profile dimensionality for '//&
                             'RTSolution output argument(s).', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -370,7 +396,7 @@ CONTAINS
                               'Inconsistent profile dimensionality for '//&
                               'Options optional input argument.', &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
     END IF
@@ -394,16 +420,16 @@ CONTAINS
       ! -------------------------
 
       DO m = 1, n_Profiles
-        Status_AD = CRTM_Adjoint_scalar( Atmosphere(m),            &  ! Input, Scalar
-                                         Surface(m),               &  ! Input, Scalar
-                                         RTSolution_AD(:,m),       &  ! Input, L   
-                                         GeometryInfo(m),          &  ! Input, Scalar
-                                         ChannelInfo,              &  ! Input, Scalar
-                                         Atmosphere_AD(m),         &  ! Output, Scalar
-                                         Surface_AD(m),            &  ! Output, Scalar
-                                         RTSolution(:,m),          &  ! Output, L
-                                         Options = Options(m),     &  ! Optional input, Scalar
-                                         Message_Log = Message_Log )  ! Error messaging
+        Status_AD = CRTM_Adjoint_scalar( Atmosphere(m),          &  ! Input, Scalar
+                                         Surface(m),             &  ! Input, Scalar
+                                         RTSolution_AD(:,m),     &  ! Input, L   
+                                         GeometryInfo(m),        &  ! Input, Scalar
+                                         ChannelInfo,            &  ! Input, Scalar
+                                         Atmosphere_AD(m),       &  ! Output, Scalar
+                                         Surface_AD(m),          &  ! Output, Scalar
+                                         RTSolution(:,m),        &  ! Output, L
+                                         Options=Options(m),     &  ! Optional input, Scalar
+                                         Message_Log=Message_Log )  ! Error messaging
         IF ( Status_AD /= SUCCESS ) THEN
           Error_Status = Status_AD
           IF ( Error_Status == FAILURE ) THEN
@@ -412,7 +438,7 @@ CONTAINS
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM( Message ), &
                                   Error_Status, &
-                                  Message_Log = Message_Log )
+                                  Message_Log=Message_Log )
             RETURN
           END IF
         END IF
@@ -426,15 +452,15 @@ CONTAINS
       ! ----------------------------
 
       DO m = 1, n_Profiles
-        Status_AD = CRTM_Adjoint_scalar( Atmosphere(m),            &  ! Input, Scalar
-                                         Surface(m),               &  ! Input, Scalar
-                                         RTSolution_AD(:,m),       &  ! Input, L   
-                                         GeometryInfo(m),          &  ! Input, Scalar
-                                         ChannelInfo,              &  ! Input, Scalar
-                                         Atmosphere_AD(m),         &  ! Output, Scalar
-                                         Surface_AD(m),            &  ! Output, Scalar
-                                         RTSolution(:,m),          &  ! Output, L   
-                                         Message_Log = Message_Log )  ! Error messaging
+        Status_AD = CRTM_Adjoint_scalar( Atmosphere(m),          &  ! Input, Scalar
+                                         Surface(m),             &  ! Input, Scalar
+                                         RTSolution_AD(:,m),     &  ! Input, L   
+                                         GeometryInfo(m),        &  ! Input, Scalar
+                                         ChannelInfo,            &  ! Input, Scalar
+                                         Atmosphere_AD(m),       &  ! Output, Scalar
+                                         Surface_AD(m),          &  ! Output, Scalar
+                                         RTSolution(:,m),        &  ! Output, L   
+                                         Message_Log=Message_Log )  ! Error messaging
         IF ( Status_AD /= SUCCESS ) THEN
           Error_Status = Status_AD
           IF ( Error_Status == FAILURE ) THEN
@@ -443,7 +469,7 @@ CONTAINS
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM( Message ), &
                                   Error_Status, &
-                                  Message_Log = Message_Log )
+                                  Message_Log=Message_Log )
             RETURN
           END IF
         END IF
@@ -474,36 +500,40 @@ CONTAINS
                                 Message_Log )  &  ! Error messaging
                               RESULT( Error_Status )
     ! Arguments
-    TYPE( CRTM_Atmosphere_type ),                 INTENT( IN OUT ) :: Atmosphere    ! Scalar
-    TYPE( CRTM_Surface_type ),                    INTENT( IN )     :: Surface       ! Scalar
-    TYPE( CRTM_RTSolution_type ), DIMENSION( : ), INTENT( IN OUT ) :: RTSolution_AD ! L
-    TYPE( CRTM_GeometryInfo_type ),               INTENT( IN OUT ) :: GeometryInfo  ! Scalar
-    TYPE( CRTM_ChannelInfo_type ),                INTENT( IN )     :: ChannelInfo   ! Scalar 
-    TYPE( CRTM_Atmosphere_type ),                 INTENT( IN OUT ) :: Atmosphere_AD ! Scalar
-    TYPE( CRTM_Surface_type ),                    INTENT( IN OUT ) :: Surface_AD    ! Scalar
-    TYPE( CRTM_RTSolution_type ), DIMENSION( : ), INTENT( IN OUT ) :: RTSolution    ! L
-    TYPE( CRTM_Options_type ), OPTIONAL,          INTENT( IN )     :: Options       ! M
-    CHARACTER( * ),            OPTIONAL,          INTENT( OUT )    :: RCS_Id
-    CHARACTER( * ),            OPTIONAL,          INTENT( IN )     :: Message_Log
+    TYPE(CRTM_Atmosphere_type),               INTENT(IN)     :: Atmosphere    ! Scalar
+    TYPE(CRTM_Surface_type),                  INTENT(IN)     :: Surface       ! Scalar
+    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN OUT) :: RTSolution_AD ! L
+    TYPE(CRTM_GeometryInfo_type),             INTENT(IN OUT) :: GeometryInfo  ! Scalar
+    TYPE(CRTM_ChannelInfo_type),              INTENT(IN)     :: ChannelInfo   ! Scalar 
+    TYPE(CRTM_Atmosphere_type),               INTENT(IN OUT) :: Atmosphere_AD ! Scalar
+    TYPE(CRTM_Surface_type),                  INTENT(IN OUT) :: Surface_AD    ! Scalar
+    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN OUT) :: RTSolution    ! L
+    TYPE(CRTM_Options_type), OPTIONAL,        INTENT(IN)     :: Options       ! M
+    CHARACTER(*),            OPTIONAL,        INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,        INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Adjoint(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Adjoint(Scalar)'
+    INTEGER,      PARAMETER :: FW=1, AD=2  ! AllocStatus indices
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     LOGICAL :: User_Emissivity
     LOGICAL :: User_Direct_Reflectivity
     INTEGER :: Status_FWD, Status_AD
     INTEGER :: l, n_Full_Streams
-    TYPE( CRTM_AtmAbsorption_type ) :: AtmAbsorption,  AtmAbsorption_AD
-    TYPE( CRTM_AtmScatter_type )    :: AerosolScatter, AerosolScatter_AD
-    TYPE( CRTM_AtmScatter_type )    :: CloudScatter,   CloudScatter_AD
-    TYPE( CRTM_AtmScatter_type )    :: AtmOptics,      AtmOptics_AD 
-    TYPE( CRTM_SfcOPtics_type )     :: SfcOptics,      SfcOptics_AD
+    INTEGER, DIMENSION(2,6) :: AllocStatus
+    TYPE(CRTM_Predictor_type)     :: Predictor,      Predictor_AD
+    TYPE(CRTM_AtmAbsorption_type) :: AtmAbsorption,  AtmAbsorption_AD
+    TYPE(CRTM_AtmScatter_type)    :: AerosolScatter, AerosolScatter_AD
+    TYPE(CRTM_AtmScatter_type)    :: CloudScatter,   CloudScatter_AD
+    TYPE(CRTM_AtmScatter_type)    :: AtmOptics,      AtmOptics_AD 
+    TYPE(CRTM_SfcOPtics_type)     :: SfcOptics,      SfcOptics_AD
     ! Internal variables
-    TYPE( CRTM_CSVariables_type ) :: CSV  ! CloudScatter
-    TYPE( CRTM_AOVariables_type ) :: AOV  ! AtmOptics
-    TYPE( CRTM_RTVariables_type ) :: RTV  ! RTSolution
+    TYPE(CRTM_APVariables_type) :: APV  ! Predictor
+    TYPE(CRTM_CSVariables_type) :: CSV  ! CloudScatter
+    TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
+    TYPE(CRTM_RTVariables_type) :: RTV  ! RTSolution
 
 
     ! ------
@@ -511,11 +541,6 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-
-    ! ----------------------------
-    ! Check the number of channels
-    ! ----------------------------
     ! If no channels, simply return
     IF ( ChannelInfo%n_Channels == 0 ) RETURN
     ! Output array too small
@@ -528,37 +553,23 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM( Message ), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#              -- CHECK THE OPTIONAL STRUCTURE ARGUMENTS --                #
-    !#                                                                          #
-    !# Note the use of the "User_Emissivity" logical flag in this section is    #
-    !# not intended as the generic "user options are present" flag. It is       #
-    !# anticipated that future additions to the Options structure argument will #
-    !# necessitate additional flag variables.                                   #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------------------------------------------------
+    ! ---------------------------------------------
+    ! Check the optional Options structure argument
+    ! ---------------------------------------------
     ! Default action is NOT to use user specified Options
-    ! ---------------------------------------------------
+    User_Emissivity = .FALSE.
+    !.... other User_XXX flags as added.
 
-    User_Emissivity    = .FALSE.
-
-
-    ! ------------------------------
-    ! Check the FWD Options argument
-    ! ------------------------------
-
+    ! Check the Options argument
     Options_Present: IF ( PRESENT( Options ) ) THEN
 
       ! Check if the supplied emissivity should be used
       Check_Emissivity: IF ( Options%Emissivity_Switch == SET ) THEN
-
         ! Are the channel dimensions consistent
         IF ( Options%n_Channels < ChannelInfo%n_Channels ) THEN
           Error_Status = FAILURE
@@ -568,38 +579,29 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM( Message ), &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
           RETURN
         END IF
-
         ! Set to use the supplied emissivity
         User_Emissivity = .TRUE.
-
         ! Check if the supplied direct reflectivity should be used
         User_Direct_Reflectivity = .FALSE.
         IF ( Options%Direct_Reflectivity_Switch == SET ) User_Direct_Reflectivity = .TRUE.
-
       END IF Check_Emissivity
-
     END IF Options_Present
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#         -- COMPUTE THE DERIVED GEOMETRY FROM THE USER SPECIFIED --       #
-    !#         -- COMPONENTS OF THE CRTM_GeometryInfo STRUCTURE        --       #
-    !#--------------------------------------------------------------------------#
-
+    ! ------------------------
+    ! Compute derived geometry
+    ! ------------------------
     Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo, &
-                                              Message_Log = Message_Log )
-
-
+                                              Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing derived GeometryInfo components', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -608,179 +610,89 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#                     -- ALLOCATE ALL LOCAL STRUCTURES --                  #
     !#--------------------------------------------------------------------------#
-
-    ! ----------------------------
-    ! The AtmAbsorption structures
-    ! ----------------------------
-
-    ! Forward
-    Status_FWD = CRTM_Allocate_AtmAbsorption( Atmosphere%n_Layers,      &  ! Input
-                                              MAX_N_PREDICTORS,         &  ! Input
-                                              MAX_N_ABSORBERS,          &  ! Input
-                                              AtmAbsorption,            &  ! Output
-                                              Message_Log = Message_Log )  ! Error messaging
-
-    ! Adjoint
-    Status_AD = CRTM_Allocate_AtmAbsorption( Atmosphere%n_Layers,      &  ! Input
-                                             MAX_N_PREDICTORS,         &  ! Input
-                                             MAX_N_ABSORBERS,          &  ! Input
-                                             AtmAbsorption_AD,         &  ! Output
-                                             Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error allocating AtmAbsorption structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! ---------------------------
+    ! The Predictor and AtmAbsorption structures
+    AllocStatus(FW,1)=CRTM_Allocate_Predictor( Atmosphere%n_Layers   , &  ! Input
+                                               MAX_N_PREDICTORS      , &  ! Input
+                                               MAX_N_ABSORBERS       , &  ! Input
+                                               Predictor             , &  ! Output
+                                               Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(AD,1)=CRTM_Allocate_Predictor( Atmosphere%n_Layers   , &  ! Input
+                                               MAX_N_PREDICTORS      , &  ! Input
+                                               MAX_N_ABSORBERS       , &  ! Input
+                                               Predictor_AD          , &  ! Output
+                                               Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(FW,2)=CRTM_Allocate_AtmAbsorption( Atmosphere%n_Layers   , &  ! Input
+                                                   AtmAbsorption         , &  ! Output
+                                                   Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(AD,2)=CRTM_Allocate_AtmAbsorption( Atmosphere%n_Layers   , &  ! Input
+                                                   AtmAbsorption_AD      , &  ! Output
+                                                   Message_Log=Message_Log )  ! Error messaging
     ! The CloudScatter structures
-    ! ---------------------------
-
-    ! Forward
-    Status_FWD = CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,      &  ! Input
-                                           MAX_N_LEGENDRE_TERMS,     &  ! Input
-                                           MAX_N_PHASE_ELEMENTS,     &  ! Input
-                                           CloudScatter,             &  ! Output
-                                           Message_Log = Message_Log )  ! Error messaging
-
-    ! Adjoint
-    Status_AD = CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,      &  ! Input
-                                          MAX_N_LEGENDRE_TERMS,     &  ! Input
-                                          MAX_N_PHASE_ELEMENTS,     &  ! Input
-                                          CloudScatter_AD,          &  ! Output
-                                          Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error allocating CloudScatter structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! -----------------------------
+    AllocStatus(FW,3)=CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,    &  ! Input
+                                                MAX_N_LEGENDRE_TERMS,   &  ! Input
+                                                MAX_N_PHASE_ELEMENTS,   &  ! Input
+                                                CloudScatter,           &  ! Output
+                                                Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(AD,3)=CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,    &  ! Input
+                                                MAX_N_LEGENDRE_TERMS,   &  ! Input
+                                                MAX_N_PHASE_ELEMENTS,   &  ! Input
+                                                CloudScatter_AD,        &  ! Output
+                                                Message_Log=Message_Log )  ! Error messaging
     ! The AerosolScatter structures
-    ! -----------------------------
-
-    ! Forward
-    Status_FWD = CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,      &  ! Input
-                                           MAX_N_LEGENDRE_TERMS,     &  ! Input
-                                           MAX_N_PHASE_ELEMENTS,     &  ! Input
-                                           AerosolScatter,           &  ! Output
-                                           Message_Log = Message_Log )  ! Error messaging
-
-    ! Adjoint
-    Status_AD = CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,      &  ! Input
-                                          MAX_N_LEGENDRE_TERMS,     &  ! Input
-                                          MAX_N_PHASE_ELEMENTS,     &  ! Input
-                                          AerosolScatter_AD,        &  ! Output
-                                          Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error allocating AerosolScatter structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    ! -----------------------
+    AllocStatus(FW,4)=CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,    &  ! Input
+                                                MAX_N_LEGENDRE_TERMS,   &  ! Input
+                                                MAX_N_PHASE_ELEMENTS,   &  ! Input
+                                                AerosolScatter,         &  ! Output
+                                                Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(AD,4)=CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,    &  ! Input
+                                                MAX_N_LEGENDRE_TERMS,   &  ! Input
+                                                MAX_N_PHASE_ELEMENTS,   &  ! Input
+                                                AerosolScatter_AD,      &  ! Output
+                                                Message_Log=Message_Log )  ! Error messaging
     ! The AtmOptics structure
-    ! -----------------------
-
-    ! Forward
-    Status_FWD = CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,      &  ! Input
-                                           MAX_N_LEGENDRE_TERMS,     &  ! Input
-                                           MAX_N_PHASE_ELEMENTS,     &  ! Input
-                                           AtmOptics,                &  ! Output
-                                           Message_Log = Message_Log )  ! Error messaging
-
-    ! Adjoint
-    Status_AD = CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,      &  ! Input
-                                          MAX_N_LEGENDRE_TERMS,     &  ! Input
-                                          MAX_N_PHASE_ELEMENTS,     &  ! Input
-                                          AtmOptics_AD,             &  ! Output
-                                          Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error allocating AtmOptics structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! -----------------------
+    AllocStatus(FW,5)=CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,    &  ! Input
+                                                MAX_N_LEGENDRE_TERMS,   &  ! Input
+                                                MAX_N_PHASE_ELEMENTS,   &  ! Input
+                                                AtmOptics,              &  ! Output
+                                                Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(AD,5)=CRTM_Allocate_AtmScatter( Atmosphere%n_Layers,    &  ! Input
+                                                MAX_N_LEGENDRE_TERMS,   &  ! Input
+                                                MAX_N_PHASE_ELEMENTS,   &  ! Input
+                                                AtmOptics_AD,           &  ! Output
+                                                Message_Log=Message_Log )  ! Error messaging
     ! The SfcOptics structure
-    ! -----------------------
-
-    ! Forward
-    Status_FWD = CRTM_Allocate_SfcOptics( MAX_N_ANGLES,             &  ! Input
-                                          MAX_N_STOKES,             &  ! Input
-                                          SfcOptics,                &  ! Output
-                                          Message_Log = Message_Log )  ! Error messaging
-
-    ! Adjoint
-    Status_AD = CRTM_Allocate_SfcOptics( MAX_N_ANGLES,             &  ! Input
-                                         MAX_N_STOKES,             &  ! Input
-                                         SfcOptics_AD,             &  ! Output
-                                         Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = FAILURE
+    AllocStatus(FW,6)=CRTM_Allocate_SfcOptics( MAX_N_ANGLES,           &  ! Input
+                                               MAX_N_STOKES,           &  ! Input
+                                               SfcOptics,              &  ! Output
+                                               Message_Log=Message_Log )  ! Error messaging
+    AllocStatus(AD,6)=CRTM_Allocate_SfcOptics( MAX_N_ANGLES,           &  ! Input
+                                               MAX_N_STOKES,           &  ! Input
+                                               SfcOptics_AD,           &  ! Output
+                                               Message_Log=Message_Log )  ! Error messaging
+    IF ( ANY(AllocStatus /= SUCCESS) ) THEN
+      Error_Status=FAILURE
       CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error allocating SfcOptics structures', &
+                            'Error allocating local data structures', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- PREPROCESS SOME INPUT DATA --                     #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------------------------------
+    ! --------------------------
+    ! Preprocess some input data
+    ! --------------------------
     ! Average surface skin temperature for multi-surface types
-    ! --------------------------------------------------------
-
     CALL CRTM_Compute_SurfaceT( Surface, SfcOptics )
 
 
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#             -- SET UP FOR FORWARD GASEOUS ABSORPTION CALCS --            #
-    !#--------------------------------------------------------------------------#
-
-    Status_FWD = CRTM_SetUp_AtmAbsorption( Atmosphere,               &  ! Input
-                                           GeometryInfo,             &  ! Input
-                                           AtmAbsorption,            &  ! Output
-                                           Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_FWD /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error setting up AtmAbsorption structure', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
+    ! ------------------------------------------
+    ! Compute predictors for AtmAbsorption calcs
+    ! ------------------------------------------
+    CALL CRTM_Compute_Predictors( Atmosphere  , &  ! Input
+                                  GeometryInfo, &  ! Input
+                                  Predictor   , &  ! Output
+                                  APV           )  ! Internal variable output
 
 
     !#--------------------------------------------------------------------------#
@@ -799,19 +711,9 @@ CONTAINS
       ! Compute the layer optical depths
       ! due to gaseous absorption
       ! --------------------------------
-
-      Status_FWD = CRTM_Compute_AtmAbsorption( ChannelInfo%Channel_Index(l), &  ! Input
-                                               AtmAbsorption,                &  ! In/Output
-                                               Message_Log = Message_Log     )  ! Error messaging
-
-      IF ( Status_FWD /= SUCCESS ) THEN
-        Error_Status = FAILURE
-        CALL DIsplay_Message( ROUTINE_NAME, &
-                              'Error in CRTM_Compute_AtmAbsorption', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
+      CALL CRTM_Compute_AtmAbsorption( ChannelInfo%Channel_Index(l), &  ! Input
+                                       Predictor                   , &  ! Input
+                                       AtmAbsorption                 )  ! Output
 
 
       ! ---------------------------------------------------------------
@@ -820,7 +722,6 @@ CONTAINS
       ! cloud parameters only. It will also use the aerosol parameters 
       ! when aerosol scattering is included.
       ! ---------------------------------------------------------------
-
       CALL CRTM_Compute_n_Streams( Atmosphere, &
                                    ChannelInfo%Channel_Index(l), &
                                    n_Full_Streams, &
@@ -837,15 +738,12 @@ CONTAINS
       ! -----------------------------------------------------------
       ! Compute the cloud particle absorption/scattering properties
       ! -----------------------------------------------------------
-
       IF( Atmosphere%n_Clouds > 0 ) THEN
-
         Status_FWD = CRTM_Compute_CloudScatter( Atmosphere,                   &  ! Input
                                                 ChannelInfo%Channel_Index(l), &  ! Input
                                                 CloudScatter,                 &  ! Output
                                                 CSV,                          &  ! Internal variable output
-                                                Message_Log = Message_Log     )  ! Error messaging
-
+                                                Message_Log=Message_Log       )  ! Error messaging
         IF ( Status_FWD /= SUCCESS ) THEN
           Error_Status = FAILURE
           WRITE( Message, '( "Error computing CloudScatter for ", a, &
@@ -855,25 +753,21 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM( Message ), &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
           RETURN
         END IF
-
       ENDIF
 
 
       ! ----------------------------------------------------
       ! Compute the aerosol absorption/scattering properties
       ! ----------------------------------------------------
-
       IF ( Atmosphere%n_Aerosols > 0 ) THEN
-
         Status_FWD = CRTM_Compute_AerosolScatter( Atmosphere,                   &  ! Input
                                                   GeometryInfo,                 &  ! Input
                                                   ChannelInfo%Channel_Index(l), &  ! Input
                                                   AerosolScatter,               &  ! Output
-                                                  Message_Log = Message_Log     )  ! Error messaging
-
+                                                  Message_Log=Message_Log       )  ! Error messaging
         IF ( Status_FWD /= SUCCESS ) THEN
           Error_Status = FAILURE
           WRITE( Message, '( "Error computing AerosolScatter for ", a, ", channel ", i4 )' ) &
@@ -882,17 +776,15 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM( Message ), &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
           RETURN
         END IF
-
       END IF
 
 
       ! ---------------------------------------------------
       ! Compute the combined atmospheric optical properties
       ! ---------------------------------------------------
-
       CALL CRTM_Combine_AtmOptics( AtmAbsorption,  & ! Input
                                    CloudScatter,   & ! Input
                                    AerosolScatter, & ! Input
@@ -904,7 +796,6 @@ CONTAINS
       ! Fill the SfcOptics structure for the optional
       ! emissivity input case.
       ! ---------------------------------------------
-
       ! Indicate SfcOptics ARE to be computed
       SfcOptics%Compute_Switch = SET
 
@@ -928,7 +819,6 @@ CONTAINS
       ! ------------------------------------
       ! Solve the radiative transfer problem
       ! ------------------------------------
-
       Error_Status = CRTM_Compute_RTSolution( Atmosphere,                   &  ! Input
                                               Surface,                      &  ! Input
                                               AtmOptics,                    &  ! Input
@@ -937,8 +827,7 @@ CONTAINS
                                               ChannelInfo%Channel_Index(l), &  ! Input
                                               RTSolution(l),                &  ! Output
                                               RTV,                          &  ! Internal variable output
-                                              Message_Log = Message_Log     )  ! Error messaging
-
+                                              Message_Log=Message_Log       )  ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error computing CRTM_Compute_RTSolution for ", a, &
                           &", channel ", i4 )' ) &
@@ -947,7 +836,7 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
 
@@ -960,7 +849,6 @@ CONTAINS
       ! --------------------------------------------------
       ! Reinitialise profile independent adjoint variables
       ! --------------------------------------------------
-
       AtmOptics_AD%Phase_Coefficient     = ZERO
       AtmOptics_AD%Asymmetry_Factor      = ZERO
       AtmOptics_AD%Delta_Truncation      = ZERO
@@ -971,7 +859,6 @@ CONTAINS
       ! -------------------------------------
       ! The adjoint of the radiative transfer
       ! -------------------------------------
-
       Status_AD = CRTM_Compute_RTSolution_AD( Atmosphere,                   &  ! FWD Input
                                               Surface,                      &  ! FWD Input
                                               AtmOptics,                    &  ! FWD Input
@@ -985,14 +872,13 @@ CONTAINS
                                               AtmOptics_AD,                 &  ! AD Output
                                               SfcOptics_AD,                 &  ! AD Output
                                               RTV,                          &  ! Internal variable input
-                                              Message_Log = Message_Log     )  ! Error messaging
-
+                                              Message_Log=Message_Log     )  ! Error messaging
       IF ( Status_AD /= SUCCESS ) THEN
         Error_Status = FAILURE
         CALL DIsplay_Message( ROUTINE_NAME, &
                               'Error in CRTM_Compute_RTSolution_AD', &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
 
@@ -1000,7 +886,6 @@ CONTAINS
       ! ------------------------------------------------------------------
       ! Compute the adjoint of the combined atmospheric optical properties
       ! ------------------------------------------------------------------
-
       CALL CRTM_Combine_AtmOptics_AD( AtmAbsorption,     &  ! FWD Input
                                       CloudScatter,      &  ! FWD Input
                                       AerosolScatter,    &  ! FWD Input
@@ -1015,51 +900,44 @@ CONTAINS
       ! ------------------------------------------------------------
       ! Compute the adjoint aerosol absorption/scattering properties
       ! ------------------------------------------------------------
-
       IF ( Atmosphere%n_Aerosols > 0 ) THEN
-
         Status_AD = CRTM_Compute_AerosolScatter_AD( Atmosphere,                   &  ! Input
                                                     AerosolScatter,               &  ! Input
                                                     AerosolScatter_AD,            &  ! Input
                                                     GeometryInfo,                 &  ! Input
                                                     ChannelInfo%Channel_Index(l), &  ! Input
                                                     Atmosphere_AD,                &  ! In/Output
-                                                    Message_Log = Message_Log     )  ! Error messaging
-
+                                                    Message_Log=Message_Log       )  ! Error messaging
         IF ( Status_AD /= SUCCESS ) THEN
           Error_Status = FAILURE
           CALL DIsplay_Message( ROUTINE_NAME, &
                                 'Error in CRTM_Compute_AerosolScatter_AD', &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
           RETURN
         END IF
-
       END IF
 
 
       ! ----------------------------------------------------------
       ! Compute the adjoint cloud absorption/scattering properties
       ! ----------------------------------------------------------
-
       IF( Atmosphere%n_Clouds > 0 ) THEN
-
         Status_AD = CRTM_Compute_CloudScatter_AD( Atmosphere,                   &  ! Input
                                                   CloudScatter,                 &  ! Input
                                                   CloudScatter_AD,              &  ! Input
                                                   ChannelInfo%Channel_Index(l), &  ! Input
                                                   Atmosphere_AD,                &  ! In/Output
                                                   CSV,                          &  ! Internal variable input
-                                                  Message_Log = Message_Log     )  ! Error messaging
+                                                  Message_Log=Message_Log       )  ! Error messaging
         IF ( Status_AD /= SUCCESS ) THEN
           Error_Status = FAILURE
           CALL DIsplay_Message( ROUTINE_NAME, &
                                 'Error in CRTM_Compute_CloudScatter_AD', &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
           RETURN
         END IF
-
       END IF
 
 
@@ -1067,138 +945,51 @@ CONTAINS
       ! Compute the adjoint layer optical depths
       ! due to gaseous absorption
       ! ----------------------------------------
-
-      Status_AD = CRTM_Compute_AtmAbsorption_AD( ChannelInfo%Channel_Index(l), &  ! Input
-                                                 AtmAbsorption,                &  ! Input
-                                                 AtmAbsorption_AD,             &  ! In/Output
-                                                 Message_Log = Message_Log     )  ! Error messaging
-
-      IF ( Status_AD /= SUCCESS ) THEN
-        Error_Status = FAILURE
-        CALL DIsplay_Message( ROUTINE_NAME, &
-                              'Error in CRTM_Compute_AtmAbsorption_AD', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
+      CALL CRTM_Compute_AtmAbsorption_AD( ChannelInfo%Channel_Index(l), &  ! Input
+                                          Predictor,                    &  ! FWD Input
+                                          AtmAbsorption_AD,             &  ! AD Input
+                                          Predictor_AD                  )  ! AD Output
 
     END DO Channel_Loop
 
+    ! -------------------------------------
+    ! Adjoint of the predictor calculations
+    ! -------------------------------------
+    CALL CRTM_Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
+                                      Predictor,     &  ! FWD Input
+                                      Predictor_AD,  &  ! AD Input
+                                      GeometryInfo,  &  ! Input
+                                      Atmosphere_AD, &  ! AD Output
+                                      APV            )  ! Internal variable input
 
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- ADJOINT OF THE AtmAbsorption SETUP --                 #
-    !#--------------------------------------------------------------------------#
-
-    Status_AD = CRTM_SetUp_AtmAbsorption_AD( Atmosphere,               &  ! Input
-                                             AtmAbsorption,            &  ! Input
-                                             AtmAbsorption_AD,         &  ! Input
-                                             GeometryInfo,             &  ! Input
-                                             Atmosphere_AD,            &  ! In/Output
-                                             Message_Log = Message_Log )  ! Error messaging
-
-    IF ( Status_AD /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL DIsplay_Message( ROUTINE_NAME, &
-                            'Error in CRTM_SetUp_AtmAbsorption_AD', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- POSTPROCESS SOME INPUT DATA --                    #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------------------------------------------------------
+    ! ---------------------------
+    ! Postprocess some input data
+    ! ---------------------------
     ! Adjoint of average surface skin temperature for multi-surface types
-    ! -------------------------------------------------------------------
-
     CALL CRTM_Compute_SurfaceT_AD( Surface, SfcOptics_AD, Surface_AD )  
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- DEALLOCATE LOCAL STRUCTURES --                     #
-    !#--------------------------------------------------------------------------#
-
-    ! ------------------------
-    ! The SfcOptics structures
-    ! ------------------------
-
-    Status_FWD = CRTM_Destroy_SfcOptics( SfcOptics )
-    Status_AD  = CRTM_Destroy_SfcOptics( SfcOptics_AD )
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating SfcOptics structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-    ! ------------------------
-    ! The AtmOptics structures
-    ! ------------------------
-
-    Status_FWD = CRTM_Destroy_AtmScatter( AtmOptics )
-    Status_AD  = CRTM_Destroy_AtmScatter( AtmOptics_AD )
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating CloudScatter structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! -----------------------------
-    ! The AerosolScatter structures
-    ! -----------------------------
-
-    Status_FWD = CRTM_Destroy_AtmScatter( AerosolScatter )
-    Status_AD  = CRTM_Destroy_AtmScatter( AerosolScatter_AD )
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating AerosolScatter structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
     ! ---------------------------
-    ! The CloudScatter structures
+    ! Deallocate local structures
     ! ---------------------------
-
-    Status_FWD = CRTM_Destroy_AtmScatter( CloudScatter )
-    Status_AD  = CRTM_Destroy_AtmScatter( CloudScatter_AD )
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
+    AllocStatus(AD,6)=CRTM_Destroy_SfcOptics( SfcOptics_AD )
+    AllocStatus(FW,6)=CRTM_Destroy_SfcOptics( SfcOptics )
+    AllocStatus(AD,5)=CRTM_Destroy_AtmScatter( AtmOptics_AD )
+    AllocStatus(FW,5)=CRTM_Destroy_AtmScatter( AtmOptics )
+    AllocStatus(AD,4)=CRTM_Destroy_AtmScatter( AerosolScatter_AD )
+    AllocStatus(FW,4)=CRTM_Destroy_AtmScatter( AerosolScatter )
+    AllocStatus(AD,3)=CRTM_Destroy_AtmScatter( CloudScatter_AD )
+    AllocStatus(FW,3)=CRTM_Destroy_AtmScatter( CloudScatter )
+    AllocStatus(AD,2)=CRTM_Destroy_AtmAbsorption( AtmAbsorption_AD )
+    AllocStatus(FW,2)=CRTM_Destroy_AtmAbsorption( AtmAbsorption )
+    AllocStatus(AD,1)=CRTM_Destroy_Predictor( Predictor_AD )
+    AllocStatus(FW,1)=CRTM_Destroy_Predictor( Predictor )
+    IF ( ANY(AllocStatus /= SUCCESS ) ) THEN
       Error_Status = WARNING
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating CloudScatter structures', &
+                            'Error deallocating local structures', &
                             Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! ----------------------------
-    ! The AtmAbsorption structures
-    ! ----------------------------
-
-    Status_FWD = CRTM_Destroy_AtmAbsorption( AtmAbsorption )
-    Status_AD  = CRTM_Destroy_AtmAbsorption( AtmAbsorption_AD )
-
-    IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating AtmAbsorption structures', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
   END FUNCTION CRTM_Adjoint_scalar

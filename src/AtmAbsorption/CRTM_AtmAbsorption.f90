@@ -16,27 +16,22 @@ MODULE CRTM_AtmAbsorption
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,                     ONLY: fp=>fp_kind
-  USE Message_Handler,                ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters,                ONLY: ZERO, POINT_5, &
-                                            LIMIT_EXP, LIMIT_LOG, &
-                                            MAX_N_ABSORBERS, &
-                                            MAX_N_PREDICTORS_USED, &
-                                            MAX_N_ORDERS
-  USE CRTM_TauCoeff,                  ONLY: TC
-  USE CRTM_Atmosphere_Define,         ONLY: CRTM_Atmosphere_type, H2O_ID, O3_ID
-  USE CRTM_GeometryInfo_Define,       ONLY: CRTM_GeometryInfo_type
-  USE CRTM_AtmAbsorption_Define,      ONLY: CRTM_AtmAbsorption_type, &
-                                            CRTM_Associated_AtmAbsorption, &
-                                            CRTM_Destroy_AtmAbsorption, &
-                                            CRTM_Allocate_AtmAbsorption, &
-                                            CRTM_Assign_AtmAbsorption
-  USE CRTM_AtmAbsorption_IntAbsorber, ONLY: CRTM_Compute_IntAbsorber, &
-                                            CRTM_Compute_IntAbsorber_TL, &
-                                            CRTM_Compute_IntAbsorber_AD
-  USE CRTM_AtmAbsorption_Predictor,   ONLY: CRTM_Compute_Predictors, &
-                                            CRTM_Compute_Predictors_TL, &
-                                            CRTM_Compute_Predictors_AD
+  USE Type_Kinds,                ONLY: fp=>fp_kind
+  USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters,           ONLY: ZERO, POINT_5, &
+                                       LIMIT_EXP, LIMIT_LOG, &
+                                       MAX_N_ABSORBERS, &
+                                       MAX_N_PREDICTORS_USED, &
+                                       MAX_N_ORDERS
+  USE CRTM_TauCoeff,             ONLY: TC
+  USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID, O3_ID
+  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
+  USE CRTM_Predictor_Define,     ONLY: CRTM_Predictor_type
+  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type, &
+                                       CRTM_Associated_AtmAbsorption, &
+                                       CRTM_Destroy_AtmAbsorption, &
+                                       CRTM_Allocate_AtmAbsorption, &
+                                       CRTM_Assign_AtmAbsorption
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -56,11 +51,8 @@ MODULE CRTM_AtmAbsorption
   PUBLIC :: CRTM_Allocate_AtmAbsorption
   PUBLIC :: CRTM_Assign_AtmAbsorption
   ! Science routines in this modules
-  PUBLIC :: CRTM_SetUp_AtmAbsorption
   PUBLIC :: CRTM_Compute_AtmAbsorption
-  PUBLIC :: CRTM_SetUp_AtmAbsorption_TL
   PUBLIC :: CRTM_Compute_AtmAbsorption_TL
-  PUBLIC :: CRTM_SetUp_AtmAbsorption_AD
   PUBLIC :: CRTM_Compute_AtmAbsorption_AD
 
 
@@ -69,7 +61,7 @@ MODULE CRTM_AtmAbsorption
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_AtmAbsorption.f90,v 2.7 2006/05/25 19:14:16 wd20pd Exp $'
+  '$Id: CRTM_AtmAbsorption.f90,v 2.8 2006/08/31 17:02:26 frpv Exp $'
 
 
 CONTAINS
@@ -83,402 +75,19 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_SetUp_AtmAbsorption
-!
-! PURPOSE:
-!       Function to set-up the CRTM_AtmAbsorption_type data structure for a
-!       supplied atmospheric profile in preparation for multi-channel
-!       gas absorption optical depth computations via the
-!       CRTM_Compute_AtmAbsorption function.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_SetUp_AtmAbsorption( Atmosphere,               &  ! Input
-!                                                GeometryInfo,             &  ! Input
-!                                                AtmAbsorption,            &  ! Output
-!                                                Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
-!                        profile data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
-!                        view geometry information.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!        AtmAbsorption:  CRTM_AtmAbsorption structure containing the
-!                        gaseous absorption data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was successful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption argument is IN OUT rather
-!       than just OUT. This is necessary because the argument is defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_SetUp_AtmAbsorption( Atmosphere,    &  ! Input
-                                     GeometryInfo,  &  ! Input
-                                     AtmAbsorption, &  ! Output
-                                     Message_Log )  &  ! Error messaging
-                                   RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),    INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_GeometryInfo_type),  INTENT(IN)     :: GeometryInfo
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption    
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetUp_AtmAbsorption'
-    ! Local variables
-    REAL(fp), DIMENSION(0:Atmosphere%n_Layers, & 
-                        MAX_N_ABSORBERS        ) :: Nadir_IntAbsorber
-
-    ! Set up
-    Error_Status = SUCCESS
-
-    ! Compute the nadir integrated absorber profiles
-    CALL CRTM_Compute_IntAbsorber( Atmosphere,       &  ! Input
-                                   Nadir_IntAbsorber )  ! Output
-
-    ! Modify absorber quantities by the angle secant
-    AtmAbsorption%IntAbsorber = GeometryInfo%Secant_Sensor_Zenith * Nadir_IntAbsorber
-
-    ! Calculate the predictors for the satellite view angle
-    CALL CRTM_Compute_Predictors( Atmosphere,   &  ! Input
-                                  AtmAbsorption )  ! In/Output
-
-    ! Copy the secant angle to the AtmAbsorption structure    
-    AtmAbsorption%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
-
-  END FUNCTION CRTM_SetUp_AtmAbsorption
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_SetUp_AtmAbsorption_TL
-!
-! PURPOSE:
-!       Function to set-up the CRTM_AtmAbsorption_type data structure for a
-!       supplied atmospheric profile in preparation for multi-channel
-!       gas absorption tangent-linear optical depth computations via the
-!       CRTM_Compute_AtmAbsorption_TL function.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_SetUp_AtmAbsorption_TL( Atmosphere,               &  ! Input
-!                                                   AtmAbsorption,            &  ! Input
-!                                                   Atmosphere_TL,            &  ! Input
-!                                                   GeometryInfo,             &  ! Input
-!                                                   AtmAbsorption_TL,         &  ! Output
-!                                                   Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
-!                           state data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       AtmAbsorption:      CRTM_AtmAbsorption structure containing the integrated
-!                           absorber and gas absoprtion model predictor profiles.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Atmosphere_TL:      CRTM Atmosphere structure containing the tangent-linear
-!                           atmospheric state data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:       CRTM_GeometryInfo structure containing the 
-!                           view geometry information.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!        AtmAbsorption_TL:  CRTM_AtmAbsorption structure containing the
-!                           tangent-linear integrated absorber and gas
-!                           absoprtion model predictor profiles.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was successful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument is defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_SetUp_AtmAbsorption_TL( Atmosphere,       &  ! Input
-                                        AtmAbsorption,    &  ! Input
-                                        Atmosphere_TL,    &  ! Input
-                                        GeometryInfo,     &  ! Input
-                                        AtmAbsorption_TL, &  ! Output
-                                        Message_Log )     &  ! Error messaging
-                                      RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),    INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN)     :: AtmAbsorption
-    TYPE(CRTM_Atmosphere_type),    INTENT(IN)     :: Atmosphere_TL
-    TYPE(CRTM_GeometryInfo_type),  INTENT(IN)     :: GeometryInfo
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_TL
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetUp_AtmAbsorption_TL'
-    ! Local variables
-    REAL(fp), DIMENSION(0:Atmosphere%n_Layers, & 
-                        MAX_N_ABSORBERS        ) :: Nadir_IntAbsorber_TL
-
-    ! Set up
-    Error_Status = SUCCESS
-
-    ! Compute the tangent-linear nadir integrated absorber profiles
-    CALL CRTM_Compute_IntAbsorber_TL( Atmosphere,          &  ! Input
-                                      Atmosphere_TL,       &  ! Input
-                                      Nadir_IntAbsorber_TL )  ! Output
-
-    ! Modify absorber quantities by the angle secant
-    AtmAbsorption_TL%IntAbsorber = GeometryInfo%Secant_Sensor_Zenith * Nadir_IntAbsorber_TL
-
-    ! Calculate the predictors for the satellite view angle
-    CALL CRTM_Compute_Predictors_TL( Atmosphere,      &  ! Input
-                                     AtmAbsorption,   &  ! Input
-                                     Atmosphere_TL,   &  ! Input
-                                     AtmAbsorption_TL )  ! In/Output
-
-  END FUNCTION CRTM_SetUp_AtmAbsorption_TL
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_SetUp_AtmAbsorption_AD
-!
-! PURPOSE:
-!       Function to perform the adjoint of the set-up of the
-!       CRTM_AtmAbsorption_type data structure for a supplied atmospheric
-!       profile after multi-channel gas absorption adjoint optical depth
-!       computations via the CRTM_Compute_AtmAbsorption_AD function.
-!
-!       This function must be called *after* the CRTM_Compute_AtmAbsorption_AD
-!       function.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_SetUp_AtmAbsorption_AD( Atmosphere,               &  ! Input
-!                                                   AtmAbsorption,            &  ! Input
-!                                                   AtmAbsorption_AD,         &  ! Input
-!                                                   GeometryInfo,             &  ! Input
-!                                                   Atmosphere_AD,            &  ! Output
-!                                                   Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
-!                           state data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       AtmAbsorption:      CRTM_AtmAbsorption structure containing the integrated
-!                           absorber and gas absoprtion model predictor profiles.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       AtmAbsorption_AD:   CRTM_AtmAbsorption structure containing the
-!                           adjoint integrated absorber and gas absoprtion model
-!                           predictor profiles.
-!                           **NOTE: On EXIT from this function, the contents of
-!                                   this structure are set to zero.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-!       GeometryInfo:       CRTM_GeometryInfo structure containing the 
-!                           view geometry information.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Atmosphere_AD:      CRTM Atmosphere structure containing the adjoint
-!                           atmospheric state data.
-!                           **NOTE: On ENTRY to this function, the contents of
-!                                   this structure should be defined (e.g.
-!                                   initialized to some value based on the
-!                                   position of this function in the call chain.)
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was successful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The contents of the input AtmAbsorption_AD structure argument are set
-!       to zero before exiting this routine.
-!
-! COMMENTS:
-!       - Note the INTENT on the input AtmAbsorption_AD argument is IN OUT rather
-!         than just OUT. This is because the structure components are set to zero
-!         before exiting this routine.
-!
-!       - Note the INTENT on the output Atmosphere_AD argument is IN OUT rather
-!         than just OUT. This is necessary because the argument is defined
-!         upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_SetUp_AtmAbsorption_AD( Atmosphere,       &  ! Input
-                                        AtmAbsorption,    &  ! Input
-                                        AtmAbsorption_AD, &  ! Input
-                                        GeometryInfo,     &  ! Input
-                                        Atmosphere_AD,    &  ! Output
-                                        Message_Log )     &  ! Error messaging
-                                      RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),    INTENT(IN)      :: Atmosphere
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN)      :: AtmAbsorption
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT)  :: AtmAbsorption_AD
-    TYPE(CRTM_GeometryInfo_type),  INTENT(IN)      :: GeometryInfo
-    TYPE(CRTM_Atmosphere_type),    INTENT( IN OUT) :: Atmosphere_AD
-    CHARACTER(*),        OPTIONAL, INTENT(IN)      :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetUp_AtmAbsorption_AD'
-    ! Local variables
-    REAL(fp), DIMENSION(0:Atmosphere%n_Layers, & 
-                        MAX_N_ABSORBERS        ) :: Nadir_IntAbsorber_AD
-
-    ! Set up
-    Error_Status = SUCCESS
-
-    ! Calculate the adjoint predictors for the satellite view angle
-    CALL CRTM_Compute_Predictors_AD( Atmosphere,       &  ! Input
-                                     AtmAbsorption,    &  ! Input
-                                     AtmAbsorption_AD, &  ! In/Output
-                                     Atmosphere_AD     )  ! Output
-
-    ! Modify absorber quantities by the angle secant
-    Nadir_IntAbsorber_AD = GeometryInfo%Secant_Sensor_Zenith * AtmAbsorption_AD%IntAbsorber
-
-    ! Compute the adjoint nadir integrated absorber profiles
-    CALL CRTM_Compute_IntAbsorber_AD( Atmosphere,           &  ! Input
-                                      Nadir_IntAbsorber_AD, &  ! Input
-                                      Atmosphere_AD         )  ! Output
-
-    ! Zero the AtmAbsorption_AD structure
-    AtmAbsorption_AD%IntAbsorber   = ZERO
-    AtmAbsorption_AD%Predictor     = ZERO
-    AtmAbsorption_AD%Optical_Depth = ZERO
-
-  END FUNCTION CRTM_SetUp_AtmAbsorption_AD
-
-
 !------------------------------------------------------------------------------
 !
 ! NAME:
 !       CRTM_Compute_AtmAbsorption
 !
 ! PURPOSE:
-!       Function to calculate the layer optical depths due to gaseous
-!       absorption for a given input atmospheric profile for a single
-!       channel.
-!
-!       This routine must be called *after* the CRTM_SetUp_AtmAbsorption
-!       routine.
+!       Subroutine to calculate the layer optical depths due to gaseous
+!       absorption for a given input atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AtmAbsorption( Channel_Index,            &  ! Input, scalar
-!                                                  AtmAbsorption,            &  ! In/Output
-!                                                  Message_Log = Message_Log )  ! Error messaging
+!       CALL CRTM_Compute_AtmAbsorption( Channel_Index, &  ! Input
+!                                        Predictor,     &  ! Input
+!                                        AtmAbsorption  )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       Channel_Index:   Channel index id. This is a unique index associated
@@ -489,57 +98,35 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!        AtmAbsorption:  Upon INPUT, this structure contains valid integrated
-!                        absorber and predictor profile data.
+!        Predictor:      Structure containing the integrated absorber and
+!                        predictor profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_Predictor_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        AtmAbsorption:  Upon OUTPUT, this structure contains valid optical
-!                        depth profile data.
+!        AtmAbsorption:  Structure containing computed optical depth
+!                        profile data.
 !                        UNITS:      N/A
 !                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was successful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
 ! COMMENTS:
-!       Note the INTENT on the AtmAbsorption argument is IN OUT rather
+!       Note the INTENT on the structure arguments are IN OUT rather
 !       than just OUT. This is necessary because the argument is defined
 !       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AtmAbsorption( Channel_Index, &  ! Input, scalar
-                                       AtmAbsorption, &  ! In/Output
-                                       Message_Log )  &  ! Error messaging
-                                     RESULT( Error_Status )
+  SUBROUTINE CRTM_Compute_AtmAbsorption( Channel_Index, &  ! Input, scalar
+                                         Predictor,     &  ! Input
+                                         AtmAbsorption  )  ! Output
     ! Arguments
     INTEGER,                       INTENT(IN)     :: Channel_Index
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption    
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(CRTM_Predictor_type),     INTENT(IN OUT) :: Predictor
+    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AtmAbsorption'
     ! Local variables
@@ -548,23 +135,19 @@ CONTAINS
     INTEGER :: j       ! Absorber index
     INTEGER :: i, ip   ! Predictor index
     INTEGER :: n       ! Polynomial index
-    REAL(fp) :: ave_IntAbsorber
-    REAL(fp) :: d_IntAbsorber
-    REAL(fp) :: IntAbsorber_Level
+    REAL(fp) :: ave_A
+    REAL(fp) :: d_A
+    REAL(fp) :: A_Level
     REAL(fp) :: LN_Chi
     REAL(fp) :: Absorption_Coefficient
     ! Polynomial derived coefficients
-    REAL(fp), DIMENSION( 0:MAX_N_PREDICTORS_USED ) :: b
-
+    REAL(fp), DIMENSION(0:MAX_N_PREDICTORS_USED) :: b
 
     ! ------
     ! Set up
     ! ------
-    Error_Status = SUCCESS
-
     ! Assign the channel index to a short name
     l = Channel_Index
-
     ! Initilise the optical depth
     AtmAbsorption%Optical_Depth = ZERO
 
@@ -572,7 +155,7 @@ CONTAINS
     ! -----------------------------------------------------
     ! Loop over each absorber for optical depth calculation
     ! -----------------------------------------------------
-    Absorber_Loop: DO j = 1, AtmAbsorption%n_Absorbers
+    Absorber_Loop: DO j = 1, Predictor%n_Absorbers
 
 
       ! -----------------------------------------
@@ -594,12 +177,10 @@ CONTAINS
 
         ! -----------------------------------
         ! Calculate the current layer average
-        ! absorber amount and difference
+        ! integrated absorber amount and difference
         ! -----------------------------------
-        ave_IntAbsorber = POINT_5 * ( AtmAbsorption%IntAbsorber( k,   j ) + &
-                                      AtmAbsorption%IntAbsorber( k-1, j )   )
-        d_IntAbsorber   = AtmAbsorption%IntAbsorber( k,   j ) - &
-                          AtmAbsorption%IntAbsorber( k-1, j )
+        ave_A = POINT_5 * ( Predictor%A(k,j) + Predictor%A(k-1,j) )
+        d_A = Predictor%A(k,j) - Predictor%A(k-1,j)
 
 
         ! ----------------------------------------------------------
@@ -619,10 +200,9 @@ CONTAINS
         !   Alpha : absorber amount-level coordinate constant
         !   C1,C2 : scaling factors for level in the range of 0 to 1
         ! ----------------------------------------------------------
-        IntAbsorber_Level = LOG( ( ave_IntAbsorber - TC%Alpha_C2(j) ) / TC%Alpha_C1(j) ) / &
-        !                   ------------------------------------------------------------
-                                                TC%Alpha(j)
-
+        A_Level = LOG( ( ave_A - TC%Alpha_C2(j) ) / TC%Alpha_C1(j) ) / &
+        !         --------------------------------------------------
+                                       TC%Alpha(j)
 
 
         ! ----------------------------------------------------------------
@@ -661,10 +241,10 @@ CONTAINS
         !    executed at least once, regardless of the loop indices,
         !    make sure it's not on by default!
         ! ----------------------------------------------------------------
-        DO i = 0, TC%Predictor_Index( 0, j, l )
-          b(i) = TC%C( TC%Order_Index( i, j, l ), i, j, l )
-          DO n = TC%Order_Index( i, j, l ) - 1, 0, -1
-            b(i) = ( b(i) * IntAbsorber_Level ) + TC%C( n, i, j, l )
+        DO i = 0, TC%Predictor_Index(0,j,l)
+          b(i) = TC%C( TC%Order_Index(i,j,l),i,j,l )
+          DO n = TC%Order_Index(i,j,l ) - 1, 0, -1
+            b(i) = ( b(i) * A_Level ) + TC%C(n,i,j,l)
           END DO
         END DO
 
@@ -677,15 +257,15 @@ CONTAINS
         !
         !                     __Iuse
         !                    \
-        !   LN(chi) = b(0) +  > b(i).Pred(i)
+        !   LN(chi) = b(0) +  > b(i).X(i)
         !                    /__
         !                       i=1
         !
         ! ---------------------------------------------------------
         LN_Chi = b(0)
-        DO i = 1, TC%Predictor_Index( 0, j, l )
-          ip = TC%Predictor_Index( i, j, l )
-          LN_Chi = LN_Chi + ( b(i) * AtmAbsorption%Predictor( ip, k ) )
+        DO i = 1, TC%Predictor_Index(0,j,l)
+          ip = TC%Predictor_Index(i,j,l)
+          LN_Chi = LN_Chi + ( b(i) * Predictor%X(ip,k) )
         END DO 
 
 
@@ -706,7 +286,7 @@ CONTAINS
         ! Calculate optical_depth
         ! -----------------------
         AtmAbsorption%Optical_Depth( k ) = AtmAbsorption%Optical_Depth( k ) + &
-                                           ( Absorption_Coefficient * d_IntAbsorber )
+                                           ( Absorption_Coefficient * d_A )
 
       END DO Layer_Loop
 
@@ -717,92 +297,73 @@ CONTAINS
     ! Scale the optical depth to nadir
     ! --------------------------------
     AtmAbsorption%Optical_Depth = AtmAbsorption%Optical_Depth / &
-                                  AtmAbsorption%Secant_Sensor_Zenith
+                                  Predictor%Secant_Sensor_Zenith
 
-  END FUNCTION CRTM_Compute_AtmAbsorption
+  END SUBROUTINE CRTM_Compute_AtmAbsorption
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Compute_AtmAbsorption_TL
 !
 ! PURPOSE:
-!       Function to calculate the tangent-linear layer optical depths due
-!       to gaseous absorption for a given input atmospheric profile for a
-!       single channel.
-!
-!       This routine must be called *after* the CRTM_SetUp_AtmAbsorption_TL
-!       routine.
+!       Subroutine to calculate the tangent-linear layer optical depths
+!       due to gaseous absorption for a given input atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AtmAbsorption_TL( Channel_Index,            &  ! Input
-!                                                     AtmAbsorption,            &  ! Input     
-!                                                     AtmAbsorption_TL,         &  ! In/Output 
-!                                                     Message_Log = Message_Log )  ! Error messaging
+!       CALL CRTM_Compute_AtmAbsorption_TL( Channel_Index,    &  ! Input
+!                                           Predictor,        &  ! FWD Input
+!                                           Predictor_TL,     &  ! TL Input
+!                                           AtmAbsorption_TL  )  ! TL Output
 !
 ! INPUT ARGUMENTS:
 !       Channel_Index:      Channel index id. This is a unique index associated
-!                           with a (supported) sensor channel used to access
-!                           the shared coefficient data.
+!                           with a (supported) sensor channel used to access the
+!                           shared coefficient data.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!        AtmAbsorption:     CRTM_AtmAbsorption structure containing the
-!                           gaseous absorption data.
+!        Predictor:         Structure containing the integrated absorber and
+!                           predictor profile data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                           TYPE:       TYPE(CRTM_Predictor_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
+!        Predictor_TL:      Structure containing the tangent-linear integrated
+!                           absorber and predictor profile data.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
+!                           TYPE:       TYPE(CRTM_Predictor_type)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!                           ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        AtmAbsorption_TL:  CRTM_AtmAbsorption structure containing the
-!                           tangent-linear gaseous absorption data.
+!        AtmAbsorption_TL:  Structure containing the computed tangent-linear
+!                           optical depth profile data.
 !                           UNITS:      N/A
 !                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was successful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
 ! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined
+!       Note the INTENT on the AtmAbsorption_TL argument is IN OUT rather
+!       than just OUT. This is necessary because the argument is defined
 !       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AtmAbsorption_TL( Channel_Index,    &  ! Input
-                                          AtmAbsorption,    &  ! Input
-                                          AtmAbsorption_TL, &  ! In/Output
-                                          Message_Log )     &  ! Error messaging
-                                        RESULT( Error_Status )
+  SUBROUTINE CRTM_Compute_AtmAbsorption_TL( Channel_Index,   &  ! Input
+                                            Predictor,       &  ! Input
+                                            Predictor_TL,    &  ! Input
+                                            AtmAbsorption_TL )  ! Output
     ! Arguments
-    INTEGER,                         INTENT(IN)     :: Channel_Index
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN)     :: AtmAbsorption    
+    INTEGER,                       INTENT(IN)     :: Channel_Index
+    TYPE(CRTM_Predictor_type),     INTENT(IN)     :: Predictor
+    TYPE(CRTM_Predictor_type),     INTENT(IN)     :: Predictor_TL
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_TL
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AtmAbsorption_TL'
     ! Local variables
@@ -811,10 +372,10 @@ CONTAINS
     INTEGER :: j       ! Absorber index
     INTEGER :: i, ip   ! Predictor index
     INTEGER :: n       ! Polynomial index
-    REAL(fp) :: ave_IntAbsorber,        ave_IntAbsorber_TL
-    REAL(fp) :: d_IntAbsorber,          d_IntAbsorber_TL
-    REAL(fp) :: IntAbsorber_Level,      IntAbsorber_Level_TL
-    REAL(fp) :: LN_Chi,                 LN_Chi_TL
+    REAL(fp) :: ave_A,   ave_A_TL
+    REAL(fp) :: d_A,     d_A_TL
+    REAL(fp) :: A_Level, A_Level_TL
+    REAL(fp) :: LN_Chi,  LN_Chi_TL
     REAL(fp) :: Absorption_Coefficient, Absorption_Coefficient_TL
     ! Polynomial derived coefficients
     REAL(fp), DIMENSION( 0:MAX_N_PREDICTORS_USED ) :: b, b_TL
@@ -823,11 +384,8 @@ CONTAINS
     ! ------
     ! Set up
     ! ------
-    Error_Status = SUCCESS
-
     ! Assign the channel index to a short name
     l = Channel_Index
-
     ! Initilise the tangent-linear optical depth
     AtmAbsorption_TL%Optical_Depth = ZERO
 
@@ -835,7 +393,7 @@ CONTAINS
     ! -----------------------------------------------------
     ! Loop over each absorber for optical depth calculation
     ! -----------------------------------------------------
-    Absorber_Loop: DO j = 1, AtmAbsorption%n_Absorbers
+    Absorber_Loop: DO j = 1, Predictor%n_Absorbers
 
 
       ! -----------------------------------------
@@ -852,22 +410,18 @@ CONTAINS
       ! ----------------
       ! Loop over layers
       ! ----------------
-      Layer_Loop: DO k = 1, AtmAbsorption%n_Layers
+      Layer_Loop: DO k = 1, AtmAbsorption_TL%n_Layers
 
 
         ! -----------------------------------
         ! Calculate the current layer average
         ! absorber amount and difference
         ! -----------------------------------
-        ave_IntAbsorber    = POINT_5 * ( AtmAbsorption%IntAbsorber( k,   j ) + &
-                                         AtmAbsorption%IntAbsorber( k-1, j )   )
-        ave_IntAbsorber_TL = POINT_5 * ( AtmAbsorption_TL%IntAbsorber( k,   j ) + &
-                                         AtmAbsorption_TL%IntAbsorber( k-1, j )   )
+        ave_A    = POINT_5*(Predictor%A(k,j)    + Predictor%A(k-1,j))
+        ave_A_TL = POINT_5*(Predictor_TL%A(k,j) + Predictor_TL%A(k-1,j))
 
-        d_IntAbsorber    = AtmAbsorption%IntAbsorber( k,   j ) - &
-                           AtmAbsorption%IntAbsorber( k-1, j )
-        d_IntAbsorber_TL = AtmAbsorption_TL%IntAbsorber( k,   j ) - &
-                           AtmAbsorption_TL%IntAbsorber( k-1, j )
+        d_A    = Predictor%A(k,j)    - Predictor%A(k-1,j)
+        d_A_TL = Predictor_TL%A(k,j) - Predictor_TL%A(k-1,j)
 
 
         ! ----------------------------------------------------------
@@ -894,13 +448,13 @@ CONTAINS
         !             Alpha.( A - C2 )
         !
         ! ----------------------------------------------------------
-        IntAbsorber_Level = LOG( ( ave_IntAbsorber - TC%Alpha_C2(j) ) / TC%Alpha_C1(j) ) / &
-        !                   ------------------------------------------------------------
-                                                TC%Alpha(j)
+        A_Level = LOG( ( ave_A - TC%Alpha_C2(j) ) / TC%Alpha_C1(j) ) / &
+        !         --------------------------------------------------
+                                      TC%Alpha(j)
 
-        IntAbsorber_Level_TL =                 ave_IntAbsorber_TL / &
-        !                      ------------------------------------------------------
-                               ( TC%Alpha(j) * ( ave_IntAbsorber - TC%Alpha_C2(j) ) )
+        A_Level_TL =                ave_A_TL / &
+        !             --------------------------------------------
+                      ( TC%Alpha(j) * ( ave_A - TC%Alpha_C2(j) ) )
 
 
 
@@ -977,14 +531,14 @@ CONTAINS
         !    executed at least once, regardless of the loop indices,
         !    make sure it's not on by default!
         ! ----------------------------------------------------------------
-        DO i = 0, TC%Predictor_Index( 0, j, l )
-          b(i)    = TC%C( TC%Order_Index( i, j, l ), i, j, l )
+        DO i = 0, TC%Predictor_Index(0,j,l)
+          b(i)    = TC%C( TC%Order_Index(i,j,l),i,j,l )
           b_TL(i) = ZERO
           ! NOTE: The tangent-linear term is calculated FIRST
           !       See explanation note 1) above.
-          DO n = TC%Order_Index( i, j, l ) - 1, 0, -1
-            b_TL(i) = ( b(i) * IntAbsorber_Level_TL ) + ( b_TL(i) * IntAbsorber_Level )
-            b(i)    = ( b(i) * IntAbsorber_Level ) + TC%C( n, i, j, l )
+          DO n = TC%Order_Index(i,j,l ) - 1, 0, -1
+            b_TL(i) = ( b(i) * A_Level_TL ) + ( b_TL(i) * A_Level )
+            b(i)    = ( b(i) * A_Level ) + TC%C(n,i,j,l)
           END DO
 
         END DO
@@ -998,7 +552,7 @@ CONTAINS
         !
         !                     __Iuse
         !                    \
-        !   LN(chi) = b(0) +  > b(i).Pred(i)
+        !   LN(chi) = b(0) +  > b(i).X(i)
         !                    /__
         !                       i=1
         !
@@ -1006,18 +560,18 @@ CONTAINS
         !
         !               __Iuse
         !              \
-        !   dLN(chi) =  >  (b(i).dPred(i)) + (db(i).Pred(i)) 
+        !   dLN(chi) =  >  (b(i).dX(i)) + (db(i).X(i)) 
         !              /__
         !                 i=1
         !
         ! ---------------------------------------------------------
         LN_Chi = b(0)
         LN_Chi_TL = b_TL(0)
-        DO i = 1, TC%Predictor_Index( 0, j, l )
-          ip = TC%Predictor_Index( i, j, l )
-          LN_Chi    = LN_Chi    + ( b(i) * AtmAbsorption%Predictor( ip, k ) )
-          LN_Chi_TL = LN_Chi_TL + ( b(i)    * AtmAbsorption_TL%Predictor( ip, k ) ) + &
-                                  ( b_TL(i) * AtmAbsorption%Predictor(    ip, k ) )
+        DO i = 1, TC%Predictor_Index(0,j,l)
+          ip = TC%Predictor_Index(i,j,l)
+          LN_Chi    = LN_Chi    + ( b(i) * Predictor%X(ip,k) )
+          LN_Chi_TL = LN_Chi_TL + ( b(i)    * Predictor_TL%X(ip,k) ) + &
+                                  ( b_TL(i) * Predictor%X(   ip,k) )
         END DO 
 
 
@@ -1041,8 +595,8 @@ CONTAINS
         ! Calculate the tangent-linear optical depth
         ! ------------------------------------------
         AtmAbsorption_TL%Optical_Depth( k ) = AtmAbsorption_TL%Optical_Depth( k ) + &
-                                              ( Absorption_Coefficient_TL * d_IntAbsorber    ) + &
-                                              ( Absorption_Coefficient    * d_IntAbsorber_TL )
+                                              ( Absorption_Coefficient_TL * d_A    ) + &
+                                              ( Absorption_Coefficient    * d_A_TL )
 
       END DO Layer_Loop
 
@@ -1053,9 +607,9 @@ CONTAINS
     ! Scale the tangent-linear optical depth to nadir
     ! -----------------------------------------------
     AtmAbsorption_TL%Optical_Depth = AtmAbsorption_TL%Optical_Depth / &
-                                     AtmAbsorption%Secant_Sensor_Zenith
+                                     Predictor_TL%Secant_Sensor_Zenith
 
-  END FUNCTION CRTM_Compute_AtmAbsorption_TL
+  END SUBROUTINE CRTM_Compute_AtmAbsorption_TL
 
 
 !--------------------------------------------------------------------------------
@@ -1065,71 +619,46 @@ CONTAINS
 !
 ! PURPOSE:
 !       Function to calculate the layer optical depths adjoint due
-!       to gaseous absorption for a given input atmospheric profile for a
-!       single channel.
-!
-!       This routine must be called *before* the CRTM_SetUp_AtmAbsorption_AD
-!       routine.
+!       to gaseous absorption for a given input atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AtmAbsorption_AD( Channel_Index,            &  ! Input
-!                                                     AtmAbsorption,            &  ! Input
-!                                                     AtmAbsorption_AD,         &  ! In/Output
-!                                                     Message_Log = Message_Log )  ! Error messaging
+!       CALL CRTM_Compute_AtmAbsorption_AD( Channel_Index,    &  ! Input
+!                                           Predictor,        &  ! FWD Input
+!                                           AtmAbsorption_AD, &  ! TL Input
+!                                           Predictor_AD      )  ! TL Output
 !
 ! INPUT ARGUMENTS:
 !       Channel_Index:      Channel index id. This is a unique index associated
-!                           with a (supported) sensor channel used to access
-!                           the shared coefficient data.
+!                           with a (supported) sensor channel used to access the
+!                           shared coefficient data.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       AtmAbsorption:      CRTM_AtmAbsorption structure containing the
-!                           gaseous absorption data.
+!        Predictor:         Structure containing the integrated absorber and
+!                           predictor profile data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                           TYPE:       TYPE(CRTM_Predictor_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       AtmAbsorption_AD:   Upon entry, this CRTM_AtmAbsorption structure
-!                           contains the adjoint optical depth profiles.
-!                           ** NOTE: THIS STRUCTURE IS MODIFIED WITHIN **
-!                           **       THIS FUNCTION                   **
+!        AtmAbsorption_AD:  Structure containing the computed adjoint
+!                           optical depth profile data.
+!                           Set to zero upon output.
 !                           UNITS:      N/A
 !                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       AtmAbsorption_AD:   Upon exit, this CRTM_AtmAbsorption structure
-!                           contains the adjoint integrated absorber and
-!                           predictor profiles. The adjoint optical depth
-!                           component has been zeroed.
+!        Predictor_AD:      Structure containing the adjoint integrated
+!                           absorber and predictor profile data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                           TYPE:       TYPE(CRTM_Predictor_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was successful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
 !
 ! SIDE EFFECTS:
 !       Components of the AtmAbsorption_AD structure argument are modified
@@ -1137,18 +666,15 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AtmAbsorption_AD( Channel_Index,    &  ! Input
-                                          AtmAbsorption,    &  ! Input
-                                          AtmAbsorption_AD, &  ! In/Output
-                                          Message_Log )     &  ! Error messaging
-                                        RESULT( Error_Status )
+  SUBROUTINE CRTM_Compute_AtmAbsorption_AD( Channel_Index,    &  ! Input
+                                            Predictor,        &  ! FWD Input
+                                            AtmAbsorption_AD, &  ! TL Input
+                                            Predictor_AD      )  ! TL Output
     ! Arguments
     INTEGER,                       INTENT(IN)     :: Channel_Index
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN)     :: AtmAbsorption
+    TYPE(CRTM_Predictor_type),     INTENT(IN)     :: Predictor
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_AD
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(CRTM_Predictor_type),     INTENT(IN OUT) :: Predictor_AD
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AtmAbsorption_AD'
     ! Local variables
@@ -1157,10 +683,10 @@ CONTAINS
     INTEGER :: j       ! Absorber index
     INTEGER :: i, ip   ! Predictor index
     INTEGER :: n       ! Polynomial index
-    REAL(fp) :: ave_IntAbsorber,        ave_IntAbsorber_AD
-    REAL(fp) :: d_IntAbsorber,          d_IntAbsorber_AD
-    REAL(fp) :: IntAbsorber_Level,      IntAbsorber_Level_AD
-    REAL(fp) :: LN_Chi,                 LN_Chi_AD
+    REAL(fp) :: ave_A,   ave_A_AD
+    REAL(fp) :: d_A,     d_A_AD
+    REAL(fp) :: A_Level, A_Level_AD
+    REAL(fp) :: LN_Chi,  LN_Chi_AD
     REAL(fp) :: Absorption_Coefficient, Absorption_Coefficient_AD
     ! Polynomial derived coefficients
     REAL(fp), DIMENSION(0:MAX_N_ORDERS, &
@@ -1171,26 +697,23 @@ CONTAINS
     ! ------
     ! Set up
     ! ------
-    Error_Status = SUCCESS
-
     ! Assign the channel index to a short name
     l = Channel_Index
-
     ! Initilise the local adjoint variables
-    IntAbsorber_Level_AD = ZERO
+    A_Level_AD = ZERO
 
 
     ! -------------------------------------------
     ! Compute adjoint nadir optical depth profile
     ! -------------------------------------------
     AtmAbsorption_AD%Optical_Depth = AtmAbsorption_AD%Optical_Depth / &
-                                     AtmAbsorption%Secant_Sensor_Zenith
+                                     Predictor_AD%Secant_Sensor_Zenith
 
 
     ! -----------------------------------------------------
     ! Loop over each absorber for optical depth calculation
     ! -----------------------------------------------------
-    Absorber_loop: DO j = 1, AtmAbsorption%n_Absorbers
+    Absorber_loop: DO j = 1, Predictor%n_Absorbers
 
 
       ! -----------------------------------------
@@ -1207,17 +730,15 @@ CONTAINS
       ! ----------------
       ! Loop over layers
       ! ----------------
-      Layer_Loop: DO k = AtmAbsorption%n_Layers, 1, -1
+      Layer_Loop: DO k = AtmAbsorption_AD%n_Layers, 1, -1
 
 
         ! -----------------------------------
         ! Calculate the current layer average
         ! absorber amount and differences
         ! -----------------------------------
-        ave_IntAbsorber = POINT_5 * ( AtmAbsorption%IntAbsorber( k,   j ) + &
-                                      AtmAbsorption%IntAbsorber( k-1, j )   )
-        d_IntAbsorber   = AtmAbsorption%IntAbsorber( k,   j ) - &
-                          AtmAbsorption%IntAbsorber( k-1, j )
+        ave_A = POINT_5 * ( Predictor%A(k,j) + Predictor%A(k-1,j) )
+        d_A   = Predictor%A(k,j) - Predictor%A(k-1,j)
 
 
 
@@ -1243,9 +764,9 @@ CONTAINS
         !   Alpha : absorber amount-level coordinate constant
         !   C1,C2 : scaling factors for level in the range of 0 to 1
         ! ----------------------------------------------------------
-        IntAbsorber_Level = LOG( ( ave_IntAbsorber - TC%Alpha_C2(j) ) / TC%Alpha_C1(j) ) / &
-        !                   ------------------------------------------------------------
-                                                   TC%Alpha(j)
+        A_Level = LOG( ( ave_A - TC%Alpha_C2(j) ) / TC%Alpha_C1(j) ) / &
+        !         --------------------------------------------------
+                                     TC%Alpha(j)
 
 
         ! ----------------------------------------------------------------
@@ -1289,11 +810,10 @@ CONTAINS
         !    make sure it's not on by default!
         ! ----------------------------------------------------------------
         DO i = 0, TC%Predictor_Index( 0, j, l )
-          b( TC%Order_Index( i, j, l ), i) = TC%C( TC%Order_Index( i, j, l ), i, j, l )
-          DO n = TC%Order_Index( i, j, l ) - 1, 0, -1
-            b(n,i) = ( b(n+1,i) * IntAbsorber_Level ) + TC%C( n, i, j, l )
+          b( TC%Order_Index(i,j,l),i ) = TC%C( TC%Order_Index(i,j,l),i,j,l )
+          DO n = TC%Order_Index(i,j,l) - 1, 0, -1
+            b(n,i) = ( b(n+1,i) * A_Level ) + TC%C(n,i,j,l)
           END DO
-
         END DO
 
 
@@ -1305,7 +825,7 @@ CONTAINS
         !
         !                     __Iuse
         !                    \
-        !   LN(chi) = b(0) +  > b(i).Pred(i)
+        !   LN(chi) = b(0) +  > b(i).X(i)
         !                    /__
         !                       i=1
         !
@@ -1315,9 +835,9 @@ CONTAINS
         ! the b coefficient values.
         ! ---------------------------------------------------------
         LN_Chi = b(0,0)
-        DO i = 1, TC%Predictor_Index( 0, j, l )
-          ip = TC%Predictor_Index( i, j, l )
-          LN_Chi = LN_Chi + ( b(0,i) * AtmAbsorption%Predictor( ip, k ) )
+        DO i = 1, TC%Predictor_Index(0,j,l)
+          ip = TC%Predictor_Index(i,j,l)
+          LN_Chi = LN_Chi + ( b(0,i) * Predictor%X(ip,k) )
         END DO 
 
 
@@ -1356,8 +876,8 @@ CONTAINS
         ! because
         !   AtmAbsorption_TL%Optical_Depth( k ) = AtmAbsorption_TL%Optical_Depth( k ) + (....)
         ! ---------------------------------------------------------------
-        d_IntAbsorber_AD = Absorption_Coefficient * AtmAbsorption_AD%Optical_Depth( k )   ! .... (1)
-        Absorption_Coefficient_AD = d_IntAbsorber * AtmAbsorption_AD%Optical_Depth( k )
+        d_A_AD = Absorption_Coefficient * AtmAbsorption_AD%Optical_Depth( k )   ! .... (1)
+        Absorption_Coefficient_AD = d_A * AtmAbsorption_AD%Optical_Depth( k )
 
 
 
@@ -1386,7 +906,7 @@ CONTAINS
         !
         !                     __Iuse
         !                    \
-        !   LN(chi) = b(0) +  > b(i).Pred(i)
+        !   LN(chi) = b(0) +  > b(i).X(i)
         !                    /__
         !                       i=1
         !
@@ -1394,21 +914,21 @@ CONTAINS
         !
         !               __Iuse
         !              \
-        !   dLN(chi) =  >  (b(i).dPred(i)) + (db(i).Pred(i)) 
+        !   dLN(chi) =  >  (b(i).dX(i)) + (db(i).X(i)) 
         !              /__
         !                 i=1
         !
         ! So the adjoint forms are for each predictor index i,
         !               
-        !    *           *                *
-        !   d Pred(i) = d Pred(i) + b(i).d LN(chi)
+        !    *        *             *
+        !   d X(i) = d X(i) + b(i).d LN(chi)
         !
         !
         ! and,
         !
         !
-        !    *                *
-        !   d b(i) = Pred(i).d LN(chi)
+        !    *             *
+        !   d b(i) = X(i).d LN(chi)
         !
         !            *
         ! where the d  indicates an adjoint variable. Note two
@@ -1419,11 +939,10 @@ CONTAINS
         !    iteration. I.e. no b_AD = ZERO before the loop.
         !
         ! ---------------------------------------------------------
-        DO i = 1, TC%Predictor_Index( 0, j, l )
-          ip = TC%Predictor_Index( i, j, l )
-          AtmAbsorption_AD%Predictor(ip,k) = AtmAbsorption_AD%Predictor( ip,k ) + &
-                                             ( b(0,i) * LN_Chi_AD )
-          b_AD(i) = AtmAbsorption%Predictor(ip,k) * LN_Chi_AD
+        DO i = 1, TC%Predictor_Index(0,j,l)
+          ip = TC%Predictor_Index(i,j,l)
+          Predictor_AD%X(ip,k) = Predictor_AD%X(ip,k) + ( b(0,i)*LN_Chi_AD )
+          b_AD(i) = Predictor%X(ip,k) * LN_Chi_AD
         END DO 
         b_AD(0) = LN_Chi_AD
         LN_Chi_AD = ZERO
@@ -1466,12 +985,12 @@ CONTAINS
         !   d b(i) = k.d b(i)
         !
         ! ----------------------------------------------------------------
-        DO i = 0, TC%Predictor_Index( 0, j, l )
-          ! Note that the order of the IntAbsorber_Level_AD and b_AD
+        DO i = 0, TC%Predictor_Index(0,j,l)
+          ! Note that the order of the A_Level_AD and b_AD
           ! calculation are important
-          DO n = 0, TC%Order_Index( i, j, l ) - 1
-            IntAbsorber_Level_AD = IntAbsorber_Level_AD + ( b(n+1,i) * b_AD(i) )
-            b_AD(i) = IntAbsorber_Level * b_AD(i)
+          DO n = 0, TC%Order_Index(i,j,l) - 1
+            A_Level_AD = A_Level_AD + ( b(n+1,i) * b_AD(i) )
+            b_AD(i) = A_Level * b_AD(i)
           END DO
           b_AD(i) = ZERO
         END DO
@@ -1508,11 +1027,11 @@ CONTAINS
         !         Alpha.( A - C2 )
         !
         ! ----------------------------------------------------------
-        ave_IntAbsorber_AD =               IntAbsorber_Level_AD / &
-        !                    ------------------------------------------------------  ....(2)
-                             ( TC%Alpha(j) * ( ave_IntAbsorber - TC%Alpha_C2(j) ) )
+        ave_A_AD =               A_Level_AD / &
+        !          --------------------------------------------  ....(2)
+                   ( TC%Alpha(j) * ( ave_A - TC%Alpha_C2(j) ) )
 
-        IntAbsorber_Level_AD = ZERO
+        A_Level_AD = ZERO
 
 
 
@@ -1520,20 +1039,17 @@ CONTAINS
         ! Adjoints of the current layer average absorber
         ! amount and difference.
         !
-        ! Neither d_IntAbsorber_AD nor ave_IntAbsorber_AD need
-        ! to be set to zero after this as they are explicitly
-        ! reassigned each layer iteration at (1) and (2) above
-        ! respectively.
+        ! Neither d_A_AD nor ave_A_AD need to be set to zero
+        ! after this as they are explicitly reassigned each
+        ! layer iteration at (1) and (2) above respectively.
         ! ---------------------------------------------------
-        AtmAbsorption_AD%IntAbsorber( k-1, j ) = AtmAbsorption_AD%IntAbsorber( k-1, j ) - &
-                                                 d_IntAbsorber_AD + ( POINT_5 * ave_IntAbsorber_AD )
-        AtmAbsorption_AD%IntAbsorber( k,   j ) = AtmAbsorption_AD%IntAbsorber( k,   j ) + &
-                                                 d_IntAbsorber_AD + ( POINT_5 * ave_IntAbsorber_AD )
+        Predictor_AD%A(k-1,j) = Predictor_AD%A(k-1,j) - d_A_AD + (POINT_5*ave_A_AD)
+        Predictor_AD%A( k, j) = Predictor_AD%A( k, j) + d_A_AD + (POINT_5*ave_A_AD)
 
       END DO Layer_Loop
 
     END DO Absorber_Loop
 
-  END FUNCTION CRTM_Compute_AtmAbsorption_AD
+  END SUBROUTINE CRTM_Compute_AtmAbsorption_AD
 
 END MODULE CRTM_AtmAbsorption

@@ -2,7 +2,7 @@
 #
 # Makefile for JCSDA CRTM Build
 #
-# $Id: makefile,v 1.9 2006/06/15 17:42:26 wd20pd Exp $
+# $Id: makefile,v 1.10 2006/08/31 17:06:47 frpv Exp $
 #
 #==============================================================================
 
@@ -69,8 +69,8 @@ OBJ_FILES = Type_Kinds.o \
             CRTM_ChannelInfo_Define.o \
             CRTM_ChannelInfo.o \
             CRTM_GeometryInfo_Define.o \
-            CRTM_AtmAbsorption_IntAbsorber.o \
-            CRTM_AtmAbsorption_Predictor.o \
+            CRTM_Predictor_Define.o \
+            CRTM_Predictor.o \
             CRTM_AtmAbsorption_Define.o \
             CRTM_AtmAbsorption.o \
             CRTM_AtmScatter_Define.o \

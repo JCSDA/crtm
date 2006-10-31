@@ -128,7 +128,7 @@ MODULE SensorInfo_LinkedList
   ! ------------------------
 
   ! -- Node definition
-  TYPE, PRIVATE :: SensorInfo_Node_type
+  TYPE :: SensorInfo_Node_type
     TYPE( SensorInfo_type )               :: SensorInfo          ! Node data
     TYPE( SensorInfo_Node_type ), POINTER :: Previous => NULL()  ! Pointer to previous node
     TYPE( SensorInfo_Node_type ), POINTER :: Next     => NULL()  ! Pointer to next node
@@ -149,7 +149,7 @@ MODULE SensorInfo_LinkedList
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SensorInfo_LinkedList.f90,v 1.10 2006/05/02 16:58:02 dgroff Exp $'
+    '$Id: SensorInfo_LinkedList.f90,v 1.11 2006/09/06 15:09:09 frpv Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -2071,17 +2071,20 @@ END MODULE SensorInfo_LinkedList
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SensorInfo_LinkedList.f90,v 1.10 2006/05/02 16:58:02 dgroff Exp $
+! $Id: SensorInfo_LinkedList.f90,v 1.11 2006/09/06 15:09:09 frpv Exp $
 !
-! $Date: 2006/05/02 16:58:02 $
+! $Date: 2006/09/06 15:09:09 $
 !
-! $Revision: 1.10 $
+! $Revision: 1.11 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: SensorInfo_LinkedList.f90,v $
+! Revision 1.11  2006/09/06 15:09:09  frpv
+! Removed unneeded PRIVATE attribute for SensorInfo_Node_type definition.
+!
 ! Revision 1.10  2006/05/02 16:58:02  dgroff
 ! *** empty log message ***
 !

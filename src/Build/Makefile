@@ -2,7 +2,7 @@
 #
 # Makefile for local JCSDA CRTM Build package
 #
-# $Id: Makefile,v 1.10 2006/06/15 17:42:26 wd20pd Exp $
+# $Id: Makefile,v 1.11 2006/08/31 17:06:30 frpv Exp $
 #
 #==============================================================================
 
@@ -67,8 +67,8 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_ChannelInfo_Define.f90 \
             CRTM_ChannelInfo.f90 \
             CRTM_GeometryInfo_Define.f90 \
-            CRTM_AtmAbsorption_IntAbsorber.f90 \
-            CRTM_AtmAbsorption_Predictor.f90 \
+            CRTM_Predictor_Define.f90 \
+            CRTM_Predictor.f90 \
             CRTM_AtmAbsorption_Define.f90 \
             CRTM_AtmAbsorption.f90 \
             CRTM_AtmScatter_Define.f90 \

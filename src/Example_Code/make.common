@@ -19,8 +19,8 @@ OBJ_FILES = Timing_Utility.o CRTM_Test_Utility.o \
 
 # Library and include macros
 # *** MODIFY THESE TO THE LOCATION OF THE CRTM LIBRARY ON YOUR SYSTEM ***
-INCLUDES = -I$(HOME)/local/CRTM/include
-LIBRARIES = -L$(HOME)/local/CRTM/lib -lCRTM
+INCLUDES = -I$(CRTM_SOURCE_ROOT)/Build/include
+LIBRARIES = -L$(CRTM_SOURCE_ROOT)/Build/lib -lCRTM
 
 
 # ------------------

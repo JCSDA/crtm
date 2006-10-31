@@ -25,7 +25,7 @@ for TEST in ${TEST_TYPE}; do
       echo ${FILE_ROOT}
       if [ -f "${FILE_ROOT}.Baseline" -a -f "${FILE_ROOT}" ]; then
         mv ${FILE_ROOT} ${FILE_ROOT}.Baseline
-        cvs commit -m "Updated baseline results for `date`" ${FILE_ROOT}.Baseline
+        cvs commit -m "Updated baseline results for `date`. Intel compiler 9.0(20050912). MetOffice baseline." ${FILE_ROOT}.Baseline
       fi
     done
     cd ..
