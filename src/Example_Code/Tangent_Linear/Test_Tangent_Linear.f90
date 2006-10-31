@@ -31,7 +31,7 @@ PROGRAM Test_Tangent_Linear
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Tangent_Linear'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Tangent_Linear.f90,v 1.8 2006/06/13 17:15:21 wd20pd Exp $'
+    '$Id: Test_Tangent_Linear.f90,v 1.10 2006/09/22 20:07:56 wd20pd Exp $'
   CHARACTER(*), PARAMETER :: TEST_ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: TEST_SFCDATA_FILENAME = 'ECMWF-Surface.bin'
   INTEGER,      PARAMETER :: MAX_TEST_CASES = 52
@@ -253,5 +253,14 @@ PROGRAM Test_Tangent_Linear
                           Error_Status )
     STOP
   END IF
+
+
+  ! --------
+  ! Clean up
+  ! --------
+  Error_Status = CRTM_Destroy_Options(Options)
+  DEALLOCATE(RTSolution, RTSolution_TL, STAT = Allocate_Status)
+  Error_Status = CRTM_Destroy_Surface(Surface, Surface_TL)
+  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere, Atmosphere_TL)
 
 END PROGRAM Test_Tangent_Linear

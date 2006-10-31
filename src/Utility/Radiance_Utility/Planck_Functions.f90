@@ -24,7 +24,7 @@
 !                               fundamental physical constants.
 !                               USEs: TYPE_KINDS module
 !
-!       Error_Handler:          Module to define simple error codes and
+!       Message_Handler:        Module to define simple error codes and
 !                               handle error conditions
 !                               USEs: FILE_UTILITY module
 !
@@ -90,7 +90,7 @@ MODULE Planck_Functions
  
   USE Type_Kinds, ONLY: fp_kind
   USE Fundamental_Constants, ONLY: C_1, C_2
-  USE Error_Handler
+  USE Message_Handler
 
 
   ! ---------------------------
@@ -154,7 +154,7 @@ MODULE Planck_Functions
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Planck_Functions.f90,v 3.1 2004/09/08 23:32:54 paulv Exp $'
+    '$Id: Planck_Functions.f90,v 3.2 2006/09/21 17:57:31 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -284,7 +284,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the Planck calculation was successful
 !                              == FAILURE an error was found with the input.
 !                           UNITS:      N/A
@@ -293,7 +293,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:     Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None
@@ -1018,7 +1018,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the Planck calculation was successful
 !                              == FAILURE an error was found with the input.
 !                           UNITS:      N/A
@@ -1027,7 +1027,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None
@@ -1758,7 +1758,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the calculation was successful
 !                              == FAILURE an error was found with the input.
 !                           UNITS:      N/A
@@ -1767,7 +1767,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None
@@ -2512,7 +2512,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the ERROR_HANDLER module.
+!                           The error codes are defined in the Message_Handler module.
 !                           If == SUCCESS the Planck calculation was successful
 !                              == FAILURE an error was found with the input.
 !                           UNITS:      N/A
@@ -2521,7 +2521,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None
@@ -3179,17 +3179,20 @@ END MODULE Planck_Functions
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Planck_Functions.f90,v 3.1 2004/09/08 23:32:54 paulv Exp $
+! $Id: Planck_Functions.f90,v 3.2 2006/09/21 17:57:31 wd20pd Exp $
 !
-! $Date: 2004/09/08 23:32:54 $
+! $Date: 2006/09/21 17:57:31 $
 !
-! $Revision: 3.1 $
+! $Revision: 3.2 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Planck_Functions.f90,v $
+! Revision 3.2  2006/09/21 17:57:31  wd20pd
+! Replaced all references to Error_Handler with Message_Handler.
+!
 ! Revision 3.1  2004/09/08 23:32:54  paulv
 ! - Update for new Utility modules.
 !

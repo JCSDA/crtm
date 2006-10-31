@@ -21,7 +21,7 @@
 !       File_Utility:                Module containing generic file utility
 !                                    routines
 !
-!       Error_Handler:               Module to define simple error codes and
+!       Message_Handler:             Module to define simple error codes and
 !                                    handle error conditions
 !                                    USEs: FILE_UTILITY module
 !
@@ -31,22 +31,22 @@
 !
 !       Interpolate:                 Module containing interpolation routines
 !                                    USEs: TYPE_KINDS module
-!                                          ERROR_HANDLER module
+!                                          Message_Handler module
 !
 !       Planck_Functions:            Module containing Planck function routines
 !                                    USEs: TYPE_KINDS module
 !                                          FUNDAMENTAL_CONSTANTS module
-!                                          ERROR_HANDLER module
+!                                          Message_Handler module
 !
 !       Solar_Define:                Module defining the Solar data structure
 !                                    and containing routines to manipulate it.
 !                                    USEs: TYPE_KINDS module
-!                                          ERROR_HANDLER module
+!                                          Message_Handler module
 !
 !       Solar_netCDF_IO:             Module containing routines to read and write
 !                                    netCDF format Solar files.
 !                                    USEs: TYPE_KINDS module
-!                                          ERROR_HANDLER module
+!                                          Message_Handler module
 !                                          SOLAR_DEFINE module
 !                                          NETCDF module
 !                                          NETCDF_UTILITY module
@@ -134,7 +134,7 @@ PROGRAM Create_Solar_netCDF_File
 
   USE Type_Kinds
   USE File_Utility
-  USE Error_Handler
+  USE Message_Handler
 
   USE Interpolate
 
@@ -158,7 +158,7 @@ PROGRAM Create_Solar_netCDF_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_Solar_netCDF_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_Solar_netCDF_File.f90,v 1.5 2004/08/31 18:17:07 paulv Exp $'
+  '$Id: Create_Solar_netCDF_File.f90,v 1.6 2006/10/17 18:40:50 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -209,7 +209,7 @@ PROGRAM Create_Solar_netCDF_File
   WRITE( *, '(/5x, " Program to read the ASCII format Kurucz solar source     ")' )
   WRITE( *, '( 5x, "  spectrum and write it and a blackbody equivalent source ")' )
   WRITE( *, '( 5x, "  function to a netCDF format file.                       ")' )
-  WRITE( *, '(/5x, " $Revision: 1.5 $")' )
+  WRITE( *, '(/5x, " $Revision: 1.6 $")' )
   WRITE( *, '( 5x, a)' ) PROGRAM_HEADER
 
 
@@ -542,17 +542,20 @@ END PROGRAM Create_Solar_netCDF_File
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Create_Solar_netCDF_File.f90,v 1.5 2004/08/31 18:17:07 paulv Exp $
+! $Id: Create_Solar_netCDF_File.f90,v 1.6 2006/10/17 18:40:50 wd20pd Exp $
 !
-! $Date: 2004/08/31 18:17:07 $
+! $Date: 2006/10/17 18:40:50 $
 !
-! $Revision: 1.5 $
+! $Revision: 1.6 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Create_Solar_netCDF_File.f90,v $
+! Revision 1.6  2006/10/17 18:40:50  wd20pd
+! Modified to replace Error_Handler references with Message_Handler.
+!
 ! Revision 1.5  2004/08/31 18:17:07  paulv
 ! - Updated to use new Solar_Define, Solar_netCDF_IO, and Planck_Functions
 !   modules.

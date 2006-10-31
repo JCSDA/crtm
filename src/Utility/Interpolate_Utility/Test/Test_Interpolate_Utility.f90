@@ -10,7 +10,8 @@ PROGRAM Test_Interpolate_Utility
   USE Type_Kinds,          ONLY: fp=>fp_kind
   USE Message_Handler,     ONLY: SUCCESS, FAILURE, Display_Message
   USE File_Utility,        ONLY: Get_Lun
-  USE Interpolate_Utility, ONLY: Value_Locate, &
+  USE Search_Utility,      ONLY: Value_Locate
+  USE Interpolate_Utility, ONLY: Linear_Interpolate, &
                                  Polynomial_Interpolate, &
                                  Spline_Initialize, Spline_Interpolate
   ! Disable implicit typing
@@ -22,7 +23,7 @@ PROGRAM Test_Interpolate_Utility
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Test_Interpolate_Utility'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Interpolate_Utility.f90,v 1.2 2006/06/07 20:19:34 wd20pd Exp $'
+    '$Id: Test_Interpolate_Utility.f90,v 1.3 2006/10/09 14:24:09 wd20pd Exp $'
   INTEGER,      PARAMETER :: N  = 25
 !  INTEGER,      PARAMETER :: N  = 12
   INTEGER,      PARAMETER :: NI = 78
@@ -44,8 +45,10 @@ PROGRAM Test_Interpolate_Utility
   REAL(fp), DIMENSION(N) :: y2
   REAL(fp), DIMENSION(NI) :: xInt, yTrue
   INTEGER,  DIMENSION(NI) :: x_idx
+  REAL(fp), DIMENSION(NI,2)         :: LinInt
   REAL(fp), DIMENSION(NI,NORDERS,2) :: PolyInt
   REAL(fp), DIMENSION(NI,2)         :: SplineInt
+  REAL(fp), DIMENSION(2)         :: LinError
   REAL(fp), DIMENSION(NORDERS,2) :: PolyError
   REAL(fp), DIMENSION(2)         :: SplineError
 
@@ -82,6 +85,17 @@ PROGRAM Test_Interpolate_Utility
   PolyError   = ZERO
   SplineError = ZERO
   WRITE( *, '( /5x, "Interpolating...." )' )
+  ! Linear scalar
+  x_idx = Value_Locate(x,xint)
+  DO i = 1, NI
+    Error_Status = Linear_Interpolate( x, y, xInt(i), LinInt(i,1) )
+  END DO
+  LinError(1) = SUM(ABS(yTrue-LinInt(:,1)))
+
+  ! Linear rank-1
+  Error_Status = Linear_Interpolate( x, y, xInt, LinInt(:,2) )
+  LinError(2) = SUM(ABS(yTrue-LinInt(:,2)))
+
   ! Polynomial scalar
   x_idx = Value_Locate(x,xint)
   DO j = 1, NORDERS
@@ -119,6 +133,9 @@ PROGRAM Test_Interpolate_Utility
   ! ----------------------
   WRITE( *, '( /5x, "Error sums, SUM(ABS(yTrue-yInt)):" )' )
   DO k = 1, 2
+    WRITE( *, '( 5x, "LinInt ", a, ": ", es13.6 )' ) FTYPE(k), LinError(k)
+  END DO
+  DO k = 1, 2
     WRITE( *, '( 5x, "PolyInt ", a )' ) FTYPE(k)
     DO j = 1, NORDERS
       WRITE( *, '( 7x, "Order ", i2, ": ", es13.6 )' ) ORDER(j),PolyError(j,k) 
@@ -139,6 +156,22 @@ PROGRAM Test_Interpolate_Utility
   CLOSE( FileID )
 
 
+  ! ----------------------------------
+  ! Write the linear interpolated data
+  ! ----------------------------------
+  DO k = 1, 2
+    IF( k==1 ) THEN
+      FileID=Open_File('linint-scalar_xy.dat')
+    ELSE 
+      FileID=Open_File('linint-rank1_xy.dat') 
+    END IF
+    DO i = 1, NI
+      WRITE( FileID, '( 12(1x,es20.11e3,:) )' ) xInt(i), yTrue(i), LinInt(i,k)
+    END DO
+    CLOSE( FileID )
+  END DO
+
+
   ! --------------------------------------
   ! Write the polynomial interpolated data
   ! --------------------------------------
@@ -155,7 +188,6 @@ PROGRAM Test_Interpolate_Utility
   END DO
 
 
-  ! ----------------------------------
   ! Write the spline interpolated data
   ! ----------------------------------
   DO k = 1, 2

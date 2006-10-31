@@ -2,7 +2,7 @@
 #
 # Makefile for Create_Solar_netCDF_File program
 #
-# $Id: Makefile,v 1.5 2004/08/31 18:16:16 paulv Exp $
+# $Id: Makefile,v 1.6 2006/10/17 18:40:50 wd20pd Exp $
 #
 #==============================================================================
 
@@ -35,7 +35,7 @@ EXE_FILE = Create_Solar_netCDF_File
 
 UTILITY_OBJ_FILES = Type_Kinds.o \
                     File_Utility.o \
-                    Error_Handler.o
+                    Message_Handler.o
 INTERPOLATE_OBJ_FILES = Interpolate.o
 CONSTANTS_OBJ_FILES = Fundamental_Constants.o
 PLANCK_OBJ_FILES = Planck_Functions.o
@@ -179,22 +179,22 @@ remove_source_links:
 
 Type_Kinds.o : Type_Kinds.f90
 File_Utility.o : File_Utility.f90
-Error_Handler.o : Error_Handler.f90 File_Utility.o
+Message_Handler.o : Message_Handler.f90 File_Utility.o
 
-Interpolate.o : Interpolate.f90 Type_Kinds.o Error_Handler.o 
+Interpolate.o : Interpolate.f90 Type_Kinds.o Message_Handler.o 
 
 Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
-Planck_Functions.o : Planck_Functions.f90 Error_Handler.o Fundamental_Constants.o Type_Kinds.o 
+Planck_Functions.o : Planck_Functions.f90 Message_Handler.o Fundamental_Constants.o Type_Kinds.o 
 
-netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Error_Handler.o 
-netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Error_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o
 
-Solar_netCDF_IO.o : Solar_netCDF_IO.f90 Type_Kinds.o Error_Handler.o Solar_Define.o netCDF_Utility.o 
-Solar_Define.o : Solar_Define.f90 Type_Kinds.o Error_Handler.o File_Utility.o 
+Solar_netCDF_IO.o : Solar_netCDF_IO.f90 Type_Kinds.o Message_Handler.o Solar_Define.o netCDF_Utility.o 
+Solar_Define.o : Solar_Define.f90 Type_Kinds.o Message_Handler.o File_Utility.o 
 
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o File_Utility.o Error_Handler.o Interpolate.o Planck_Functions.o Fundamental_Constants.o Solar_Define.o Solar_netCDF_IO.o 
+$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o File_Utility.o Message_Handler.o Interpolate.o Planck_Functions.o Fundamental_Constants.o Solar_Define.o Solar_netCDF_IO.o 
 
 
 # -------------------------------

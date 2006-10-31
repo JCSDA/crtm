@@ -1,91 +1,14 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       ComponentTest_netCDF_IO
 !
-! PURPOSE:
-!       Module containing routines to read and write netCDF format
-!       ComponentTest files.
-!       
-! CATEGORY:
-!       CRTM : Test : Utility
+! ComponentTest_netCDF_IO
 !
-! LANGUAGE:
-!       Fortran-95
+! Module containing routines to read and write netCDF format
+! ComponentTest files.
 !
-! CALLING SEQUENCE:
-!       USE ComponentTest_netCDF_IO
-!
-! MODULES:
-!       Type_Kinds:            Module containing definitions for kinds
-!                              of variable types.
-!
-!       File_Utility:          Module containing generic file utility routines
-!
-!       Message_Handler:       Module to define simple error codes and
-!                              handle error conditions
-!                              USEs: FILE_UTILITY module
-!
-!       ComponentTest_Define:  Module defining the ComponentTest data structure
-!                              and containing routines to manipulate it.
-!                              USEs: TYPE_KINDS module
-!                                    FILE_UTILITY module
-!                                    ERROR_HANDLER module
-!
-!       netcdf:                Module supplied with the Fortran 90 version 
-!                              of the netCDF libraries (at least v3.5.0).
-!                              See http://www.unidata.ucar.edu/packages/netcdf
-!
-!       netCDF_Utility:        Module containing utility routines for
-!                              netCDF file access.
-!                              USEs: NETCDF_DIMENSION_UTILITY module
-!                                    NETCDF_VARIABLE_UTILITY module
-!                                    NETCDF_ATTRIBUTE_UTILITY module
-!
-! CONTAINS:
-!       Inquire_ComponentTest_netCDF:  Function to inquire a netCDF format 
-!                                   ComponentTest file to obtain information
-!                                   about the data dimensions and attributes.
-!
-!       Write_ComponentTest_netCDF:    Function to write ComponentTest data to a
-!                                   netCDF format ComponentTest file.
-!
-!       Read_ComponentTest_netCDF:     Function to read ComponentTest data from a
-!                                   netCDF format ComponentTest file.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 02-Mar-2006
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2006 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE ComponentTest_netCDF_IO
 
@@ -97,9 +20,7 @@ MODULE ComponentTest_netCDF_IO
   USE Type_Kinds
   USE File_Utility
   USE Message_Handler
-
   USE ComponentTest_Define
-
   USE netcdf
   USE netCDF_Utility,  Open_ComponentTest_netCDF =>  Open_netCDF, &
                       Close_ComponentTest_netCDF => Close_netCDF
@@ -161,7 +82,7 @@ MODULE ComponentTest_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ComponentTest_netCDF_IO.f90,v 1.3 2006/05/02 14:58:35 dgroff Exp $'
+    '$Id: ComponentTest_netCDF_IO.f90,v 1.4 2006/09/21 17:56:09 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -429,7 +350,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the global attribute write was successful
 !                            == FAILURE an error occurred writing the supplied
 !                                       global attribute(s).
@@ -443,7 +364,7 @@ CONTAINS
 !                           SOURCE: netCDF library
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! COMMON BLOCKS:
 !       None
@@ -906,7 +827,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the global attribute read was successful
 !                            == FAILURE an error occurred reading the requested
 !                                       global attribute(s).
@@ -920,7 +841,7 @@ CONTAINS
 !                             SOURCE: NETCDF_ATTRIBUTE module
 !
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       If a FAILURE error occurs, the netCDF file is closed.
@@ -1409,7 +1330,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:          The return value is an integer defining the error status.
-!                              The error codes are defined in the ERROR_HANDLER module.
+!                              The error codes are defined in the Message_Handler module.
 !                              If == SUCCESS the netCDF file creation was successful
 !                                 == FAILURE an unrecoverable error occurred.
 !                              UNITS:      N/A
@@ -1434,7 +1355,7 @@ CONTAINS
 !                                   SOURCE: NETCDF_VARIABLE_UTILITY module
 !
 !       Display_Message:            Subroutine to output messages
-!                                   SOURCE: ERROR_HANDLER module
+!                                   SOURCE: Message_Handler module
 !
 !       NF90_CREATE:                Function to create a netCDF file.
 !                                   SOURCE: netCDF library
@@ -2592,7 +2513,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:         The return value is an integer defining the error status.
-!                             The error codes are defined in the ERROR_HANDLER module.
+!                             The error codes are defined in the Message_Handler module.
 !                             If == SUCCESS the netCDF file inquiry was successful
 !                                == FAILURE an error occurred reading any of the requested
 !                                           dimension or release/version data.
@@ -2625,7 +2546,7 @@ CONTAINS
 !                                   SOURCE: NETCDF_UTILITY module
 !
 !       Display_Message:            Subroutine to output messages
-!                                   SOURCE: ERROR_HANDLER module
+!                                   SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -3122,7 +3043,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the netCDF file write was successful
 !                           == FAILURE - the input ComponentTest structure contains
 !                                        unassociated pointer members, or
@@ -3153,7 +3074,7 @@ CONTAINS
 !                                    SOURCE: NETCDF_VARIABLE_UTILITY module
 !
 !       Display_Message:             Subroutine to output messages
-!                                    SOURCE: ERROR_HANDLER module
+!                                    SOURCE: Message_Handler module
 !
 !       NF90_ENDDEF:                 Function to put a netCDF dataset into
 !                                    data mode.
@@ -3756,7 +3677,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the netCDF file read was successful
 !                           == FAILURE an unrecoverable read error occurred.
 !                        UNITS:      N/A
@@ -3783,7 +3704,7 @@ CONTAINS
 !                                      SOURCE: NETCDF_VARIABLE_UTILITY module
 !
 !       Display_Message:               Subroutine to output messages
-!                                      SOURCE: ERROR_HANDLER module
+!                                      SOURCE: Message_Handler module
 !
 !       NF90_INQ_VARID:                Function to inquire a variable in a 
 !                                      netCDF dataset base don its name.
@@ -4262,36 +4183,3 @@ CONTAINS
   END FUNCTION Read_ComponentTest_netCDF
 
 END MODULE ComponentTest_netCDF_IO
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: ComponentTest_netCDF_IO.f90,v 1.3 2006/05/02 14:58:35 dgroff Exp $
-!
-! $Date: 2006/05/02 14:58:35 $
-!
-! $Revision: 1.3 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: ComponentTest_netCDF_IO.f90,v $
-! Revision 1.3  2006/05/02 14:58:35  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 1.2  2006/03/06 23:11:13  paulv
-! - Made all parameters inherited from ComponentTest_Define public.
-! - The input and output variable units are no longer attributes of the
-!   variable name variables - netCDF API doesn't allow rank-1 attributes of
-!   character type. The variable unit strings are now read and written as variables
-!   themselves.
-! - Corrected bugs in named of inherited parameters.
-!
-! Revision 1.1  2006/03/06 19:24:32  paulv
-! Initial checkin. Untested.
-!
-!
-!

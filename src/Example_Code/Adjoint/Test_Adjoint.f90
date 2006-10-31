@@ -30,7 +30,7 @@ PROGRAM Test_Adjoint
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Adjoint'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Adjoint.f90,v 1.8 2006/06/13 17:15:21 wd20pd Exp $'
+    '$Id: Test_Adjoint.f90,v 1.10 2006/09/22 20:07:56 wd20pd Exp $'
   CHARACTER(*), PARAMETER :: TEST_ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: TEST_SFCDATA_FILENAME = 'ECMWF-Surface.bin'
   INTEGER,      PARAMETER :: MAX_TEST_CASES = 52
@@ -60,7 +60,7 @@ PROGRAM Test_Adjoint
   TYPE(CRTM_Surface_type),      DIMENSION(MAX_TEST_CASES)   :: Surface,    Surface_AD
   TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_TEST_CASES)   :: GeometryInfo
   TYPE(CRTM_RTSolution_type),   DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_AD
-  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options, Options_AD
+  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -252,5 +252,14 @@ PROGRAM Test_Adjoint
                           Error_Status )
     STOP
   END IF
+
+
+  ! --------
+  ! Clean up
+  ! --------
+  Error_Status = CRTM_Destroy_Options(Options)
+  DEALLOCATE(RTSolution, RTSolution_AD, STAT = Allocate_Status)
+  Error_Status = CRTM_Destroy_Surface(Surface, Surface_AD)
+  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere, Atmosphere_AD)
 
 END PROGRAM Test_Adjoint

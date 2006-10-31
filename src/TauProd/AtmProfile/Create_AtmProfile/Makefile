@@ -21,11 +21,15 @@ SRC_FILES = Type_Kinds.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Fundamental_Constants.f90 \
+            Search_Utility.f90 \
             Interpolate_Utility.f90 \
+              Linear_Interpolation.f90 \
+              Polynomial_Interpolation.f90 \
+              Spline_Interpolation.f90 \
             netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
-            netCDF_Variable_Utility.f90 \
+              netCDF_Dimension_Utility.f90 \
+              netCDF_Attribute_Utility.f90 \
+              netCDF_Variable_Utility.f90 \
             AtmProfile_Parameters.f90 \
             AtmProfile_Define.f90 \
             AtmProfile_netCDF_IO.f90 \

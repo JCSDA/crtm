@@ -5,15 +5,19 @@ netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_H
 Units_Conversion.o : Units_Conversion.f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o Atmospheric_Properties.o 
 UMBC_Profile_Set.o : UMBC_Profile_Set.f90 Type_Kinds.o File_Utility.o Message_Handler.o Profile_Utility_Parameters.o Units_Conversion.o 
 Type_Kinds.o : Type_Kinds.f90 
+Spline_Interpolation.o : Spline_Interpolation.f90 Type_Kinds.o Message_Handler.o Search_Utility.o 
+Search_Utility.o : Search_Utility.f90 Type_Kinds.o Message_Handler.o 
 Profile_Utility_Parameters.o : Profile_Utility_Parameters.f90 Type_Kinds.o Fundamental_Constants.o 
-Model_Profile_Set.f90.o Model_Profile_Set.o : Model_Profile_Set.f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o Units_Conversion.o 
+Polynomial_Interpolation.o : Polynomial_Interpolation.f90 Type_Kinds.o Message_Handler.o Search_Utility.o 
+Model_Profile_Set.o : Model_Profile_Set.f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o Units_Conversion.o 
 Message_Handler.o : Message_Handler.f90 File_Utility.o 
-Interpolate_Utility.o : Interpolate_Utility.f90 Type_Kinds.o Message_Handler.o 
+Linear_Interpolation.o : Linear_Interpolation.f90 Type_Kinds.o Message_Handler.o Search_Utility.o 
+Interpolate_Utility.o : Interpolate_Utility.f90 Linear_Interpolation.o Polynomial_Interpolation.o Spline_Interpolation.o 
 Geopotential.o : Geopotential.f90 Type_Kinds.o Message_Handler.o Fundamental_Constants.o Atmospheric_Properties.o 
 Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
 File_Utility.o : File_Utility.f90 
 ECMWF_Profile_Set.o : ECMWF_Profile_Set.f90 Type_Kinds.o File_Utility.o Message_Handler.o Units_Conversion.o 
-Create_AtmProfile.o : Create_AtmProfile.f90 Type_Kinds.o File_Utility.o Message_Handler.o Interpolate_Utility.o AtmProfile_Parameters.o AtmProfile_Define.o AtmProfile_netCDF_IO.o UMBC_Profile_Set.o CIMSS_Profile_Set.o ECMWF_Profile_Set.o Model_Profile_Set.f90.o Profile_Utility_Parameters.o Units_Conversion.o Geopotential.o 
+Create_AtmProfile.o : Create_AtmProfile.f90 Type_Kinds.o File_Utility.o Message_Handler.o Interpolate_Utility.o AtmProfile_Parameters.o AtmProfile_Define.o AtmProfile_netCDF_IO.o UMBC_Profile_Set.o CIMSS_Profile_Set.o ECMWF_Profile_Set.o Model_Profile_Set.o Profile_Utility_Parameters.o Units_Conversion.o Geopotential.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
 CIMSS_Profile_Set.o : CIMSS_Profile_Set.f90 Type_Kinds.o Message_Handler.o 
 Atmospheric_Properties.o : Atmospheric_Properties.f90 Type_Kinds.o Message_Handler.o Profile_Utility_Parameters.o 

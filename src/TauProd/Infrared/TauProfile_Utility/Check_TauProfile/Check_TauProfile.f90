@@ -1,7 +1,7 @@
 !
 ! Check_TauProfile
 !
-! Program to check TauProfile datafiles for invalid data.
+! Program to check TauProfile datafiles for invalid or inconsistent data.
 !
 !
 ! CREATION HISTORY:
@@ -11,34 +11,26 @@
 
 PROGRAM Check_TauProfile
 
-
-  ! ------------
+  ! ------------------
+  ! Environment set up
+  ! ------------------
   ! Module usage
-  ! ------------
-
   USE Type_Kinds
   USE File_Utility
   USE Message_Handler
   USE Compare_Float_Numbers
-
   USE TauProfile_Define
   USE TauProfile_netCDF_IO
-
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ----------
   ! Parameters
   ! ----------
-
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_TauProfile.f90,v 1.3 2006/07/27 20:23:15 wd20pd Exp $'
+  '$Id: Check_TauProfile.f90,v 1.4 2006/09/21 17:53:54 wd20pd Exp $'
 
   REAL( fp_kind ), PARAMETER :: ZERO = 0.0_fp_kind
   REAL( fp_kind ), PARAMETER :: ONE  = 1.0_fp_kind
@@ -68,7 +60,7 @@ PROGRAM Check_TauProfile
   ! Display descriptive header
   CALL Program_Message(PROGRAM_NAME, &
                        'Program to check TauProfile datafiles for invalid data.', &
-                       '$Revision: 1.3 $' )
+                       '$Revision: 1.4 $' )
 
 
   !#----------------------------------------------------------------------------#

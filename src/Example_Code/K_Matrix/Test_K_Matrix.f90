@@ -30,7 +30,7 @@ PROGRAM Test_K_Matrix
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_K_Matrix'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_K_Matrix.f90,v 1.8 2006/06/13 17:15:21 wd20pd Exp $'
+    '$Id: Test_K_Matrix.f90,v 1.10 2006/09/22 20:07:56 wd20pd Exp $'
   CHARACTER(*), PARAMETER :: TEST_ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: TEST_SFCDATA_FILENAME = 'ECMWF-Surface.bin'
   CHARACTER(*), PARAMETER :: TEST_OUTPUT_FILENAME = 'CRTM_Test_K_Matrix.output'
@@ -48,7 +48,6 @@ PROGRAM Test_K_Matrix
   ! ---------
   CHARACTER(256) :: Message
   INTEGER :: i, l, m, iOptions
-  INTEGER :: Status_FWD, Status_K
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
   CHARACTER(256) :: File_Prefix
@@ -64,7 +63,7 @@ PROGRAM Test_K_Matrix
   TYPE(CRTM_Atmosphere_type),   DIMENSION(:,:), ALLOCATABLE :: Atmosphere_K
   TYPE(CRTM_Surface_type),      DIMENSION(:,:), ALLOCATABLE :: Surface_K
   TYPE(CRTM_RTSolution_type),   DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_K
-  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options, Options_K
+  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -179,7 +178,7 @@ PROGRAM Test_K_Matrix
   ! --------------------------
   ! Allocate the Options input
   ! --------------------------
-  Error_Status = CRTM_Allocate_Options( ChannelInfo%n_Channels, Options   )
+  Error_Status = CRTM_Allocate_Options( ChannelInfo%n_Channels, Options )
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
                           'Error allocating Options structure array', & 
@@ -244,6 +243,8 @@ PROGRAM Test_K_Matrix
                        TRIM(File_Prefix)//'.'//TEST_OUTPUT_FILENAME, Message, &
                        ChannelInfo, Atmosphere, Surface, RTSolution, &
                        RTSolution_K=RTSolution_K, Surface_K=Surface_K)
+      CALL Print_K_Results(TRIM(File_Prefix)//'.dat', &
+                           ChannelInfo, Atmosphere, Atmosphere_K, Surface_K)
     CALL Display_Timing( Timing )
 
   END DO
@@ -260,5 +261,20 @@ PROGRAM Test_K_Matrix
                            Error_Status )
     STOP
   END IF
+
+
+  ! --------
+  ! Clean up
+  ! --------
+  Error_Status = CRTM_Destroy_Options(Options)
+  Error_Status = CRTM_Destroy_Surface(Surface)
+  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere)
+  DO m = 1, MAX_TEST_CASES
+    Error_Status = CRTM_Destroy_Surface(Surface_K(:,m))
+    Error_Status = CRTM_Destroy_Atmosphere(Atmosphere_K(:,m))
+  END DO
+  DEALLOCATE(RTSolution, RTSolution_K, &
+             Surface_K, Atmosphere_K, &
+             STAT = Allocate_Status)
 
 END PROGRAM Test_K_Matrix

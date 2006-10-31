@@ -344,6 +344,7 @@ LINUX_FLAGS_LAHEY_DEBUG = "FC=${NAME_LAHEY}" \
                                      ${LINUX_COMMON_FLAGS_LAHEY_DEBUG}" \
 	                  "FL_FLAGS= ${LINUX_COMMON_FLAGS_LAHEY_DEBUG} \
                                      ${LIBRARIES} \
+                                     --staticlink \
                                      -o" \
                           "ENDIAN=Little_Endian"
 
@@ -359,6 +360,7 @@ LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
                                     ${LINUX_COMMON_FLAGS_LAHEY_PROD}" \
                          "FL_FLAGS= ${LINUX_COMMON_FLAGS_LAHEY_PROD} \
                                     ${LIBRARIES} \
+                                     --staticlink \
                                     -o" \
                          "ENDIAN=Little_Endian"
 
@@ -387,6 +389,7 @@ LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
                                    -ffree-form \
                                    -fno-second-underscore \
                                    -ftrace=frame \
+                                   -malign-double \
                                    -std=f95 \
 	                           -Wall \
                                    ${INCLUDES} \
@@ -417,7 +420,7 @@ LINUX_FLAGS_G95_PROD = "FC=${NAME_G95}" \
                        "ENDIAN=Little_Endian"
 
 
-# -- Here set the DEFAULT Lahey compiler flags
+# -- Here set the DEFAULT g95 compiler flags
 LINUX_FLAGS_G95 = $(LINUX_FLAGS_G95_DEBUG)
 
 

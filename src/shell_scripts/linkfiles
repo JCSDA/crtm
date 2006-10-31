@@ -69,9 +69,9 @@ LINKFILE_LIST=$*
 for FILE in ${LINKFILE_LIST}; do
   # Search
   if [ -z "${FILTER_DIR}" ]; then
-    LINKFILE=$(find ${LINKFILE_ROOT} -name ${FILE} -type f)
+    LINKFILE=$(find ${LINKFILE_ROOT}/ -name ${FILE} -type f)
   else
-    LINKFILE=$(find ${LINKFILE_ROOT} -name ${FILE} -type f | grep ${FILTER_DIR})
+    LINKFILE=$(find ${LINKFILE_ROOT}/ -name ${FILE} -type f | grep ${FILTER_DIR})
   fi
   # Link
   if [ -n "${LINKFILE}" ]; then

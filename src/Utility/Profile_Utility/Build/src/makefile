@@ -2,36 +2,21 @@
 #
 # Makefile for Profile Utility Build
 #
-# $Id: makefile,v 1.4 2006/05/05 22:41:26 wd20pd Exp $
-#
 #==============================================================================
 
-#-------------------------------------------------------------------------------#
-#                               -- DEFINE MACROS --                             # 
-#-------------------------------------------------------------------------------#
-
+# -------------
+# Define macros
+# -------------
 include ../make.macros
 
-
-# -------------
 # This makefile
-# -------------
-
 MAKE_FILE = makefile
 
-
-# ----------------
 # The library name
-# ----------------
-
 LIBRARY_TAG = Profile_Utility
 LIBRARY_NAME = lib$(LIBRARY_TAG).a
 
-
-# ----------------------------
 # Profile_Utility Object files
-# ----------------------------
-
 OBJ_FILES = Type_Kinds.o \
             File_Utility.o \
             Message_Handler.o \
@@ -44,15 +29,10 @@ OBJ_FILES = Type_Kinds.o \
             Profile_Utility.o
 
 
-
-#-------------------------------------------------------------------------------#
-#                             -- DEFINE DEPENDECIES --                          # 
-#-------------------------------------------------------------------------------#
-
-# ------------------------------
+# ------------------
+# Define dependecies
+# ------------------
 # Default build based on OS type
-# ------------------------------
-
 all:
 	@echo "OS type detected: "`uname -s`
 	@case `uname -s` in \
@@ -63,11 +43,7 @@ all:
 	  *) echo "This system is not supported" ;; \
        esac
 
-
-# ----------------
 # IBM AIX Compiler
-# ----------------
-
 ibm_debug:
 	make -f $(MAKE_FILE) library $(AIX_FLAGS_DEBUG)
 
@@ -75,10 +51,7 @@ ibm:
 	make -f $(MAKE_FILE) library $(AIX_FLAGS_PROD)
 
 
-# --------------------
 # SGI MIPSpro Compiler
-# --------------------
-
 sgi_debug:
 	make -f $(MAKE_FILE) library $(IRIX64_FLAGS_DEBUG)
 
@@ -86,10 +59,7 @@ sgi:
 	make -f $(MAKE_FILE) library $(IRIX64_FLAGS_PROD)
 
 
-# --------------
 # SunOS Compiler
-# --------------
-
 sun_debug:
 	make -f $(MAKE_FILE) library $(SUNOS_FLAGS_DEBUG)
 
@@ -97,13 +67,7 @@ sun:
 	make -f $(MAKE_FILE) library $(SUNOS_FLAGS_PROD)
 
 
-# -----------------------------------------------------------
 # Linux compilers.
-#
-# *** NOTE: The PGI compiler must be v6 or later but even ***
-# ***       that may not work due to compiler bugs        ***
-# -----------------------------------------------------------
-
 intel_debug:
 	make -f $(MAKE_FILE) library $(LINUX_FLAGS_INTEL_DEBUG)
 
@@ -129,32 +93,14 @@ g95:
 	make -f $(MAKE_FILE) library $(LINUX_FLAGS_G95_PROD)
 
 
-
-# -----------------------------------
 # Build the library and include files
-# -----------------------------------
-
 library: $(OBJ_FILES)
 	$(ARCHIVER) $(ARCHIVER_FLAGS) $(LIBRARY_NAME) $(OBJ_FILES)
 
-
-# ------------------
 # Clean up the chaff
-# ------------------
-
 clean:
-	$(REMOVE) $(OBJ_FILES) *.mod *.MOD *.m *.M *.stb *.a
+	$(REMOVE) $(OBJ_FILES) *.mod *.MOD *.stb *.a
 
-
-# -------------------------
-# Define build dependencies
-# -------------------------
-
+# Define build dependencies and rules
 include make.dependencies
-
-
-# --------------------------
-# Define default build rules
-# --------------------------
-
 include make.rules

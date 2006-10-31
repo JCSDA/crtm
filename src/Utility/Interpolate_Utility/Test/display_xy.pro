@@ -1,6 +1,8 @@
 pro display_xy
 
-  files = ['polyint-rank1_xy.dat', $
+  files = ['linint-rank1_xy.dat', $
+           'linint-scalar_xy.dat', $
+           'polyint-rank1_xy.dat', $
            'polyint-scalar_xy.dat', $
            'splineint-rank1_xy.dat', $
            'splineint-scalar_xy.dat' ]

@@ -63,7 +63,7 @@ MODULE CRTM_Predictor
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Predictor.f90,v 2.1 2006/08/31 16:54:29 frpv Exp $'
+  '$Id: CRTM_Predictor.f90,v 2.2 2006/10/31 21:07:32 wd20pd Exp $'
 
 
   ! -------------------------------------------------
@@ -713,7 +713,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Integrated_Predictors_TL'
     ! Local variables
     INTEGER :: i, i1, j, k
-    INTEGER :: n_Predictors
     REAL(fp) :: d_A_TL
     REAL(fp) :: Factor_1_TL
     REAL(fp) :: Factor_2_TL
@@ -998,7 +997,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Integrated_Predictors_AD'
     ! Local variables
     INTEGER :: i, i1, j, k
-    INTEGER :: n_Predictors
     REAL(fp) :: d_A_AD
     REAL(fp) :: Factor_1_AD
     REAL(fp) :: Factor_2_AD
@@ -1045,7 +1043,7 @@ CONTAINS
         Inverse_4 = Inverse_3 * Inverse_1
 
         ! Adjoint of predictor summation across layers
-        DO i = 1, n_Predictors
+        DO i = 1, MAX_N_INTEGRATED_PREDICTORS
           xL_AD(i,k)   = xL_AD(i,k) + Pred_AD%X(i1+i-1,k)
           xL_AD(i,k-1) = Pred_AD%X(i1+i-1,k)
         END DO

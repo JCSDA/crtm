@@ -16,20 +16,20 @@
 !       Type_Kinds:                Module to hold specification kinds for
 !                                  variable declaration.
 !
-!       Error_Handler:             Module to define simple error codes and
+!       Message_Handler:           Module to define simple error codes and
 !                                  handle error conditions
 !                                  USEs: FILE_UTILITY module
 !
 !       SpcCoeff_Define:           Module defining the SpcCoeff data structure
 !                                  and containing routines to manipulate it.
 !                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
+!                                        Message_Handler module
 !                                        COMPARE_FLOAT_NUMBERS module
 !                                        
 !       SpcCoeff_netCDF_IO:        Module containing routines to read and
 !                                  write netCDF format SpcCoeff files.
 !                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
+!                                        Message_Handler module
 !                                        SPCCOEFF_DEFINE module
 !                                        NETCDF module
 !                                        NETCDF_UTILITY module
@@ -39,7 +39,7 @@
 !                                  application to sensor channels.
 !                                  USEs: TYPE_KINDS module
 !                                        FUNDAMENTAL_CONSTANTS module
-!                                        ERROR_HANDLER module
+!                                        Message_Handler module
 !
 ! CONTAINS:
 !       None.
@@ -92,7 +92,7 @@ PROGRAM Sensor_Planck_Functions_Test
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE SpcCoeff_Define
   USE SpcCoeff_netCDF_IO
@@ -113,7 +113,7 @@ PROGRAM Sensor_Planck_Functions_Test
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Sensor_Planck_Functions_Test'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Sensor_Planck_Functions_Test.f90,v 2.2 2004/09/08 23:32:54 paulv Exp $'
+  '$Id: Sensor_Planck_Functions_Test.f90,v 2.3 2006/09/21 17:58:25 wd20pd Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -191,7 +191,7 @@ PROGRAM Sensor_Planck_Functions_Test
   WRITE( *, '(/5x, a)' ) PROGRAM_HEADER
   WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
   WRITE( *, '(/5x, " Program to test the sensor Planck function routines.")' )
-  WRITE( *, '(/5x, " $Revision: 2.2 $")' )
+  WRITE( *, '(/5x, " $Revision: 2.3 $")' )
   WRITE( *, '( 5x, a)' ) PROGRAM_HEADER
 
 
@@ -562,17 +562,20 @@ END PROGRAM Sensor_Planck_Functions_Test
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Sensor_Planck_Functions_Test.f90,v 2.2 2004/09/08 23:32:54 paulv Exp $
+! $Id: Sensor_Planck_Functions_Test.f90,v 2.3 2006/09/21 17:58:25 wd20pd Exp $
 !
-! $Date: 2004/09/08 23:32:54 $
+! $Date: 2006/09/21 17:58:25 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Sensor_Planck_Functions_Test.f90,v $
+! Revision 2.3  2006/09/21 17:58:25  wd20pd
+! Replaced all references to Error_Handler with Message_Handler.
+!
 ! Revision 2.2  2004/09/08 23:32:54  paulv
 ! - Update for new Utility modules.
 !

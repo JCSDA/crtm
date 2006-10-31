@@ -20,14 +20,14 @@
 !       Type_Kinds:            Module containing definitions for kinds
 !                              of variable types.
 !
-!       Error_Handler:         Module to define simple error codes and
+!       Message_Handler:       Module to define simple error codes and
 !                              handle error conditions
 !                              USEs: FILE_UTILITY module
 !
 !       Solar_Define:          Module defining the Solar data structure and
 !                              containing routines to manipulate it.
 !                              USEs: TYPE_KINDS module
-!                                    ERROR_HANDLER module
+!                                    Message_Handler module
 !
 !       netcdf:                Module supplied with the Fortran 90 version 
 !                              of the netCDF libraries (at least v3.5.0).
@@ -90,7 +90,7 @@ MODULE Solar_netCDF_IO
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE Solar_Define
 
@@ -123,7 +123,7 @@ MODULE Solar_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Solar_netCDF_IO.f90,v 2.3 2005/08/11 17:33:14 paulv Exp $'
+    '$Id: Solar_netCDF_IO.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -303,7 +303,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the global attribute write was successful
 !                            == FAILURE an error occurred writing the supplied
 !                                       global attribute(s).
@@ -317,7 +317,7 @@ CONTAINS
 !                               SOURCE: netCDF library
 !
 !       Display_Message:        Subroutine to output messages
-!                               SOURCE: ERROR_HANDLER module
+!                               SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -414,7 +414,7 @@ CONTAINS
     NF90_Status = NF90_PUT_ATT( NC_FileID,   &
                                 NF90_GLOBAL, &
                                 WRITE_MODULE_HISTORY_GATTNAME,    &
-                                '$Id: Solar_netCDF_IO.f90,v 2.3 2005/08/11 17:33:14 paulv Exp $' )
+                                '$Id: Solar_netCDF_IO.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $' )
 
 
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -679,7 +679,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the global attribute read was successful
 !                            == FAILURE an error occurred reading the requested
 !                                       global attribute(s).
@@ -693,7 +693,7 @@ CONTAINS
 !                               SOURCE: NETCDF_UTILITY module
 !
 !       Display_Message:        Subroutine to output messages
-!                               SOURCE: ERROR_HANDLER module
+!                               SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       If a FAILURE error occurs, the netCDF file is closed.
@@ -1016,7 +1016,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the netCDF file inquiry was successful
 !                            == FAILURE an error occurred reading any of the requested
 !                                       dimension data.
@@ -1049,7 +1049,7 @@ CONTAINS
 !                                SOURCE: NETCDF_UTILITY module
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1328,7 +1328,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the netCDF file write was successful
 !                           == FAILURE - the input Solar structure contains
 !                                        unassociated pointer members, or
@@ -1375,7 +1375,7 @@ CONTAINS
 !                                SOURCE: netCDF library
 !
 !       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
+!                                SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       If the output file already exists, it is overwritten
@@ -2216,7 +2216,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the netCDF file read was successful
 !                           == FAILURE a unrecoverable read error occurred.
 !                           == WARNING an error occurred reading the global
@@ -2248,7 +2248,7 @@ CONTAINS
 !                              SOURCE: netCDF library
 !
 !       Display_Message:       Subroutine to output messages
-!                              SOURCE: ERROR_HANDLER module
+!                              SOURCE: Message_Handler module
 !
 !
 ! SIDE EFFECTS:
@@ -2603,17 +2603,20 @@ END MODULE Solar_netCDF_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Solar_netCDF_IO.f90,v 2.3 2005/08/11 17:33:14 paulv Exp $
+! $Id: Solar_netCDF_IO.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $
 !
-! $Date: 2005/08/11 17:33:14 $
+! $Date: 2006/09/21 17:59:50 $
 !
-! $Revision: 2.3 $
+! $Revision: 2.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Solar_netCDF_IO.f90,v $
+! Revision 2.4  2006/09/21 17:59:50  wd20pd
+! Replaced all references to Error_Handler with Message_Handler.
+!
 ! Revision 2.3  2005/08/11 17:33:14  paulv
 ! - Added call to Frequency_Solar() in the Read_Solar_netCDF() function.
 !

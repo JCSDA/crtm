@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Test_Interpolate_Utility program
+# Makefile for Test_CosFilter program
 #
 #==============================================================================
 
@@ -11,17 +11,14 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Test_Interpolate_Utility
+EXE_FILE = Test_CosFilter
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
-            Search_Utility.f90 \
-            Linear_Interpolation.f90 \
-            Polynomial_Interpolation.f90 \
-            Spline_Interpolation.f90 \
-            Interpolate_Utility.f90
+            Fundamental_Constants.f90 \
+            FFT_Spectral_Utility.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

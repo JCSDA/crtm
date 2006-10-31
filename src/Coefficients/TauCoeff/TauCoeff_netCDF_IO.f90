@@ -45,7 +45,7 @@ MODULE TauCoeff_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauCoeff_netCDF_IO.f90,v 5.9 2006/06/23 23:17:32 wd20pd Exp $'
+    '$Id: TauCoeff_netCDF_IO.f90,v 5.10 2006/09/21 17:49:41 wd20pd Exp $'
 
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: TITLE_GATTNAME         = 'title' 
@@ -280,7 +280,7 @@ CONTAINS
                                RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: NC_Filename
-    INTEGER,                  INTENT(IN) :: NC_FileID
+    INTEGER,                INTENT(IN) :: NC_FileID
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN) :: History
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Sensor_Name
@@ -606,8 +606,6 @@ CONTAINS
     END FUNCTION Get_GAttString
 
   END FUNCTION Read_TauCoeff_GAtts
-
-
 
 
 !--------------------------------------------------------------------------------
@@ -2143,7 +2141,7 @@ CONTAINS
     END IF
 
     ! Close the file
-    Error_Status = Close_TauCoeff_netCDF( NC_FileID )
+    Close_Status = Close_TauCoeff_netCDF( NC_FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauCoeff data file '// &

@@ -4,53 +4,31 @@
 #
 #================================================================================
 
-#-------------------------------------------------------------------------------#
-#                               -- DEFINE MACROS --                             # 
-#-------------------------------------------------------------------------------#
+# -------------
+# Define macros
+# -------------
 
 include make.macros
 
-
-# ----------------
 # The library name
-# ----------------
-
 LIBRARY_TAG = Profile_Utility
 LIBRARY_NAME = lib$(LIBRARY_TAG).a
 
-
-# -----------------------
 # The library directories
-# -----------------------
-
 SOURCE_DIR = src
 LIBRARY_DIR = lib
 INCLUDE_DIR = include
 
 
-#-------------------------------------------------------------------------------#
-#                            -- COMPILATION TARGETS --                          #
-#                                                                               #
-# The default build target will work for most workstation platforms. For linux  #
-# systems where there are several compiler choices, specific compiler targets   #
-# are also provided. To modify the default Linux compiler, edit the make.macros #
-# file definition of LINUX_FLAGS.                                               #
-#                                                                               #
-# Note there are production and debug targets. Default build is production.     #
-#-------------------------------------------------------------------------------#
-
-# ----------------------
+# -------------------
+# Compilation targets
+# -------------------
 # Default compiler build
-# ----------------------
-
 all:
 	cd $(SOURCE_DIR); make; cd ..
 
 
-# ----------------
 # IBM AIX Compiler
-# ----------------
-
 ibm_debug:
 	cd $(SOURCE_DIR); make ibm_debug; cd ..
 
@@ -58,10 +36,7 @@ ibm:
 	cd $(SOURCE_DIR); make ibm; cd ..
 
 
-# -------------------
 # SGI IRIX64 Compiler
-# -------------------
-
 sgi_debug:
 	cd $(SOURCE_DIR); make sgi_debug; cd ..
 
@@ -69,10 +44,7 @@ sgi:
 	cd $(SOURCE_DIR); make sgi; cd ..
 
 
-# --------------
 # SunOS Compiler
-# --------------
-
 sun_debug:
 	cd $(SOURCE_DIR); make sun_debug; cd ..
 
@@ -80,13 +52,7 @@ sun:
 	cd $(SOURCE_DIR); make sun; cd ..
 
 
-# -----------------------------------------------------------
-# Linux compilers.
-#
-# *** NOTE: The PGI compiler must be v6 or later but even ***
-# ***       that may not work due to compiler bugs        ***
-# -----------------------------------------------------------
-
+# Linux compilers
 intel_debug:
 	cd $(SOURCE_DIR); make intel_debug; cd ..
 
@@ -112,11 +78,9 @@ g95:
 	cd $(SOURCE_DIR); make g95; cd ..
 
 
-
 # ---------------------------------------------------------------------
 # Install the library and include files in their respective directories
 # ---------------------------------------------------------------------
-
 install: install_lib install_include
 
 install_lib:
@@ -136,7 +100,7 @@ install_include:
 	cd $(SOURCE_DIR); \
 	for FILE in `ls -1 | egrep "\.(mod|MOD|m|M)$$"`; do \
 	  if [ -f $$FILE ]; then \
-	    $(MOVE) $$FILE ../$(INCLUDE_DIR); \
+	    $(COPY) -f $$FILE ../$(INCLUDE_DIR); \
 	  fi ; \
 	done ; \
 	cd ..
@@ -145,7 +109,6 @@ install_include:
 # --------
 # Clean up
 # --------
-
 # Just the source directory
 clean:
 	@cd $(SOURCE_DIR); make clean; cd ..

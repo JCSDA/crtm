@@ -30,7 +30,7 @@ PROGRAM Test_Forward
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Forward.f90,v 1.13 2006/06/13 17:15:21 wd20pd Exp $'
+    '$Id: Test_Forward.f90,v 1.15 2006/09/22 20:07:56 wd20pd Exp $'
   CHARACTER(*), PARAMETER :: TEST_ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: TEST_SFCDATA_FILENAME = 'ECMWF-Surface.bin'
   INTEGER,      PARAMETER :: MAX_TEST_CASES = 52
@@ -204,6 +204,8 @@ PROGRAM Test_Forward
     CALL Print_Results(FWD_OUTPUT, &
                        TRIM(File_Prefix)//'.'//TEST_OUTPUT_FILENAME, Message, &
                        ChannelInfo, Atmosphere, Surface, RTSolution)
+      CALL Print_FWD_Results(TRIM(File_Prefix)//'.dat', &
+                             ChannelInfo, RTSolution)
     CALL Display_Timing( Timing )
 
   END DO
@@ -220,5 +222,14 @@ PROGRAM Test_Forward
                            Error_Status )
     STOP
   END IF
+
+
+  ! --------
+  ! Clean up
+  ! --------
+  Error_Status = CRTM_Destroy_Options(Options)
+  DEALLOCATE(RTSolution, STAT = Allocate_Status)
+  Error_Status = CRTM_Destroy_Surface(Surface)
+  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere)
 
 END PROGRAM Test_Forward

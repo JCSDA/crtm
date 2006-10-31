@@ -38,6 +38,8 @@ MODULE CRTM_Test_Utility
   ! Procedures
   PUBLIC :: Print_ChannelInfo
   PUBLIC :: Print_Results
+  PUBLIC :: Print_FWD_Results
+  PUBLIC :: Print_K_Results
 
 
   ! -----------------
@@ -131,6 +133,94 @@ CONTAINS
 
 
   ! Procedure to output some CRTM run results
+  SUBROUTINE Print_FWD_Results(Filename   , &
+                               ChannelInfo, &
+                               RTSolution   )
+    ! Arguments
+    CHARACTER(*),                                INTENT(IN) :: Filename
+    TYPE(CRTM_ChannelInfo_type),                 INTENT(IN) :: ChannelInfo
+    TYPE(CRTM_RTSolution_type),  DIMENSION(:,:), INTENT(IN) :: RTSolution
+    ! Local variables
+    INTEGER :: FileID
+    INTEGER :: IO_Status
+    INTEGER :: l, nChannels
+    INTEGER :: m, nProfiles
+
+    ! Set up
+    nChannels = SIZE(RTSolution,DIM=1)
+    nProfiles = SIZE(RTSolution,DIM=2)
+
+    ! Open output file
+    FileID = Open_TestFile(Filename, 'REPLACE')
+
+    ! Output header
+    !
+    ! Output instrument ID
+    WRITE(FileID,'(a)') ChannelInfo%Sensor_Descriptor(1)
+    ! Output dimensions
+    WRITE(FileID,'(2i5)')nChannels, nProfiles
+
+    ! Write to file
+    Profile_Loop: DO m = 1, nProfiles
+      WRITE(FileID,'("Profile #",i0)') m
+      Channel_Loop: DO l = 1, nChannels
+        WRITE(FileID,'(i5,2x,f10.6)') ChannelInfo%Sensor_Channel(l), &
+                                      RTSolution(l,m)%Brightness_Temperature
+      END DO Channel_Loop
+    END DO Profile_Loop
+    CLOSE( FileID )
+  END SUBROUTINE Print_FWD_Results
+
+  SUBROUTINE Print_K_Results(Filename    , &
+                             ChannelInfo , &
+                             Atmosphere  , &
+                             Atmosphere_K, &
+                             Surface_K     )
+    ! Arguments
+    CHARACTER(*),                                INTENT(IN) :: Filename
+    TYPE(CRTM_ChannelInfo_type),                 INTENT(IN) :: ChannelInfo
+    TYPE(CRTM_Atmosphere_type),  DIMENSION(:)  , INTENT(IN) :: Atmosphere
+    TYPE(CRTM_Atmosphere_type),  DIMENSION(:,:), INTENT(IN) :: Atmosphere_K
+    TYPE(CRTM_Surface_type),     DIMENSION(:,:), INTENT(IN) :: Surface_K
+    ! Local variables
+    INTEGER :: FileID
+    INTEGER :: IO_Status
+    INTEGER :: k, nLayers
+    INTEGER :: l, nChannels
+    INTEGER :: m, nProfiles
+
+    ! Set up
+    nLayers   = Atmosphere_K(1,1)%n_Layers
+    nChannels = SIZE(Atmosphere_K,DIM=1)
+    nProfiles = SIZE(Atmosphere_K,DIM=2)
+
+    ! Open output file
+    FileID = Open_TestFile(Filename, 'REPLACE')
+
+    ! Output header
+    !
+    ! Output instrument ID
+    WRITE(FileID,'(a)') ChannelInfo%Sensor_Descriptor(1)
+    ! Output dimensions
+    WRITE(FileID,'(3i5)')nLayers, nChannels, nProfiles
+
+    ! Write to file
+    Profile_Loop: DO m = 1, nProfiles
+      WRITE(FileID,'("Profile #",i0)') m
+      Channel_Loop: DO l = 1, nChannels
+        WRITE(FileID,'("Channel #",i0)') ChannelInfo%Sensor_Channel(l)
+        Layer_Loop: DO k = 1, nLayers
+          WRITE(FileID,'(i5,4(2x,es13.6))') k, &
+                                        Atmosphere(m)%Pressure(k)       , & ! FWD pressure
+                                        Atmosphere_K(l,m)%Temperature(k), & ! K Temperature
+                                        Atmosphere_K(l,m)%Absorber(k,1) , & ! K Water vapour
+                                        Atmosphere_K(l,m)%Absorber(k,2)     ! K Ozone
+        END DO Layer_Loop
+      END DO Channel_Loop
+    END DO Profile_Loop
+    CLOSE( FileID )
+  END SUBROUTINE Print_K_Results
+
   SUBROUTINE Print_Results(Output_Type, Filename, Message, &
                            ChannelInfo, Atmosphere, Surface, RTSolution, &
                            RTSolution_TL, &

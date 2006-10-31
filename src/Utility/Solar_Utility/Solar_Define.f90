@@ -20,7 +20,7 @@
 !       Type_Kinds:       Module containing definitions for kinds
 !                         of variable types.
 !
-!       Error_Handler:    Module to define simple error codes and
+!       Message_Handler:  Module to define simple error codes and
 !                         handle error conditions
 !                         USEs: FILE_UTILITY module
 !
@@ -154,7 +154,7 @@ MODULE Solar_Define
   ! ----------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
 
   ! -----------------------
@@ -185,7 +185,7 @@ MODULE Solar_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: Solar_Define.f90,v 2.3 2005/08/11 17:32:29 paulv Exp $'
+  '$Id: Solar_Define.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $'
 
   ! -- Default Solar blackbody temperature in KELVIN
   REAL( fp_kind ), PARAMETER, PRIVATE :: DEFAULT_BLACKBODY_TEMPERATURE = 5783.0_fp_kind
@@ -530,7 +530,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
 !                        == FAILURE - an error occurred, or
 !                                   - the structure internal allocation counter
@@ -544,7 +544,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:       Subroutine to output messages
-!                              SOURCE: ERROR_HANDLER module
+!                              SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -803,7 +803,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure pointer allocations were
 !                                   successful
 !                        == FAILURE - an error occurred, or
@@ -824,7 +824,7 @@ CONTAINS
 !                          members of Solar data structures.
 !
 !       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1067,7 +1067,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure assignment was successful
 !                        == FAILURE an error occurred
 !                     UNITS:      N/A
@@ -1082,7 +1082,7 @@ CONTAINS
 !                           the Solar data structure.
 !
 !       Display_Message:    Subroutine to output messages
-!                           SOURCE: ERROR_HANDLER module
+!                           SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       None.
@@ -1279,7 +1279,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the frequency grid calculation was successful
 !                        == FAILURE an error occurred processing the input
 !                     UNITS:      N/A
@@ -1288,7 +1288,7 @@ CONTAINS
 !
 ! CALLS:
 !       Display_Message:      Subroutine to output messages
-!                             SOURCE: ERROR_HANDLER module
+!                             SOURCE: Message_Handler module
 !
 ! SIDE EFFECTS:
 !       The FREQUENCY field of the input Solar structure is filled.
@@ -1418,17 +1418,20 @@ END MODULE Solar_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Solar_Define.f90,v 2.3 2005/08/11 17:32:29 paulv Exp $
+! $Id: Solar_Define.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $
 !
-! $Date: 2005/08/11 17:32:29 $
+! $Date: 2006/09/21 17:59:50 $
 !
-! $Revision: 2.3 $
+! $Revision: 2.4 $
 !
 ! $Name:  $
 !
 ! $State: Exp $
 !
 ! $Log: Solar_Define.f90,v $
+! Revision 2.4  2006/09/21 17:59:50  wd20pd
+! Replaced all references to Error_Handler with Message_Handler.
+!
 ! Revision 2.3  2005/08/11 17:32:29  paulv
 ! - Added Frequency component to Solar structure.
 ! - Added Frequency_Solar function to compute the frequency grid for the

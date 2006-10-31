@@ -20,14 +20,14 @@
 !       Type_Kinds:          Module containing definitions for kinds
 !                            of variable types.
 !
-!       Error_Handler:       Module to define simple error codes and
+!       Message_Handler:     Module to define simple error codes and
 !                            handle error conditions
 !                            USEs: FILE_UTILITY module
 !
 !       SpcCoeff_Define:     Module defining the SpcCoeff data structure
 !                            and containing routines to manipulate it.
 !                            USEs: TYPE_KINDS module
-!                                  ERROR_HANDLER module
+!                                  Message_Handler module
 !                                  COMPARE_FLOAT_NUMBERS module
 !
 !       Planck_Functions:    Module containing monochromatic Planck
@@ -35,7 +35,7 @@
 !                            dT/dB routines.
 !                            USEs: TYPE_KINDS module
 !                                  FUNDAMENTAL_CONSTANTS module
-!                                  ERROR_HANDLER module
+!                                  Message_Handler module
 !
 ! CONTAINS:
 !       Sensor_Radiance:     Function to calculate the Planck radiance
@@ -95,7 +95,7 @@ MODULE Sensor_Planck_Functions
   ! ------------
 
   USE Type_Kinds
-  USE Error_Handler
+  USE Message_Handler
 
   USE SpcCoeff_Define
 
@@ -126,7 +126,7 @@ MODULE Sensor_Planck_Functions
 
   ! -- RCS Id field
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Sensor_Planck_Functions.f90,v 2.2 2004/09/08 23:32:54 paulv Exp $'
+    '$Id: Sensor_Planck_Functions.f90,v 2.3 2006/09/21 17:57:32 wd20pd Exp $'
 
   ! -- Keyword set value
   INTEGER,         PRIVATE, PARAMETER :: SET = 1
@@ -223,7 +223,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the ERROR_HANDLER module.
+!                          The error codes are defined in the Message_Handler module.
 !                          If == SUCCESS the Planck calculation was successful
 !                             == FAILURE an error was found with the input.
 !                          UNITS:      N/A
@@ -232,7 +232,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 !      Planck_Radiance:    Function to calculate monochromatic Planck
 !                          radiances.
@@ -508,7 +508,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the ERROR_HANDLER module.
+!                          The error codes are defined in the Message_Handler module.
 !                          If == SUCCESS the Planck calculation was successful
 !                             == FAILURE an error was found with the input.
 !                          UNITS:      N/A
@@ -517,7 +517,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 !      Planck_Temperature: Function to calculate monochromatic Planck
 !                          temperature.
@@ -798,7 +798,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the ERROR_HANDLER module.
+!                          The error codes are defined in the Message_Handler module.
 !                          If == SUCCESS the Planck calculation was successful
 !                             == FAILURE an error was found with the input.
 !                          UNITS:      N/A
@@ -807,7 +807,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 !      Planck_dBdT:        Function to calculate monochromatic Planck
 !                          radiance derivative.
@@ -1090,7 +1090,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the ERROR_HANDLER module.
+!                          The error codes are defined in the Message_Handler module.
 !                          If == SUCCESS the Planck calculation was successful
 !                             == FAILURE an error was found with the input.
 !                          UNITS:      N/A
@@ -1099,7 +1099,7 @@ CONTAINS
 !
 ! CALLS:
 !      Display_Message:    Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
+!                          SOURCE: Message_Handler module
 !
 !      Planck_dTdB:        Function to calculate monochromatic Planck
 !                          temperature derivative.
@@ -1299,15 +1299,18 @@ END MODULE Sensor_Planck_Functions
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Sensor_Planck_Functions.f90,v 2.2 2004/09/08 23:32:54 paulv Exp $
+! $Id: Sensor_Planck_Functions.f90,v 2.3 2006/09/21 17:57:32 wd20pd Exp $
 !
-! $Date: 2004/09/08 23:32:54 $
+! $Date: 2006/09/21 17:57:32 $
 !
-! $Revision: 2.2 $
+! $Revision: 2.3 $
 !
 ! $State: Exp $
 !
 ! $Log: Sensor_Planck_Functions.f90,v $
+! Revision 2.3  2006/09/21 17:57:32  wd20pd
+! Replaced all references to Error_Handler with Message_Handler.
+!
 ! Revision 2.2  2004/09/08 23:32:54  paulv
 ! - Update for new Utility modules.
 !
