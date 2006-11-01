@@ -69,9 +69,9 @@ class FDefMod
     @scalarList=[]
     @arrayList =[]
     @debug     =debug
-    @dstring=""
-    @sstring=""
-    @astring=""
+    @dfmt=""
+    @sfmt=""
+    @afmt=""
     @dimdecl=""
   end
 
@@ -155,7 +155,7 @@ class FDefMod
         unless arrayMatch.nil?
           # We have matched an array component definition
           dims  =arrayMatch[3].split(/\s*,\s*/)                # Array of dimension names
-          ndims =dims.size                                     # The number of dimensions
+          ndims =dims.length                                   # The number of dimensions
           dimidx=(1..ndims).to_a.collect {|i| "i"+i.to_s}      # Loop index variables for each dimension
           @arrayList<<{:type     => arrayMatch[1].upcase,
                        :param    => arrayMatch[2],
@@ -188,11 +188,11 @@ class FDefMod
     
     # Construct component name formats
     dsl=@dimList.inject(0) {|memo,d| memo >= d.length ? memo : d.length}
-    @dstring="%-#{dsl}.#{dsl}s"
+    @dfmt="%-#{dsl}.#{dsl}s"
     ssl=(@scalarList.collect {|s| s[:name]}).inject(0) {|memo,s| memo >= s.length ? memo : s.length}
-    @sstring="%-#{ssl}.#{ssl}s"
+    @sfmt="%-#{ssl}.#{ssl}s"
     asl=(@arrayList.collect {|a| a[:name]}).inject(0) {|memo,a| memo >= a.length ? memo : a.length}
-    @astring="%-#{asl}.#{asl}s"
+    @afmt="%-#{asl}.#{asl}s"
 
   end # def read
 
@@ -224,7 +224,7 @@ class FDefMod
     @arrayList.each do |a|
       arrayDef<<i1+"#{a[:type]}"
       arrayDef<<"(#{a[:param]})" unless a[:param].nil?
-      arrayDef<<", DIMENSION("<<([":"]*a[:dims].length).join(",")<<")"
+      arrayDef<<", DIMENSION("<<([":"]*a[:ndims]).join(",")<<")"
       arrayDef<<", POINTER :: #{a[:name]}=>NULL()"
       arrayDef<<" ! #{a[:desc]}" unless a[:desc].nil?
       arrayDef<<"\n"
@@ -259,11 +259,11 @@ EOF
     
     # The dimension clear statements
     dimClear=""
-    @dimList.each {|d| dimClear<<i1+"#{@structName}%#{@dstring%d}=0\n"}
+    @dimList.each {|d| dimClear<<i1+"#{@structName}%#{@dfmt%d}=0\n"}
     
     # The scalar clear statements
     scalarClear=""
-    scalarList.each {|s| scalarClear<<i1+"#{@structName}%#{@sstring%s[:name]}=#{s[:initval]}\n" unless s[:initval].nil?}
+    scalarList.each {|s| scalarClear<<i1+"#{@structName}%#{@sfmt%s[:name]}=#{s[:initval]}\n" unless s[:initval].nil?}
 
     # The subroutine
     str=<<EOF
@@ -337,9 +337,9 @@ EOF
     i0,i1=indent(0),indent(1)
 
     # The array component deallocation statement
-    deallocStatement=i1+"DEALLOCATE( #{@structName}%#{@astring%@arrayList.first[:name]}, &\n"
+    deallocStatement=i1+"DEALLOCATE( #{@structName}%#{@afmt%@arrayList.first[:name]}, &\n"
     1.upto(@arrayList.length-1) do |i|
-      deallocStatement<<indent(7)+"#{@structName}%#{@astring%@arrayList[i][:name]}, &\n"
+      deallocStatement<<indent(7)+"#{@structName}%#{@afmt%@arrayList[i][:name]}, &\n"
     end
     deallocStatement<<indent(7)+"STAT = Allocate_Status )"
     
@@ -416,7 +416,7 @@ EOF
 
     # The function declaration dimension inputs
     dimFuncDef=""
-    @dimList.each {|d| dimFuncDef<<indent(5)+" #{@dstring%d}, &  ! Input\n"}
+    @dimList.each {|d| dimFuncDef<<indent(5)+" #{@dfmt%d}, &  ! Input\n"}
     dimFuncDef.chomp! # Remove last newline
 
     # The argument declaration dimension inputs
@@ -425,11 +425,11 @@ EOF
     dimArgDef.chomp! # Remove last newline
     
     # The dimension value check
-    dimValCheck=i1+"IF ( #{@dstring%@dimList.first} < 1 .OR. &\n"
+    dimValCheck=i1+"IF ( #{@dfmt%@dimList.first} < 1 .OR. &\n"
     1.upto(@dimList.length-2) do |i|
-      dimValCheck<<indent(3)+" #{@dstring%@dimList[i]} < 1 .OR. &\n"
+      dimValCheck<<indent(3)+" #{@dfmt%@dimList[i]} < 1 .OR. &\n"
     end
-    dimValCheck<<indent(3)+" #{@dstring%@dimList.last} < 1 ) THEN"
+    dimValCheck<<indent(3)+" #{@dfmt%@dimList.last} < 1 ) THEN"
     
     # The array component allocation statement
     arrayAlloc=i1+"ALLOCATE( #{@structName}%#{@arrayList.first[:name]}(#{@arrayList.first[:dims].join(",")}), &\n"
@@ -440,7 +440,7 @@ EOF
     
     # The dimension assignment statements
     dimAssign=""
-    @dimList.each {|d| dimAssign<<i1+"#{@structName}%#{@dstring%d} = #{d}\n"}
+    @dimList.each {|d| dimAssign<<i1+"#{@structName}%#{@dfmt%d} = #{d}\n"}
     
     # The array initialisation statements
     arrayAssign=""
@@ -448,7 +448,7 @@ EOF
       # Only intrinsic types are initialisaed
       next if a[:type] == "TYPE"
       # Construct the initialistions
-      arrayAssign<<i1+"#{@structName}%#{@astring%a[:name]} = " 
+      arrayAssign<<i1+"#{@structName}%#{@afmt%a[:name]} = " 
       arrayAssign<< case a[:type]
                       when "INTEGER"   then "0\n"
                       when "REAL"      then "ZERO\n"
@@ -538,7 +538,7 @@ EOF
 
     # The output structure allocation statement
     allocStruct=i1+"Error_Status = Allocate_#{@structName}( &\n"
-    @dimList.each {|d| allocStruct<<indent(9)+" #{@structName}%#{@dstring%d}, &\n"}
+    @dimList.each {|d| allocStruct<<indent(9)+" #{@structName}%#{@dfmt%d}, &\n"}
     allocStruct<<indent(9)+" #{@structName}_out, &\n"+indent(9)+" Message_Log=Message_Log)"
 
     # The scalar assignment statements
@@ -547,7 +547,7 @@ EOF
 
       # Everything but derived types are simply assigned
       unless s[:type] == "TYPE"
-        scalarAssign<<i1+"#{@structName}_out%#{@sstring%s[:name]} = #{@structName}_in%#{s[:name]}\n"
+        scalarAssign<<i1+"#{@structName}_out%#{@sfmt%s[:name]} = #{@structName}_in%#{s[:name]}\n"
 
       # Derived type call their Assign function
       else
@@ -570,7 +570,7 @@ EOF
 
       # Everything but derived types are simply assigned
       unless a[:type] == "TYPE"
-        arrayAssign<<i1+"#{@structName}_out%#{@astring%a[:name]} = #{@structName}_in%#{a[:name]}\n"
+        arrayAssign<<i1+"#{@structName}_out%#{@afmt%a[:name]} = #{@structName}_in%#{a[:name]}\n"
 
       # Derived type call their Assign function
       else
@@ -653,13 +653,13 @@ EOF
     # -----------------------------------
     # The dimension value equality checks
     # -----------------------------------
-    d=@dstring%@dimList.first
+    d=@dfmt%@dimList.first
     dimEqual=indent(1)+"IF ( #{@structName}_LHS%#{d} /= #{@structName}_RHS%#{d} .OR. &\n"
     1.upto(@dimList.length-2) do |i|
-      d=@dstring%@dimList[i]
+      d=@dfmt%@dimList[i]
       dimEqual<<indent(3) + " #{@structName}_LHS%#{d} /= #{@structName}_RHS%#{d} .OR. &\n"
     end
-    d=@dstring%@dimList.last
+    d=@dfmt%@dimList.last
     dimEqual<<indent(3) + " #{@structName}_LHS%#{d} /= #{@structName}_RHS%#{d} ) THEN"
 
     # ------------------------------------
@@ -859,7 +859,7 @@ EOF
     
     # Output dimension list for write
     infoDim=indent(2)+"ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &\n"+
-            @dimList.collect {|d| indent(2)+"#{@structName}%#{@dstring%d}"}.join(", &\n")             
+            @dimList.collect {|d| indent(2)+"#{@structName}%#{@dfmt%d}"}.join(", &\n")             
     
     # Create the function
     str=<<EOF
@@ -1040,9 +1040,9 @@ EOF
   def assocIf(operator)
     n=2
     if @arrayList.length>1
-      str=indent(n)+"IF ( ASSOCIATED(#{@structName}%#{@astring%@arrayList.first[:name]}) .#{operator}. &\n"
-      1.upto(@arrayList.length-2) {|i| str<<indent(n+2)+" ASSOCIATED(#{@structName}%#{@astring%@arrayList[i][:name]}) .#{operator}. &\n"}
-      str<<indent(n+2)+" ASSOCIATED(#{@structName}%#{@astring%@arrayList.last[:name]}) ) THEN\n"
+      str=indent(n)+"IF ( ASSOCIATED(#{@structName}%#{@afmt%@arrayList.first[:name]}) .#{operator}. &\n"
+      1.upto(@arrayList.length-2) {|i| str<<indent(n+2)+" ASSOCIATED(#{@structName}%#{@afmt%@arrayList[i][:name]}) .#{operator}. &\n"}
+      str<<indent(n+2)+" ASSOCIATED(#{@structName}%#{@afmt%@arrayList.last[:name]}) ) THEN\n"
     else
       str=indent(n)+"IF ( ASSOCIATED(#{@structName}%#{@arrayList.first[:name]}) ) THEN\n"  
     end
