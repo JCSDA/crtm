@@ -607,7 +607,7 @@ CONTAINS
     ! Scale the tangent-linear optical depth to nadir
     ! -----------------------------------------------
     AtmAbsorption_TL%Optical_Depth = AtmAbsorption_TL%Optical_Depth / &
-                                     Predictor_TL%Secant_Sensor_Zenith
+                                     Predictor%Secant_Sensor_Zenith
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption_TL
 
@@ -707,7 +707,7 @@ CONTAINS
     ! Compute adjoint nadir optical depth profile
     ! -------------------------------------------
     AtmAbsorption_AD%Optical_Depth = AtmAbsorption_AD%Optical_Depth / &
-                                     Predictor_AD%Secant_Sensor_Zenith
+                                     Predictor%Secant_Sensor_Zenith
 
 
     ! -----------------------------------------------------
