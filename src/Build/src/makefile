@@ -113,7 +113,7 @@ all:
 	  "SunOS")   make -f $(MAKE_FILE) library $(SUNOS_FLAGS) ;; \
 	  "AIX")     make -f $(MAKE_FILE) library $(AIX_FLAGS) ;; \
 	  "IRIX64" ) make -f $(MAKE_FILE) library $(IRIX64_FLAGS) ;; \
-	  "Linux" )  make -f $(MAKE_FILE) library $(LINUX_FLAGS) ;; \
+	  "Linux"|"Darwin") make -f $(MAKE_FILE) library $(LINUX_FLAGS) ;; \
 	  *) echo "This system is not supported" ;; \
        esac
 
