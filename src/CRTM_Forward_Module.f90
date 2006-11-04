@@ -87,7 +87,7 @@ MODULE CRTM_Forward_Module
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Forward_Module.f90,v 1.19 2006/08/31 17:04:04 frpv Exp $'
+  '$Id$'
 
 
 CONTAINS

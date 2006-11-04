@@ -94,7 +94,7 @@ MODULE CRTM_Tangent_Linear_Module
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Tangent_Linear_Module.f90,v 1.12 2006/08/31 17:04:04 frpv Exp $'
+  '$Id$'
 
 
 CONTAINS
