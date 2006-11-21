@@ -484,7 +484,8 @@ PROGRAM Assemble_Coefficient_File
       Error_Status = Read_TauCoeff_netCDF( TRIM( TauCoeff_Filename ), &
                                            TauCoeff, &
                                            Sensor_Name   = Input_TauCoeff_Sensor_Name, &
-                                           Platform_Name = Input_TauCoeff_Platform_Name )
+                                           Platform_Name = Input_TauCoeff_Platform_Name, &
+                                           ID_Tag        = TauCoeff_ID_Tag )
 
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
