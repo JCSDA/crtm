@@ -1,33 +1,39 @@
 PROGRAM Test_CosFilter
-  USE Type_Kinds,           ONLY: fp=>fp_kind
+  USE Type_Kinds          , ONLY: fp=>fp_kind
+  USE File_Utility        , ONLY: Get_Lun
+  USE Message_Handler     , ONLY: SUCCESS
   USE FFT_Spectral_Utility, ONLY: CosFilter
   IMPLICIT NONE
 
-  INTEGER,  PARAMETER  :: N = 1000
-  REAL(fp), PARAMETER :: F1a = 500.0_fp
-  REAL(fp), PARAMETER :: F1b = 600.0_fp
-  REAL(fp), PARAMETER :: F2a = 3500.0_fp
-  REAL(fp), PARAMETER :: F2b = 3600.0_fp
+  INTEGER,  PARAMETER :: N = 1000
+  REAL(fp), PARAMETER :: dF = 0.1_fp
+  REAL(fp), PARAMETER :: FBEGIN1 = 500.0_fp
+  REAL(fp), PARAMETER :: FBEGIN2 = 3500.0_fp
 
-  INTEGER :: i, ierr1, ierr2
+  INTEGER :: i, ierr1, ierr2, fileId
   REAL(fp), DIMENSION(N) :: f, f1, f2
   REAL(fp), DIMENSION(N) :: filter1, filter2
   
-  f = (/ (i,i=0,N-1) /) / REAL(N-1,fp)
-  f1 = f*(F1b-F1a) + F1a
-  f2 = f*(F2b-F2a) + F2a
-  
-  filter1=1.0_fp
-  filter2=1.0_fp
+  ! Create frequency arrays
+  f = (/ (i,i=0,N-1) /)
+  f1 = FBEGIN1 + (f*dF)
+  f2 = FBEGIN2 + (f*dF)
+
+  ! Call the function
   ierr1=CosFilter(f1, filter1)
   ierr2=CosFilter(f2, filter2, Reverse=1)
+  IF ( ierr1 /= SUCCESS .OR. ierr2 /= SUCCESS ) STOP
   
-  OPEN(10,FILE='Test_CosFilter.dat',STATUS='UNKNOWN')
+  ! Output an ASCII file for viewing results
+  fileId=Get_Lun()
+  OPEN(fileId,FILE='Test_CosFilter.dat',STATUS='UNKNOWN')
+  WRITE(fileId,*) N
   DO i=1, N
-    WRITE(10,*) f1(i), filter1(i)
+    WRITE(fileId,*) f1(i), filter1(i)
   END DO
   DO i=1, N
-    WRITE(10,*) f2(i), filter2(i)
+    WRITE(fileId,*) f2(i), filter2(i)
   END DO
-  CLOSE(10)
+  CLOSE(fileId)
+
 END PROGRAM Test_CosFilter

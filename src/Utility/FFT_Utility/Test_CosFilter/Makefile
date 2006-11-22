@@ -24,6 +24,11 @@ SRC_FILES = Type_Kinds.f90 \
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
+# Library and include macros
+FFT_LIB = $(HOME)/local/FFT
+INCLUDES = -I$(FFT_LIB)/include
+LIBRARIES = -L$(FFT_LIB)/lib -lfft
+
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
