@@ -18,6 +18,7 @@ MODULE FFT_Spectral_Utility
   ! Visibility
   ! ----------
   PRIVATE
+  PUBLIC :: Sinc
   PUBLIC :: CosFilter
   PUBLIC :: SPCtoIFG
   PUBLIC :: IFGtoSPC
@@ -47,7 +48,6 @@ MODULE FFT_Spectral_Utility
   REAL(fp), PARAMETER :: ONE           = 1.0_fp
   REAL(fp), PARAMETER :: ONEpointFIVE  = 1.5_fp
   REAL(fp), PARAMETER :: TWO           = 2.0_fp
-
   
 CONTAINS
 
@@ -128,7 +128,7 @@ CONTAINS
     ! Function result
     REAL(fp) :: nyquistF
     ! Local variables
-    INTEGER  :: nX, nF
+    INTEGER  :: nX
     REAL(fp) :: dX
     
     ! Compute average optical delay
@@ -247,6 +247,30 @@ CONTAINS
 !##                                                                              ##
 !##################################################################################
 !##################################################################################
+
+  FUNCTION Sinc(x, Normalized) RESULT(y)
+    ! Arguments
+    REAL(fp),          INTENT(IN) :: x(:)
+    INTEGER, OPTIONAL, INTENT(IN) :: Normalized
+    ! Function result
+    REAL(fp), DIMENSION(SIZE(x)) :: y
+    ! Local variables
+    REAL(fp), DIMENSION(SIZE(x)) :: xScale
+
+    ! Check normalisation
+    xScale = x
+    IF ( PRESENT( Normalized ) ) THEN
+      IF ( Normalized == 1 ) xScale = PI*x
+    END IF
+    
+    ! Compute Sinc function    
+    WHERE( xScale /= ZERO )
+      y = SIN(xScale)/xScale
+    ELSEWHERE
+      y = ONE
+    END WHERE
+  END FUNCTION Sinc
+  
 
   FUNCTION CosFilter(Frequency   , & ! Input
                      Filter      , & ! Output
