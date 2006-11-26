@@ -18,6 +18,7 @@ SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
             Fundamental_Constants.f90 \
+            Compare_Float_Numbers.f90 \
             FFT_Spectral_Utility.f90
 
 # Obj files used in link phase
