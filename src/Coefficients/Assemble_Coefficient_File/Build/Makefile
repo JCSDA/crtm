@@ -19,8 +19,7 @@ EXE_FILE = Assemble_Coefficient_File
 include make.filelist
 
 # Obj files used in link phase
-OBJ_FILES = ${SRC_FILES:.f90=.o} \
-            $(EXE_FILE).o
+OBJ_FILES = ${SRC_FILES:.f90=.o}
 
 # Include and library definitions
 INCLUDES = -I$(HOME)/local/netcdf/include

@@ -35,6 +35,7 @@ clean: create_macro_links
 	@cd $(BUILD_DIR); make clean; cd ..
 
 realclean: clean remove_links
+	@cd $(BUILD_DIR); $(REMOVE) $(EXE_FILE); cd ..
 
 # Install it
 install: create_macro_links
@@ -52,13 +53,11 @@ create_macro_links:
 create_source_links:
 	@cd $(BUILD_DIR); \
 	  linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES); \
-	  linkfiles .. $(EXE_FILE).f90; \
 	cd ..
-
 
 remove_links:
 	@cd $(BUILD_DIR); \
-	  unlinkfiles $(MACRO_FILES) $(SRC_FILES) $(EXE_FILE).f90; \
+	  unlinkfiles $(MACRO_FILES) $(SRC_FILES); \
 	cd ..
         
 # Create tarball for distribution
