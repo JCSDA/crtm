@@ -18,5 +18,6 @@
 ;
 ;-
 PRO Undefine, var
+  IF ( N_ELEMENTS(var) EQ 0 ) THEN RETURN
   varTmp = SIZE(TEMPORARY(var))
 END
