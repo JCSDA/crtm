@@ -438,7 +438,7 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
                               stride       , $  ; Input
                               count_vector , $  ; Output
                               offset_vector, $  ; Output
-                              stride_vector     ; Output
+                              stride_vector  )  ; Output
       IF ( result NE SUCCESS ) THEN BEGIN
         MESSAGE, 'COUNT, OFFSET, and/or STRIDE vector check failed.', /NONAME, /NOPRINT
       ENDIF
