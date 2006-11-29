@@ -33,7 +33,7 @@ PROGRAM Test_ApodFunction
   REAL(fp), DIMENSION(N) :: x, y
   
   ! Create optical delay array
-  x(NHALF:N)   = maxX * (/(REAL(i,fp),i=0,NHALF+1)/) / REAL(NHALF,fp)
+  x(NHALF:N)   = MAXX * (/(REAL(i,fp),i=0,NHALF)/) / REAL(NHALF,fp)
   x(1:NHALF-1) = -ONE * x(N-1:NHALF+1:-1)
 
   ! Open ASCII file for viewing results
