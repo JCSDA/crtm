@@ -2,7 +2,7 @@
 #
 # Makefile for CRTM AtmAbsorption Tangent-Linear Test program
 #
-# $Id: Makefile,v 1.12 2006/06/29 18:36:29 dgroff Exp $
+# $Id: Makefile,v 1.15 2006/11/21 22:34:46 dgroff Exp $
 #
 #==============================================================================
 
@@ -15,7 +15,7 @@ MAKE_FILE = Makefile
 EXE_FILE = Test_Tangent_Linear
 
 # Source file s for linking
-SRC_FILES = Type_Kinds.f90 \
+SRC_FILES =         Type_Kinds.f90 \
                     File_Utility.f90 \
                     Message_Handler.f90 \
                     Compare_Float_Numbers.f90 \
@@ -32,32 +32,34 @@ SRC_FILES = Type_Kinds.f90 \
 		    CloudCoeff_Binary_IO.f90 \
 		    EmisCoeff_Define.f90 \
 		    EmisCoeff_Binary_IO.f90 \
+                    CRTM_Parameters.f90 \
+                    CRTM_Cloud_Define.f90 \
+                    CRTM_Aerosol_Define.f90 \
+                    CRTM_Cloud_Binary_IO.f90 \
+                    CRTM_Aerosol_Binary_IO.f90 \
 		    CRTM_SpcCoeff.f90 \
 		    CRTM_TauCoeff.f90 \
 		    CRTM_AerosolCoeff.f90 \
 		    CRTM_CloudCoeff.f90 \
 		    CRTM_EmisCoeff.f90 \
 		    CRTM_Atmosphere_Define.f90 \
-		    CRTM_Cloud_Define.f90 \
-		    CRTM_Aerosol_Define.f90 \
 		    CRTM_Atmosphere_Binary_IO.f90 \
-		    CRTM_Cloud_Binary_IO.f90 \
-		    CRTM_Aerosol_Binary_IO.f90 \
  		    CRTM_ChannelInfo_Define.f90 \
  		    CRTM_ChannelInfo.f90 \
  		    CRTM_GeometryInfo_Define.f90 \
- 		    CRTM_AtmAbsorption_IntAbsorber.f90 \
-   		    CRTM_AtmAbsorption_Predictor.f90 \
+ 		    CRTM_Predictor_Define.f90 \
+   		    CRTM_Predictor.f90 \
    		    CRTM_AtmAbsorption_Define.f90 \
    		    CRTM_AtmAbsorption.f90 \
-		    CRTM_Parameters.f90 \
 		    CRTM_LifeCycle.f90 \
+                    netCDF_Dimension_Utility.f90 \
+                    netCDF_Variable_Utility.f90 \
+                    netCDF_Attribute_Utility.f90 \
+                    netCDF_Utility.f90 \
 		    ComponentTest_Define.f90 \
- 		    ComponentTest_netCDF_IO.f90 \
- 		    netCDF_Utility.f90 \
-       		    netCDF_Dimension_Utility.f90 \
-       		    netCDF_Variable_Utility.f90 \
-       		    netCDF_Attribute_Utility.f90
+ 		    ComponentTest_netCDF_IO.f90 
+ 		    
+		    
 
 OBJ_FILES = ${SRC_FILES:.f90=.o} $(EXE_FILE).o
 
@@ -93,8 +95,6 @@ SENSORID_LIST = amsua_n17 \
 		ssmis_f16 \
 		airs281SUBSET_aqua
 
-
-
 create_links:
 	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 	@linkcoeffdata -b $(SENSORID_LIST)
@@ -107,12 +107,13 @@ remove_links:
 
 
 # Dependency list
-include make.dependencies
+	include make.dependencies
 
 
 # -------------------------------
 # Create tarball for distribution
 # -------------------------------
+
 TAR_FILE = $(EXE_FILE)_software.tar
 tar: create_links
 	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
