@@ -2,7 +2,7 @@
 #
 # Makefile for CRTM AtmOptics Tangent-Linear Test program
 #
-# $Id: Makefile,v 1.5 2006/06/30 13:43:51 dgroff Exp $
+# $Id: Makefile,v 1.6 2006/11/22 16:24:13 dgroff Exp $
 #
 #==============================================================================
 
@@ -31,7 +31,8 @@ EXE_FILE = Test_Tangent_Linear
 # Object files
 # ------------
 
-SRC_FILES = Type_Kinds.f90 \
+SRC_FILES =         Type_Kinds.f90 \
+                    CRTM_Parameters.f90 \
                     File_Utility.f90 \
 		    Sort_Utility.f90 \
                     Message_Handler.f90 \
@@ -40,6 +41,8 @@ SRC_FILES = Type_Kinds.f90 \
                     Binary_File_Utility.f90 \
                     SpcCoeff_Define.f90 \
                     SpcCoeff_Binary_IO.f90 \
+                    CRTM_Cloud_Define.f90 \
+                    CRTM_Aerosol_Define.f90 \
                     TauCoeff_Define.f90 \
                     TauCoeff_Binary_IO.f90 \
  		    AerosolCoeff_Define.f90 \
@@ -53,17 +56,15 @@ SRC_FILES = Type_Kinds.f90 \
                     CRTM_AerosolCoeff.f90 \
                     CRTM_CloudCoeff.f90 \
                     CRTM_EmisCoeff.f90 \
- 		    CRTM_Atmosphere_Define.f90 \
-                    CRTM_Cloud_Define.f90 \
-                    CRTM_Aerosol_Define.f90 \
-                    CRTM_Atmosphere_Binary_IO.f90 \
                     CRTM_Cloud_Binary_IO.f90 \
                     CRTM_Aerosol_Binary_IO.f90 \
+ 		    CRTM_Atmosphere_Define.f90 \
+                    CRTM_Atmosphere_Binary_IO.f90 \
  	            CRTM_ChannelInfo_Define.f90 \
                     CRTM_ChannelInfo.f90 \
  		    CRTM_GeometryInfo_Define.f90 \
-	            CRTM_AtmAbsorption_IntAbsorber.f90 \
-                    CRTM_AtmAbsorption_Predictor.f90 \
+	            CRTM_Predictor_Define.f90 \
+                    CRTM_Predictor.f90 \
                     CRTM_AtmAbsorption_Define.f90 \
                     CRTM_AtmAbsorption.f90 \
  	            CRTM_AtmScatter_Define.f90 \
@@ -72,12 +73,16 @@ SRC_FILES = Type_Kinds.f90 \
  		    CRTM_AtmOptics.f90 \
  		    CRTM_Parameters.f90 \
                     CRTM_LifeCycle.f90 \
-                    ComponentTest_Define.f90 \
-                    ComponentTest_netCDF_IO.f90 \
-                    netCDF_Utility.f90 \
+		    CRTM_SensorData_Define.f90 \
                     netCDF_Dimension_Utility.f90 \
                     netCDF_Variable_Utility.f90 \
-                    netCDF_Attribute_Utility.f90
+                    netCDF_Attribute_Utility.f90 \
+                    netCDF_Utility.f90 \
+                    ComponentTest_Define.f90 \
+                    ComponentTest_netCDF_IO.f90 \
+                    CRTM_Surface_Define.f90 \
+		    TauProfile_Define.f90 
+                    
 
 OBJ_FILES = ${SRC_FILES:.f90=.o} $(EXE_FILE).o
 
@@ -150,7 +155,7 @@ remove_links:
 # Dependency list
 # ---------------
 
-include make.dependencies
+#include make.dependencies
 
 # -------------------------------
 # Create tarball for distribution
