@@ -656,7 +656,7 @@ PROGRAM Test_Tangent_Linear
 
                              IF ( Error_Status /= SUCCESS ) THEN
                                 CALL Display_Message( PROGRAM_NAME, &
-                                                      'Error assigning Atmosphere TL/NL structures', &
+                                                      'Error assigning AtmAbsorption TL/NL structures', &
                                                        Error_Status )
                                STOP
                              END IF
@@ -666,7 +666,7 @@ PROGRAM Test_Tangent_Linear
 
                              IF ( Error_Status /= SUCCESS ) THEN
                                 CALL Display_Message( PROGRAM_NAME, &
-                                                      'Error assigning Atmosphere TL/NL structures', &
+                                                      'Error assigning AtmAbsorption TL/NL structures', &
                                                        Error_Status )
                                STOP
                              END IF
@@ -677,7 +677,7 @@ PROGRAM Test_Tangent_Linear
 
                              IF ( Error_Status /= SUCCESS ) THEN
                                 CALL Display_Message( PROGRAM_NAME, &
-                                                      'Error assigning Atmosphere TL/NL structures', &
+                                                      'Error assigning AtmAbsorption TL/NL structures', &
                                                        Error_Status )
                                STOP
                              END IF
@@ -687,7 +687,7 @@ PROGRAM Test_Tangent_Linear
 
                              IF ( Error_Status /= SUCCESS ) THEN
                                 CALL Display_Message( PROGRAM_NAME, &
-                                                      'Error assigning Atmosphere TL/NL structures', &
+                                                      'Error assigning AtmAbsorption TL/NL structures', &
                                                        Error_Status )
                                STOP
                              END IF
