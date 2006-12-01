@@ -865,7 +865,8 @@ print *, nSpc, nIfg, nPO2
     ! Allocate arrays
     ALLOCATE( f(nPO2), spc(nPO2), opd(nIfg), ifg(nIfg), filter(nFilter), cspc(nOut), &
               STAT = Allocate_Status )
-    
+
+spc=zero
     ! Compute frequency grid
     f1 = InFrequency(1)   - width
     f2 = f1 + REAL(nPO2-1,fp)*dF
@@ -918,7 +919,7 @@ call debug_dumpcomplex(opd(1:nIfgPO2),ifg(1:nIfgPO2),'fint_ifg_dump1.dat')
     nHalf=nIfg/2
     dX = ComputeMeanDelta(opd(1:nIfgPO2))
     maxX = dX * REAL(nHalf,fp)
-    opd(nHalf:nIfg) = maxX * (/ (REAL(i,fp),i=0,nHalf+1) /) / REAL(nHalf,fp)
+    opd(nHalf:nIfg) = maxX * (/ (REAL(i,fp),i=0,nHalf) /) / REAL(nHalf,fp)
     opd(1:nHalf-1)  = -ONE * opd(nIfg-1:nHalf+1:-1)
 
 call debug_dumpcomplex(opd,ifg,'fint_ifg_dump2.dat')
