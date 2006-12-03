@@ -75,17 +75,86 @@ class FDefMod
     @dimdecl=""
   end
 
+  # ----------------------------------------
+  # Method to process a dimension definition
+  # ----------------------------------------
+  def dimProcess(line)
+    dimMatch = DIMREGEXP.match(line)
+    unless dimMatch.nil?
+      # We have matched a dimension definition
+      @dimList<<dimMatch[1]
+      puts(@dimList.last.inspect) if @debug
+    else
+      # No match, so raise an error
+      raise StandardError, "Invalid dimension definition"
+    end
+  end 
+
+  # -------------------------------------
+  # Method to process a scalar definition
+  # -------------------------------------
+  def scalarProcess(line)
+    scalarMatch = COMPONENTREGEXP.match(line)
+    unless scalarMatch.nil?
+      # We have matched a scalar component definition
+      @scalarList<<{:type     => scalarMatch[1].upcase,
+                    :param    => scalarMatch[2],
+                    :typename =>(scalarMatch[2].split("_")[0] if scalarMatch[1].upcase == "TYPE"),
+                    :name     => scalarMatch[4],
+                    :initval  =>(scalarMatch[5].chomp.rstrip unless scalarMatch[5].nil?),
+                    :desc     => scalarMatch[6]}
+      puts(@scalarList.last.inspect) if @debug
+    else
+      # No match, so raise an error
+      raise StandardError, "Invalid scalar definition"
+    end
+  end
+
+  # -------------------------------------
+  # Method to process an array definition
+  # -------------------------------------
+  def arrayProcess(line)
+    arrayMatch = COMPONENTREGEXP.match(line)
+    unless arrayMatch.nil?
+      # We have matched an array component definition
+      dims  =arrayMatch[3].split(/\s*,\s*/)                # Array of dimension names
+      ndims =dims.length                                   # The number of dimensions
+      dimidx=(1..ndims).to_a.collect {|i| "i"+i.to_s}      # Loop index variables for each dimension
+      @arrayList<<{:type     => arrayMatch[1].upcase,
+                   :param    => arrayMatch[2],
+                   :typename =>(arrayMatch[2].split("_")[0] if arrayMatch[1].upcase == "TYPE"),
+                   :dims     => dims,
+                   :ndims    => ndims,
+                   :dimidx   => dimidx,
+                   :name     => arrayMatch[4],
+                   :desc     => arrayMatch[6]}
+      @dimdecl=dimidx if ndims>@dimdecl.length             
+      puts(@arrayList.last.inspect) if @debug
+    else
+      # No match, so raise an error
+      raise StandardError, "Invalid array definition"
+    end
+  end
+
+  # ------------------------------
+  # Method to check the dimensions
+  # ------------------------------
+  def dimCheck
+    @arrayList.each do |a|
+      a[:dims].each do |d|
+        raise(StandardError, "Invalid dimension, #{d}, specified for #{a[:name]}") unless @dimList.include?(d)
+      end
+    end
+  end
+
   # ------------------------------------------
   # Method to parse an fdefmod definition file
   # ------------------------------------------
   def read(file)
 
-    # Initialise tag switches
-    dim,scalar,array = false,false,false
+    # Initialise component type tag switch
+    tag=""
     
-    # Initialise the maximum dimension counter
-    maxdims=0
-
     # Process file line by line
     File.open(file,"r").readlines.each do |line|
 
@@ -100,88 +169,38 @@ class FDefMod
       break if line =~ STRUCTENDREGEXP
       
       # Match fdefmod tags and set switches
-      if line =~ /!\s*Dimensions/i
-        dim,scalar,array=true,false,false
+      case line
+      when /!\s*Dimensions/i
+        tag="dim"
         puts("Dimensions") if @debug
         next
-      end
-      if line =~ /!\s*Scalars/i
-        dim,scalar,array=false,true,false
+      when /!\s*Scalars/i
+        tag="scalar"
         puts("Scalar components") if @debug
         next
-      end
-      if line =~ /!\s*Arrays/i
-        dim,scalar,array=false,false,true
+      when /!\s*Arrays/i
+        tag="array"
         puts("Array components") if @debug
         next
       end
       
-      # Process dimensions
-      if dim
-        dimMatch = DIMREGEXP.match(line)
-        unless dimMatch.nil?
-          # We have matched a dimension definition
-          @dimList<<dimMatch[1]
-          puts(@dimList.last.inspect) if @debug
-        else
-          # No match, so raise an error
-          raise StandardError, "Invalid dimension definition"
-        end
+      # Process structure components
+      case tag
+      when "dim"
+        dimProcess(line)
         next
-      end
-
-      # Process scalars
-      if scalar
-        scalarMatch = COMPONENTREGEXP.match(line)
-        unless scalarMatch.nil?
-          # We have matched a scalar component definition
-          @scalarList<<{:type     => scalarMatch[1].upcase,
-                        :param    => scalarMatch[2],
-                        :typename =>(scalarMatch[2].split("_")[0] if scalarMatch[1].upcase == "TYPE"),
-                        :name     => scalarMatch[4],
-                        :initval  =>(scalarMatch[5].chomp.rstrip unless scalarMatch[5].nil?),
-                        :desc     => scalarMatch[6]}
-          puts(@scalarList.last.inspect) if @debug
-        else
-          # No match, so raise an error
-          raise StandardError, "Invalid scalar definition"
-        end
+      when "scalar"
+        scalarProcess(line)
         next
-      end
-
-      # Process arrays
-      if array
-        arrayMatch = COMPONENTREGEXP.match(line)
-        unless arrayMatch.nil?
-          # We have matched an array component definition
-          dims  =arrayMatch[3].split(/\s*,\s*/)                # Array of dimension names
-          ndims =dims.length                                   # The number of dimensions
-          dimidx=(1..ndims).to_a.collect {|i| "i"+i.to_s}      # Loop index variables for each dimension
-          @arrayList<<{:type     => arrayMatch[1].upcase,
-                       :param    => arrayMatch[2],
-                       :typename =>(arrayMatch[2].split("_")[0] if arrayMatch[1].upcase == "TYPE"),
-                       :dims     => dims,
-                       :ndims    => ndims,
-                       :dimidx   => dimidx,
-                       :name     => arrayMatch[4],
-                       :desc     => arrayMatch[6]}
-          @dimdecl=dimidx if ndims>maxdims             
-          puts(@arrayList.last.inspect) if @debug
-        else
-          # No match, so raise an error
-          raise StandardError, "Invalid array definition\n#{line}"
-        end
+      when "array"
+        arrayProcess(line)
         next
       end
       
     end # File.open
 
     # Check that all array component dimensions are valid
-    @arrayList.each do |a|
-      a[:dims].each do |d|
-        raise(StandardError, "Invalid dimension, #{d}, specified for #{a[:name]}") unless @dimList.include?(d)
-      end
-    end
+    dimCheck
     
     # Convert the dimension declaration
     @dimdecl=indent(1)+"INTEGER :: #{@dimdecl.join(",")}"
