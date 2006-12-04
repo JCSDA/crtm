@@ -728,16 +728,14 @@ PROGRAM Test_Tangent_Linear
                          IF ( TL_GradientEqual .AND. NLTL_NegGradientEqual .AND. NLTL_PosGradientEqual ) THEN
                         
                              CYCLE Layer_Loop
-                           ! If the test has not passed multiply DeltaX by 0.5
-                           ELSE
+                         ! If the test has not passed multiply DeltaX by 0.5
+                         ELSE
                              CALL Get_Next_DeltaX(DeltaX)
-                           ! Test to see if np==Max_Iterations
-                           IF (Max_Iterations( nP )) THEN
-                             FatalFailure = .TRUE.
-                              IF (nIV==4 .AND. l==10) THEN
-                              END IF
-                             GO TO 1       
-                           END IF        
+                             ! Test to see if np==Max_Iterations
+                             IF (Max_Iterations( nP )) THEN
+                               FatalFailure = .TRUE.
+                               GO TO 1       
+                             END IF        
                              
                          END IF
 
