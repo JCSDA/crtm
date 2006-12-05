@@ -429,6 +429,7 @@ PROGRAM Test_Tangent_Linear
                                  
           
                                 1 CONTINUE
+                                PRINT *, FatalFailure
                                         ! Begin layer loop
                                         Layer_Loop: DO k = 1, Atmosphere(m)%n_Layers
 
@@ -603,22 +604,23 @@ PROGRAM Test_Tangent_Linear
                                                                END IF
 
                                                             END DO Switch_Loop
-
+                                                   
                                                   ! ----------------------------------------------
                                                   ! CALCULATE THE GRADIENTS AND TEST BY COMPARISON
                                                   ! IF A FATAL FAILURE HAS NOT OCCURED
                                                   ! ----------------------------------------------   
 
                                                   IF ( .NOT. FatalFailure ) THEN 
-                                                     
+                                                    
+                                                    IF (Linear_Test == ZERO) THEN
+                                                       CYCLE Layer_Loop
+                                                    END IF 
                                                     ! Optical depth gradients
                                                     Positive_OD_TL = ABS(CloudScatter_Pos_TL%Optical_Depth(k)/Linear_Test)
                                                     Negative_OD_TL = ABS(CloudScatter_Neg_TL%Optical_Depth(k)/Linear_Test)
                                                     Positive_OD_NL = ABS((CloudScatter_Pos_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)
                                                     Negative_OD_NL = ABS((CloudScatter_Neg_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)
-                                                    IF (nIV==4 .AND. k==1) THEN
-                                                      PRINT *, Negative_OD_NL, Negative_OD_TL, Linear_Test, (CloudScatter_Pos_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))
-                                                    END IF 
+                                                   
                                                       
                                                       
                                                     ! Single Scatter Albedo gradients
@@ -767,7 +769,9 @@ PROGRAM Test_Tangent_Linear
                                                       ComponentTest%d1(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU) = (CloudScatter_Pos_NL%Optical_Depth(k) - &
                                                                                                                        CloudScatter_Baseline%Optical_Depth(k))
                                                       ComponentTest%d2(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU) = CloudScatter_Pos_TL%Optical_Depth(k)
+                                                       
 
+                                                     ! PRINT *, ComponentTest%d2(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU) 
                                                       ComponentTest%d1(k,l,Zero_Pert,nIV,NOV_TAU) = ZERO
                                                       ComponentTest%d2(k,l,Zero_Pert,nIV,NOV_TAU) = ZERO
 
