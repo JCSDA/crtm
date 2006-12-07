@@ -165,10 +165,10 @@ PROGRAM Test_Tangent_Linear
   REAL(fp) :: Positive_DT_NL
   REAL(fp) :: Negative_DT_NL
   
-  REAL(fp), DIMENSION( MAX_N_LEGENDRE_TERMS ) :: Positive_PC_TL
-  REAL(fp), DIMENSION( MAX_N_LEGENDRE_TERMS ) :: Negative_PC_TL
-  REAL(fp), DIMENSION( MAX_N_LEGENDRE_TERMS ) :: Positive_PC_NL
-  REAL(fp), DIMENSION( MAX_N_LEGENDRE_TERMS ) :: Negative_PC_NL
+  REAL(fp) :: Positive_PC_TL
+  REAL(fp) :: Negative_PC_TL
+  REAL(fp) :: Positive_PC_NL
+  REAL(fp) :: Negative_PC_NL
   
   INTEGER, PARAMETER :: ULP = 900000000
   INTEGER, PARAMETER :: Max_Delta_Iter = 15
@@ -291,7 +291,7 @@ PROGRAM Test_Tangent_Linear
   ! Allocate the ComponentTest structure
   Error_Status = Allocate_ComponentTest( Atmosphere(1)%n_Layers, &
                                          ChannelInfo%n_Channels, &
-                                         N_PERTURBATIONS, &
+                                         N_Perturbations, &
                                          N_INPUT_VARIABLES, &
                                          N_OUTPUT_VARIABLES, &
                                          ComponentTest )
@@ -307,7 +307,6 @@ PROGRAM Test_Tangent_Linear
   ComponentTest%DataType              = COMPONENTTEST_POLY_DATATYPE
   ComponentTest%Pressure              = Atmosphere(1)%Pressure
   ComponentTest%Spectral              = ChannelInfo%Sensor_Channel
-  ComponentTest%Perturbation          = PERTURBATION_FRACTION
   ComponentTest%Input_Variable_Name   = INPUT_VARIABLE_NAME
   ComponentTest%Input_Variable_Units  = INPUT_VARIABLE_UNITS
   ComponentTest%Output_Variable_Name  = OUTPUT_VARIABLE_NAME
@@ -315,6 +314,8 @@ PROGRAM Test_Tangent_Linear
 
   ! Initialise the number of profiles actually written
   nm = 0
+
+  PERTURBATION_FRACTION(Zero_Pert) = 0.00_fp
 
           ! Begin profile loop
           Profile_Loop: DO m = 1, N_PROFILES
@@ -397,7 +398,8 @@ PROGRAM Test_Tangent_Linear
               STOP
             END IF
             CALL CRTM_Zero_Atmosphere( Atmosphere_TL )
-
+            ! Initialize logical flags
+            FatalFailure=.FALSE.
             
 
                     ! Loop over sensor channels
@@ -424,12 +426,11 @@ PROGRAM Test_Tangent_Linear
                                 WRITE( *, '( 5x, "Perturbation variable: ", a )' ) INPUT_VARIABLE_NAME(nIV)
 
 
-                                ! Initialize logical flags
-                                FatalFailure=.FALSE.
+                                
                                  
           
                                 1 CONTINUE
-                                PRINT *, FatalFailure
+                               
                                         ! Begin layer loop
                                         Layer_Loop: DO k = 1, Atmosphere(m)%n_Layers
 
@@ -439,6 +440,7 @@ PROGRAM Test_Tangent_Linear
                                           ! Initialize the perturbation counter
                                           nP = 0
 
+                                         
                                                   ! Begin the perturbation loop
                                                   Perturbation_Loop: DO 
 
@@ -514,7 +516,7 @@ PROGRAM Test_Tangent_Linear
                                                                    Atmosphere_NL%Cloud(mc)%Effective_Variance(k) = &
                                                                      Atmosphere_NL%Cloud(mc)%Effective_Variance(k) + &
                                                                      Atmosphere_TL%Cloud(mc)%Effective_Variance(k)
-
+								   
                                                                    Linear_Test=Atmosphere_TL%Cloud(mc)%Effective_Variance(k)
 
                                                                  ! -- Cloud water content
@@ -602,6 +604,11 @@ PROGRAM Test_Tangent_Linear
                                                                  END IF
 
                                                                END IF
+							      ! IF (nIV==2 .AND. k==85) THEN
+							      !   PRINT *, switch, (CloudScatter_Pos_NL%Single_Scatter_Albedo(85) - CloudScatter_Baseline%Single_Scatter_Albedo(85)), &
+							      !	 (CloudScatter_Neg_NL%Single_Scatter_Albedo(85) - CloudScatter_Baseline%Single_Scatter_Albedo(85)), Linear_Test, &
+							      !	 CloudScatter_NL%Single_Scatter_Albedo(85), CloudScatter_Baseline%Single_Scatter_Albedo(85)
+							      ! END IF
 
                                                             END DO Switch_Loop
                                                    
@@ -612,17 +619,16 @@ PROGRAM Test_Tangent_Linear
 
                                                   IF ( .NOT. FatalFailure ) THEN 
                                                     
-                                                    IF (Linear_Test == ZERO) THEN
-                                                       CYCLE Layer_Loop
-                                                    END IF 
-                                                    ! Optical depth gradients
-                                                    Positive_OD_TL = ABS(CloudScatter_Pos_TL%Optical_Depth(k)/Linear_Test)
-                                                    Negative_OD_TL = ABS(CloudScatter_Neg_TL%Optical_Depth(k)/Linear_Test)
-                                                    Positive_OD_NL = ABS((CloudScatter_Pos_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)
-                                                    Negative_OD_NL = ABS((CloudScatter_Neg_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)
                                                    
-                                                      
-                                                      
+                                                   
+						     
+                                                    ! Optical depth gradients
+                                                    Positive_OD_TL = ABS(CloudScatter_Pos_TL%Optical_Depth(k)/Linear_Test)						    
+                                                    Negative_OD_TL = ABS(CloudScatter_Neg_TL%Optical_Depth(k)/Linear_Test)						    
+                                                    Positive_OD_NL = ABS((CloudScatter_Pos_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)						    
+                                                    Negative_OD_NL = ABS((CloudScatter_Neg_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)
+						    
+                                                                                                                                                             
                                                     ! Single Scatter Albedo gradients
                                                     Positive_SSA_TL = ABS(CloudScatter_Pos_TL%Single_Scatter_Albedo(k)/Linear_Test)
                                                     Negative_SSA_TL = ABS(CloudScatter_Neg_TL%Single_Scatter_Albedo(k)/Linear_Test)
@@ -640,36 +646,37 @@ PROGRAM Test_Tangent_Linear
                                                     Negative_DT_TL = ABS(CloudScatter_Neg_TL%Delta_Truncation(k)/Linear_Test)
                                                     Positive_DT_NL = ABS((CloudScatter_Pos_NL%Delta_Truncation(k) - CloudScatter_Baseline%Delta_Truncation(k))/Linear_Test)
                                                     Negative_DT_NL = ABS((CloudScatter_Neg_NL%Delta_Truncation(k) - CloudScatter_Baseline%Delta_Truncation(k))/Linear_Test)
-
+                                                    
                                                             ! Phase Coefficient
                                                             DO nLT = 0, MAX_N_LEGENDRE_TERMS
-                                                              
-                                                              Positive_PC_TL(nLT) = ABS(CloudScatter_Pos_TL%Phase_Coefficient(nLT,1,k)/Linear_Test)
-                                                              Negative_PC_TL(nLT) = ABS(CloudScatter_Neg_TL%Phase_Coefficient(nLT,1,k)/Linear_Test)
-                                                              Positive_PC_NL(nLT) = ABS((CloudScatter_Pos_NL%Phase_Coefficient(nLT,1,k) - &
+                                                             
+                                                              Positive_PC_TL = ABS(CloudScatter_Pos_TL%Phase_Coefficient(nLT,1,k)/Linear_Test)							      
+                                                              Negative_PC_TL = ABS(CloudScatter_Neg_TL%Phase_Coefficient(nLT,1,k)/Linear_Test)
+                                                              Positive_PC_NL = ABS((CloudScatter_Pos_NL%Phase_Coefficient(nLT,1,k) - &
                                                               CloudScatter_Pos_NL%Phase_Coefficient(nLT,1,k))/Linear_Test)
-                                                              Negative_PC_NL(nLT) = ABS((CloudScatter_Neg_NL%Phase_Coefficient(nLT,1,k) - &
-                                                              CloudScatter_Pos_NL%Phase_Coefficient(nLT,1,k))/Linear_Test)
-
-                                                              TL_PC_GradientEqual = Compare_Float( Positive_PC_TL(nLT),    &  ! Input
-                                                                                                   Negative_PC_TL(nLT),    &  ! Input
+                                                              Negative_PC_NL = ABS((CloudScatter_Neg_NL%Phase_Coefficient(nLT,1,k) - &
+                                                              CloudScatter_Pos_NL%Phase_Coefficient(nLT,1,k))/Linear_Test)                                                             
+                                                              TL_PC_GradientEqual = Compare_Float( Positive_PC_TL,    &  ! Input
+                                                                                                   Negative_PC_TL,    &  ! Input
                                                                                                    ULP=ULP                 )  ! Input
 
-                                                              NLTL_PC_NegGradientEqual = Compare_Float( Negative_PC_TL(nLT),  &   !  Input
-                                                                                                        Negative_PC_NL(nLT),  &   !  Input
+                                                              NLTL_PC_NegGradientEqual = Compare_Float( Negative_PC_TL,  &   !  Input
+                                                                                                        Negative_PC_NL,  &   !  Input
                                                                                                         ULP=ULP               )
 
-                                                              NLTL_PC_PosGradientEqual = Compare_Float( Positive_PC_TL(nLT),  &
-                                                                                                        Positive_PC_NL(nLT),  &
+                                                              NLTL_PC_PosGradientEqual = Compare_Float( Positive_PC_TL,  &
+                                                                                                        Positive_PC_NL,  &
                                                                                                         ULP=ULP               )
-
+                                                              
                                                               IF (.NOT. TL_PC_GradientEqual .OR. .NOT. NLTL_PC_NegGradientEqual .OR. .NOT. NLTL_PC_PosGradientEqual) THEN
                                                                 PC_Test = .FALSE.
                                                                 EXIT
+							      ELSE 
+							        PC_Test = .TRUE.
                                                               END IF
 
                                                             END DO
-
+                                                    
                                                     TL_OD_GradientEqual = Compare_Float( Positive_OD_TL,  &  !  Input
                                                                                          Negative_OD_TL,  &  !  Input
                                                                                          ULP=ULP          )  !  Input
@@ -685,9 +692,11 @@ PROGRAM Test_Tangent_Linear
                                                     
                                                     IF (.NOT. TL_OD_GradientEqual .OR. .NOT. NLTL_OD_NegGradientEqual .OR. .NOT. NLTL_OD_PosGradientEqual) THEN
                                                       OD_Test = .FALSE.
-                                                    END IF
+                                                    ELSE
+						      OD_Test = .TRUE. 
+						    END IF
 
-
+                                                   
                                                     TL_SSA_GradientEqual = Compare_Float( Positive_SSA_TL,  &  !  Input
                                                                                           Negative_SSA_TL,  &  !  Input
                                                                                           ULP=ULP           )  !  Input
@@ -703,6 +712,8 @@ PROGRAM Test_Tangent_Linear
 
                                                     IF (.NOT. TL_SSA_GradientEqual .OR. .NOT. NLTL_SSA_NegGradientEqual .OR. .NOT. NLTL_SSA_PosGradientEqual) THEN
                                                       SSA_Test = .FALSE.
+						    ELSE
+						      SSA_Test = .TRUE.
                                                     END IF
 
                                                     TL_AF_GradientEqual = Compare_Float( Positive_AF_TL,  &  !  Input
@@ -720,6 +731,8 @@ PROGRAM Test_Tangent_Linear
                                                     
                                                     IF (.NOT. TL_AF_GradientEqual .OR. .NOT. NLTL_AF_NegGradientEqual .OR. .NOT. NLTL_AF_PosGradientEqual) THEN
                                                       AF_Test = .FALSE.
+						    ELSE
+						      AF_Test = .TRUE.
                                                     END IF
 
 
@@ -739,12 +752,14 @@ PROGRAM Test_Tangent_Linear
                                                     
                                                     IF (.NOT. TL_DT_GradientEqual .OR. .NOT. NLTL_DT_NegGradientEqual .OR. .NOT. NLTL_DT_PosGradientEqual) THEN
                                                       DT_Test = .FALSE.
+						    ELSE
+						      DT_Test = .TRUE.
                                                     END IF
-
-
+                                                    IF (nIV==1) THEN
+                                                    PRINT *, OD_Test, AF_Test, SSA_Test, DT_Test, PC_Test, k
+						    END IF
                                                     !  Determine if ALL of the tests passed ..
                                                     IF ( OD_Test .AND. AF_Test .AND. SSA_Test .AND. DT_Test .AND. PC_Test) THEN
-
                                                         CYCLE Layer_Loop
                                                     !  If the test has not passed multiply DeltaX by 0.5
                                                     ELSE
@@ -760,7 +775,7 @@ PROGRAM Test_Tangent_Linear
 
                                                   ELSE
 
-
+                                                    
                                                       ! Save the data for this profile if necessary 
                                                       ComponentTest%d1(k,l,nP,nIV,NOV_TAU) = (CloudScatter_Neg_NL%Optical_Depth(k) - &
                                                                                              CloudScatter_Baseline%Optical_Depth(k))
@@ -770,11 +785,13 @@ PROGRAM Test_Tangent_Linear
                                                                                                                        CloudScatter_Baseline%Optical_Depth(k))
                                                       ComponentTest%d2(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU) = CloudScatter_Pos_TL%Optical_Depth(k)
                                                        
-
-                                                     ! PRINT *, ComponentTest%d2(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU) 
                                                       ComponentTest%d1(k,l,Zero_Pert,nIV,NOV_TAU) = ZERO
                                                       ComponentTest%d2(k,l,Zero_Pert,nIV,NOV_TAU) = ZERO
-
+						    ! IF (nIV==1 .AND. k==1) THEN
+						    !   PRINT *, "Something's wrong here", ComponentTest%d1(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU), Linear_Test, &
+						    !   ComponentTest%d2(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU)
+						    ! END IF   
+						     
                                                       ComponentTest%d1(k,l,nP,nIV,NOV_OMEGA) = (CloudScatter_Neg_NL%Single_Scatter_Albedo(k) - &
                                                                                                CloudScatter_Baseline%Single_Scatter_Albedo(k))
                                                       ComponentTest%d2(k,l,nP,nIV,NOV_OMEGA) = CloudScatter_Neg_TL%Single_Scatter_Albedo(k)
@@ -807,6 +824,11 @@ PROGRAM Test_Tangent_Linear
 
                                                       ComponentTest%d1(k,l,Zero_Pert,nIV,NOV_D) = ZERO
                                                       ComponentTest%d2(k,l,Zero_Pert,nIV,NOV_D) = ZERO
+						      
+						      !IF (nP==1 .AND. k>85 .AND. nIV==4) THEN
+						      !	          PRINT *, (CloudScatter_Pos_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k)), &
+						      !		  CloudScatter_Pos_TL%Optical_Depth(k), Linear_Test, ComponentTest%d1(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU)
+					              !END IF
 
                                                          DO nLT = 0, MAX_N_LEGENDRE_TERMS
                                                            nOV = NOV_PC_L0 + nLT  ! Offset index into output arrays
@@ -833,7 +855,7 @@ PROGRAM Test_Tangent_Linear
                                         END DO Layer_Loop
                               END DO Input_Variable_Loop
                     END DO Channel_Loop
-
+                    ComponentTest%Perturbation = PERTURBATION_FRACTION
     ! Set the current dataset number in the output structure
     nm = nm + 1
     ComponentTest%nM = nm
