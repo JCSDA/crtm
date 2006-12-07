@@ -124,8 +124,8 @@ CONTAINS
     
     ! Create list of candidate primes, p_i, such
     ! that 2 <= p_i <= n
-    listA(:,1) = (/(i,i=2,n)/); i1=1
-    listA(:,2) = 0            ; i2=2
+    listA(:,1) = (/(i,i=2,n)/); i1=1  ! Each iteration will bounce
+    listA(:,2) = 0            ; i2=2  ! between these lists
     
     ! Initialise the "found" primes list
     nP=1
