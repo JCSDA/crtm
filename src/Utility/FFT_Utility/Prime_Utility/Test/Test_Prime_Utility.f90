@@ -5,7 +5,7 @@ PROGRAM Test_Prime_Utility
   INTEGER, PARAMETER :: NTEST=500
   INTEGER, PARAMETER :: NPFTEST=9438
   ! Variables
-  INTEGER :: i, j
+  INTEGER :: i, j, errStatus
   INTEGER :: prod
   TYPE(Prime_type) :: Prime
 
@@ -22,6 +22,7 @@ PROGRAM Test_Prime_Utility
   Prime=Primes(NTEST)
   WRITE(*,'(//5x,"Primes in range 1..",i0," derived via Primes:")') Prime%number
   WRITE(*,'(10(1x,i5))') Prime%n
+  errStatus = Destroy_Prime(Prime)
 
   Prime=PrimeFactor(NPFTEST)
   WRITE(*,'(//5x,"Prime factors for ",i0,":")') Prime%number
@@ -32,5 +33,6 @@ PROGRAM Test_Prime_Utility
     IF(i < Prime%nPrimes) WRITE(*,'(" x ")',ADVANCE='NO')
   END DO
   WRITE(*,'(" = ",i0)')prod
+  errStatus = Destroy_Prime(Prime)
   
 END PROGRAM Test_Prime_Utility
