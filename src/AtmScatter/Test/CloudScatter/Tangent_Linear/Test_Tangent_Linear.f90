@@ -604,12 +604,7 @@ PROGRAM Test_Tangent_Linear
                                                                  END IF
 
                                                                END IF
-							      ! IF (nIV==2 .AND. k==85) THEN
-							      !   PRINT *, switch, (CloudScatter_Pos_NL%Single_Scatter_Albedo(85) - CloudScatter_Baseline%Single_Scatter_Albedo(85)), &
-							      !	 (CloudScatter_Neg_NL%Single_Scatter_Albedo(85) - CloudScatter_Baseline%Single_Scatter_Albedo(85)), Linear_Test, &
-							      !	 CloudScatter_NL%Single_Scatter_Albedo(85), CloudScatter_Baseline%Single_Scatter_Albedo(85)
-							      ! END IF
-
+							      
                                                             END DO Switch_Loop
                                                    
                                                   ! ----------------------------------------------
@@ -618,9 +613,6 @@ PROGRAM Test_Tangent_Linear
                                                   ! ----------------------------------------------   
 
                                                   IF ( .NOT. FatalFailure ) THEN 
-                                                    
-                                                   
-                                                   
 						     
                                                     ! Optical depth gradients
                                                     Positive_OD_TL = ABS(CloudScatter_Pos_TL%Optical_Depth(k)/Linear_Test)						    
@@ -628,7 +620,6 @@ PROGRAM Test_Tangent_Linear
                                                     Positive_OD_NL = ABS((CloudScatter_Pos_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)						    
                                                     Negative_OD_NL = ABS((CloudScatter_Neg_NL%Optical_Depth(k) - CloudScatter_Baseline%Optical_Depth(k))/Linear_Test)
 						    
-                                                                                                                                                             
                                                     ! Single Scatter Albedo gradients
                                                     Positive_SSA_TL = ABS(CloudScatter_Pos_TL%Single_Scatter_Albedo(k)/Linear_Test)
                                                     Negative_SSA_TL = ABS(CloudScatter_Neg_TL%Single_Scatter_Albedo(k)/Linear_Test)
@@ -658,15 +649,15 @@ PROGRAM Test_Tangent_Linear
                                                               CloudScatter_Pos_NL%Phase_Coefficient(nLT,1,k))/Linear_Test)                                                             
                                                               TL_PC_GradientEqual = Compare_Float( Positive_PC_TL,    &  ! Input
                                                                                                    Negative_PC_TL,    &  ! Input
-                                                                                                   ULP=ULP                 )  ! Input
+                                                                                                   ULP=ULP            )  ! Input
 
                                                               NLTL_PC_NegGradientEqual = Compare_Float( Negative_PC_TL,  &   !  Input
                                                                                                         Negative_PC_NL,  &   !  Input
-                                                                                                        ULP=ULP               )
+                                                                                                        ULP=ULP              )
 
                                                               NLTL_PC_PosGradientEqual = Compare_Float( Positive_PC_TL,  &
                                                                                                         Positive_PC_NL,  &
-                                                                                                        ULP=ULP               )
+                                                                                                        ULP=ULP          )
                                                               
                                                               IF (.NOT. TL_PC_GradientEqual .OR. .NOT. NLTL_PC_NegGradientEqual .OR. .NOT. NLTL_PC_PosGradientEqual) THEN
                                                                 PC_Test = .FALSE.
@@ -755,9 +746,7 @@ PROGRAM Test_Tangent_Linear
 						    ELSE
 						      DT_Test = .TRUE.
                                                     END IF
-                                                    IF (nIV==1) THEN
-                                                    PRINT *, OD_Test, AF_Test, SSA_Test, DT_Test, PC_Test, k
-						    END IF
+                                                   
                                                     !  Determine if ALL of the tests passed ..
                                                     IF ( OD_Test .AND. AF_Test .AND. SSA_Test .AND. DT_Test .AND. PC_Test) THEN
                                                         CYCLE Layer_Loop
@@ -787,10 +776,6 @@ PROGRAM Test_Tangent_Linear
                                                        
                                                       ComponentTest%d1(k,l,Zero_Pert,nIV,NOV_TAU) = ZERO
                                                       ComponentTest%d2(k,l,Zero_Pert,nIV,NOV_TAU) = ZERO
-						    ! IF (nIV==1 .AND. k==1) THEN
-						    !   PRINT *, "Something's wrong here", ComponentTest%d1(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU), Linear_Test, &
-						    !   ComponentTest%d2(k,l,((N_Perturbations + 1) - nP),nIV,NOV_TAU)
-						    ! END IF   
 						     
                                                       ComponentTest%d1(k,l,nP,nIV,NOV_OMEGA) = (CloudScatter_Neg_NL%Single_Scatter_Albedo(k) - &
                                                                                                CloudScatter_Baseline%Single_Scatter_Albedo(k))
