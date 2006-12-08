@@ -15,7 +15,7 @@ PROGRAM Test_Fourier_Interpolate
   REAL(fp),    DIMENSION(:), ALLOCATABLE :: fIn, spcIn
   REAL(fp),    DIMENSION(:), ALLOCATABLE :: fOut, spcOut
   INTEGER  :: fileId
-  INTEGER  :: i, j, n, n2
+  INTEGER  :: i, j, nIn, po2, nPO2, nOut
   INTEGER  :: errStatus, allocStatus
   CHARACTER(5) :: cFilterWidth
   
@@ -27,6 +27,10 @@ PROGRAM Test_Fourier_Interpolate
   WRITE(*,'(5x,"Enter choice: ")',ADVANCE='NO')
   READ(*,*) i
 
+  ! Enter a power-of-two value
+  WRITE(*,'(/5x,"Enter a power-of-two [14]: ")',ADVANCE='NO')
+  READ(*,*) po2
+
   ! Read the spectral data
   WRITE(*,'(/5x,"Reading input test spectrum ",a,"...")' ) TRIM(INFILE(i))
   errStatus = Open_Binary_File( INFILE(i), &
@@ -35,9 +39,9 @@ PROGRAM Test_Fourier_Interpolate
     WRITE(*,*) 'Error opening test spectrum file.'
     STOP
   END IF
-  READ(fileId) n  ! The number of SPC points
-  n2 = 2**14 + 1  ! The number of zerofilled IFG points
-  ALLOCATE(fIn(n), spcIn(n), fOut(n2), spcOut(n2), STAT=allocStatus)
+  READ(fileId) nIn  ! The number of SPC points
+  nPO2 = (2**po2 + 1) + 10  ! The number of interpolated output points, plus some extra
+  ALLOCATE(fIn(nIn), spcIn(nIn), fOut(nPO2), spcOut(nPO2), STAT=allocStatus)
   IF ( allocStatus /= 0 ) THEN
     WRITE(*,*) 'Error allocating arrays. STAT=',allocStatus
     STOP
@@ -54,7 +58,8 @@ PROGRAM Test_Fourier_Interpolate
     
     ! Call the routine
     WRITE(*,'(/5x,"Calling Fourier_Interpolate with filter width of ",a,"cm-1...")' ) TRIM(cFilterWidth)
-    errStatus=Fourier_Interpolate(fIn, spcIn, fOut, spcOut, &
+    errStatus=Fourier_Interpolate(fIn, spcIn, nOut, fOut, spcOut, &
+                                  PowerOfTwo =po2, &
                                   FilterWidth=FILTERWIDTH(j))
     IF ( errStatus /= SUCCESS ) THEN
       WRITE(*,*) 'Error in Fourier_Interpolate call'
@@ -72,13 +77,13 @@ PROGRAM Test_Fourier_Interpolate
       STOP
     END IF
     ! The original SPC data (REAL ONLY)
-    WRITE(fileId) n            ! The number of SPC points
-    WRITE(fileId) fIn          ! Frequency data
-    WRITE(fileId) spcIn        ! Real part of SPC
+    WRITE(fileId) nIn             ! The number of SPC points
+    WRITE(fileId) fIn             ! Frequency data
+    WRITE(fileId) spcIn           ! Real part of SPC
     ! The interpolated SPC data (REAL ONLY)
-    WRITE(fileId) n2           ! The number of SPC points
-    WRITE(fileId) fOut         ! Frequency data
-    WRITE(fileId) spcOut       ! Real part of SPC
+    WRITE(fileId) nOut            ! The number of SPC points
+    WRITE(fileId) fOut(1:nOut)    ! Frequency data
+    WRITE(fileId) spcOut(1:nOut)  ! Real part of SPC
     CLOSE(fileId)
   END DO
   
