@@ -854,26 +854,41 @@ CONTAINS
     nFilter = ComputeNPoints(width, dF)
     width = REAL(nFilter-1,fp) * dF
     
-    nSpc = nIn + 2*(nFilter-1)
-!    nIfg = ComputeNIFG(nSpc) 
-    nPO2 = 2**(ComputeNextPO2(nSpc)) + 1
-    nIfgPO2 = ComputeNIFG(nPO2) 
-    nIfg = ComputeNIFG(nOut) 
+    nSpc = nIn + 2*(nFilter-1)             ! No. of input SPC points bookended with filter
+    nPO2 = 2**(ComputeNextPO2(nSpc)) + 1   ! The next power-of-two no. of pts for zerofilled SPC
+    nIfgPO2 = ComputeNIFG(nPO2)            ! The no. of IFG points for the zerofilled SPC
+    nIfg    = ComputeNIFG(nOut)            ! The no. of IFG points for the output SPC
 
-print *, nSpc, nIfg, nPO2
+    IF (nIfg < nIfgPO2 ) THEN
+      Error_Status = FAILURE
+      WRITE(Message,'("Number of output SPC IFG pts., ",i0,&
+                     &", too few for intermediate IFG, ",i0,)') nIfg, nIfgPO2
+      CALL Display_Message(ROUTINE_NAME, &
+                           TRIM(Message), &
+                           Error_Status, &
+                           Message_Log=Message_Log)
+      RETURN
+    END IF
+
+print *, 'No. of input SPC points:                       ', nIn
+print *, 'No. of filtered input SPC points:              ', nSpc
+print *, 'Next PO2 no. of points for filtered input SPC: ', nPO2
+print *, 'No. of IFG points for PO2/zerofilled SPC:      ', nIfgPO2
+print *, 'No. of IFG points for output SPC:              ', nIfg
     
-    ! Allocate arrays
+    ! Allocate and initialise arrays
     ALLOCATE( f(nPO2), spc(nPO2), opd(nIfg), ifg(nIfg), filter(nFilter), cspc(nOut), &
               STAT = Allocate_Status )
+    spc = ZERO
+    ifg = CMPLX(ZERO,ZERO,fp)
 
-spc=zero
     ! Compute frequency grid
     f1 = InFrequency(1)   - width
     f2 = f1 + REAL(nPO2-1,fp)*dF
     f = (/ (REAL(i,fp),i=0,nPO2-1) /) / REAL(nPO2-1,fp) 
     f = f*(f2-f1) + f1
     
-    ! Slot in spectrum to work array
+    ! Slot in spectrum to SPC work array
     spc(nFilter:nFilter+nIn-1) = InSpectrum
     
     ! Apply filter to spectrum
@@ -893,14 +908,7 @@ spc=zero
                               Message_Log=Message_Log  ) ! Error messaging
     spc(nFilter+nIn-1:nSpc) = spc(nFilter+nIn-1) * filter
 
-outfrequency=zero
-outfrequency(1:npo2)=f
-outspectrum=zero
-outspectrum(1:npo2)=spc
-
-ifg=CMPLX(ZERO,ZERO,fp)
-
-    ! FFT to an interferogram
+    ! FFT filtered input spectrum to an interferogram
     Error_Status = SPCtoIFG(f,spc,opd(1:nIfgPO2),ifg(1:nIfgPO2))
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message(ROUTINE_NAME, &
@@ -910,22 +918,18 @@ ifg=CMPLX(ZERO,ZERO,fp)
       RETURN
     END IF
 
-call debug_dumpcomplex(opd(1:nIfgPO2),ifg(1:nIfgPO2),'fint_ifg_dump1.dat')
-    
-    ! Shift interferogram to new ZPD
+    ! Zerofill interferogram by shifting it to new ZPD 
     ifg = CSHIFT(ifg, -((nIfg/2)-(nIfgPO2/2)))
 
-    ! Fill out optical delay grid
+    ! Compute the optical delay grid
     nHalf=nIfg/2
     dX = ComputeMeanDelta(opd(1:nIfgPO2))
     maxX = dX * REAL(nHalf,fp)
     opd(nHalf:nIfg) = maxX * (/ (REAL(i,fp),i=0,nHalf) /) / REAL(nHalf,fp)
     opd(1:nHalf-1)  = -ONE * opd(nIfg-1:nHalf+1:-1)
 
-call debug_dumpcomplex(opd,ifg,'fint_ifg_dump2.dat')
-    
-    ! FFT to a spectrum
-    Error_Status = IFGtoSPC(opd,REAL(ifg,fp),OutFrequency,cspc)
+    ! FFT zerofilled interferogram to a spectrum
+    Error_Status = IFGtoSPC(opd,ifg,OutFrequency,cspc)
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message(ROUTINE_NAME, &
                            'IFG->SPC FFT failed.', &
@@ -934,22 +938,12 @@ call debug_dumpcomplex(opd,ifg,'fint_ifg_dump2.dat')
       RETURN
     END IF
 
-outfrequency=outfrequency+f(1)
-outspectrum=real(cspc,fp)
-call debug_dumpcomplex(OutFrequency,cspc,'fint_cspc_dump.dat')
+    ! Prepare return arguments
+    OutFrequency=OutFrequency+f(1)  ! Translate output frequency
+    OutSpectrum =REAL(cspc,fp)      ! Only the REAL part of the spectrum is returned
 
-
-!1) copy input to tmp spc arrays
-!1a) apply cos filter
-!2) fft to ifg
-!3) zerofill the interferogram
-!4) compute zerofilled ifg optical delay grid
-!5) fft to spc
 !6) translate output frequency grid as required
 !6a) truncate output to original bandwidth (due to cos filter)
-
-!First use ifg/opd array slices in fft calls
-
 
   END FUNCTION Fourier_Interpolate
   
