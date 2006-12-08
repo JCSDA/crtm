@@ -9,7 +9,7 @@
 ; CALLING SEQUENCE:
 ;       fileId = Open_Binary_File( fileName                       , $
 ;                                  WRITE          =Write          , $
-;                                  SWAP_ENDIAN    =Swap_Endian    , $
+;                                  SWAP           =Swap           , $
 ;                                  F77_UNFORMATTED=F77_Unformatted  )
 ;
 ; INPUTS:
@@ -34,33 +34,35 @@
 ;                         DIMENSION:  Scalar
 ;                         ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Swap_Endian:      Set this keyword parameter to byte swap data written
-;                         to the file opened by this function. This keyword is
-;                         ignored unless the WRITE keyword is also set.
+;       Swap:             Set this keyword parameter to byte swap data written
+;                         to the file opened by this function.
+;                         This keyword is ignored unless the WRITE keyword is
+;                         also set.
 ;                         If NOT SET, data subsequently written to a file is written
-;                                     in the native platform format.
+;                                     in the native platform endian format.
 ;                            SET,     data subsequently written to a file is byte
-;                                     swapped compared to the native platform format.
+;                                     swapped compared to the native platform byte
+;                                     endian format.
 ;                         UNITS:      N/A
 ;                         TYPE:       INTEGER
 ;                         DIMENSION:  Scalar
 ;                         ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       F77_Unformatted:  Set this keyword parameter to open a file equivalent to
-;                         Fortran SEQUENTIAL, UNFORMATTED access.
-;                         If NOT SET, data subsequently read from or written to a
-;                                     file is treated as a "regular" byte stream.
-;                                     (DEFAULT).
-;                            SET,     the file format is such that each data record
-;                                     is bounded by 4-byte record markers that contain
-;                                     the size of the record.
+;       Stream:           Set this keyword parameter to set file access to an
+;                         unformatted byte stream.
+;                         If NOT SET, data access is Fortran SEQUENTIAL,
+;                                     UNFORMATTED. (DEFAULT)
+;                                     Each data record is bounded by 4-byte
+;                                     record markers that contain the record size.
+;                            SET,     data access is a "regular" byte stream with
+;                                     no record markers.
 ;                         UNITS:      N/A
 ;                         TYPE:       INTEGER
 ;                         DIMENSION:  Scalar
 ;                         ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ; FUNCTION RESULT:
-;       FileID:           File unit number used for subsequent file access.
+;       fileId:           File unit number used for subsequent file access.
 ;                         UNITS:      N/A
 ;                         TYPE:       INTEGER
 ;                         DIMENSION:  Scalar
@@ -71,13 +73,12 @@
 ;
 ;-
 
-FUNCTION Open_Binary_File, fileName, $
-                           WRITE          =Write, $
-                           SWAP_ENDIAN    =Swap_Endian, $   ; Only for output
-                           F77_UNFORMATTED=F77_Unformatted
+FUNCTION Check_Binary_File, fileName, $
+                            STREAM=Stream, $
+                            DEBUG =Debug
 
-  ; Define parameters
-  MAGIC_NUMBER = 123456789L
+  ; Include the parameters file
+  @binary_file_parameters
 
   ; Define error handler
   @error_codes
@@ -85,50 +86,104 @@ FUNCTION Open_Binary_File, fileName, $
   IF ( Error_Status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
     MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-    IF ( N_ELEMENTS(lun) NE 0 ) THEN FREE_LUN, lun
+    IF ( N_ELEMENTS(fileId) NE 0 ) THEN FREE_LUN, fileId
+    RETURN, CHECK_FAILURE
+  ENDIF
+
+  ; Define variables to read the record markers
+  ; (if required) and the magic number
+  r1 = 0L & mN = 0L & r2 = 0L
+
+  ; Read the magic number
+  OPENR, fileId, fileName, /GET_LUN
+  IF ( KEYWORD_SET(Stream) ) THEN BEGIN
+    READU, fileId, mN
+  ENDIF ELSE BEGIN
+    READU, fileId, r1, mN, r2
+  ENDELSE
+  FREE_LUN, fileId
+
+  ; Check the native version
+  IF ( mN EQ MAGIC_NUMBER ) THEN BEGIN
+    IF ( KEYWORD_SET(Debug) ) THEN $
+      MESSAGE, 'File in native endian format. No swapping.', /INFORMATIONAL
+    RETURN, CHECK_NOSWAP
+  ENDIF
+  
+  ; Check the swapped version
+  IF ( SWAP_ENDIAN(mN) EQ MAGIC_NUMBER ) THEN BEGIN
+    IF ( KEYWORD_SET(Debug) ) THEN $
+      MESSAGE, 'File not native endian format. Byte swapping set.', /INFORMATIONAL
+    RETURN, CHECK_SWAP
+  ENDIF
+
+  ; Not a recognised BinFile
+  MESSAGE, 'Unrecognised file type. Invalid magic number', $
+           /NONAME, /NOPRINT
+
+END
+
+
+FUNCTION Open_Binary_File, fileName, $
+                           STREAM=Stream, $
+                           WRITE =Write , $
+                           SWAP  =Swap  , $  ; Only for output
+                           DEBUG =Debug
+
+  ; Include the parameters file
+  @binary_file_parameters
+
+  ; Define error handler
+  @error_codes
+  CATCH, Error_Status
+  IF ( Error_Status NE 0 ) THEN BEGIN
+    CATCH, /CANCEL
+    MESSAGE, !ERROR_STATE.MSG, /CONTINUE
+    IF ( N_ELEMENTS(fileId) NE 0 ) THEN FREE_LUN, fileId
     RETURN, FAILURE
   ENDIF
 
-  ; Get a free unit number
-  GET_LUN, lun
-
-  ; Check input
+  ; Check fileName
   IF ( NOT Valid_String(fileName) ) THEN $
     MESSAGE, 'Must specify a filename.', /NONAME, /NOPRINT
 
-  ; Default is to open for read...
-  Input=TRUE
-  ; ...unless WRITE keyword is set.
-  IF ( KEYWORD_SET(Write) ) THEN Input=FALSE
+  ; Default access is sequential, unformatted...
+  seqUnfmt=1
+  ; ... unless STREAM keyword is set
+  IF ( KEYWORD_SET(Stream) ) THEN seqUnfmt=0
   
+  ; Default is to open for read...
+  input=TRUE
+  ; ...unless WRITE keyword is set.
+  IF ( KEYWORD_SET(Write) ) THEN input=FALSE
+
+  
+  ; -------------------------
+  ; Open the file accordingly
+  ; -------------------------
   IF ( Input ) THEN BEGIN
+    ; Check the file
+    swapFlag=Check_Binary_File(fileName, STREAM=Stream, DEBUG=Debug)
+    IF ( swapFlag EQ CHECK_FAILURE ) THEN $
+      MESSAGE, 'Binary file check failed', /NONAME, /NOPRINT
     ; Open the file for reading
-    OPENR, lun, fileName, $
-                F77_UNFORMATTED=F77_Unformatted
-    ; Read the magic number
-    mnRead = 0L
-    READU, lun, mnRead
-    ; Check it
-    IF ( mnRead EQ MAGIC_NUMBER ) THEN RETURN, lun
-    ; Check the swapped version
-    IF ( SWAP_ENDIAN(mnRead) EQ MAGIC_NUMBER ) THEN BEGIN
-      CLOSE, lun
-      OPENR, lun, fileName, $
-                  F77_UNFORMATTED=F77_Unformatted, $
-                  /SWAP_ENDIAN
-      READU, lun, mnRead
-      RETURN, lun
-    ENDIF
-    ; Not a recognised BinFile
-    MESSAGE, 'Unrecognised file type.', $
-             /NONAME, /NOPRINT
+    OPENR, fileId, fileName, /GET_LUN, $
+                   F77_UNFORMATTED=seqUnfmt, $
+                   SWAP_ENDIAN    =swapFlag
+    ; Read past the magic number
+    mN = 0L
+    READU, fileId, mN
+
   ENDIF ELSE BEGIN
-    OPENW, lun, fileName, $
-                SWAP_Endian    =Swap_Endian, $
-                F77_UNFORMATTED=F77_Unformatted
+    ; Open the file for writing
+    OPENW, fileId, fileName, /GET_LUN, $
+                   SWAP_ENDIAN    =Swap, $
+                   F77_UNFORMATTED=SeqUnFmt
     ; Write the magic number
-    WRITEU, lun, MAGIC_NUMBER
-    RETURN, lun
+    WRITEU, fileId, MAGIC_NUMBER
+
   ENDELSE
+
+  RETURN, fileId
 
 END ; FUNCTION Open_BinFile
