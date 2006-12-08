@@ -63,21 +63,23 @@ MODULE FFT_Spectral_Utility
   REAL(fp), PARAMETER :: ONE       = 1.0_fp
   REAL(fp), PARAMETER :: ONEPOINT5 = 1.5_fp
   REAL(fp), PARAMETER :: TWO       = 2.0_fp
-  REAL(fp), PARAMETER :: POINT46 = 0.46_fp
-  REAL(fp), PARAMETER :: POINT54 = 0.54_fp
+  REAL(fp), PARAMETER :: POINT46   = 0.46_fp
+  REAL(fp), PARAMETER :: POINT54   = 0.54_fp
   REAL(fp), PARAMETER :: LN2 = 0.693147180559945309417232_fp
   ! Apodisation function type values
-  INTEGER, PARAMETER :: BARTLETT_APOD = 1
-  INTEGER, PARAMETER :: WELCH_APOD    = 2
-  INTEGER, PARAMETER :: CONNES_APOD   = 3
-  INTEGER, PARAMETER :: COSINE_APOD   = 4
-  INTEGER, PARAMETER :: HAMMING_APOD  = 5
-  INTEGER, PARAMETER :: HANNING_APOD  = 6
-  INTEGER, PARAMETER :: BEER_APOD       = WELCH_APOD
-  INTEGER, PARAMETER :: STRONGBEER_APOD = CONNES_APOD
+  INTEGER,  PARAMETER :: BARTLETT_APOD = 1
+  INTEGER,  PARAMETER :: WELCH_APOD    = 2
+  INTEGER,  PARAMETER :: CONNES_APOD   = 3
+  INTEGER,  PARAMETER :: COSINE_APOD   = 4
+  INTEGER,  PARAMETER :: HAMMING_APOD  = 5
+  INTEGER,  PARAMETER :: HANNING_APOD  = 6
+  INTEGER,  PARAMETER :: BEER_APOD       = WELCH_APOD
+  INTEGER,  PARAMETER :: STRONGBEER_APOD = CONNES_APOD
   ! Cos Filter default rolloff width
   REAL(fp), PARAMETER :: DEFAULT_WIDTH = 10.0_fp
-  
+  ! Fourier interpolation default power-of-two
+  INTEGER,  PARAMETER :: DEFAULT_PO2 = 14
+    
   
 CONTAINS
 
@@ -775,19 +777,23 @@ CONTAINS
   END FUNCTION ComplexIFG_to_ComplexSPC
 
 
-  FUNCTION Fourier_Interpolate( InFrequency , &
-                                InSpectrum  , &
-                                OutFrequency, &
-                                OutSpectrum , &
-                                FilterWidth , & ! Optional input
-                                RCS_Id      , &
-                                Message_Log ) &
+  FUNCTION Fourier_Interpolate( InFrequency , &  ! Input
+                                InSpectrum  , &  ! Input
+                                nOutSpectrum, &  ! Output
+                                OutFrequency, &  ! Output
+                                OutSpectrum , &  ! Output
+                                PowerOfTwo  , &  ! Optional input
+                                FilterWidth , &  ! Optional input
+                                RCS_Id      , &  ! Revision control
+                                Message_Log ) &  ! Message handling
                               RESULT( Error_Status )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: InFrequency(:)  
-    REAL(fp),               INTENT(IN)  :: InSpectrum(:)   
+    REAL(fp),               INTENT(IN)  :: InFrequency(:)
+    REAL(fp),               INTENT(IN)  :: InSpectrum(:)
+    INTEGER,                INTENT(OUT) :: nOutSpectrum
     REAL(fp),               INTENT(OUT) :: OutFrequency(:) 
-    REAL(fp),               INTENT(OUT) :: OutSpectrum(:)  
+    REAL(fp),               INTENT(OUT) :: OutSpectrum(:)
+    INTEGER,      OPTIONAL, INTENT(IN)  :: PowerOfTwo
     REAL(fp),     OPTIONAL, INTENT(IN)  :: FilterWidth
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -800,16 +806,22 @@ CONTAINS
     INTEGER :: Allocate_Status
     LOGICAL :: applyFilter
     INTEGER :: nIn, nOut
-    INTEGER :: i, nFilter, nSpc, nIfg, nPO2, nIfgPO2, nHalf
+    INTEGER :: inPO2, outPO2
+    INTEGER :: i, i1, i2
+    INTEGER :: nFilter
+    INTEGER :: nHalf, nSpcMult
+    INTEGER :: nSpcIn, nSpcOut
+    INTEGER :: nSpcInPO2, nIfgInPO2
+    INTEGER :: nSpcOutPO2, nIfgOutPO2
     REAL(fp) :: dF
     REAL(fp) :: width
     REAL(fp) :: f1, f2
     REAL(fp) :: dX, maxX
-    REAL(fp),    DIMENSION(:), ALLOCATABLE :: f    ! For filtered spectrum
-    REAL(fp),    DIMENSION(:), ALLOCATABLE :: spc  ! For filtered spectrum
-    REAL(fp),    DIMENSION(:), ALLOCATABLE :: opd  ! Intermediate FFT output
-    COMPLEX(fp), DIMENSION(:), ALLOCATABLE :: ifg  ! Intermediate FFT output
-    COMPLEX(fp), DIMENSION(:), ALLOCATABLE :: cspc ! Intermediate FFT output
+    REAL(fp),    DIMENSION(:), ALLOCATABLE :: f       ! I/P to SPC->IFG FFT; O/P from IFG->SPC FFT
+    REAL(fp),    DIMENSION(:), ALLOCATABLE :: spc     ! I/P to SPC->IFG FFT
+    REAL(fp),    DIMENSION(:), ALLOCATABLE :: opd     ! O/P from SPC->IFG FFT; I/P to IFG->SPC FFT
+    COMPLEX(fp), DIMENSION(:), ALLOCATABLE :: ifg     ! O/P from SPC->IFG FFT; I/P to IFG->SPC FFT
+    COMPLEX(fp), DIMENSION(:), ALLOCATABLE :: cspc    ! O/P from IFG->SPC FFT
     REAL(fp),    DIMENSION(:), ALLOCATABLE :: filter  ! For the cosine filter
 
     ! Set up
@@ -838,6 +850,10 @@ CONTAINS
       RETURN
     END IF
 
+    ! Check output power-of-two
+    outPO2 = DEFAULT_PO2
+    IF ( PRESENT(PowerOfTwo) ) outPO2 = ABS(PowerOfTwo)
+      
     ! Check filter width
     width = DEFAULT_WIDTH
     applyFilter = .TRUE.
@@ -849,20 +865,41 @@ CONTAINS
       END IF
     END IF
 
-    ! Compute required lengths of arrays
+    ! Compute filter parameters
     dF = ComputeMeanDelta(InFrequency)
     nFilter = ComputeNPoints(width, dF)
     width = REAL(nFilter-1,fp) * dF
-    
-    nSpc = nIn + 2*(nFilter-1)             ! No. of input SPC points bookended with filter
-    nPO2 = 2**(ComputeNextPO2(nSpc)) + 1   ! The next power-of-two no. of pts for zerofilled SPC
-    nIfgPO2 = ComputeNIFG(nPO2)            ! The no. of IFG points for the zerofilled SPC
-    nIfg    = ComputeNIFG(nOut)            ! The no. of IFG points for the output SPC
 
-    IF (nIfg < nIfgPO2 ) THEN
+
+    ! Compute the spectral and interferogram
+    ! lengths for the filtered input spectrum 
+    nSpcIn    = nIn + 2*(nFilter-1)      ! No. of input SPC points bookended with filter
+    inPO2     = ComputeNextPO2(nSpcIn)   ! Next power-of-two for input, filtered SPC
+    nSpcInPO2 = 2**inPO2 + 1             ! No. of SPC points input to SPC->IFG FFT
+    nIfgInPO2 = ComputeNIFG(nSpcInPO2)   ! No. of IFG points output from SPC->IFG FFT
+
+    IF (inPO2 >= outPO2) THEN
       Error_Status = FAILURE
-      WRITE(Message,'("Number of output SPC IFG pts., ",i0,&
-                     &", too few for intermediate IFG, ",i0,)') nIfg, nIfgPO2
+      CALL Display_Message(ROUTINE_NAME, &
+                           'Interpolation(zerofill) power of two too small '//&
+                           'for number of input spectral points.', &
+                           Error_Status, &
+                           Message_Log=Message_Log)
+      RETURN
+    END IF
+
+
+    ! Compute the interferogram and spectral
+    ! lengths for the zerofilled output spectrum
+    nSpcMult = 2**(outPO2-inPO2)          ! The multplier between the in and out PO2 no. of points
+    nSpcOut  = (nIn-1)*nSpcMult + 1       ! The number of interpolated output spectral points
+    nSpcOutPO2 = 2**outPO2 + 1            ! No. of SPC points output from IFG->SPC FFT
+    nIfgOutPO2 = ComputeNIFG(nSpcOutPO2)  ! No. of IFG points input to IFG->SPC FFT
+
+    IF (nOut < nSpcOut ) THEN
+      Error_Status = FAILURE
+      WRITE(Message,'("Output arrays too small (",i0,&
+                     &") to contain interpolated data (",i0,")")') nOut, nSpcOut
       CALL Display_Message(ROUTINE_NAME, &
                            TRIM(Message), &
                            Error_Status, &
@@ -870,24 +907,45 @@ CONTAINS
       RETURN
     END IF
 
-print *, 'No. of input SPC points:                       ', nIn
-print *, 'No. of filtered input SPC points:              ', nSpc
-print *, 'Next PO2 no. of points for filtered input SPC: ', nPO2
-print *, 'No. of IFG points for PO2/zerofilled SPC:      ', nIfgPO2
-print *, 'No. of IFG points for output SPC:              ', nIfg
-    
-    ! Allocate and initialise arrays
-    ALLOCATE( f(nPO2), spc(nPO2), opd(nIfg), ifg(nIfg), filter(nFilter), cspc(nOut), &
+print *, 'No. of input SPC points:               ', nIn
+print *, 'No. of filtered input SPC points:      ', nSpcIn
+print *, 'No. of interpolated output SPC points: ', nSpcOut
+print *, 'No. of SPC points for SPC->IFG SPC:    ', nSpcInPO2
+print *, 'No. of IFG points for SPC->IFG IFG:    ', nIfgInPO2
+print *, 'No. of SPC points for IFG->SPC SPC:    ', nSpcOutPO2
+print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
+
+    ! Allocate local work arrays
+    ALLOCATE( filter(nFilter) , &
+              f(nSpcOutPO2)   , &  ! Input to SPC->IFG FFT; Output from IFG->SPC FFT 
+              spc(nSpcInPO2)  , &  ! Input to SPC->IFG FFT
+              opd(nIfgOutPO2) , &  ! Output from SPC->IFG FFT; Input to IFG->SPC FFT
+              ifg(nIfgOutPO2) , &  ! Output from SPC->IFG FFT; Input to IFG->SPC FFT
+              cspc(nSpcOutPO2), &  ! Output from IFG->SPC FFT
               STAT = Allocate_Status )
+    IF (Allocate_Status /= 0) THEN
+      Error_Status = FAILURE
+      WRITE(Message,'("Error allocating local work arrays. STAT=",i0)') Allocate_Status
+      CALL Display_Message(ROUTINE_NAME, &
+                           TRIM(Message), &
+                           Error_Status, &
+                           Message_Log=Message_Log)
+      RETURN
+    END IF
+
+
+    ! Initialise arrays
     spc = ZERO
     ifg = CMPLX(ZERO,ZERO,fp)
 
+
     ! Compute frequency grid
-    f1 = InFrequency(1)   - width
-    f2 = f1 + REAL(nPO2-1,fp)*dF
-    f = (/ (REAL(i,fp),i=0,nPO2-1) /) / REAL(nPO2-1,fp) 
-    f = f*(f2-f1) + f1
-    
+    f1 = InFrequency(1) - width
+    f2 = f1 + REAL(nSpcInPO2-1,fp)*dF
+    f(1:nSpcInPO2) = (/ (REAL(i,fp),i=0,nSpcInPO2-1) /) / REAL(nSpcInPO2-1,fp) 
+    f(1:nSpcInPO2) = f(1:nSpcInPO2)*(f2-f1) + f1
+
+
     ! Slot in spectrum to SPC work array
     spc(nFilter:nFilter+nIn-1) = InSpectrum
     
@@ -901,15 +959,19 @@ print *, 'No. of IFG points for output SPC:              ', nIfg
     spc(1:nFilter) = spc(nFilter) * filter
 
     ! Back-end
-    Error_Status = CosFilter( f(nFilter+nIn-1:nSpc)  , & ! Input
+    Error_Status = CosFilter( f(nFilter+nIn-1:nSpcIn), & ! Input
                               filter                 , & ! Output
                               FilterWidth=width      , & ! Optional Input
                               Reverse=1              , & ! Optional Input
                               Message_Log=Message_Log  ) ! Error messaging
-    spc(nFilter+nIn-1:nSpc) = spc(nFilter+nIn-1) * filter
+    spc(nFilter+nIn-1:nSpcIn) = spc(nFilter+nIn-1) * filter
+
 
     ! FFT filtered input spectrum to an interferogram
-    Error_Status = SPCtoIFG(f,spc,opd(1:nIfgPO2),ifg(1:nIfgPO2))
+    Error_Status = SPCtoIFG(f(1:nSpcInPO2)  , &  ! Input
+                            spc             , &  ! Input
+                            opd(1:nIfgInPO2), &  ! Output
+                            ifg(1:nIfgInPO2)  )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message(ROUTINE_NAME, &
                            'SPC->IFG FFT failed.', &
@@ -918,18 +980,24 @@ print *, 'No. of IFG points for output SPC:              ', nIfg
       RETURN
     END IF
 
-    ! Zerofill interferogram by shifting it to new ZPD 
-    ifg = CSHIFT(ifg, -((nIfg/2)-(nIfgPO2/2)))
 
-    ! Compute the optical delay grid
-    nHalf=nIfg/2
-    dX = ComputeMeanDelta(opd(1:nIfgPO2))
-    maxX = dX * REAL(nHalf,fp)
-    opd(nHalf:nIfg) = maxX * (/ (REAL(i,fp),i=0,nHalf) /) / REAL(nHalf,fp)
-    opd(1:nHalf-1)  = -ONE * opd(nIfg-1:nHalf+1:-1)
+    ! Zerofill interferogram by shifting entire array to new ZPD 
+    ifg = CSHIFT(ifg, -((nIfgOutPO2/2)-(nIfgInPO2/2)))
+
+
+    ! Compute the optical delay grid for the zerofilled interferogram
+    dX    = ComputeMeanDelta(opd(1:nIfgInPO2))
+    nHalf = nIfgOutPO2/2
+    maxX  = dX * REAL(nHalf,fp)
+    opd(nHalf:nIfgOutPO2) = maxX * (/(REAL(i,fp),i=0,nHalf)/) / REAL(nHalf,fp)
+    opd(1:nHalf-1)        = -ONE * opd(nIfgOutPO2-1:nHalf+1:-1)
+
 
     ! FFT zerofilled interferogram to a spectrum
-    Error_Status = IFGtoSPC(opd,ifg,OutFrequency,cspc)
+    Error_Status = IFGtoSPC(opd , &  ! Input
+                            ifg , &  ! Input
+                            f   , &  ! Output
+                            cspc  )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message(ROUTINE_NAME, &
                            'IFG->SPC FFT failed.', &
@@ -938,12 +1006,13 @@ print *, 'No. of IFG points for output SPC:              ', nIfg
       RETURN
     END IF
 
-    ! Prepare return arguments
-    OutFrequency=OutFrequency+f(1)  ! Translate output frequency
-    OutSpectrum =REAL(cspc,fp)      ! Only the REAL part of the spectrum is returned
 
-!6) translate output frequency grid as required
-!6a) truncate output to original bandwidth (due to cos filter)
+    ! Fill return arguments
+    i1 = (nFilter-1)*nSpcMult + 1
+    i2 = i1 + nSpcOut - 1
+    nOutSpectrum            = nSpcOut
+    OutFrequency(1:nSpcOut) = f(i1:i2) + InFrequency(1) - width
+    OutSpectrum(1:nSpcOut)  = REAL(cspc(i1:i2),fp)
 
   END FUNCTION Fourier_Interpolate
   
