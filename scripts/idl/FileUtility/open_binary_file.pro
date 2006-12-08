@@ -7,10 +7,10 @@
 ;       "Binary" files.
 ;
 ; CALLING SEQUENCE:
-;       fileId = Open_Binary_File( fileName                       , $
-;                                  WRITE          =Write          , $
-;                                  SWAP           =Swap           , $
-;                                  F77_UNFORMATTED=F77_Unformatted  )
+;       fileId = Open_Binary_File( fileName     , $
+;                                  WRITE =Write , $
+;                                  SWAP  =Swap  , $
+;                                  STREAM=STREAM  )
 ;
 ; INPUTS:
 ;       fileName:         Name of the Binary file to open.
