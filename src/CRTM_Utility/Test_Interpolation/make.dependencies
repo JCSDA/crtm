@@ -1,2 +1,5 @@
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Interp_ND.o : Interp_ND.f90 Type_Kinds.o 
+Test_Interp_2D.o : Test_Interp_2D.f90 Interp_ND.o Compare_Float_Numbers.o Type_Kinds.o 
+Test_Interpolation.o : Test_Interpolation.f90 Interp_ND.o Compare_Float_Numbers.o Type_Kinds.o 
 Type_Kinds.o : Type_Kinds.f90 
-Test_Interpolation.o : Test_Interpolation.f90 Type_Kinds.o 

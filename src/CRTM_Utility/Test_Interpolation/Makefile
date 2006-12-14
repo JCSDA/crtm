@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Test_Interpolation program
+# Makefile for Test_Interp_2D program
 #
 #==============================================================================
 
@@ -11,10 +11,12 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Test_Interpolation
+EXE_FILE = Test_Interp_2D
 
 # Source files to link
-SRC_FILES = Type_Kinds.f90
+SRC_FILES = Type_Kinds.f90 \
+            Compare_Float_Numbers.f90 \
+            Interp_ND.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
