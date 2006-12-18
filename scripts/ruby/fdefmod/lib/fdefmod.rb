@@ -2,7 +2,9 @@
 
 class FDefMod
 
+  # -------------------------------
   # The FDefMod regular expressions
+  # -------------------------------
   STRUCTBEGINREGEXP=%r{
       ^\s*TYPE\s*::\s*
       (\w*)_type       # Capture the structure name to $1
@@ -12,7 +14,6 @@ class FDefMod
       ^\s*END\s+TYPE\s*
       (\w*)            # Capture the structure name to $1
     }ix
-
 
   DIMREGEXP=%r{
       ^\s*INTEGER\s*::\s* # Only integer types are allowed for dimensions
@@ -206,12 +207,9 @@ class FDefMod
     @dimdecl=indent(1)+"INTEGER :: #{@dimdecl.join(",")}"
     
     # Construct component name formats
-    dsl=@dimList.inject(0) {|memo,d| memo >= d.length ? memo : d.length}
-    @dfmt="%-#{dsl}.#{dsl}s"
-    ssl=(@scalarList.collect {|s| s[:name]}).inject(0) {|memo,s| memo >= s.length ? memo : s.length}
-    @sfmt="%-#{ssl}.#{ssl}s"
-    asl=(@arrayList.collect {|a| a[:name]}).inject(0) {|memo,a| memo >= a.length ? memo : a.length}
-    @afmt="%-#{asl}.#{asl}s"
+    @dfmt=nameFmt(@dimList)
+    @sfmt=nameFmt(@scalarList.collect {|s| s[:name]})
+    @afmt=nameFmt(@arrayList.collect  {|a| a[:name]})
 
   end # def read
 
@@ -224,43 +222,50 @@ class FDefMod
     i0,i1=indent(0),indent(1)
     
     # Dimensions
-    dimDef=""
-    @dimList.each {|d| dimDef<<i1+"INTEGER :: #{d}=0\n"}
+    dimDef="    ! Dimensions\n"
+    @dimList.each {|d| dimDef<<"    INTEGER :: #{d}=0\n"}
+
     
+    # -------
     # Scalars
-    scalarDef=""
-    @scalarList.each do |s|
-      scalarDef<<i1+"#{s[:type]}"
-      scalarDef<<"(#{s[:param]})" unless s[:param].nil?
-      scalarDef<<" :: #{s[:name]}"
-      scalarDef<<" = #{s[:initval]}" unless s[:initval].nil?
-      scalarDef<<" ! #{s[:desc]}" unless s[:desc].nil?
+    # -------
+    # Get the pretty print output format for the type definitions
+    scalarTypeDef=@scalarList.collect {|s| %Q{#{s[:type]}#{"(#{s[:param]})" unless s[:param].nil?}}}
+    sFmt=nameFmt(scalarTypeDef)
+    # Construct the scalar definitions
+    scalarDef="    ! Scalars\n"
+    @scalarList.each_index do |i|
+      scalarDef<<"    #{sFmt%scalarTypeDef[i]}"
+      scalarDef<<" :: #{@scalarList[i][:name]}"
+      scalarDef<<" = #{@scalarList[i][:initval]}" unless @scalarList[i][:initval].nil?
+      scalarDef<<" ! #{@scalarList[i][:desc]}" unless @scalarList[i][:desc].nil?
       scalarDef<<"\n"
     end
     
+    # ------
     # Arrays
-    arrayDef=""
-    @arrayList.each do |a|
-      arrayDef<<i1+"#{a[:type]}"
-      arrayDef<<"(#{a[:param]})" unless a[:param].nil?
-      arrayDef<<", DIMENSION("<<([":"]*a[:ndims]).join(",")<<")"
-      arrayDef<<", POINTER :: #{a[:name]}=>NULL()"
-      arrayDef<<" ! #{a[:desc]}" unless a[:desc].nil?
+    # ------
+    # Get the pretty print output format for the type definitions
+    arrayTypeDef=@arrayList.collect {|s| %Q{#{s[:type]}#{"(#{s[:param]})" unless s[:param].nil?}}}
+    aFmt=nameFmt(arrayTypeDef)
+    # Construct the array definitions
+    arrayDef="    ! Arrays\n"
+    @arrayList.each_index do |i|
+      arrayDef<<"    #{aFmt%arrayTypeDef[i]}"
+      arrayDef<<", DIMENSION("<<([":"]*@arrayList[i][:ndims]).join(",")<<")"
+      arrayDef<<", POINTER :: #{@arrayList[i][:name]}=>NULL()"
+      arrayDef<<" ! #{@arrayList[i][:desc]}" unless @arrayList[i][:desc].nil?
       arrayDef<<"\n"
     end
 
     # The definition
     str=<<EOF
-#{i0}TYPE :: #{@structName}_type
-#{i1}INTEGER :: n_Allocates=0
-#{i1}
-#{i1}! Dimensions
-#{dimDef}
-#{i1}! Scalars
-#{scalarDef}
-#{i1}! Arrays
-#{arrayDef}
-#{i0}END TYPE #{@structName}_type
+  TYPE :: #{@structName}_type
+    INTEGER :: n_Allocates=0
+#{dimDef.chomp}
+#{"#{scalarDef.chomp}" unless @scalarList.empty?}
+#{arrayDef.chomp}
+  END TYPE #{@structName}_type
 EOF
 
     # Done
@@ -273,27 +278,16 @@ EOF
   # ----------------------------------------
   def clearSub
 
-    # The indents
-    i0,i1=indent(0),indent(1)
-    
-    # The dimension clear statements
-    dimClear=""
-    @dimList.each {|d| dimClear<<i1+"#{@structName}%#{@dfmt%d}=0\n"}
-    
     # The scalar clear statements
     scalarClear=""
-    scalarList.each {|s| scalarClear<<i1+"#{@structName}%#{@sfmt%s[:name]}=#{s[:initval]}\n" unless s[:initval].nil?}
+    scalarList.each {|s| scalarClear<<"    #{@structName}%#{@sfmt%s[:name]}=#{s[:initval]}\n" unless s[:initval].nil?}
 
     # The subroutine
     str=<<EOF
-#{i0}SUBROUTINE Clear_#{@structName}(#{@structName})
-#{i1}TYPE(#{@structName}_type), INTENT(IN OUT) :: #{@structName}
-#{i1}    
-#{i1}! Dimensions
-#{dimClear}
-#{i1}! Scalars
-#{scalarClear}
-#{i0}END SUBROUTINE Clear_#{@structName}
+  SUBROUTINE Clear_#{@structName}(#{@structName})
+    TYPE(#{@structName}_type), INTENT(IN OUT) :: #{@structName}
+#{scalarClear.chomp}
+  END SUBROUTINE Clear_#{@structName}
 EOF
 
     # Done
@@ -306,40 +300,41 @@ EOF
   # -------------------------------------------
   def assocFunc
 
-    # The indents
-    i0,i1=indent(0),indent(1)
+    # Declaration and argument type definition format
+    dFmt=nameFmt(["#{@structName}_out","ANY_Test"])
+    aFmt=nameFmt(["TYPE(#{@structName}_type)","INTEGER, OPTIONAL"])
 
     # The function
     str=<<EOF
-#{i0}FUNCTION Associated_#{@structName}( &
-#{i1}         #{@structName}, &  ! Input
-#{i1}         ANY_Test ) & ! Optional input
-#{i1}       RESULT(Association_Status)
-#{i1}! Arguments
-#{i1}TYPE(#{@structName}_type), INTENT(IN) :: #{@structName}
-#{i1}INTEGER, OPTIONAL, INTENT(IN) :: ANY_Test
-#{i1}! Function result
-#{i1}LOGICAL :: Association_Status
-#{i1}! Local variables
-#{i1}LOGICAL :: ALL_Test
-#{i1}
-#{i1}! Default is to test ALL the pointer members
-#{i1}! for a true association status....
-#{i1}ALL_Test = .TRUE.
-#{i1}! ...unless the ANY_Test argument is set.
-#{i1}IF ( PRESENT( ANY_Test ) ) THEN
-#{i1}  IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
-#{i1}END IF
-#{i1}
-#{i1}! Test the structure associations    
-#{i1}Association_Status = .FALSE.
-#{i1}IF (ALL_Test) THEN
+  FUNCTION Associated_#{@structName}( &
+             #{dFmt%"#{@structName}"}, &  ! Input
+             #{dFmt%"ANY_Test"}) & ! Optional input
+           RESULT(Association_Status)
+    ! Arguments
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN) :: #{@structName}
+    #{aFmt%"INTEGER, OPTIONAL"}, INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL :: Association_Status
+    ! Local variables
+    LOGICAL :: ALL_Test
+    
+    ! Default is to test ALL the pointer members
+    ! for a true association status....
+    ALL_Test = .TRUE.
+    ! ...unless the ANY_Test argument is set.
+    IF ( PRESENT( ANY_Test ) ) THEN
+      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
+    END IF
+    
+    ! Test the structure associations    
+    Association_Status = .FALSE.
+    IF (ALL_Test) THEN
 #{assocIf("AND")}
-#{i1}ELSE
+    ELSE
 #{assocIf("OR")}
-#{i1}END IF
-#{i1}
-#{i0}END FUNCTION Associated_#{@structName}
+    END IF
+    
+  END FUNCTION Associated_#{@structName}
 EOF
 
     # Done
@@ -352,72 +347,80 @@ EOF
   # ----------------------------------------
   def destroyFunc
 
-    # The indents
-    i0,i1=indent(0),indent(1)
+    # Declaration and argument type definition format
+    dFmt=nameFmt(["#{@structName}","Message_Log"])
+    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
 
     # The array component deallocation statement
-    deallocStatement=i1+"DEALLOCATE( #{@structName}%#{@afmt%@arrayList.first[:name]}, &\n"
+    deallocStatement="    DEALLOCATE( #{@structName}%#{@afmt%@arrayList.first[:name]}, &\n"
     1.upto(@arrayList.length-1) do |i|
       deallocStatement<<indent(7)+"#{@structName}%#{@afmt%@arrayList[i][:name]}, &\n"
     end
     deallocStatement<<indent(7)+"STAT = Allocate_Status )"
     
+    # The dimension clear statements
+    dimClear=""
+    @dimList.each {|d| dimClear<<"    #{@structName}%#{@dfmt%d}=0\n"}
+
     # The function
     str=<<EOF
-#{i0}FUNCTION Destroy_#{@structName}( &
-#{i1}         #{@structName}, &  ! Output
-#{i1}         No_Clear, &  ! Optional input
-#{i1}         RCS_Id, &  ! Revision control
-#{i1}         Message_Log ) &  ! Error messaging
-#{i1}       RESULT(Error_Status)
-#{i1}! Arguments
-#{i1}TYPE(#{@structName}_type), INTENT(IN OUT) :: #{@structName} 
-#{i1}INTEGER,      OPTIONAL, INTENT(IN)  :: No_Clear
-#{i1}CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-#{i1}CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-#{i1}! Function result
-#{i1}INTEGER :: Error_Status
-#{i1}! Local parameters
-#{i1}CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_#{@structName}'
-#{i1}! Local variables
-#{i1}CHARACTER(256)  :: Message
-#{i1}LOGICAL :: Clear
-#{i1}INTEGER :: Allocate_Status
-#{i1}
-#{i1}! Set up
-#{i1}Error_Status = SUCCESS
-#{i1}IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-#{i1}
-#{i1}! Default is to clear scalar members...
-#{i1}Clear = .TRUE.
-#{i1}! ....unless the No_Clear argument is set
-#{i1}IF ( PRESENT( No_Clear ) ) THEN
-#{i1}  IF ( No_Clear == 1 ) Clear = .FALSE.
-#{i1}END IF
-#{i1}
-#{i1}! Initialise the scalar members
-#{i1}IF ( Clear ) CALL Clear_#{@structName}(#{@structName})
-#{i1}
-#{i1}! If ALL pointer members are NOT associated, do nothing
-#{i1}IF ( .NOT. Associated_#{@structName}(#{@structName}) ) RETURN
-#{i1}
-#{i1}! Deallocate the pointer members
+  FUNCTION Destroy_#{@structName}( &
+             #{dFmt%"#{@structName}"}, &  ! Output
+             #{dFmt%"No_Clear"}, &  ! Optional input
+             #{dFmt%"RCS_Id"}, &  ! Revision control
+             #{dFmt%"Message_Log"}) &  ! Error messaging
+           RESULT(Error_Status)
+    ! Arguments
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName} 
+    #{aFmt%"INTEGER,      OPTIONAL"}, INTENT(IN)     :: No_Clear
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_#{@structName}'
+    ! Local variables
+    CHARACTER(256)  :: Message
+    LOGICAL :: Clear
+    INTEGER :: Allocate_Status
+    
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    
+    ! Default is to clear scalar members...
+    Clear = .TRUE.
+    ! ....unless the No_Clear argument is set
+    IF ( PRESENT( No_Clear ) ) THEN
+      IF ( No_Clear == 1 ) Clear = .FALSE.
+    END IF
+    
+    ! Initialise the scalar members
+    IF ( Clear ) CALL Clear_#{@structName}(#{@structName})
+    
+    ! If ALL pointer members are NOT associated, do nothing
+    IF ( .NOT. Associated_#{@structName}(#{@structName}) ) RETURN
+    
+    ! Deallocate the pointer members
 #{deallocStatement}
-#{i1}IF ( Allocate_Status /= 0 ) THEN
-#{i1}  WRITE( Message, '( "Error deallocating #{@structName}. STAT = ", i5 )' ) &
-#{i1}                  Allocate_Status
+    IF ( Allocate_Status /= 0 ) THEN
+      WRITE( Message, '( "Error deallocating #{@structName}. STAT = ", i5 )' ) &
+                      Allocate_Status
 #{failReturn(2,"TRIM(Message)")}
-#{i1}END IF
-#{i1}
-#{i1}! Decrement and test allocation counter
-#{i1}#{@structName}%n_Allocates = #{@structName}%n_Allocates - 1
-#{i1}IF ( #{@structName}%n_Allocates /= 0 ) THEN
-#{i1}  WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-#{i1}                  #{@structName}%n_Allocates
+    END IF
+
+    ! Reset the dimension indicators
+#{dimClear.chomp}
+    
+    ! Decrement and test allocation counter
+    #{@structName}%n_Allocates = #{@structName}%n_Allocates - 1
+    IF ( #{@structName}%n_Allocates /= 0 ) THEN
+      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
+                      #{@structName}%n_Allocates
 #{failReturn(2,"TRIM(Message)")}
-#{i1}END IF
-#{i1}
-#{i0}END FUNCTION Destroy_#{@structName}
+    END IF
+    
+  END FUNCTION Destroy_#{@structName}
 EOF
 
     # Done
@@ -425,33 +428,27 @@ EOF
   end # def destroyFunc
   
 
-  # -----------------------------------------
+  # =========================================
   # Method to construct the Allocate function
-  # -----------------------------------------
+  # =========================================
   def allocFunc
 
-    # The indents
-    i0,i1=indent(0),indent(1)
+    # Declaration and argument type definition format
+    dFmt=nameFmt(["#{@structName}_out","Message_Log"]+@dimList)
+    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
 
     # The function declaration dimension inputs
     dimFuncDef=""
-    @dimList.each {|d| dimFuncDef<<indent(5)+" #{@dfmt%d}, &  ! Input\n"}
+    @dimList.each {|d| dimFuncDef<<indent(5)+" #{dFmt%d}, &  ! Input\n"}
     dimFuncDef.chomp! # Remove last newline
 
     # The argument declaration dimension inputs
     dimArgDef=""
-    @dimList.each {|d| dimArgDef<<i1+"INTEGER, INTENT(IN) :: #{d}\n"}
+    @dimList.each {|d| dimArgDef<<indent(1)+aFmt%"INTEGER"+", INTENT(IN)     :: #{d}\n"}
     dimArgDef.chomp! # Remove last newline
     
-    # The dimension value check
-    dimValCheck=i1+"IF ( #{@dfmt%@dimList.first} < 1 .OR. &\n"
-    1.upto(@dimList.length-2) do |i|
-      dimValCheck<<indent(3)+" #{@dfmt%@dimList[i]} < 1 .OR. &\n"
-    end
-    dimValCheck<<indent(3)+" #{@dfmt%@dimList.last} < 1 ) THEN"
-    
     # The array component allocation statement
-    arrayAlloc=i1+"ALLOCATE( #{@structName}%#{@arrayList.first[:name]}(#{@arrayList.first[:dims].join(",")}), &\n"
+    arrayAlloc="    ALLOCATE( #{@structName}%#{@arrayList.first[:name]}(#{@arrayList.first[:dims].join(",")}), &\n"
     1.upto(@arrayList.length-1) do |i|
       arrayAlloc<<indent(6)+"#{@structName}%#{@arrayList[i][:name]}(#{@arrayList[i][:dims].join(",")}), &\n"
     end
@@ -459,7 +456,7 @@ EOF
     
     # The dimension assignment statements
     dimAssign=""
-    @dimList.each {|d| dimAssign<<i1+"#{@structName}%#{@dfmt%d} = #{d}\n"}
+    @dimList.each {|d| dimAssign<<"    #{@structName}%#{@dfmt%d} = #{d}\n"}
     
     # The array initialisation statements
     arrayAssign=""
@@ -467,7 +464,7 @@ EOF
       # Only intrinsic types are initialisaed
       next if a[:type] == "TYPE"
       # Construct the initialistions
-      arrayAssign<<i1+"#{@structName}%#{@afmt%a[:name]} = " 
+      arrayAssign<<"    #{@structName}%#{@afmt%a[:name]} = " 
       arrayAssign<< case a[:type]
                       when "INTEGER"   then "0\n"
                       when "REAL"      then "ZERO\n"
@@ -479,67 +476,67 @@ EOF
 
     # The function
     str=<<EOF
-#{i0}FUNCTION Allocate_#{@structName}( &
+  FUNCTION Allocate_#{@structName}( &
 #{dimFuncDef}
-#{i1}         #{@structName}, &  ! Output
-#{i1}         RCS_Id,       &  ! Revision control
-#{i1}         Message_Log ) &  ! Error messaging
-#{i1}       RESULT( Error_Status )
-#{i1}! Arguments
+             #{dFmt%"#{@structName}"}, &  ! Output
+             #{dFmt%"RCS_Id"}, &  ! Revision control
+             #{dFmt%"Message_Log"}) &  ! Error messaging
+           RESULT( Error_Status )
+    ! Arguments
 #{dimArgDef}
-#{i1}TYPE(#{@structName}_type), INTENT(IN OUT) :: #{@structName}
-#{i1}CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-#{i1}CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-#{i1}! Function result
-#{i1}INTEGER :: Error_Status
-#{i1}! Local parameters
-#{i1}CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_#{@structName}'
-#{i1}! Local variables
-#{i1}CHARACTER(256)  :: Message
-#{i1}INTEGER :: Allocate_Status
-#{i1}
-#{i1}! Set up
-#{i1}Error_Status = SUCCESS
-#{i1}IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-#{i1}
-#{i1}! Check dimensions
-#{dimValCheck}
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName}
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_#{@structName}'
+    ! Local variables
+    CHARACTER(256)  :: Message
+    INTEGER :: Allocate_Status
+    
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    
+    ! Check dimensions
+#{dimcheckIf}
 #{failReturn(2,"'Input #{@structName} dimensions must all be > 0.'")}
-#{i1}END IF
-#{i1}
-#{i1}! Check if ANY pointers are already associated.
-#{i1}! If they are, deallocate them but leave scalars.
-#{i1}IF ( Associated_#{@structName}( #{@structName}, ANY_Test=1 ) ) THEN
-#{i1}  Error_Status = Destroy_#{@structName}( &
-#{i1}                   #{@structName}, &
-#{i1}                   No_Clear=1, &
-#{i1}                   Message_Log=Message_Log )
-#{i1}  IF ( Error_Status /= SUCCESS ) THEN
+    END IF
+    
+    ! Check if ANY pointers are already associated.
+    ! If they are, deallocate them but leave scalars.
+    IF ( Associated_#{@structName}( #{@structName}, ANY_Test=1 ) ) THEN
+      Error_Status = Destroy_#{@structName}( &
+                       #{@structName}, &
+                       No_Clear=1, &
+                       Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
 #{failReturn(3,"'Error deallocating #{@structName} prior to allocation.'")}
-#{i1}  END IF
-#{i1}END IF
-#{i1}
-#{i1}! Perform the pointer allocation
+      END IF
+    END IF
+    
+    ! Perform the pointer allocation
 #{arrayAlloc}
-#{i1}IF ( Allocate_Status /= 0 ) THEN
-#{i1}  WRITE( Message, '( "Error allocating #{@structName} data arrays. STAT = ", i5 )' ) &
-#{i1}                  Allocate_Status
+    IF ( Allocate_Status /= 0 ) THEN
+      WRITE( Message, '( "Error allocating #{@structName} data arrays. STAT = ", i5 )' ) &
+                      Allocate_Status
 #{failReturn(2,"TRIM(Message)")}
-#{i1}END IF
-#{i1}
-#{i1}! Assign the dimensions
+    END IF
+    
+    ! Assign the dimensions
 #{dimAssign}
-#{i1}! Initialise the arrays
+    ! Initialise the arrays
 #{arrayAssign}
-#{i1}! Increment and test the allocation counter
-#{i1}#{@structName}%n_Allocates = #{@structName}%n_Allocates + 1
-#{i1}IF ( #{@structName}%n_Allocates /= 1 ) THEN
-#{i1}  WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
-#{i1}                  #{@structName}%n_Allocates
+    ! Increment and test the allocation counter
+    #{@structName}%n_Allocates = #{@structName}%n_Allocates + 1
+    IF ( #{@structName}%n_Allocates /= 1 ) THEN
+      WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
+                      #{@structName}%n_Allocates
 #{failReturn(2,"TRIM(Message)")}
-#{i1}END IF
-#{i1}
-#{i0}END FUNCTION Allocate_#{@structName}
+    END IF
+    
+  END FUNCTION Allocate_#{@structName}
 EOF
 
     # Done
@@ -547,9 +544,9 @@ EOF
   end # def allocFunc
   
 
-  # ---------------------------------------
+  # =======================================
   # Method to construct the Assign function
-  # ---------------------------------------
+  # =======================================
   def assignFunc
 
     # The indents
@@ -571,13 +568,13 @@ EOF
       # Derived type call their Assign function
       else
         typeAssign=<<-EOF
-#{i1}Error_Status = Assign_#{s[:typename]}( &
-#{i1}                 #{@structName}_in%#{s[:name]}, &
-#{i1}                 #{@structName}_out%#{s[:name]}, &
-#{i1}                 Message_Log=Message )
-#{i1}IF ( Error_Status /= SUCCESS ) THEN
+    Error_Status = Assign_#{s[:typename]}( &
+                     #{@structName}_in%#{s[:name]}, &
+                     #{@structName}_out%#{s[:name]}, &
+                     Message_Log=Message )
+    IF ( Error_Status /= SUCCESS ) THEN
 #{failReturn(2,"'Error copying #{@structName} scalar structure component #{s[:name]}'")}
-#{i1}END IF
+    END IF
 EOF
         scalarAssign<<typeAssign
       end
@@ -615,45 +612,49 @@ EOF
       end
     end
 
+    # Declaration and argument type definition format
+    dFmt=nameFmt(["#{@structName}_out","Message_Log"])
+    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+
     # Create the function
     str=<<EOF
-#{i0}FUNCTION Assign_#{@structName}( &
-#{i1}         #{@structName}_in , &  ! Input
-#{i1}         #{@structName}_out, &  ! Output
-#{i1}         RCS_Id      , &  ! Revision control
-#{i1}         Message_Log ) &  ! Error messaging
-#{i1}       RESULT( Error_Status )
-#{i1}! Arguments
-#{i1}TYPE(#{@structName}_type), INTENT(IN)     :: #{@structName}_in
-#{i1}TYPE(#{@structName}_type), INTENT(IN OUT) :: #{@structName}_out
-#{i1}CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-#{i1}CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-#{i1}! Function result
-#{i1}INTEGER :: Error_Status
-#{i1}! Local parameters
-#{i1}CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_#{@structName}'
-#{i1}! Local variables
+  FUNCTION Assign_#{@structName}( &
+             #{dFmt%"#{@structName}_in"}, &  ! Input
+             #{dFmt%"#{@structName}_out"}, &  ! Output
+             #{dFmt%"RCS_Id"}, &  ! Revision control
+             #{dFmt%"Message_Log"}) &  ! Error messaging
+           RESULT( Error_Status )
+    ! Arguments
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)     :: #{@structName}_in
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName}_out
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_#{@structName}'
+    ! Local variables
 #{@dimdecl}
-#{i1}
-#{i1}! Set up
-#{i1}IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-#{i1}
-#{i1}! ALL *input* pointers must be associated
-#{i1}IF ( .NOT. Associated_#{@structName}(#{@structName}_In) ) THEN
+
+    ! Set up
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! ALL *input* pointers must be associated
+    IF ( .NOT. Associated_#{@structName}(#{@structName}_In) ) THEN
 #{failReturn(2,"'Some or all INPUT #{@structName} pointer members are NOT associated.'")}
-#{i1}END IF
-#{i1}
-#{i1}! Allocate data arrays
+    END IF
+    
+    ! Allocate data arrays
 #{allocStruct}
-#{i1}IF ( Error_Status /= SUCCESS ) THEN
+    IF ( Error_Status /= SUCCESS ) THEN
 #{failReturn(2,"'Error allocating output structure'")}
-#{i1}END IF
-#{i1}
-#{i1}! Assign non-dimension scalar members
+    END IF
+    
+    ! Assign non-dimension scalar members
 #{scalarAssign}
-#{i1}! Copy array data
+    ! Copy array data
 #{arrayAssign}
-#{i0}END FUNCTION Assign_#{@structName}
+  END FUNCTION Assign_#{@structName}
 EOF
 
     # Done
@@ -661,9 +662,9 @@ EOF
   end # def assignFunc
   
 
-  # --------------------------------------
+  # ======================================
   # Method to construct the Equal function
-  # --------------------------------------
+  # ======================================
   def equalFunc
 
     # The indents
@@ -802,60 +803,64 @@ EOF
       end
     end
 
+    # Declaration and argument type definition format
+    dFmt=nameFmt(["#{@structName}_LHS","Message_Log"])
+    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    
     # Create the function
     str=<<EOF
-#{i0}FUNCTION Equal_#{@structName}( &
-#{i1}         #{@structName}_LHS, &  ! Input
-#{i1}         #{@structName}_RHS, &  ! Input
-#{i1}         ULP_Scale,    &  ! Optional input
-#{i1}         RCS_Id,       &  ! Revision control
-#{i1}         Message_Log ) &  ! Error messaging
-#{i1}       RESULT( Error_Status )
-#{i1}! Arguments
-#{i1}TYPE(#{@structName}_type), INTENT(IN)  :: #{@structName}_LHS
-#{i1}TYPE(#{@structName}_type), INTENT(IN)  :: #{@structName}_RHS
-#{i1}INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
-#{i1}CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-#{i1}CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-#{i1}! Function result
-#{i1}INTEGER :: Error_Status
-#{i1}! Local parameters
-#{i1}CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_#{@structName}'
-#{i1}! Local variables
-#{i1}CHARACTER(256)  :: Message
-#{i1}INTEGER :: ULP
-#{i1}INTEGER :: l, j
+  FUNCTION Equal_#{@structName}( &
+             #{dFmt%"#{@structName}_LHS"}, &  ! Input
+             #{dFmt%"#{@structName}_RHS"}, &  ! Input
+             #{dFmt%"ULP_Scale"}, &  ! Optional input
+             #{dFmt%"RCS_Id"}, &  ! Revision control
+             #{dFmt%"Message_Log"}) &  ! Error messaging
+           RESULT( Error_Status )
+    ! Arguments
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)  :: #{@structName}_LHS
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)  :: #{@structName}_RHS
+    #{aFmt%"INTEGER,      OPTIONAL"}, INTENT(IN)  :: ULP_Scale
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT) :: RCS_Id
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_#{@structName}'
+    ! Local variables
+    CHARACTER(256)  :: Message
+    INTEGER :: ULP
+    INTEGER :: l, j
 #{@dimdecl}
-#{i1}
-#{i1}! Set up
-#{i1}Error_Status = SUCCESS
-#{i1}IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-#{i1}
-#{i1}! Default precision is a single unit in last place
-#{i1}ULP = 1
-#{i1}! ... unless the ULP_Scale argument is set and positive
-#{i1}IF ( PRESENT( ULP_Scale ) ) THEN
-#{i1}  IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-#{i1}END IF
-#{i1}
-#{i1}! Check the structure association status
-#{i1}IF ( .NOT. Associated_#{@structName}( #{@structName}_LHS ) ) THEN
+
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Default precision is a single unit in last place
+    ULP = 1
+    ! ... unless the ULP_Scale argument is set and positive
+    IF ( PRESENT( ULP_Scale ) ) THEN
+      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
+    END IF
+
+    ! Check the structure association status
+    IF ( .NOT. Associated_#{@structName}( #{@structName}_LHS ) ) THEN
 #{failReturn(2,"'Some or all INPUT #{@structName}_LHS pointer members are NOT associated.'")}
-#{i1}END IF
-#{i1}IF ( .NOT. Associated_#{@structName}( #{@structName}_RHS ) ) THEN
+    END IF
+    IF ( .NOT. Associated_#{@structName}( #{@structName}_RHS ) ) THEN
 #{failReturn(2,"'Some or all INPUT #{@structName}_RHS pointer members are NOT associated.'")}
-#{i1}END IF
-#{i1}
-#{i1}! Check dimensions
+    END IF
+    
+    ! Check dimensions
 #{dimEqual}
 #{failReturn(2,"'Structure dimensions are different.'")}
-#{i1}END IF
-#{i1}
-#{i1}! Check the scalar components
+    END IF
+
+    ! Check the scalar components
 #{scalarEqual}
-#{i1}! Check the array components
+    ! Check the array components
 #{arrayEqual}
-#{i0}END FUNCTION Equal_#{@structName}
+  END FUNCTION Equal_#{@structName}
 EOF
 
     # Done
@@ -863,9 +868,9 @@ EOF
   end # def equalFunc
 
 
-  # ---------------------------------------
+  # =======================================
   # Method to construct the Info subroutine
-  # ---------------------------------------
+  # =======================================
   def infoSub
 
     # The indents
@@ -880,36 +885,40 @@ EOF
     infoDim=indent(2)+"ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &\n"+
             @dimList.collect {|d| indent(2)+"#{@structName}%#{@dfmt%d}"}.join(", &\n")             
     
+    # Declaration and argument type definition format
+    dFmt=nameFmt(["#{@structName}","RCS_Id"])
+    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    
     # Create the function
     str=<<EOF
-#{i0}SUBROUTINE Info_#{@structName}( &
-#{i1}           #{@structName}, &
-#{i1}           Info,     &  ! Output
-#{i1}           RCS_Id    )  ! Revision control
-#{i1}! Arguments
-#{i1}TYPE(#{@structName}_type),    INTENT(IN)  :: #{@structName}
-#{i1}CHARACTER(*),           INTENT(OUT) :: Info
-#{i1}CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-#{i1}! Parameters
-#{i1}INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-#{i1}INTEGER, PARAMETER :: LINEFEED = 10
-#{i1}! Local variables
-#{i1}CHARACTER(80)  :: FmtString
-#{i1}CHARACTER(512) :: LongString
-#{i1}
-#{i1}! Set up
-#{i1}IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-#{i1}
-#{i1}! Write the required info to the local string
+  SUBROUTINE Info_#{@structName}( &
+               #{dFmt%"#{@structName}"}, &
+               #{dFmt%"Info"}, &  ! Output
+               #{dFmt%"RCS_Id"}  )  ! Revision control
+    ! Arguments
+    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)  :: #{@structName}
+    #{aFmt%"CHARACTER(*)"}, INTENT(OUT) :: Info
+    #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT) :: RCS_Id
+    ! Parameters
+    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+    INTEGER, PARAMETER :: LINEFEED = 10
+    ! Local variables
+    CHARACTER(80)  :: FmtString
+    CHARACTER(512) :: LongString
+
+    ! Set up
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Write the required info to the local string
 #{infoFmt}
-#{i1}WRITE( LongString, FMT=FmtString ) &
+    WRITE( LongString, FMT=FmtString ) &
 #{infoDim}
-#{i1}
-#{i1}! Trim the output based on the
-#{i1}! dummy argument string length
-#{i1}Info = LongString(1:MIN( LEN(Info), LEN_TRIM( LongString ) ))
-#{i1}
-#{i0}END SUBROUTINE Info_#{@structName}
+
+    ! Trim the output based on the
+    ! dummy argument string length
+    Info = LongString(1:MIN( LEN(Info), LEN_TRIM( LongString ) ))
+
+  END SUBROUTINE Info_#{@structName}
 EOF
 
     # Done
@@ -1030,6 +1039,12 @@ EOF
   private
 # =======
 
+  # Generate formats for list of names
+  def nameFmt(nameList)
+    strLen=nameList.inject(0) {|memo,n| memo >= n.length ? memo : n.length}
+    "%-#{strLen}.#{strLen}s"
+  end
+  
   # Generate indent levels for code
   def indent(indentLevel)
     base="  "
@@ -1055,6 +1070,20 @@ EOF
     str
   end # def endLoop
 
+  # Generate dimension value check for Allocate function
+  def dimcheckIf
+    str="    IF ( #{@dfmt%@dimList.first} < 1"
+    if @dimList.length==1
+      str<<" ) THEN"
+    else
+      str<<" .OR. &\n"
+      1.upto(@dimList.length-2) do |i|
+        str<<"         #{@dfmt%@dimList[i]} < 1 .OR. &\n"
+      end
+      str<<"         #{@dfmt%@dimList.last} < 1 ) THEN"
+    end
+  end
+  
   # Generate IF statement for Associated function
   def assocIf(operator)
     n=2
