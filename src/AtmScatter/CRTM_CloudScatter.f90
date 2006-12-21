@@ -72,7 +72,9 @@ MODULE CRTM_CloudScatter
   PUBLIC :: CRTM_Compute_CloudScatter_TL
   PUBLIC :: CRTM_Compute_CloudScatter_AD
 
-
+  ! -- Interpolation routines for module
+  PUBLIC :: Get_Cloud_Opt_IR
+  PUBLIC :: Get_Cloud_Opt_MW
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -88,7 +90,10 @@ MODULE CRTM_CloudScatter
   INTEGER, PARAMETER :: EIGHT_STREAMS     =  8
   INTEGER, PARAMETER :: SIXTEEN_STREAMS   = 16
   INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
-
+  
+  ! -- Table indexing variables
+  REAL(fp_kind), PARAMETER :: MINIMUM_WAVENUMBER = 102.0_fp_kind
+  REAL(fp_kind), PARAMETER :: WAVENUMBER_SPACING = FOUR
 
   ! ----------------
   ! Module variables (eventually remove)
@@ -114,16 +119,6 @@ MODULE CRTM_CloudScatter
 
 
 CONTAINS
-
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-
 
 !------------------------------------------------------------------------------
 !S+
@@ -1037,8 +1032,18 @@ CONTAINS
   ENDDO       ! END of LOOP over cloud type (n)
                                    
   END FUNCTION CRTM_Compute_CloudScatter_AD
-!
-!
+
+
+
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                        ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
   SUBROUTINE Get_Cloud_Opt_IR(n_Legendre_Terms, & !INPUT  number of Legendre terms 
                               n_Phase_Elements, & !INPUT  number of phase elements
                                     Wavenumber, & !INPUT  wavenumber in 1/cm 
@@ -1064,20 +1069,23 @@ CONTAINS
     ! ----------------------- !
     REAL( fp_kind ) :: d1,d2
     INTEGER :: m,L,L1,L2
-!
+
+
+
     ! eff_v is not used yet.
     d1 = eff_v
 
     p_coef = ZERO
 
     !  find index L1 and slope d1 on frequency interpolation
-    L1 = ( wavenumber - 102 )/FOUR + 1
-    d1 = wavenumber -(L1-1) * FOUR - 102.0
+    L1 = ( Wavenumber - MINIMUM_WAVENUMBER )/WAVENUMBER_SPACING + 1
+    d1 = ((Wavenumber -(L1-1) * WAVENUMBER_SPACING - MINIMUM_WAVENUMBER)/FOUR)
+    
+ 
  
 !  find index L2 and slope d2 on effective radius interpolation
     call find_idx(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2)
     IF( Cloud_Type == WATER_CLOUD .OR. Cloud_Type == RAIN_CLOUD) THEN
-
      ext = (ONE-d1)*(ONE-d2)*CloudC%ext_L_IR(L1,L2)  &
          + (ONE-d1)*d2*CloudC%ext_L_IR(L1,L2+1)      &
          + (ONE-d2)*d1*CloudC%ext_L_IR(L1+1,L2)      &
@@ -1090,13 +1098,16 @@ CONTAINS
          + (ONE-d1)*d2*CloudC%g_L_IR(L1,L2+1)      &
          + (ONE-d2)*d1*CloudC%g_L_IR(L1+1,L2)      &
          + d1*d2*CloudC%g_L_IR(L1+1,L2+1)
-
+     
+     
      IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
        DO L = 0, n_Legendre_Terms
+       
         p_coef(L,1)=(ONE-d1)*(ONE-d2)*CloudC%phase_coeff_L_IR(L1,L2,L+Offset_LegTerm) &
         +(ONE-d1)*d2*CloudC%phase_coeff_L_IR(L1,L2+1,L+Offset_LegTerm) &
         +(ONE-d2)*d1*CloudC%phase_coeff_L_IR(L1+1,L2,L+Offset_LegTerm)   &
         +d1*d2*CloudC%phase_coeff_L_IR(L1+1,L2+1,L+Offset_LegTerm)
+        
        ENDDO
      ENDIF
     ELSE IF(Cloud_Type==ICE_CLOUD .OR. Cloud_Type==SNOW_CLOUD .OR. &
@@ -1105,6 +1116,11 @@ CONTAINS
        IF(Cloud_Type == SNOW_CLOUD) m = 1
        IF(Cloud_Type == GRAUPEL_CLOUD) m = 2
        IF(Cloud_Type == HAIL_CLOUD) m = 3
+
+!      ext = Interp_2D(d1,d2,CloudC%ext_S_IR(L1:L1+IORD,L2:L2+IORD,m))
+!      w0  = Interp_2D(d1,d2,CloudC%w_S_IR(L1:L1+IORD,L2:L2+IORD,m))
+!      g   = Interp_2D(d1,d2,CloudC%g_S_IR(L1:L1+IORD,L2:L2+IORD,m))
+
        ext = (ONE-d1)*(ONE-d2)*CloudC%ext_S_IR(L1,L2,m)  &
            + (ONE-d1)*d2*CloudC%ext_S_IR(L1,L2+1,m)      &
            + (ONE-d2)*d1*CloudC%ext_S_IR(L1+1,L2,m)      &
@@ -1170,8 +1186,8 @@ CONTAINS
        d1 = eff_v_TL
 !
 !  find index L1 and slope d1 on frequency interpolation
-      L1 = ( wavenumber - 102 )/FOUR + 1
-      d1 = wavenumber -(L1-1) * FOUR - 102.0
+      L1 = ( Wavenumber - MINIMUM_WAVENUMBER )/FOUR + 1
+      d1 = ((Wavenumber -(L1-1) * FOUR - MINIMUM_WAVENUMBER)/FOUR)
        
 !  find index L2 and slope d2 on effective radius interpolation
       call find_idx(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2)
@@ -1278,8 +1294,8 @@ CONTAINS
        d2_AD = ZERO
 !  find index L1 and slope d1 on frequency interpolation
        
-       L1 = ( wavenumber - 102 )/FOUR + 1
-       d1 = wavenumber -(L1-1) * FOUR - 102.0
+       L1 = ( Wavenumber - 102 )/FOUR + 1
+       d1 = ((Wavenumber -(L1-1) * WAVENUMBER_SPACING - MINIMUM_WAVENUMBER)/FOUR)
 !  find index L2 and slope d2 on effective radius interpolation
        call find_idx(CloudC%n_Reff_IR,CloudC%Reff_IR,eff_radius,L2,d2)
 
@@ -1388,11 +1404,11 @@ CONTAINS
        REAL( fp_kind ) :: d1,d2,d3
        REAL( fp_kind ) :: a1,a2
        INTEGER :: k,m,L,L1,L2,L3
-!
+
     ! eff_v is not used yet.
        g = eff_v
 
-       p_coef = ZERO
+       p_coef=ZERO
        w0=ZERO
        g=ZERO
 !  find index L1 and slope d1 on frequency interpolation
