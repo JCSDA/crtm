@@ -1,139 +1,71 @@
 #==============================================================================
 #
-# Makefile for Test_Type_Kinds program
-#
-# $Id: Makefile,v 1.4 2006/05/04 18:57:15 dgroff Exp $
+# Makefile for local Test_Type_Kinds build
 #
 #==============================================================================
 
-#-----------------------------------------------------------------------------
-#                          -- Define macros --
-#-----------------------------------------------------------------------------
-
-REPOSITORY_DIR = $(HOME)/src
-
-include $(REPOSITORY_DIR)/make.macros
-
-
 # -------------
+# Define macros
+# -------------
+include $(CRTM_SOURCE_ROOT)/make.macros
+
 # This makefile
-# -------------
-
 MAKE_FILE = Makefile
 
-
-# ----------------
 # Executable files
-# ----------------
-
 EXE_FILE = Test_Type_Kinds
 
+# Source files to link
+BUILD_DIR = ./Build
+include $(BUILD_DIR)/make.filelist
 
-# ------------
-# Object files
-# ------------
-
-
-UTILITY_OBJ_FILES = Type_Kinds.o
-
-OBJ_FILES = $(UTILITY_OBJ_FILES) \
-            $(EXE_FILE).o
+# Macro files to link
+MACRO_FILES = make.macros make.rules make.common_targets
 
 
-
-#-----------------------------------------------------------------------------
-#                          -- Define dependecies --
-#-----------------------------------------------------------------------------
-
-# ---------------------
+# ------------------
+# Define dependecies
+# ------------------
 # Make based on OS type
-# ---------------------
+all: create_links
+	@cd $(BUILD_DIR); make; cd ..
 
-all:
-	@echo "OS type detected: "`uname -s`
-	@case `uname -s` in \
-	  "SunOS")   make -f $(MAKE_FILE) test_program $(SUNOS_FLAGS) ;; \
-	  "AIX")     make -f $(MAKE_FILE) test_program $(AIX_FLAGS) ;; \
-	  "IRIX64" ) make -f $(MAKE_FILE) test_program $(IRIX64_FLAGS) ;; \
-	  "Linux" )  make -f $(MAKE_FILE) test_program $(LINUX_FLAGS) ;; \
-	  *) echo "This system is not supported" ;; \
-       esac
-
-
-
-# ----------------
-# Make the program
-# ----------------
-
-test_program: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
-
-
-# --------
 # Clean up
-# --------
+clean: create_macro_links
+	@cd $(BUILD_DIR); make clean; cd ..
 
-clean:
-	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD *.stb
+realclean: clean remove_links
+	@cd $(BUILD_DIR); $(REMOVE) $(EXE_FILE); cd ..
 
-
-realclean: remove_links clean
-
-
-# --------------------------------
-# Create the links for compilation
-# (This is a kludge for now...)
-# --------------------------------
-
-UTILITY_SOURCE_DIR = $(REPOSITORY_DIR)/Utility
-UTILITY_SOURCE_FILES = ${UTILITY_OBJ_FILES:.o=.f90}
+# Install it
+install: create_macro_links
+	@cd $(BUILD_DIR); make install; cd ..
 
 
-create_links:
-	@for source_file in ${UTILITY_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${UTILITY_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
+# Source file link creation and removal
+create_links: create_macro_links create_source_links
 
-ALL_SOURCE_FILES = $(UTILITY_SOURCE_FILES)
+create_macro_links:
+	@cd $(BUILD_DIR); \
+	  linkfiles $(CRTM_SOURCE_ROOT) $(MACRO_FILES); \
+	cd ..
+
+create_source_links:
+	@cd $(BUILD_DIR); \
+	  linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES); \
+	cd ..
 
 remove_links:
-	@for source_file in ${ALL_SOURCE_FILES}; do \
-	  $(REMOVE) $$source_file ; \
-	done
-
-
-# ---------------
-# Dependency list
-# ---------------
-
-Type_Kinds.o : Type_Kinds.f90 
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o
-
-
-# -------------------------------
+	@cd $(BUILD_DIR); \
+	  unlinkfiles $(MACRO_FILES) $(SRC_FILES); \
+	cd ..
+        
 # Create tarball for distribution
-# -------------------------------
-
-TAR_FILE = $(EXE_FILE)_software.tar
-
-tar: create_links
-	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
-	@$(COPY) makefile.dist makefile
-	$(TARBALL_APPEND) $(TAR_FILE) makefile
-	@$(REMOVE) makefile
-	@$(COPY) $(REPOSITORY_DIR)/make.macros .
-	@$(COPY) $(REPOSITORY_DIR)/make.rules .
-	$(TARBALL_APPEND) $(TAR_FILE) make.macros make.rules
-	@$(REMOVE) make.macros make.rules
+TAR_DIR = $(EXE_FILE)
+TAR_FILE = Test_Type_Kinds_software.tar
+tar: clean create_links
+	@$(LINK) $(BUILD_DIR) $(TAR_DIR)
+	$(TARBALL_CREATE) $(TAR_FILE) $(TAR_DIR)
+	@$(REMOVE) $(TAR_DIR)
 	compress $(TAR_FILE)
-
-
-
-#-----------------------------------------------------------------------------
-#                          -- Define default rules --
-#-----------------------------------------------------------------------------
-
-include $(REPOSITORY_DIR)/make.rules
 
