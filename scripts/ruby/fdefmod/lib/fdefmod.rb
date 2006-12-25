@@ -2,12 +2,17 @@
 
 class FDefMod
 
-  # -------------------------------
+  # ===============================
   # The FDefMod regular expressions
-  # -------------------------------
+  # ===============================
+  NAMESPACEREGEXP=%r{
+      ^\s*NAMESPACE\s*:\s*
+      (\w*)            # Capture the namespace prefix to $1
+    }ix
+    
   STRUCTBEGINREGEXP=%r{
       ^\s*TYPE\s*::\s*
-      (\w*)_type       # Capture the structure name to $1
+      (\w*)            # Capture the structure name to $1
     }ix
 
   STRUCTENDREGEXP=%r{
@@ -38,7 +43,7 @@ class FDefMod
       (?:                             # Non-capture grouping
         \s*,\s*DIMENSION\s*           # attribute name
         \(                            # dimlist paren start
-          ([\w,]+)                    # capture dimension list text to $3
+          ([-\w:,]+)                  # capture dimension list text to $3
         \)                            # dimlist paren end
       )?                              # The whole group is optional
       # Look for the component variable name
@@ -47,7 +52,7 @@ class FDefMod
       # Look for init val
       (?:                             # Non-capture grouping
         \s*=\s*                       # Assignment operator + whitespace
-        (['"'\s\w]*)                  # Capture the initialisation value or parameter name to $5
+        (['"'.,()\s\w]*)              # Capture the initialisation value or parameter name to $5
       )?                              # The whole group is optional
       # Look for description
       (?:                             # Non-capture grouping
@@ -56,15 +61,16 @@ class FDefMod
       )?                              # The whole group is optional
     }ix
   
-  # ---------------------
+  # =====================
   # Class variable access
-  # ---------------------
-  attr_accessor :structName,:dimList,:scalarList,:arrayList,:debug
+  # =====================
+  attr_accessor :nameSpace,:structName,:dimList,:scalarList,:arrayList,:debug
 
-  # -----------------
+  # =================
   # Class constructor
-  # -----------------
+  # =================
   def initialize(debug=false)
+    @nameSpace =""
     @structName=""
     @dimList   =[]
     @scalarList=[]
@@ -76,9 +82,9 @@ class FDefMod
     @dimdecl=""
   end
 
-  # ----------------------------------------
+  # ========================================
   # Method to process a dimension definition
-  # ----------------------------------------
+  # ========================================
   def dimProcess(line)
     dimMatch = DIMREGEXP.match(line)
     unless dimMatch.nil?
@@ -91,9 +97,9 @@ class FDefMod
     end
   end 
 
-  # -------------------------------------
+  # =====================================
   # Method to process a scalar definition
-  # -------------------------------------
+  # =====================================
   def scalarProcess(line)
     scalarMatch = COMPONENTREGEXP.match(line)
     unless scalarMatch.nil?
@@ -111,14 +117,19 @@ class FDefMod
     end
   end
 
-  # -------------------------------------
+  # =====================================
   # Method to process an array definition
-  # -------------------------------------
+  # =====================================
   def arrayProcess(line)
     arrayMatch = COMPONENTREGEXP.match(line)
     unless arrayMatch.nil?
       # We have matched an array component definition
-      dims  =arrayMatch[3].split(/\s*,\s*/)                # Array of dimension names
+      dims=[]                                              # Array of dimension extents
+      arrayMatch[3].split(/\s*,\s*/).each do |d|
+        thisdim=d.split(/\s*:\s*/)
+        thisdim=["1"]+thisdim if thisdim.length == 1
+        dims<<thisdim
+      end
       ndims =dims.length                                   # The number of dimensions
       dimidx=(1..ndims).to_a.collect {|i| "i"+i.to_s}      # Loop index variables for each dimension
       @arrayList<<{:type     => arrayMatch[1].upcase,
@@ -137,38 +148,56 @@ class FDefMod
     end
   end
 
-  # ------------------------------
+
+  # ==============================
   # Method to check the dimensions
-  # ------------------------------
+  # ==============================
   def dimCheck
     @arrayList.each do |a|
       a[:dims].each do |d|
-        raise(StandardError, "Invalid dimension, #{d}, specified for #{a[:name]}") unless @dimList.include?(d)
+        dim=/[_a-zA-Z0-9]+/.match(d[1])[0]
+        raise(StandardError, "Invalid dimension, #{dim}, specified for #{a[:name]}") unless @dimList.include?(dim)
       end
     end
   end
 
-  # ------------------------------------------
-  # Method to parse an fdefmod definition file
-  # ------------------------------------------
-  def read(file)
 
-    # Initialise component type tag switch
+  # ==========================================
+  # Method to parse an fdefmod definition file
+  # ==========================================
+  def read(file)
+    parse(File.open(file,"r").readlines)
+  end
+  
+  
+  # ===================================
+  # Method to parse fdefmod definitions
+  # ===================================
+  def parse(lines)
+
+    # Set the component identifier tag
     tag=""
     
-    # Process file line by line
-    File.open(file,"r").readlines.each do |line|
-
+    # Parse line by line
+    lines.each do |line|
+    
+      # Retrieve the namespace prefix
+      if line =~ NAMESPACEREGEXP
+        @nameSpace=$1+"_"
+        puts("Namespace prefix: #{@nameSpace}") if @debug
+        next
+      end
+    
       # Retrieve the structure name
       if line =~ STRUCTBEGINREGEXP
         @structName=$1
-        puts("Structure name: #{structName}") if @debug
+        puts("Structure name: #{@structName}") if @debug
         next
       end
-      
+    
       # Check for definition end
       break if line =~ STRUCTENDREGEXP
-      
+    
       # Match fdefmod tags and set switches
       case line
       when /!\s*Dimensions/i
@@ -184,7 +213,7 @@ class FDefMod
         puts("Array components") if @debug
         next
       end
-      
+    
       # Process structure components
       case tag
       when "dim"
@@ -198,7 +227,7 @@ class FDefMod
         next
       end
       
-    end # File.open
+    end
 
     # Check that all array component dimensions are valid
     dimCheck
@@ -210,21 +239,18 @@ class FDefMod
     @dfmt=nameFmt(@dimList)
     @sfmt=nameFmt(@scalarList.collect {|s| s[:name]})
     @afmt=nameFmt(@arrayList.collect  {|a| a[:name]})
+    
+  end # def parse
 
-  end # def read
 
-  # --------------------------------------------
+  # ============================================
   # Method to construct the structure definition
-  # --------------------------------------------
+  # ============================================
   def structDef
 
-    # The indents
-    i0,i1=indent(0),indent(1)
-    
     # Dimensions
     dimDef="    ! Dimensions\n"
     @dimList.each {|d| dimDef<<"    INTEGER :: #{d}=0\n"}
-
     
     # -------
     # Scalars
@@ -260,12 +286,12 @@ class FDefMod
 
     # The definition
     str=<<EOF
-  TYPE :: #{@structName}_type
+  TYPE :: #{@nameSpace}#{@structName}_type
     INTEGER :: n_Allocates=0
 #{dimDef.chomp}
 #{"#{scalarDef.chomp}" unless @scalarList.empty?}
 #{arrayDef.chomp}
-  END TYPE #{@structName}_type
+  END TYPE #{@nameSpace}#{@structName}_type
 EOF
 
     # Done
@@ -273,9 +299,9 @@ EOF
   end # def structDef
 
 
-  # ----------------------------------------
+  # ========================================
   # Method to construct the Clear subroutine
-  # ----------------------------------------
+  # ========================================
   def clearSub
 
     # The scalar clear statements
@@ -284,10 +310,10 @@ EOF
 
     # The subroutine
     str=<<EOF
-  SUBROUTINE Clear_#{@structName}(#{@structName})
-    TYPE(#{@structName}_type), INTENT(IN OUT) :: #{@structName}
+  SUBROUTINE #{@nameSpace}Clear_#{@structName}(#{@structName})
+    TYPE(#{@nameSpace}#{@structName}_type), INTENT(IN OUT) :: #{@structName}
 #{scalarClear.chomp}
-  END SUBROUTINE Clear_#{@structName}
+  END SUBROUTINE #{@nameSpace}Clear_#{@structName}
 EOF
 
     # Done
@@ -295,23 +321,23 @@ EOF
   end # def clearSub
   
 
-  # -------------------------------------------
+  # ===========================================
   # Method to construct the Associated function
-  # -------------------------------------------
+  # ===========================================
   def assocFunc
 
     # Declaration and argument type definition format
-    dFmt=nameFmt(["#{@structName}_out","ANY_Test"])
-    aFmt=nameFmt(["TYPE(#{@structName}_type)","INTEGER, OPTIONAL"])
+    dFmt=nameFmt(["#{@structName}","ANY_Test"])
+    aFmt=nameFmt(["TYPE(#{@nameSpace}#{@structName}_type)","INTEGER, OPTIONAL"])
 
     # The function
     str=<<EOF
-  FUNCTION Associated_#{@structName}( &
+  FUNCTION #{@nameSpace}Associated_#{@structName}( &
              #{dFmt%"#{@structName}"}, &  ! Input
              #{dFmt%"ANY_Test"}) & ! Optional input
            RESULT(Association_Status)
     ! Arguments
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN) :: #{@structName}
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN) :: #{@structName}
     #{aFmt%"INTEGER, OPTIONAL"}, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
@@ -334,7 +360,7 @@ EOF
 #{assocIf("OR")}
     END IF
     
-  END FUNCTION Associated_#{@structName}
+  END FUNCTION #{@nameSpace}Associated_#{@structName}
 EOF
 
     # Done
@@ -342,14 +368,14 @@ EOF
   end # def assocFunc
   
 
-  # ----------------------------------------
+  # ========================================
   # Method to construct the Destroy function
-  # ----------------------------------------
+  # ========================================
   def destroyFunc
 
     # Declaration and argument type definition format
     dFmt=nameFmt(["#{@structName}","Message_Log"])
-    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    aFmt=nameFmt(["TYPE(#{@nameSpace}#{@structName}_type)","CHARACTER(*), OPTIONAL"])
 
     # The array component deallocation statement
     deallocStatement="    DEALLOCATE( #{@structName}%#{@afmt%@arrayList.first[:name]}, &\n"
@@ -364,21 +390,21 @@ EOF
 
     # The function
     str=<<EOF
-  FUNCTION Destroy_#{@structName}( &
+  FUNCTION #{@nameSpace}Destroy_#{@structName}( &
              #{dFmt%"#{@structName}"}, &  ! Output
              #{dFmt%"No_Clear"}, &  ! Optional input
              #{dFmt%"RCS_Id"}, &  ! Revision control
              #{dFmt%"Message_Log"}) &  ! Error messaging
            RESULT(Error_Status)
     ! Arguments
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName} 
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName} 
     #{aFmt%"INTEGER,      OPTIONAL"}, INTENT(IN)     :: No_Clear
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_#{@structName}'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = '#{@nameSpace}Destroy_#{@structName}'
     ! Local variables
     CHARACTER(256)  :: Message
     LOGICAL :: Clear
@@ -396,10 +422,10 @@ EOF
     END IF
     
     ! Initialise the scalar members
-    IF ( Clear ) CALL Clear_#{@structName}(#{@structName})
+    IF ( Clear ) CALL #{@nameSpace}Clear_#{@structName}(#{@structName})
     
     ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_#{@structName}(#{@structName}) ) RETURN
+    IF ( .NOT. #{@nameSpace}Associated_#{@structName}(#{@structName}) ) RETURN
     
     ! Deallocate the pointer members
 #{deallocStatement}
@@ -420,7 +446,7 @@ EOF
 #{failReturn(2,"TRIM(Message)")}
     END IF
     
-  END FUNCTION Destroy_#{@structName}
+  END FUNCTION #{@nameSpace}Destroy_#{@structName}
 EOF
 
     # Done
@@ -435,7 +461,7 @@ EOF
 
     # Declaration and argument type definition format
     dFmt=nameFmt(["#{@structName}_out","Message_Log"]+@dimList)
-    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    aFmt=nameFmt(["TYPE(#{@nameSpace}#{@structName}_type)","CHARACTER(*), OPTIONAL"])
 
     # The function declaration dimension inputs
     dimFuncDef=""
@@ -448,11 +474,12 @@ EOF
     dimArgDef.chomp! # Remove last newline
     
     # The array component allocation statement
-    arrayAlloc="    ALLOCATE( #{@structName}%#{@arrayList.first[:name]}(#{@arrayList.first[:dims].join(",")}), &\n"
-    1.upto(@arrayList.length-1) do |i|
-      arrayAlloc<<indent(6)+"#{@structName}%#{@arrayList[i][:name]}(#{@arrayList[i][:dims].join(",")}), &\n"
+    arrayAlloc="    ALLOCATE( &\n"
+    @arrayList.each do |a|
+      dimExtDef=a[:dims].collect {|d| d.join(":")}.join(",")
+      arrayAlloc<<"      #{@structName}%#{a[:name]}(#{dimExtDef}), &\n"
     end
-    arrayAlloc<<indent(6)+"STAT = Allocate_Status )"
+    arrayAlloc<<"      STAT = Allocate_Status )"
     
     # The dimension assignment statements
     dimAssign=""
@@ -476,7 +503,7 @@ EOF
 
     # The function
     str=<<EOF
-  FUNCTION Allocate_#{@structName}( &
+  FUNCTION #{@nameSpace}Allocate_#{@structName}( &
 #{dimFuncDef}
              #{dFmt%"#{@structName}"}, &  ! Output
              #{dFmt%"RCS_Id"}, &  ! Revision control
@@ -484,13 +511,13 @@ EOF
            RESULT( Error_Status )
     ! Arguments
 #{dimArgDef}
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName}
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName}
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_#{@structName}'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = '#{@nameSpace}Allocate_#{@structName}'
     ! Local variables
     CHARACTER(256)  :: Message
     INTEGER :: Allocate_Status
@@ -506,8 +533,8 @@ EOF
     
     ! Check if ANY pointers are already associated.
     ! If they are, deallocate them but leave scalars.
-    IF ( Associated_#{@structName}( #{@structName}, ANY_Test=1 ) ) THEN
-      Error_Status = Destroy_#{@structName}( &
+    IF ( #{@nameSpace}Associated_#{@structName}( #{@structName}, ANY_Test=1 ) ) THEN
+      Error_Status = #{@nameSpace}Destroy_#{@structName}( &
                        #{@structName}, &
                        No_Clear=1, &
                        Message_Log=Message_Log )
@@ -536,7 +563,7 @@ EOF
 #{failReturn(2,"TRIM(Message)")}
     END IF
     
-  END FUNCTION Allocate_#{@structName}
+  END FUNCTION #{@nameSpace}Allocate_#{@structName}
 EOF
 
     # Done
@@ -553,7 +580,7 @@ EOF
     i0,i1=indent(0),indent(1)
 
     # The output structure allocation statement
-    allocStruct=i1+"Error_Status = Allocate_#{@structName}( &\n"
+    allocStruct=i1+"Error_Status = #{@nameSpace}Allocate_#{@structName}( &\n"
     @dimList.each {|d| allocStruct<<indent(9)+" #{@structName}_in%#{@dfmt%d}, &\n"}
     allocStruct<<indent(9)+" #{@structName}_out, &\n"+indent(9)+" Message_Log=Message_Log)"
 
@@ -614,25 +641,25 @@ EOF
 
     # Declaration and argument type definition format
     dFmt=nameFmt(["#{@structName}_out","Message_Log"])
-    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    aFmt=nameFmt(["TYPE(#{@nameSpace}#{@structName}_type)","CHARACTER(*), OPTIONAL"])
 
     # Create the function
     str=<<EOF
-  FUNCTION Assign_#{@structName}( &
+  FUNCTION #{@nameSpace}Assign_#{@structName}( &
              #{dFmt%"#{@structName}_in"}, &  ! Input
              #{dFmt%"#{@structName}_out"}, &  ! Output
              #{dFmt%"RCS_Id"}, &  ! Revision control
              #{dFmt%"Message_Log"}) &  ! Error messaging
            RESULT( Error_Status )
     ! Arguments
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)     :: #{@structName}_in
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName}_out
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN)     :: #{@structName}_in
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN OUT) :: #{@structName}_out
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_#{@structName}'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = '#{@nameSpace}Assign_#{@structName}'
     ! Local variables
 #{@dimdecl}
 
@@ -640,7 +667,7 @@ EOF
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
-    IF ( .NOT. Associated_#{@structName}(#{@structName}_In) ) THEN
+    IF ( .NOT. #{@nameSpace}Associated_#{@structName}(#{@structName}_In) ) THEN
 #{failReturn(2,"'Some or all INPUT #{@structName} pointer members are NOT associated.'")}
     END IF
     
@@ -654,7 +681,7 @@ EOF
 #{scalarAssign}
     ! Copy array data
 #{arrayAssign}
-  END FUNCTION Assign_#{@structName}
+  END FUNCTION #{@nameSpace}Assign_#{@structName}
 EOF
 
     # Done
@@ -805,11 +832,11 @@ EOF
 
     # Declaration and argument type definition format
     dFmt=nameFmt(["#{@structName}_LHS","Message_Log"])
-    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    aFmt=nameFmt(["TYPE(#{@nameSpace}#{@structName}_type)","CHARACTER(*), OPTIONAL"])
     
     # Create the function
     str=<<EOF
-  FUNCTION Equal_#{@structName}( &
+  FUNCTION #{@nameSpace}Equal_#{@structName}( &
              #{dFmt%"#{@structName}_LHS"}, &  ! Input
              #{dFmt%"#{@structName}_RHS"}, &  ! Input
              #{dFmt%"ULP_Scale"}, &  ! Optional input
@@ -817,15 +844,15 @@ EOF
              #{dFmt%"Message_Log"}) &  ! Error messaging
            RESULT( Error_Status )
     ! Arguments
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)  :: #{@structName}_LHS
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)  :: #{@structName}_RHS
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN)  :: #{@structName}_LHS
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN)  :: #{@structName}_RHS
     #{aFmt%"INTEGER,      OPTIONAL"}, INTENT(IN)  :: ULP_Scale
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT) :: RCS_Id
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_#{@structName}'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = '#{@nameSpace}Equal_#{@structName}'
     ! Local variables
     CHARACTER(256)  :: Message
     INTEGER :: ULP
@@ -844,10 +871,10 @@ EOF
     END IF
 
     ! Check the structure association status
-    IF ( .NOT. Associated_#{@structName}( #{@structName}_LHS ) ) THEN
+    IF ( .NOT. #{@nameSpace}Associated_#{@structName}( #{@structName}_LHS ) ) THEN
 #{failReturn(2,"'Some or all INPUT #{@structName}_LHS pointer members are NOT associated.'")}
     END IF
-    IF ( .NOT. Associated_#{@structName}( #{@structName}_RHS ) ) THEN
+    IF ( .NOT. #{@nameSpace}Associated_#{@structName}( #{@structName}_RHS ) ) THEN
 #{failReturn(2,"'Some or all INPUT #{@structName}_RHS pointer members are NOT associated.'")}
     END IF
     
@@ -860,7 +887,7 @@ EOF
 #{scalarEqual}
     ! Check the array components
 #{arrayEqual}
-  END FUNCTION Equal_#{@structName}
+  END FUNCTION #{@nameSpace}Equal_#{@structName}
 EOF
 
     # Done
@@ -887,16 +914,16 @@ EOF
     
     # Declaration and argument type definition format
     dFmt=nameFmt(["#{@structName}","RCS_Id"])
-    aFmt=nameFmt(["TYPE(#{@structName}_type)","CHARACTER(*), OPTIONAL"])
+    aFmt=nameFmt(["TYPE(#{@nameSpace}#{@structName}_type)","CHARACTER(*), OPTIONAL"])
     
     # Create the function
     str=<<EOF
-  SUBROUTINE Info_#{@structName}( &
+  SUBROUTINE #{@nameSpace}Info_#{@structName}( &
                #{dFmt%"#{@structName}"}, &
                #{dFmt%"Info"}, &  ! Output
                #{dFmt%"RCS_Id"}  )  ! Revision control
     ! Arguments
-    #{aFmt%"TYPE(#{@structName}_type)"}, INTENT(IN)  :: #{@structName}
+    #{aFmt%"TYPE(#{@nameSpace}#{@structName}_type)"}, INTENT(IN)  :: #{@structName}
     #{aFmt%"CHARACTER(*)"}, INTENT(OUT) :: Info
     #{aFmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT) :: RCS_Id
     ! Parameters
@@ -916,9 +943,9 @@ EOF
 
     ! Trim the output based on the
     ! dummy argument string length
-    Info = LongString(1:MIN( LEN(Info), LEN_TRIM( LongString ) ))
+    Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
 
-  END SUBROUTINE Info_#{@structName}
+  END SUBROUTINE #{@nameSpace}Info_#{@structName}
 EOF
 
     # Done
@@ -937,9 +964,9 @@ EOF
     # Create the module
     str=<<EOF
 !
-! #{@structName}_Define
+! #{@nameSpace}#{@structName}_Define
 !
-! Module defining the #{@structName} data structure and containing routines to 
+! Module defining the #{@nameSpace}#{@structName} data structure and containing routines to 
 ! manipulate it.
 !
 ! CREATION HISTORY:
@@ -949,7 +976,7 @@ EOF
 !                      paul.vandelst@ssec.wisc.edu
 !
 
-MODULE #{@structName}_Define
+MODULE #{@nameSpace}#{@structName}_Define
 
   ! ------------------
   ! Environment set up
@@ -968,14 +995,14 @@ MODULE #{@structName}_Define
   ! Everything private by default
   PRIVATE
   ! #{@structName} data structure definition
-  PUBLIC :: #{structName}_type
+  PUBLIC :: #{@nameSpace}#{structName}_type
   ! Structure procedures
-  PUBLIC :: Associated_#{structName}
-  PUBLIC :: Destroy_#{structName}
-  PUBLIC :: Allocate_#{structName}
-  PUBLIC :: Assign_#{structName}
-  PUBLIC :: Equal_#{structName}
-  PUBLIC :: Info_#{structName}
+  PUBLIC :: #{@nameSpace}Associated_#{structName}
+  PUBLIC :: #{@nameSpace}Destroy_#{structName}
+  PUBLIC :: #{@nameSpace}Allocate_#{structName}
+  PUBLIC :: #{@nameSpace}Assign_#{structName}
+  PUBLIC :: #{@nameSpace}Equal_#{structName}
+  PUBLIC :: #{@nameSpace}Info_#{structName}
     
 
   ! -----------------
@@ -1026,7 +1053,7 @@ CONTAINS
 #{equalFunc}
 
 #{infoSub}
-END MODULE #{@structName}_Define
+END MODULE #{@nameSpace}#{@structName}_Define
 EOF
   
 
@@ -1056,7 +1083,7 @@ EOF
   def beginLoop(a)
     str=""
     0.upto(a[:ndims]-1) do |i|
-      str<<indent(i+1)+"DO #{a[:dimidx].reverse[i]}=1,#{a[:dims].reverse[i]}\n"
+      str<<indent(i+1)+"DO #{a[:dimidx].reverse[i]}=#{a[:dims].reverse[i][0]},#{a[:dims].reverse[i][1]}\n"
     end
     str
   end # def beginLoop
