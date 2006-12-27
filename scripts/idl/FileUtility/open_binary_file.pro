@@ -148,9 +148,9 @@ FUNCTION Open_Binary_File, fileName, $
     MESSAGE, 'Must specify a filename.', /NONAME, /NOPRINT
 
   ; Default access is sequential, unformatted...
-  seqUnfmt=1
+  seqUnfmt=TRUE
   ; ... unless STREAM keyword is set
-  IF ( KEYWORD_SET(Stream) ) THEN seqUnfmt=0
+  IF ( KEYWORD_SET(Stream) ) THEN seqUnfmt=FALSE
   
   ; Default is to open for read...
   input=TRUE
