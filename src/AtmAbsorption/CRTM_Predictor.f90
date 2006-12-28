@@ -24,12 +24,25 @@ MODULE CRTM_Predictor
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,               ONLY: fp=>fp_kind
-  USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters
-  USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type, H2O_ID, O3_ID
+  USE Type_Kinds              , ONLY: fp=>fp_kind
+  USE Message_Handler         , ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters         , ONLY: ZERO                       , &
+                                      POINT_25, POINT_5, POINT_75, &
+                                      ONE, TWO, THREE            , &
+                                      TOA_PRESSURE               , &
+                                      RECIPROCAL_GRAVITY         , &
+                                      WET_ABSORBER_INDEX         , &
+                                      DRY_ABSORBER_INDEX         , &
+                                      OZO_ABSORBER_INDEX         , &
+                                      MAX_N_LAYERS               , &
+                                      MAX_N_ABSORBERS            , &
+                                      MAX_N_STANDARD_PREDICTORS  , &
+                                      MAX_N_INTEGRATED_PREDICTORS, &
+                                      MINIMUM_ABSORBER_AMOUNT
+  USE CRTM_Atmosphere_Define  , ONLY: CRTM_Atmosphere_type, &
+                                      H2O_ID, O3_ID
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
-  USE CRTM_Predictor_Define,    ONLY: CRTM_Predictor_type      , &
+  USE CRTM_Predictor_Define   , ONLY: CRTM_Predictor_type      , &
                                       CRTM_Associated_Predictor, &
                                       CRTM_Destroy_Predictor   , &
                                       CRTM_Allocate_Predictor  , &
@@ -73,7 +86,6 @@ MODULE CRTM_Predictor
   TYPE :: CRTM_APVariables_type
     PRIVATE
     REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2 = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: d_A = ZERO
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1 = ZERO
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2 = ZERO
     REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s = ZERO
@@ -136,7 +148,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_IntAbsorber'
     ! Local variables
-    INTEGER  :: k
+    INTEGER  :: k, j
     REAL(fp) :: dPonG
     INTEGER  :: H2O_Index
     INTEGER  ::  O3_Index
@@ -165,6 +177,15 @@ CONTAINS
       Pred%A( k, OZO_ABSORBER_INDEX ) = Pred%A(k-1,OZO_ABSORBER_INDEX) + &
                                         (dPonG * Atm%Absorber(k,O3_Index))
 
+    END DO
+
+    ! Compute the integrated absorber level
+    ! differences and average layer amount
+    DO j = 1, Pred%n_Absorbers
+      DO k = 1, Pred%n_Layers
+        Pred%dA(k,j)   = Pred%A(k,j) - Pred%A(k-1,j)
+        Pred%aveA(k,j) = POINT_5 * (Pred%A(k,j) + Pred%A(k-1,j))
+      END DO
     END DO
 
   END SUBROUTINE CRTM_Compute_IntAbsorber
@@ -219,7 +240,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_IntAbsorber_TL'
     ! Local variables
-    INTEGER  :: k
+    INTEGER  :: k, j
     REAL(fp) :: dPonG
     REAL(fp) :: dPonG_TL
     INTEGER  :: H2O_Index
@@ -251,6 +272,15 @@ CONTAINS
                                         (dPonG * Atm_TL%Absorber(k,O3_Index)) + &
                                         (dPonG_TL * Atm%Absorber(k,O3_Index))
 
+    END DO
+
+    ! Compute the tangent-linear integrated absorber level
+    ! differences and average layer amount
+    DO j = 1, Pred_TL%n_Absorbers
+      DO k = 1, Pred_TL%n_Layers
+        Pred_TL%dA(k,j)   = Pred_TL%A(k,j) - Pred_TL%A(k-1,j)
+        Pred_TL%aveA(k,j) = POINT_5 * (Pred_TL%A(k,j) + Pred_TL%A(k-1,j))
+      END DO
     END DO
 
   END SUBROUTINE CRTM_Compute_IntAbsorber_TL
@@ -307,7 +337,7 @@ CONTAINS
     TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
     ! Local variables
-    INTEGER  :: k
+    INTEGER  :: k, j
     REAL(fp) :: dPonG
     REAL(fp) :: dPonG_AD
     INTEGER  :: H2O_Index
@@ -316,6 +346,19 @@ CONTAINS
     ! Get the atmosphere gaseous absorber indices
     H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1 )
      O3_Index = MINLOC(ABS(Atm%Absorber_ID -  O3_ID), DIM=1 )
+
+    ! Compute the adjoint integrated absorber level
+    ! differences and average layer amount
+    DO j = 1, Pred_AD%n_Absorbers
+      DO k = Pred_AD%n_Layers, 1, -1
+        Pred_AD%A(k-1,j) = Pred_AD%A(k-1,j) + (POINT_5*Pred_AD%aveA(k,j))
+        Pred_AD%A(k-1,j) = Pred_AD%A(k-1,j) - Pred_AD%dA(k,j)
+        Pred_AD%A(k  ,j) = Pred_AD%A(k  ,j) + (POINT_5*Pred_AD%aveA(k,j))
+        Pred_AD%A(k  ,j) = Pred_AD%A(k  ,j) + Pred_AD%dA(k,j)
+        Pred_AD%dA(  k,j) = ZERO
+        Pred_AD%aveA(k,j) = ZERO
+      END DO
+    END DO
 
     ! Loop over layers, SFC -> TOA
     DO k = Atm_AD%n_Layers, 1, -1
@@ -510,13 +553,12 @@ CONTAINS
 
         ! Calculate Absorber multiplicative Factors
         APV%A_2(k,j)      = Pred%A(k,j)*Pred%A(k,j)
-        APV%d_A(k,j)      = Pred%A(k,j)-Pred%A(k-1,j)                      ! For * terms
-        APV%Factor_1(k,j) = (Pred%A(k,j)  + Pred%A(k-1,j) ) * APV%d_A(k,j) ! For ** terms
-        APV%Factor_2(k,j) = (APV%A_2(k,j) + APV%A_2(k-1,j)) * APV%d_A(k,j) ! For *** terms
+        APV%Factor_1(k,j) = (Pred%A(k,j)  + Pred%A(k-1,j) ) * Pred%dA(k,j) ! For ** terms
+        APV%Factor_2(k,j) = (APV%A_2(k,j) + APV%A_2(k-1,j)) * Pred%dA(k,j) ! For *** terms
 
         ! Calculate the intermediate sums
-        APV%s(1,k,j) = APV%s(1,k-1,j) + ( Atm%Temperature(k) * APV%d_A(k,j) )      ! T*
-        APV%s(2,k,j) = APV%s(2,k-1,j) + ( Atm%Pressure(k)    * APV%d_A(k,j) )      ! P*
+        APV%s(1,k,j) = APV%s(1,k-1,j) + ( Atm%Temperature(k) * Pred%dA(k,j) )      ! T*
+        APV%s(2,k,j) = APV%s(2,k-1,j) + ( Atm%Pressure(k)    * Pred%dA(k,j) )      ! P*
         APV%s(3,k,j) = APV%s(3,k-1,j) + ( Atm%Temperature(k) * APV%Factor_1(k,j) ) ! T**
         APV%s(4,k,j) = APV%s(4,k-1,j) + ( Atm%Pressure(k)    * APV%Factor_1(k,j) ) ! P**
         APV%s(5,k,j) = APV%s(5,k-1,j) + ( Atm%Temperature(k) * APV%Factor_2(k,j) ) ! T***
@@ -713,7 +755,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Integrated_Predictors_TL'
     ! Local variables
     INTEGER :: i, i1, j, k
-    REAL(fp) :: d_A_TL
     REAL(fp) :: Factor_1_TL
     REAL(fp) :: Factor_2_TL
     REAL(fp) :: Inverse_1
@@ -746,23 +787,18 @@ CONTAINS
 
         ! Calculate absorber multiplicative Factors
         A_2_TL(k) = TWO * Pred%A(k,j) * Pred_TL%A(k,j)
-
-        ! For the * terms
-        d_A_TL = Pred_TL%A(k,j) - Pred_TL%A(k-1,j)
-
         ! For the ** terms
-        Factor_1_TL = ( ( Pred%A(k,j)    + Pred%A(k-1,j)    ) * d_A_TL ) + &
-                      ( ( Pred_TL%A(k,j) + Pred_TL%A(k-1,j) ) * APV%d_A(k,j) )
-
+        Factor_1_TL = ( ( Pred%A(k,j)    + Pred%A(k-1,j)    ) * Pred_TL%dA(k,j) ) + &
+                      ( ( Pred_TL%A(k,j) + Pred_TL%A(k-1,j) ) *    Pred%dA(k,j) )
         ! For the *** terms       
-        Factor_2_TL = ( ( APV%A_2(k,j) + APV%A_2(k-1,j)) * d_A_TL ) + &
-                      ( ( A_2_TL(k)  + A_2_TL(k-1) ) * APV%d_A(k,j))
+        Factor_2_TL = ( ( APV%A_2(k,j) + APV%A_2(k-1,j)) * Pred_TL%dA(k,j) ) + &
+                      ( ( A_2_TL(k)    + A_2_TL(k-1)   ) *    Pred%dA(k,j) )
 
         ! Calculate the intermediate sums
-        s_TL(1) = s_TL(1) + ( Atm_TL%Temperature(k) * APV%d_A(k,j)) + &      ! T*
-                            ( Atm%Temperature(k)    * d_A_TL )
-        s_TL(2) = s_TL(2) + ( Atm_TL%Pressure(k)    * APV%d_A(k,j)) + &      ! P*
-                            ( Atm%Pressure(k)       * d_A_TL )
+        s_TL(1) = s_TL(1) + ( Atm_TL%Temperature(k) *    Pred%dA(k,j)) + &   ! T*
+                            ( Atm%Temperature(k)    * Pred_TL%dA(k,j))
+        s_TL(2) = s_TL(2) + ( Atm_TL%Pressure(k)    *    Pred%dA(k,j)) + &   ! P*
+                            ( Atm%Pressure(k)       * Pred_TL%dA(k,j))
         s_TL(3) = s_TL(3) + ( Atm_TL%Temperature(k) * APV%Factor_1(k,j)) + & ! T**
                             ( Atm%Temperature(k)    * Factor_1_TL )
         s_TL(4) = s_TL(4) + ( Atm_TL%Pressure(k)    * APV%Factor_1(k,j)) + & ! P**
@@ -1083,14 +1119,14 @@ CONTAINS
 
         ! Pressure adjoint
         Atm_AD%Pressure(k) = Atm_AD%Pressure(k) + &
-                             ( APV%d_A(k,j)      * s_AD(2) ) + &  ! P*
+                             ( Pred%dA(k,j)      * s_AD(2) ) + &  ! P*
                              ( APV%Factor_1(k,j) * s_AD(4) ) + &  ! P**
                              ( APV%Factor_2(k,j) * s_AD(6) )      ! P***
 
 
         ! Temperature adjoint
         Atm_AD%Temperature(k) = Atm_AD%Temperature(k) + &
-                                ( APV%d_A(k,j)      * s_AD(1) ) + &  ! T*
+                                ( Pred%dA(k,j)      * s_AD(1) ) + &  ! T*
                                 ( APV%Factor_1(k,j) * s_AD(3) ) + &  ! T**
                                 ( APV%Factor_2(k,j) * s_AD(5) )      ! T***
 
@@ -1124,7 +1160,7 @@ CONTAINS
         !   A_2_AD( k ) = A_2_AD( k ) + ( d_A(k) * Factor_2_AD )
         ! since only A_2_AD( n_Layers ) is initialised outside the
         ! current layer loop.
-        A_2_AD(k-1) = APV%d_A(k,j) * Factor_2_AD
+        A_2_AD(k-1) = Pred%dA(k,j) * Factor_2_AD
         A_2_AD( k ) = A_2_AD( k ) + A_2_AD(k-1)
 
         ! Adjoint of A(). Here, since Pred_AD%A() is NOT a local adjoint
@@ -1134,7 +1170,7 @@ CONTAINS
                  ( ( Pred%A(k,j)  + Pred%A(k-1,j)  ) * Factor_1_AD ) + &
                  ( ( APV%A_2(k,j) + APV%A_2(k-1,j) ) * Factor_2_AD )
 
-        Add_Factor = APV%d_A(k,j) * Factor_1_AD
+        Add_Factor = Pred%dA(k,j) * Factor_1_AD
         Pred_AD%A(k-1,j) = Pred_AD%A(k-1,j) + Add_Factor - d_A_AD
         Pred_AD%A( k ,j) = Pred_AD%A( k ,j) + Add_Factor + d_A_AD + &
                            ( TWO * Pred%A(k,j) * A_2_AD(k) )
@@ -1201,7 +1237,7 @@ CONTAINS
 !                       The contents of this structure are NOT accessible
 !                       outside of the CRTM_Predictor module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_APVariables_type
+!                       TYPE:       TYPE(CRTM_APVariables_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(OUT)
 !
@@ -1238,8 +1274,6 @@ CONTAINS
     TYPE(CRTM_APVariables_type),  INTENT(OUT)    :: APV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_Predictors'
-    ! Local variables
-    INTEGER :: i1, i2, j
 
     ! Save the angle information
     Predictor%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
@@ -1365,8 +1399,6 @@ CONTAINS
     TYPE(CRTM_APVariables_type),  INTENT(IN)     :: APV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_Predictors_TL'
-    ! Local variables
-    INTEGER :: i1, i2, j
 
     ! Save the angle information
     Predictor_TL%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
@@ -1492,9 +1524,6 @@ CONTAINS
     TYPE(CRTM_APVariables_type),  INTENT(IN)     :: APV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_Predictors_AD'
-    ! Local variables
-    LOGICAL :: Compute_Standard
-    INTEGER :: i1, i2, j
 
     ! Save the angle information
     Predictor_AD%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith

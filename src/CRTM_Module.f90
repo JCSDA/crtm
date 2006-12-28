@@ -13,7 +13,7 @@ MODULE CRTM_Module
   USE CRTM_Parameters
 
   USE CRTM_LifeCycle
-  USE CRTM_ChannelInfo
+!  USE CRTM_ChannelInfo
 
   USE CRTM_Forward_Module
   USE CRTM_Tangent_Linear_Module

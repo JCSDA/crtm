@@ -1,28 +1,28 @@
 
      Number of channels indexed:    19
 
-  Channel         Sensor             NCEP          WMO           WMO     Channel
-   Index        Descriptor         Sensor ID   Satellite ID   Sensor ID   Number
-  ------------------------------------------------------------------------------
-       1  >hirs3_n17           <      17           208           606          1
-       2  >hirs3_n17           <      17           208           606          2
-       3  >hirs3_n17           <      17           208           606          3
-       4  >hirs3_n17           <      17           208           606          4
-       5  >hirs3_n17           <      17           208           606          5
-       6  >hirs3_n17           <      17           208           606          6
-       7  >hirs3_n17           <      17           208           606          7
-       8  >hirs3_n17           <      17           208           606          8
-       9  >hirs3_n17           <      17           208           606          9
-      10  >hirs3_n17           <      17           208           606         10
-      11  >hirs3_n17           <      17           208           606         11
-      12  >hirs3_n17           <      17           208           606         12
-      13  >hirs3_n17           <      17           208           606         13
-      14  >hirs3_n17           <      17           208           606         14
-      15  >hirs3_n17           <      17           208           606         15
-      16  >hirs3_n17           <      17           208           606         16
-      17  >hirs3_n17           <      17           208           606         17
-      18  >hirs3_n17           <      17           208           606         18
-      19  >hirs3_n17           <      17           208           606         19
+  Channel        SensorID            WMO           WMO     Channel
+   Index                         Satellite ID   Sensor ID   Number
+  ----------------------------------------------------------------
+       1  >hirs3_n17           <     208           606          1
+       2  >hirs3_n17           <     208           606          2
+       3  >hirs3_n17           <     208           606          3
+       4  >hirs3_n17           <     208           606          4
+       5  >hirs3_n17           <     208           606          5
+       6  >hirs3_n17           <     208           606          6
+       7  >hirs3_n17           <     208           606          7
+       8  >hirs3_n17           <     208           606          8
+       9  >hirs3_n17           <     208           606          9
+      10  >hirs3_n17           <     208           606         10
+      11  >hirs3_n17           <     208           606         11
+      12  >hirs3_n17           <     208           606         12
+      13  >hirs3_n17           <     208           606         13
+      14  >hirs3_n17           <     208           606         14
+      15  >hirs3_n17           <     208           606         15
+      16  >hirs3_n17           <     208           606         16
+      17  >hirs3_n17           <     208           606         17
+      18  >hirs3_n17           <     208           606         18
+      19  >hirs3_n17           <     208           606         19
 
      Calling the Tangent-Linear CRTM...
 

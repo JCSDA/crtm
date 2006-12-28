@@ -4,6 +4,7 @@
 ! Module to compute the cloud particle absorption and scattering properties
 ! required for radiative transfer in a cloudy atmosphere.
 !
+!
 ! CREATION HISTORY  
 !        Written by:     Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov 
 !                        Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
@@ -18,10 +19,10 @@ MODULE CRTM_CloudScatter
   ! Module use
   ! ----------
 
-  USE Type_Kinds
+  USE Type_Kinds, ONLY: fp
   USE Message_Handler
 
-  ! -- CRTM modules
+  ! CRTM modules
   USE CRTM_Parameters
   USE CRTM_SpcCoeff
   USE CRTM_CloudCoeff,          ONLY: CloudC
@@ -35,11 +36,11 @@ MODULE CRTM_CloudScatter
                                       HAIL_CLOUD
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
 
-  ! -- The AtmScatter structure definition module
-  ! -- The PUBLIC entities in CRTM_AtmScatter_Define
-  ! -- are also explicitly defined as PUBLIC here
-  ! -- (down below) so a user need only USE this
-  ! -- module (CRTM_CloudScatter).
+  ! The AtmScatter structure definition module
+  ! The PUBLIC entities in CRTM_AtmScatter_Define
+  ! are also explicitly defined as PUBLIC here
+  ! (down below) so a user need only USE this
+  ! module (CRTM_CloudScatter).
   USE CRTM_AtmScatter_Define
 
 
@@ -53,21 +54,21 @@ MODULE CRTM_CloudScatter
   ! Visibilities
   ! ------------
 
-  ! -- Everything private by default
+  ! Everything private by default
   PRIVATE
 
-  ! -- CRTM_AtmScatter structure data type
-  ! -- in the CRTM_AtmScatter_Define module
+  ! CRTM_AtmScatter structure data type
+  ! in the CRTM_AtmScatter_Define module
   PUBLIC :: CRTM_AtmScatter_type
 
-  ! -- CRTM_AtmScatter structure routines inherited
-  ! -- from the CRTM_AtmScatter_Define module
+  ! CRTM_AtmScatter structure routines inherited
+  ! from the CRTM_AtmScatter_Define module
   PUBLIC :: CRTM_Associated_AtmScatter
   PUBLIC :: CRTM_Destroy_AtmScatter
   PUBLIC :: CRTM_Allocate_AtmScatter
   PUBLIC :: CRTM_Assign_AtmScatter
 
-  ! -- Science routines in this modules
+  ! Science routines in this modules
   PUBLIC :: CRTM_Compute_CloudScatter
   PUBLIC :: CRTM_Compute_CloudScatter_TL
   PUBLIC :: CRTM_Compute_CloudScatter_AD
@@ -79,11 +80,11 @@ MODULE CRTM_CloudScatter
   ! Module parameters
   ! -----------------
 
-  ! -- RCS Id for the module
-  CHARACTER( * ), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_CloudScatter.f90,v 1.6 2006/06/23 23:20:10 wd20pd Exp $'
+  ! RCS Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id: CRTM_CloudScatter.f90,v 1.6.2.1 2006/09/07 09:07:37 frpv Exp $'
 
-  ! -- Number of stream angle definitions
+  ! Number of stream angle definitions
   INTEGER, PARAMETER :: TWO_STREAMS       =  2
   INTEGER, PARAMETER :: FOUR_STREAMS      =  4
   INTEGER, PARAMETER :: SIX_STREAMS       =  6
@@ -92,8 +93,8 @@ MODULE CRTM_CloudScatter
   INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
   
   ! -- Table indexing variables
-  REAL(fp_kind), PARAMETER :: MINIMUM_WAVENUMBER = 102.0_fp_kind
-  REAL(fp_kind), PARAMETER :: WAVENUMBER_SPACING = FOUR
+  REAL(fp), PARAMETER :: MINIMUM_WAVENUMBER = 102.0_fp
+  REAL(fp), PARAMETER :: WAVENUMBER_SPACING = FOUR
 
   ! ----------------
   ! Module variables (eventually remove)
@@ -102,16 +103,16 @@ MODULE CRTM_CloudScatter
 
 
   ! --------------------------------------
-  ! Strucutre definition to hold forward
+  ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
   ! --------------------------------------
 
   TYPE, PUBLIC :: CRTM_CSVariables_type
     PRIVATE
-    REAL( fp_kind ), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: ext  !be  ! Extinction coefficients
-    REAL( fp_kind ), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: w0   !w   ! Single scatter albedos
-    REAL( fp_kind ), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: g   ! Asymmetry factors
-    REAL( fp_kind ), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: ext  !be  ! Extinction coefficients
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: w0   !w   ! Single scatter albedos
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: g   ! Asymmetry factors
+    REAL(fp), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
                                MAX_N_PHASE_ELEMENTS,  &
                                MAX_N_LAYERS,          &
                                MAX_N_CLOUDS           ) :: p_coef  !p      ! Phase coefficients
@@ -121,7 +122,7 @@ MODULE CRTM_CloudScatter
 CONTAINS
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Compute_CloudScatter
 !
@@ -131,36 +132,39 @@ CONTAINS
 !       single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter( Atmosphere,               &  ! Input
-!                                                 GeometryInfo,             &  ! Input
-!                                                 Channel_Index,            &  ! Input, scalar
-!                                                 CloudScatter,             &  ! Output
-!                                                 CSVariables,              &  ! Internal variable output
-!                                                 Message_Log = Message_Log )  ! Error messaging 
+!       Error_Status = CRTM_Compute_CloudScatter( Atmosphere             , &  ! Input
+!                                                 SensorIndex            , &  ! Input
+!                                                 ChannelIndex           , &  ! Input
+!                                                 CloudScatter           , &  ! Output
+!                                                 CSVariables            , &  ! Internal variable output
+!                                                 Message_Log=Message_Log  )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE( CRTM_Atmosphere_type )
+!                        TYPE:       TYPE(CRTM_Atmosphere_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
-!                        view geometry information.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE( CRTM_GeometryInfo_type )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
-!
-!       Channel_Index:   Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
+!                        ATTRIBUTES: INTENT(IN)
 !
+!       ChannelIndex:    Channel index id. This is a unique index associated
+!                        with a (supported) sensor channel used to access the
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -170,30 +174,29 @@ CONTAINS
 !                        UNITS:      N/A
 !                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !        CloudScatter:   CRTM_AtmScatter structure containing the cloud particle
 !                        absorption and scattering properties required for
 !                        radiative transfer.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE( CRTM_AtmScatter_type )
+!                        TYPE:       TYPE(CRTM_AtmScatter_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN OUT )
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !        CSVariables:    Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_CloudScatter module.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_CSVariables_type
+!                        TYPE:       TYPE(CRTM_CSVariables_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT )
-!
+!                        ATTRIBUTES: INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the computation was sucessful
 !                           == FAILURE an unrecoverable error occurred
 !                        UNITS:      N/A
@@ -205,104 +208,92 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-!S-
+!
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter( Atmosphere,    &  ! Input
-                                      Channel_Index, &  ! Input
-                                      CloudScatter,  &  ! Output
-                                      CSV,           &  ! Internal variable output
-                                      Message_Log )  &  ! Error messaging
-                                    RESULT ( Error_Status )
+  FUNCTION CRTM_Compute_CloudScatter( Atmosphere  , &  ! Input
+                                      SensorIndex , &  ! Input
+                                      ChannelIndex, &  ! Input
+                                      CloudScatter, &  ! Output
+                                      CSV         , &  ! Internal variable output
+                                      Message_Log ) &  ! Error messaging
+                                    RESULT( Error_Status )
     ! Arguments
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere
-    INTEGER,                        INTENT( IN )     :: Channel_Index
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: CloudScatter
-    TYPE( CRTM_CSVariables_type ),  INTENT( OUT )    :: CSV
-    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atmosphere
+    INTEGER                    , INTENT(IN)     :: SensorIndex
+    INTEGER                    , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CloudScatter
+    TYPE(CRTM_CSVariables_type), INTENT(OUT)    :: CSV
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local variables
+    CHARACTER(256) :: Message
     INTEGER :: i, j, k, n, L, kuse
     INTEGER :: Sensor_Type
-    REAL( fp_kind ) :: Frequency, Wavenumber
+    REAL(fp) :: Frequency, Wavenumber
     INTEGER, DIMENSION( Atmosphere%Max_Layers ) :: kidx
-    REAL( fp_kind ) :: Water_Content,eff_radius,eff_v,Temperature
+    REAL(fp) :: Water_Content,eff_radius,eff_v,Temperature
     INTEGER :: Cloud_Type, n_Legendre_Terms, n_Phase_Elements
-    REAL( fp_kind ) :: Scattering_Coefficient
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
-
+    REAL(fp) :: Scattering_Coefficient
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
 
     ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
+    ! Spectral variables
+    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Frequency   = SC(SensorIndex)%Frequency(ChannelIndex)
+    Wavenumber  = SC(SensorIndex)%Wavenumber(ChannelIndex)
+    ! Phase matrix dimensions
+    n_Legendre_Terms = CloudScatter%n_Legendre_Terms
+    n_Phase_Elements = CloudScatter%n_Phase_Elements
 
-
-    ! -------------------- !
-    ! channel based        !
-    ! -------------------- !
-      Sensor_Type = SC%Sensor_Type(Channel_Index)
-      Frequency   = SC%Frequency(Channel_Index)
-      Wavenumber  = SC%Wavenumber(Channel_Index)
-
-    ! -------------------- !
-    ! OSS node based       !
-    ! -------------------- !
-    !  Sensor_Type = SC%Sensor_Type(SC%Channel_Node_Map(1,Channel_Index))
-    !  Frequency   = SC%Node_Frequency(Channel_Index)
-    !  Wavenumber  = SC%Node_Wavenumber(Channel_Index)
- 
-      n_Legendre_Terms = CloudScatter%n_Legendre_Terms
-      n_Phase_Elements = CloudScatter%n_Phase_Elements
-
-    ! ----------------------------------------------------
-    ! Determining Offset place for Legendre coefficients
-    ! corresponding to n_Streams.
-    ! ----------------------------------------------------
-
-     SELECT CASE( CloudScatter%n_Legendre_Terms )
-
-       CASE ( Two_Streams )       ! 0 : Two_Streams, Asymmetry factor will be used.
+    ! Determine offset place for Legendre coefficients
+    ! corresponding to n_Streams
+    SELECT CASE( CloudScatter%n_Legendre_Terms )
+      ! 0 : Two_Streams, Asymmetry factor will be used.
+      CASE( Two_Streams )       
         Offset_LegTerm = 0 
-
-       CASE ( Four_Streams )       ! 0 : Four_Streams
+      ! 0 : Four_Streams
+      CASE( Four_Streams )
         Offset_LegTerm = 0 
-
-       CASE ( Six_Streams )        ! Four_Streams+1 : Six_Streams
+      ! Four_Streams+1 : Six_Streams
+      CASE( Six_Streams )
         Offset_LegTerm = 5 
-
-       CASE ( Eight_Streams )      ! Four_Streams+1+Six_Streams+1 : Eight_Streams
+      ! Four_Streams+1+Six_Streams+1 : Eight_Streams
+      CASE( Eight_Streams )
         Offset_LegTerm = 12
-
-!       CASE ( Sixteen_Streams )    ! Four_Streams+1+Six_Streams+1+Eight_Streams+1 : Sixteen_Streams
-!        Offset_LegTerm = 21 
-
-       CASE DEFAULT
-
-    ! ------------------------------------------------------------
-    !    Using two-streams model or HG and RAYLEIGH Phase function
-    ! ------------------------------------------------------------
-
-      IF( HGphase ) THEN
-      CloudScatter%n_Legendre_Terms = 0
-      ELSE
-      Error_Status = FAILURE
-      print *,' the n_Legendre_Terms in cloudscatter do not fit this model ', &
-         CloudScatter%n_Legendre_Terms
-      ENDIF
-
+      ! Four_Streams+1+Six_Streams+1+Eight_Streams+1 : Sixteen_Streams
+      CASE ( Sixteen_Streams )
+        Offset_LegTerm = 21 
+      ! Use two-stream model or HG and RAYLEIGH Phase function
+      CASE DEFAULT
+        IF( HGphase ) THEN
+          CloudScatter%n_Legendre_Terms = 0
+        ELSE
+          Error_Status = FAILURE
+          WRITE(Message,'("The n_Legendre_Terms in CloudScatter, ",i0,", do not fit model")') &
+                        CloudScatter%n_Legendre_Terms
+          CALL Display_Message(ROUTINE_NAME, &
+                               TRIM(Message), &
+                               Error_Status, &
+                               Message_Log=Message_Log)
+          RETURN
+        END IF
       END SELECT
-    !#--------------------------------------------------------------------------#
-    !#                -- INITIALIZATION  --                                     #
-    !#--------------------------------------------------------------------------#
+      
+      ! Initialisation
+      CloudScatter%Offset_LegTerm        = Offset_LegTerm
+      CloudScatter%Optical_Depth         = ZERO
+      CloudScatter%Single_Scatter_Albedo = ZERO
+      CloudScatter%Asymmetry_Factor      = ZERO
 
-         CloudScatter%Offset_LegTerm = Offset_LegTerm
-         CloudScatter%Optical_Depth = ZERO
-         CloudScatter%Single_Scatter_Albedo = ZERO
-         CloudScatter%Asymmetry_Factor = ZERO
-
+      ! If no clouds, no scattering!
       IF(Atmosphere%n_Clouds == 0) RETURN
+      
+      
          IF( CloudC%n_Phase_Elements > 0 ) CloudScatter%Phase_Coefficient = ZERO
 !
     !#--------------------------------------------------------------------------#
@@ -347,7 +338,7 @@ CONTAINS
             CSV%p_coef(:,:,j,n) = ZERO
         ELSE
             PRINT *,' WRONG SENSOR TYPE in CRTM_CloudScatter ', &
-                      Channel_Index, Sensor_Type
+                      ChannelIndex, Sensor_Type
         ENDIF
 
          Scattering_Coefficient = CSV%ext(j,n)*Water_Content*CSV%w0(j,n)
@@ -394,7 +385,7 @@ CONTAINS
           ENDDO
         ELSE
         ! For Henyey_Greenstein phase function
-          CloudScatter%Phase_Coefficient(1,1,i)=1.5_fp_kind*CloudScatter%Asymmetry_Factor(i)
+          CloudScatter%Phase_Coefficient(1,1,i)=1.5_fp*CloudScatter%Asymmetry_Factor(i)
           CloudScatter%Phase_Coefficient(2,1,i) = ZERO
         ENDIF
 
@@ -411,7 +402,7 @@ CONTAINS
   END FUNCTION CRTM_Compute_CloudScatter
 !
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Compute_CloudScatter_TL
 !
@@ -421,61 +412,73 @@ CONTAINS
 !       for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter_TL( Atmosphere,               &  ! Input
-!                                                    CloudScatter,             &  ! Input
-!                                                    Atmosphere_TL,            &  ! Input
-!                                                    GeometryInfo,             &  ! Input
-!                                                    Channel_Index,            &  ! Input, scalar
-!                                                    CloudScatter_TL,          &  ! Output        
-!                                                    CSVariables,              &  ! Internal variable input
-!                                                    Message_Log = Message_Log )  ! Error messaging 
+!       Error_Status = CRTM_Compute_CloudScatter_TL( Atmosphere             , &  ! Input
+!                                                    CloudScatter           , &  ! Input
+!                                                    Atmosphere_TL          , &  ! Input
+!                                                    GeometryInfo           , &  ! Input
+!                                                    SensorIndex            , &  ! Input
+!                                                    ChannelIndex           , &  ! Input
+!                                                    CloudScatter_TL        , &  ! Output        
+!                                                    CSVariables            , &  ! Internal variable input
+!                                                    Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
 !                         profile data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_Atmosphere_type )
+!                         TYPE:       TYPE(CRTM_Atmosphere_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       CloudScatter:     CRTM_AtmScatter structure containing the forward model
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_AtmScatter_type )
+!                         TYPE:       TYPE(CRTM_AtmScatter_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:    CRTM Atmosphere structure containing the tangent-linear
 !                         atmospheric state data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_Atmosphere_type )
+!                         TYPE:       TYPE(CRTM_Atmosphere_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       GeometryInfo:     CRTM_GeometryInfo structure containing the 
 !                         view geometry information.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_GeometryInfo_type )
+!                         TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:    Channel index id. This is a unique index associated
-!                         with a (supported) sensor channel used to access the
-!                         shared coefficient data.
+!       SensorIndex:      Sensor index id. This is a unique index associated
+!                         with a (supported) sensor used to access the
+!                         shared coefficient data for a particular sensor.
+!                         See the ChannelIndex argument.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:     Channel index id. This is a unique index associated
+!                         with a (supported) sensor channel used to access the
+!                         shared coefficient data for a particular sensor's
+!                         channel.
+!                         See the SensorIndex argument.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       CSVariables:      Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
 !                         The contents of this structure are NOT accessible
 !                         outside of the CRTM_CloudScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       CRTM_CSVariables_type
+!                         TYPE:       TYPE(CRTM_CSVariables_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:      Character string specifying a filename in which any
@@ -485,21 +488,21 @@ CONTAINS
 !                         UNITS:      N/A
 !                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !        CloudScatter_TL: CRTM_AtmScatter structure containing the tangent-linear
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_AtmScatter_type )
+!                         TYPE:       TYPE(CRTM_AtmScatter_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN OUT )
+!                         ATTRIBUTES: INTENT(IN OUT)
 !
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the computation was sucessful
 !                           == FAILURE an unrecoverable error occurred
 !                        UNITS:      N/A
@@ -511,60 +514,51 @@ CONTAINS
 !       than just OUT. This is necessary because the argument may be defined
 !       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-!S-
+!
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter_TL( Atmosphere,      &  ! Input
-                                         CloudScatter,    &  ! Input
-                                         Atmosphere_TL,   &  ! Input
-                                         Channel_Index,   &  ! Input
+  FUNCTION CRTM_Compute_CloudScatter_TL( Atmosphere     , &  ! Input
+                                         CloudScatter   , &  ! Input
+                                         Atmosphere_TL  , &  ! Input
+                                         SensorIndex    , &  ! Input
+                                         ChannelIndex   , &  ! Input
                                          CloudScatter_TL, &  ! Output
-                                         CSV,             &  ! Internal variable input
-                                         Message_Log )    &  ! Error messaging
-                                       RESULT ( Error_Status )
+                                         CSV            , &  ! Internal variable input
+                                         Message_Log    ) &  ! Error messaging
+                                       RESULT( Error_Status )
     ! Arguments
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere,Atmosphere_TL
-    INTEGER,                        INTENT( IN )     :: Channel_Index
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: CloudScatter
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: CloudScatter_TL
-    TYPE( CRTM_CSVariables_type ),  INTENT( IN )     :: CSV
-    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atmosphere,Atmosphere_TL
+    INTEGER                    , INTENT(IN)     :: SensorIndex
+    INTEGER                    , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CloudScatter
+    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CloudScatter_TL
+    TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
     ! Local variables 
     INTEGER :: i, j, k, n, L, kuse
     INTEGER :: Sensor_Type
-    REAL( fp_kind ) :: Frequency, Wavenumber
+    REAL(fp) :: Frequency, Wavenumber
     INTEGER, DIMENSION( Atmosphere%Max_Layers ) :: kidx
-    REAL( fp_kind ) :: Water_Content,eff_radius,eff_v,Temperature
-    REAL( fp_kind ) :: ext_TL,w0_TL,g_TL,Water_Content_TL,eff_radius_TL,eff_v_TL,Temperature_TL
+    REAL(fp) :: Water_Content,eff_radius,eff_v,Temperature
+    REAL(fp) :: ext_TL,w0_TL,g_TL,Water_Content_TL,eff_radius_TL,eff_v_TL,Temperature_TL
     INTEGER :: Cloud_Type, n_Legendre_Terms, n_Phase_Elements
-    REAL( fp_kind ), DIMENSION(0:CloudScatter%n_Legendre_Terms,CloudScatter%n_Phase_Elements) :: p_coef_TL
-    REAL( fp_kind ) :: Scattering_Coefficient,Scattering_Coefficient_TL
-    REAL( fp_kind ), DIMENSION( Atmosphere%Max_Layers ) :: T_Scattering,T_Scattering_TL
+    REAL(fp), DIMENSION(0:CloudScatter%n_Legendre_Terms,CloudScatter%n_Phase_Elements) :: p_coef_TL
+    REAL(fp) :: Scattering_Coefficient,Scattering_Coefficient_TL
+    REAL(fp), DIMENSION( Atmosphere%Max_Layers ) :: T_Scattering,T_Scattering_TL
 
 
     ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-
-
-    ! -------------------- !
-    ! channel based        !
-    ! -------------------- !
-      Sensor_Type = SC%Sensor_Type(Channel_Index)
-      Frequency   = SC%Frequency(Channel_Index)
-      Wavenumber  = SC%Wavenumber(Channel_Index)
-
-    ! -------------------- !
-    ! OSS node based       !
-    ! -------------------- !
-    !  Sensor_Type = SC%Sensor_Type(SC%Channel_Node_Map(1,Channel_Index))
-    !  Frequency   = SC%Node_Frequency(Channel_Index)
-    !  Wavenumber  = SC%Node_Wavenumber(Channel_Index)
+    ! Spectral variables
+    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Frequency   = SC(SensorIndex)%Frequency(ChannelIndex)
+    Wavenumber  = SC(SensorIndex)%Wavenumber(ChannelIndex)
 
     n_Legendre_Terms = CloudScatter%n_Legendre_Terms
     n_Phase_Elements = CloudScatter%n_Phase_Elements
@@ -626,7 +620,7 @@ CONTAINS
             p_coef_TL = ZERO
         ELSE
             PRINT *,' WRONG SENSOR TYPE in CRTM_CloudScatter ', &
-                      Channel_Index, Sensor_Type
+                      ChannelIndex, Sensor_Type
         ENDIF
 
         Scattering_Coefficient = CSV%ext(j,n)*Water_Content*CSV%w0(j,n)
@@ -684,7 +678,7 @@ CONTAINS
         ELSE
 
            CloudScatter_TL%Phase_Coefficient(1,1,i)  &
-             =1.5_fp_kind*CloudScatter_TL%Asymmetry_Factor(i)
+             =1.5_fp*CloudScatter_TL%Asymmetry_Factor(i)
            CloudScatter_TL%Phase_Coefficient(2,1,i) = ZERO
         ENDIF
            CloudScatter_TL%Phase_Coefficient(0,1,i) = ZERO
@@ -714,30 +708,31 @@ CONTAINS
 !       scattering properties for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter_AD(  Atmosphere,               &  ! Input   
-!                                                     CloudScatter,             &  ! Input   
-!                                                     CloudScatter_AD,          &  ! Input   
-!                                                     GeometryInfo,             &  ! Input   
-!                                                     Channel_Index,            &  ! Input   
-!                                                     Atmosphere_AD,            &  ! Output  
-!                                                     CSVariables,              &  ! Internal variable input
-!                                                     Message_Log = Message_Log )  ! Error messaging 
+!       Error_Status = CRTM_Compute_CloudScatter_AD(  Atmosphere             , &  ! Input   
+!                                                     CloudScatter           , &  ! Input   
+!                                                     CloudScatter_AD        , &  ! Input   
+!                                                     GeometryInfo           , &  ! Input   
+!                                                     SensorIndex            , &  ! Input
+!                                                     ChannelIndex           , &  ! Input
+!                                                     Atmosphere_AD          , &  ! Output  
+!                                                     CSVariables            , &  ! Internal variable input
+!                                                     Message_Log=Message_Log  )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
 !                         profile data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_Atmosphere_type )
+!                         TYPE:       TYPE(CRTM_Atmosphere_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       CloudScatter:     CRTM_AtmScatter structure containing the forward model
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_AtmScatter_type )
+!                         TYPE:       TYPE(CRTM_AtmScatter_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !        CloudScatter_AD: CRTM_AtmScatter structure containing the adjoint
 !                         of the cloud particle absorption and scattering
@@ -746,34 +741,44 @@ CONTAINS
 !                                 this structure may be modified (e.g. set to
 !                                 zero.)
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_AtmScatter_type )
+!                         TYPE:       TYPE(CRTM_AtmScatter_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN OUT )
+!                         ATTRIBUTES: INTENT(IN OUT)
 !
 !       GeometryInfo:     CRTM_GeometryInfo structure containing the 
 !                         view geometry information.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_GeometryInfo_type )
+!                         TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:    Channel index id. This is a unique index associated
-!                         with a (supported) sensor channel used to access the
-!                         shared coefficient data.
+!       SensorIndex:      Sensor index id. This is a unique index associated
+!                         with a (supported) sensor used to access the
+!                         shared coefficient data for a particular sensor.
+!                         See the ChannelIndex argument.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:     Channel index id. This is a unique index associated
+!                         with a (supported) sensor channel used to access the
+!                         shared coefficient data for a particular sensor's
+!                         channel.
+!                         See the SensorIndex argument.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       CSVariables:      Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
 !                         The contents of this structure are NOT accessible
 !                         outside of the CRTM_CloudScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       CRTM_CSVariables_type
+!                         TYPE:       TYPE(CRTM_CSVariables_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
-!
+!                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:      Character string specifying a filename in which any
@@ -783,7 +788,7 @@ CONTAINS
 !                         UNITS:      N/A
 !                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !       Atmosphere_AD:    CRTM Atmosphere structure containing the adjoint
@@ -793,14 +798,14 @@ CONTAINS
 !                                 initialized to some value based on the
 !                                 position of this function in the call chain.)
 !                         UNITS:      N/A
-!                         TYPE:       TYPE( CRTM_Atmosphere_type )
+!                         TYPE:       TYPE(CRTM_Atmosphere_type)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN OUT )
+!                         ATTRIBUTES: INTENT(IN OUT)
 !
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the ERROR_HANDLER module.
+!                         The error codes are defined in the Message_Handler module.
 !                         If == SUCCESS the computation was sucessful
 !                            == FAILURE an unrecoverable error occurred
 !                         UNITS:      N/A
@@ -817,59 +822,49 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter_AD( Atmosphere,      &  ! Input
-                                         CloudScatter,    &  ! Input
+  FUNCTION CRTM_Compute_CloudScatter_AD( Atmosphere     , &  ! Input
+                                         CloudScatter   , &  ! Input
                                          CloudScatter_AD, &  ! Input
-                                         Channel_Index,   &  ! Input
-                                         Atmosphere_AD,   &  ! Output
-                                         CSV,             &  ! Internal variable input
-                                         Message_Log )    &  ! Error messaging
-                                       RESULT ( Error_Status )
+                                         SensorIndex    , &  ! Input
+                                         ChannelIndex   , &  ! Input
+                                         Atmosphere_AD  , &  ! Output
+                                         CSV            , &  ! Internal variable input
+                                         Message_Log    ) &  ! Error messaging
+                                       RESULT( Error_Status )
     ! Arguments
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN )     :: CloudScatter
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: CloudScatter_AD
-    INTEGER,                        INTENT( IN )     :: Channel_Index
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN OUT ) :: Atmosphere_AD
-    TYPE( CRTM_CSVariables_type ),  INTENT( IN )     :: CSV
-    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atmosphere
+    TYPE(CRTM_AtmScatter_type) , INTENT(IN)     :: CloudScatter
+    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CloudScatter_AD
+    INTEGER                    , INTENT(IN)     :: SensorIndex
+    INTEGER                    , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN OUT) :: Atmosphere_AD
+    TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter_AD'
     ! Local variables
     INTEGER :: i, j, k, n, L, kuse
     INTEGER :: Sensor_Type
-    REAL( fp_kind ) :: Frequency, Wavenumber
+    REAL(fp) :: Frequency, Wavenumber
     INTEGER, DIMENSION( Atmosphere%Max_Layers ) :: kidx
-    REAL( fp_kind ) :: Water_Content,eff_radius,eff_v,Temperature
-    REAL( fp_kind ) :: ext_AD,w0_AD,g_AD,Water_Content_AD,eff_radius_AD,eff_v_AD,Temperature_AD
+    REAL(fp) :: Water_Content,eff_radius,eff_v,Temperature
+    REAL(fp) :: ext_AD,w0_AD,g_AD,Water_Content_AD,eff_radius_AD,eff_v_AD,Temperature_AD
     INTEGER :: Cloud_Type, n_Legendre_Terms, n_Phase_Elements
-    REAL( fp_kind ), DIMENSION(0:CloudScatter%n_Legendre_Terms,CloudScatter%n_Phase_Elements) :: p_coef_AD
-    REAL( fp_kind ) :: Scattering_Coefficient,Scattering_Coefficient_AD
-    REAL( fp_kind ), DIMENSION( Atmosphere%Max_Layers ) :: T_Scattering,T_Scattering_AD
+    REAL(fp), DIMENSION(0:CloudScatter%n_Legendre_Terms,CloudScatter%n_Phase_Elements) :: p_coef_AD
+    REAL(fp) :: Scattering_Coefficient,Scattering_Coefficient_AD
+    REAL(fp), DIMENSION( Atmosphere%Max_Layers ) :: T_Scattering,T_Scattering_AD
 
 
     ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-
-
-    ! -------------------- !
-    ! channel based        !
-    ! -------------------- !
-      Sensor_Type = SC%Sensor_Type(Channel_Index)
-      Frequency   = SC%Frequency(Channel_Index)
-      Wavenumber  = SC%Wavenumber(Channel_Index)
-
-    ! -------------------- !
-    ! OSS node based       !
-    ! -------------------- !
-    !  Sensor_Type = SC%Sensor_Type(SC%Channel_Node_Map(1,Channel_Index))
-    !  Frequency   = SC%Node_Frequency(Channel_Index)
-    !  Wavenumber  = SC%Node_Wavenumber(Channel_Index)
-
+    ! Spectral variables
+    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Frequency   = SC(SensorIndex)%Frequency(ChannelIndex)
+    Wavenumber  = SC(SensorIndex)%Wavenumber(ChannelIndex)
 !
   IF(Atmosphere%n_Clouds == 0) RETURN
     n_Legendre_Terms = CloudScatter%n_Legendre_Terms
@@ -918,7 +913,7 @@ CONTAINS
        CloudScatter_AD%Phase_Coefficient(2,1,i) = ZERO
        CloudScatter_AD%Asymmetry_Factor(i) =  &
          CloudScatter_AD%Asymmetry_Factor(i)  &
-         + 1.5_fp_kind*CloudScatter_AD%Phase_Coefficient(1,1,i)
+         + 1.5_fp*CloudScatter_AD%Phase_Coefficient(1,1,i)
        ENDIF
 
      ENDIF
@@ -1059,15 +1054,15 @@ CONTAINS
 !      obtaining extinction (ext), scattereing (w0) coefficients
 !      asymmetry factor (g), and spherical Legendre coefficients (p_coef).
 ! ---------------------------------------------------------------------------------------
-    REAL( fp_kind ) , INTENT( IN ) :: Wavenumber,eff_radius,eff_v
-    INTEGER, INTENT( IN ) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
-    REAL( fp_kind ) , INTENT( OUT ) :: ext,w0,g
-    REAL( fp_kind ) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef
+    REAL(fp) , INTENT(IN) :: Wavenumber,eff_radius,eff_v
+    INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
+    REAL(fp) , INTENT(OUT) :: ext,w0,g
+    REAL(fp) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
-    REAL( fp_kind ) :: d1,d2
+    REAL(fp) :: d1,d2
     INTEGER :: m,L,L1,L2
 
 
@@ -1169,16 +1164,16 @@ CONTAINS
 !      factor (g_TL), and Legendre coefficients (p_coef_TL).
 ! ---------------------------------------------------------------------------------------
        IMPLICIT NONE
-       REAL( fp_kind ) , INTENT( IN ) :: Wavenumber,eff_radius,eff_v,eff_radius_TL,eff_v_TL
-       INTEGER, INTENT( IN ) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
-       REAL( fp_kind ) , INTENT( INOUT ) :: ext_TL,w0_TL,g_TL
-       REAL( fp_kind ) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef_TL
+       REAL(fp) , INTENT(IN) :: Wavenumber,eff_radius,eff_v,eff_radius_TL,eff_v_TL
+       INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
+       REAL(fp) , INTENT( INOUT ) :: ext_TL,w0_TL,g_TL
+       REAL(fp) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef_TL
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
-       REAL( fp_kind ) :: d1,d2,d2_TL
-       REAL( fp_kind ) :: a1_TL,a2_TL
+       REAL(fp) :: d1,d2,d2_TL
+       REAL(fp) :: a1_TL,a2_TL
        INTEGER :: m,L,L1,L2
 
     !  eff_v is not used yet.
@@ -1274,17 +1269,17 @@ CONTAINS
 !      as well as asymmetry factor (g).
 ! ---------------------------------------------------------------------------------------
        IMPLICIT NONE
-       REAL( fp_kind ) , INTENT( IN ) :: Wavenumber,eff_radius,eff_v
-       INTEGER, INTENT( IN ) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
-       REAL( fp_kind ) , INTENT( IN ) :: ext_AD,w0_AD,g_AD
-       REAL( fp_kind ) , INTENT( IN ), DIMENSION(0:,:) :: p_coef_AD
-       REAL( fp_kind ) , INTENT( INOUT ) :: eff_radius_AD,eff_v_AD
+       REAL(fp) , INTENT(IN) :: Wavenumber,eff_radius,eff_v
+       INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
+       REAL(fp) , INTENT(IN) :: ext_AD,w0_AD,g_AD
+       REAL(fp) , INTENT(IN), DIMENSION(0:,:) :: p_coef_AD
+       REAL(fp) , INTENT( INOUT ) :: eff_radius_AD,eff_v_AD
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
-       REAL( fp_kind ) :: d1,d2,d2_AD
-       REAL( fp_kind ) :: a1_AD,a2_AD
+       REAL(fp) :: d1,d2,d2_AD
+       REAL(fp) :: a1_AD,a2_AD
        INTEGER :: m,L,L1,L2
 !
     ! eff_v is not used yet.
@@ -1393,16 +1388,16 @@ CONTAINS
 !      as well as asymmetry factor (g).
 ! ---------------------------------------------------------------------------------------
        IMPLICIT NONE
-       REAL( fp_kind ) , INTENT( IN ) :: Frequency,eff_radius,eff_v,Temperature
-       INTEGER, INTENT( IN ) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
-       REAL( fp_kind ) , INTENT( OUT ) :: ext,w0,g
-       REAL( fp_kind ) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef
+       REAL(fp) , INTENT(IN) :: Frequency,eff_radius,eff_v,Temperature
+       INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
+       REAL(fp) , INTENT(OUT) :: ext,w0,g
+       REAL(fp) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
-       REAL( fp_kind ) :: d1,d2,d3
-       REAL( fp_kind ) :: a1,a2
+       REAL(fp) :: d1,d2,d3
+       REAL(fp) :: a1,a2
        INTEGER :: k,m,L,L1,L2,L3
 
     ! eff_v is not used yet.
@@ -1536,17 +1531,17 @@ CONTAINS
 !      factor (g_TL), and Legendre coefficients (p_coef_TL).
 ! ---------------------------------------------------------------------------------------
        IMPLICIT NONE
-       REAL( fp_kind ) , INTENT( IN ) :: Frequency,eff_radius,eff_v,Temperature
-       REAL( fp_kind ) , INTENT( IN ) :: eff_radius_TL,eff_v_TL,Temperature_TL
-       INTEGER, INTENT( IN ) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
-       REAL( fp_kind ) , INTENT( INOUT ) :: ext_TL,w0_TL,g_TL
-       REAL( fp_kind ) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef_TL
+       REAL(fp) , INTENT(IN) :: Frequency,eff_radius,eff_v,Temperature
+       REAL(fp) , INTENT(IN) :: eff_radius_TL,eff_v_TL,Temperature_TL
+       INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
+       REAL(fp) , INTENT( INOUT ) :: ext_TL,w0_TL,g_TL
+       REAL(fp) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef_TL
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
-       REAL( fp_kind ) :: d1,d2,d3
-       REAL( fp_kind ) :: a1_TL,a2_TL,d2_TL,d3_TL
+       REAL(fp) :: d1,d2,d3
+       REAL(fp) :: a1_TL,a2_TL,d2_TL,d3_TL
        INTEGER :: k,m,L,L1,L2,L3
 !
     !  eff_TL is not used yet.
@@ -1690,17 +1685,17 @@ CONTAINS
 !      as well as asymmetry factor (g).
 ! ---------------------------------------------------------------------------------------
        IMPLICIT NONE
-       REAL( fp_kind ) , INTENT( IN ) :: Frequency,eff_radius,eff_v,Temperature
-       INTEGER, INTENT( IN ) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
-       REAL( fp_kind ) , INTENT( IN ) :: ext_AD,w0_AD,g_AD
-       REAL( fp_kind ) , INTENT( IN ), DIMENSION(0:,:) :: p_coef_AD
-       REAL( fp_kind ) , INTENT( INOUT ) :: eff_radius_AD,eff_v_AD,Temperature_AD
+       REAL(fp) , INTENT(IN) :: Frequency,eff_radius,eff_v,Temperature
+       INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
+       REAL(fp) , INTENT(IN) :: ext_AD,w0_AD,g_AD
+       REAL(fp) , INTENT(IN), DIMENSION(0:,:) :: p_coef_AD
+       REAL(fp) , INTENT( INOUT ) :: eff_radius_AD,eff_v_AD,Temperature_AD
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
-       REAL( fp_kind ) :: d1,d2,d3
-       REAL( fp_kind ) :: a1_AD,a2_AD,d2_AD,d3_AD
+       REAL(fp) :: d1,d2,d3
+       REAL(fp) :: a1_AD,a2_AD,d2_AD,d3_AD
        INTEGER :: k,m,L,L1,L2,L3
 !
     ! eff_v is not used yet.
@@ -1839,11 +1834,11 @@ CONTAINS
 !   Find index and slope.
 ! ---------------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, INTENT( IN ) :: n
-      REAL( fp_kind ), INTENT( IN ), DIMENSION( : ) :: X
-      REAL( fp_kind ), INTENT( IN ) :: X0
-      INTEGER, INTENT( OUT ) :: idx
-      REAL( fp_kind ), INTENT( OUT ) :: slope
+      INTEGER, INTENT(IN) :: n
+      REAL(fp), INTENT(IN), DIMENSION( : ) :: X
+      REAL(fp), INTENT(IN) :: X0
+      INTEGER, INTENT(OUT) :: idx
+      REAL(fp), INTENT(OUT) :: slope
 !
       INTEGER :: k
 
@@ -1868,11 +1863,11 @@ CONTAINS
 !   Find index and slope.
 ! ---------------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, INTENT( IN ) :: n
-      REAL( fp_kind ), INTENT( IN ), DIMENSION( : ) :: X
-      REAL( fp_kind ), INTENT( IN ) :: X0, X0_TL
-      INTEGER, INTENT( IN ) :: idx
-      REAL( fp_kind ), INTENT( OUT ) :: slope_TL
+      INTEGER, INTENT(IN) :: n
+      REAL(fp), INTENT(IN), DIMENSION( : ) :: X
+      REAL(fp), INTENT(IN) :: X0, X0_TL
+      INTEGER, INTENT(IN) :: idx
+      REAL(fp), INTENT(OUT) :: slope_TL
 !
          if( X0 <= X(1) ) then
          slope_TL = ZERO 
@@ -1889,12 +1884,12 @@ CONTAINS
 !   Find index and slope.
 ! ---------------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER, INTENT( IN ) :: n
-      REAL( fp_kind ), INTENT( IN ), DIMENSION( : ) :: X
-      REAL( fp_kind ), INTENT( IN ) ::  X0
-      REAL( fp_kind ), INTENT( INOUT ) :: slope_AD
-      INTEGER, INTENT( IN ) :: idx
-      REAL( fp_kind ), INTENT( OUT ) :: X0_AD
+      INTEGER, INTENT(IN) :: n
+      REAL(fp), INTENT(IN), DIMENSION( : ) :: X
+      REAL(fp), INTENT(IN) ::  X0
+      REAL(fp), INTENT( INOUT ) :: slope_AD
+      INTEGER, INTENT(IN) :: idx
+      REAL(fp), INTENT(OUT) :: X0_AD
 !
          X0_AD = ZERO
          if( X0 <= X(1) ) then
@@ -1913,8 +1908,8 @@ CONTAINS
   ! -----------------------------
   SUBROUTINE interp2(x1,x2,y1,y2,y3,y4,y)
 
-    REAL( fp_kind ), INTENT( IN ) :: x1,x2,y1,y2,y3,y4 
-    REAL( fp_kind ), INTENT( OUT ) :: y 
+    REAL(fp), INTENT(IN) :: x1,x2,y1,y2,y3,y4 
+    REAL(fp), INTENT(OUT) :: y 
 
     y=(ONE-x1)*(ONE-x2)*y1+(ONE-x1)*x2*y2+x1*(ONE-x2)*y3+x1*x2*y4
 
@@ -1926,8 +1921,8 @@ CONTAINS
   ! -----------------------------------------------
   SUBROUTINE interp2_TL(x1,x2,y1,y2,y3,y4,x1_TL,x2_TL,y_TL)
 
-    REAL( fp_kind ), INTENT( IN ) :: x1,x2,x1_TL,x2_TL,y1,y2,y3,y4 
-    REAL( fp_kind ), INTENT( OUT ) :: y_TL
+    REAL(fp), INTENT(IN) :: x1,x2,x1_TL,x2_TL,y1,y2,y3,y4 
+    REAL(fp), INTENT(OUT) :: y_TL
 
     y_TL= (-(ONE-x2)*y1-x2*y2+(ONE-x2)*y3+x2*y4)*x1_TL + &
           (-(ONE-x1)*y1+(ONE-x1)*y2-x1*y3+x1*y4)*x2_TL
@@ -1940,9 +1935,9 @@ CONTAINS
   ! ----------------------------------------
   SUBROUTINE interp2_AD(x1,x2,y1,y2,y3,y4,y_AD,x1_AD,x2_AD)
 
-    REAL( fp_kind ), INTENT( IN )     :: x1,x2,y1,y2,y3,y4 
-    REAL( fp_kind ), INTENT( IN OUT ) :: y_AD
-    REAL( fp_kind ), INTENT( IN OUT ) :: x1_AD,x2_AD
+    REAL(fp), INTENT(IN)     :: x1,x2,y1,y2,y3,y4 
+    REAL(fp), INTENT(IN OUT) :: y_AD
+    REAL(fp), INTENT(IN OUT) :: x1_AD,x2_AD
 
     x1_AD = x1_AD + (-(ONE-x2)*y1-x2*y2+(ONE-x2)*y3+x2*y4)*y_AD
     x2_AD = x2_AD + (-(ONE-x1)*y1+(ONE-x1)*y2-x1*y3+x1*y4)*y_AD
@@ -1951,84 +1946,3 @@ CONTAINS
   END SUBROUTINE interp2_AD
 
 END MODULE CRTM_CloudScatter
-
-
-!---------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!---------------------------------------------------------------------------------
-!
-! $Id: CRTM_CloudScatter.f90,v 1.6 2006/06/23 23:20:10 wd20pd Exp $
-!
-! $Date: 2006/06/23 23:20:10 $
-!
-! $Revision: 1.6 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: CRTM_CloudScatter.f90,v $
-! Revision 1.6  2006/06/23 23:20:10  wd20pd
-! - Changed shared data structure name from ScatC to CloudC to relfect changes
-!   in the CRTM_CloudCoeff module.
-! - Changed some of the CloudC component names (dimension values) to relfect
-!   changes in the CloudCoeff_Define module.
-!
-! Revision 1.5  2006/05/25 19:27:59  wd20pd
-! Removed redundant parameter definitions.
-!
-! Revision 1.4  2006/05/18 23:18:31  dgroff
-! The variable ZERO is use associated with the module (CRTM_Atmosphere_Define).
-! The Fortran "ONLY" statement is used to remove any conflicts with the usage
-! of variable 'ZERO' in this module.
-!
-! Revision 1.3  2006/05/02 14:58:34  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 1.2  2006/04/24 14:05:52  wd20pd
-! - Merged CRTM_Sensor branch onto the main trunk.
-!
-! Revision 1.1.2.9  2006/04/20 20:34:53  paulv
-! - Added Message_Log arguments to public procedures.
-!
-! Revision 1.1.2.8  2006/04/17 16:47:08  paulv
-! - Added internal variable CSV to the CloudScatter procedure argumen list
-!   to preserve the forward model variables required for the TL and AD
-!   calculations.
-! - Tidied up some other parameter definitions.
-!
-! Revision 1.1.2.7  2005/10/18 12:11:10  paulv
-! - Corrected bug in interp2_AD() routine. The output adjoint variables were
-!   declared with INTENT(IN). This has been changed to INTENT(IN OUT).
-!
-! Revision 1.1.2.6  2005/10/13 22:21:24  paulv
-! - Corrected bug in use of kidx and PACK intrinsic in CRTM_Compute_CloudScatter_TL
-!   and CRTM_Compute_CloudScatter_AD. The LHS and RHS of the offending lines were
-!   made conformable.
-!
-! Revision 1.1.2.5  2005/10/13 15:12:51  paulv
-! - Corrected bug in use of kidx and PACK intrinsic in CRTM_Compute_CloudScatter.
-!   The LHS and RHS of the offending line were made conformable.
-!
-! Revision 1.1.2.4  2005/09/23 19:36:38  yhan
-! --- Replaced Cloud_Type = n with Cloud_Type = Atmosphere%cloud(n)%Type
-!
-! Revision 1.1.2.3  2005/08/23 22:21:51  qliu
-! -- Deleted unused variables.
-!
-! Revision 1.1.2.2  2005/08/19 20:14:32  qliu
-! -- change "ScatterCoeff" to CloudCoeff.
-!
-! Revision 1.1.2.1  2005/08/16 17:47:51  qliu
-! - First working version of cloud scattering and absorption.
-!
-! Revision 1.1  2005/02/25 00:13:14  paulv
-! Initial checkin.
-!
-!
-!
-!
-
-
-!
-

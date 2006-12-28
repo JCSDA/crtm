@@ -365,7 +365,8 @@ LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
                          "ENDIAN=Little_Endian"
 
 # -- Here set the DEFAULT Lahey compiler flags
-LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
+#LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
+LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_PROD)
 
 
 # -------------------------------------------------

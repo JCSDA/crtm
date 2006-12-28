@@ -1,0 +1,11 @@
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
+CRTM_SpcCoeff.o : CRTM_SpcCoeff.f90 CRTM_Parameters.o SpcCoeff_Binary_IO.o SpcCoeff_Define.o Message_Handler.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+SpcCoeff_Binary_IO.o : SpcCoeff_Binary_IO.f90 SpcCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+SpcCoeff_Define.o : SpcCoeff_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Test_CRTM_SpcCoeff.o : Test_CRTM_SpcCoeff.f90 CRTM_SpcCoeff.o Message_Handler.o 
+Type_Kinds.o : Type_Kinds.f90 

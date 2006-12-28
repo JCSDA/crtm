@@ -1,13 +1,13 @@
 
      Number of channels indexed:     4
 
-  Channel         Sensor             NCEP          WMO           WMO     Channel
-   Index        Descriptor         Sensor ID   Satellite ID   Sensor ID   Number
-  ------------------------------------------------------------------------------
-       1  >imgr_g11            <     261           255           615          2
-       2  >imgr_g11            <     261           255           615          3
-       3  >imgr_g11            <     261           255           615          4
-       4  >imgr_g11            <     261           255           615          5
+  Channel        SensorID            WMO           WMO     Channel
+   Index                         Satellite ID   Sensor ID   Number
+  ----------------------------------------------------------------
+       1  >imgr_g11            <     255           615          2
+       2  >imgr_g11            <     255           615          3
+       3  >imgr_g11            <     255           615          4
+       4  >imgr_g11            <     255           615          5
 
      Calling the Tangent-Linear CRTM...
 

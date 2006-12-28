@@ -15,7 +15,7 @@ MODULE CRTM_Parameters
   ! ---------------------
   ! Module use statements
   ! ---------------------
-  USE Type_Kinds, ONLY : fp=>fp_kind
+  USE Type_Kinds, ONLY: fp=>fp_kind
 
 
   ! ------------------
@@ -24,10 +24,10 @@ MODULE CRTM_Parameters
   ! Everything PRIVATE by default
   PRIVATE
   ! The MAX_N_CHANNELS methods
-  PUBLIC :: CRTM_Set_Max_n_Channels
-  PUBLIC :: CRTM_Reset_Max_n_Channels
-  PUBLIC :: CRTM_Get_Max_n_Channels
-
+  PUBLIC :: CRTM_Set_Max_nChannels    ! Subroutine
+  PUBLIC :: CRTM_Reset_Max_nChannels  ! Subroutine
+  PUBLIC :: CRTM_Get_Max_nChannels    ! Function
+  PUBLIC :: CRTM_IsSet_Max_nChannels  ! Function
 
 
   !#----------------------------------------------------------------------------#
@@ -45,15 +45,18 @@ MODULE CRTM_Parameters
   ! and SET, during the model initialisation.
   !
   ! In this module it is a protected variable in that it can
-  ! only be set, reset, or retrieved via the MAX_N_CHANNELS
+  ! only be set, reset, or retrieved via the *_N_CHANNELS
   ! methods.
   ! ----------------------------------------------------------
-
-  ! Accessed via SET_MAX_N_CHANNELS, RESET_MAX_N_CHANNELS,
-  ! and GET_MAX_N_CHANNELS routines
   INTEGER, PRIVATE, PARAMETER :: RESET_VALUE = -1
   INTEGER, PRIVATE, SAVE      :: MAX_N_CHANNELS = RESET_VALUE
 
+
+  ! -----------------------------------------
+  ! The maximum number of sensors that can be
+  ! specified in a single initialisation call
+  ! -----------------------------------------
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_SENSORS = 100
 
   ! -----------------------------------------------------
   ! The maximum number of atmospheric profiles and layers
@@ -85,10 +88,11 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = EPSILON( ONE )
 
 
-  ! ---------------------------------------------
-  ! Constant to allow degrees->radians conversion
-  ! ---------------------------------------------
+  ! --------------------
+  ! PI-related constants
+  ! --------------------
   REAL(fp), PUBLIC, PARAMETER :: PI = 3.141592653589793238462643383279_fp
+  REAL(fp), PUBLIC, PARAMETER :: TWOPI = TWO * PI
   REAL(fp), PUBLIC, PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
 
 
@@ -115,6 +119,8 @@ MODULE CRTM_Parameters
   INTEGER, PUBLIC, PARAMETER :: NO      = 0, YES = 1
   INTEGER, PUBLIC, PARAMETER :: NOT_SET = 0, SET = 1
 
+  ! Default string length for SensorIDs
+  INTEGER, PUBLIC, PARAMETER :: STRLEN = 20
 
 
   !#----------------------------------------------------------------------------#
@@ -124,21 +130,17 @@ MODULE CRTM_Parameters
   ! -------------------------------------
   ! Absorbers in the gas absorption model
   ! -------------------------------------
-
   ! The total number
   INTEGER, PUBLIC, PARAMETER :: MAX_N_ABSORBERS = 3
-
   ! The indexing order of the absorbers
   INTEGER, PUBLIC, PARAMETER :: WET_ABSORBER_INDEX = 1
   INTEGER, PUBLIC, PARAMETER :: DRY_ABSORBER_INDEX = 2
   INTEGER, PUBLIC, PARAMETER :: OZO_ABSORBER_INDEX = 3
-
   ! The absorber index and name arrays
   INTEGER, PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
     ABSORBER_INDEX = (/ WET_ABSORBER_INDEX, &
                         DRY_ABSORBER_INDEX, &
                         OZO_ABSORBER_INDEX /)
-
   CHARACTER( * ), PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
     ABSORBER_NAME = (/ 'wet', &
                        'dry', &
@@ -148,17 +150,13 @@ MODULE CRTM_Parameters
   ! --------------------------------------
   ! Predictors in the gas absorption model
   ! --------------------------------------
-
   ! Standard predictors are absorber independent
   INTEGER, PUBLIC, PARAMETER :: MAX_N_STANDARD_PREDICTORS   = 11
-
   ! Integrated predictors are defined for EACH absoreber
   INTEGER, PUBLIC, PARAMETER :: MAX_N_INTEGRATED_PREDICTORS = 6
-
   ! The total number of predictors
   INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS = MAX_N_STANDARD_PREDICTORS + &
                                                    ( MAX_N_ABSORBERS * MAX_N_INTEGRATED_PREDICTORS )
-
   ! The number selected from the total to be
   ! used in the gas absorption algorithm
   INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS_USED = 6
@@ -168,7 +166,6 @@ MODULE CRTM_Parameters
   ! Maximum number of polynomial orders for
   ! reconstructing the gas absorption coefficients
   ! ----------------------------------------------
-
   INTEGER, PUBLIC, PARAMETER :: MAX_N_ORDERS = 10
 
 
@@ -177,7 +174,6 @@ MODULE CRTM_Parameters
   ! the smallest representable numbers.
   ! This value is equivalent to TINY(ONE)**0.25
   ! ----------------------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
 
 
@@ -185,11 +181,9 @@ MODULE CRTM_Parameters
   ! Numerical limits for the gas absorption
   ! coefficient reconstruction
   ! ---------------------------------------
-
   ! Numerical limits based on precision
 !  REAL(fp), PUBLIC, PARAMETER :: LIMIT_EXP = 36.0436_fp   ! ABS( LOG( TOLERANCE ) )
 !  REAL(fp), PUBLIC, PARAMETER :: LIMIT_LOG = 4.5e+15_fp   ! EXP( LIMIT_EXP )
-
   ! Numerical limits based on experiment.
   REAL(fp), PUBLIC, PARAMETER :: LIMIT_EXP = 20.0_fp
   REAL(fp), PUBLIC, PARAMETER :: LIMIT_LOG = 4.8e+08_fp   ! EXP( LIMIT_EXP )
@@ -198,7 +192,6 @@ MODULE CRTM_Parameters
   ! ---------------------------------------
   ! Top-Of-Atmosphere (TOA) pressure in hPa
   ! ---------------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: TOA_PRESSURE = 0.005_fp
 
 
@@ -206,7 +199,6 @@ MODULE CRTM_Parameters
   ! Reciprocal gravity (scaled by 100 for use with pressure
   ! in hPa) used in computing integrated absorber amounts
   ! -------------------------------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: RECIPROCAL_GRAVITY = ONE / 980.665_fp
 
 
@@ -218,7 +210,6 @@ MODULE CRTM_Parameters
   ! -----------------
   ! Distance defaults
   ! -----------------
-
   REAL(fp), PUBLIC, PARAMETER :: EARTH_RADIUS     = 6370.0_fp  ! Mean earth radius 
   REAL(fp), PUBLIC, PARAMETER :: SATELLITE_HEIGHT = 800.0_fp
 
@@ -228,7 +219,6 @@ MODULE CRTM_Parameters
   ! - Azimuth angles that are multiples
   !   of 2pi are not accepted.
   ! -----------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_SCAN_ANGLE    = 65.0_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_ZENITH_ANGLE  = 65.0_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_AZIMUTH_ANGLE = 360.0_fp
@@ -245,10 +235,8 @@ MODULE CRTM_Parameters
   ! - Azimuth angles that are multiples
   !   of 2pi are not accepted.
   ! -------------------------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: MAX_SOURCE_ZENITH_ANGLE  = 85.0_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_SECANT_SOURCE_ZENITH = 11.473711738554476_fp
-
   REAL(fp), PUBLIC, PARAMETER :: MAX_SOURCE_AZIMUTH_ANGLE = 360.0_fp
 
 
@@ -257,7 +245,6 @@ MODULE CRTM_Parameters
   ! ACOS( 3/5 ) in degrees is (~53.13)
   ! Used to approximate the downwelling flux
   ! ----------------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: DIFFUSIVITY_ANGLE  = 53.130102354156_fp
   REAL(fp), PUBLIC, PARAMETER :: DIFFUSIVITY_RADIAN = 0.927295218002_fp
   REAL(fp), PUBLIC, PARAMETER :: SECANT_DIFFUSIVITY = FIVE / THREE
@@ -270,11 +257,8 @@ MODULE CRTM_Parameters
   ! inputs a value larger than this for the Flux_Zenith_Angle,
   ! the diffusivity angles are used instead
   ! -----------------------------------------------------------
-
   REAL(fp), PUBLIC, PARAMETER :: MAX_FLUX_ZENITH_ANGLE  = 63.612200038757_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_SECANT_FLUX_ZENITH = 2.25_fp
-
-
 
 
 
@@ -306,7 +290,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Set_Max_n_Channels
+!       CRTM_Set_Max_nChannels
 ! 
 ! PURPOSE:
 !       Subroutine to set the protected variable MAX_N_CHANNELS value in the
@@ -314,14 +298,14 @@ CONTAINS
 !       initialisation.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Set_Max_n_Channels( Value )
+!       CALL CRTM_Set_Max_nChannels( Value )
 !
 ! INPUT ARGUMENTS:
-!       Value:        The maximum number of channels.
+!       Value:        The number of channels.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN )
+!                     ATTRIBUTES: INTENT(IN)
 !
 ! SIDE EFFECTS:
 !       This subroutines changes the value of the MAX_N_CHANNELS pseudo-parameter
@@ -333,16 +317,16 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Set_Max_n_Channels( Value )
-    INTEGER, INTENT( IN ) :: Value
+  SUBROUTINE CRTM_Set_Max_nChannels( Value )
+    INTEGER, INTENT(IN) :: Value
     MAX_N_CHANNELS = Value
-  END SUBROUTINE CRTM_Set_Max_n_Channels
+  END SUBROUTINE CRTM_Set_Max_nChannels
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Reset_Max_n_Channels
+!       CRTM_Reset_Max_nChannels
 ! 
 ! PURPOSE:
 !       Subroutine to reset the protected variable MAX_N_CHANNELS value in the
@@ -350,7 +334,7 @@ CONTAINS
 !       during the CRTM destruction.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Reset_Max_n_Channels()
+!       CALL CRTM_Reset_Max_nChannels()
 !
 ! SIDE EFFECTS:
 !       This subroutines changes the value of the MAX_N_CHANNELS pseudo-parameter
@@ -362,41 +346,28 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Reset_Max_n_Channels()
+  SUBROUTINE CRTM_Reset_Max_nChannels()
     MAX_N_CHANNELS = RESET_VALUE
-  END SUBROUTINE CRTM_Reset_Max_n_Channels
+  END SUBROUTINE CRTM_Reset_Max_nChannels
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Get_Max_n_Channels
+!       CRTM_Get_Max_nChannels
 ! 
 ! PURPOSE:
-!       Subroutine to GET the protected variable MAX_N_CHANNELS value stored
+!       Function to GET the protected variable MAX_N_CHANNELS value stored
 !       in the CRTM_Parameters module.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Get_Max_n_Channels( Value, Is_Set )
+!       Value = CRTM_Get_Max_nChannels()
 !
-! OUTPUT ARGUMENTS:
-!       Value:        The maximum number of channels.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       Is_Set:       Logical flag for determining whether or not the
-!                     maximum number of channels has been set.
-!                     If == .TRUE.  the MAX_N_CHANNELS protected variable is
-!                                   set to a valid value.
-!                        == .FALSE. the MAX_N_CHANNELS protected variable
-!                                   value is invalid
-!                     UNITS:      N/A
-!                     TYPE:       LOGICAL
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT ), OPTIONAL
+! FUNCTION RESULT:
+!       Value:  The number of channels.
+!               UNITS:      N/A
+!               TYPE:       INTEGER
+!               DIMENSION:  Scalar
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 16-Aug-2001
@@ -404,17 +375,44 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Get_Max_n_Channels( Value, Is_Set )
-    INTEGER,           INTENT( OUT ) :: Value
-    LOGICAL, OPTIONAL, INTENT( OUT ) :: Is_Set
+  FUNCTION CRTM_Get_Max_nChannels() RESULT(Value)
+    INTEGER :: Value
     Value = MAX_N_CHANNELS
-    IF ( PRESENT( Is_Set ) ) THEN
-      IF ( Value /= RESET_VALUE ) THEN
-        Is_Set = .TRUE.
-      ELSE
-        Is_Set = .FALSE.
-      END IF
-    END IF
-  END SUBROUTINE CRTM_Get_Max_n_Channels
+  END FUNCTION CRTM_Get_Max_nChannels
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_IsSet_Max_nChannels
+! 
+! PURPOSE:
+!       Function to determie if the MAX_N_CHANNELS protected variable in the
+!       CRTM_Parameters module has been set to a valid value
+!
+! CALLING SEQUENCE:
+!       Is_Set = CRTM_IsSet_Max_nChannels()
+!
+! FUNCTION RESULT:
+!       Is_Set:  Logical flag for determining whether or not the
+!                number of channels has been set.
+!                If == .TRUE.  the MAX_N_CHANNELS protected variable is
+!                              set to a valid value.
+!                   == .FALSE. the MAX_N_CHANNELS protected variable
+!                              value is invalid
+!                UNITS:      N/A
+!                TYPE:       LOGICAL
+!                DIMENSION:  Scalar
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 16-Aug-2001
+!                       paul.vandelst@ssec.wisc.edu
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_IsSet_Max_nChannels() RESULT(Is_Set)
+    LOGICAL :: Is_Set
+    Is_Set = (MAX_N_CHANNELS /= RESET_VALUE)
+  END FUNCTION CRTM_IsSet_Max_nChannels
 
 END MODULE CRTM_Parameters

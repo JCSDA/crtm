@@ -41,29 +41,29 @@ PROGRAM Test_K_Matrix
   INTEGER,      PARAMETER, DIMENSION( N_OPTIONS_CASES ) :: &
     OPTIONS_CASES = (/ NO_OPTIONS,  &
                        FWD_OPTIONS /)
+  INTEGER, PARAMETER :: NSENSORS=4
+  CHARACTER(*), PARAMETER, DIMENSION(NSENSORS) :: SENSORID=&
+    (/ 'amsua_n17', &
+       'hirs3_n17', &
+       'ssmis_f16', &
+       'imgr_g11 ' /)
 
 
   ! ---------
   ! Variables
   ! ---------
   CHARACTER(256) :: Message
-  INTEGER :: i, l, m, iOptions
+  INTEGER :: i, l, m, n, iOptions, l1, l2, nChannels
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-  CHARACTER(256) :: File_Prefix
-  CHARACTER(256) :: SpcCoeff_File
-  CHARACTER(256) :: TauCoeff_File
-  CHARACTER(256) :: AerosolCoeff_File
-  CHARACTER(256) :: CloudCoeff_File
-  CHARACTER(256) :: EmisCoeff_File
-  TYPE(CRTM_ChannelInfo_type)                               :: ChannelInfo
-  TYPE(CRTM_Atmosphere_type),   DIMENSION(MAX_TEST_CASES)   :: Atmosphere
-  TYPE(CRTM_Surface_type),      DIMENSION(MAX_TEST_CASES)   :: Surface
+  TYPE(CRTM_ChannelInfo_type) , DIMENSION(NSENSORS)         :: ChannelInfo
+  TYPE(CRTM_Atmosphere_type)  , DIMENSION(MAX_TEST_CASES)   :: Atmosphere
+  TYPE(CRTM_Surface_type)     , DIMENSION(MAX_TEST_CASES)   :: Surface
   TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_TEST_CASES)   :: GeometryInfo
-  TYPE(CRTM_Atmosphere_type),   DIMENSION(:,:), ALLOCATABLE :: Atmosphere_K
-  TYPE(CRTM_Surface_type),      DIMENSION(:,:), ALLOCATABLE :: Surface_K
-  TYPE(CRTM_RTSolution_type),   DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_K
-  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options
+  TYPE(CRTM_Atmosphere_type)  , DIMENSION(:,:), ALLOCATABLE :: Atmosphere_K
+  TYPE(CRTM_Surface_type)     , DIMENSION(:,:), ALLOCATABLE :: Surface_K
+  TYPE(CRTM_RTSolution_type)  , DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_K
+  TYPE(CRTM_Options_type)     , DIMENSION(MAX_TEST_CASES)   :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -93,48 +93,28 @@ PROGRAM Test_K_Matrix
   END IF
 
 
-  ! -----------------------------
-  ! Get the coefficient filenames
-  ! -----------------------------
-  ! Enter the instrument file prefix, e.g. hirs3_n16
-  WRITE( *, FMT     = '( /5x, "Enter the instrument file prefix : " )', &
-            ADVANCE = 'NO' )
-  READ( *, '( a )' ) File_Prefix
-  File_Prefix = ADJUSTL( File_Prefix )
-
-  ! Create the filenames
-  SpcCoeff_File = TRIM( File_Prefix )//'.SpcCoeff.bin'
-  TauCoeff_File = TRIM( File_Prefix )//'.TauCoeff.bin'
-  AerosolCoeff_File = 'AerosolCoeff.bin'
-  CloudCoeff_File   = 'CloudCoeff.bin'
-  EmisCoeff_File    = 'EmisCoeff.bin'
-
-
   ! -------------------
   ! Initialise the CRTM
   ! -------------------
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
   Error_Status = CRTM_Init( ChannelInfo, &
-                            SpcCoeff_File     = SpcCoeff_File, &
-                            TauCoeff_File     = TauCoeff_File, &
-                            AerosolCoeff_File = AerosolCoeff_File, &
-                            CloudCoeff_File   = CloudCoeff_File, &
-                            EmisCoeff_File    = EmisCoeff_File )
+                            SensorId=SENSORID )
   IF ( Error_Status /= SUCCESS ) THEN 
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error initializing CRTM', & 
-                           Error_Status)  
-    STOP
+     CALL Display_Message( PROGRAM_NAME, &
+                           'Error initializing CRTM', & 
+                            Error_Status)  
+   STOP
   END IF
 
 
   ! ----------------------
   ! Allocate output arrays
   ! ----------------------
-  ALLOCATE( Atmosphere_K( ChannelInfo%n_Channels, MAX_TEST_CASES ), &
-            Surface_K(    ChannelInfo%n_Channels, MAX_TEST_CASES ), &
-            RTSolution(   ChannelInfo%n_Channels, MAX_TEST_CASES ), &
-            RTSolution_K( ChannelInfo%n_Channels, MAX_TEST_CASES ), &
+  nChannels = SUM(ChannelInfo%n_Channels)
+  ALLOCATE( Atmosphere_K( nChannels, MAX_TEST_CASES ), &
+            Surface_K(    nChannels, MAX_TEST_CASES ), &
+            RTSolution(   nChannels, MAX_TEST_CASES ), &
+            RTSolution_K( nChannels, MAX_TEST_CASES ), &
             STAT = Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
@@ -148,7 +128,7 @@ PROGRAM Test_K_Matrix
   ! Set the adjoint values
   ! ----------------------
   DO m = 1, MAX_TEST_CASES
-    DO l = 1, ChannelInfo%n_Channels
+    DO l = 1, nChannels
       ! The results are all dTb/dx...
       RTSolution_K(l,m)%Brightness_Temperature = ONE
       ! Copy the adjoint atmosphere structure
@@ -178,7 +158,7 @@ PROGRAM Test_K_Matrix
   ! --------------------------
   ! Allocate the Options input
   ! --------------------------
-  Error_Status = CRTM_Allocate_Options( ChannelInfo%n_Channels, Options )
+  Error_Status = CRTM_Allocate_Options( nChannels, Options )
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
                           'Error allocating Options structure array', & 
@@ -199,7 +179,9 @@ PROGRAM Test_K_Matrix
   ! ------------------------------
   ! Print some initialisation info
   ! ------------------------------
-  CALL Print_ChannelInfo(TRIM(File_Prefix)//'.'//TEST_OUTPUT_FILENAME, ChannelInfo)
+  DO n=1, NSENSORS
+    CALL Print_ChannelInfo(TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, ChannelInfo(n))
+  END DO
 
 
   ! -----------------------
@@ -239,12 +221,16 @@ PROGRAM Test_K_Matrix
     END IF
 
     ! Output some results
-    CALL Print_Results(K_OUTPUT, &
-                       TRIM(File_Prefix)//'.'//TEST_OUTPUT_FILENAME, Message, &
-                       ChannelInfo, Atmosphere, Surface, RTSolution, &
-                       RTSolution_K=RTSolution_K, Surface_K=Surface_K)
-      CALL Print_K_Results(TRIM(File_Prefix)//'.dat', &
-                           ChannelInfo, Atmosphere, Atmosphere_K, Surface_K)
+    l1=1
+    DO n = 1, NSENSORS
+      l2 = l1 + ChannelInfo(n)%n_Channels - 1
+      CALL Print_Results(K_OUTPUT, &
+                         TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, Message, &
+                         ChannelInfo(n), Atmosphere, Surface, RTSolution(l1:l2,:),&
+                         RTSolution_K=RTSolution_K(l1:l2,:), &
+                         Surface_K=Surface_K(l1:l2,:))
+      l1 = l2 + 1
+    END DO
     CALL Display_Timing( Timing )
 
   END DO

@@ -52,10 +52,8 @@ MODULE CRTM_RTSolution_Define
 
   INTERFACE CRTM_Allocate_RTSolution
     MODULE PROCEDURE Allocate_Scalar
-    MODULE PROCEDURE Allocate_Rank01
-    MODULE PROCEDURE Allocate_Rank02
-    MODULE PROCEDURE Allocate_Rank11
-    MODULE PROCEDURE Allocate_Rank12
+    MODULE PROCEDURE Allocate_Rank1
+    MODULE PROCEDURE Allocate_Rank2
   END INTERFACE CRTM_Allocate_RTSolution
 
   INTERFACE CRTM_Assign_RTSolution
@@ -150,11 +148,11 @@ CONTAINS
     RTSolution%Down_Radiance           = FP_DEFAULT
     RTSolution%Down_Solar_Radiance     = FP_DEFAULT
     RTSolution%Surface_Planck_Radiance = FP_DEFAULT
-    RTSolution%n_Full_Streams     = IP_DEFAULT
-    RTSolution%Scattering_Flag    = LP_DEFAULT
-    RTSolution%n_Stokes           = IP_DEFAULT
-    RTSolution%Radiance               = FP_DEFAULT
-    RTSolution%Brightness_Temperature = FP_DEFAULT
+    RTSolution%n_Full_Streams          = IP_DEFAULT
+    RTSolution%Scattering_Flag         = LP_DEFAULT
+    RTSolution%n_Stokes                = IP_DEFAULT
+    RTSolution%Radiance                = FP_DEFAULT
+    RTSolution%Brightness_Temperature  = FP_DEFAULT
   END SUBROUTINE CRTM_Clear_RTSolution
 
 
@@ -179,8 +177,8 @@ CONTAINS
 !       CRTM_RTSolution structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_RTSolution( RTSolution,         &  ! Input
-!                                                        ANY_Test = Any_Test )  ! Optional input
+!       Association_Status = CRTM_Associated_RTSolution( RTSolution       , &  ! Input
+!                                                        ANY_Test=Any_Test  )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       RTSolution:          RTSolution structure which is to have its pointer
@@ -226,11 +224,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Associated_RTSolution( RTSolution, & ! Input
-                                       ANY_Test ) & ! Optional input
+                                       ANY_Test  ) & ! Optional input
                                      RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution
-    INTEGER,         OPTIONAL, INTENT(IN) :: ANY_Test
+    INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -278,9 +276,9 @@ CONTAINS
 !       RTSolution data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_RTSolution( RTSolution,               &  ! Output
-!                                               RCS_Id = RCS_Id,          &  ! Revision control
-!                                               Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Destroy_RTSolution( RTSolution             , &  ! Output
+!                                               RCS_Id     =RCS_Id     , &  ! Revision control
+!                                               Message_Log=Message_Log  )  ! Error messaging
 ! 
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
@@ -332,9 +330,9 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( RTSolution,   &  ! Output
-                           No_Clear,     &  ! Optional input
-                           RCS_Id,       &  ! Revision control
+  FUNCTION Destroy_Scalar( RTSolution  , &  ! Output
+                           No_Clear    , &  ! Optional input
+                           RCS_Id      , &  ! Revision control
                            Message_Log ) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
@@ -347,7 +345,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTSolution(Scalar)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
@@ -388,12 +386,12 @@ CONTAINS
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
         WRITE( Message, '( "Error deallocating CRTM_RTSolution Layer_Optical_Depth ", &
-                          &"member. STAT = ", i5 )' ) &
+                          &"member. STAT = ", i0 )' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status,    &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END IF
 
@@ -404,32 +402,32 @@ CONTAINS
     RTSolution%n_Allocates = RTSolution%n_Allocates - 1
     IF ( RTSolution%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
+      WRITE( Message, '( "Allocation counter /= 0, Value = ", i0 )' ) &
                       RTSolution%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
   END FUNCTION Destroy_Scalar
 
 
-  FUNCTION Destroy_Rank1( RTSolution,   &  ! Output
-                          No_Clear,     &  ! Optional input
-                          RCS_Id,       &  ! Revision control
+  FUNCTION Destroy_Rank1( RTSolution  , &  ! Output
+                          No_Clear    , &  ! Optional input
+                          RCS_Id      , &  ! Revision control
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN OUT) :: RTSolution
-    INTEGER,                    OPTIONAL,     INTENT(IN)     :: No_Clear
-    CHARACTER(*),               OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,     INTENT(IN)     :: Message_Log
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:)
+    INTEGER,          OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
@@ -446,16 +444,16 @@ CONTAINS
     ! ----------------------------
     DO n = 1, SIZE( RTSolution )
       Scalar_Status = Destroy_Scalar( RTSolution(n), &
-                                      No_Clear = No_Clear, &
-                                      Message_Log = Message_Log )
+                                      No_Clear   =No_Clear, &
+                                      Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error destroying element #", i5, &
+        WRITE( Message, '( "Error destroying element #", i0, &
                           &" of rank-1 CRTM_RTSolution structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
   END FUNCTION Destroy_Rank1
@@ -467,16 +465,16 @@ CONTAINS
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_RTSolution_type), DIMENSION(:,:), INTENT(IN OUT) :: RTSolution
-    INTEGER,                    OPTIONAL,       INTENT(IN)     :: No_Clear
-    CHARACTER(*),               OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,       INTENT(IN)     :: Message_Log
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:,:)
+    INTEGER,          OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j
 
@@ -491,19 +489,19 @@ CONTAINS
     ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
-    DO j = 1, SIZE( RTSolution, DIM = 2 )
-      DO i = 1, SIZE( RTSolution, DIM = 1 )
+    DO j = 1, SIZE(RTSolution, DIM=2)
+      DO i = 1, SIZE(RTSolution, DIM=1)
         Scalar_Status = Destroy_Scalar( RTSolution(i,j), &
-                                        No_Clear = No_Clear, &
-                                        Message_Log = Message_Log )
+                                        No_Clear   =No_Clear, &
+                                        Message_Log=Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
-          WRITE( Message, '( "Error destroying element #", i5, ",", i5, &
-                            &" of rank-2 CRTM_RTSolution structure array." )' ) i,j
+          WRITE( Message, '( "Error destroying element #(", i0, ",", i0, &
+                            &") of rank-2 CRTM_RTSolution structure array." )' ) i,j
           CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
+                                TRIM(Message), &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
         END IF
       END DO
     END DO
@@ -520,18 +518,17 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_RTSolution( n_Layers,                 &  ! Input
-!                                                RTSolution,               &  ! Output
-!                                                RCS_Id = RCS_Id,          &  ! Revision control
-!                                                Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Allocate_RTSolution( n_Layers               , &  ! Input
+!                                                RTSolution             , &  ! Output
+!                                                RCS_Id     =RCS_Id     , &  ! Revision control
+!                                                Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     Number of atmospheric layers 
 !                     Must be > 0
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar OR Rank-1
-!                                 See output RTSolution dimensionality chart
+!                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -554,12 +551,13 @@ CONTAINS
 !                       L == number of channels
 !                       M == number of profiles
 !
-!                        Input                       Output
-!                       n_Layers                    RTSolution
-!                       dimension                   dimension
-!                     ----------------------------------------------------------
-!                        scalar      scalar, Rank-1 (L or M), or Rank-2 (L x M)
-!                          L                 Rank-1 (L),      or Rank-2 (L x M)
+!                        Input           Output
+!                       n_Layers       RTSolution
+!                       dimension      dimension
+!                     -------------------------------
+!                        scalar         scalar
+!                        scalar      Rank-1 (L or M)
+!                        scalar      Rank-2 (L x M)
 !
 !                     These multiple interfaces are supplied purely for ease of
 !                     use depending on how it's used.
@@ -602,13 +600,13 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_Scalar( n_Layers,     &  ! Input
-                            RTSolution,   &  ! Output
-                            RCS_Id,       &  ! Revision control
+  FUNCTION Allocate_Scalar( n_Layers    , &  ! Input
+                            RTSolution  , &  ! Output
+                            RCS_Id      , &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
-    INTEGER,                      INTENT(IN)     :: n_Layers
+    INTEGER,                    INTENT(IN)     :: n_Layers
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
     CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
@@ -617,7 +615,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Scalar)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Allocate_Status
 
 
@@ -633,7 +631,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers must be > 0.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -641,13 +639,13 @@ CONTAINS
     ! If they are, deallocate them but leave scalars.
     IF ( CRTM_Associated_RTSolution( RTSolution ) ) THEN
       Error_Status = CRTM_Destroy_RTSolution( RTSolution, &
-                                              No_Clear = SET, &
-                                              Message_Log = Message_Log )
+                                              No_Clear   =SET, &
+                                              Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
                               'Error deallocating CRTM_RTSolution pointer members.', &
                               Error_Status,    &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
     END IF
@@ -656,16 +654,16 @@ CONTAINS
     ! ----------------------
     ! Allocate the structure
     ! ----------------------
-    ALLOCATE( RTSolution%Layer_Optical_Depth( n_Layers ),    &
+    ALLOCATE( RTSolution%Layer_Optical_Depth(n_Layers), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating RTSolution data arrays. STAT = ", i5 )' ) &
+      WRITE( Message, '( "Error allocating RTSolution data arrays. STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -683,32 +681,32 @@ CONTAINS
     RTSolution%n_Allocates = RTSolution%n_Allocates + 1
     IF ( RTSolution%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
+      WRITE( Message, '( "Allocation counter /= 1, Value = ", i0 )' ) &
                       RTSolution%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
   END FUNCTION Allocate_Scalar
 
 
-  FUNCTION Allocate_Rank01( n_Layers,     &  ! Input, scalar
-                            RTSolution,   &  ! Output, L or M   
-                            RCS_Id,       &  ! Revision control 
-                            Message_Log ) &  ! Error messaging  
-                          RESULT( Error_Status )                
+  FUNCTION Allocate_Rank1( n_Layers    , &  ! Input,  scalar
+                           RTSolution  , &  ! Output, rank-1 (L or M)
+                           RCS_Id      , &  ! Revision control
+                           Message_Log ) &  ! Error messaging
+                         RESULT( Error_Status )
     ! Arguments
-    INTEGER,                                  INTENT(IN)     :: n_Layers
-    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN OUT) :: RTSolution
-    CHARACTER(*),               OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,     INTENT(IN)     :: Message_Log
+    INTEGER,                    INTENT(IN)     :: n_Layers
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:)
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-0,1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
@@ -722,39 +720,39 @@ CONTAINS
     ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
-    DO n = 1, SIZE( RTSolution )
+    DO n = 1, SIZE(RTSolution)
       Scalar_Status = Allocate_Scalar( n_Layers,      & ! Input
                                        RTSolution(n), & ! Output
-                                       Message_Log = Message_Log )
+                                       Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
+        WRITE( Message, '( "Error allocating element #", i0, &
                           &" of rank-1 CRTM_RTSolution structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
-  END FUNCTION Allocate_Rank01
+  END FUNCTION Allocate_Rank1
 
 
-  FUNCTION Allocate_Rank02( n_Layers,     &  ! Input, scalar
-                            RTSolution,   &  ! Output, L x M    
-                            RCS_Id,       &  ! Revision control 
-                            Message_Log ) &  ! Error messaging  
-                          RESULT( Error_Status )
+  FUNCTION Allocate_Rank2( n_Layers    , &  ! Input,  scalar
+                           RTSolution  , &  ! Output, rank-2 (L x M)
+                           RCS_Id      , &  ! Revision control 
+                           Message_Log ) &  ! Error messaging  
+                         RESULT( Error_Status )
     ! Arguments
-    INTEGER,                                    INTENT(IN)     :: n_Layers
-    TYPE(CRTM_RTSolution_type), DIMENSION(:,:), INTENT(IN OUT) :: RTSolution
-    CHARACTER(*),               OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,       INTENT(IN)     :: Message_Log
+    INTEGER,                    INTENT(IN)     :: n_Layers
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:,:)
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-0,2)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j
 
@@ -769,145 +767,23 @@ CONTAINS
     ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
-    DO j = 1, SIZE( RTSolution, DIM = 2 )
-      DO i = 1, SIZE( RTSolution, DIM = 1 )
+    DO j = 1, SIZE(RTSolution, DIM=2)
+      DO i = 1, SIZE(RTSolution, DIM=1)
         Scalar_Status = Allocate_Scalar( n_Layers,        & ! Input
                                          RTSolution(i,j), & ! Output
-                                         Message_Log = Message_Log )
+                                         Message_Log=Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
-          WRITE( Message, '( "Error allocating element #", i5, ",", i5, &
-                            &" of rank-2 CRTM_RTSolution structure array." )' ) i, j
+          WRITE( Message, '( "Error allocating element #(", i0, ",", i0, &
+                            &") of rank-2 CRTM_RTSolution structure array." )' ) i, j
           CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
+                                TRIM(Message), &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
         END IF
       END DO
     END DO
-  END FUNCTION Allocate_Rank02
-
-
-  FUNCTION Allocate_Rank11( n_Layers,     &  ! Input, L
-                            RTSolution,   &  ! Output, L
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                    DIMENSION(:), INTENT(IN)     :: n_Layers
-    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN OUT) :: RTSolution
-    CHARACTER(*),               OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-1,1)'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, n
-
-
-    ! ------
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Dimensions of n_Layers and
-    ! RTSolution must be the same
-    n = SIZE( n_Layers )
-    IF ( SIZE( RTSolution ) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Layers and RTSolution arrays'//&
-                            ' have different sizes', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! ----------------------------
-    ! Loop over RTSolution entries
-    ! ----------------------------
-    DO i = 1, n
-      Scalar_Status = Allocate_Scalar( n_Layers(i),   & ! Input
-                                       RTSolution(i), & ! Output
-                                       Message_Log = Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of rank-1 CRTM_RTSolution structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-    END DO
-  END FUNCTION Allocate_Rank11
-
-
-  FUNCTION Allocate_Rank12( n_Layers,     &  ! Input, L
-                            RTSolution,   &  ! Output, L x M
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                      DIMENSION(:),   INTENT(IN)     :: n_Layers
-    TYPE(CRTM_RTSolution_type), DIMENSION(:,:), INTENT(IN OUT) :: RTSolution
-    CHARACTER(*),               OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,       INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-1,2)'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, j, n
-
-
-    ! ------
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Dimensions of n_layers and first dimension
-    ! of RTSolution must be the same
-    n = SIZE( n_Layers )
-    IF ( SIZE( RTSolution, DIM = 1 ) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Layers array and the first dimension of'//&
-                            ' the RTSolution array have different sizes', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! ----------------------------
-    ! Loop over RTSolution entries
-    ! ----------------------------
-    DO j = 1, SIZE( RTSolution, DIM = 2 )
-      DO i = 1, n
-        Scalar_Status = Allocate_Scalar( n_Layers(i),     & ! Input
-                                         RTSolution(i,j), & ! Output
-                                         Message_Log = Message_Log )
-        IF ( Scalar_Status /= SUCCESS ) THEN
-          Error_Status = Scalar_Status
-          WRITE( Message, '( "Error allocating element #", i5, ",", i5, &
-                            &" of rank-2 CRTM_RTSolution structure array." )' ) i, j
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
-                                Error_Status, &
-                                Message_Log = Message_Log )
-        END IF
-      END DO
-    END DO
-  END FUNCTION Allocate_Rank12
+  END FUNCTION Allocate_Rank2
 
 
 !--------------------------------------------------------------------------------
@@ -919,10 +795,10 @@ CONTAINS
 !       Function to copy valid CRTM_RTSolution structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_RTSolution( RTSolution_in,            &  ! Input
-!                                              RTSolution_out,           &  ! Output
-!                                              RCS_Id = RCS_Id,          &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Assign_RTSolution( RTSolution_in          , &  ! Input
+!                                              RTSolution_out         , &  ! Output
+!                                              RCS_Id     =RCS_Id     , &  ! Revision control
+!                                              Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       RTSolution_in:   CRTM_RTSolution structure which is to be copied.
@@ -977,10 +853,10 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_Scalar( RTSolution_in,  &  ! Input
+  FUNCTION Assign_Scalar( RTSolution_in , &  ! Input
                           RTSolution_out, &  ! Output
-                          RCS_Id,         &  ! Revision control
-                          Message_Log )   &  ! Error messaging
+                          RCS_Id        , &  ! Revision control
+                          Message_Log   ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)     :: RTSolution_in
@@ -1009,12 +885,12 @@ CONTAINS
     ! ----------------------------------------------
     IF ( .NOT. CRTM_Associated_RTSolution( RTSolution_In ) ) THEN
       Error_Status = CRTM_Destroy_RTSolution( RTSolution_Out, &
-                                              Message_Log = Message_Log )
+                                              Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
                               'Error deallocating output CRTM_RTSolution pointer members.', &
                               Error_Status,    &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
       RETURN
     END IF
@@ -1025,12 +901,12 @@ CONTAINS
     ! ----------------------
     Error_Status = CRTM_Allocate_RTSolution( RTSolution_in%n_Layers, &
                                              RTSolution_out, &
-                                             Message_Log = Message_Log )
+                                             Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error allocating output RTSolution arrays.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -1053,26 +929,27 @@ CONTAINS
     ! -----------------
     ! Assign array data
     ! -----------------
-    RTSolution_out%Layer_Optical_Depth = RTSolution_in%Layer_Optical_Depth             
+    RTSolution_out%Layer_Optical_Depth = RTSolution_in%Layer_Optical_Depth
+    
   END FUNCTION Assign_Scalar
 
 
-  FUNCTION Assign_Rank1( RTSolution_in,  &  ! Input
+  FUNCTION Assign_Rank1( RTSolution_in , &  ! Input
                          RTSolution_out, &  ! Output
-                         RCS_Id,         &  ! Revision control
-                         Message_Log )   &  ! Error messaging
+                         RCS_Id        , &  ! Revision control
+                         Message_Log   ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN)     :: RTSolution_in
-    TYPE(CRTM_RTSolution_type), DIMENSION(:), INTENT(IN OUT) :: RTSolution_out
-    CHARACTER(*),               OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,     INTENT(IN)     :: Message_Log
+    TYPE(CRTM_RTSolution_type), INTENT(IN)     :: RTSolution_in(:)
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution_out(:)
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
@@ -1091,7 +968,7 @@ CONTAINS
                             'Input RTSolution_in and RTSolution_out arrays'//&
                             ' have different sizes', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -1102,36 +979,36 @@ CONTAINS
     DO i = 1, n
       Scalar_Status = Assign_Scalar( RTSolution_in(i), &
                                      RTSolution_out(i), &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error copying element #", i5, &
+        WRITE( Message, '( "Error copying element #", i0, &
                           &" of rank-1 CRTM_RTSolution structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
   END FUNCTION Assign_Rank1
 
 
-  FUNCTION Assign_Rank2( RTSolution_in,  &  ! Input
+  FUNCTION Assign_Rank2( RTSolution_in , &  ! Input
                          RTSolution_out, &  ! Output
-                         RCS_Id,         &  ! Revision control
-                         Message_Log )   &  ! Error messaging
+                         RCS_Id        , &  ! Revision control
+                         Message_Log   ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_RTSolution_type), DIMENSION(:,:), INTENT(IN)     :: RTSolution_in
-    TYPE(CRTM_RTSolution_type), DIMENSION(:,:), INTENT(IN OUT) :: RTSolution_out
-    CHARACTER(*),               OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),               OPTIONAL,       INTENT(IN)     :: Message_Log
+    TYPE(CRTM_RTSolution_type), INTENT(IN)     :: RTSolution_in(:,:)
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution_out(:,:)
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j, l, m
 
@@ -1143,16 +1020,16 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
-    l = SIZE( RTSolution_in, DIM = 1 )
-    m = SIZE( RTSolution_in, DIM = 2 )
-    IF ( SIZE( RTSolution_out, DIM = 1 ) /= l .AND. &
-         SIZE( RTSolution_out, DIM = 2 ) /= m       ) THEN
+    l = SIZE(RTSolution_in, DIM=1)
+    m = SIZE(RTSolution_in, DIM=2)
+    IF ( SIZE(RTSolution_out, DIM=1) /= l .AND. &
+         SIZE(RTSolution_out, DIM=2) /= m       ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input RTSolution_in and RTSolution_out arrays'//&
                             ' have different dimension sizes', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -1164,15 +1041,15 @@ CONTAINS
       DO i = 1, l
         Scalar_Status = Assign_Scalar( RTSolution_in(i,j), &
                                        RTSolution_out(i,j), &
-                                       Message_Log = Message_Log )
+                                       Message_Log=Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
-          WRITE( Message, '( "Error copying element #", i5, ",", i5, &
-                            &" of rank-2 CRTM_RTSolution structure array." )' ) i, j
+          WRITE( Message, '( "Error copying element #(", i0, ",", i0, &
+                            &") of rank-2 CRTM_RTSolution structure array." )' ) i, j
           CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
+                                TRIM(Message), &
                                 Error_Status, &
-                                Message_Log = Message_Log )
+                                Message_Log=Message_Log )
         END IF
       END DO
     END DO

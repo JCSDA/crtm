@@ -51,7 +51,7 @@ MODULE CRTM_MW_Land_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_MW_Land_SfcOptics.f90,v 1.9 2006/05/23 22:10:59 wd20pd Exp $'
+  '$Id: CRTM_MW_Land_SfcOptics.f90,v 1.9.2.1 2006/09/07 09:54:32 frpv Exp $'
 
 
   ! --------------------------------------
@@ -80,11 +80,12 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Land_SfcOptics( Surface,                &  ! Input
-!                                                 GeometryInfo,           &  ! Input
-!                                                 Channel_Index,          &  ! Input, scalar
-!                                                 SfcOptics,              &  ! Output
-!                                                 MWLSOVariables,         &  ! Internal variable output
+!       Error_Status = Compute_MW_Land_SfcOptics( Surface               , &  ! Input
+!                                                 GeometryInfo          , &  ! Input
+!                                                 SensorIndex           , &  ! Input
+!                                                 ChannelIndex          , &  ! Output     
+!                                                 SfcOptics             , &  ! Output
+!                                                 MWLSOVariables        , &  ! Internal variable output
 !                                                 Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -102,14 +103,24 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
+!       ChannelIndex:    Channel index id. This is a unique index associated
+!                        with a (supported) sensor channel used to access the
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -155,17 +166,19 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_MW_Land_SfcOptics( Surface,       &  ! Input
-                                      GeometryInfo,  &  ! Input
-                                      Channel_Index, &  ! Input
-                                      SfcOptics,     &  ! Output
-                                      MWLSOV,        &  ! Internal variable output
-                                      Message_Log )  &  ! Error messaging
+  FUNCTION Compute_MW_Land_SfcOptics( Surface     , &  ! Input
+                                      GeometryInfo, &  ! Input
+                                      SensorIndex , &  ! Input
+                                      ChannelIndex, &  ! Input
+                                      SfcOptics   , &  ! Output
+                                      MWLSOV      , &  ! Internal variable output
+                                      Message_Log ) &  ! Error messaging
                                     RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
     TYPE(MWLSOVariables_type),    INTENT(IN OUT) :: MWLSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -188,11 +201,11 @@ CONTAINS
     ! --------------------------------------
     ! Compute the surface optical parameters
     ! --------------------------------------
-    IF ( SC%Frequency(Channel_Index) < FREQUENCY_CUTOFF ) THEN
+    IF ( SC(SensorIndex)%Frequency(ChannelIndex) < FREQUENCY_CUTOFF ) THEN
       ! Frequency is low enough for the model
       DO i = 1, SfcOptics%n_Angles
         CALL NESDIS_LandEM(SfcOptics%Angle(i),            & ! Input, Degree
-                           SC%Frequency(Channel_Index),   & ! Input, GHz
+                           SC(SensorIndex)%Frequency(ChannelIndex),   & ! Input, GHz
                            Surface%Soil_Moisture_Content, & ! Input, g.cm^-3
                            Surface%Vegetation_Fraction,   & ! Input
                            Surface%Soil_Temperature,      & ! Input, K
@@ -227,13 +240,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Land_SfcOptics_TL( Surface,                &  ! Input
-!                                                    SfcOptics,              &  ! Input     
-!                                                    Surface_TL,             &  ! Input
-!                                                    GeometryInfo,           &  ! Input
-!                                                    Channel_Index,          &  ! Input, scalar
-!                                                    SfcOptics_TL,           &  ! Output
-!                                                    MWLSOVariables,         &  ! Internal variable input
+!       Error_Status = Compute_MW_Land_SfcOptics_TL( Surface               , &  ! Input
+!                                                    SfcOptics             , &  ! Input     
+!                                                    Surface_TL            , &  ! Input
+!                                                    GeometryInfo          , &  ! Input
+!                                                    SensorIndex           , &  ! Input
+!                                                    ChannelIndex          , &  ! Output     
+!                                                    SfcOptics_TL          , &  ! Output
+!                                                    MWLSOVariables        , &  ! Internal variable input
 !                                                    Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -266,9 +280,20 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
@@ -318,13 +343,14 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_MW_Land_SfcOptics_TL( Surface,       &  ! Input
-                                         SfcOptics,     &  ! Input     
-                                         Surface_TL,    &  ! Input
-                                         GeometryInfo,  &  ! Input
-                                         Channel_Index, &  ! Input, scalar
-                                         SfcOptics_TL,  &  ! Output
-                                         MWLSOV,        &  ! Internal variable input
+  FUNCTION Compute_MW_Land_SfcOptics_TL( Surface     , &  ! Input
+                                         SfcOptics   , &  ! Input     
+                                         Surface_TL  , &  ! Input
+                                         GeometryInfo, &  ! Input
+                                         SensorIndex , &  ! Input
+                                         ChannelIndex, &  ! Input
+                                         SfcOptics_TL, &  ! Output
+                                         MWLSOV      , &  ! Internal variable input
                                          Message_Log )  &  ! Error messaging 
                                        RESULT ( Error_Status )
     ! Arguments
@@ -332,7 +358,8 @@ CONTAINS
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
     TYPE(MWLSOVariables_type),    INTENT(IN)     :: MWLSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -371,13 +398,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Land_SfcOptics_AD( Surface,                &  ! Input
-!                                                    SfcOptics,              &  ! Input     
-!                                                    SfcOptics_AD,           &  ! Input     
-!                                                    GeometryInfo,           &  ! Input
-!                                                    Channel_Index,          &  ! Input, scalar
-!                                                    Surface_AD,             &  ! Output
-!                                                    MWLSOVariables,         &  ! Internal variable input
+!       Error_Status = Compute_MW_Land_SfcOptics_AD( Surface               , &  ! Input
+!                                                    SfcOptics             , &  ! Input     
+!                                                    SfcOptics_AD          , &  ! Input     
+!                                                    GeometryInfo          , &  ! Input
+!                                                    SensorIndex           , &  ! Input
+!                                                    ChannelIndex          , &  ! Output     
+!                                                    Surface_AD            , &  ! Output
+!                                                    MWLSOVariables        , &  ! Internal variable input
 !                                                    Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -411,20 +439,22 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       MWLSOVariables:  Structure containing internal variables required for
-!                        subsequent tangent-linear or adjoint model calls.
-!                        The contents of this structure are NOT accessible
-!                        outside of the CRTM_MW_Land_SfcOptics module.
+!       ChannelIndex:    Channel index id. This is a unique index associated
+!                        with a (supported) sensor channel used to access the
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
 !                        UNITS:      N/A
-!                        TYPE:       MWLSOVariables_type
+!                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -466,21 +496,23 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_MW_Land_SfcOptics_AD( Surface,       &  ! Input
-                                         SfcOptics,     &  ! Input     
-                                         SfcOptics_AD,  &  ! Input
-                                         GeometryInfo,  &  ! Input
-                                         Channel_Index, &  ! Input, scalar
-                                         Surface_AD,    &  ! Output     
-                                         MWLSOV,        &  ! Internal variable input
-                                         Message_Log )  &  ! Error messaging 
+  FUNCTION Compute_MW_Land_SfcOptics_AD( Surface     , &  ! Input
+                                         SfcOptics   , &  ! Input     
+                                         SfcOptics_AD, &  ! Input
+                                         GeometryInfo, &  ! Input
+                                         SensorIndex , &  ! Input
+                                         ChannelIndex, &  ! Input
+                                         Surface_AD  , &  ! Output     
+                                         MWLSOV      , &  ! Internal variable input
+                                         Message_Log ) &  ! Error messaging 
                                        RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
     TYPE(MWLSOVariables_type),    INTENT(IN)     :: MWLSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log

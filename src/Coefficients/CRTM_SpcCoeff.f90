@@ -1,68 +1,12 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       CRTM_SpcCoeff
 !
-! PURPOSE:
-!       Module containing the shared CRTM spectral coefficients (SpcCoeff)
-!       and their load/destruction routines. 
+! CRTM_SpcCoeff
 !
-! CATEGORY:
-!       CRTM : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE CRTM_SpcCoeff
-!
-! PUBLIC DATA:
-!       SC:   Data structure containing the SpcCoeff data
-!             UNITS:      N/A
-!             TYPE:       SpcCoeff_Sensor_type
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: PUBLIC, SAVE
-!
-! MODULES:
-!       Type_Kinds:           Module containing data type kind definitions.
-!
-!       Message_Handler:      Module to define simple error codes and
-!                             handle error conditions
-!                             USEs: FILE_UTILITY module
-!
-!       SpcCoeff_Define:      Module defining the SpcCoeff data structure and
-!                             containing routines to manipulate it.
-!                             USEs: TYPE_KINDS module
-!                                   ERROR_HANDLER module
-!                                   COMPUTE_FLOAT_NUMBERS module
-!
-!       SpcCoeff_Binary_IO:   Module containing routines to read and write
-!                             binary format SpcCoeff files.
-!                             USEs: TYPE_KINDS module
-!                                   FILE_UTILITY module
-!                                   ERROR_HANDLER module
-!                                   SPCCOEFF_DEFINE module
-!                                   BINARY_UTILITY module
-!
-!       CRTM_Parameters:      Module of parameter definitions for the CRTM.
-!                             USEs: TYPE_KINDS module
-!
-! CONTAINS:
-!       CRTM_Load_SpcCoeff:      Function to load the SpcCoeff data
-!                                into the module public data structure SC.
-!
-!       CRTM_Destroy_SpcCoeff:   Function to deallocate the module public data
-!                                structure SC.
-!
-! EXTERNALS:
-!       None
-!
-! COMMON BLOCKS:
-!       None.
+! Module containing the shared CRTM spectral coefficients (SpcCoeff)
+! and their load/destruction routines. 
 !
 ! SIDE EFFECTS:
 !       Routines in this module modify the contents of the public
-!       data structure SC.
+!       data structures.
 !
 ! RESTRICTIONS:
 !       Routines in this module should only be called during the
@@ -72,68 +16,41 @@
 !       Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2000, 2003, 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE CRTM_SpcCoeff
 
-
-  ! ---------------------
+  ! ----------------
+  ! Enviroment setup
+  ! ----------------
   ! Module use statements
-  ! ---------------------
-
-  USE Type_Kinds
-  USE Message_Handler
-
-  USE SpcCoeff_Define
-  USE SpcCoeff_Binary_IO
-
-  USE CRTM_Parameters
-
-
-
-  ! ---------------------------
+  USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
+  USE SpcCoeff_Define   , SpcCoeff_type=>SpcCoeff_Sensor_type
+  USE SpcCoeff_Binary_IO, ONLY: Read_SpcCoeff_Binary
+  USE CRTM_Parameters   , ONLY: MAX_N_SENSORS           , &
+                                CRTM_Set_Max_nChannels  , &
+                                CRTM_Reset_Max_nChannels, &
+                                CRTM_Get_Max_nChannels  , &
+                                CRTM_IsSet_Max_nChannels
   ! Disable all implicit typing
-  ! ---------------------------
-
   IMPLICIT NONE
 
 
-  ! ------------------
+  ! --------------------
   ! Default visibilities
-  ! ------------------
-
-  ! -- Everything private by default
+  ! --------------------
+  ! Everything private by default
   PRIVATE
-  
-  ! -- Public routines in this module
+  ! Public routines in this module
   PUBLIC :: CRTM_Load_SpcCoeff
   PUBLIC :: CRTM_Destroy_SpcCoeff
-
-  ! -- Sensor type module parameters inherited from SpcCoeff_Define
+  ! Sensor type module parameters inherited from SpcCoeff_Define
   PUBLIC :: N_SENSOR_TYPES
   PUBLIC :: INVALID_SENSOR
   PUBLIC :: MICROWAVE_SENSOR
   PUBLIC :: INFRARED_SENSOR
   PUBLIC :: VISIBLE_SENSOR
   PUBLIC :: SENSOR_TYPE_NAME
-  
-  ! -- Polarisation flag parameters inherited from SpcCoeff_Define
+  ! Polarisation flag parameters inherited from SpcCoeff_Define
   PUBLIC :: N_POLARIZATION_TYPES   
   PUBLIC :: INVALID_POLARIZATION   
   PUBLIC :: UNPOLARIZED            
@@ -156,34 +73,22 @@ MODULE CRTM_SpcCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! -- RCS Id for the module
-  CHARACTER( * ),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: CRTM_SpcCoeff.f90,v 1.6 2006/05/02 14:58:34 dgroff Exp $'
-
+  ! RCS Id for the module
+  CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
 
 
-  !#----------------------------------------------------------------------------#
-  !#                 -- THE SHARED SpcCoeff DATA STRUCTURE --                   #
-  !#                                                                            #
-  !# Note that the SAVE attribute is specified to ensure that the data is       #
-  !# retained even when this module is not being directly accessed.             #
-  !#----------------------------------------------------------------------------#
-
-  TYPE( SpcCoeff_Sensor_type ), SAVE, PUBLIC :: SC
-
-
-
+  ! -------------------------------------
+  ! The shared spectral coefficients data
+  ! -------------------------------------
+  TYPE(SpcCoeff_type), SAVE, PUBLIC, DIMENSION(:), ALLOCATABLE :: SC
 
 
 CONTAINS
 
 
-
-
-
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Load_SpcCoeff
 !
@@ -191,29 +96,37 @@ CONTAINS
 !       Function to load the SpcCoeff spectral coefficient data into
 !       the public data structure SC.
 !
-! CATEGORY:
-!       CRTM : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Load_SpcCoeff( SpcCoeff_File,                         &  ! Input
-!                                          Quiet             = Quiet,             &  ! Optional input
-!                                          Process_ID        = Process_ID,        &  ! Optional input
-!                                          Output_Process_ID = Output_Process_ID, &  ! Optional input
-!                                          Message_Log       = Message_Log        )  ! Error messaging
+!       Error_Status = CRTM_Load_SpcCoeff( SensorID         =SensorID,          &  ! Optional input
+!                                          File_Path        =File_Path,         &  ! Optional input
+!                                          Quiet            =Quiet,             &  ! Optional input
+!                                          Process_ID       =Process_ID,        &  ! Optional input
+!                                          Output_Process_ID=Output_Process_ID, &  ! Optional input
+!                                          Message_Log      =Message_Log        )  ! Error messaging
 !
-! INPUT ARGUMENTS:
-!       SpcCoeff_File:      Name of the CRTM Binary format SpcCoeff file
-!                           containing the spectral coefficient data.
+! OPTIONAL INPUT ARGUMENTS:
+!       SensorID:           List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
+!                           ssmis_f16, etc) with which the CRTM is to be
+!                           initialised. These Sensor ID are used to construct
+!                           the sensor specific SpcCoeff filenames containing
+!                           the necessary coefficient data, i.e.
+!                             <SensorID>.SpcCoeff.bin
+!                           If this argument is not specified, the default
+!                           SpcCoeff filename is
+!                             SpcCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Rank-1
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       File_Path:          Character string specifying a file path for the
+!                           input data files. If not specified, the current
+!                           directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!
-! OPTIONAL INPUT ARGUMENTS:
 !       Quiet:              Set this argument to suppress INFORMATION messages
 !                           being printed to standard output (or the message
 !                           log file if the Message_Log optional argument is
@@ -223,7 +136,7 @@ CONTAINS
 !                           UNITS:      None
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Process_ID:         Set this argument to the MPI process ID that this
 !                           function call is running under. This value is used
@@ -233,7 +146,7 @@ CONTAINS
 !                           UNITS:      None
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
 !                           all INFORMATION messages are to be output. If
@@ -244,7 +157,7 @@ CONTAINS
 !                           UNITS:      None
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:        Character string specifying a filename in which
 !                           any messages will be logged. If not specified,
@@ -254,18 +167,12 @@ CONTAINS
 !                           UNITS:      None
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTUPT ARGUMENTS:
-!       None.
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
-!                           ERROR_HANDLER module.
+!                           Message_Handler module.
 !                           If == SUCCESS the SpcCoeff data load was successful
 !                              == FAILURE an unrecoverable error occurred.
 !                              == WARNING the number of channels read in differs
@@ -275,191 +182,151 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
-! CALLS:
-!       Display_Message:          Subroutine to output messages
-!                                 SOURCE: ERROR_HANDLER module
-!
-!       Read_SpcCoeff_Binary:     Function to read the CRTM Binary format
-!                                 SpcCoeff data file.
-!                                 SOURCE: SPCCOEFF_BINARY_IO module
-!
-!       CRTM_Get_Max_n_Channels:  Routine to get the protected variable
-!                                 MAX_N_CHANNELS value in the CRTM_Parameters
-!                                 module.
-!                                 SOURCE: CRTM_PARAMETERS module
-!
-!       CRTM_Set_Max_n_Channels:  Routine to set the protected variable
-!                                 MAX_N_CHANNELS value in the CRTM_Parameters
-!                                 module.
-!                                 SOURCE: CRTM_PARAMETERS module
-!
 ! SIDE EFFECTS:
 !       This function modifies the contents of the public data structure SC.
 !
-! RESTRICTIONS:
-!       None.
-!
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Load_SpcCoeff( SpcCoeff_File,     &  ! Input
-                               Quiet,             &  ! Optional input
-                               Process_ID,        &  ! Optional input
+  FUNCTION CRTM_Load_SpcCoeff( SensorID         , &  ! Input
+                               File_Path        , &  ! Optional input
+                               Quiet            , &  ! Optional input
+                               Process_ID       , &  ! Optional input
                                Output_Process_ID, &  ! Optional input
-                               Message_Log )      &  ! Error messaging
+                               Message_Log      ) &  ! Error messaging
                              RESULT ( Error_Status )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
     ! Arguments
-    ! ---------
-
-    CHARACTER( * ),           INTENT( IN )  :: SpcCoeff_File
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN )  :: Quiet
-    INTEGER,        OPTIONAL, INTENT( IN )  :: Process_ID
-    INTEGER,        OPTIONAL, INTENT( IN )  :: Output_Process_ID
-
-    ! -- Error messaging
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN)  :: SensorID
+    CHARACTER(*),               OPTIONAL, INTENT(IN)  :: File_Path
+    INTEGER,                    OPTIONAL, INTENT(IN)  :: Quiet             
+    INTEGER,                    OPTIONAL, INTENT(IN)  :: Process_ID        
+    INTEGER,                    OPTIONAL, INTENT(IN)  :: Output_Process_ID 
+    CHARACTER(*),               OPTIONAL, INTENT(IN)  :: Message_Log       
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! ----------------
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Load_SpcCoeff'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Load_SpcCoeff'
     ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: Message 
-    CHARACTER( 256 ) :: Process_ID_Tag
-
-    ! -- Maximum channels protected variable
-    INTEGER :: Max_n_Channels
+    CHARACTER(256) :: Message 
+    CHARACTER(256) :: Process_ID_Tag
+    CHARACTER(256), DIMENSION(MAX_N_SENSORS) :: SpcCoeff_File
+    INTEGER :: Allocate_Status
+    INTEGER :: n, nSensors, nChannels
+    INTEGER :: Max_n_Channels  ! Maximum channels protected variable
     LOGICAL :: Is_Set
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CHECK OPTIONAL ARGUMENTS --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------------
+    ! Setup 
+    Error_Status = SUCCESS
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
-    ! -----------------------------------
-
     IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i5 )' ) Process_ID
+      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i0 )' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF
 
+    ! Determine the number of sensors and construct their filenames
+    IF ( PRESENT( SensorID ) ) THEN
+      ! Construct filenames for specified sensors
+      nSensors=SIZE(SensorID)
+      IF ( nSensors > MAX_N_SENSORS ) THEN
+        Error_Status = FAILURE
+        WRITE(Message,'("Too many sensors, ",i0," specified. Maximum of ",i0," sensors allowed.")') &
+                      nSensors, MAX_N_SENSORS
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message)//TRIM(Process_ID_Tag), &
+                              Error_Status, &
+                              Message_Log=Message_Log)
+        RETURN
+      END IF
+      DO n=1,nSensors
+        SpcCoeff_File(n) = TRIM(ADJUSTL(SensorID(n)))//'.SpcCoeff.bin'
+      END DO
+    ELSE
+      ! No sensors specified. Use default filename.
+      nSensors=1
+      SpcCoeff_File(1)='SpcCoeff.bin'
+    END IF
 
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- READ THE SpcCoeff DATA FILE --                      #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Read_SpcCoeff_Binary( TRIM( SpcCoeff_File ), &  ! Input
-                                         SC,                    &  ! Output
-                                         Quiet             = Quiet, &
-                                         Process_ID        = Process_ID, &
-                                         Output_Process_ID = Output_Process_ID, &
-                                         Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
+    ! Add the file path
+    IF ( PRESENT(File_Path) ) THEN
+      DO n=1,nSensors
+        SpcCoeff_File(n) = TRIM(ADJUSTL(File_Path))//TRIM(SpcCoeff_File(n))
+      END DO
+    END IF
+    
+    ! Allocate the SpcCoeff shared data structure array
+    ALLOCATE(SC(nSensors),STAT=Allocate_Status)
+    IF ( Allocate_Status/=0 ) THEN
+      Error_Status = FAILURE
+      WRITE(Message,'("SpcCoeff structure array allocation failed. STAT=",i0)') Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading SpcCoeff data from '//&
-                            TRIM( SpcCoeff_File )//&
-                            TRIM( Process_ID_Tag ), &
+                            TRIM(Message)//TRIM(Process_ID_Tag), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log)
       RETURN
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#               -- SET THE PROTECT VARIABLE MAX_N_CHANNELS --              #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------
-    ! Get the current value, if any
-    ! -----------------------------
-
-    CALL CRTM_Get_Max_n_Channels( Max_n_Channels, Is_Set )
-
-
-    ! ------------------------------------
-    ! Has the number of channels been set?
-    ! ------------------------------------
-
-    IF ( Is_Set ) THEN
-
-      ! -- Yes. Check the value      
-      IF ( Max_n_Channels /= SC%n_Channels ) THEN
-        Error_Status = WARNING
-        WRITE( Message, '( "MAX_N_CHANNELS already set to different value, ", i4, ", ", &
-                          &"than defined in spectral coefficient file, ", i4, &
-                          &". Overwriting" )' ) &
-                        Max_n_Channels, SC%n_Channels
+    ! Read the SpcCoeff data files
+    DO n = 1, nSensors
+      Error_Status = Read_SpcCoeff_Binary( TRIM(SpcCoeff_File(n))             , &  ! Input
+                                           SC(n)                              , &  ! Output
+                                           Quiet            =Quiet            , &
+                                           Process_ID       =Process_ID       , &
+                                           Output_Process_ID=Output_Process_ID, &
+                                           Message_Log      =Message_Log        )
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE(Message,'("Error reading SpcCoeff file #",i0,", ",a)') &
+                      n, TRIM(SpcCoeff_File(n))
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message )//TRIM( Process_ID_Tag ), &
+                              TRIM(Message)//TRIM(Process_ID_Tag), &
                               Error_Status, &
-                              Message_Log = Message_Log )
-        CALL CRTM_Set_Max_n_Channels( SC%n_Channels )
+                              Message_Log=Message_Log )
+        RETURN
       END IF
+    END DO
 
+    ! Determine the total number of channels
+    nChannels = SUM(SC%n_Channels)
+    
+    ! Set the protected variable MAX_N_CHANNELS
+    !
+    ! Get the current value, if any
+    Max_n_Channels = CRTM_Get_Max_nChannels()
+    ! Has the number of channels been set?
+    IF ( CRTM_IsSet_Max_nChannels() ) THEN
+      ! Yes. Check the value      
+      IF ( Max_n_Channels /= nChannels ) THEN
+        Error_Status = WARNING
+        WRITE( Message, '( "MAX_N_CHANNELS already set to different value, ",i0,", ", &
+                          &"than defined by SpcCoeff file(s), ",i0, &
+                          &". Overwriting" )' ) &
+                        Max_n_Channels, nChannels
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message)//TRIM(Process_ID_Tag), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        CALL CRTM_Set_Max_nChannels(nChannels)
+      END IF
     ELSE
-
-      ! -- No. Set the value
-      CALL CRTM_Set_Max_n_Channels( SC%n_Channels )
-
+      ! No. Set the value
+      CALL CRTM_Set_Max_nChannels(nChannels)
     END IF
 
   END FUNCTION CRTM_Load_SpcCoeff
 
 
-
-
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Destroy_SpcCoeff
 !
 ! PURPOSE:
-!       Function to deallocate the public data structure SC containing
+!       Function to deallocate the public data structure array containing
 !       the CRTM SpcCoeff spectral coefficient data.
-!
-! CATEGORY:
-!       CRTM : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Destroy_SpcCoeff( Process_ID  = Process_ID, &  ! Optional input
 !                                             Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       None.
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Process_ID:       Set this argument to the MPI process ID that this
@@ -469,27 +336,21 @@ CONTAINS
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:      Character string specifying a filename in which any
 !                         messages will be logged. If not specified, or if an
 !                         error occurs opening the log file, the default action
 !                         is to output messages to the screen.
 !                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTUPT ARGUMENTS:
-!       None.
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error
 !                         status. The error codes are defined in the
-!                         ERROR_HANDLER module.
+!                         Message_Handler module.
 !                         If == SUCCESS the deallocation of the public SC data
 !                                       structure was successful
 !                            == FAILURE an unrecoverable error occurred.
@@ -497,160 +358,67 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! CALLS:
-!       Display_Message:            Subroutine to output messages
-!                                   SOURCE: ERROR_HANDLER module
-!
-!       Destroy_SpcCoeff:           Function to deallocate SpcCoeff data
-!                                   structures.
-!                                   SOURCE: SPCCOEFF_DEFINE module
-!
-!       CRTM_Reset_Max_n_Channels:  Routine to reset the protected variable
-!                                   MAX_N_CHANNELS value in the CRTM_Parameters
-!                                   module to an invalid value.
-!                                   SOURCE: CRTM_PARAMETERS module
-!
 ! SIDE EFFECTS:
-!       This function modifies the contents of the public data structure SC.
+!       This function modifies the contents of the public shared data
+!       structures in this module.
 !
-! RESTRICTIONS:
-!       None.
-!
-!S-
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Destroy_SpcCoeff( Process_ID,   &  ! Optional input
                                   Message_Log ) &  ! Error messaging
                                 RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
     ! Arguments
-    ! ---------
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN )  :: Process_ID
-
-    ! -- Error message log file
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Process_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! ----------------
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_SpcCoeff'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_SpcCoeff'
     ! Local variables
-    ! ---------------
+    CHARACTER(256) :: Message
+    CHARACTER(256) :: Process_ID_Tag
+    INTEGER :: n, Destroy_Status, Allocate_Status
 
-    CHARACTER( 256 ) :: Process_ID_Tag
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CHECK OPTIONAL ARGUMENTS --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------------
+    ! Set up
+    Error_Status = SUCCESS
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
-    ! -----------------------------------
-
     IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i5 )' ) Process_ID
+      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i0 )' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF
 
+    ! Destroy the structure array elements
+    DO n = 1, SIZE(SC)
+      Destroy_Status = Destroy_SpcCoeff( SC(n), &
+                                         Message_Log=Message_Log )
+      IF ( Destroy_Status /= SUCCESS ) THEN
+        Error_Status = FAILURE
+        WRITE(Message,'("Error destroying SpcCoeff structure array element #",i0)') n
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message)//TRIM(Process_ID_Tag), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        ! No return here. Continue deallocating
+      END IF
+    END DO
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- DESTROY THE STRUCTURE --                       #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Destroy_SpcCoeff( SC, &
-                                     Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
+    ! Deallocate the structure array itself
+    DEALLOCATE( SC, STAT=Allocate_Status )
+    IF ( Allocate_Status/=0 ) THEN
       Error_Status = FAILURE
+      WRITE(Message,'("Error deallocating SpcCoeff structure array. STAT=",i0)') Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error occurred deallocating the public SpcCoeff structure'//&
-                            TRIM( Process_ID_Tag ), &
+                            TRIM(Message)//TRIM(Process_ID_Tag), &
                             Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+                            Message_Log=Message_Log)
+      ! Again, no return.
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#           -- RESET THE PROTECTED VARIABLE MAX_N_CHANNELS --              #
-    !#--------------------------------------------------------------------------#
-
-    CALL CRTM_Reset_Max_n_Channels()
+    ! Reset the protected variable MAX_N_CHANNELS
+    CALL CRTM_Reset_Max_nChannels()
 
   END FUNCTION CRTM_Destroy_SpcCoeff
 
 END MODULE CRTM_SpcCoeff
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: CRTM_SpcCoeff.f90,v 1.6 2006/05/02 14:58:34 dgroff Exp $
-!
-! $Date: 2006/05/02 14:58:34 $
-!
-! $Revision: 1.6 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: CRTM_SpcCoeff.f90,v $
-! Revision 1.6  2006/05/02 14:58:34  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 1.5  2006/04/24 17:58:16  wd20pd
-! - Merged CRTM_Sensor branch onto main trunk.
-!
-! Revision 1.4.2.2  2005/08/16 19:56:01  qliu
-! - Added sensor type and polarisation parameters to PUBLIC list.
-!
-! Revision 1.4.2.1  2005/07/12 14:47:01  paulv
-! - Updated older generic type, SpcCoeff_type, to SpcCoeff_Sensor_type for
-!   the CRTM_Sensor branch of the CRTM.
-!
-! Revision 1.4  2004/11/04 21:54:34  paulv
-! - Renamed calls to CRTM_Parameters routines that set the protected variable
-!   MAX_N_CHANNELS to have the "CRTM_" prefix.
-! - Updated header documentation.
-!
-! Revision 1.3  2004/08/06 19:20:45  paulv
-! - Altered initialization call to have the same form as other CRTM structure
-!   initializations, but without the "CRTM_" prefix.
-!
-! Revision 1.2  2004/05/21 20:36:27  paulv
-! - Updated routine descriptions. Cosmetic change only.
-!
-! Revision 1.1  2004/05/19 21:36:29  paulv
-! Initial checkin.
-!
-!
-!

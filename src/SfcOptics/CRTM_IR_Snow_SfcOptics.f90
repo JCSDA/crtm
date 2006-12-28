@@ -51,7 +51,7 @@ MODULE CRTM_IR_Snow_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_IR_Snow_SfcOptics.f90,v 1.5 2006/05/23 22:10:59 wd20pd Exp $'
+  '$Id: CRTM_IR_Snow_SfcOptics.f90,v 1.5.2.1 2006/09/07 09:54:32 frpv Exp $'
 
 
   ! --------------------------------------
@@ -80,11 +80,12 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Snow_SfcOptics( Surface,                &  ! Input
-!                                                 GeometryInfo,           &  ! Input
-!                                                 Channel_Index,          &  ! Input, scalar
-!                                                 SfcOptics,              &  ! Output     
-!                                                 IRSSOVariables,         &  ! Internal variable output
+!       Error_Status = Compute_IR_Snow_SfcOptics( Surface               , &  ! Input
+!                                                 GeometryInfo          , &  ! Input
+!                                                 SensorIndex           , &  ! Input
+!                                                 ChannelIndex          , &  ! Output     
+!                                                 SfcOptics             , &  ! Output     
+!                                                 IRSSOVariables        , &  ! Internal variable output
 !                                                 Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -102,14 +103,24 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
+!       ChannelIndex:    Channel index id. This is a unique index associated
+!                        with a (supported) sensor channel used to access the
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -155,17 +166,19 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Snow_SfcOptics( Surface,       &  ! Input
-                                      GeometryInfo,  &  ! Input
-                                      Channel_Index, &  ! Input
-                                      SfcOptics,     &  ! Output
-                                      IRSSOV,        &  ! Internal variable output
-                                      Message_Log )  &  ! Error messaging
+  FUNCTION Compute_IR_Snow_SfcOptics( Surface     , &  ! Input
+                                      GeometryInfo, &  ! Input
+                                      SensorIndex , &  ! Input
+                                      ChannelIndex, &  ! Input
+                                      SfcOptics   , &  ! Output
+                                      IRSSOV      , &  ! Internal variable output
+                                      Message_Log ) &  ! Error messaging
                                     RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
     TYPE(IRSSOVariables_type),    INTENT(IN OUT) :: IRSSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -188,7 +201,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     ! Wavelength in microns 
-    Wavelength = Inverse_cm_to_Micron(SC%Wavenumber(Channel_Index))
+    Wavelength = Inverse_cm_to_Micron(SC(SensorIndex)%Wavenumber(ChannelIndex))
 
 
     ! -------------------------------------
@@ -202,7 +215,7 @@ CONTAINS
     ! ----------------------
     ! Solar direct component
     ! ----------------------
-    IF ( SC%Is_Solar_Channel(Channel_Index) == 1 ) THEN
+    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
       SfcOptics%Direct_Reflectivity(:,1) = ONE-Emissivity
     END IF
 
@@ -230,13 +243,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Snow_SfcOptics_TL( Surface,                &  ! Input
-!                                                    SfcOptics,              &  ! Input     
-!                                                    Surface_TL,             &  ! Input
-!                                                    GeometryInfo,           &  ! Input
-!                                                    Channel_Index,          &  ! Input, scalar
-!                                                    SfcOptics_TL,           &  ! Output     
-!                                                    IRSSOVariables,         &  ! Internal variable input
+!       Error_Status = Compute_IR_Snow_SfcOptics_TL( Surface               , &  ! Input
+!                                                    SfcOptics             , &  ! Input     
+!                                                    Surface_TL            , &  ! Input
+!                                                    GeometryInfo          , &  ! Input
+!                                                    SensorIndex           , &  ! Input
+!                                                    ChannelIndex          , &  ! Output     
+!                                                    SfcOptics_TL          , &  ! Output     
+!                                                    IRSSOVariables        , &  ! Internal variable input
 !                                                    Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -269,9 +283,20 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
@@ -321,21 +346,23 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Snow_SfcOptics_TL( Surface,       &  ! Input
-                                         SfcOptics,     &  ! Input     
-                                         Surface_TL,    &  ! Input
-                                         GeometryInfo,  &  ! Input
-                                         Channel_Index, &  ! Input, scalar
-                                         SfcOptics_TL,  &  ! Output     
-                                         IRSSOV,        &  ! Internal variable input
-                                         Message_Log )  &  ! Error messaging 
+  FUNCTION Compute_IR_Snow_SfcOptics_TL( Surface     , &  ! Input
+                                         SfcOptics   , &  ! Input     
+                                         Surface_TL  , &  ! Input
+                                         GeometryInfo, &  ! Input
+                                         SensorIndex , &  ! Input
+                                         ChannelIndex, &  ! Input
+                                         SfcOptics_TL, &  ! Output     
+                                         IRSSOV      , &  ! Internal variable input
+                                         Message_Log ) &  ! Error messaging 
                                        RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
     TYPE(IRSSOVariables_type),    INTENT(IN)     :: IRSSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -374,13 +401,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Snow_SfcOptics_AD( Surface,                &  ! Input
-!                                                    SfcOptics,              &  ! Input     
-!                                                    SfcOptics_AD,           &  ! Input     
-!                                                    GeometryInfo,           &  ! Input
-!                                                    Channel_Index,          &  ! Input, scalar
-!                                                    Surface_AD,             &  ! Output
-!                                                    IRSSOVariables,         &  ! Internal variable input
+!       Error_Status = Compute_IR_Snow_SfcOptics_AD( Surface               , &  ! Input
+!                                                    SfcOptics             , &  ! Input     
+!                                                    SfcOptics_AD          , &  ! Input     
+!                                                    GeometryInfo          , &  ! Input
+!                                                    SensorIndex           , &  ! Input
+!                                                    ChannelIndex          , &  ! Output     
+!                                                    Surface_AD            , &  ! Output
+!                                                    IRSSOVariables        , &  ! Internal variable input
 !                                                    Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -414,9 +442,20 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
@@ -469,13 +508,14 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Snow_SfcOptics_AD( Surface,       &  ! Input
-                                         SfcOptics,     &  ! Input     
-                                         SfcOptics_AD,  &  ! Input
-                                         GeometryInfo,  &  ! Input
-                                         Channel_Index, &  ! Input, scalar
-                                         Surface_AD,    &  ! Output     
-                                         IRSSOV,        &  ! Internal variable input
+  FUNCTION Compute_IR_Snow_SfcOptics_AD( Surface     , &  ! Input
+                                         SfcOptics   , &  ! Input     
+                                         SfcOptics_AD, &  ! Input
+                                         GeometryInfo, &  ! Input
+                                         SensorIndex , &  ! Input
+                                         ChannelIndex, &  ! Input
+                                         Surface_AD  , &  ! Output     
+                                         IRSSOV      , &  ! Internal variable input
                                          Message_Log )  &  ! Error messaging 
                                        RESULT ( Error_Status )
     ! Arguments
@@ -483,7 +523,8 @@ CONTAINS
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
     TYPE(IRSSOVariables_type),    INTENT(IN)     :: IRSSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log

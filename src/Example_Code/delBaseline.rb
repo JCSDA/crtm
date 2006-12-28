@@ -97,6 +97,6 @@ modelDir.each_with_index do |dir, index|
   next if not File.directory?(dir) or not modelTest[index]
   sensorId.each do |id|
     file=dir+"/"+id+".CRTM_Test_"+dir+".output"
-    system("rm -f #{file}") if File.file?(file)
+    File.delete(file) if File.file?(file)
   end
 end

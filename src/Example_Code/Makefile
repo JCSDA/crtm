@@ -36,22 +36,24 @@ build_test_k_matrix:
 
 
 # run targets
+RUN_OPTS = "-Wl,-T"
+
 run: run_test_forward \
      run_test_tangent_linear \
      run_test_adjoint \
      run_test_k_matrix
 
 run_test_forward: build_test_forward
-	cd Forward; run_Test_Forward; cd ..
+	cd Forward; Test_Forward $(RUN_OPTS); cd ..
 
 run_test_tangent_linear: build_test_tangent_linear
-	cd Tangent_Linear; run_Test_Tangent_Linear; cd ..
+	cd Tangent_Linear; Test_Tangent_Linear $(RUN_OPTS); cd ..
 
 run_test_adjoint: build_test_adjoint
-	cd Adjoint; run_Test_Adjoint; cd ..
+	cd Adjoint; Test_Adjoint $(RUN_OPTS); cd ..
 
 run_test_k_matrix: build_test_k_matrix
-	cd K_Matrix; run_Test_K_Matrix; cd ..
+	cd K_Matrix; Test_K_Matrix $(RUN_OPTS); cd ..
 
 
 # Clean targets

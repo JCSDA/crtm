@@ -51,7 +51,7 @@ MODULE CRTM_IR_Water_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_IR_Water_SfcOptics.f90,v 1.6 2006/05/23 22:10:59 wd20pd Exp $'
+  '$Id: CRTM_IR_Water_SfcOptics.f90,v 1.6.2.1 2006/09/07 09:54:32 frpv Exp $'
 
 
   ! --------------------------------------
@@ -80,11 +80,12 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics( Surface,                &  ! Input
-!                                                  GeometryInfo,           &  ! Input
-!                                                  Channel_Index,          &  ! Input, scalar
-!                                                  SfcOptics,              &  ! Output     
-!                                                  IRWSOVariables,         &  ! Internal variable output
+!       Error_Status = Compute_IR_Water_SfcOptics( Surface               , &  ! Input
+!                                                  GeometryInfo          , &  ! Input
+!                                                  SensorIndex           , &  ! Input
+!                                                  ChannelIndex          , &  ! Output     
+!                                                  SfcOptics             , &  ! Output     
+!                                                  IRWSOVariables        , &  ! Internal variable output
 !                                                  Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -102,14 +103,24 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
+!       ChannelIndex:    Channel index id. This is a unique index associated
+!                        with a (supported) sensor channel used to access the
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -155,17 +166,19 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Water_SfcOptics( Surface,       &  ! Input
-                                       GeometryInfo,  &  ! Input
-                                       Channel_Index, &  ! Input
-                                       SfcOptics,     &  ! Output
-                                       IRWSOV,        &  ! Internal variable output
-                                       Message_Log )  &  ! Error messaging
+  FUNCTION Compute_IR_Water_SfcOptics( Surface     , &  ! Input
+                                       GeometryInfo, &  ! Input
+                                       SensorIndex , &  ! Input
+                                       ChannelIndex, &  ! Input
+                                       SfcOptics   , &  ! Output
+                                       IRWSOV      , &  ! Internal variable output
+                                       Message_Log ) &  ! Error messaging
                                      RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
     TYPE(IRWSOVariables_type),    INTENT(IN OUT) :: IRWSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -190,7 +203,7 @@ CONTAINS
     ! Compute IR sea surface emissivity
     ! ---------------------------------
     Error_Status = CRTM_Compute_IRSSEM( Surface%Wind_Speed, &
-                                        SC%Wavenumber(Channel_Index), &
+                                        SC(SensorIndex)%Wavenumber(ChannelIndex), &
                                         SfcOptics%Angle(1:nZ), &
                                         SfcOptics%Emissivity(1:nZ,1), &
                                         Message_Log=Message_Log )
@@ -210,7 +223,7 @@ CONTAINS
     ! all angles (1:nZ).
     ! ----------------------------------------------------
     ! Solar direct
-    IF ( SC%Is_Solar_Channel(Channel_Index) == 1 ) THEN
+    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
       SfcOptics%Direct_Reflectivity(1:nZ,1) = ONE-SfcOptics%Emissivity(iZ,1)
     END IF
 
@@ -234,13 +247,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics_TL( Surface,                &  ! Input
-!                                                     SfcOptics,              &  ! Input     
-!                                                     Surface_TL,             &  ! Input
-!                                                     GeometryInfo,           &  ! Input
-!                                                     Channel_Index,          &  ! Input, scalar
-!                                                     SfcOptics_TL,           &  ! Output     
-!                                                     IRWSOVariables,         &  ! Internal variable input
+!       Error_Status = Compute_IR_Water_SfcOptics_TL( Surface               , &  ! Input
+!                                                     SfcOptics             , &  ! Input     
+!                                                     Surface_TL            , &  ! Input
+!                                                     GeometryInfo          , &  ! Input
+!                                                     SensorIndex           , &  ! Input
+!                                                     ChannelIndex          , &  ! Output     
+!                                                     SfcOptics_TL          , &  ! Output     
+!                                                     IRWSOVariables        , &  ! Internal variable input
 !                                                     Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -273,9 +287,20 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
@@ -325,21 +350,23 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Water_SfcOptics_TL( Surface,       &  ! Input
-                                          SfcOptics,     &  ! Input     
-                                          Surface_TL,    &  ! Input
-                                          GeometryInfo,  &  ! Input
-                                          Channel_Index, &  ! Input, scalar
-                                          SfcOptics_TL,  &  ! Output     
-                                          IRWSOV,        &  ! Internal variable input
-                                          Message_Log )  &  ! Error messaging 
+  FUNCTION Compute_IR_Water_SfcOptics_TL( Surface     , &  ! Input
+                                          SfcOptics   , &  ! Input     
+                                          Surface_TL  , &  ! Input
+                                          GeometryInfo, &  ! Input
+                                          SensorIndex , &  ! Input
+                                          ChannelIndex, &  ! Input
+                                          SfcOptics_TL, &  ! Output     
+                                          IRWSOV      , &  ! Internal variable input
+                                          Message_Log ) &  ! Error messaging 
                                         RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
     TYPE(IRWSOVariables_type),    INTENT(IN)     :: IRWSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -363,9 +390,8 @@ CONTAINS
     ! ------------------------------------------------
     ! Compute tangent-linear IR sea surface emissivity
     ! ------------------------------------------------
-
     Error_Status = CRTM_Compute_IRSSEM_TL( Surface%Wind_Speed, &
-                                           SC%Wavenumber(Channel_Index), &
+                                           SC(SensorIndex)%Wavenumber(ChannelIndex), &
                                            SfcOptics%Angle(1:nZ), &
                                            Surface_TL%Wind_Speed, &
                                            SfcOptics_TL%Emissivity(1:nZ,1), &
@@ -386,7 +412,7 @@ CONTAINS
     ! all angles (1:nZ).
     ! -----------------------------------------------------
     ! Solar direct
-    IF ( SC%Is_Solar_Channel(Channel_Index) == 1 ) THEN
+    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
       SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = -SfcOptics_TL%Emissivity(iZ,1)
     END IF
 
@@ -409,13 +435,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics_AD( Surface,                &  ! Input
-!                                                     SfcOptics,              &  ! Input     
-!                                                     SfcOptics_AD,           &  ! Input     
-!                                                     GeometryInfo,           &  ! Input
-!                                                     Channel_Index,          &  ! Input, scalar
-!                                                     Surface_AD,             &  ! Output
-!                                                     IRWSOVariables,         &  ! Internal variable input
+!       Error_Status = Compute_IR_Water_SfcOptics_AD( Surface               , &  ! Input
+!                                                     SfcOptics             , &  ! Input     
+!                                                     SfcOptics_AD          , &  ! Input     
+!                                                     GeometryInfo          , &  ! Input
+!                                                     SensorIndex           , &  ! Input
+!                                                     ChannelIndex          , &  ! Output     
+!                                                     Surface_AD            , &  ! Output
+!                                                     IRWSOVariables        , &  ! Internal variable input
 !                                                     Message_Log=Message_Log )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -449,9 +476,20 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Channel_Index:   Channel index id. This is a unique index associated
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
+!                        shared coefficient data for a particular sensor's
+!                        channel.
+!                        See the SensorIndex argument.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
@@ -504,21 +542,23 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Water_SfcOptics_AD( Surface,       &  ! Input
-                                          SfcOptics,     &  ! Input     
-                                          SfcOptics_AD,  &  ! Input
-                                          GeometryInfo,  &  ! Input
-                                          Channel_Index, &  ! Input, scalar
-                                          Surface_AD,    &  ! Output     
-                                          IRWSOV,        &  ! Internal variable input
-                                          Message_Log )  &  ! Error messaging 
+  FUNCTION Compute_IR_Water_SfcOptics_AD( Surface     , &  ! Input
+                                          SfcOptics   , &  ! Input     
+                                          SfcOptics_AD, &  ! Input
+                                          GeometryInfo, &  ! Input
+                                          SensorIndex , &  ! Input
+                                          ChannelIndex, &  ! Input
+                                          Surface_AD  , &  ! Output     
+                                          IRWSOV      , &  ! Internal variable input
+                                          Message_Log ) &  ! Error messaging 
                                         RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Channel_Index
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
     TYPE(IRWSOVariables_type),    INTENT(IN)     :: IRWSOV
     CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
@@ -550,7 +590,7 @@ CONTAINS
     END DO
 
     ! Solar direct
-    IF ( SC%Is_Solar_Channel(Channel_Index) == 1 ) THEN
+    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
       SfcOptics_AD%Emissivity(iZ,1) = SfcOptics_AD%Emissivity(iZ,1) - &
         SUM(SfcOptics_AD%Direct_Reflectivity(1:nZ,1))
       SfcOptics_AD%Direct_Reflectivity(1:nZ,1) = ZERO
@@ -561,7 +601,7 @@ CONTAINS
     ! Compute sdjoint IRSSEM sea surface emissivity
     ! ---------------------------------------------
     Error_Status = CRTM_Compute_IRSSEM_AD( Surface%Wind_Speed, &
-                                           SC%Wavenumber(Channel_Index), &
+                                           SC(SensorIndex)%Wavenumber(ChannelIndex), &
                                            SfcOptics%Angle(1:nZ), &
                                            SfcOptics_AD%Emissivity(1:nZ,1), &
                                            Surface_AD%Wind_Speed, &

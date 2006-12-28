@@ -42,26 +42,27 @@ PROGRAM Test_Tangent_Linear
   INTEGER,      PARAMETER, DIMENSION( N_OPTIONS_CASES ) :: &
     OPTIONS_CASES = (/ NO_OPTIONS,  &
                        FWD_OPTIONS /)
+  INTEGER, PARAMETER :: NSENSORS=4
+  CHARACTER(*), PARAMETER, DIMENSION(NSENSORS) :: SENSORID=&
+    (/ 'amsua_n17', &
+       'hirs3_n17', &
+       'ssmis_f16', &
+       'imgr_g11 ' /)
+
 
   ! ---------
   ! Variables
   ! ---------
   CHARACTER(256) :: Message
-  INTEGER :: i, m, iOptions
+  INTEGER :: i, m, n, iOptions, l1, l2, nChannels
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-  CHARACTER(256) :: File_Prefix
-  CHARACTER(256) :: SpcCoeff_File
-  CHARACTER(256) :: TauCoeff_File
-  CHARACTER(256) :: AerosolCoeff_File
-  CHARACTER(256) :: CloudCoeff_File
-  CHARACTER(256) :: EmisCoeff_File
-  TYPE(CRTM_ChannelInfo_type)                               :: ChannelInfo
-  TYPE(CRTM_Atmosphere_type),   DIMENSION(MAX_TEST_CASES)   :: Atmosphere, Atmosphere_TL
-  TYPE(CRTM_Surface_type),      DIMENSION(MAX_TEST_CASES)   :: Surface,    Surface_TL
+  TYPE(CRTM_ChannelInfo_type) , DIMENSION(NSENSORS)         :: ChannelInfo
+  TYPE(CRTM_Atmosphere_type)  , DIMENSION(MAX_TEST_CASES)   :: Atmosphere, Atmosphere_TL
+  TYPE(CRTM_Surface_type)     , DIMENSION(MAX_TEST_CASES)   :: Surface,    Surface_TL
   TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_TEST_CASES)   :: GeometryInfo
-  TYPE(CRTM_RTSolution_type),   DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_TL
-  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options
+  TYPE(CRTM_RTSolution_type)  , DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_TL
+  TYPE(CRTM_Options_type)     , DIMENSION(MAX_TEST_CASES)   :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -91,33 +92,12 @@ PROGRAM Test_Tangent_Linear
   END IF
 
 
-  ! -----------------------------
-  ! Get the coefficient filenames
-  ! -----------------------------
-  ! Enter the instrument file prefix, e.g. hirs3_n16
-  WRITE( *, FMT     = '( /5x, "Enter the instrument file prefix : " )', &
-            ADVANCE = 'NO' )
-  READ( *, '( a )' ) File_Prefix
-  File_Prefix = ADJUSTL( File_Prefix )
-
-  ! Create the filenames
-  SpcCoeff_File = TRIM( File_Prefix )//'.SpcCoeff.bin'
-  TauCoeff_File = TRIM( File_Prefix )//'.TauCoeff.bin'
-  AerosolCoeff_File = 'AerosolCoeff.bin'
-  CloudCoeff_File   = 'CloudCoeff.bin'
-  EmisCoeff_File    = 'EmisCoeff.bin'
-
-
   ! -------------------
   ! Initialise the CRTM
   ! -------------------
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
   Error_Status = CRTM_Init( ChannelInfo, &
-                            SpcCoeff_File     = SpcCoeff_File, &
-                            TauCoeff_File     = TauCoeff_File, &
-                            AerosolCoeff_File = AerosolCoeff_File, &
-                            CloudCoeff_File   = CloudCoeff_File, &
-                            EmisCoeff_File    = EmisCoeff_File )
+                            SensorId=SENSORID )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error initializing CRTM', & 
@@ -129,13 +109,13 @@ PROGRAM Test_Tangent_Linear
   ! ----------------------
   ! Allocate output arrays
   ! ----------------------
-  ALLOCATE( RTSolution(    ChannelInfo%n_Channels, MAX_TEST_CASES ), &
-            RTSolution_TL( ChannelInfo%n_Channels, MAX_TEST_CASES ), &
+  nChannels = SUM(ChannelInfo%n_Channels)
+  ALLOCATE( RTSolution(    nChannels, MAX_TEST_CASES ), &
+            RTSolution_TL( nChannels, MAX_TEST_CASES ), &
             STAT = Allocate_Status )
-
   IF ( Allocate_Status /= 0 ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
-                           'Error allocating RTSolution structure arrays', & 
+                           'Error allocating RTSolution structure array', & 
                             Error_Status)  
    STOP
   END IF
@@ -172,7 +152,7 @@ PROGRAM Test_Tangent_Linear
   ! --------------------------
   ! Allocate the Options input
   ! --------------------------
-  Error_Status = CRTM_Allocate_Options( ChannelInfo%n_Channels, Options   )
+  Error_Status = CRTM_Allocate_Options( nChannels, Options )
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
                           'Error allocating Options structure array', & 
@@ -193,7 +173,9 @@ PROGRAM Test_Tangent_Linear
   ! ------------------------------
   ! Print some initialisation info
   ! ------------------------------
-  CALL Print_ChannelInfo(TRIM(File_Prefix)//'.'//TEST_OUTPUT_FILENAME, ChannelInfo)
+  DO n=1, NSENSORS
+    CALL Print_ChannelInfo(TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, ChannelInfo(n))
+  END DO
 
 
   ! -----------------------------
@@ -233,10 +215,15 @@ PROGRAM Test_Tangent_Linear
     END IF
 
     ! Output some results
-    CALL Print_Results(TL_OUTPUT, &
-                       TRIM(File_Prefix)//'.'//TEST_OUTPUT_FILENAME, Message, &
-                       ChannelInfo, Atmosphere, Surface, RTSolution, &
-                       RTSolution_TL=RTSolution_TL)
+    l1=1
+    DO n = 1, NSENSORS
+      l2 = l1 + ChannelInfo(n)%n_Channels - 1
+      CALL Print_Results(TL_OUTPUT, &
+                         TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, Message, &
+                         ChannelInfo(n), Atmosphere, Surface, RTSolution(l1:l2,:),&
+                         RTSolution_TL=RTSolution_TL(l1:l2,:))
+      l1 = l2 + 1
+    END DO
     CALL Display_Timing( Timing )
 
   END DO
@@ -259,8 +246,10 @@ PROGRAM Test_Tangent_Linear
   ! Clean up
   ! --------
   Error_Status = CRTM_Destroy_Options(Options)
-  DEALLOCATE(RTSolution, RTSolution_TL, STAT = Allocate_Status)
-  Error_Status = CRTM_Destroy_Surface(Surface, Surface_TL)
-  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere, Atmosphere_TL)
+  DEALLOCATE(RTSolution,RTSolution_TL,STAT=Allocate_Status)
+  Error_Status = CRTM_Destroy_Surface(Surface)
+  Error_Status = CRTM_Destroy_Surface(Surface_TL)
+  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere)
+  Error_Status = CRTM_Destroy_Atmosphere(Atmosphere_TL)
 
 END PROGRAM Test_Tangent_Linear
