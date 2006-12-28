@@ -1,9 +1,9 @@
 PROGRAM Test_CScatter_Interp
-  USE Type_Kinds           , ONLY: fp=>fp_kind
+  USE Type_Kinds           , ONLY: fp
   USE Message_Handler
-  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Compare_Float_Numbers
   USE CRTM_Parameters
-  USE CRTM_CloudScatter
+  USE CRTM_CloudScatter    
   USE CRTM_CloudCoeff
   USE CRTM_SpcCoeff
   USE CRTM_Cloud_Define
@@ -13,28 +13,30 @@ PROGRAM Test_CScatter_Interp
   USE Interp_ND
 
   IMPLICIT NONE
-
-  ! Atmospheric data info/dimensions
-  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
-  INTEGER, PARAMETER :: N_PROFILES = 52  
   
-  ! variable to hold atmospheric profile data
-  TYPE( CRTM_Atmosphere_Type ), DIMENSION(N_Profiles) :: Atmosphere
-  
+  ! String length parameter 
   INTEGER, PARAMETER :: SL = 512  
  
-  ! Names used for loading SpcCoeff/CloudCoeff
-  CHARACTER( SL ) :: File_Prefix
-  CHARACTER( SL ) :: SpcCoeff_File
+  ! Names used for loading CloudCoeff data
   CHARACTER( SL ) :: CloudCoeff_File
   CHARACTER( SL ), PARAMETER :: MODULE_RCS_ID = &
   '$Id: Test_CScatter_Interp.f90,v 1.6 2006/12/18 23:20:10 wx20gd Exp $'
 
   
-  INTEGER :: Error_Status, l, n, t
+
+  ! Index variables used for loop control
+  INTEGER :: Error_Status, l, n, tp, ct
   
-  ! Variables needed when calling cloudscatter interpolation routine
-  INTEGER,  PARAMETER :: CLOUD_TYPE = WATER_CLOUD
+  ! Number of cloud types
+  INTEGER, PARAMETER :: NC=2
+
+  ! Cloud type array
+  INTEGER,  PARAMETER, DIMENSION(2) :: CLOUD_TYPE = (/WATER_CLOUD, ICE_CLOUD/)
+  
+  ! Density of Ice Cloud
+  INTEGER, PARAMETER :: M=3 
+
+  ! variables calculated in CRTM_CloudScatter interpolation
   REAL(fp), PARAMETER :: EFF_v = ZERO
   REAL(fp) :: ext_IR, ext_MW
   REAL(fp) :: w0_IR, w0_MW
@@ -43,14 +45,29 @@ PROGRAM Test_CScatter_Interp
   ! Interpolation dimension parameter(used to dimension the input for 
   ! calculating the test value
   INTEGER, PARAMETER :: D=2
+
+  ! Wavenumber spacing
+  REAL(fp), PARAMETER :: dx1=4.0_fp
  
   ! These variables/parameters will be used to calculate the Test_Value
-  REAL(fp) :: d1, d2, dx1, dx2
-  REAL(fp), DIMENSION(D,D) :: y
-  REAL(fp) :: Test_Value
-  INTEGER, PARAMETER :: x1pos1=605, x1pos2=606, x2pos1=1, x2pos2=2
-  INTEGER, PARAMETER :: channel_number=18
-  INTEGER, PARAMETER :: layer_number=85
+  REAL(fp) :: d1, d2, dx2
+  INTEGER, PARAMETER :: NP = 5
+  REAL(fp), DIMENSION(D,D) :: ext, w0, g, p_coeff
+  REAL(fp), PARAMETER, DIMENSION(NP) :: EFFECTIVE_RADIUS = (/4, 16, 34, 18, 24/)
+  REAL(fp), PARAMETER, DIMENSION(NP) :: WAVENUMBER = (/1100, 1443, 1634, 1269, 1317/)
+  INTEGER, PARAMETER, DIMENSION(NP) :: LEG_TERM = (/6, 12, 18, 14, 13/)
+  INTEGER, PARAMETER :: MINIMUM_RADIUS = 5
+  INTEGER, PARAMETER :: MAXIMUM_RADIUS = 30
+  INTEGER, PARAMETER :: CHANNEL_NUMBER = 5
+  INTEGER, PARAMETER :: LAYER_NUMBER = 85
+  INTEGER :: l1pos1, l1pos2, l2pos1, l2pos2
+  
+  ! ULP for comparing test value with current cloudscatter interpolation
+  ! value
+  INTEGER, PARAMETER :: ULP = 20
+
+  ! Declare the test value
+  REAL(fp), DIMENSION(8) :: Test_Value
   
   
   ! IR/MW phase coefficient arrays are allocatable
@@ -60,6 +77,12 @@ PROGRAM Test_CScatter_Interp
   
   ! Program name
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_CScatter_Interp'
+
+  ! Logical variables (True if interpolation is correct) (False otherwise)
+  LOGICAL :: ext_liq_equal, w0_liq_equal, g_liq_equal, &
+             p_coeff_liq_equal, ext_sol_equal, w0_sol_equal, &
+             g_sol_equal, p_coeff_sol_equal
+             
   
 
   
@@ -74,56 +97,8 @@ PROGRAM Test_CScatter_Interp
                         MODULE_RCS_ID )
 
 
-  !#----------------------------------------------------------------------------#
-  !#                -- READ THE Atmosphere STRUCTURE DATA FILE --               #
-  !#----------------------------------------------------------------------------#
-
-  WRITE( *, '( /5x, "Reading the Atmosphere structure file..." )' )
-
-  Error_Status = CRTM_Read_Atmosphere_Binary( ATMOSPHERE_FILENAME, &
-                                              Atmosphere )
-
-  IF ( Error_Status /= SUCCESS ) THEN 
-     CALL Display_Message( PROGRAM_NAME, &
-                           'Error reading Atmosphere structure file '//&
-                           ATMOSPHERE_FILENAME, & 
-                           Error_Status )
-   STOP
-  END IF
-
-                        
-
-
-  ! ------------------------------------------------
-  ! Enter the instrument file prefix, e.g. hirs3_n16
-  ! ------------------------------------------------
-
-  WRITE( *, FMT     = '( /5x, "Enter the instrument file prefix : " )', &
-            ADVANCE = 'NO' )
-  READ( *, '( a )' ) File_Prefix
-  File_Prefix = ADJUSTL( File_Prefix )
-
-
-  ! --------------------
-  ! Create the filenames
-  ! --------------------
-
-  SpcCoeff_File     = TRIM( File_Prefix )//'.SpcCoeff.bin'
+ 
   CloudCoeff_File   = 'CloudCoeff.bin'
-
-  ! -------------------------------------------
-  ! Load the SpcCoeff spectral coefficient data 
-  ! into the public data structure SC
-  ! -------------------------------------------
-
-  Error_Status = CRTM_Load_SpcCoeff( SpcCoeff_File )  ! Input
-                                     
-  IF ( Error_Status /= SUCCESS ) THEN
-     CALL Display_Message( PROGRAM_NAME, &
-                           'Error loading SpcCoeff_File', &
-                            Error_Status)
-   STOP
-  END IF
 
 
   ! --------------------------------
@@ -162,82 +137,148 @@ PROGRAM Test_CScatter_Interp
                            'Error allocating p_coef_MW.', & 
                            Error_Status )
      STOP
-  END IF  
+  END IF                     
+   
+    ! Loop over test positions
+    Test_Position_Loop: DO tp=1, NP
+      ! Loop over coud types
+      Cloud_Type_Loop: DO ct=1, NC
+         ! Calculate lookup table spacing
+         l1pos1 = findIdx(CloudC%Wavenumber(1), dx1, WAVENUMBER(tp))
+         l2pos1 = findIdx(CloudC%Reff_IR, EFFECTIVE_RADIUS(tp))
+         l1pos2 = l1pos1 + 1
+         l2pos2 = l2pos1 + 1
+         dx2 = (CloudC%Reff_IR(l2pos2) - CloudC%Reff_IR(l2pos1))
+  
+        ! Calculate interpolation weighting factors
+        d1 = ((WAVENUMBER(tp) - CloudC%Wavenumber(l1pos1))/dx1)
+        
+        IF (EFFECTIVE_RADIUS(tp) < MINIMUM_RADIUS) THEN 
+          d2 = ZERO
+
+        ELSE IF (EFFECTIVE_RADIUS(tp) > MINIMUM_RADIUS .AND. EFFECTIVE_RADIUS(tp) < MAXIMUM_RADIUS) THEN
+          d2 = ((EFFECTIVE_RADIUS(tp) - CloudC%Reff_IR(l2pos1))/dx2)
+
+        ELSE
+          d2 = ONE
+
+        END IF
+        
+     
+        IF (ct == 1) THEN
+          ! assign input data used to calculate test value
+          ext = CloudC%ext_L_IR(l1pos1:l1pos2,l2pos1:l2pos2)
+          
+          w0 = CloudC%w_L_IR(l1pos1:l1pos2,l2pos1:l2pos2)
+          
+          g = CloudC%g_L_IR(l1pos1:l1pos2,l2pos1:l2pos2)
+         
+          p_coeff = CloudC%phase_coeff_L_IR(l1pos1:l1pos2,l2pos1:l2pos2,LEG_TERM(tp))
+         
+
+          ! Calculate test values used for comparison with interpolation calculations
+          Test_Value(1) = Interp_2D(d1, d2, ext)
+          Test_Value(2) = Interp_2D(d1, d2, w0)
+          Test_Value(3) = Interp_2D(d1, d2, g)
+          Test_Value(4) = Interp_2D(d1, d2, p_coeff)
+         
+
+        ELSE
+
+          ! assign input data used to calculate test value
+          ext = CloudC%ext_S_IR(l1pos1:l1pos2,l2pos1:l2pos2,M)
+          
+          w0 = CloudC%w_S_IR(l1pos1:l1pos2,l2pos1:l2pos2,M)
+          
+          g = CloudC%g_S_IR(l1pos1:l1pos2,l2pos1:l2pos2,M)
+         
+          p_coeff = CloudC%phase_coeff_S_IR(l1pos1:l1pos2,l2pos1:l2pos2,M,LEG_TERM(tp))
+         
+
+          ! Calculate test values used for comparison with interpolation calculations
+          Test_Value(5) = Interp_2D(d1, d2, ext)
+          Test_Value(6) = Interp_2D(d1, d2, w0)
+          Test_Value(7) = Interp_2D(d1, d2, g)
+          Test_Value(8) = Interp_2D(d1, d2, p_coeff)
+        
+        END IF 
 
   
-  ! assign input data used to calculate test value
-  y(1,1) = CloudC%ext_L_IR(x1pos1,x2pos1)
-  y(2,1) = CloudC%ext_L_IR(x1pos2,x2pos1)
-  y(1,2) = CloudC%ext_L_IR(x1pos1,x2pos2)
-  y(2,2) = CloudC%ext_L_IR(x1pos2,x2pos2)
+                  CALL Get_Cloud_Opt_IR(CloudC%n_Legendre_Terms,    &  ! Input
+                                        CloudC%n_Phase_Elements,    &  ! Input
+                                                 WAVENUMBER(tp),    &  ! Input
+                                                 Cloud_TYPE(ct),    &  ! Input
+                                           Effective_Radius(tp),    &  ! Input
+                                                          EFF_V,    &  ! Input
+                                                         ext_IR,    &  ! Output
+                                                          w0_IR,    &  ! Output
+                                                           g_IR,    &  ! Output
+                                                      p_coef_IR)       ! Output
 
-  dx1 = (CloudC%Wavenumber(x1pos2) - CloudC%Wavenumber(x1pos1))
-  dx2 = (CloudC%Reff_IR(x2pos2) - CloudC%Reff_IR(x2pos1))
 
-  d1 = ((SC%Wavenumber(channel_number) - CloudC%Wavenumber(x1pos1))/dx1)
-  d2 = ((Atmosphere(1)%Cloud(1)%Effective_Radius(layer_number) - CloudC%Reff_IR(x2pos1))/dx2)
+        IF (ct == 1) THEN
+          ext_liq_equal = Compare_Float(        ext_IR, & 
+                                         Test_Value(1), &
+                                               ULP=ULP  )
 
+          w0_liq_equal = Compare_Float(         w0_IR, & 
+                                        Test_Value(2), &
+                                              ULP=ULP  )
 
-  ! Calculate test value(used for comparison with interpolation calculations)
-  Test_Value = Interp_2D(d1, d2, y)
+          g_liq_equal = Compare_Float(          g_IR, &  
+                                       Test_Value(3), &
+                                             ULP=ULP  )
+
+          p_coeff_liq_equal = Compare_Float( p_coef_IR(LEG_TERM(tp),1), & 
+                                                         Test_Value(4), &
+                                                               ULP=ULP  )
+
+      
+
+        ELSE
+          ext_sol_equal = Compare_Float(        ext_IR,  & 
+                                         Test_Value(5),  &
+                                               ULP=ULP   )
+
+          w0_sol_equal = Compare_Float(         w0_IR, & 
+                                        Test_Value(6), &
+                                              ULP=ULP  )
+
+          g_sol_equal = Compare_Float(          g_IR, & 
+                                       Test_Value(7), &
+                                             ULP=ULP  )
+
+          p_coeff_sol_equal = Compare_Float(     p_coef_IR(LEG_TERM(tp),1), & 
+                                                             Test_Value(8), &
+                                                                   ULP=ULP  )
+          PRINT *, g_sol_equal, Test_Value(8), p_coef_IR(LEG_TERM(tp),1)
+
+        END IF  
+                   
+                 
+                 
+                    
+
+      END DO Cloud_Type_Loop
+    END DO Test_Position_Loop     
+   
+  IF (ext_liq_equal .AND. w0_liq_equal .AND. &
+      g_liq_equal .AND. p_coeff_liq_equal &
+     .AND. ext_sol_equal .AND. w0_sol_equal .AND. &
+      g_sol_equal .AND. p_coeff_sol_equal) THEN
+
+    PRINT *, 'All tests passed'  
+
   
-  ! Loop over channels(corresponding to a wavenumber) and effective radius(corresponding                           
-    Infrared_Channel_Loop: DO l=18, 18 
-      Infrared_Eff_Radius_Loop: DO n=85, 85 
-            
-            CALL Get_Cloud_Opt_IR(CloudC%n_Legendre_Terms,    &  ! Input
-                                  CloudC%n_Phase_Elements,    &  ! Input
-                                         SC%Wavenumber(l),    &  ! Input
-                                               CLOUD_TYPE,    &  ! Input
-               Atmosphere(1)%Cloud(1)%Effective_Radius(n),    &  ! Input
-                                                    EFF_V,    &  ! Input
-                                                   ext_IR,    &  ! Output
-                                                    w0_IR,    &  ! Output
-                                                     g_IR,    &  ! Output
-                                                p_coef_IR)       ! Output
 
-               
-            PRINT *, l, 'channel_number', n, 'layer_number', CloudC%Reff_IR(1), Atmosphere(1)%Cloud(1)%Effective_Radius(n)
-            PRINT *, CloudC%Wavenumber(605), SC%Wavenumber(l), CloudC%Wavenumber(606)
-      END DO Infrared_Eff_Radius_Loop
-    END DO Infrared_Channel_Loop 
-    PRINT *, Test_Value, ext_IR  
+  ELSE
 
-
-    Channel_Loop: DO l=1, CloudC%n_Frequencies 
-      Eff_Radius_Loop: DO n=1, CloudC%n_Reff_MW
-        Temperature_Loop: DO t=1, CloudC%n_Temperatures 
-            
-            CALL Get_Cloud_Opt_MW(CloudC%n_Legendre_Terms,    &  ! Input
-                                  CloudC%n_Phase_Elements,    &  ! Input
-                                      CloudC%Frequency(l),    &  ! Input
-                                               CLOUD_TYPE,    &  ! Input
-                                        CloudC%Reff_MW(n),    &  ! Input
-                                                    EFF_V,    &  ! Input
-                                    CloudC%Temperature(t),    &  ! Input
-                                                   ext_MW,    &  ! Output
-                                                    w0_MW,    &  ! Output
-                                                     g_MW,    &  ! Output
-                                                p_coef_MW)       ! Output
-
-
-         !   PRINT *, ext_MW, 'MW', CloudC%ext_L_MW(l,1,t), l, n, t
-         !   PRINT *, CloudC%n_Temperatures, CloudC%n_Reff_MW, CloudC%n_Wavenumbers                
-        END DO Temperature_Loop
-      END DO Eff_Radius_Loop
-    END DO Channel_Loop                     
+    PRINT *, 'Test Failed' 
   
+  END IF    
 
-  ! deallocate p_coef for the microwave
-  Deallocate( p_coef_MW,                 &
-              STAT = Error_Status        ) 
-  IF ( Error_Status /= SUCCESS ) THEN 
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error DEAllocating p_coef_MW.', & 
-                            Error_Status )
-   STOP
-  END IF
-  
+
+             
   ! deallocate p_coef for the infrared
   Deallocate( p_coef_IR,                 &
               STAT = Error_Status        ) 
@@ -258,15 +299,6 @@ PROGRAM Test_CScatter_Interp
    STOP
   END IF
   
-  ! deallocate SC structure
-  Error_Status = CRTM_Destroy_SpcCoeff( )
-    
-  IF ( Error_Status /= SUCCESS ) THEN
-     CALL Display_Message( PROGRAM_NAME, &
-                           'Error deallocating structure CloudC', &
-                           Error_Status)
-   STOP
-  END IF
 
 END PROGRAM Test_CScatter_Interp
 
