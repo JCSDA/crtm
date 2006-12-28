@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Test_Interp_2D program
+# Makefile for Test_CScatter_Interp program
 #
 #==============================================================================
 
@@ -65,7 +65,7 @@ remove_links:
 realclean: clean remove_links
 
 # Source dependency lists
-#include make.dependencies
+include make.dependencies
 
 # Define default rules
 include $(CRTM_SOURCE_ROOT)/make.rules
