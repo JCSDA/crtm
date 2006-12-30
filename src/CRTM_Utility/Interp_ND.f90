@@ -4,6 +4,7 @@ MODULE Interp_ND
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: Interp_2D
+  PUBLIC :: Interp_3D
   PUBLIC :: findIdx
   
   INTERFACE findIdx
@@ -18,22 +19,42 @@ MODULE Interp_ND
 
 CONTAINS
 
+  ! 2-D linear interpolation routine
   FUNCTION Interp_2D(d1,d2,y) RESULT(yInt)
     REAL(fp), INTENT(IN) :: d1, d2
     REAL(fp), INTENT(IN) :: y(:,:)
     REAL(fp) :: yInt
     
-    yInt = (ONE-d1)*(ONE-d2)*y(1,1) + &
-              d1   *(ONE-d2)*y(2,1) + &
-           (ONE-d1)*   d2   *y(1,2) + &   
-              d1   *   d2   *y(2,2)
-  END FUNCTION Interp_2D 
-
+    yInt = ( (ONE-d1)*(ONE-d2)*y(1,1) ) + &
+           (    d1   *(ONE-d2)*y(2,1) ) + &
+           ( (ONE-d1)*   d2   *y(1,2) ) + &   
+           (    d1   *   d2   *y(2,2) )
+  END FUNCTION Interp_2D
+  
+  ! 3-D linear interpolation function
+  FUNCTION Interp_3D(d1,d2,d3,y) RESULT(yInt)
+    REAL(fp), INTENT(IN) :: d1, d2, d3
+    REAL(fp), INTENT(IN) :: y(:,:,:)
+    REAL(fp) :: yInt
+    
+    yInt = ( (ONE-d1)*(ONE-d2)*(ONE-d3)*y(1,1,1) ) + &
+           (    d1   *(ONE-d2)*(ONE-d3)*y(2,1,1) ) + &
+           (    d1   *   d2   *(ONE-d3)*y(2,2,1) ) + &
+           ( (ONE-d1)*   d2   *(ONE-d3)*y(1,2,1) ) + &
+           ( (ONE-d1)*(ONE-d2)*   d3   *y(1,1,2) ) + &
+           (    d1   *(ONE-d2)*   d3   *y(2,1,2) ) + &
+           (    d1   *   d2   *   d3   *y(2,2,2) ) + &
+           ( (ONE-d1)*   d2   *   d3   *y(1,2,2) )
+  END FUNCTION Interp_3D
+  
   ! Find lower index for regular spacing
-  FUNCTION findRegularIdx(x1, dx, xInt) RESULT(idx)
-    REAL(fp), INTENT(IN) :: x1, dx, xInt
+  FUNCTION findRegularIdx(x, dx, xInt) RESULT(idx)
+    REAL(fp), INTENT(IN) :: x(:)
+    REAL(fp), INTENT(IN) :: dx, xInt
     INTEGER :: idx
-    idx = FLOOR((xInt-x1)/dx) + 1
+    INTEGER :: n
+    n = SIZE(x)
+    idx = MIN(FLOOR((xInt-x(1))/dx)+1,n-1)
   END FUNCTION findRegularIdx
   
   ! Find lower index for random spacing.
@@ -51,6 +72,4 @@ CONTAINS
     idx = MIN(MAX(1,k-1),n-1)
   END FUNCTION findRandomIdx
   
- 
-
 END MODULE Interp_ND
