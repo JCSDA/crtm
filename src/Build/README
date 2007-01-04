@@ -1,0 +1,52 @@
+JCSDA CRTM Build Instructions
+=============================
+
+0) Several targets are available for specific compilers. The target names are:
+     ibm  
+     sgi    (untested)  
+     sun    (untested)
+     intel
+     lahey
+     pgi  
+     g95
+   Each target has a corresponding debug target, <name>_debug, that uses the typical
+   set of compiler switches for debugging code.
+   
+   The actual compiler and switch definitions are listed in the "make.macros" files.
+   
+   The build is OS-sensitive in that the correct compiler is selected based on the
+   platform you are one. For example, if you build on an IBM/AIX system, the xlf95
+   compiler is invoked. Doing the same on a linux or MacOSX system invokes the
+   default linux compiler; currently this is the Lahey f95 compiler.
+   
+   So, if you want to modify how the CRTM builds (different compiler, different
+   switches) editing the "make.macros" file is, for now, your best best.
+   Eventually we'll put together something smarter.
+   
+   For the linux folks out there, the bottom of the "make.macros" file contains
+   the following
+     LINUX_FLAGS = $(LINUX_FLAGS_LAHEY)
+     #LINUX_FLAGS = $(LINUX_FLAGS_PGI)
+     #LINUX_FLAGS = $(LINUX_FLAGS_INTEL)
+     #LINUX_FLAGS = $(LINUX_FLAGS_G95)
+   If you want to change the default linux compiler simply comment out the Lahey
+   definition line and uncomment the compiler definition of your choice.
+
+
+1) Once all the above stuff has been sorted out, to build the CRTM library type
+
+     make [target]
+   
+   where the optional target is one listed in (0) above.
+
+
+2) To install the CRTM library in ./lib and ./include directories, type
+
+     make install
+     
+
+3) That's really it. Any questions, suggestions, additions, bug reports, etc,
+   let me know at
+     paul.vandelst@noaa.gov
+
+    
