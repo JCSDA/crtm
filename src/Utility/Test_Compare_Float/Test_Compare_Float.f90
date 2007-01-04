@@ -1,130 +1,81 @@
-!------------------------------------------------------------------------------
-!P+
-! NAME:
-!       Test_Compare_Float
 !
-! PURPOSE:
-!       Program to test the routines in the Compare_Float_Numbers module
+! Test_Compare_Float
 !
-! CATEGORY:
-!       Utility
+! Program to test the routines in the Compare_Float_Numbers module
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:                  Module containing definitions for kinds
-!                                    of variable types.
-!
-!       Compare_Float_Numbers:       Module containing routines to perform
-!                                    equality and relational comparisons on
-!                                    floating point numbers.
-!                                    USEs: TYPE_KINDS module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 13-Aug-2004
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!P-
-!------------------------------------------------------------------------------
 
 PROGRAM Test_Compare_Float
 
-
-  ! ------------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module usage
-  ! ------------
-
   USE Type_Kinds
+  USE Message_Handler
   USE Compare_Float_Numbers
-
-
-  ! ---------------------------
   ! Disable all implicit typing
-  ! ---------------------------
-
   IMPLICIT NONE
 
 
   ! ----------
   ! Parameters
   ! ----------
-
-  CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Compare_Float'
-  CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Compare_Float'
+  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id: Test_Compare_Float.f90,v 1.4 2004/11/30 20:42:12 paulv Exp $'
-  CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
-  '**********************************************************'
 
-  ! -- The test numbers
+  ! The test numbers
   INTEGER, PARAMETER :: N_TEST_NUMBERS = 5
-  REAL( Single ), PARAMETER, DIMENSION( N_TEST_NUMBERS ) :: SINGLE_NUMBER = &
+  REAL(Single), PARAMETER, DIMENSION(N_TEST_NUMBERS) :: SINGLE_REAL = &
     (/ 1.234567890123456e-16_Single, &
        1.234567890123456e-01_Single, &
        1.234567890123456e+01_Single, &
        1.234567890123456e+16_Single, &
        1.0_Single /)
 
-  REAL( Double ), PARAMETER, DIMENSION( N_TEST_NUMBERS ) :: DOUBLE_NUMBER = &
+  REAL(Double), PARAMETER, DIMENSION(N_TEST_NUMBERS) :: DOUBLE_REAL = &
     (/ 1.234567890123456e-16_Double, &
        1.234567890123456e-01_Double, &
        1.234567890123456e+01_Double, &
        1.234567890123456e+16_Double, &
        1.0_Double /)
 
-  ! -- Literal constants
-  REAL( Single ), PARAMETER :: STEN = 10.0_Single
-  REAL( Double ), PARAMETER :: DTEN = 10.0_Double
+  COMPLEX(Single), PARAMETER, DIMENSION(N_TEST_NUMBERS) :: SINGLE_COMPLEX = &
+    (/ (1.234567890123456e-16_Single,1.234567890123456e-16_Single), &
+       (1.234567890123456e-01_Single,1.234567890123456e-01_Single), &
+       (1.234567890123456e+01_Single,1.234567890123456e+01_Single), &
+       (1.234567890123456e+16_Single,1.234567890123456e+16_Single), &
+       (1.0_Single,1.0_Single) /)
+
+  COMPLEX(Double), PARAMETER, DIMENSION(N_TEST_NUMBERS) :: DOUBLE_COMPLEX = &
+    (/ (1.234567890123456e-16_Double,1.234567890123456e-16_Double), &
+       (1.234567890123456e-01_Double,1.234567890123456e-01_Double), &
+       (1.234567890123456e+01_Double,1.234567890123456e+01_Double), &
+       (1.234567890123456e+16_Double,1.234567890123456e+16_Double), &
+       (1.0_Double,1.0_Double) /)
+
+  ! Literal constants
+  REAL(Single), PARAMETER :: STEN = 10.0_Single
+  REAL(Double), PARAMETER :: DTEN = 10.0_Double
 
 
   ! ---------
   ! Variables
   ! ---------
-
-  INTEGER         :: pn_pos
-  CHARACTER( 80 ) :: pn_fmt
-
-  CHARACTER( 256 ) :: Answer
-
-  REAL( Single ) :: x,  y1, y2,   y3,  y4
-  REAL( Double ) :: xd, yd1, yd2, yd3, yd4
-
-  REAL( Single ), DIMENSION( N_TEST_NUMBERS ) :: xv,  yv1,  yv2, yv3, yv4
-  REAL( Double ), DIMENSION( N_TEST_NUMBERS ) :: xvd, yvd1, yvd2, yvd3, yvd4
-
-  REAL( Single ), DIMENSION( N_TEST_NUMBERS,2 ) :: xa,  ya1,  ya2, ya3, ya4
-  REAL( Double ), DIMENSION( N_TEST_NUMBERS,2 ) :: xad, yad1, yad2, yad3, yad4
-
+  CHARACTER(256) :: Answer
+  REAL(Single) :: x,  y1, y2,   y3,  y4
+  REAL(Double) :: xd, yd1, yd2, yd3, yd4
+  COMPLEX(Single) :: xc,  yc1r,  yc2r,  yc3r,  yc4r,  yc1i,  yc2i,  yc3i,  yc4i
+  COMPLEX(Double) :: xcd, ycd1r, ycd2r, ycd3r, ycd4r, ycd1i, ycd2i, ycd3i, ycd4i
+  REAL(Single), DIMENSION(N_TEST_NUMBERS) :: xv,  yv1,  yv2, yv3, yv4
+  REAL(Double), DIMENSION(N_TEST_NUMBERS) :: xvd, yvd1, yvd2, yvd3, yvd4
+  REAL(Single), DIMENSION(N_TEST_NUMBERS,2) :: xa,  ya1,  ya2, ya3, ya4
+  REAL(Double), DIMENSION(N_TEST_NUMBERS,2) :: xad, yad1, yad2, yad3, yad4
   INTEGER :: i
 
 
@@ -132,17 +83,9 @@ PROGRAM Test_Compare_Float
   !#                       -- OUTPUT DESCRIPTIVE HEADER --                      #
   !#----------------------------------------------------------------------------#
 
-  pn_pos = ( LEN( PROGRAM_HEADER ) / 2 ) - &
-           ( LEN( PROGRAM_NAME ) / 2 )
-  pn_pos = MAX( pn_pos, 0 ) + 5
-  WRITE( pn_fmt, '( "( ",i2,"x, a )" )' ) pn_pos
-
-  WRITE( *, '(/5x,a )' ) PROGRAM_HEADER
-  WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
-  WRITE( *, '(/5x, " Program to test the Compare_Float_Numbers module routines." )' )
-  WRITE( *, '(/5x, " $Revision: 1.4 $")' )
-  WRITE( *, '( 5x, a )' ) PROGRAM_HEADER
-
+  CALL Program_Message( PROGRAM_NAME, &
+                        'Program to test the Compare_Float_Numbers module routines.', &
+                        '$Revision: 1.4 $' )
 
 
   !#----------------------------------------------------------------------------#
@@ -160,7 +103,7 @@ PROGRAM Test_Compare_Float
     ! Single precision test
     ! ---------------------
 
-    x = SINGLE_NUMBER(i)
+    x = SINGLE_REAL(i)
     y1 = NEAREST( x, 1.0_Single )
     y2 = y1 - SPACING( x )
     y3 = NEAREST( x, -1.0_Single )
@@ -206,7 +149,7 @@ PROGRAM Test_Compare_Float
     ! Double precision test
     ! ---------------------
 
-    xd = DOUBLE_NUMBER(i)
+    xd = DOUBLE_REAL(i)
     yd1 = NEAREST( xd, 1.0_Double )
     yd2 = yd1 - SPACING( xd )
     yd3 = NEAREST( xd, -1.0_Double )
@@ -247,6 +190,93 @@ PROGRAM Test_Compare_Float
               xd .GreaterThan. yd3, xd .GreaterThan. yd4, &
               xd .LessThan. yd3, xd .LessThan. yd4
 
+
+    ! -----------------------------
+    ! Single precision complex test
+    ! -----------------------------
+
+    x = SINGLE_REAL(i)
+    y1 = NEAREST( x, 1.0_Single )
+    y2 = y1 - SPACING( x )
+    y3 = NEAREST( x, -1.0_Single )
+    y4 = y3 + SPACING( x )
+
+    xc=CMPLX(x,-x)
+    yc1r=CMPLX(y1,-x); yc1i=CMPLX(x,-y1)
+    yc2r=CMPLX(y2,-x); yc2i=CMPLX(x,-y2)
+    yc3r=CMPLX(y3,-x); yc3i=CMPLX(x,-y3)
+    yc4r=CMPLX(y4,-x); yc4i=CMPLX(x,-y4)
+    WRITE( *, '(//5x, "SINGLE TEST. xc   = (",es20.13,",",es20.13,")", &
+                &/5x, "             yc1r = (",es20.13,",",es20.13,")", 2x, ":  NEAREST( x, 1.0 )", &
+                &/5x, "             yc2r = (",es20.13,",",es20.13,")", 2x, ":  y1 - SPACING( x )", &
+                &/5x, "             yc3r = (",es20.13,",",es20.13,")", 2x, ":  NEAREST( x,-1.0 )", &
+                &/5x, "             yc4r = (",es20.13,",",es20.13,")", 2x, ":  y3 + SPACING( x )", &
+                &/5x, "             yc1i = (",es20.13,",",es20.13,")", 2x, ":  NEAREST( x, 1.0 )", &
+                &/5x, "             yc2i = (",es20.13,",",es20.13,")", 2x, ":  y1 - SPACING( x )", &
+                &/5x, "             yc3i = (",es20.13,",",es20.13,")", 2x, ":  NEAREST( x,-1.0 )", &
+                &/5x, "             yc4i = (",es20.13,",",es20.13,")", 2x, ":  y3 + SPACING( x )" )' ) &
+              xc, yc1r, yc2r, yc3r, yc4r, yc1i, yc2i, yc3i, yc4i
+
+    WRITE( *, '( /5x, "  Compare_Float( xc, yc1r )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc1r, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xc, yc2r )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc3r )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc3r, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xc, yc4r )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc1i )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc1i, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xc, yc2i )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc3i )        = ", l1, &
+                &/5x, "  Compare_Float( xc, yc3i, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xc, yc4i )        = ", l1 )' ) &
+              Compare_Float( xc, yc1r ), Compare_Float( xc, yc1r, ulp=2 ), Compare_Float( xc, yc2r ), &
+              Compare_Float( xc, yc3r ), Compare_Float( xc, yc3r, ulp=2 ), Compare_Float( xc, yc4r ), &
+              Compare_Float( xc, yc1i ), Compare_Float( xc, yc1i, ulp=2 ), Compare_Float( xc, yc2i ), &
+              Compare_Float( xc, yc3i ), Compare_Float( xc, yc3i, ulp=2 ), Compare_Float( xc, yc4i )
+
+    ! -----------------------------
+    ! Double precision complex test
+    ! -----------------------------
+
+    xd = DOUBLE_REAL(i)
+    yd1 = NEAREST( xd, 1.0_Double )
+    yd2 = yd1 - SPACING( xd )
+    yd3 = NEAREST( xd, -1.0_Double )
+    yd4 = yd3 + SPACING( xd )
+
+    xcd=CMPLX(xd,-xd)
+    ycd1r=CMPLX(yd1,-xd); ycd1i=CMPLX(xd,-yd1)
+    ycd2r=CMPLX(yd2,-xd); ycd2i=CMPLX(xd,-yd2)
+    ycd3r=CMPLX(yd3,-xd); ycd3i=CMPLX(xd,-yd3)
+    ycd4r=CMPLX(yd4,-xd); ycd4i=CMPLX(xd,-yd4)
+    WRITE( *, '(//5x, "DOUBLE TEST. xcd   = (",es27.20,",",es27.20,")", &
+                &/5x, "             ycd1r = (",es27.20,",",es27.20,")", 2x, ":  NEAREST( x, 1.0 )", &
+                &/5x, "             ycd2r = (",es27.20,",",es27.20,")", 2x, ":  y1 - SPACING( x )", &
+                &/5x, "             ycd3r = (",es27.20,",",es27.20,")", 2x, ":  NEAREST( x,-1.0 )", &
+                &/5x, "             ycd4r = (",es27.20,",",es27.20,")", 2x, ":  y3 + SPACING( x )", &
+                &/5x, "             ycd1i = (",es27.20,",",es27.20,")", 2x, ":  NEAREST( x, 1.0 )", &
+                &/5x, "             ycd2i = (",es27.20,",",es27.20,")", 2x, ":  y1 - SPACING( x )", &
+                &/5x, "             ycd3i = (",es27.20,",",es27.20,")", 2x, ":  NEAREST( x,-1.0 )", &
+                &/5x, "             ycd4i = (",es27.20,",",es27.20,")", 2x, ":  y3 + SPACING( x )" )' ) &
+              xcd, ycd1r, ycd2r, ycd3r, ycd4r, ycd1i, ycd2i, ycd3i, ycd4i
+
+    WRITE( *, '( /5x, "  Compare_Float( xcd, ycd1r )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd1r, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd2r )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd3r )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd3r, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd4r )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd1i )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd1i, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd2i )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd3i )        = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd3i, ulp=2 ) = ", l1, &
+                &/5x, "  Compare_Float( xcd, ycd4i )        = ", l1 )' ) &
+              Compare_Float( xcd, ycd1r ), Compare_Float( xcd, ycd1r, ulp=2 ), Compare_Float( xcd, ycd2r ), &
+              Compare_Float( xcd, ycd3r ), Compare_Float( xcd, ycd3r, ulp=2 ), Compare_Float( xcd, ycd4r ), &
+              Compare_Float( xcd, ycd1i ), Compare_Float( xcd, ycd1i, ulp=2 ), Compare_Float( xcd, ycd2i ), &
+              Compare_Float( xcd, ycd3i ), Compare_Float( xcd, ycd3i, ulp=2 ), Compare_Float( xcd, ycd4i )
+
     WRITE( *, '( /10x, "Press <ENTER> to continue..." )' )
     READ( *, '(a)' ) Answer
 
@@ -265,7 +295,7 @@ PROGRAM Test_Compare_Float
   ! Single precision test
   ! ---------------------
 
-  xv = SINGLE_NUMBER
+  xv = SINGLE_REAL
   yv1 = NEAREST( xv, (/ ( 1.0_Single, i = 1, N_TEST_NUMBERS) /) )
   yv2 = yv1 - SPACING( xv )
   yv3 = NEAREST( xv, (/ (-1.0_Single, i = 1, N_TEST_NUMBERS) /) )
@@ -313,7 +343,7 @@ PROGRAM Test_Compare_Float
   ! Double precision test
   ! ---------------------
 
-  xvd = DOUBLE_NUMBER
+  xvd = DOUBLE_REAL
   yvd1 = NEAREST( xvd, (/ ( 1.0_Double, i = 1, N_TEST_NUMBERS) /) )
   yvd2 = yvd1 - SPACING( xvd )
   yvd3 = NEAREST( xvd, (/ (-1.0_Double, i = 1, N_TEST_NUMBERS) /) )
@@ -372,7 +402,7 @@ PROGRAM Test_Compare_Float
   ! Single precision test
   ! ---------------------
 
-  xa  = RESHAPE((/SINGLE_NUMBER,SINGLE_NUMBER+(STEN*SPACING(SINGLE_NUMBER))/),(/N_TEST_NUMBERS,2/))
+  xa  = RESHAPE((/SINGLE_REAL,SINGLE_REAL+(STEN*SPACING(SINGLE_REAL))/),(/N_TEST_NUMBERS,2/))
   ya1 = NEAREST( xa, RESHAPE((/ ( 1.0_Single, i = 1, N_TEST_NUMBERS*2) /),(/N_TEST_NUMBERS,2/)) )
   ya2 = ya1 - SPACING( xa )
   ya3 = NEAREST( xa, RESHAPE((/ (-1.0_Single, i = 1, N_TEST_NUMBERS*2) /),(/N_TEST_NUMBERS,2/)) )
@@ -420,7 +450,7 @@ PROGRAM Test_Compare_Float
   ! Double precision test
   ! ---------------------
 
-  xad  = RESHAPE((/DOUBLE_NUMBER,DOUBLE_NUMBER+(DTEN*SPACING(DOUBLE_NUMBER))/),(/N_TEST_NUMBERS,2/))
+  xad  = RESHAPE((/DOUBLE_REAL,DOUBLE_REAL+(DTEN*SPACING(DOUBLE_REAL))/),(/N_TEST_NUMBERS,2/))
   yad1 = NEAREST( xad, RESHAPE((/ ( 1.0_Double, i = 1, N_TEST_NUMBERS*2) /),(/N_TEST_NUMBERS,2/)) )
   yad2 = yad1 - SPACING( xad )
   yad3 = NEAREST( xad, RESHAPE((/ (-1.0_Double, i = 1, N_TEST_NUMBERS*2) /),(/N_TEST_NUMBERS,2/)) )
@@ -464,25 +494,3 @@ PROGRAM Test_Compare_Float
             xad .LessThan. yad3, xad .LessThan. yad4
 
 END PROGRAM Test_Compare_Float
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Test_Compare_Float.f90,v 1.4 2004/11/30 20:42:12 paulv Exp $
-!
-! $Date: 2004/11/30 20:42:12 $
-!
-! $Revision: 1.4 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Test_Compare_Float.f90,v $
-! Revision 1.4  2004/11/30 20:42:12  paulv
-! - Added modification history footer.
-!
-!
-!

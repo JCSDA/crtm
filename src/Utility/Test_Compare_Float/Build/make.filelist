@@ -1,0 +1,5 @@
+SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Message_Handler.f90 \
+            Compare_Float_Numbers.f90 \
+            Test_Compare_Float.f90

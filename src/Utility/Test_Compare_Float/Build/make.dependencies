@@ -1,0 +1,5 @@
+Type_Kinds.o : Type_Kinds.f90 
+Test_Compare_Float.o : Test_Compare_Float.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+File_Utility.o : File_Utility.f90 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
