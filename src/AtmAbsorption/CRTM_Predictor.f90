@@ -40,6 +40,7 @@ MODULE CRTM_Predictor
                                       MAX_N_INTEGRATED_PREDICTORS, &
                                       MINIMUM_ABSORBER_AMOUNT
   USE CRTM_Atmosphere_Define  , ONLY: CRTM_Atmosphere_type, &
+                                      CRTM_Get_AbsorberIdx, &
                                       H2O_ID, O3_ID
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_Predictor_Define   , ONLY: CRTM_Predictor_type      , &
@@ -150,8 +151,8 @@ CONTAINS
     ! Local variables
     INTEGER  :: k, j
     REAL(fp) :: dPonG
-    INTEGER  :: H2O_Index
-    INTEGER  ::  O3_Index
+    INTEGER  :: H2O_Idx
+    INTEGER  ::  O3_Idx
 
     ! Initialise 0'th level amounts
     Pred%A(0,WET_ABSORBER_INDEX) = ZERO
@@ -159,8 +160,8 @@ CONTAINS
     Pred%A(0,OZO_ABSORBER_INDEX) = ZERO
 
     ! Get the atmosphere gaseous absorber indices
-    H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1 )
-    O3_Index  = MINLOC(ABS(Atm%Absorber_ID - O3_ID ), DIM=1 )
+    H2O_Idx = CRTM_Get_AbsorberIdx(Atm,H2O_ID)
+    O3_Idx  = CRTM_Get_AbsorberIdx(Atm, O3_ID)
 
     ! Loop over layers, TOA -> SFC
     DO k = 1, Atm%n_Layers
@@ -171,11 +172,11 @@ CONTAINS
       ! Compute and accumulate the sum for the
       ! layer absorber amounts for each absorber
       Pred%A( k, WET_ABSORBER_INDEX ) = Pred%A(k-1,WET_ABSORBER_INDEX) + &
-                                        (dPonG * Atm%Absorber(k,H2O_Index))
+                                        (dPonG * Atm%Absorber(k,H2O_Idx))
       Pred%A( k, DRY_ABSORBER_INDEX ) = Atm%Level_Pressure(k)
 
       Pred%A( k, OZO_ABSORBER_INDEX ) = Pred%A(k-1,OZO_ABSORBER_INDEX) + &
-                                        (dPonG * Atm%Absorber(k,O3_Index))
+                                        (dPonG * Atm%Absorber(k,O3_Idx))
 
     END DO
 
@@ -243,15 +244,15 @@ CONTAINS
     INTEGER  :: k, j
     REAL(fp) :: dPonG
     REAL(fp) :: dPonG_TL
-    INTEGER  :: H2O_Index
-    INTEGER  ::  O3_Index
+    INTEGER  :: H2O_Idx
+    INTEGER  ::  O3_Idx
 
     ! Initalise 0'th level amounts
     Pred_TL%A(0,:) = ZERO
 
     ! Get the atmosphere gaseous absorber indices
-    H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1 )
-     O3_Index = MINLOC(ABS(Atm%Absorber_ID -  O3_ID), DIM=1 )
+    H2O_Idx = CRTM_Get_AbsorberIdx(Atm,H2O_ID)
+    O3_Idx  = CRTM_Get_AbsorberIdx(Atm, O3_ID)
 
     ! Loop over layers, TOA -> SFC
     DO k = 1, Atm_TL%n_Layers
@@ -263,14 +264,14 @@ CONTAINS
       ! Compute and accumulate the sum for the
       ! layer absorber amounts for each absorber
       Pred_TL%A(k,WET_ABSORBER_INDEX) = Pred_TL%A(k-1,WET_ABSORBER_INDEX) + &
-                                        (dPonG * Atm_TL%Absorber(k,H2O_Index)) + &
-                                        (dPonG_TL * Atm%Absorber(k,H2O_Index))
+                                        (dPonG * Atm_TL%Absorber(k,H2O_Idx)) + &
+                                        (dPonG_TL * Atm%Absorber(k,H2O_Idx))
 
       Pred_TL%A(k,DRY_ABSORBER_INDEX) = Atm_TL%Level_Pressure(k)
 
       Pred_TL%A(k,OZO_ABSORBER_INDEX) = Pred_TL%A(k-1,OZO_ABSORBER_INDEX) + &
-                                        (dPonG * Atm_TL%Absorber(k,O3_Index)) + &
-                                        (dPonG_TL * Atm%Absorber(k,O3_Index))
+                                        (dPonG * Atm_TL%Absorber(k,O3_Idx)) + &
+                                        (dPonG_TL * Atm%Absorber(k,O3_Idx))
 
     END DO
 
@@ -340,12 +341,12 @@ CONTAINS
     INTEGER  :: k, j
     REAL(fp) :: dPonG
     REAL(fp) :: dPonG_AD
-    INTEGER  :: H2O_Index
-    INTEGER  ::  O3_Index
+    INTEGER  :: H2O_Idx
+    INTEGER  ::  O3_Idx
 
     ! Get the atmosphere gaseous absorber indices
-    H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1 )
-     O3_Index = MINLOC(ABS(Atm%Absorber_ID -  O3_ID), DIM=1 )
+    H2O_Idx = CRTM_Get_AbsorberIdx(Atm,H2O_ID)
+    O3_Idx  = CRTM_Get_AbsorberIdx(Atm, O3_ID)
 
     ! Compute the adjoint integrated absorber level
     ! differences and average layer amount
@@ -367,20 +368,20 @@ CONTAINS
       dPonG = RECIPROCAL_GRAVITY * (Atm%Level_Pressure(k) - Atm%Level_Pressure(k-1))
 
       ! Ozone amount adjoint
-      Atm_AD%Absorber(k,O3_Index) = Atm_AD%Absorber(k,O3_Index) + &
-                                    (dPonG * Pred_AD%A(k,OZO_ABSORBER_INDEX))
+      Atm_AD%Absorber(k,O3_Idx) = Atm_AD%Absorber(k,O3_Idx) + &
+                                  (dPonG * Pred_AD%A(k,OZO_ABSORBER_INDEX))
 
       ! Pressure adjoint
       Atm_AD%Level_Pressure(k) = Atm_AD%Level_Pressure(k) + Pred_AD%A(k,DRY_ABSORBER_INDEX)
 
       ! Water vapor amount adjoint
-      Atm_AD%Absorber(k,H2O_Index) = Atm_AD%Absorber(k,H2O_Index) + &
+      Atm_AD%Absorber(k,H2O_Idx) = Atm_AD%Absorber(k,H2O_Idx) + &
                                      (dPonG * Pred_AD%A(k,WET_ABSORBER_INDEX))
 
 
       ! dP/g adjoint
-      dPonG_AD = ( Atm%Absorber(k, O3_Index) * Pred_AD%A(k,OZO_ABSORBER_INDEX)) + &
-                 ( Atm%Absorber(k,H2O_Index) * Pred_AD%A(k,WET_ABSORBER_INDEX))
+      dPonG_AD = ( Atm%Absorber(k, O3_Idx) * Pred_AD%A(k,OZO_ABSORBER_INDEX)) + &
+                 ( Atm%Absorber(k,H2O_Idx) * Pred_AD%A(k,WET_ABSORBER_INDEX))
 
       Atm_AD%Level_Pressure(k-1) = Atm_AD%Level_Pressure(k-1) - (RECIPROCAL_GRAVITY * dPonG_AD)
       Atm_AD%Level_Pressure( k ) = Atm_AD%Level_Pressure( k ) + (RECIPROCAL_GRAVITY * dPonG_AD)
@@ -449,10 +450,10 @@ CONTAINS
     INTEGER  :: k
     REAL(fp) :: p2
     REAL(fp) :: t2
-    INTEGER  :: H2O_Index
+    INTEGER  :: H2O_Idx
 
     ! Get the H2O absorber index
-    H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1)
+    H2O_Idx = CRTM_Get_AbsorberIdx(Atm,H2O_ID)
 
     ! Compute the standard predictor set
     Layer_Loop: DO k = 1, Atm%n_Layers
@@ -471,8 +472,8 @@ CONTAINS
       Pred%X( 7,k) = Atm%Temperature(k) * p2
       Pred%X( 8,k) = t2 * p2
       Pred%X( 9,k) = Atm%Pressure(k)**POINT_25
-      Pred%X(10,k) = Atm%Absorber(k,H2O_Index)
-      Pred%X(11,k) = Atm%Absorber(k,H2O_Index) / t2
+      Pred%X(10,k) = Atm%Absorber(k,H2O_Idx)
+      Pred%X(11,k) = Atm%Absorber(k,H2O_Idx) / t2
 
     END DO Layer_Loop
 
@@ -645,10 +646,10 @@ CONTAINS
     INTEGER  :: k
     REAL(fp) :: p2, p2_TL
     REAL(fp) :: t2, t2_TL
-    INTEGER  :: H2O_Index
+    INTEGER  :: H2O_Idx
 
     ! Get the H2O absorber index
-    H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1)
+    H2O_Idx = CRTM_Get_AbsorberIdx(Atm,H2O_ID)
 
     ! Compute the tangent-linear standard predictor set
     Layer_loop: DO k = 1, Atm%n_Layers
@@ -675,9 +676,9 @@ CONTAINS
       Pred_TL%X( 8,k) = ( t2 * p2_TL ) + &
                         ( p2 * t2_TL )
       Pred_TL%X( 9,k) = POINT_25 * (Atm%Pressure(k)**(-POINT_75)) * Atm_TL%Pressure(k)
-      Pred_TL%X(10,k) = Atm_TL%Absorber(k,H2O_Index)
-      Pred_TL%X(11,k) = ( Atm_TL%Absorber(k,H2O_Index) - &
-                        ( Atm%Absorber(k,H2O_Index) * t2_TL / t2 ) ) / t2
+      Pred_TL%X(10,k) = Atm_TL%Absorber(k,H2O_Idx)
+      Pred_TL%X(11,k) = ( Atm_TL%Absorber(k,H2O_Idx) - &
+                        ( Atm%Absorber(k,H2O_Idx) * t2_TL / t2 ) ) / t2
 
     END DO Layer_loop
 
@@ -908,10 +909,10 @@ CONTAINS
     REAL(fp) :: p2, p2_AD
     REAL(fp) :: t2, t2_AD
     REAL(fp) :: t4
-    INTEGER  :: H2O_Index
+    INTEGER  :: H2O_Idx
 
     ! Get the H2O absorber index
-    H2O_Index = MINLOC(ABS(Atm%Absorber_ID - H2O_ID), DIM=1)
+    H2O_Idx = CRTM_Get_AbsorberIdx(Atm,H2O_ID)
 
     ! Compute the standard predictor set
     ! Don't have to loop backwards here as this is a parallel loop
@@ -928,13 +929,13 @@ CONTAINS
               ( t2                 * Pred_AD%X(8,k) )       ! Predictor #8, T^2.P^2
 
       ! Temperature squared adjoint
-      t2_AD =                               Pred_AD%X(3,k)     + &  ! Predictor #3, T^2
-              ( Atm%Pressure(k)           * Pred_AD%X(6,k) )   + &  ! Predictor #6, T^2.P
-              ( p2                        * Pred_AD%X(8,k) )   + &  ! Predictor #8, T^2.P^2
-              (-Atm%Absorber(k,H2O_Index) * Pred_AD%X(11,k) / t4 )  ! Predictor #11, W/T^2
+      t2_AD =                             Pred_AD%X(3,k)     + &  ! Predictor #3, T^2
+              ( Atm%Pressure(k)         * Pred_AD%X(6,k) )   + &  ! Predictor #6, T^2.P
+              ( p2                      * Pred_AD%X(8,k) )   + &  ! Predictor #8, T^2.P^2
+              (-Atm%Absorber(k,H2O_Idx) * Pred_AD%X(11,k) / t4 )  ! Predictor #11, W/T^2
 
       ! Water vapor adjoint
-      Atm_AD%Absorber(k,H2O_Index) = Atm_AD%Absorber(k,H2O_Index) + &
+      Atm_AD%Absorber(k,H2O_Idx) = Atm_AD%Absorber(k,H2O_Idx) + &
           Pred_AD%X(10,k) + &     ! Predictor #10, W
         ( Pred_AD%X(11,k) / t2 )  ! Predictor #11, W/T^2
 

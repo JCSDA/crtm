@@ -354,6 +354,8 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Assign_Atmosphere
   PUBLIC :: CRTM_WeightedSum_Atmosphere
   PUBLIC :: CRTM_Zero_Atmosphere
+  ! Utility routines in this module
+  PUBLIC :: CRTM_Get_AbsorberIdx
 
   ! -------------------
   ! Procedure overloads
@@ -2858,5 +2860,63 @@ CONTAINS
     END DO
 
   END SUBROUTINE Zero_Rank1
+
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Get_AbsorberIdx
+! 
+! PURPOSE:
+!       Function to determine the index of the requested absorber in the
+!       CRTM_Atmosphere structure absorber component.
+!
+! CALLING SEQUENCE:
+!       Idx = CRTM_Get_AbsorberIdx(Atmosphere, AbsorberId)
+!
+! INPUT ARGUMENTS:
+!       Atmosphere:   CRTM Atmosphere structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Atmosphere_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       AbsorberId:   Integer value used to identify absorbing molecular
+!                     species. The accepted absorber Id are defined in
+!                     this module.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Idx:          Index of the requested absorber in the 
+!                     Atmosphere%Absorber array component.
+!                     If the requested absorber cannot be found, 
+!                     a value of -1 is returned.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Get_AbsorberIdx(Atm, AbsorberId) RESULT(AbsorberIdx)
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atm
+    INTEGER                   , INTENT(IN) :: AbsorberId
+    ! Function result
+    INTEGER :: AbsorberIdx
+    ! Local variables
+    INTEGER :: j, Idx(1)
+    ! Initialise result to "not found"
+    AbsorberIdx = -1
+    ! Return if absorber not present
+    IF ( COUNT(Atm%Absorber_ID == AbsorberId) /= 1 ) RETURN
+    ! Find the location
+    Idx = PACK( (/(j,j=1,Atm%n_Absorbers)/), &
+                Atm%Absorber_ID==AbsorberId  )
+    AbsorberIdx=Idx(1)
+  END FUNCTION CRTM_Get_AbsorberIdx
 
 END MODULE CRTM_Atmosphere_Define
