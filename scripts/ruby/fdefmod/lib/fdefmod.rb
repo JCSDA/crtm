@@ -421,8 +421,6 @@ class FDefMod
         
         ! Check dimensions
         #{dimCheckIf()}
-          #{failReturn(6,"'Input #{@structName} dimensions must all be > 0.'",:lstrip=>true)}
-        END IF
         
         ! Check if ANY pointers are already associated.
         ! If they are, deallocate them but leave scalars.
@@ -438,11 +436,6 @@ class FDefMod
         
         ! Perform the pointer allocation
         #{arrayAlloc()}
-        IF ( Allocate_Status /= 0 ) THEN
-          WRITE( Message, '("Error allocating #{@structName} data arrays. STAT = ",i0)') &
-                          Allocate_Status
-          #{failReturn(6,"TRIM(Message)",:lstrip=>true)}
-        END IF
         
         ! Assign the dimensions
         #{dimAssign()}
@@ -497,15 +490,10 @@ class FDefMod
         IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
         ! ALL *input* pointers must be associated
-        IF ( .NOT. #{@nameSpace}Associated_#{@structName}(#{@structName}_In) ) THEN
-          #{failReturn(6,"'Some or all INPUT #{@structName} pointer members are NOT associated.'")}
-        END IF
+        #{structAssocTest("_In")}
         
         ! Allocate data arrays
         #{allocStruct()}
-        IF ( Error_Status /= SUCCESS ) THEN
-          #{failReturn(6,"'Error allocating output structure'")}
-        END IF
         
         ! Assign non-dimension scalar members
         #{scalarAssign()}
@@ -861,7 +849,7 @@ EOF
   def dimFuncDef(d_fmt)
     str=""
     @dimList.each {|d| str<<indent(13)+"#{d_fmt%d}, &  ! Input\n"}
-    str.lstrip!.chomp!  # Strip leading spaces of first line, newline of last line
+    str.lstrip.chomp  # Strip leading spaces of first line, newline of last line
   end
 
   # Method to construct the dimension argument definitions
@@ -869,22 +857,23 @@ EOF
   def dimArgDef(a_fmt)
     str=""
     @dimList.each {|d| str<<indent(4)+a_fmt%"INTEGER"+", INTENT(IN)     :: #{d}\n"}
-    str.lstrip!.chomp!  # Strip leading spaces of first line, newline of last line
+    str.lstrip.chomp  # Strip leading spaces of first line, newline of last line
   end
 
   # Generate the dimension value check statement
   # in the allocate function
   def dimCheckIf
-    str="IF (#{@dfmt%@dimList.first} < 1"
+    cmd="IF ("; n=cmd.length
     if @dimList.length==1
-      str<<" ) THEN"
+      cmd<<"#{@dfmt%@dimList.first} < 1) THEN\n"
     else
-      str<<" .OR. &\n"
-      1.upto(@dimList.length-2) do |i|
-        str<<indent(8)+"#{@dfmt%@dimList[i]} < 1 .OR. &\n"
-      end
-      str<<indent(8)+"#{@dfmt%@dimList.last} < 1 ) THEN"
+      str=""
+      @dimList[0..-2].each {|d| str<<indent(n+4)+"#{@dfmt%d} < 1 .OR. &\n"}
+      str<<indent(n+4)+"#{@dfmt%@dimList.last} < 1) THEN\n"
+      cmd<<str.lstrip
     end
+    cmd<<failReturn(6,"'Input #{@structName} dimensions must all be > 0.'")+"\n"
+    cmd<<indent(4)+"END IF"
   end # def dimCheckIf
 
   # Method to construct the allocate statement 
@@ -893,11 +882,18 @@ EOF
     a[:dims].collect {|d| d.join(":")}.join(",")
   end
   def arrayAlloc
-    str="ALLOCATE( #{@structName}%#{@arrayList.first[:name]}(#{dimExtDef(@arrayList.first)}), &\n"
-    1.upto(@arrayList.length-1) do |i|
-      str<<indent(14)+"#{@structName}%#{@arrayList[i][:name]}(#{dimExtDef(@arrayList[i])}), &\n"
+    cmd="ALLOCATE( "; n=cmd.length
+    str=""
+    @arrayList.each do |a|
+      str<<indent(n+4)+%Q{#{@structName}%#{a[:name]}(#{dimExtDef(a)}), &\n}
     end
-    str<<indent(14)+"STAT = Allocate_Status )"
+    cmd<<str.lstrip
+    cmd<<indent(n+4)+%Q{STAT = Allocate_Status )\n}
+    cmd<<indent(4)+%Q{IF ( Allocate_Status /= 0 ) THEN\n}
+    cmd<<indent(4)+%Q{  WRITE( Message, '("Error allocating #{@structName} data arrays. STAT = ",i0)') &\n}
+    cmd<<indent(4)+%Q{                  Allocate_Status\n}
+    cmd<<failReturn(6,"TRIM(Message)")+"\n"
+    cmd<<indent(4)+%Q{END IF}
   end
 
   # Method to construct the dimension assignment statements
@@ -936,14 +932,17 @@ EOF
   # Method to construct the output structure allocation statement
   # in the assign function
   def allocStruct
-    first_bit="Error_Status = #{@nameSpace}Allocate_#{@structName}"
-    nspaces=first_bit.length+6
-    str="#{first_bit}( #{@structName}_in%#{@dfmt%@dimList.first}, &\n"
-    1.upto(@dimList.length-1) do |i|
-      str<<indent(nspaces)+"#{@structName}_in%#{@dfmt%@dimList[i]}, &\n"
+    cmd="Error_Status = #{@nameSpace}Allocate_#{@structName}( "; n=cmd.length
+    str=""
+    @dimList.each do |d|
+      str<<indent(n+4)+"#{@structName}_in%#{@dfmt%d}, &\n"
     end
-    str<<indent(nspaces)+"#{@structName}_out, &\n"+
-         indent(nspaces)+"Message_Log=Message_Log)"
+    cmd<<str.lstrip
+    cmd<<indent(n+4)+"#{@structName}_out, &\n"+
+         indent(n+4)+"Message_Log=Message_Log )\n"
+    cmd<<indent(4)+"IF ( Error_Status /= SUCCESS ) THEN\n"
+    cmd<<failReturn(6,"'Error allocating output structure'")+"\n"
+    cmd<<indent(4)+"END IF"
   end # def allocStruct
 
   # Method to construct the scalar component assignment statements
@@ -969,64 +968,54 @@ EOF
   # Method to construct the structure association IF tests
   # in the equal function
   def structAssocTest(id="")
-    str="IF ( .NOT. #{@nameSpace}Associated_#{@structName}( #{@structName}#{id} ) ) THEN\n"
-    str<<"      #{failReturn(2,%Q{'Some or all INPUT #{@structName}#{id} pointer members are NOT associated.'})}\n"
-    str<<"    END IF"
-    puts str
-    str
+    cmd ="IF ( .NOT. #{@nameSpace}Associated_#{@structName}( #{@structName}#{id} ) ) THEN\n"
+    cmd<<failReturn(6,"'Some or all INPUT #{@structName}#{id} pointer members are NOT associated.'")+"\n"
+    cmd<<indent(4)+"END IF"
   end # def structAssocTest
   
   # Method to construct the dimension equality IF test
   # in the equal function
   def dimEqualTest
-    d=@dfmt%@dimList.first
-    str="IF (#{@structName}_LHS%#{d} /= #{@structName}_RHS%#{d}"
+    cmd="IF ("; n=cmd.length
     if @dimList.length==1
-      str<<" ) THEN\n"
+      cmd<<"#{@structName}_LHS%#{@dfmt%@dimList.first} /= #{@structName}_RHS%#{@dfmt%@dimList.first}) THEN\n"
     else
-      str<<" .OR. &\n"
-      1.upto(@dimList.length-2) do |i|
-        d=@dfmt%@dimList[i]
-        str<<"        #{@structName}_LHS%#{d} /= #{@structName}_RHS%#{d} .OR. &\n"
-      end
-      d=@dfmt%@dimList.last
-      str<<"        #{@structName}_LHS%#{d} /= #{@structName}_RHS%#{d} ) THEN\n"
+      str=""
+      @dimList[0..-2].each {|d| str<<indent(n+4)+"#{@structName}_LHS%#{@dfmt%d} /= #{@structName}_RHS%#{@dfmt%d} .OR. &\n"}
+      str<<indent(n+4)+"#{@structName}_LHS%#{@dfmt%@dimList.last} /= #{@structName}_RHS%#{@dfmt%@dimList.last} ) THEN\n"
+      cmd<<str.lstrip
     end
-    str<<#{failReturn(2,"'Structure dimensions are different.'")}
-    str<<"    END IF"
+    cmd<<failReturn(6,"'Structure dimensions are different.'")+"\n"
+    cmd<<indent(4)+"END IF"
   end # def dimEqualTest
 
   # Method to construct the scalar component equality checks
   # in the equal function
   def scalarEqualTest
-    str=""
+    cmd=""
     @scalarList.each do |s|
       case s[:type]
         when "INTEGER","CHARACTER","LOGICAL"
           # Integers, characters, and logicals can be directly compared
           op = s[:type]=="LOGICAL" ? ".EQV" : "/="
-          thisEqual=<<-EOT
-            IF( #{@structName}_LHS%#{s[:name]} #{op} #{@structName}_RHS%#{s[:name]}) THEN
-              #{failReturn(2,"'#{@structName} scalar component #{s[:name]} values are different.'")}
-            END IF
-          EOT
-          str<<thisEqual
-        when "REAL"
+          str =indent(4)+"IF ( #{@structName}_LHS%#{s[:name]} #{op} #{@structName}_RHS%#{s[:name]} ) THEN\n"
+          str<<failReturn(6,"'#{@structName} scalar component #{s[:name]} values are different.'")+"\n"
+          str<<indent(4)+"END IF\n"
+          cmd<<str
+        when "REAL","COMPLEX"
           # Floating point values use Compare_Float
-          thisEqual=<<-EOT
-            IF ( .NOT. Compare_Float( #{@structName}_LHS%#{s[:name]}, &
-                                      #{@structName}_RHS%#{s[:name]}, &
-                                      ULP=ULP ) ) THEN
-              #{failReturn(2,"'#{@structName} scalar component #{s[:name]} values are different.'")}
-            END IF
-          EOT
-          str<<thisEqual
+          str =indent(4)+"IF ( .NOT. Compare_Float( #{@structName}_LHS%#{s[:name]}, &\n"
+          str<<indent(4)+"                          #{@structName}_RHS%#{s[:name]}, &\n"
+          str<<indent(4)+"                          ULP=ULP ) ) THEN\n"
+          str<<failReturn(6,"'#{@structName} scalar component #{s[:name]} values are different.'")+"\n"
+          str<<indent(4)+"END IF\n"
+          cmd<<str
         else
           # Other data types not supported
-          raise StandardError, "*** Type #{s[:type]} array equality test not yet implemented ***"
+          raise StandardError, "*** Type #{s[:type]} scalar equality test not yet implemented ***"
       end
     end
-    str
+    cmd.lstrip.chomp  # Strip leading spaces of first line, newline of last line
   end # def scalarEqualTest
 
   # Method to construct the array component equality checks
@@ -1034,56 +1023,57 @@ EOF
   #
   # Build the loop DO statements
   def beginLoop(a)
-    str=""
+    cmd=""
     0.upto(a[:ndims]-1) do |i|
-      str<<indent(i+1)+"DO #{a[:dimidx].reverse[i]}=#{a[:dims].reverse[i][0]},#{a[:dims].reverse[i][1]}\n"
+      cmd<<indent(4+(i*2))+"DO #{a[:dimidx].reverse[i]}=#{a[:dims].reverse[i][0]},#{a[:dims].reverse[i][1]}\n"
     end
-    str
+    cmd
   end # def beginLoop
   #
   # Build the loop END DO statements
   def endLoop(a)
-    str=""
-    (a[:ndims]-1).downto(0) do |i|
-      str<<indent(i+1)+"END DO\n"
+    n=a[:ndims]
+    cmd=""
+    (n-1).downto(0) do |i|
+      cmd<<indent(4+(i*2))+"END DO\n"
     end
-    str
+    cmd
+    # Restore the inner loop indent after lstripping for insertion into code
+#    indent((n-1)*2,:nopad=>true)+(cmd.lstrip)
   end # def endLoop
   #
   # The main method
   def arrayEqualTest
-    str=""
+    cmd=""
     @arrayList.each do |a|
+      n=a[:ndims]
       case a[:type]
         when "INTEGER","CHARACTER","LOGICAL"
           # Integers, characters, and logicals can be directly compared
           op = a[:type]=="LOGICAL" ? ".EQV" : "/="
-          thisEqual=<<-EOT
-            IF ( ANY( #{@structName}_LHS%#{a[:name]} #{op} #{@structName}_RHS%#{a[:name]} ) ) THEN
-              #{failReturn(2,"'#{@structName} array component #{a[:name]} values are different.'")}
-            END IF
-          EOT
-          str<<thisEqual
-        when "REAL"
+          str =indent(4)+"IF ( ANY( #{@structName}_LHS%#{a[:name]} #{op} #{@structName}_RHS%#{a[:name]} ) ) THEN\n"
+          str<<failReturn(6,%Q{'#{@structName} array component #{a[:name]} values are different.'})+"\n"
+          str<<indent(4)+"END IF\n"
+          cmd<<str
+        when "REAL","COMPLEX"
           # Floating point values use Compare_Float
-          str<<beginLoop(a)
-          i=indent(a[:ndims]+1)
-          thisEqual=<<-EOT
-            #{i}IF ( .NOT. Compare_Float( #{@structName}_LHS(#{a[:dimidx].join(",")})%#{a[:name]}, &
-            #{i}                          #{@structName}_RHS(#{a[:dimidx].join(",")})%#{a[:name]}, &
-            #{i}                          ULP=ULP ) ) THEN
-            #{i}  WRITE( Message, '("#{a[:name]} values are different at index (",#{a[:ndims]}(1x,i0),")")') &
-            #{i}                  #{a[:dimidx].join(",")} 
-            #{i}  #{failReturn(2,"TRIM(Message)")}
-            #{i}END IF
-          EOT
-          str<<thisEqual
-          str<<endLoop(a)
+          cmd<<beginLoop(a)
+          i=indent(4+(n*2))
+          str ="#{i}IF ( .NOT. Compare_Float( #{@structName}_LHS(#{a[:dimidx].join(",")})%#{a[:name]}, &\n"
+          str<<"#{i}                          #{@structName}_RHS(#{a[:dimidx].join(",")})%#{a[:name]}, &\n"
+          str<<"#{i}                          ULP=ULP ) ) THEN\n"
+          str<<%Q{#{i}  WRITE( Message, '("#{a[:name]} values are different at index (",#{a[:ndims]}(1x,i0),")")') &\n}
+          str<<"#{i}                  #{a[:dimidx].join(",")}\n"
+          str<<failReturn(6+(n*2),"TRIM(Message)")+"\n"
+          str<<"#{i}END IF\n"
+          cmd<<str
+          cmd<<endLoop(a)
         else
           # Non-implemented types
           raise StandardError, "*** Type #{a[:type]} array equality test not yet implemented ***"
       end
     end
+    cmd.lstrip.chomp  # Strip leading spaces of first line, newline of last line
   end # def arrayEqualTest
 
 
