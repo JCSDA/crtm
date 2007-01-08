@@ -47,7 +47,8 @@ MODULE CRTM_Predictor
                                       CRTM_Associated_Predictor, &
                                       CRTM_Destroy_Predictor   , &
                                       CRTM_Allocate_Predictor  , &
-                                      CRTM_Assign_Predictor
+                                      CRTM_Assign_Predictor  , &
+                                      CRTM_Zero_Predictor
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -65,6 +66,7 @@ MODULE CRTM_Predictor
   PUBLIC :: CRTM_Destroy_Predictor
   PUBLIC :: CRTM_Allocate_Predictor
   PUBLIC :: CRTM_Assign_Predictor
+  PUBLIC :: CRTM_Zero_Predictor
   ! Science routines in this module
   PUBLIC :: CRTM_Compute_Predictors
   PUBLIC :: CRTM_Compute_Predictors_TL

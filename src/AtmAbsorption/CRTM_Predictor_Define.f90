@@ -36,6 +36,7 @@ MODULE CRTM_Predictor_Define
   PUBLIC :: CRTM_Destroy_Predictor
   PUBLIC :: CRTM_Allocate_Predictor
   PUBLIC :: CRTM_Assign_Predictor
+  PUBLIC :: CRTM_Zero_Predictor
     
 
   ! -----------------
@@ -659,4 +660,48 @@ CONTAINS
 
   END FUNCTION CRTM_Assign_Predictor
 
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Zero_Predictor
+! 
+! PURPOSE:
+!       Subroutine to zero-out all members of a CRTM_Predictor structure - both
+!       scalar and pointer.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Zero_Predictor( Predictor )
+!
+! OUTPUT ARGUMENTS:
+!       Predictor:    Zeroed out Predictor structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Predictor_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       - No checking of the input structure is performed, so there are no
+!         tests for pointer member association status. This means the Predictor
+!         structure must have allocated pointer members upon entry to this
+!         routine.
+!
+!       - Note the INTENT on the output Predictor argument is IN OUT rather than
+!         just OUT. This is necessary because the argument must be defined upon
+!         input.
+!
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Zero_Predictor( Predictor )  ! Output
+    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Predictor
+    ! Reset the scalar components
+    Predictor%Secant_Sensor_Zenith = ZERO
+    ! Reset the array components
+    Predictor%A    = ZERO
+    Predictor%dA   = ZERO
+    Predictor%aveA = ZERO
+    Predictor%X    = ZERO
+  END SUBROUTINE CRTM_Zero_Predictor
+  
 END MODULE CRTM_Predictor_Define
