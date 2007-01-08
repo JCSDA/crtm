@@ -5,6 +5,7 @@ MODULE Interp_ND
   PRIVATE
   PUBLIC :: Interp_2D
   PUBLIC :: Interp_3D
+  PUBLIC :: Interp_1D
   PUBLIC :: findIdx
   
   INTERFACE findIdx
@@ -18,6 +19,15 @@ MODULE Interp_ND
   REAL(fp), PARAMETER :: ONE =1.0_fp
 
 CONTAINS
+  ! 1-D linear interpolation routine
+  FUNCTION Interp_1D(d1, y) RESULT(yInt)
+    REAL(fp), INTENT(IN) :: d1
+    REAL(fp), INTENT(IN) :: y(:)
+    REAL(fp) :: yInt
+    
+    yInt = ( (ONE-d1)*y(1) ) + &
+           (    d1*y(2)    )
+  END FUNCTION Interp_1D	   
 
   ! 2-D linear interpolation routine
   FUNCTION Interp_2D(d1,d2,y) RESULT(yInt)
