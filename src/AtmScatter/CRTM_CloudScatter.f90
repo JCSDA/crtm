@@ -1087,6 +1087,9 @@ CONTAINS
 	STOP
     END SELECT
     
+    ! p_coeff is zero if [n_Phase_Elements <= ZERO or n_Legendre_Terms <= TWO]
+    p_coeff = ZERO
+    
     ! calculate wavenumber spacing (the spacing is regular for wavenumber).
     dF = CloudC%Wavenumber(2) - CloudC%Wavenumber(1)
     
@@ -1400,7 +1403,7 @@ CONTAINS
     
     CHARACTER(*), PARAMETER :: SUBROUTINE_NAME = 'Get_Cloud_Opt_MW'
     
-    ! Allocate the
+    
 						         
   
     SELECT CASE (Cloud_Type)
@@ -1419,7 +1422,8 @@ CONTAINS
     END SELECT
     
     ! Initialize w, g and p_coeff to zero. For ctype water_cloud and ice_cloud
-    ! these variables will be ZERO.
+    ! these variables will be ZERO. Also p_coeff is zero for all ctypes 
+    ! if [n_Phase_Elements <= ZERO or n_Legendre_Terms <= TWO]
     w = ZERO
     g = ZERO
     p_coeff = ZERO
