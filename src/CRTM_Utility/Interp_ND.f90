@@ -6,6 +6,7 @@ MODULE Interp_ND
   PUBLIC :: Interp_2D
   PUBLIC :: Interp_3D
   PUBLIC :: Interp_1D
+  PUBLIC :: Interp_1D_TL
   PUBLIC :: findIdx
   
   INTERFACE findIdx
@@ -57,6 +58,7 @@ CONTAINS
            ( (ONE-d1)*   d2   *   d3   *y(1,2,2) )
   END FUNCTION Interp_3D
   
+  
   ! Find lower index for regular spacing
   FUNCTION findRegularIdx(x, dx, xInt) RESULT(idx)
     REAL(fp), INTENT(IN) :: x(:)
@@ -81,5 +83,19 @@ CONTAINS
     END DO
     idx = MIN(MAX(1,k-1),n-1)
   END FUNCTION findRandomIdx
+  
+  ! 1-D linear interpolation routine for tangent-linear
+  FUNCTION Interp_1D_TL(d1,d2_TL,y) RESULT(yInt_TL)
+    REAL(fp), INTENT(IN) :: d1, d2_TL
+    REAL(fp), INTENT(IN) :: y(:,:)
+    REAL(fp) :: yInt_TL
+    
+    yInt_TL = (  d2_TL*(ONE-d1)*y(1,2) ) + &
+              ( -d2_TL*(ONE-d1)*y(1,1) ) + &
+	      (  d2_TL*   d1   *y(2,2) ) + &  
+	      ( -d2_TL*   d1   *y(2,1) )
+  END FUNCTION Interp_1D_TL 
+  
+    
   
 END MODULE Interp_ND
