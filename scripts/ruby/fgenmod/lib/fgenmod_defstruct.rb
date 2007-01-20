@@ -7,10 +7,6 @@ module FGenMod
       def generate
         type="#{config.namespace}#{config.struct_name}_type"
 
-        # Declaration and argument type definition format
-        dfmt=string_format(["#{config.struct_name}_LHS","Message_Log"])
-        afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
-
         # Base nspaces indent is 12
         nspaces=12
         

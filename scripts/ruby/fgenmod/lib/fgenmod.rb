@@ -35,11 +35,10 @@ module FGenMod
     def generate(config_file_name)
       config = Config.load(config_file_name)
       
-      mod=""
       GENERATORS.each do |gen_class|
-	gen = gen_class.new
-	gen.config = config
-	gen.generate
+        gen = gen_class.new
+        gen.config = config
+        gen.generate
       end
     end
   end

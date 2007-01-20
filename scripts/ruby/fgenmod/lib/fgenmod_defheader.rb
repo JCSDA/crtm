@@ -61,6 +61,7 @@ module FGenMod
           #{release_version_parameters(:nspaces=>nspaces) if config.release and config.version}
 
         EOT
+        str.rstrip<<"\n\n"
       end
 
       # --------------
