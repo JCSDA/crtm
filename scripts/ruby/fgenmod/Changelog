@@ -1,0 +1,27 @@
+2007-01-19 Paul van Delst <paul.vandelst@ssec.wisc.edu>
+
+  Fixed minor formatting bugs in header output and tests
+  
+  * lib/fgenmod_defheader.rb
+  (generate): Reformatted return string for consistent spacing when
+  structure release and verison number are not specified
+
+  * test/def/tc_defheader.rb
+  (DEBUG): Changed from true to false to turn off debug output
+  (setup): Added newline to end of required output to make it
+  consistent with actual output.
+  (test_generate2): Removed leading spaces from last line in
+  required output to make it consistent with actual output
+
+  * test/def/ts_fgenmod_def.rb
+  Added tc_defheader.rb test case to test suite.
+    
+  Minor cosmetic changes
+    
+  * lib/fgenmod_defstruct.rb
+  (generate): Removed mistakenly copy-pasted string formats.
+  
+  * lib/fgenmod.rb
+  (generate): Removed superfluous mod string initialisation.
+  Replaced tabs with spaces.
+  
