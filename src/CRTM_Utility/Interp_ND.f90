@@ -8,6 +8,7 @@ MODULE Interp_ND
   PUBLIC :: Interp_1D
   PUBLIC :: Interp_1D_TL
   PUBLIC :: findIdx
+  PUBLIC :: normCoord
   
   INTERFACE findIdx
     MODULE PROCEDURE findRegularIdx
@@ -20,6 +21,10 @@ MODULE Interp_ND
   REAL(fp), PARAMETER :: ONE =1.0_fp
 
 CONTAINS
+
+  ! -----------------------
+  ! Interpolation functions
+  ! -----------------------
   ! 1-D linear interpolation routine
   FUNCTION Interp_1D(d1, y) RESULT(yInt)
     REAL(fp), INTENT(IN) :: d1
@@ -59,6 +64,22 @@ CONTAINS
   END FUNCTION Interp_3D
   
   
+  ! 1-D linear interpolation routine for tangent-linear
+  FUNCTION Interp_1D_TL(d1,d2_TL,y) RESULT(yInt_TL)
+    REAL(fp), INTENT(IN) :: d1, d2_TL
+    REAL(fp), INTENT(IN) :: y(:,:)
+    REAL(fp) :: yInt_TL
+    
+    yInt_TL = (  d2_TL*(ONE-d1)*y(1,2) ) + &
+              ( -d2_TL*(ONE-d1)*y(1,1) ) + &
+	      (  d2_TL*   d1   *y(2,2) ) + &  
+	      ( -d2_TL*   d1   *y(2,1) )
+  END FUNCTION Interp_1D_TL 
+
+
+  ! ------------------
+  ! Indexing functions
+  ! ------------------
   ! Find lower index for regular spacing
   FUNCTION findRegularIdx(x, dx, xInt) RESULT(idx)
     REAL(fp), INTENT(IN) :: x(:)
@@ -84,18 +105,18 @@ CONTAINS
     idx = MIN(MAX(1,k-1),n-1)
   END FUNCTION findRandomIdx
   
-  ! 1-D linear interpolation routine for tangent-linear
-  FUNCTION Interp_1D_TL(d1,d2_TL,y) RESULT(yInt_TL)
-    REAL(fp), INTENT(IN) :: d1, d2_TL
-    REAL(fp), INTENT(IN) :: y(:,:)
-    REAL(fp) :: yInt_TL
-    
-    yInt_TL = (  d2_TL*(ONE-d1)*y(1,2) ) + &
-              ( -d2_TL*(ONE-d1)*y(1,1) ) + &
-	      (  d2_TL*   d1   *y(2,2) ) + &  
-	      ( -d2_TL*   d1   *y(2,1) )
-  END FUNCTION Interp_1D_TL 
+  ! Function to compute the
+  ! normalised coordinate for
+  ! interpolation
+  FUNCTION normCoord(x, i1, i2, xInt) RESULT(xNorm)
+    REAL(fp), INTENT(IN) :: x(:)
+    INTEGER , INTENT(IN) :: i1, i2
+    REAL(fp), INTENT(IN) :: xInt
+    REAL(fp) :: xNorm
+    REAL(fp) :: dx
+    dx = x(i2) - x(i1)
+    xNorm = MIN(MAX((xInt - x(i1))/dx,0.0_fp),1.0_fp)
+  END FUNCTION normCoord
   
-    
   
 END MODULE Interp_ND
