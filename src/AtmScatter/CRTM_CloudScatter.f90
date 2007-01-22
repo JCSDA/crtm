@@ -1061,13 +1061,14 @@ CONTAINS
     INTEGER,  INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
     REAL(fp), INTENT(OUT) :: ext,w,g
     REAL(fp), INTENT( INOUT ), DIMENSION(0:,:) :: p_coeff
-    INTEGER,  PARAMETER :: ORDER=1 
-    REAL(fp), DIMENSION(ORDER+1,ORDER+1) :: g_IR_LUT, w_IR_LUT, ext_IR_LUT, p_coeff_IR_LUT
-    CHARACTER(*), PARAMETER :: SUBROUTINE_NAME   = 'Get_Cloud_Opt_IR'
+    
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
+    INTEGER,  PARAMETER :: ORDER=1 
+    REAL(fp), DIMENSION(ORDER+1,ORDER+1) :: g_IR_LUT, w_IR_LUT, ext_IR_LUT, p_coeff_IR_LUT
+    CHARACTER(*), PARAMETER :: SUBROUTINE_NAME   = 'Get_Cloud_Opt_IR'
     REAL(fp) :: dF, dFn, dR, dRn
     INTEGER :: k, i1, i2, j1, j2, l
     LOGICAL :: Solid
@@ -1079,31 +1080,20 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; Solid=.TRUE.  ; k=1
       CASE(GRAUPEL_CLOUD); Solid=.TRUE.  ; k=2
       CASE(HAIL_CLOUD)   ; Solid=.TRUE.  ; k=3
-      CASE DEFAULT
-        ! This should never happen
-	CALL Display_Message(SUBROUTINE_NAME,&
-	                     'Invalid cloud type in hinge point test!',&
-			     FAILURE)
-	STOP
     END SELECT
-    
+   
     ! p_coeff is zero if [n_Phase_Elements <= ZERO or n_Legendre_Terms <= TWO]
     p_coeff = ZERO
     
-    ! calculate wavenumber spacing (the spacing is regular for wavenumber).
-    dF = CloudC%Wavenumber(2) - CloudC%Wavenumber(1)
-    
     !  find indices for effective radius and wavenumber
-    i1 = findIdx(CloudC%Wavenumber, dF, Wavenumber); i2 = i1 + 1
-    j1 = findIdx(CloudC%Reff_IR, eff_radius); j2 = j1 + 1
-    
-    ! calculate effective radius LUT spacing (the spacing is not regular).
-    dR = CloudC%Reff_IR(j2) - CloudC%Reff_IR(j1)
+    i1 = findIdx(CloudC%Wavenumber, WAVENUMBER_SPACING, Wavenumber); i2 = i1 + 1
+    j1 = findIdx(CloudC%Reff_IR, Eff_Radius); j2 = j1 + 1
+      
     
     ! calculate normalized spacing for interpolation position
-    dFn = (Wavenumber - CloudC%Wavenumber(i1))/dF
-    dRn = (eff_radius - CloudC%Reff_IR(j1))/dR
-    
+    dFn = normCoord(CloudC%Wavenumber, i1, i2, Wavenumber)
+    dRn = normCoord(CloudC%Reff_IR, j1, j2, Eff_Radius)
+     
     ! Assign LUT array values and perform interpolation for
     ! solid and liquid phase
     IF (Solid) THEN
@@ -1113,8 +1103,8 @@ CONTAINS
       IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
           p_coeff_IR_LUT=CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l)
-	  p_coeff(l,1)=Interp_2D(dFn,dRn,p_coeff_IR_LUT)
-	END DO
+          p_coeff(l,1)=Interp_2D(dFn,dRn,p_coeff_IR_LUT)
+        END DO
       END IF  
     ELSE
       ext_IR_LUT=CloudC%ext_L_IR(i1:i2,j1:j2)
@@ -1122,15 +1112,14 @@ CONTAINS
       g_IR_LUT=CloudC%g_L_IR(i1:i2,j1:j2)
       IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-	  p_coeff_IR_LUT=CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l)
-	  p_coeff(l,1)=Interp_2D(dFn,dRn,p_coeff_IR_LUT)
-	END DO
+          p_coeff_IR_LUT=CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l)
+          p_coeff(l,1)=Interp_2D(dFn,dRn,p_coeff_IR_LUT)
+        END DO
       END IF
     END IF 
     ext=Interp_2D(dFn,dRn,ext_IR_LUT)
     w=Interp_2D(dFn,dRn,w_IR_LUT)
     g=Interp_2D(dFn,dRn,g_IR_LUT)             
-  
   END SUBROUTINE Get_Cloud_Opt_IR
 ! 
 !
@@ -1380,32 +1369,31 @@ CONTAINS
     INTEGER, INTENT(IN) :: Cloud_Type,n_Legendre_Terms,n_Phase_Elements
     REAL(fp) , INTENT(OUT) :: ext,w,g
     REAL(fp) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coeff
-    INTEGER, PARAMETER :: Min_Radius_Index = 1
-    INTEGER, PARAMETER :: Ice_Temp_Index = 3
-    INTEGER, PARAMETER :: ORDER=1
+    
 
     ! ----------------------- !
     !  local variables        !
     ! ----------------------- !
+    INTEGER, PARAMETER :: Min_Radius_Index = 1
+    INTEGER, PARAMETER :: Ice_Temp_Index = 3
+    INTEGER, PARAMETER :: ORDER=1
     REAL(fp) :: dF, dFn, dR, dRn, dT, dTn
     INTEGER :: k,p,l,t1,t2,i1,i2,j1,j2
     ! Variables to hold LUT data for water clouds and ice precipitating clouds
     REAL(fp), DIMENSION(ORDER+1,ORDER+1) :: ext_MW_wat_LUT, ext_MW_ipc_LUT, &
-                                	   w_MW_ipc_LUT, g_MW_ipc_LUT, &
-					   p_coeff_MW_ipc_LUT
+                                           w_MW_ipc_LUT, g_MW_ipc_LUT, &
+                                           p_coeff_MW_ipc_LUT
 
     ! Variables to hold LUT data for rain clouds 
     REAL(fp), DIMENSION(ORDER+1,ORDER+1,ORDER+1) :: ext_MW_rai_LUT, w_MW_rai_LUT, &
-                                        	   g_MW_rai_LUT, p_coeff_MW_rai_LUT
-						   
+                                                   g_MW_rai_LUT, p_coeff_MW_rai_LUT
+
     ! Variables to hold LUT data for non-precipitating ice clouds
     REAL(fp), DIMENSION(ORDER+1) :: ext_MW_ice_LUT
     
     CHARACTER(*), PARAMETER :: SUBROUTINE_NAME = 'Get_Cloud_Opt_MW'
     
-    
-						         
-  
+
     SELECT CASE (Cloud_Type)
       CASE(WATER_CLOUD)  ;
       CASE(ICE_CLOUD)    ; k=3
@@ -1413,12 +1401,6 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1
       CASE(GRAUPEL_CLOUD); k=2
       CASE(HAIL_CLOUD)   ; k=3
-      CASE DEFAULT
-        ! This should never happen
-	CALL Display_Message(SUBROUTINE_NAME,&
-	                     'Invalid cloud type in hinge point test!',&
-			     FAILURE)
-	STOP
     END SELECT
     
     ! Initialize w, g and p_coeff to zero. For ctype water_cloud and ice_cloud
@@ -1440,9 +1422,9 @@ CONTAINS
     dT = CloudC%Temperature(t2) - CloudC%Temperature(t1)
     
     ! calculate normalized spacing for interpolation position
-    dFn = (Frequency - CloudC%Frequency(i1))/dF
-    dRn = (Eff_Radius - CloudC%Reff_MW(j1))/dR
-    dTn = (Temperature - CloudC%Temperature(t1))/dT
+    dFn = normCoord(CloudC%Frequency, i1, i2, Frequency)
+    dRn = normCoord(CloudC%Reff_MW, j1, j2, Eff_Radius)
+    dTn = normCoord(CloudC%Temperature, t1, t2, Temperature)
     
     ! Assign LUT array values and perform interpolation
     ! for all cloud types
@@ -1455,11 +1437,11 @@ CONTAINS
       g_MW_rai_LUT=CloudC%g_L_MW(i1:i2,j1:j2,t1:t2)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO p = 1, n_Phase_Elements
-	  DO l = 0, n_Legendre_Terms
-	    p_coeff_MW_rai_LUT=CloudC%phase_coeff_L_MW(i1:i2,j1:j2,t1:t2,2,1)
-	    p_coeff(l,p)=Interp_3D(dFn,dRn,dTn,p_coeff_MW_rai_LUT)
-	  END DO
-	END DO
+          DO l = 0, n_Legendre_Terms
+            p_coeff_MW_rai_LUT=CloudC%phase_coeff_L_MW(i1:i2,j1:j2,t1:t2,2,1)
+            p_coeff(l,p)=Interp_3D(dFn,dRn,dTn,p_coeff_MW_rai_LUT)
+          END DO
+        END DO
       END IF
       ext=Interp_3D(dFn,dRn,dTn,ext_MW_rai_LUT)
       w=Interp_3D(dFn,dRn,dTn,w_MW_rai_LUT)
@@ -1473,11 +1455,11 @@ CONTAINS
       g_MW_ipc_LUT=CloudC%g_S_MW(i1:i2,j1:j2,k)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO p = 1, n_Phase_Elements
-	  DO l = 0, n_Legendre_Terms
-	    p_coeff_MW_ipc_LUT=CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l,1)
-	    p_coeff(l,p)=Interp_2D(dFn,dRn,p_coeff_MW_ipc_LUT)
-	  END DO
-       	END DO
+          DO l = 0, n_Legendre_Terms
+            p_coeff_MW_ipc_LUT=CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l,1)
+            p_coeff(l,p)=Interp_2D(dFn,dRn,p_coeff_MW_ipc_LUT)
+          END DO
+        END DO
       END IF
       ext=Interp_2D(dFn,dRn,ext_MW_ipc_LUT)
       w=Interp_2D(dFn,dRn,w_MW_ipc_LUT)
