@@ -1,18 +1,22 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Alloc < FGenMod::Def::Base
+    class Alloc < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Allocate")
+        name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
+        # Classes "called" in this procedure
+        (assoc=Assoc.new).config=self.config
+        (destroy=Destroy.new).config=self.config
+        
         # Declaration and argument type definition format
         dfmt=string_format(["#{config.struct_name}","Message_Log"]+config.dim_list)
         afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
 
-        # Base nspaces indent is 12
+        # Base nspaces indent
         nspaces=12
         
         # The function
@@ -47,8 +51,8 @@ module FGenMod
             
             ! Check if ANY pointers are already associated.
             ! If they are, deallocate them but leave scalars.
-            IF ( #{procedure_name("Associated")}( #{config.struct_name}, ANY_Test=1 ) ) THEN
-              Error_Status = #{procedure_name("Destroy")}( &
+            IF ( #{assoc.procedure_name}( #{config.struct_name}, ANY_Test=1 ) ) THEN
+              Error_Status = #{destroy.procedure_name}( &
                                #{config.struct_name}, &
                                No_Clear=1, &
                                Message_Log=Message_Log )

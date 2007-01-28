@@ -1,13 +1,13 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
 
-    class Struct < FGenMod::Def::Base
+    class Struct < FGenMod::Define::Base
 
       def generate
         type="#{config.namespace}#{config.struct_name}_type"
 
-        # Base nspaces indent is 12
+        # Base nspaces indent
         nspaces=12
         
         # The function
@@ -28,29 +28,43 @@ module FGenMod
       # --------------
       # helper methods
       # --------------
-      # Method to construct the release and version definitions
-      # in the structure definition function
-      def release_version
+      # Method to construct the release
+      # and version definitions in the
+      # structure definition function
+      def release_version(args={})
+        nspaces = args[:nspaces] ? args[:nspaces] : 0
+
+        # Construct the definitions
         defn=""
         if config.release and config.version
-          defn ="! Release and version information\n"
-          defn<<"    INTEGER :: Release = #{config.struct_name.upcase}_RELEASE\n"
-          defn<<"    INTEGER :: Version = #{config.struct_name.upcase}_VERSION"
+          defn  = "! Release and version information\n"
+          defn << indent(nspaces)<<"INTEGER :: Release = #{config.struct_name.upcase}_RELEASE\n"
+          defn << indent(nspaces)<<"INTEGER :: Version = #{config.struct_name.upcase}_VERSION"
         end
       end
 
-      # Method to construct the dimension definitions
-      # in the structure definition function
-      def dimensions
-        defn="! Dimensions\n"
-        list_format(config.dim_list).each {|d| defn<<"    INTEGER :: #{d} = 0\n"}
-        defn.chomp  # Remove the last newline
+      # Method to construct the dimension
+      # definitions in the structure
+      # definition
+      def dimensions(args={})
+        nspaces = args[:nspaces] ? args[:nspaces] : 0
+
+        # Construct the definitions
+        defn = "! Dimensions\n"
+        list_format(config.dim_list).each do |d|
+          defn << indent(nspaces)<<"INTEGER :: #{d} = 0\n"
+        end
+        defn.chomp
       end
     
-      # Method to construct the scalar component definitions
-      # in the structure definition function
-      def scalars
-        defn=""
+      # Method to construct the scalar
+      # component definitions in the
+      # structure definition
+      def scalars(args={})
+        nspaces = args[:nspaces] ? args[:nspaces] : 0
+        
+        # Only construct definitions
+        # if there are any scalars defined
         unless config.scalar_list.empty?
           # Build the formatted output lists
           # so everything is lined up
@@ -63,10 +77,12 @@ module FGenMod
           # Construct the scalar definitions
           defn="! Scalars\n"
           tlist.each_index do |i|
-            defn<<"    #{tlist[i]} :: #{slist[i]}#{ilist[i]}#{dlist[i]}\n"
+            defn << indent(nspaces)<<"#{tlist[i]} :: #{slist[i]}#{ilist[i]}#{dlist[i]}\n"
           end
+        else
+          defn = ""
         end
-        defn.chomp  # Remove the last newline
+        defn.chomp
       end
 
 

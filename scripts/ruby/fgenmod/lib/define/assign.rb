@@ -1,18 +1,18 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Assign < FGenMod::Def::Base
+    class Assign < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Assign")
+        name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
         # Declaration and argument type definition format
         dfmt=string_format(["#{config.struct_name}_out","Message_Log"])
         afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
 
-        # Base nspaces indent is 12
+        # Base nspaces indent
         nspaces=12
         
         # The function
@@ -62,24 +62,6 @@ module FGenMod
       # --------------
       # helper methods
       # --------------
-      # Method to construct the output
-      # structure allocation statement
-      # in the assign function
-      def alloc_struct(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        # Build the pretty output format
-        dfmt=string_format(config.dim_list)
-        # Build the structure allocation call
-        cmd="Error_Status = #{procedure_name("Allocate")}( "; n=cmd.length+nspaces
-        str=""
-        config.dim_list.each do |d|
-          str<<indent(n)+"#{config.struct_name}_in%#{dfmt%d}, &\n"
-        end
-        cmd<<str.lstrip
-        cmd<<indent(n)<<"#{config.struct_name}_out, &\n"
-        cmd<<indent(n)<<"Message_Log=Message_Log )"
-      end
-
       # Method to construct the scalar
       # component assignment statements
       # in the assign function

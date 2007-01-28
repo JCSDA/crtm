@@ -1,9 +1,9 @@
-require 'fgenmod_base'
+require 'base/base'
 module FGenMod
-  module Def
+  module Define
     class Base < FGenMod::Base
       # This is how the config gets passed along
-      # and this may hold future shared Def code
+      # and this may hold future shared Define code
     end
   end
 end

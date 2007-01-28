@@ -1,13 +1,17 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Destroy < FGenMod::Def::Base
+    class Destroy < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Destroy")
+        name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
+        # Classes "called" in this procedure
+        (clear=Clear.new).config=self.config
+        (assoc=Assoc.new).config=self.config
+        
         # Declaration and argument type definition format
         dfmt=string_format(["#{config.struct_name}","Message_Log"])
         afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
@@ -46,10 +50,10 @@ module FGenMod
             END IF
             
             ! Initialise the scalar members
-            IF ( Clear ) CALL #{config.namespace}Clear_#{config.struct_name}(#{config.struct_name})
+            IF ( Clear ) CALL #{clear.procedure_name}(#{config.struct_name})
             
             ! If ALL pointer members are NOT associated, do nothing
-            IF ( .NOT. #{procedure_name("Associated")}(#{config.struct_name}) ) RETURN
+            IF ( .NOT. #{assoc.procedure_name}(#{config.struct_name}) ) RETURN
             
             ! Deallocate the pointer members
             #{deallocate(:nspaces=>12)}

@@ -1,18 +1,18 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Equal < FGenMod::Def::Base
+    class Equal < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Equal")
+        name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
         # Declaration and argument type definition format
         dfmt=string_format(["#{config.struct_name}_LHS","Message_Log"])
         afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
 
-        # Base nspaces indent is 12
+        # Base nspaces indent
         nspaces=12
         
         # The function

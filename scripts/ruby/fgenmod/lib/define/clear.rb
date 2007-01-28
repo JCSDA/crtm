@@ -1,11 +1,11 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Clear < FGenMod::Def::Base
+    class Clear < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Clear")
+        name=procedure_name
         str=strip_output(<<-EOT)
           SUBROUTINE #{name}(#{config.struct_name})
             TYPE(#{config.namespace}#{config.struct_name}_type), INTENT(IN OUT) :: #{config.struct_name}

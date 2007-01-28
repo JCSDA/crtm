@@ -1,22 +1,21 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
 
-    class Header < FGenMod::Def::Base
+    class Header < FGenMod::Define::Base
 
       def generate
         name="#{config.namespace}#{config.struct_name}"
 
-        s=Struct.new
-        s.config = self.config
+        (s=Struct.new).config=self.config
         
-        # Base nspaces indent is 10
+        # Base nspaces indent
         nspaces=10
         
         # The header
         str=strip_output(<<-EOT,"")
         !
-        ! #{name}_Define
+        ! #{name}_#{module_name}
         !
         ! Module defining the #{name} data structure and containing routines to 
         ! manipulate it.
@@ -28,13 +27,13 @@ module FGenMod
         !                      paul.vandelst@ssec.wisc.edu
         !
 
-        MODULE #{name}_Define
+        MODULE #{name}_#{module_name}
 
           ! ------------------
           ! Environment set up
           ! ------------------
           ! Module use
-          #{dependencies(:nspaces=>nspaces)}
+          #{dependencies(Generator::DEPENDENCIES,:nspaces=>nspaces)}
           ! Disable implicit typing
           IMPLICIT NONE
 
@@ -47,7 +46,7 @@ module FGenMod
           ! Data structure definition
           PUBLIC :: #{name}_type
           ! Structure procedures
-          #{public_procedures(:nspaces=>nspaces)}
+          #{public_procedures(Generator::PUBLIC_GENERATORS,:nspaces=>nspaces)}
             
 
           ! -----------------
@@ -67,32 +66,6 @@ module FGenMod
       # --------------
       # helper methods
       # --------------
-      # Method to construct the
-      # dependencies list
-      def dependencies(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        # Get a pretty print format
-        fmt=string_format(FGenMod::Def::Generator::DEPENDENCIES.collect {|d| d[:mod]})
-        # Build the module use list
-        str=""
-        FGenMod::Def::Generator::DEPENDENCIES.each do |d|
-          str<<indent(nspaces)<<"USE #{fmt%d[:mod]}, ONLY: #{d[:only_list].join(", ")}\n"
-        end
-        str.lstrip.chomp
-      end
-
-      # Method to construct the
-      # list of public procedures
-      def public_procedures(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        str=""
-        FGenMod::Def::Generator::PUBLIC_GENERATORS.each do |gen_class|
-          base_name=gen_class.to_s.split("::").last
-          str<<indent(nspaces)<<"PUBLIC :: "<<procedure_name(base_name)<<"\n"
-        end
-        str.lstrip.chomp
-      end
-      
       # Method to construct the release
       # and version parameter definitions
       def release_version_parameters(args={})

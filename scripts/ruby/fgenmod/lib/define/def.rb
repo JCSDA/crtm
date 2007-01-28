@@ -1,19 +1,19 @@
-require 'fgenmod_defbase'
-require 'fgenmod_defheader'
-require 'fgenmod_defstruct'
-require 'fgenmod_defclear'
-require 'fgenmod_defassoc'
-require 'fgenmod_defdestroy'
-require 'fgenmod_defalloc'
-require 'fgenmod_defassign'
-require 'fgenmod_defequal'
-require 'fgenmod_definfo'
-require 'fgenmod_defcheckrelease'
+require 'define/base'
+require 'define/header'
+require 'define/struct'
+require 'define/clear'
+require 'define/assoc'
+require 'define/destroy'
+require 'define/alloc'
+require 'define/assign'
+require 'define/equal'
+require 'define/info'
+require 'define/checkrelease'
 
 module FGenMod
-  module Def
+  module Define
   
-    class Generator < FGenMod::Def::Base
+    class Generator < FGenMod::Define::Base
       
       DEPENDENCIES=[
         {:mod=>"Type_Kinds",:only_list=>%w{ fp }},
@@ -67,10 +67,10 @@ module FGenMod
         end
 
         # The module end statement
-        mod<<"\nEND MODULE #{self.config.namespace}#{self.config.struct_name}_Define\n"
+        mod<<"\nEND MODULE #{self.config.namespace}#{self.config.struct_name}_#{self.module_name}\n"
 
         # Output to file
-        filename = "#{self.config.namespace}#{self.config.struct_name}_Define.f90"
+        filename = "#{self.config.namespace}#{self.config.struct_name}_#{self.module_name}.f90"
         open(filename,'w') {|f| f.puts(mod)}
       end
     end

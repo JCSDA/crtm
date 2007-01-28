@@ -1,11 +1,11 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Assoc < FGenMod::Def::Base
+    class Assoc < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Associated")
+        name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
         # Declaration and argument type definition format
@@ -26,7 +26,7 @@ module FGenMod
             ! Local variables
             LOGICAL :: ALL_Test
             
-            ! Default is to test ALL the pointer members
+            ! Defineault is to test ALL the pointer members
             ! for a true association status....
             ALL_Test = .TRUE.
             ! ...unless the ANY_Test argument is set.

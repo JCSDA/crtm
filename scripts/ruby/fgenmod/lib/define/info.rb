@@ -1,18 +1,18 @@
-require 'fgenmod_defbase'
+require 'define/base'
 module FGenMod
-  module Def
+  module Define
   
-    class Info < FGenMod::Def::Base
+    class Info < FGenMod::Define::Base
     
       def generate
-        name=procedure_name("Info")
+        name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
         # Declaration and argument type definition format
         dfmt=string_format(["#{config.struct_name}","RCS_Id"])
         afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
 
-        # Base nspaces indent is 12
+        # Base nspaces indent
         nspaces=12
         
         # The function

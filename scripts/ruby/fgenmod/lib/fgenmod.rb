@@ -1,21 +1,9 @@
-require 'fgenmod_config'
-require 'fgenmod_base'
-require 'fgenmod_def'
+require 'config/config'
+require 'base/base'
+require 'define/define'
+require 'io/io'
 
 module FGenMod
-  
-#  class BinIOMod < FGenMod::Base
-#    def generate
-#      puts self.class
-#    end
-#  end
-#  
-#  class NCIOMod < FGenMod::Base
-#    def generate
-#      puts self.class
-#    end
-#  end
-
   
   # Main driver of the generation
   class Generator
@@ -24,13 +12,9 @@ module FGenMod
     # Just add another class to generate
     # another part
     GENERATORS = [
-      FGenMod::Def::Generator
+      FGenMod::Define::Generator,
+      FGenMod::IO::Generator
     ]
-#    GENERATORS = [
-#      FGenMod::Def::Generator,
-#      FgenMod::BinIO::Generator,
-#      FGenMod::NCIO::Generator
-#    ]
     
     def generate(config_file_name)
       config = Config.load(config_file_name)
