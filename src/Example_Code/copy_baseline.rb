@@ -2,18 +2,21 @@
 
 # == Synopsis
 #
-# copyBaseline.rb:: Copy current CRTM baseline output for a specified model and
-#                   sensor to a date/time tagged file.
+# copy_baseline.rb:: Copy current CRTM test code output for a specified model and
+#                    sensor to the baseline file for respository checkin.
 #
 # == Usage
 #
-# copyBaseline.rb [OPTION] sensorId1 [ sensorId2 sensorId3 ...]
+# copy_baseline.rb [OPTION] sensor_id1 [ sensor_id2 sensor_id3 ...]
 #
 # If no options are specified, then no CRTM model results (forward, tangent-linear,
 # adjoint, and K-matrix) are copied.
 # 
 # --help  (-h)
 #    you're looking at it.
+#
+# --dry-run  (-n)
+#    echo the commands to be executed, but do nothing
 #
 # --forward  (-f)
 #    Copy the forward model results
@@ -30,7 +33,7 @@
 # --everything  (-e)
 #    Copy every set of CRTM model results.
 #
-# sensorId1 [ sensorId2 sensorId3 ...]
+# sensor_id1 [ sensor_id2 sensor_id3 ...]
 #    The string ids for the sensor results to copy. Examples are
 #    amsua_n17, hirs3_n17, ssmis_f16, imgr_g11, etc..
 #
@@ -38,15 +41,17 @@
 require 'getoptlong'
 require 'rdoc/usage'
  
-# Specify defaults
-forward      =false
-tangentlinear=false
-adjoint      =false
-kmatrix      =false
-
+# Specify directories and defaults
+models={:fwd => {:dir => "Forward"       , :test => false},
+        :tl  => {:dir => "Tangent_Linear", :test => false},
+        :ad  => {:dir => "Adjoint"       , :test => false},
+        :k   => {:dir => "K_Matrix"      , :test => false} }
+noop = false
+        
 # Specify accepted options
 options=GetoptLong.new(
   [ "--help",           "-h", GetoptLong::NO_ARGUMENT ],
+  [ "--dry-run",        "-n", GetoptLong::NO_ARGUMENT ],
   [ "--forward",        "-f", GetoptLong::NO_ARGUMENT ],
   [ "--tangent-linear", "-t", GetoptLong::NO_ARGUMENT ],
   [ "--adjoint",        "-a", GetoptLong::NO_ARGUMENT ],
@@ -60,19 +65,18 @@ begin
       when "--help"
         RDoc::usage
         exit 0
+      when "--dry-run"
+        noop = true
       when "--forward"
-        forward=true
+        models[:fwd][:test] = true
       when "--tangent-linear"
-        tangentlinear=true
+        models[:tl][:test]  = true
       when "--adjoint"
-        adjoint=true
+        models[:ad][:test]  = true
       when "--k-matrix"
-        kmatrix=true
+        models[:k][:test]   = true
       when "--everything"
-        forward      =true
-        tangentlinear=true
-        adjoint      =true
-        kmatrix      =true
+        models.each_key {|k| models[k][:test] = true}
     end
   end
 rescue StandardError=>error_message
@@ -81,26 +85,24 @@ rescue StandardError=>error_message
   exit 1
 end
 
-# Get the sensorID
+# Get the sensor_id
 if ARGV.empty?
-  puts("Missing sensorId argument (try --help)")
+  puts("Missing sensor_id argument (try --help)")
   exit 1
 end
-sensorId=ARGV
-
-# The test directory names
-modelDir =["Forward","Tangent_Linear","Adjoint","K_Matrix"]
-modelTest=[forward  , tangentlinear  , adjoint , kmatrix  ]
-
-# The log message
-dateTag=Time.now.strftime('%d-%h-%Y_%H:%M%Z')
+sensor_id=ARGV
 
 # Test each model
-modelDir.each_with_index do |dir, index|
-  next if not File.directory?(dir) or not modelTest[index]
-  sensorId.each do |id|
-    new=dir+"/"+id+".CRTM_Test_"+dir+".output"
-    tagged=new+"."+dateTag
-    system("cp #{new} #{tagged}") if File.file?(new)
+models.each_key do |k|
+  next if not File.directory?(models[k][:dir]) or not models[k][:test]
+  sensor_id.each do |id|
+    new = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.output"
+    old = "#{new}.Baseline"
+    cmd = "cp #{new} #{old}"
+    if noop
+      puts cmd
+    else
+      system(cmd) if File.file?(new)
+    end
   end
 end
