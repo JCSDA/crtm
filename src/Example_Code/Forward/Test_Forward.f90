@@ -16,10 +16,19 @@ PROGRAM Test_Forward
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE CRTM_Module, fp=>fp_kind   ! The main CRTM module
+  USE CRTM_Module                ! The main CRTM module
   USE CRTM_Atmosphere_Binary_IO  ! Just for reading test datafiles
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
-  USE CRTM_Test_Utility          ! For test output
+  USE CRTM_Test_Utility, &
+        ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, MAX_NPROFILES, &
+              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, MAX_NTESTS, &
+              MAX_NSENSORS, TEST_SENSORID, &
+              FWD_OUTPUT, Print_Results, &
+              Perform_Test, &
+              Print_ChannelInfo, &
+              Dump_ForwardModel_Results
+
+  
   USE Timing_Utility             ! For timing runs
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -31,22 +40,7 @@ PROGRAM Test_Forward
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id: Test_Forward.f90,v 1.15 2006/09/22 20:07:56 wd20pd Exp $'
-  CHARACTER(*), PARAMETER :: TEST_ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
-  CHARACTER(*), PARAMETER :: TEST_SFCDATA_FILENAME = 'ECMWF-Surface.bin'
-  INTEGER,      PARAMETER :: MAX_TEST_CASES = 52
-  CHARACTER(*), PARAMETER :: TEST_OUTPUT_FILENAME = 'CRTM_Test_Forward.output'
-  INTEGER,      PARAMETER :: N_OPTIONS_CASES = 2
-  INTEGER,      PARAMETER :: NO_OPTIONS  = 1
-  INTEGER,      PARAMETER :: FWD_OPTIONS = 2
-  INTEGER,      PARAMETER, DIMENSION( N_OPTIONS_CASES ) :: &
-    OPTIONS_CASES = (/ NO_OPTIONS,  &
-                       FWD_OPTIONS /)
-  INTEGER, PARAMETER :: NSENSORS=4
-  CHARACTER(*), PARAMETER, DIMENSION(NSENSORS) :: SENSORID=&
-    (/ 'amsua_n17', &
-       'hirs3_n17', &
-       'ssmis_f16', &
-       'imgr_g11 ' /)
+  CHARACTER(*), PARAMETER :: OUTPUT_FILENAME = 'CRTM_Test_Forward.output'
   REAL(fp), PARAMETER :: TEST_ZENITH_ANGLE = 30.0_fp
 
 
@@ -57,12 +51,15 @@ PROGRAM Test_Forward
   INTEGER :: i, m, n, iOptions, l1, l2
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-  TYPE(CRTM_ChannelInfo_type),  DIMENSION(NSENSORS)         :: ChannelInfo
-  TYPE(CRTM_Atmosphere_type),   DIMENSION(MAX_TEST_CASES)   :: Atmosphere
-  TYPE(CRTM_Surface_type),      DIMENSION(MAX_TEST_CASES)   :: Surface
-  TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_TEST_CASES)   :: GeometryInfo
+  CHARACTER(256) :: Experiment
+  INTEGER, DIMENSION(MAX_NPROFILES) :: nClouds
+  INTEGER, DIMENSION(MAX_NPROFILES) :: nAerosols
+  TYPE(CRTM_ChannelInfo_type),  DIMENSION(MAX_NSENSORS)     :: ChannelInfo
+  TYPE(CRTM_Atmosphere_type),   DIMENSION(MAX_NPROFILES)    :: Atmosphere
+  TYPE(CRTM_Surface_type),      DIMENSION(MAX_NPROFILES)    :: Surface
+  TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_NPROFILES)    :: GeometryInfo
   TYPE(CRTM_RTSolution_type),   DIMENSION(:,:), ALLOCATABLE :: RTSolution
-  TYPE(CRTM_Options_type),      DIMENSION(MAX_TEST_CASES)   :: Options
+  TYPE(CRTM_Options_type),      DIMENSION(MAX_NPROFILES)    :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -71,26 +68,31 @@ PROGRAM Test_Forward
   ! Read the atmosphere and surface structure data files
   ! ----------------------------------------------------
   WRITE( *, '( /5x, "Reading ECMWF Atmosphere structure file..." )' )
-  Error_Status = CRTM_Read_Atmosphere_Binary( TEST_ATMDATA_FILENAME, &
+  Error_Status = CRTM_Read_Atmosphere_Binary( ATMDATA_FILENAME, &
                                               Atmosphere )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error reading Atmosphere structure file '//&
-                           TEST_ATMDATA_FILENAME, & 
+                           ATMDATA_FILENAME, & 
                            Error_Status )
    STOP
   END IF
 
   WRITE( *, '( /5x, "Reading Surface structure file..." )' )
-  Error_Status = CRTM_Read_Surface_Binary( TEST_SFCDATA_FILENAME, &
+  Error_Status = CRTM_Read_Surface_Binary( SFCDATA_FILENAME, &
                                            Surface )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error reading Surface structure file '//&
-                           TEST_SFCDATA_FILENAME, & 
+                           SFCDATA_FILENAME, & 
                            Error_Status )
    STOP
   END IF
+
+  ! Save the number of clouds and
+  ! aerosols in each profile
+  nClouds   = Atmosphere%n_Clouds
+  nAerosols = Atmosphere%n_Aerosols
 
 
   ! -------------------
@@ -98,7 +100,7 @@ PROGRAM Test_Forward
   ! -------------------
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
   Error_Status = CRTM_Init( ChannelInfo, &
-                            SensorId=SENSORID )
+                            SensorId=TEST_SENSORID )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error initializing CRTM', & 
@@ -110,7 +112,7 @@ PROGRAM Test_Forward
   ! ----------------------
   ! Allocate output arrays
   ! ----------------------
-  ALLOCATE( RTSolution( SUM(ChannelInfo%n_Channels), MAX_TEST_CASES ), &
+  ALLOCATE( RTSolution( SUM(ChannelInfo%n_Channels), MAX_NPROFILES ), &
             STAT = Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
@@ -136,7 +138,7 @@ PROGRAM Test_Forward
   ! Assign some values
   ! ------------------
   GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
-  DO m = 1, MAX_TEST_CASES
+  DO m = 1, MAX_NPROFILES
     Options(m)%Emissivity = 0.8_fp
   END DO
 
@@ -144,27 +146,46 @@ PROGRAM Test_Forward
   ! ------------------------------
   ! Print some initialisation info
   ! ------------------------------
-  DO n=1, NSENSORS
-    CALL Print_ChannelInfo(TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, ChannelInfo(n))
+  DO n=1, MAX_NSENSORS
+    CALL Print_ChannelInfo(TRIM(TEST_SENSORID(n))//'.'//OUTPUT_FILENAME, ChannelInfo(n))
   END DO
   
 
   ! ----------------------
   ! Call the Forward model
   ! ----------------------
-  DO i = 1, N_OPTIONS_CASES
+  DO i = 0, MAX_NTESTS
 
-    ! Set the optional emissivity data switches
-    iOptions = OPTIONS_CASES( i )
-    SELECT CASE ( iOptions )
-      CASE ( NO_OPTIONS )
-        Options%Emissivity_Switch = 0
-        Message = 'Calling the Forward CRTM...'
-      CASE ( FWD_OPTIONS )
-        Options%Emissivity_Switch = 1
-        Message = 'Calling the Forward CRTM with FWD Options...'
-    END SELECT
-    WRITE( *, '( /5x, a )' ) TRIM( Message )
+    Experiment = ''
+    
+    ! Turn emissivity option on and off
+    IF ( Perform_Test(i,EMISSIVITY_TEST) ) THEN
+      Options%Emissivity_Switch = 1
+      Experiment = TRIM(Experiment)//' Emissivity option ON'
+    ELSE
+      Options%Emissivity_Switch = 0
+      Experiment = TRIM(Experiment)//' Emissivity option OFF'
+    END IF
+    
+    ! Turn clouds on and off
+    IF ( Perform_Test(i,CLOUDS_TEST) ) THEN
+      Atmosphere%n_Clouds = nClouds
+      Experiment = TRIM(Experiment)//' Clouds ON'
+    ELSE
+      Atmosphere%n_Clouds = 0
+      Experiment = TRIM(Experiment)//' Clouds OFF'
+    END IF
+    
+    ! Turn aerosols on and off
+    IF ( Perform_Test(i,AEROSOLS_TEST) ) THEN
+      Atmosphere%n_Aerosols = nAerosols
+      Experiment = TRIM(Experiment)//' Aerosols ON'
+    ELSE
+      Atmosphere%n_Aerosols = 0
+      Experiment = TRIM(Experiment)//' Aerosols OFF'
+    END IF
+    
+    WRITE(*,'(/5x,a)') TRIM(Experiment)
 
     ! Call the CRTM
     CALL Begin_Timing( Timing )
@@ -184,15 +205,17 @@ PROGRAM Test_Forward
 
     ! Output some results
     l1=1
-    DO n = 1, NSENSORS
+    DO n = 1, MAX_NSENSORS
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
       CALL Print_Results(FWD_OUTPUT, &
-                         TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, Message, &
+                         TRIM(TEST_SENSORID(n))//'.'//OUTPUT_FILENAME, Message, &
                          ChannelInfo(n), Atmosphere, Surface, RTSolution(l1:l2,:))
       l1 = l2 + 1
     END DO
     CALL Display_Timing( Timing )
 
+    CALL Dump_ForwardModel_Results(i, Experiment, ChannelInfo, &
+                                   Atmosphere, Surface, RTSolution)
   END DO
 
 
