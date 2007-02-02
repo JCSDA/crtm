@@ -182,6 +182,9 @@ CONTAINS
 
     END DO
 
+    ! Modify absorber quantities by the angle secant
+    Pred%A = Pred%Secant_Sensor_Zenith * Pred%A
+
     ! Compute the integrated absorber level
     ! differences and average layer amount
     DO j = 1, Pred%n_Absorbers
@@ -277,6 +280,9 @@ CONTAINS
 
     END DO
 
+    ! Modify absorber quantities by the angle secant
+    Pred_TL%A = Pred_TL%Secant_Sensor_Zenith * Pred_TL%A
+
     ! Compute the tangent-linear integrated absorber level
     ! differences and average layer amount
     DO j = 1, Pred_TL%n_Absorbers
@@ -362,6 +368,9 @@ CONTAINS
         Pred_AD%aveA(k,j) = ZERO
       END DO
     END DO
+
+    ! Modify absorber quantities by the angle secant
+    Pred_AD%A = Pred_AD%Secant_Sensor_Zenith * Pred_AD%A
 
     ! Loop over layers, SFC -> TOA
     DO k = Atm_AD%n_Layers, 1, -1
@@ -1285,9 +1294,6 @@ CONTAINS
     CALL CRTM_Compute_IntAbsorber( Atmosphere, &  ! Input
                                    Predictor   )  ! Output
 
-    ! Modify absorber quantities by the angle secant
-    Predictor%A = Predictor%Secant_Sensor_Zenith * Predictor%A
-
     ! Compute the predictors
     !
     ! Standard predictors
@@ -1410,9 +1416,6 @@ CONTAINS
     CALL CRTM_Compute_IntAbsorber_TL( Atmosphere   , &  ! Input
                                       Atmosphere_TL, &  ! Input
                                       Predictor_TL   )  ! Output
-
-    ! Modify absorber quantities by the angle secant
-    Predictor_TL%A = Predictor_TL%Secant_Sensor_Zenith * Predictor_TL%A
 
     ! Compute the predictors
     !
@@ -1543,9 +1546,6 @@ CONTAINS
     CALL CRTM_Standard_Predictors_AD( Atmosphere   , &  ! Input
                                       Predictor_AD , &  ! Input
                                       Atmosphere_AD  )  ! Output
-
-    ! Modify absorber quantities by the angle secant
-    Predictor_AD%A = Predictor_AD%Secant_Sensor_Zenith * Predictor_AD%A
 
     ! Compute the adjoint nadir integrated absorber profiles
     CALL CRTM_Compute_IntAbsorber_AD( Atmosphere   , &  ! Input

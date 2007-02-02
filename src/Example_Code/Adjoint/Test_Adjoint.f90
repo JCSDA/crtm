@@ -47,6 +47,7 @@ PROGRAM Test_Adjoint
        'hirs3_n17', &
        'ssmis_f16', &
        'imgr_g11 ' /)
+  REAL(fp), PARAMETER :: TEST_ZENITH_ANGLE = 30.0_fp
 
 
   ! ---------
@@ -164,7 +165,7 @@ PROGRAM Test_Adjoint
   ! ------------------
   ! Assign some values
   ! ------------------
-  GeometryInfo%Sensor_Zenith_Angle = ZERO   ! Nadir
+  GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
   DO m = 1, MAX_TEST_CASES
     Options(m)%Emissivity = 0.8_fp
   END DO
