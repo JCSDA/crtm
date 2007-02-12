@@ -10,6 +10,7 @@ MODULE CRTM_Test_Utility
   ! Environment set up
   ! ------------------
   ! Module usage
+  USE Type_Kinds,              ONLY: fp
   USE File_Utility,            ONLY: Get_Lun, File_Exists
   USE CRTM_Parameters,         ONLY: ZERO
   USE CRTM_ChannelInfo_Define, ONLY: CRTM_ChannelInfo_type
@@ -36,6 +37,7 @@ MODULE CRTM_Test_Utility
   PUBLIC :: ATMDATA_FILENAME
   PUBLIC :: SFCDATA_FILENAME
   PUBLIC :: MAX_NPROFILES
+  PUBLIC :: USED_NPROFILES
   
   PUBLIC :: EMISSIVITY_TEST
   PUBLIC :: CLOUDS_TEST
@@ -43,7 +45,9 @@ MODULE CRTM_Test_Utility
   PUBLIC :: MAX_NTESTS
   
   PUBLIC :: MAX_NSENSORS
-  PUBLIC :: TEST_SENSORID  
+  PUBLIC :: TEST_SENSORID
+
+  PUBLIC :: TEST_ANGLE
   
   PUBLIC :: FWD_OUTPUT
   PUBLIC :: TL_OUTPUT
@@ -64,7 +68,8 @@ MODULE CRTM_Test_Utility
   ! Datafile names and dimensions
   CHARACTER(*), PARAMETER :: ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: SFCDATA_FILENAME = 'ECMWF-Surface.bin'
-  INTEGER,      PARAMETER :: MAX_NPROFILES = 52
+  INTEGER,      PARAMETER :: MAX_NPROFILES  = 52
+  INTEGER,      PARAMETER :: USED_NPROFILES = 10
 
   ! Set up the tests
   INTEGER, PARAMETER :: EMISSIVITY_TEST = 1
@@ -80,6 +85,10 @@ MODULE CRTM_Test_Utility
        'ssmis_f16', &
        'imgr_g11 ' /)
 
+  ! Default test angle
+  REAL(fp), PARAMETER :: TEST_ANGLE = 30.0_fp
+  
+  ! Output type flags
   INTEGER, PARAMETER :: FWD_OUTPUT = 1
   INTEGER, PARAMETER :: TL_OUTPUT  = 2
   INTEGER, PARAMETER :: AD_OUTPUT  = 3
