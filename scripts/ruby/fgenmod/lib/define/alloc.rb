@@ -22,13 +22,13 @@ module FGenMod
         # The function
         str=strip_output(<<-EOT)
           FUNCTION #{name}( &
-                     #{dim_func_def(dfmt,:nspaces=>nspaces+9)}
+                     #{procedure_dim_def(dfmt,:nspaces=>nspaces+9)}
                      #{dfmt%"#{config.struct_name}"}, &  ! Output
                      #{dfmt%"RCS_Id"}, &  ! Revision control
                      #{dfmt%"Message_Log"}) &  ! Error messaging
                    RESULT( Error_Status )
             ! Arguments
-            #{dim_arg_def(afmt,:nspaces=>nspaces)}
+            #{argument_dim_def(afmt,:nspaces=>nspaces)}
             #{afmt%type}, INTENT(IN OUT) :: #{config.struct_name}
             #{afmt%"CHARACTER(*), OPTIONAL"}, INTENT(OUT)    :: RCS_Id
             #{afmt%"CHARACTER(*), OPTIONAL"}, INTENT(IN)     :: Message_Log
@@ -37,7 +37,7 @@ module FGenMod
             ! Local parameters
             CHARACTER(*), PARAMETER :: ROUTINE_NAME = '#{name}'
             ! Local variables
-            CHARACTER(256)  :: Message
+            CHARACTER(256) :: Message
             INTEGER :: Allocate_Status
             
             ! Set up
@@ -45,9 +45,7 @@ module FGenMod
             IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
             
             ! Check dimensions
-            #{dim_test(:nspaces=>nspaces)}
-              #{fail_return("'Input #{config.struct_name} dimensions must all be > 0.'",:nspaces=>nspaces+2,:lstrip=>true)}
-            END IF
+            #{dimension_size_test(:nspaces=>nspaces)}
             
             ! Check if ANY pointers are already associated.
             ! If they are, deallocate them but leave scalars.
@@ -90,44 +88,6 @@ module FGenMod
       # --------------
       # helper methods
       # --------------
-      # method to construct the dimension
-      # argument entries in the allocate
-      # function definition
-      def dim_func_def(dfmt,args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        str=""
-        config.dim_list.each {|d| str<<indent(nspaces)<<"#{dfmt%d}, &  ! Input\n"}
-        str.lstrip.chomp  # Strip leading spaces of first line, newline of last line
-      end
-
-      # Method to construct the dimension
-      # argument definitions in the allocate
-      # function
-      def dim_arg_def(afmt,args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        str=""
-        config.dim_list.each {|d| str<<indent(nspaces)<<"#{afmt%"INTEGER"}, INTENT(IN)     :: #{d}\n"}
-        str.lstrip.chomp  # Strip leading spaces of first line, newline of last line
-      end
-
-      # Generate the dimension value
-      # check statement in the allocate
-      # function
-      def dim_test(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        # Build a formatted list
-        dim_list=list_format(config.dim_list)
-        # Build the IF test
-        cmd="IF ("; n=cmd.length+nspaces
-        if dim_list.length>1
-          str=""
-          dim_list[0..-2].each {|d| str<<indent(n)<<"#{d} < 1 .OR. &\n"}
-          cmd<<str.lstrip<<indent(n)<<"#{dim_list.last} < 1) THEN"
-        else
-          cmd<<"#{dim_list.first} < 1) THEN"
-        end
-      end
-
       # Method to construct the
       # allocate statement in the
       # allocate function

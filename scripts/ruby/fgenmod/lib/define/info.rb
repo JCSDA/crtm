@@ -4,6 +4,11 @@ module FGenMod
   
     class Info < FGenMod::Define::Base
     
+      # Base nspaces indent
+      NSPACES = 12
+      
+      # Method to generate the
+      # info procedure
       def generate
         name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
@@ -12,9 +17,6 @@ module FGenMod
         dfmt=string_format(["#{config.struct_name}","RCS_Id"])
         afmt=string_format([type,"CHARACTER(*), OPTIONAL"])
 
-        # Base nspaces indent
-        nspaces=12
-        
         # The function
         str=strip_output(<<-EOT)
           SUBROUTINE #{name}( &
@@ -36,8 +38,8 @@ module FGenMod
             IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
             ! Write the required info to the local string
-            #{info_format(:nspaces=>nspaces)}
-            #{info_write(:nspaces=>nspaces)}
+            #{info_format}
+            #{info_write}
 
             ! Trim the output based on the
             ! dummy argument string length
@@ -51,24 +53,29 @@ module FGenMod
       # --------------
       # helper methods
       # --------------
-      # Method to generate the info output format string
+      # Method to generate the
+      # info output format string
       def info_format(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
-        fmt="FmtString='"; n=fmt.length+nspaces
-        fmt<<"(a,1x,\"#{config.struct_name}:\",2x,&\n"
-        fmt<<config.dim_list.collect {|d| indent(n)<<"&\"#{d.upcase}=\",i0,2x"}.join(",&\n")<<")'"
+        nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
+        fmt  = "FmtString='"; n = fmt.length+nspaces
+        fmt << "(a,1x,\"#{config.struct_name}:\",2x,&\n"
+        fmt << config.dim_list.collect {|d| indent(n)<<"&\"#{d.upcase}=\",i0,2x"}.join(",&\n")<<")'"
       end
-  
-      # Method to generate the info write statement
+
+
+      # Method to generate the
+      # info write statement
       def info_write(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
+        nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
+        
         # Build a formatted list
-        dim_list=list_format(config.dim_list)
+        dim_list = list_format(config.dim_list)
+        
         # Build the write statement
-        cmd="WRITE("; n=cmd.length+nspaces
-        cmd<<"LongString, FMT=FmtString) &\n" 
-        cmd<<indent(n)<<"ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &\n"
-        cmd<<dim_list.collect {|d| indent(n)+"#{config.struct_name}%#{d}"}.join(", &\n")
+        cmd  = "WRITE("; n = cmd.length+nspaces
+        cmd << "LongString, FMT=FmtString) &\n" 
+        cmd << indent(n)<<"ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &\n"
+        cmd << dim_list.collect {|d| indent(n)+"#{config.struct_name}%#{d}"}.join(", &\n")
       end
     end
   end

@@ -83,6 +83,7 @@ module FGenMod
     attr_accessor :struct_name                        # The structure name
     attr_accessor :release,:version                   # The structure/file release and verison number
     attr_accessor :dim_list,:scalar_list,:array_list  # The structure component lists
+    attr_accessor :gatts                              # The netCDF global attribute strings
     attr_accessor :dimdecl                            # The local dimension loop variables
     attr_accessor :debug                              # Have a guess
 
@@ -97,6 +98,7 @@ module FGenMod
       @dim_list   =[]
       @scalar_list=[]
       @array_list =[]
+      @gatts      =[]
       @debug      =debug
       @dimdecl    =""
     end

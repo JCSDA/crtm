@@ -4,12 +4,14 @@ module FGenMod
 
     class Struct < FGenMod::Define::Base
 
+      # Base nspaces indent
+      NSPACES = 12
+      
+      # Method to generate the
+      # structure definition
       def generate
         type="#{config.namespace}#{config.struct_name}_type"
 
-        # Base nspaces indent
-        nspaces=12
-        
         # The function
         str=strip_output(<<-EOT)
           ! -----------------------
@@ -17,10 +19,10 @@ module FGenMod
           ! -----------------------
           TYPE :: #{type}
             INTEGER :: n_Allocates=0
-            #{release_version()}
-            #{dimensions()}
-            #{scalars()}
-            #{arrays()}
+            #{release_version}
+            #{dimensions}
+            #{scalars}
+            #{arrays}
           END TYPE #{type}
         EOT
       end
@@ -32,7 +34,7 @@ module FGenMod
       # and version definitions in the
       # structure definition function
       def release_version(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
+        nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
 
         # Construct the definitions
         defn=""
@@ -47,7 +49,7 @@ module FGenMod
       # definitions in the structure
       # definition
       def dimensions(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
+        nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
 
         # Construct the definitions
         defn = "! Dimensions\n"
@@ -61,7 +63,7 @@ module FGenMod
       # component definitions in the
       # structure definition
       def scalars(args={})
-        nspaces = args[:nspaces] ? args[:nspaces] : 0
+        nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
         
         # Only construct definitions
         # if there are any scalars defined
@@ -86,9 +88,12 @@ module FGenMod
       end
 
 
-      # Method to construct the array component definitions
-      # in the structure definition function
-      def arrays
+      # Method to construct the array
+      # component definitions in the
+      # structure definition
+      def arrays(args={})
+        nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
+
         # Build the formatted output lists
         # so everything is lined up
         tlist=list_format(config.array_list.collect do |a|
@@ -99,10 +104,11 @@ module FGenMod
                           end)
         alist=list_format(config.array_list.collect {|a| a[:name]})
         dlist=config.array_list.collect {|a| a[:desc] ? " ! #{a[:desc]}" : ""}
+        
         # Construct the array definitions
         defn="! Arrays\n"
         tlist.each_index do |i|
-          defn<<"    #{tlist[i]}, DIMENSION#{clist[i]}, POINTER :: #{alist[i]} => NULL()#{dlist[i]}\n"
+          defn << indent(nspaces)<<"#{tlist[i]}, DIMENSION#{clist[i]}, POINTER :: #{alist[i]} => NULL()#{dlist[i]}\n"
         end
         defn.chomp  # Remove the last newline
       end
