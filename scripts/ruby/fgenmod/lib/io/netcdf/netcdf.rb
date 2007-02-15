@@ -3,6 +3,9 @@ require 'io/netcdf/header'
 require 'io/netcdf/inquire'
 require 'io/netcdf/read'
 require 'io/netcdf/write'
+require 'io/netcdf/read_gatts'
+require 'io/netcdf/write_gatts'
+require 'io/netcdf/create'
 
 module FGenMod
   module IO
@@ -18,8 +21,18 @@ module FGenMod
         ]
 
         PRIVATE_GENERATORS=[
+          Read_GAtts,
+          Write_GAtts,
+          Create
         ]
         
+#        PRIVATE_GENERATORS=[
+#          Remove_Null,
+#          Read_GAtts,
+#          Write_GAtts,
+#          Create
+#        ]
+#        
         PUBLIC_GENERATORS = [
           Inquire,
           Read,

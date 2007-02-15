@@ -14,7 +14,10 @@ module FGenMod
       # Method to determine the IO action
       # i.e. read, write, etc
       def io_action
-        self.class_name
+        case self.class_name.downcase
+          when "read" , "read_gatts", "inquire"  : "read"
+          when "write", "write_gatts", "create"  : "write"
+        end
       end
 
       # Method to determine the present
@@ -23,7 +26,6 @@ module FGenMod
       # for messages
       def io_ing
         case io_action
-          when "inquire": "inquiring"
           when "read"   : "reading"
           when "write"  : "writing"
         end
@@ -33,6 +35,24 @@ module FGenMod
       # to use with the io action in messages
       def io_tofrom
         io_action=="write" ? "to" : "from"
+      end
+      
+      # Method to determine argument
+      # intent based on class
+      def io_intent
+        case io_action
+          when "read"  : "OUT"
+          when "write" : "IN"
+        end
+      end
+
+      # Method to determine argument
+      # direction label based on class
+      def io_dir
+        case io_action
+          when "read"  : "Output"
+          when "write" : "Input"
+        end
       end
     end
   end
