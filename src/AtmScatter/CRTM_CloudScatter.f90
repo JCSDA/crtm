@@ -43,7 +43,9 @@ MODULE CRTM_CloudScatter
                                       interp_2D_TL     , &
                                       interp_3D_TL     , &
                                       interp_2D_AD     , &
-                                      interp_3D_AD
+                                      interp_3D_AD     , &
+                                      dlpoly           , &
+                                      lpoly
 
   ! The AtmScatter structure definition module
   ! The PUBLIC entities in CRTM_AtmScatter_Define
@@ -1077,6 +1079,7 @@ CONTAINS
     INTEGER  :: l
     REAL(fp) :: f_int, r_int
     REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
     
     ! Find the frequency and effective
     ! radius indices for interpolation
@@ -1087,6 +1090,10 @@ CONTAINS
     r_int = MAX(MIN(MAXVAL(CloudC%Reff_IR),eff_radius),MINVAL(CloudC%Reff_IR))
     CALL find_index(CloudC%Reff_IR, r_int, j1,j2)
     r = CloudC%Reff_IR(j1:j2)
+    
+    ! Calculate the Lagrange polynomials
+    wlp = lpoly(f,f_int)
+    xlp = lpoly(r,r_int)
  
     ! Determine the density index, k, for the clouds
     ! based on CloudC LUT organisation
@@ -1101,25 +1108,23 @@ CONTAINS
     
     ! Perform interpolation based on cloud type
     IF (Solid) THEN
-      CALL interp_2D(f, r, CloudC%ext_S_IR(i1:i2,j1:j2,k), f_int, r_int, ext)
-      CALL interp_2D(f, r, CloudC%w_S_IR(i1:i2,j1:j2,k)  , f_int, r_int, w0 )
-      CALL interp_2D(f, r, CloudC%g_S_IR(i1:i2,j1:j2,k)  , f_int, r_int, g  )
+      CALL interp_2D(CloudC%ext_S_IR(i1:i2,j1:j2,k), wlp, xlp, ext)
+      CALL interp_2D(CloudC%w_S_IR(i1:i2,j1:j2,k), wlp, xlp, w0)
+      CALL interp_2D(CloudC%g_S_IR(i1:i2,j1:j2,k), wlp, xlp, g)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-          CALL interp_2D(f, r, &
-                         CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+Offset_LegTerm), &
-                         f_int, r_int, p_coef(l,1))
+          CALL interp_2D(CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+Offset_LegTerm), &
+                         wlp, xlp, p_coef(l,1))
         END DO
       END IF
     ELSE
-      CALL interp_2D(f, r, CloudC%ext_L_IR(i1:i2,j1:j2), f_int, r_int, ext)
-      CALL interp_2D(f, r, CloudC%w_L_IR(i1:i2,j1:j2)  , f_int, r_int, w0 )
-      CALL interp_2D(f, r, CloudC%g_L_IR(i1:i2,j1:j2)  , f_int, r_int, g  )
+      CALL interp_2D(CloudC%ext_L_IR(i1:i2,j1:j2), wlp, xlp, ext)
+      CALL interp_2D(CloudC%w_L_IR(i1:i2,j1:j2), wlp, xlp, w0)
+      CALL interp_2D(CloudC%g_L_IR(i1:i2,j1:j2), wlp, xlp, g)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-          CALL interp_2D(f, r, &
-                         CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+Offset_LegTerm), &
-                         f_int, r_int, p_coef(l,1))
+          CALL interp_2D(CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+Offset_LegTerm), &
+                         wlp, xlp, p_coef(l,1))
         END DO
       END IF
     END IF
@@ -1168,6 +1173,9 @@ CONTAINS
     REAL(fp) :: f_int   , r_int
     REAL(fp) :: f_int_TL, r_int_TL
     REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wdlp, xdlp
+    
 
     ! No TL output when effective radius
     ! is outside LUT bounds
@@ -1193,6 +1201,12 @@ CONTAINS
     r_int = eff_radius
     CALL find_index(CloudC%Reff_IR, r_int, j1,j2)
     r = CloudC%Reff_IR(j1:j2)
+    
+    ! Calculate the Forward Lagrange Polynomials
+    wlp = lpoly(f,f_int)
+    
+    ! Calculate the TL Lagrange Polynomials
+    xdlp = dlpoly(r,r_int)  
  
     ! Determine the density index, k, for the clouds
     ! based on CloudC LUT organisation
@@ -1207,25 +1221,23 @@ CONTAINS
     
     ! Perform interpolation based on cloud type
     IF (Solid) THEN
-      CALL interp_2D_TL(f, r, CloudC%ext_S_IR(i1:i2,j1:j2,k), f_int, r_int, f_int_TL, r_int_TL, ext_TL)
-      CALL interp_2D_TL(f, r, CloudC%w_S_IR(i1:i2,j1:j2,k)  , f_int, r_int, f_int_TL, r_int_TL, w0_TL )
-      CALL interp_2D_TL(f, r, CloudC%g_S_IR(i1:i2,j1:j2,k)  , f_int, r_int, f_int_TL, r_int_TL, g_TL  )
+      CALL interp_2D_TL(CloudC%ext_S_IR(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, ext_TL)
+      CALL interp_2D_TL(CloudC%w_S_IR(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, w0_TL)
+      CALL interp_2D_TL(CloudC%g_S_IR(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, g_TL)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-          CALL interp_2D_TL(f, r, &
-                            CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+Offset_LegTerm), &
-                            f_int, r_int, f_int_TL, r_int_TL, p_coef_TL(l,1))
+          CALL interp_2D_TL(CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+Offset_LegTerm), &
+                            wlp, xdlp, r_int_TL, p_coef_TL(l,1))
         END DO
       END IF
     ELSE
-      CALL interp_2D_TL(f, r, CloudC%ext_L_IR(i1:i2,j1:j2), f_int, r_int, f_int_TL, r_int_TL, ext_TL)
-      CALL interp_2D_TL(f, r, CloudC%w_L_IR(i1:i2,j1:j2)  , f_int, r_int, f_int_TL, r_int_TL, w0_TL )
-      CALL interp_2D_TL(f, r, CloudC%g_L_IR(i1:i2,j1:j2)  , f_int, r_int, f_int_TL, r_int_TL, g_TL  )
+      CALL interp_2D_TL(CloudC%ext_L_IR(i1:i2,j1:j2), wlp, xdlp, r_int_TL, ext_TL)
+      CALL interp_2D_TL(CloudC%w_L_IR(i1:i2,j1:j2), wlp, xdlp, r_int_TL, w0_TL)
+      CALL interp_2D_TL(CloudC%g_L_IR(i1:i2,j1:j2), wlp, xdlp, r_int_TL, g_TL)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-          CALL interp_2D_TL(f, r, &
-                            CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+Offset_LegTerm), &
-                            f_int, r_int, f_int_TL, r_int_TL, p_coef_TL(l,1))
+          CALL interp_2D_TL(CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+Offset_LegTerm), &
+                            wlp, xdlp, r_int_TL, p_coef_TL(l,1))
         END DO
       END IF
     END IF
@@ -1272,6 +1284,8 @@ CONTAINS
     REAL(fp) :: f_int   , r_int
     REAL(fp) :: f_int_AD, r_int_AD
     REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wdlp, xdlp
 
     ! No TL output when effective radius
     ! is outside LUT bounds
@@ -1299,6 +1313,13 @@ CONTAINS
     CALL find_index(CloudC%Reff_IR, r_int, j1,j2)
     r = CloudC%Reff_IR(j1:j2)
  
+    ! Calculate the Forward Lagrange Polynomials
+    wlp = lpoly(f,f_int)
+    
+    
+    ! Calculate the TL Lagrange Polynomials
+    xdlp = dlpoly(r,r_int) 
+     
     ! Determine the density index, k, for the clouds
     ! based on CloudC LUT organisation
     SELECT CASE (Cloud_Type)
@@ -1312,25 +1333,23 @@ CONTAINS
     
     ! Perform interpolation based on cloud type
     IF (Solid) THEN
-      CALL interp_2D_AD(f, r, CloudC%ext_S_IR(i1:i2,j1:j2,k), f_int, r_int, ext_AD, f_int_AD, eff_radius_AD)
-      CALL interp_2D_AD(f, r, CloudC%w_S_IR(i1:i2,j1:j2,k)  , f_int, r_int, w0_AD , f_int_AD, eff_radius_AD)
-      CALL interp_2D_AD(f, r, CloudC%g_S_IR(i1:i2,j1:j2,k)  , f_int, r_int, g_AD  , f_int_AD, eff_radius_AD)
+      CALL interp_2D_AD(CloudC%ext_S_IR(i1:i2,j1:j2,k), wlp, xdlp, ext_AD, eff_radius_AD)
+      CALL interp_2D_AD(CloudC%w_S_IR(i1:i2,j1:j2,k), wlp, xdlp, w0_AD, eff_radius_AD)
+      CALL interp_2D_AD(CloudC%g_S_IR(i1:i2,j1:j2,k), wlp, xdlp, g_AD, eff_radius_AD)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-          CALL interp_2D_AD(f, r, &
-                            CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+Offset_LegTerm), &
-                            f_int, r_int, p_coef_AD(l,1), f_int_AD, eff_radius_AD)
+          CALL interp_2D_AD(CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+Offset_LegTerm), &
+                            wlp, xdlp, p_coef_AD(l,1), eff_radius_AD)
         END DO
       END IF
     ELSE
-      CALL interp_2D_AD(f, r, CloudC%ext_L_IR(i1:i2,j1:j2), f_int, r_int, ext_AD, f_int_AD, eff_radius_AD)
-      CALL interp_2D_AD(f, r, CloudC%w_L_IR(i1:i2,j1:j2)  , f_int, r_int, w0_AD , f_int_AD, eff_radius_AD)
-      CALL interp_2D_AD(f, r, CloudC%g_L_IR(i1:i2,j1:j2)  , f_int, r_int, g_AD  , f_int_AD, eff_radius_AD)
+      CALL interp_2D_AD(CloudC%ext_L_IR(i1:i2,j1:j2), wlp, xdlp, ext_AD, eff_radius_AD)
+      CALL interp_2D_AD(CloudC%w_L_IR(i1:i2,j1:j2), wlp, xdlp, w0_AD, eff_radius_AD)
+      CALL interp_2D_AD(CloudC%g_L_IR(i1:i2,j1:j2), wlp, xdlp, g_AD, eff_radius_AD)
       IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
         DO l = 0, n_Legendre_Terms
-          CALL interp_2D_AD(f, r, &
-                            CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+Offset_LegTerm), &
-                            f_int, r_int, p_coef_AD(l,1), f_int_AD, eff_radius_AD)
+          CALL interp_2D_AD(CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+Offset_LegTerm), &
+                            wlp, xdlp, p_coef_AD(l,1), eff_radius_AD)
         END DO
       END IF
     END IF
@@ -1375,6 +1394,7 @@ CONTAINS
     INTEGER  :: j, k, l, m
     REAL(fp) :: f_int, r_int, t_int
     REAL(fp), DIMENSION(INTERP_NPTS) :: f, r, t
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp, ylp
 
     ! Initialise results that may
     ! not be interpolated
@@ -1395,29 +1415,33 @@ CONTAINS
     t_int = MAX(MIN(MAXVAL(CloudC%Temperature),Temperature),MINVAL(CloudC%Temperature))
     CALL find_index(CloudC%Temperature, t_int, k1,k2)
     t = CloudC%Temperature(k1:k2)
- 
+    
+    ! Calculate the Lagrange polynomials
+    wlp = lpoly(f,f_int)
+    xlp = lpoly(r,r_int)
+    ylp = lpoly(t,t_int)
+        
     ! Perform interpolation based on cloud type
     SELECT CASE (Cloud_Type)
       CASE (WATER_CLOUD)
-        CALL interp_2D(f, t, CloudC%ext_L_MW(i1:i2,1,k1:k2), f_int, t_int, ext)
+        CALL interp_2D(CloudC%ext_L_MW(i1:i2,1,k1:k2), wlp, ylp, ext)
 
       CASE (RAIN_CLOUD)
-        CALL interp_3D(f, r, t, CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), f_int, r_int, t_int, ext)
-        CALL interp_3D(f, r, t, CloudC%w_L_MW(i1:i2,j1:j2,k1:k2)  , f_int, r_int, t_int, w0 )
-        CALL interp_3D(f, r, t, CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)  , f_int, r_int, t_int, g  )
+        CALL interp_3D(CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, ext)
+        CALL interp_3D(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, w0)
+        CALL interp_3D(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, g)
         IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              CALL interp_3D(f, r, t, &
-                             CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+Offset_LegTerm,m), &
-                             f_int, r_int, t_int, p_coef(l,m))
+              CALL interp_3D(CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+Offset_LegTerm,m), &
+                             wlp, xlp, ylp, p_coef(l,m))
             END DO
           END DO
         END IF
 
       CASE (ICE_CLOUD)
         j = 1; k = 3
-        CALL interp_1D(f, CloudC%ext_S_MW(i1:i2,j,k), f_int, ext)
+        CALL interp_1D(CloudC%ext_S_MW(i1:i2,j,k), wlp, ext)
 
       CASE DEFAULT
         SELECT CASE (Cloud_Type)
@@ -1425,15 +1449,14 @@ CONTAINS
           CASE (HAIL_CLOUD)   ; k = 3
           CASE DEFAULT        ; k = 1
         END SELECT
-        CALL interp_2D(f, r, CloudC%ext_S_MW(i1:i2,j1:j2,k) ,f_int, r_int, ext)
-        CALL interp_2D(f, r, CloudC%w_S_MW(i1:i2,j1:j2,k)   ,f_int, r_int, w0 )
-        CALL interp_2D(f, r, CloudC%g_S_MW(i1:i2,j1:j2,k)   ,f_int, r_int, g  )
+        CALL interp_2D(CloudC%ext_S_MW(i1:i2,j1:j2,k), wlp, xlp, ext)
+        CALL interp_2D(CloudC%w_S_MW(i1:i2,j1:j2,k), wlp, xlp, w0)
+        CALL interp_2D(CloudC%g_S_MW(i1:i2,j1:j2,k), wlp, xlp, g)
         IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              CALL interp_2D(f, r, &
-                             CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+Offset_LegTerm,m), &
-                             f_int, r_int, p_coef(l,m))
+              CALL interp_2D(CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+Offset_LegTerm,m), &
+                             wlp, xlp, p_coef(l,m))
             END DO
           END DO
         END IF
@@ -1486,6 +1509,8 @@ CONTAINS
     REAL(fp) :: f_int   , r_int   , t_int
     REAL(fp) :: f_int_TL, r_int_TL, t_int_TL
     REAL(fp), DIMENSION(INTERP_NPTS) :: f, r, t
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp, ylp
+    REAL(fp), DIMENSION(INTERP_NPTS) :: xdlp, ydlp
 
     ! Initialise results that may
     ! not be interpolated
@@ -1511,6 +1536,15 @@ CONTAINS
     t = CloudC%Temperature(k1:k2)
     t_int_TL = Temperature_TL
  
+    ! Calculate Forward Lagrange polynomials
+    wlp = lpoly(f,f_int)
+    xlp = lpoly(r,r_int)
+    ylp = lpoly(t,t_int)
+    
+    ! Calculate TL Lagrange polynomials
+    xdlp = dlpoly(r,r_int)
+    ydlp = dlpoly(t,t_int)
+ 
     ! Perform interpolation based on cloud type
     SELECT CASE (Cloud_Type)
       CASE (WATER_CLOUD)
@@ -1521,7 +1555,7 @@ CONTAINS
           ext_TL = ZERO
           RETURN
         END IF
-        CALL interp_2D_TL(f, t, CloudC%ext_L_MW(i1:i2,1,k1:k2), f_int, t_int, f_int_TL, t_int_TL, ext_TL)
+        CALL interp_2D_TL(CloudC%ext_L_MW(i1:i2,1,k1:k2), wlp, ydlp, t_int_TL, ext_TL)
 
       CASE (RAIN_CLOUD)
         ! No TL output when both effective radius
@@ -1533,16 +1567,16 @@ CONTAINS
           ext_TL = ZERO
           RETURN
         END IF
-        CALL interp_3D_TL(f, r, t, CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), f_int, r_int, t_int, f_int_TL, r_int_TL, t_int_TL, ext_TL)
-        CALL interp_3D_TL(f, r, t, CloudC%w_L_MW(i1:i2,j1:j2,k1:k2)  , f_int, r_int, t_int, f_int_TL, r_int_TL, t_int_TL, w0_TL )
-        CALL interp_3D_TL(f, r, t, CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)  , f_int, r_int, t_int, f_int_TL, r_int_TL, t_int_TL, g_TL  )
+        CALL interp_3D_TL(CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, xdlp, ydlp, r_int_TL, t_int_TL, ext_TL)
+        CALL interp_3D_TL(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, xdlp, ydlp, r_int_TL, t_int_TL, w0_TL)
+        CALL interp_3D_TL(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, xdlp, ydlp, r_int_TL, t_int_TL, g_TL)  
         IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              CALL interp_3D_TL(f, r, t, &
-                                CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+Offset_LegTerm,m), &
-                                f_int, r_int, t_int, &
-                                f_int_TL, r_int_TL, t_int_TL, &
+              CALL interp_3D_TL(CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+Offset_LegTerm,m), &
+                                wlp, xlp, ylp, &
+                                xdlp, ydlp,    &
+                                r_int_TL, t_int_TL, &
                                 p_coef_TL(l,m))
             END DO
           END DO
@@ -1564,16 +1598,16 @@ CONTAINS
           ext_TL = ZERO
           RETURN
         END IF
-        CALL interp_2D_TL(f, r, CloudC%ext_S_MW(i1:i2,j1:j2,k) ,f_int, r_int, f_int_TL, r_int_TL, ext_TL)
-        CALL interp_2D_TL(f, r, CloudC%w_S_MW(i1:i2,j1:j2,k)   ,f_int, r_int, f_int_TL, r_int_TL, w0_TL )
-        CALL interp_2D_TL(f, r, CloudC%g_S_MW(i1:i2,j1:j2,k)   ,f_int, r_int, f_int_TL, r_int_TL, g_TL  )
+        CALL interp_2D_TL(CloudC%ext_S_MW(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, ext_TL)
+        CALL interp_2D_TL(CloudC%w_S_MW(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, w0_TL)
+        CALL interp_2D_TL(CloudC%g_S_MW(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, g_TL)
         IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              CALL interp_2D_TL(f, r, &
-                                CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+Offset_LegTerm,m), &
-                                f_int, r_int, &
-                                f_int_TL, r_int_TL, &
+              CALL interp_2D_TL(CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+Offset_LegTerm,m), &
+                                wlp,      &
+                                xdlp    , &
+                                r_int_TL, &
                                 p_coef_TL(l,m))
             END DO
           END DO
@@ -1626,6 +1660,8 @@ CONTAINS
     REAL(fp) :: f_int   , r_int   , t_int
     REAL(fp) :: f_int_AD
     REAL(fp), DIMENSION(INTERP_NPTS) :: f, r, t
+    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp, ylp
+    REAL(fp), DIMENSION(INTERP_NPTS) :: xdlp, ydlp
 
     ! Effective variance isn't used yet
     eff_v_AD = ZERO
@@ -1646,6 +1682,15 @@ CONTAINS
     t_int = MAX(MIN(MAXVAL(CloudC%Temperature),Temperature),MINVAL(CloudC%Temperature))
     CALL find_index(CloudC%Temperature, t_int, k1,k2)
     t = CloudC%Temperature(k1:k2)
+    
+    ! Calculate Forward Lagrange polynomials
+    wlp = lpoly(f,f_int)
+    xlp = lpoly(r,r_int)
+    ylp = lpoly(t,t_int)
+    
+    ! Calculate TL Lagrange polynomials
+    xdlp = dlpoly(r,r_int)
+    ydlp = dlpoly(t,t_int)
  
     ! Perform interpolation based on cloud type
     SELECT CASE (Cloud_Type)
@@ -1661,7 +1706,7 @@ CONTAINS
           p_coef_AD = ZERO
           RETURN
         END IF
-        CALL interp_2D_AD(f, t, CloudC%ext_L_MW(i1:i2,1,k1:k2), f_int, t_int, ext_AD, f_int_AD, Temperature_AD)
+        CALL interp_2D_AD(CloudC%ext_L_MW(i1:i2,1,k1:k2), wlp, ydlp, ext_AD, Temperature_AD)
 
       CASE (RAIN_CLOUD)
         ! No TL output when both effective radius
@@ -1678,20 +1723,20 @@ CONTAINS
           p_coef_AD = ZERO
           RETURN
         END IF
-        CALL interp_3D_AD(f, r, t, CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), f_int, r_int, t_int, ext_AD, &
-                          f_int_AD, eff_radius_AD, Temperature_AD)
-        CALL interp_3D_AD(f, r, t, CloudC%w_L_MW(i1:i2,j1:j2,k1:k2)  , f_int, r_int, t_int, w0_AD , &
-                          f_int_AD, eff_radius_AD, Temperature_AD)
-        CALL interp_3D_AD(f, r, t, CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)  , f_int, r_int, t_int, g_AD  , &
-                          f_int_AD, eff_radius_AD, Temperature_AD)
+        CALL interp_3D_AD(CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, &
+                          xdlp, ydlp, ext_AD, eff_radius_AD, Temperature_AD)
+        CALL interp_3D_AD(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, &
+                          xdlp, ydlp, w0_AD, eff_radius_AD, Temperature_AD)
+        CALL interp_3D_AD(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, &
+                          xdlp, ydlp, g_AD, eff_radius_AD, Temperature_AD)
         IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              CALL interp_3D_AD(f, r, t, &
-                                CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+Offset_LegTerm,m), &
-                                f_int, r_int, t_int, &
+              CALL interp_3D_AD(CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+Offset_LegTerm,m), &
+                                wlp, xlp, ylp, &
+                                xdlp, ydlp,    &
                                 p_coef_AD(l,m), &
-                                f_int_AD, eff_radius_AD, Temperature_AD)
+                                eff_radius_AD, Temperature_AD)
             END DO
           END DO
         END IF
@@ -1721,17 +1766,16 @@ CONTAINS
           p_coef_AD = ZERO
           RETURN
         END IF
-        CALL interp_2D_AD(f, r, CloudC%ext_S_MW(i1:i2,j1:j2,k) ,f_int, r_int, ext_AD, f_int_AD, eff_radius_AD)
-        CALL interp_2D_AD(f, r, CloudC%w_S_MW(i1:i2,j1:j2,k)   ,f_int, r_int, w0_AD , f_int_AD, eff_radius_AD)
-        CALL interp_2D_AD(f, r, CloudC%g_S_MW(i1:i2,j1:j2,k)   ,f_int, r_int, g_AD  , f_int_AD, eff_radius_AD)
+        CALL interp_2D_AD(CloudC%ext_S_MW(i1:i2,j1:j2,k), wlp, xdlp, ext_AD, eff_radius_AD)
+        CALL interp_2D_AD(CloudC%w_S_MW(i1:i2,j1:j2,k), wlp, xdlp, w0_AD, eff_radius_AD)
+        CALL interp_2D_AD(CloudC%g_S_MW(i1:i2,j1:j2,k), wlp, xdlp, g_AD, eff_radius_AD)
         IF (n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              CALL interp_2D_AD(f, r, &
-                                CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+Offset_LegTerm,m), &
-                                f_int, r_int, &
+              CALL interp_2D_AD(CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+Offset_LegTerm,m), &
+                                wlp, xdlp, &
                                 p_coef_AD(l,m), &
-                                f_int_AD, eff_radius_AD)
+                                eff_radius_AD)
             END DO
           END DO
         END IF
