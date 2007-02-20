@@ -2,19 +2,6 @@ MODULE CRTM_Interpolation
 
   USE Type_Kinds, ONLY: fp=>fp_kind
   IMPLICIT NONE
-  !PRIVATE
-  PUBLIC :: interp_1D
-  PUBLIC :: interp_2D
-  PUBLIC :: interp_3D
-  PUBLIC :: interp_1D_TL
-  PUBLIC :: interp_2D_TL
-  PUBLIC :: interp_3D_TL
-  PUBLIC :: interp_1D_AD
-  PUBLIC :: interp_2D_AD
-  PUBLIC :: interp_3D_AD
-  PUBLIC :: find_index
-  PUBLIC :: lpoly
-  PUBLIC :: dlpoly
   
   INTERFACE interp_2D_TL
     MODULE PROCEDURE interp_2D_2D_TL
@@ -384,7 +371,7 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: wdlp(:), xdlp(:), ydlp(:)
     REAL(fp), INTENT(IN OUT) :: w_int_AD, x_int_AD, y_int_AD, z_int_AD
     INTEGER  :: i, j
-    REAL(fp) :: a(NPTS)   , b(NPTS)
+    REAL(fp) :: a(NPTS,NPTS)   , b(NPTS)
     REAL(fp) :: a_AD(NPTS), b_AD(NPTS)
     REAL(fp) :: a_AD_int
     REAL(fp) :: b_AD_int
@@ -394,9 +381,9 @@ CONTAINS
     DO j = 1,NPTS
       ! Interpolate z in w dimension for all x and y
       DO i = 1,NPTS
-        CALL interp_1D(z(:,i,j),wlp,a(i))
+        CALL interp_1D(z(:,i,j),wlp,a(i,j))
       END DO
-      CALL interp_1D(a,xlp,b(j))
+      CALL interp_1D(a(:,j),xlp,b(j))
     END DO
 
     ! Adjoint calculations
@@ -412,7 +399,7 @@ CONTAINS
     ! The first part provides x_int_AD (dz/dx)
     DO j = 1,NPTS
       a_AD_int = b_AD(j)
-      CALL interp_1D_AD(a,xdlp,b_AD(j),x_int_AD)
+      CALL interp_1D_AD(a(:,j),xdlp,b_AD(j),x_int_AD)
       CALL interp_1D_FWD_AD(xlp,a_AD_int,a_AD) 
       ! Adjoint of z interpolation in w dimension for all x and y
       ! This provides w_int_AD (dz/dw)
@@ -434,7 +421,7 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: xdlp(:), ydlp(:)
     REAL(fp), INTENT(IN OUT) :: x_int_AD, y_int_AD, z_int_AD
     INTEGER  :: i, j
-    REAL(fp) :: a(NPTS)   , b(NPTS)
+    REAL(fp) :: a(NPTS,NPTS)   , b(NPTS)
     REAL(fp) :: b_AD(NPTS)
     REAL(fp) :: b_AD_int
     ! Forward calculations
@@ -442,9 +429,9 @@ CONTAINS
     DO j = 1,NPTS
       ! Interpolate z in w dimension for all x and y
       DO i = 1,NPTS
-        CALL interp_1D(z(:,i,j),wlp,a(i))
+        CALL interp_1D(z(:,i,j),wlp,a(i,j))
       END DO
-      CALL interp_1D(a,xlp,b(j))
+      CALL interp_1D(a(:,j),xlp,b(j))
     END DO
     ! Adjoint calculations
     ! Initialize local AD variables
@@ -457,7 +444,7 @@ CONTAINS
     ! Adjoint of a interpolation in x dimension for all y
     ! The first part provides x_int_AD (dz/dx)
     DO j = 1,NPTS
-      CALL interp_1D_AD(a,xdlp,b_AD(j),x_int_AD)
+      CALL interp_1D_AD(a(:,j),xdlp,b_AD(j),x_int_AD)
     END DO
   END SUBROUTINE interp_3D_2D_AD
   
@@ -472,15 +459,15 @@ CONTAINS
     REAL(fp), INTENT(IN)      :: ydlp(:)
     REAL(fp), INTENT(IN OUT)  :: z_int_AD, y_int_AD
     INTEGER  :: i, j
-    REAL(fp) :: a(NPTS), b(NPTS) 
+    REAL(fp) :: a(NPTS,NPTS), b(NPTS) 
     ! Forward calculations
     ! Interpolate a in x dimension for all y
     DO j = 1,NPTS
       ! Interpolate z in w dimension for all x and y
       DO i = 1,NPTS
-        CALL interp_1D(z(:,i,j),wlp,a(i))
+        CALL interp_1D(z(:,i,j),wlp,a(i,j))
       END DO
-      CALL interp_1D(a,xlp,b(j))
+      CALL interp_1D(a(:,j),xlp,b(j))
     END DO
     ! Adjoint calculation
     CALL interp_1D_AD(b,ydlp,z_int_AD,y_int_AD)
