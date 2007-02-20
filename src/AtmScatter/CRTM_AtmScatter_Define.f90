@@ -47,7 +47,7 @@ MODULE CRTM_AtmScatter_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_AtmScatter_Define.f90,v 1.18 2006/05/25 19:30:07 wd20pd Exp $'
+  '$Id$'
 
   
   ! -----------------------------------------
@@ -63,7 +63,7 @@ MODULE CRTM_AtmScatter_Define
     INTEGER :: n_Phase_Elements   = 0  ! IpUse dimension
     ! Algorithm specific members
     REAL(fp), DIMENSION(:,:,:), POINTER :: Phase_Coefficient => NULL()  ! 0:Ic x Ip x K
-    INTEGER :: Offset_LegTerm = 0   ! start position of array for Legendre coefficients 
+    INTEGER :: lOffset = 0   ! start position in array for Legendre coefficients 
     ! Mandatory members
     REAL(fp), DIMENSION(:), POINTER :: Optical_Depth         => NULL() ! K
     REAL(fp), DIMENSION(:), POINTER :: Single_Scatter_Albedo => NULL() ! K
@@ -119,7 +119,7 @@ CONTAINS
     AtmScatter%n_Legendre_Terms   = 0
     AtmScatter%Max_Phase_Elements = 0
     AtmScatter%n_Phase_Elements   = 0
-    AtmScatter%Offset_LegTerm = 0
+    AtmScatter%lOffset = 0
   END SUBROUTINE CRTM_Clear_AtmScatter
 
 
@@ -773,11 +773,12 @@ CONTAINS
     END IF
 
 
-    ! ----------------------------------------
-    ! Assign the used-dimension scalar members
-    ! ----------------------------------------
+    ! ---------------------
+    ! Assign scalar members
+    ! ---------------------
     AtmScatter_out%n_Legendre_Terms = AtmScatter_in%n_Legendre_Terms
     AtmScatter_out%n_Phase_Elements = AtmScatter_in%n_Phase_Elements
+    AtmScatter_out%lOffset = AtmScatter_in%lOffset
 
 
     ! -----------------
