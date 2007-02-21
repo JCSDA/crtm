@@ -42,9 +42,8 @@ usage()
   echo
   echo "   -h            Print this message and exit"
   echo
-  echo "   -l            [Linux systems only]"
-  echo "                 Use this option to produce LITTLE-endian output files."
-  echo "                 The default action is to produce BIG-endian output files."
+  echo "   -l            Use this option to produce LITTLE-endian output files."
+  echo "                 The default INTENT is to produce BIG-endian output files."
   echo "                 This option is ignored for non-linux systems."
   echo
   echo "   -a            Use this option to specify the type of coefficient assembly"
@@ -71,12 +70,9 @@ usage()
 #-------------------------------------------------------------------------------
 
   SCRIPT_NAME="`basename $0`"
-
   SUCCESS=0
   FAILURE=1
-
   EXIT_CODE=${SUCCESS}
-
 
 
 #-------------------------------------------------------------------------------
@@ -105,26 +101,31 @@ usage()
   # EXE_DIR and COEFF_DIR without any reference
   # to ROOT_DIR.
   # -------------------------------------------
-
-  # -- Root directory
+  # Root directory
   ROOT_DIR="/u/wx20pd"
 
-  # -- Executable directory
+  # Executable directory
   EXE_DIR="${ROOT_DIR}/bin"
 
-  # -- Coefficient data directory
+  # Coefficient data directory
   COEFF_DIR="${ROOT_DIR}/CRTM/Coefficient_Data"
 
-
   # ----------------------------------------------
-  # Define the OS type and the default output type
-  # Little endian files are produced on Linux
-  # systems only.
+  # Define the OS type and the default endian type
+  # suffix. It is an adopted convention IN THIS
+  # SCRIPT ONLY that the program,
+  #
+  #   Assemble_Coefficient_File
+  #
+  # produces BIG-ENDIAN output. On linux systems
+  # a *separate* executable is created called
+  #
+  #   Assemble_Coefficient_File.little_endian
+  #
+  # that produces LITTLE-ENDIAN files.
   # ----------------------------------------------
-
   OS_TYPE=`uname -s`
-  ENDIAN="big_endian"
-
+  ENDIAN=""
 
   # ---------------------------------
   # Default coefficient assembly type
@@ -132,19 +133,15 @@ usage()
   # 2 : Assemble TauCoeff only
   # 3 : Assemble both
   # ---------------------------------
-
   ASSEMBLY_TYPE=3
-
 
   # --------------------------------
   # Set the default output data type
   # 1 : netCDF output
   # 2 : Binary output
   # --------------------------------
-
   OUTPUT_TYPE=2
   OUTPUT_EXT="bin"
-
 
 
 #-------------------------------------------------------------------------------
@@ -153,24 +150,20 @@ usage()
 
   while getopts :hla:o: OPTVAL; do
 
-
     # --------------------------------------------
     # If option argument looks like another option
     # exit the loop
     # --------------------------------------------
-
     case ${OPTARG} in
       -*) break;;
     esac
 
-
     # ----------------------------
     # Parse the valid options here
     # ----------------------------
-
     case ${OPTVAL} in
       l)  if [ ${OS_TYPE} = "Linux" ]; then
-            ENDIAN="little_endian"
+            ENDIAN=".little_endian"
           fi;;
       a)  ASSEMBLY_TYPE=${OPTARG}
           if [ ${ASSEMBLY_TYPE} -lt 1 -o ${ASSEMBLY_TYPE} -gt 3 ]; then
@@ -191,16 +184,12 @@ usage()
       :|\?) OPTVAL=${OPTARG}
             break;;
     esac
-
   done
-
 
   # ----------------------------
   # Remove the options processed
   # ----------------------------
-
   shift `expr ${OPTIND} - 1`
-
 
   # ------------------------------------------
   # Now output invalidities based on OPTVAL
@@ -208,9 +197,7 @@ usage()
   # the situations where an option is passed
   # as an argument to another option.
   # ------------------------------------------
-
   case ${OPTVAL} in
-
 
     # --------------------------------------------
     # If OPTVAL contains nothing, then all options
@@ -218,7 +205,6 @@ usage()
     # remains in the argument list is the SatInfo
     # filename
     # --------------------------------------------
-
     \?) if [ $# -lt 1 ]; then
           echo
           echo "${SCRIPT_NAME}: Missing 'SatInfo_File' argument"
@@ -226,37 +212,46 @@ usage()
           exit ${FAILURE}
         fi;;
 
-
     # ------------------------------------
     # Valid options, but missing arguments
     # ------------------------------------
-
     a|o) ( echo; echo "${SCRIPT_NAME}: '-${OPTVAL}' OPTION REQUIRES AN ARGUMENT" ; usage ) | more
          exit ${FAILURE};;
 
     # --------------
     # Invalid option
     # --------------
-
     ?) echo; echo "${SCRIPT_NAME}: Invalid option '-${OPTARG}'"
        usage
        exit ${FAILURE};;
 
   esac
 
-
   # --------------------------------
   # Assign the SatInfo file argument
   # --------------------------------
-
   SATINFO_FILE=$1
 
+
+#-------------------------------------------------------------------------------
+#                   -- CHECK THAT THE VARIOUS FILES EXIST --
+#-------------------------------------------------------------------------------
+  CHECK_FILES=\
+"${EXE_DIR}/Info_SAT2SENSOR "\
+"${EXE_DIR}/Assemble_Coefficient_File${ENDIAN} "\
+"${COEFF_DIR}/Master.SensorInfo"
+
+  for FILE in ${CHECK_FILES}; do
+    if [ ! -f ${FILE} ]; then
+      echo; echo "${SCRIPT_NAME}: `basename $FILE` not found in `dirname $FILE`."
+      exit ${FAILURE}
+    fi
+  done
 
 
 #-------------------------------------------------------------------------------
 #              -- CREATE A SensorInfo FILE FROM THE SatInfo INPUT --
 #-------------------------------------------------------------------------------
-
   ${EXE_DIR}/Info_SAT2SENSOR << NoMoreInput
 ${SATINFO_FILE}
 ${COEFF_DIR}/Master.SensorInfo
@@ -265,25 +260,20 @@ NoMoreInput
 SENSORINFO_FILE="${SATINFO_FILE}.SensorInfo"
 
 
-
 #-------------------------------------------------------------------------------
 #       -- ASSEMBLE THE COEFFICIENTS ACCORDING TO THE SensorInfo FILE --
 #-------------------------------------------------------------------------------
-
-  ${EXE_DIR}/Assemble_Coefficient_File.${ENDIAN} << NoMoreInput
+  ${EXE_DIR}/Assemble_Coefficient_File${ENDIAN} << NoMoreInput
 ${SENSORINFO_FILE}
 ${ASSEMBLY_TYPE}
 ${OUTPUT_TYPE}
 ${COEFF_DIR}/
 NoMoreInput
 
-
   # ----------------------------------
   # Remove the created SensorInfo file
   # ----------------------------------
-
   rm -f ${SENSORINFO_FILE}
-
 
 
 #-------------------------------------------------------------------------------
@@ -293,28 +283,23 @@ NoMoreInput
   # ---------------------------------
   # Define the valid output file list
   # ---------------------------------
-
   case ${ASSEMBLY_TYPE} in
     1) FILE_TYPE_LIST="SpcCoeff";;
     2) FILE_TYPE_LIST="TauCoeff";;
     3) FILE_TYPE_LIST="SpcCoeff TauCoeff";;
   esac
 
-
   # -----------------------------------------------
   # Rename the files according to the input SatInfo
   # file and output a directory list.
   # -----------------------------------------------
-
   echo
   echo " --------------------------"
   echo " Coefficient files created:"
   echo " --------------------------"
-
   for FILE_TYPE in ${FILE_TYPE_LIST}; do
     INFILE="Concatenated.${FILE_TYPE}.${OUTPUT_EXT}"
     OUTFILE="${SATINFO_FILE}.${FILE_TYPE}.${OUTPUT_EXT}"
-
     if [ -f ${INFILE} ]; then
       mv ${INFILE} ${OUTFILE}
       ls -laF ${OUTFILE}
@@ -322,7 +307,6 @@ NoMoreInput
       echo; echo "${SCRIPT_NAME}: Concatenated ${FILE_TYPE} file was not created"
       EXIT_CODE=${FAILURE}
     fi
-
   done
 
   exit ${EXIT_CODE}
