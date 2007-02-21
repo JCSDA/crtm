@@ -2,6 +2,20 @@ MODULE CRTM_Interpolation
 
   USE Type_Kinds, ONLY: fp=>fp_kind
   IMPLICIT NONE
+  PRIVATE
+  PUBLIC :: NPTS
+  PUBLIC :: interp_1D
+  PUBLIC :: interp_2D
+  PUBLIC :: interp_3D
+  PUBLIC :: interp_1D_TL
+  PUBLIC :: interp_2D_TL
+  PUBLIC :: interp_3D_TL
+  PUBLIC :: interp_1D_AD
+  PUBLIC :: interp_2D_AD
+  PUBLIC :: interp_3D_AD
+  PUBLIC :: find_index
+  PUBLIC :: lpoly
+  PUBLIC :: dlpoly
   
   INTERFACE interp_2D_TL
     MODULE PROCEDURE interp_2D_2D_TL
