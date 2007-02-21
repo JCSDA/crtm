@@ -125,9 +125,9 @@ PROGRAM Test_Interpolation
   INTEGER , PARAMETER :: NIDX = 6
   INTEGER , PARAMETER :: N = 21
   
-  REAL(fp), PARAMETER :: ZERO = 0.0_fp
-  REAL(fp), PARAMETER :: ONE  = 1.0_fp
-  REAL(fp), PARAMETER :: TWO  = 2.0_fp
+   REAL(fp), PARAMETER :: ZERO = 0.0_fp
+   REAL(fp), PARAMETER :: ONE  = 1.0_fp
+   REAL(fp), PARAMETER :: TWO  = 2.0_fp
 
   REAL(fp), PARAMETER :: WC     = 3.0_fp
   INTEGER , PARAMETER :: WPOWER = 2
@@ -135,13 +135,15 @@ PROGRAM Test_Interpolation
   INTEGER , PARAMETER :: XPOWER = 3
   REAL(fp), PARAMETER :: YC     = 10.0_fp
   INTEGER , PARAMETER :: YPOWER = 1
-
-  
+  INTEGER , PARAMETER :: NPTS = 4
+  !PRINT *, NPTS
   ! Variables
   INTEGER  :: i , j , k
   INTEGER  :: i1, i2
   INTEGER  :: j1, j2
   INTEGER  :: k1, k2
+  REAL(fp) :: wlp(NPTS), xlp(NPTS), ylp(NPTS)
+  REAL(fp) :: wdlp(NPTS), xdlp(NPTS), ydlp(NPTS)
   REAL(fp) :: dx
   REAL(fp) :: x_regular(NIDX), x_random(NIDX)
   REAL(fp) :: w(N), x(N), y(N)
@@ -221,7 +223,8 @@ PROGRAM Test_Interpolation
   z1 = z_1d(w)
   DO i = 1,N
     CALL find_index(w,w(i),i1,i2)
-    CALL interp_1D(w(i1:i2),z1(i1:i2),w(i),zint)
+    wlp = lpoly(w(i1:i2),w(i))
+    CALL interp_1D(z1(i1:i2),wlp,zint)
     CALL assert_equal(z1(i), zint, ulp=ULP)
   END DO
   CALL report_test()
@@ -231,9 +234,11 @@ PROGRAM Test_Interpolation
   z2 = z_2d(w,x)
   DO j = 1,N
     CALL find_index(x,x(j),j1,j2)
+    xlp = lpoly(x(j1:j2),x(j))
     DO i = 1,N
       CALL find_index(w,w(i),i1,i2)
-      CALL interp_2D(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),w(i),x(j),zint)
+      wlp = lpoly(w(i1:i2),w(i))
+      CALL interp_2D(z2(i1:i2,j1:j2),wlp,xlp,zint)
       CALL assert_equal(z2(i,j), zint, ulp=ULP)
     END DO
   END DO
@@ -244,11 +249,14 @@ PROGRAM Test_Interpolation
   z3 = z_3d(w,x,y)
   DO k = 1,N
     CALL find_index(y,y(k),k1,k2)
+    ylp = lpoly(y(k1:k2),y(k))
     DO j = 1,N
       CALL find_index(x,x(j),j1,j2)
+      xlp = lpoly(x(j1:j2),x(j))
       DO i = 1,N
         CALL find_index(w,w(i),i1,i2)
-        CALL interp_3D(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),w(i),x(j),y(k),zint)
+        wlp = lpoly(w(i1:i2),w(i))
+        CALL interp_3D(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint)
         CALL assert_equal(z3(i,j,k), zint, ulp=ULP)
       END DO
     END DO
@@ -265,48 +273,57 @@ PROGRAM Test_Interpolation
   wint = (w(N/2) + w(N/2+1))/TWO
   zcalc = zw(wint)
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D(w(i1:i2),z1(i1:i2),wint,zint)
+  wlp = lpoly(w(i1:i2),wint)
+  CALL interp_1D(z1(i1:i2),wlp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
   zcalc = zw(wint)
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D(w(i1:i2),z1(i1:i2),wint,zint)
+  wlp = lpoly(w(i1:i2),wint)
+  CALL interp_1D(z1(i1:i2),wlp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
   ! Right edge
   wint = (w(N-1) + w(N))/TWO
   zcalc = zw(wint)
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D(w(i1:i2),z1(i1:i2),wint,zint)
+  wlp = lpoly(w(i1:i2),wint)
+  CALL interp_1D(z1(i1:i2),wlp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
 
   CALL report_test()
 
-  ! 2-D test
+  !! 2-D test
   CALL init_test('2-D interpolation test')
   ! In the middle
   wint = (w(N/2) + w(N/2+1))/TWO
   xint = (x(N/2) + x(N/2+1))/TWO
   zcalc = zw(wint) + zx(xint)
   CALL find_index(w,wint,i1,i2)
+  wlp = lpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,zint)
+  xlp = lpoly(x(j1:j2),xint)
+  CALL interp_2D(z2(i1:i2,j1:j2),wlp,xlp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
   xint = (x(1) + x(2))/TWO
   zcalc = zw(wint) + zx(xint)
   CALL find_index(w,wint,i1,i2)
+  wlp = lpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,zint)
+  xlp = lpoly(x(j1:j2),wint)
+  CALL interp_2D(z2(i1:i2,j1:j2),wlp,xlp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
   ! Right edge
   wint = (w(N-1) + w(N))/TWO
   xint = (x(N-1) + x(N))/TWO
   zcalc = zw(wint) + zx(xint)
   CALL find_index(w,wint,i1,i2)
+  wlp = lpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,zint)
+  xlp = lpoly(x(j1:j2),xint)
+  CALL interp_2D(z2(i1:i2,j1:j2),wlp,xlp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
 
   CALL report_test()
@@ -319,9 +336,12 @@ PROGRAM Test_Interpolation
   yint = (y(N/2) + y(N/2+1))/TWO
   zcalc = zw(wint) + zx(xint) + zy(yint)
   CALL find_index(w,wint,i1,i2)
+  wlp = lpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp = lpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,zint)
+  ylp = lpoly(y(k1:k2),yint)
+  CALL interp_3D(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
@@ -329,9 +349,12 @@ PROGRAM Test_Interpolation
   yint = (y(1) + y(2))/TWO
   zcalc = zw(wint) + zx(xint) + zy(yint)
   CALL find_index(w,wint,i1,i2)
+  wlp = lpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp = lpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,zint)
+  ylp = lpoly(y(k1:k2),yint)
+  CALL interp_3D(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
   ! Right edge
   wint = (w(N-1) + w(N))/TWO
@@ -339,9 +362,12 @@ PROGRAM Test_Interpolation
   yint = (y(N-1) + y(N))/TWO
   zcalc = zw(wint) + zx(xint) + zy(yint)
   CALL find_index(w,wint,i1,i2)
+  wlp = lpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp = lpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,zint)
+  ylp = lpoly(y(k1:k2),yint)
+  CALL interp_3D(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint)
   CALL assert_equal(zcalc, zint, ulp=ULP)
 
   CALL report_test()
@@ -358,21 +384,24 @@ PROGRAM Test_Interpolation
   wint_TL = 0.1_fp
   dzcalc = dzw(wint)*wint_TL
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D_TL(w(i1:i2),z1(i1:i2),wint,wint_TL,zint_TL)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL interp_1D_TL(z1(i1:i2),wdlp,wint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
   wint_TL = -1.314159_fp
   dzcalc = dzw(wint)*wint_TL
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D_TL(w(i1:i2),z1(i1:i2),wint,wint_TL,zint_TL)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL interp_1D_TL(z1(i1:i2),wdlp,wint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
   ! Right edge
   wint    = (w(N-1) + w(N))/TWO
   wint_TL = 1.8275_fp
   dzcalc = dzw(wint)*wint_TL
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D_TL(w(i1:i2),z1(i1:i2),wint,wint_TL,zint_TL)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL interp_1D_TL(z1(i1:i2),wdlp,wint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
 
   CALL report_test()
@@ -387,8 +416,12 @@ PROGRAM Test_Interpolation
   xint_TL = 0.1_fp
   dzcalc = dzw(wint)*wint_TL + dzx(xint)*xint_TL
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D_TL(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,wint_TL,xint_TL,zint_TL)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xlp,wdlp,xdlp,wint_TL,xint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
@@ -397,8 +430,12 @@ PROGRAM Test_Interpolation
   xint_TL = -1.1756_fp
   dzcalc = dzw(wint)*wint_TL + dzx(xint)*xint_TL
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D_TL(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,wint_TL,xint_TL,zint_TL)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xlp,wdlp,xdlp,wint_TL,xint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
   ! Right edge
   wint = (w(N-1) + w(N))/TWO
@@ -407,10 +444,56 @@ PROGRAM Test_Interpolation
   xint_TL = 1.4563_fp
   dzcalc = dzw(wint)*wint_TL + dzx(xint)*xint_TL
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D_TL(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,wint_TL,xint_TL,zint_TL)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xlp,wdlp,xdlp,wint_TL,xint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
 
+  CALL report_test()
+  
+  ! 2-D with one dimension perturbed test
+  verbose = .FALSE.
+  CALL init_test('2-D/1-D TL interpolation test',verbose=verbose)
+  ! In the middle
+  wint = (w(N/2) + w(N/2+1))/TWO
+  xint = (x(N/2) + x(N/2+1))/TWO
+  xint_TL = 0.1_fp
+  dzcalc = dzx(xint)*xint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2), wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xdlp,xint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  ! Left edge
+  wint = (w(1) + w(2))/TWO
+  xint = (x(1) + x(2))/TWO
+  xint_TL = -1.1756_fp
+  dzcalc = dzx(xint)*xint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2), wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xdlp,xint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  ! right edge
+  wint = (w(N-1) + w(N))/TWO
+  xint = (x(N-1) + x(N))/TWO
+  xint_TL = 1.4563_fp
+  dzcalc = dzx(xint)*xint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2), wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xdlp,xint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  
   CALL report_test()
 
   ! 3-D test
@@ -425,9 +508,15 @@ PROGRAM Test_Interpolation
   yint_TL = 0.1_fp
   dzcalc = dzw(wint)*wint_TL + dzx(xint)*xint_TL + dzy(yint)*yint_TL
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D_TL(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,wint_TL,xint_TL,yint_TL,zint_TL)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,wdlp,xdlp,ydlp,wint_TL,xint_TL,yint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
@@ -438,9 +527,15 @@ PROGRAM Test_Interpolation
   yint_TL = -1.0199_fp
   dzcalc = dzw(wint)*wint_TL + dzx(xint)*xint_TL + dzy(yint)*yint_TL
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D_TL(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,wint_TL,xint_TL,yint_TL,zint_TL)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,wdlp,xdlp,ydlp,wint_TL,xint_TL,yint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
   ! Right edge
   wint = (w(N-1) + w(N))/TWO
@@ -451,13 +546,124 @@ PROGRAM Test_Interpolation
   yint_TL = 1.2121_fp
   dzcalc = dzw(wint)*wint_TL + dzx(xint)*xint_TL + dzy(yint)*yint_TL
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D_TL(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,wint_TL,xint_TL,yint_TL,zint_TL)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,wdlp,xdlp,ydlp,wint_TL,xint_TL,yint_TL,zint_TL)
   CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
 
   CALL report_test()
 
+  ! 3-D with 2 dimensions perturbed test
+  verbose = .FALSE.
+  CALL init_test('3-D/2-D TL interpolation test',verbose=verbose)
+  ! In the middle
+  wint = (w(N/2) + w(N/2+1))/TWO
+  xint = (x(N/2) + x(N/2+1))/TWO
+  yint = (y(N/2) + y(N/2+1))/TWO
+  xint_TL = 0.1_fp
+  yint_TL = 0.1_fp
+  dzcalc = dzx(xint)*xint_TL + dzy(yint)*yint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,xdlp,ydlp,xint_TL,yint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  ! left edge
+  wint = (w(1) + w(2))/TWO
+  xint = (x(1) + x(2))/TWO
+  yint = (y(1) + y(2))/TWO
+  xint_TL = -1.2000_fp
+  yint_TL = -1.0199_fp
+  dzcalc = dzx(xint)*xint_TL + dzy(yint)*yint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,xdlp,ydlp,xint_TL,yint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  ! Right edge
+  wint = (w(N-1) + w(N))/TWO
+  xint = (x(N-1) + x(N))/TWO
+  yint = (y(N-1) + y(N))/TWO
+  xint_TL = 1.4563_fp
+  yint_TL = 1.2121_fp
+  dzcalc = dzx(xint)*xint_TL + dzy(yint)*yint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,xdlp,ydlp,xint_TL,yint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  
+  CALL report_test()
+  
+  ! 3-D with 1 dimension perturbed test
+  verbose = .FALSE.
+  CALL init_test('3-D/1-D TL interpolation test',verbose=verbose)
+  ! In the middle
+  wint = (w(N/2) + w(N/2+1))/TWO
+  xint = (x(N/2) + x(N/2+1))/TWO
+  yint = (y(N/2) + y(N/2+1))/TWO
+  yint_TL = 0.1_fp
+  dzcalc = dzy(yint)*yint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(i1:i2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ydlp,yint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  ! left edge
+  wint = (w(1) + w(2))/TWO
+  xint = (x(1) + x(2))/TWO
+  yint = (y(1) + y(2))/TWO
+  yint_TL = -1.0199_fp
+  dzcalc = dzy(yint)*yint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(i1:i2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ydlp,yint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  ! right edge
+  wint = (w(N-1) + w(N))/TWO
+  xint = (x(N-1) + x(N))/TWO
+  yint = (y(N-1) + y(N))/TWO
+  yint_TL = 1.2121_fp
+  dzcalc = dzy(yint)*yint_TL
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(i1:i2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ydlp,yint_TL,zint_TL)
+  CALL assert_equal(dzcalc, zint_TL, ulp=ULP)
+  
+  CALL report_test()
+  
   ! ----------------------
   ! AD interpolation tests
   ! ----------------------
@@ -470,7 +676,8 @@ PROGRAM Test_Interpolation
   zint_AD = ONE
   dzcalc = dzw(wint)
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D_AD(w(i1:i2),z1(i1:i2),wint,zint_AD,wint_AD)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL interp_1D_AD(z1(i1:i2),wdlp,zint_AD,wint_AD)
   CALL assert_equal(dzcalc, wint_AD, ulp=ULP)
   ! Left edge
   wint = (w(1) + w(2))/TWO
@@ -478,7 +685,8 @@ PROGRAM Test_Interpolation
   zint_AD = ONE
   dzcalc = dzw(wint)
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D_AD(w(i1:i2),z1(i1:i2),wint,zint_AD,wint_AD)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL interp_1D_AD(z1(i1:i2),wdlp,zint_AD,wint_AD)
   CALL assert_equal(dzcalc, wint_AD, ulp=ULP)
   ! Right edge
   wint    = (w(N-1) + w(N))/TWO
@@ -486,7 +694,8 @@ PROGRAM Test_Interpolation
   zint_AD = ONE
   dzcalc = dzw(wint)
   CALL find_index(w,wint,i1,i2)
-  CALL interp_1D_AD(w(i1:i2),z1(i1:i2),wint,zint_AD,wint_AD)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL interp_1D_AD(z1(i1:i2),wdlp,zint_AD,wint_AD)
   CALL assert_equal(dzcalc, wint_AD, ulp=ULP)
   
   CALL report_test()
@@ -503,8 +712,12 @@ PROGRAM Test_Interpolation
   dzwcalc = dzw(wint)
   dzxcalc = dzx(xint)
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D_AD(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,zint_AD,wint_AD,xint_AD)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xlp,wdlp,xdlp,zint_AD,wint_AD,xint_AD)
   CALL assert_equal(dzwcalc, wint_AD, ulp=ULP)
   CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
   ! Left edge
@@ -516,8 +729,12 @@ PROGRAM Test_Interpolation
   dzwcalc = dzw(wint)
   dzxcalc = dzx(xint)
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D_AD(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,zint_AD,wint_AD,xint_AD)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xlp,wdlp,xdlp,zint_AD,wint_AD,xint_AD)
   CALL assert_equal(dzwcalc, wint_AD, ulp=ULP)
   CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
   ! Right edge
@@ -529,9 +746,65 @@ PROGRAM Test_Interpolation
   dzwcalc = dzw(wint)
   dzxcalc = dzx(xint)
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
-  CALL interp_2D_AD(w(i1:i2),x(j1:j2),z2(i1:i2,j1:j2),wint,xint,zint_AD,wint_AD,xint_AD)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xlp,wdlp,xdlp,zint_AD,wint_AD,xint_AD)
   CALL assert_equal(dzwcalc, wint_AD, ulp=ULP)
+  CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
+  
+  CALL report_test()
+  
+  ! 2-D test with 1 perturbed dimension
+  verbose = .FALSE.
+  CALL init_test('2-D/1-D AD interpolation test',verbose=verbose)
+  ! In the middle
+  wint    = (w(N/2) + w(N/2+1))/TWO
+  xint    = (x(N/2) + x(N/2+1))/TWO
+  wint_AD = ZERO
+  xint_AD = ZERO
+  zint_AD = ONE
+  dzxcalc = dzx(xint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xdlp,zint_AD,xint_AD)
+  CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
+  ! Left edge
+  wint = (w(1) + w(2))/TWO
+  xint = (x(1) + x(2))/TWO
+  wint_AD = ZERO
+  xint_AD = ZERO
+  zint_AD = ONE
+  dzwcalc = dzw(wint)
+  dzxcalc = dzx(xint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xdlp,zint_AD,xint_AD)
+  CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
+  ! Right edge
+  wint = (w(N-1) + w(N))/TWO
+  xint = (x(N-1) + x(N))/TWO
+  wint_AD = ZERO
+  xint_AD = ZERO
+  zint_AD = ONE
+  dzwcalc = dzw(wint)
+  dzxcalc = dzx(xint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xdlp,zint_AD,xint_AD)
   CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
   
   CALL report_test()
@@ -551,15 +824,111 @@ PROGRAM Test_Interpolation
   dzxcalc = dzx(xint)
   dzycalc = dzy(yint)
   CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
   CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
   CALL find_index(y,yint,k1,k2)
-  CALL interp_3D_AD(w(i1:i2),x(j1:j2),y(k1:k2),z3(i1:i2,j1:j2,k1:k2),wint,xint,yint,zint_AD,wint_AD,xint_AD,yint_AD)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,wdlp,xdlp,ydlp,zint_AD,wint_AD,xint_AD,yint_AD)
   CALL assert_equal(dzwcalc, wint_AD, ulp=ULP)
+  CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
+  CALL assert_equal(dzycalc, yint_AD, ulp=ULP)
+  
+  ! Left edge
+  wint    = (w(2) + w(1))/TWO
+  xint    = (x(2) + x(1))/TWO
+  yint    = (y(2) + y(1))/TWO
+  wint_AD = ZERO
+  xint_AD = ZERO
+  yint_AD = ZERO
+  zint_AD = ONE
+  dzwcalc = dzw(wint)
+  dzxcalc = dzx(xint)
+  dzycalc = dzy(yint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  wdlp = dlpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,wdlp,xdlp,ydlp,zint_AD,wint_AD,xint_AD,yint_AD)
+  CALL assert_equal(dzwcalc, wint_AD, ulp=ULP)
+  CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
+  CALL assert_equal(dzycalc, yint_AD, ulp=ULP)
+  
+  CALL report_test()
+  ! 3-D adjoint for 2 perturbed dimensions
+  verbose = .FALSE.
+  CALL init_test('3-D/2-D AD interpolation test',verbose=verbose)
+  ! In the middle
+  wint    = (w(N/2) + w(N/2+1))/TWO
+  xint    = (x(N/2) + x(N/2+1))/TWO
+  yint    = (y(N/2) + y(N/2+1))/TWO
+  xint_AD = ZERO
+  yint_AD = ZERO
+  zint_AD = ONE
+  dzxcalc = dzx(xint)
+  dzycalc = dzy(yint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,xdlp,ydlp,zint_AD,xint_AD,yint_AD)
+  CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
+  CALL assert_equal(dzycalc, yint_AD, ulp=ULP)
+  
+  ! Left edge
+  wint    = (w(2) + w(1))/TWO
+  xint    = (x(2) + x(1))/TWO
+  yint    = (y(2) + y(1))/TWO
+  xint_AD = ZERO
+  yint_AD = ZERO
+  zint_AD = ONE
+  dzxcalc = dzx(xint)
+  dzycalc = dzy(yint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  xdlp = dlpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ylp  = lpoly(y(k1:k2),yint)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,xdlp,ydlp,zint_AD,xint_AD,yint_AD)
   CALL assert_equal(dzxcalc, xint_AD, ulp=ULP)
   CALL assert_equal(dzycalc, yint_AD, ulp=ULP)
 
   CALL report_test()
-
+  ! 3-D adjoint for 1 perturbed dimension
+  verbose = .FALSE.
+  CALL init_test('3-D/1-D AD interpolation test',verbose=verbose)
+  ! In the middle
+  wint    = (w(N/2) + w(N/2+1))/TWO
+  xint    = (x(N/2) + x(N/2+1))/TWO
+  yint    = (y(N/2) + y(N/2+1))/TWO
+  yint_AD = ZERO
+  zint_AD = ONE
+  dzycalc = dzy(yint)
+  CALL find_index(w,wint,i1,i2)
+  wlp  = lpoly(w(i1:i2),wint)
+  CALL find_index(x,xint,j1,j2)
+  xlp  = lpoly(x(j1:j2),xint)
+  CALL find_index(y,yint,k1,k2)
+  ydlp = dlpoly(y(k1:k2),yint)
+  CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ydlp,zint_AD,yint_AD)
+  CALL assert_equal(dzycalc, yint_AD, ulp=ULP)
+  
+  CALL report_test()  
   ! ------------
   ! Test summary
   ! ------------
