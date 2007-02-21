@@ -135,15 +135,15 @@ PROGRAM Test_Interpolation
   INTEGER , PARAMETER :: XPOWER = 3
   REAL(fp), PARAMETER :: YC     = 10.0_fp
   INTEGER , PARAMETER :: YPOWER = 1
-  INTEGER , PARAMETER :: NPTS = 4
+  INTEGER , PARAMETER :: I_NPTS = 4
   !PRINT *, NPTS
   ! Variables
   INTEGER  :: i , j , k
   INTEGER  :: i1, i2
   INTEGER  :: j1, j2
   INTEGER  :: k1, k2
-  REAL(fp) :: wlp(NPTS), xlp(NPTS), ylp(NPTS)
-  REAL(fp) :: wdlp(NPTS), xdlp(NPTS), ydlp(NPTS)
+  REAL(fp) :: wlp(I_NPTS), xlp(I_NPTS), ylp(I_NPTS)
+  REAL(fp) :: wdlp(I_NPTS), xdlp(I_NPTS), ydlp(I_NPTS)
   REAL(fp) :: dx
   REAL(fp) :: x_regular(NIDX), x_random(NIDX)
   REAL(fp) :: w(N), x(N), y(N)
