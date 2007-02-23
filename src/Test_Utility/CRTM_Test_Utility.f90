@@ -38,28 +38,26 @@ MODULE CRTM_Test_Utility
   PUBLIC :: SFCDATA_FILENAME
   PUBLIC :: MAX_NPROFILES
   PUBLIC :: USED_NPROFILES
-  
   PUBLIC :: EMISSIVITY_TEST
   PUBLIC :: CLOUDS_TEST
   PUBLIC :: AEROSOLS_TEST
   PUBLIC :: MAX_NTESTS
-  
   PUBLIC :: MAX_NSENSORS
   PUBLIC :: TEST_SENSORID
-
   PUBLIC :: TEST_ANGLE
-  
-  PUBLIC :: FWD_OUTPUT
-  PUBLIC :: TL_OUTPUT
-  PUBLIC :: AD_OUTPUT
-  PUBLIC :: K_OUTPUT
+  PUBLIC :: TEST_DELTA
+  PUBLIC :: FWD_TYPE
+  PUBLIC :: TL_TYPE 
+  PUBLIC :: AD_TYPE 
+  PUBLIC :: KM_TYPE 
+  PUBLIC :: TYPE_NAME
   ! Procedures
   PUBLIC :: Perform_Test
   PUBLIC :: Print_ChannelInfo
-  PUBLIC :: Print_Results
-  PUBLIC :: Print_FWD_Results
-  PUBLIC :: Print_K_Results
-  PUBLIC :: Dump_ForwardModel_Results
+  PUBLIC :: Dump_FWD_Model_Results
+  PUBLIC :: Dump_TL_Model_Results
+  PUBLIC :: Dump_AD_Model_Results
+  PUBLIC :: Dump_KM_Model_Results
 
 
   ! ------------------------
@@ -88,11 +86,17 @@ MODULE CRTM_Test_Utility
   ! Default test angle
   REAL(fp), PARAMETER :: TEST_ANGLE = 30.0_fp
   
+  ! Default test pertubation fraction
+  REAL(fp), PARAMETER :: TEST_DELTA = 0.05_fp ! 5%
+  
   ! Output type flags
-  INTEGER, PARAMETER :: FWD_OUTPUT = 1
-  INTEGER, PARAMETER :: TL_OUTPUT  = 2
-  INTEGER, PARAMETER :: AD_OUTPUT  = 3
-  INTEGER, PARAMETER :: K_OUTPUT   = 4
+  INTEGER, PARAMETER :: NTYPES = 4
+  INTEGER, PARAMETER :: FWD_TYPE = 1
+  INTEGER, PARAMETER :: TL_TYPE  = 2
+  INTEGER, PARAMETER :: AD_TYPE  = 3
+  INTEGER, PARAMETER :: KM_TYPE  = 4
+  CHARACTER(*), PARAMETER, DIMENSION(NTYPES) :: TYPE_NAME = &
+    (/'FWD','TL ','AD ','KM '/)
 
 
   ! -------------------------
@@ -156,36 +160,23 @@ CONTAINS
     LOGICAL :: Perform_Test
     Perform_Test = (IAND(TestNumber,TestID) /= 0)  
   END FUNCTION Perform_Test
+
   
   ! Procedure to output some initialisation info
-  SUBROUTINE Print_ChannelInfo(Filename,ChannelInfo)
-    CHARACTER(*),                INTENT(IN) :: Filename
+  SUBROUTINE Print_ChannelInfo(ChannelInfo)
     TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
-    INTEGER :: FileID
-    INTEGER :: IO_Status
     INTEGER :: l
 
-    ! Open output file
-    FileID = Open_TestFile(Filename, 'REPLACE')
-
-    ! Write to stdout and file
-    WRITE( *,      100 ) ChannelInfo%n_Channels
-    WRITE( FileID, 100 ) ChannelInfo%n_Channels
-    WRITE( *,      200 )
-    WRITE( FileID, 200 )
+    ! Output some info
+    WRITE(*,100) ChannelInfo%n_Channels
+    WRITE(*,200)
     DO l = 1, ChannelInfo%n_Channels
-      WRITE( *,      300 ) ChannelInfo%Channel_Index( l ), &
-                           ChannelInfo%SensorID( l ), &
-                           ChannelInfo%WMO_Satellite_ID( l ), &
-                           ChannelInfo%WMO_Sensor_ID( l ), &
-                           ChannelInfo%Sensor_Channel( l )
-      WRITE( FileID, 300 ) ChannelInfo%Channel_Index( l ), &
-                           ChannelInfo%SensorID( l ), &
-                           ChannelInfo%WMO_Satellite_ID( l ), &
-                           ChannelInfo%WMO_Sensor_ID( l ), &
-                           ChannelInfo%Sensor_Channel( l )
+      WRITE(*,300) ChannelInfo%Channel_Index(l), &
+                   ChannelInfo%SensorID(l), &
+                   ChannelInfo%WMO_Satellite_ID(l), &
+                   ChannelInfo%WMO_Sensor_ID(l), &
+                   ChannelInfo%Sensor_Channel(l)
     END DO
-    CLOSE( FileID )
 
     ! Format statements
     100 FORMAT( /5x, 'Number of channels indexed: ', i5 )
@@ -193,252 +184,13 @@ CONTAINS
                &/2x, ' Index                         Satellite ID   Sensor ID   Number', &
                &/2x, '----------------------------------------------------------------'  )
     300 FORMAT( 2x, 2x, i4, 2x, '>', a, '<', 5x, i3, 11x, i3, 7x, i4 )
-
   END SUBROUTINE Print_ChannelInfo
 
 
-  ! Procedure to output some CRTM run results
-  SUBROUTINE Print_FWD_Results(Filename   , &
-                               ChannelInfo, &
-                               RTSolution   )
-    ! Arguments
-    CHARACTER(*),                                INTENT(IN) :: Filename
-    TYPE(CRTM_ChannelInfo_type),                 INTENT(IN) :: ChannelInfo
-    TYPE(CRTM_RTSolution_type),  DIMENSION(:,:), INTENT(IN) :: RTSolution
-    ! Local variables
-    INTEGER :: FileID
-    INTEGER :: IO_Status
-    INTEGER :: l, nChannels
-    INTEGER :: m, nProfiles
-
-    ! Set up
-    nChannels = SIZE(RTSolution,DIM=1)
-    nProfiles = SIZE(RTSolution,DIM=2)
-
-    ! Open output file
-    FileID = Open_TestFile(Filename, 'REPLACE')
-
-    ! Output header
-    !
-    ! Output instrument ID
-    WRITE(FileID,'(a)') ChannelInfo%SensorID(1)
-    ! Output dimensions
-    WRITE(FileID,'(2i5)')nChannels, nProfiles
-
-    ! Write to file
-    Profile_Loop: DO m = 1, nProfiles
-      WRITE(FileID,'("Profile #",i0)') m
-      Channel_Loop: DO l = 1, nChannels
-        WRITE(FileID,'(i5,2x,f10.6)') ChannelInfo%Sensor_Channel(l), &
-                                      RTSolution(l,m)%Brightness_Temperature
-      END DO Channel_Loop
-    END DO Profile_Loop
-    CLOSE( FileID )
-  END SUBROUTINE Print_FWD_Results
-
-  SUBROUTINE Print_K_Results(Filename    , &
-                             ChannelInfo , &
-                             Atmosphere  , &
-                             Atmosphere_K, &
-                             Surface_K     )
-    ! Arguments
-    CHARACTER(*),                                INTENT(IN) :: Filename
-    TYPE(CRTM_ChannelInfo_type),                 INTENT(IN) :: ChannelInfo
-    TYPE(CRTM_Atmosphere_type),  DIMENSION(:)  , INTENT(IN) :: Atmosphere
-    TYPE(CRTM_Atmosphere_type),  DIMENSION(:,:), INTENT(IN) :: Atmosphere_K
-    TYPE(CRTM_Surface_type),     DIMENSION(:,:), INTENT(IN) :: Surface_K
-    ! Local variables
-    INTEGER :: FileID
-    INTEGER :: IO_Status
-    INTEGER :: k, nLayers
-    INTEGER :: l, nChannels
-    INTEGER :: m, nProfiles
-
-    ! Set up
-    nLayers   = Atmosphere_K(1,1)%n_Layers
-    nChannels = SIZE(Atmosphere_K,DIM=1)
-    nProfiles = SIZE(Atmosphere_K,DIM=2)
-
-    ! Open output file
-    FileID = Open_TestFile(Filename, 'REPLACE')
-
-    ! Output header
-    !
-    ! Output instrument ID
-    WRITE(FileID,'(a)') ChannelInfo%SensorID(1)
-    ! Output dimensions
-    WRITE(FileID,'(3i5)')nLayers, nChannels, nProfiles
-
-    ! Write to file
-    Profile_Loop: DO m = 1, nProfiles
-      WRITE(FileID,'("Profile #",i0)') m
-      Channel_Loop: DO l = 1, nChannels
-        WRITE(FileID,'("Channel #",i0)') ChannelInfo%Sensor_Channel(l)
-        Layer_Loop: DO k = 1, nLayers
-          WRITE(FileID,'(i5,4(2x,es13.6))') k, &
-                                        Atmosphere(m)%Pressure(k)       , & ! FWD pressure
-                                        Atmosphere_K(l,m)%Temperature(k), & ! K Temperature
-                                        Atmosphere_K(l,m)%Absorber(k,1) , & ! K Water vapour
-                                        Atmosphere_K(l,m)%Absorber(k,2)     ! K Ozone
-        END DO Layer_Loop
-      END DO Channel_Loop
-    END DO Profile_Loop
-    CLOSE( FileID )
-  END SUBROUTINE Print_K_Results
-
-  SUBROUTINE Print_Results(Output_Type, Filename, Message, &
-                           ChannelInfo, Atmosphere, Surface, RTSolution, &
-                           RTSolution_TL, &
-                           RTSolution_AD, &
-                           RTSolution_K, &
-                           Surface_AD, &
-                           SURFACE_K)
-    INTEGER,                                              INTENT(IN) :: Output_Type
-    CHARACTER(*),                                         INTENT(IN) :: Filename
-    CHARACTER(*),                                         INTENT(IN) :: Message
-    TYPE(CRTM_ChannelInfo_type),                          INTENT(IN) :: ChannelInfo
-    TYPE(CRTM_Atmosphere_type),           DIMENSION(:),   INTENT(IN) :: Atmosphere
-    TYPE(CRTM_Surface_type),              DIMENSION(:),   INTENT(IN) :: Surface
-    TYPE(CRTM_RTSolution_type),           DIMENSION(:,:), INTENT(IN) :: RTSolution
-    TYPE(CRTM_RTSolution_type), OPTIONAL, DIMENSION(:,:), INTENT(IN) :: RTSolution_TL
-    TYPE(CRTM_RTSolution_type), OPTIONAL, DIMENSION(:,:), INTENT(IN) :: RTSolution_AD
-    TYPE(CRTM_RTSolution_type), OPTIONAL, DIMENSION(:,:), INTENT(IN) :: RTSolution_K
-    TYPE(CRTM_Surface_type),    OPTIONAL, DIMENSION(:),   INTENT(IN) :: Surface_AD
-    TYPE(CRTM_Surface_type),    OPTIONAL, DIMENSION(:,:), INTENT(IN) :: Surface_K
-    ! Local parameters for formatting output
-    CHARACTER(*), PARAMETER :: FWD_HDR_FMT = &
-     '(/2x,"Channel         Sensor            Radiance      Brightness     Surface",'//&
-     ' /2x," Index        Descriptor                        Temperature   Emissivity",'//&
-     ' /2x,"------------------------------------------------------------------------")'
-    CHARACTER(*), PARAMETER :: FWD_FMT = &
-     '(4x,i4,2x,">",a,"<",3x,f10.6,5x,f10.6,3x,f10.6)'
-
-    CHARACTER(*), PARAMETER :: TL_HDR_FMT = &
-     '(/2x,"Channel         Sensor            Radiance          Tb    '//&
-     '     Surface     Emissivity_TL   Radiance_TL       Tb_TL  ",'//&
-     ' /2x," Index        Descriptor                                  '//&
-     '    Emissivity",'//&
-     ' /2x,"----------------------------------------------------------'//&
-     '-----------------------------------------------------------")'
-    CHARACTER(*), PARAMETER :: TL_FMT = &
-     '(4x,i4,2x,">",a,"<",3x,f10.6,5x,f10.6,3x,f10.6,4x,f9.6,5x,f10.6,5x,f10.6 )'
-
-    CHARACTER(*), PARAMETER :: AD_HDR_FMT = &
-     '( /2x,"Channel         Sensor            Radiance          Tb       '//&
-     '  Surface     Emissivity_AD               Tsfc_AD",'//&
-     '  /2x," Index        Descriptor                                     '//&
-     ' Emissivity                     Land   Water    Snow    Ice ",'//&
-     '  /2x,"-------------------------------------------------------------'//&
-     '--------------------------------------------------------------")'
-    CHARACTER(*), PARAMETER :: AD_FMT = &
-     '(4x,i4,2x,">",a,"<",3x,f10.6,5x,f10.6,3x,f10.6,5x,f10.6,5x,4f8.4)'
-
-    CHARACTER(*), PARAMETER :: K_HDR_FMT = &
-     '(/2x,"Channel         Sensor            Radiance          Tb       '//&
-     '  Surface     Emissivity_K                Tsfc_K",'//&
-     ' /2x," Index        Descriptor                                     '//&
-     ' Emissivity                      Land    Water   Snow    Ice",'//&
-     ' /2x,"-------------------------------------------------------------'//&
-     '--------------------------------------------------------------")'
-    CHARACTER(*), PARAMETER :: K_FMT = &
-     '(4x,i4,2x,">",a,"<",3x,f10.6,5x,f10.6,3x,f10.6,5x,f10.6,5x,4f8.4)'
-    CHARACTER(*), PARAMETER :: K_FMT2 = &
-     '(93x,"--------------------------------",/93x,4f8.4)'
-
-    INTEGER :: FileID
-    INTEGER :: IO_Status
-    INTEGER :: l, m, n
-    INTEGER :: Surface_Type
-
-    ! Open output file
-    FileID = Open_TestFile(Filename, 'OLD')
-
-    ! Write to file
-    WRITE( FileID, '( /5x, a )' ) TRIM(Message)
-    Profile_Loop: DO m = 1, SIZE( RTSolution, 2 )
-
-      ! Model independent output
-      WRITE(FileID,'(/5x,"Profile #", i2, " results:" )') m
-      WRITE(FileID,'(/5x,"Atmosphere climatology: ", a )') CLIMATOLOGY_MODEL_NAME(Atmosphere(m)%Climatology)
-      DO n = 1, Atmosphere(m)%n_Clouds
-        WRITE(FileID,'(5x,"Cloud ",i3," type: ",a)') n, CLOUD_TYPE_NAME( Atmosphere(m)%Cloud(n)%Type )
-      END DO
-      Surface_Type=0
-      IF( Surface(m)%Land_Coverage  >ZERO ) Surface_Type = LAND_SURFACE
-      IF( Surface(m)%Water_Coverage >ZERO ) Surface_Type = Surface_Type + WATER_SURFACE
-      IF( Surface(m)%Snow_Coverage  >ZERO ) Surface_Type = Surface_Type + SNOW_SURFACE
-      IF( Surface(m)%Ice_Coverage   >ZERO ) Surface_Type = Surface_Type + ICE_SURFACE
-      WRITE(FileID,'(5x,"Surface type: ",a)') SURFACE_TYPE_NAME(Surface_Type)
-
-      ! Model dependent output
-      SELECT CASE (Output_Type)
-
-        ! Forward model output
-        CASE (FWD_OUTPUT)
-          WRITE(FileID,FMT=FWD_HDR_FMT)
-          FWD_Channel_Loop: DO l = 1, SIZE( RTSolution, 1 )
-            WRITE(FileID,FMT=FWD_FMT) ChannelInfo%Channel_Index( l ), &
-                                      ChannelInfo%SensorID( l ), &
-                                      RTSolution(l,m)%Radiance, &
-                                      RTSolution(l,m)%Brightness_Temperature, &
-                                      RTSolution(l,m)%Surface_Emissivity
-          END DO FWD_Channel_Loop
-
-        ! Tangent-linear model output
-        CASE (TL_OUTPUT)
-          WRITE(FileID, FMT=TL_HDR_FMT)
-          TL_Channel_Loop: DO l = 1, SIZE( RTSolution, 1 )
-            WRITE(FileID,FMT=TL_FMT) ChannelInfo%Channel_Index( l ), &
-                                     ChannelInfo%SensorID( l ), &
-                                     RTSolution(l,m)%Radiance, &
-                                     RTSolution(l,m)%Brightness_Temperature, &
-                                     RTSolution(l,m)%Surface_Emissivity, &
-                                     RTSolution_TL(l,m)%Surface_Emissivity, &
-                                     RTSolution_TL(l,m)%Radiance, &
-                                     RTSolution_TL(l,m)%Brightness_Temperature
-          END DO TL_Channel_Loop
-
-        ! Adjoint model output
-        CASE (AD_OUTPUT)
-          WRITE(FileID,FMT=AD_HDR_FMT)
-          AD_Channel_Loop: DO l = 1, SIZE( RTSolution, 1 )
-            WRITE(FileID,FMT=AD_FMT) ChannelInfo%Channel_Index( l ), &
-                                     ChannelInfo%SensorID( l ), &
-                                     RTSolution(l,m)%Radiance, &
-                                     RTSolution(l,m)%Brightness_Temperature, &
-                                     RTSolution(l,m)%Surface_Emissivity, &
-                                     RTSolution_AD(l,m)%Surface_Emissivity, &
-                                     Surface_AD(m)%Land_Temperature, &
-                                     Surface_AD(m)%Water_Temperature, &
-                                     Surface_AD(m)%Snow_Temperature, &
-                                     Surface_AD(m)%Ice_Temperature
-          END DO AD_Channel_Loop
-
-        ! K-Matrix model output
-        CASE (K_OUTPUT)
-          WRITE(FileID,FMT=K_HDR_FMT)
-          K_Channel_Loop: DO l = 1, SIZE( RTSolution, 1 )
-            WRITE(FileID,FMT=K_FMT) ChannelInfo%Channel_Index( l ), &
-                                    ChannelInfo%SensorID( l ), &
-                                    RTSolution(l,m)%Radiance, &
-                                    RTSolution(l,m)%Brightness_Temperature, &
-                                    RTSolution(l,m)%Surface_Emissivity, &
-                                    RTSolution_K(l,m)%Surface_Emissivity, &
-                                    Surface_K(l,m)%Land_Temperature, &
-                                    Surface_K(l,m)%Water_Temperature, &
-                                    Surface_K(l,m)%Snow_Temperature, &
-                                    Surface_K(l,m)%Ice_Temperature
-          END DO K_Channel_Loop
-          WRITE(FileID,FMT=K_FMT2)SUM(Surface_K(:,m)%Land_Temperature), &
-                                  SUM(Surface_K(:,m)%Water_Temperature), &
-                                  SUM(Surface_K(:,m)%Snow_Temperature), &
-                                  SUM(Surface_K(:,m)%Ice_Temperature)
-      END SELECT
-    END DO Profile_Loop
-    CLOSE( FileID )
-  END SUBROUTINE Print_Results
-
-
+  ! ----------------------------------------
+  ! Subroutine to dump out the ancillary
+  ! information for a single atm/sfc profile
+  ! ----------------------------------------
   SUBROUTINE Dump_ProfilePreamble(FileID, m, Atm, Sfc)
     ! Arguments
     INTEGER                   , INTENT(IN) :: FileID
@@ -452,6 +204,8 @@ CONTAINS
     
     WRITE(FileID,'(" Profile ",i0)') m
     WRITE(FileID,'("   Climatology: ", a )') CLIMATOLOGY_MODEL_NAME(Atm(m)%Climatology)
+    WRITE(FileID,'("   Dimensions: nLayers, nAbsorbers ",/2i5)') &
+                 Atm(m)%n_Layers, Atm(m)%n_Absorbers
     WRITE(FileID,'("   Dimensions: nClouds, nAerosols ",/2i5)') &
                  Atm(m)%n_Clouds, Atm(m)%n_Aerosols
     ! Output cloud info
@@ -488,12 +242,16 @@ CONTAINS
   END SUBROUTINE Dump_ProfilePreamble
 
 
-  SUBROUTINE Dump_ForwardModel_Results(ExperimentNumber    , &
-                                       ExperimentDescriptor, &
-                                       ChannelInfo         , &
-                                       Atmosphere          , &
-                                       Surface             , &
-                                       RTSolution            )
+  ! --------------------------------------
+  ! Subroutine to dump out results for the
+  ! forward model tests
+  ! --------------------------------------
+  SUBROUTINE Dump_FWD_Model_Results(ExperimentNumber    , &
+                                    ExperimentDescriptor, &
+                                    ChannelInfo         , &
+                                    Atmosphere          , &
+                                    Surface             , &
+                                    RTSolution            )
     ! Arguments
     INTEGER,                     INTENT(IN) :: ExperimentNumber
     CHARACTER(*),                INTENT(IN) :: ExperimentDescriptor
@@ -538,6 +296,7 @@ CONTAINS
       FileID = Open_TestFile(Filename, Status)
 
       ! Write information to file
+      WRITE(FileID,'(" Datatype: ",a)') TRIM(TYPE_NAME(FWD_TYPE))
       WRITE(FileID,'(" Filename: ",a)') TRIM(Filename)
       WRITE(FileID,'(" Experiment: ", a)') TRIM(ExperimentDescriptor) 
       WRITE(FileID,'(" Dimensions: nChannels, nProfiles ",/2i5)') nChannels, nProfiles
@@ -561,6 +320,326 @@ CONTAINS
       ! Update channel begin index
       l1 = l2 + 1
     END DO Sensor_Loop
-  END SUBROUTINE Dump_ForwardModel_Results
+  END SUBROUTINE Dump_FWD_Model_Results
+
+
+  ! --------------------------------------
+  ! Subroutine to dump out results for the
+  ! tangent-linear model tests
+  ! --------------------------------------
+  SUBROUTINE Dump_TL_Model_Results(ExperimentNumber    , &
+                                   ExperimentDescriptor, &
+                                   ChannelInfo         , &
+                                   Atmosphere          , &
+                                   Surface             , &
+                                   RTSolution          , &
+                                   RTSolution_TL         )
+    ! Arguments
+    INTEGER,                     INTENT(IN) :: ExperimentNumber
+    CHARACTER(*),                INTENT(IN) :: ExperimentDescriptor
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo(:)      ! N
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN) :: Atmosphere(:)       ! M
+    TYPE(CRTM_Surface_type)    , INTENT(IN) :: Surface(:)          ! M
+    TYPE(CRTM_RTSolution_type) , INTENT(IN) :: RTSolution(:,:)     ! L x M
+    TYPE(CRTM_RTSolution_type) , INTENT(IN) :: RTSolution_TL(:,:)  ! L x M
+    ! Local variables
+    CHARACTER(7)   :: Status
+    CHARACTER(256) :: SensorID
+    CHARACTER(256) :: Filename
+    INTEGER :: l1, l2, l, m, n
+    INTEGER :: nSensors, nChannels, nProfiles
+    INTEGER :: FileID
+
+    ! Obtain dimensions
+    nSensors  = SIZE(ChannelInfo)
+    nProfiles = SIZE(RTSolution,DIM=2)
+    
+    ! Open output file
+    IF ( ExperimentNumber == 0 ) THEN
+      Status = 'REPLACE'
+    ELSE
+      Status = 'OLD'
+    END IF
+
+    ! Initialise channel begin index
+    l1=1
+    
+    ! Loop over sensors
+    Sensor_Loop: DO n = 1, nSensors
+    
+      ! Initialise channel end index
+      l2 = l1 + ChannelInfo(n)%n_Channels - 1
+      nChannels = ChannelInfo(n)%n_Channels
+      
+      ! Assumption is one sensor per ChannelInfo element
+      SensorID = ChannelInfo(n)%SensorID(1)
+      Filename = TRIM(SensorID)//'.CRTM_Test_Tangent_Linear.dump'
+      
+      ! Open the dump file for the current sensor
+      FileID = Open_TestFile(Filename, Status)
+
+      ! Write information to file
+      WRITE(FileID,'(" Datatype: ",a)') TRIM(TYPE_NAME(TL_TYPE))
+      WRITE(FileID,'(" Filename: ",a)') TRIM(Filename)
+      WRITE(FileID,'(" Experiment: ", a)') TRIM(ExperimentDescriptor) 
+      WRITE(FileID,'(" Dimensions: nChannels, nProfiles ",/2i5)') nChannels, nProfiles
+
+      Profile_Loop: DO m = 1, nProfiles
+        ! Output the preamble for each profile
+        CALL Dump_ProfilePreamble(FileId, m, Atmosphere, Surface)
+        ! Output channel info
+        Channel_Loop: DO l = l1, l2
+          WRITE(FileID,'(i5,2x,a,6(2x,es16.9))') ChannelInfo(n)%Sensor_Channel(l-l1+1), &
+                                                 ChannelInfo(n)%SensorID(l-l1+1), &
+                                                 RTSolution(l,m)%Radiance, &
+                                                 RTSolution(l,m)%Brightness_Temperature, &
+                                                 RTSolution(l,m)%Surface_Emissivity, &
+                                                 RTSolution_TL(l,m)%Radiance, &
+                                                 RTSolution_TL(l,m)%Brightness_Temperature, &
+                                                 RTSolution_TL(l,m)%Surface_Emissivity
+        END DO Channel_Loop
+      END DO Profile_Loop
+      
+      ! Close dump file for current sensor
+      CLOSE( FileID )
+      
+      ! Update channel begin index
+      l1 = l2 + 1
+    END DO Sensor_Loop
+  END SUBROUTINE Dump_TL_Model_Results
+
+
+  ! --------------------------------------
+  ! Subroutine to dump out results for the
+  ! adjoint model tests
+  ! --------------------------------------
+  SUBROUTINE Dump_AD_Model_Results(ExperimentNumber    , &
+                                   ExperimentDescriptor, &
+                                   ChannelInfo         , &
+                                   Atmosphere          , &
+                                   Surface             , &
+                                   RTSolution          , &
+                                   RTSolution_AD       , &
+                                   Atmosphere_AD       , &
+                                   Surface_AD            )
+    ! Arguments
+    INTEGER,                     INTENT(IN) :: ExperimentNumber
+    CHARACTER(*),                INTENT(IN) :: ExperimentDescriptor
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo(:)      ! N
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN) :: Atmosphere(:)       ! M
+    TYPE(CRTM_Surface_type)    , INTENT(IN) :: Surface(:)          ! M
+    TYPE(CRTM_RTSolution_type) , INTENT(IN) :: RTSolution(:,:)     ! L x M
+    TYPE(CRTM_RTSolution_type) , INTENT(IN) :: RTSolution_AD(:,:)  ! L x M
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN) :: Atmosphere_AD(:)    ! M
+    TYPE(CRTM_Surface_type)    , INTENT(IN) :: Surface_AD(:)       ! M
+    ! Local variables
+    CHARACTER(7)   :: Status
+    CHARACTER(256) :: SensorID
+    CHARACTER(256) :: Filename
+    INTEGER :: j, l1, l2, l, m, n, nc, na
+    INTEGER :: nSensors, nChannels, nProfiles
+    INTEGER :: FileID
+
+    ! Obtain dimensions
+    nSensors  = SIZE(ChannelInfo)
+    nProfiles = SIZE(RTSolution,DIM=2)
+    
+    ! Open output file
+    IF ( ExperimentNumber == 0 ) THEN
+      Status = 'REPLACE'
+    ELSE
+      Status = 'OLD'
+    END IF
+
+    ! Initialise channel begin index
+    l1=1
+    
+    ! Loop over sensors
+    Sensor_Loop: DO n = 1, nSensors
+    
+      ! Initialise channel end index
+      l2 = l1 + ChannelInfo(n)%n_Channels - 1
+      nChannels = ChannelInfo(n)%n_Channels
+      
+      ! Assumption is one sensor per ChannelInfo element
+      SensorID = ChannelInfo(n)%SensorID(1)
+      Filename = TRIM(SensorID)//'.CRTM_Test_Adjoint.dump'
+      
+      ! Open the dump file for the current sensor
+      FileID = Open_TestFile(Filename, Status)
+
+      ! Write information to file
+      WRITE(FileID,'(" Datatype: ",a)') TRIM(TYPE_NAME(AD_TYPE))
+      WRITE(FileID,'(" Filename: ",a)') TRIM(Filename)
+      WRITE(FileID,'(" Experiment: ", a)') TRIM(ExperimentDescriptor) 
+      WRITE(FileID,'(" Dimensions: nChannels, nProfiles ",/2i5)') nChannels, nProfiles
+
+      Profile_Loop: DO m = 1, nProfiles
+        ! Output the preamble for each profile
+        CALL Dump_ProfilePreamble(FileId, m, Atmosphere, Surface)
+        ! Output channel info
+        Channel_Loop: DO l = l1, l2
+          WRITE(FileID,'(i5,2x,a,6(2x,es16.9))') ChannelInfo(n)%Sensor_Channel(l-l1+1), &
+                                                 ChannelInfo(n)%SensorID(l-l1+1), &
+                                                 RTSolution(l,m)%Radiance, &
+                                                 RTSolution(l,m)%Brightness_Temperature, &
+                                                 RTSolution(l,m)%Surface_Emissivity, &
+                                                 RTSolution_AD(l,m)%Surface_Emissivity
+        END DO Channel_Loop
+        ! Output surface adjoint data
+        WRITE(FileID,'(5x,"Surface adjoint data")')
+        WRITE(FileID,'(5x,4(2x,es16.9))') Surface_AD(m)%Land_Temperature, &
+                                          Surface_AD(m)%Water_Temperature, &
+                                          Surface_AD(m)%Snow_Temperature, &
+                                          Surface_AD(m)%Ice_Temperature
+        ! Output atmospheric absorber adjoint data
+        WRITE(FileID,'(5x,"Absorber adjoint data")')
+        WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Pressure
+        WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Temperature
+        DO j = 1, Atmosphere(m)%n_Absorbers
+          WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Absorber(:,j)
+        END DO
+        ! Output atmospheric cloud adjoint data
+        IF (Atmosphere(m)%n_Clouds > 0) THEN
+          WRITE(FileID,'(5x,"Cloud adjoint data")')
+          DO nc = 1, Atmosphere(m)%n_Clouds
+            WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Cloud(nc)%Water_Content
+            WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Cloud(nc)%Effective_Radius
+          END DO
+        END IF
+        ! Output atmospheric aerosol adjoint data
+        IF (Atmosphere(m)%n_Aerosols > 0) THEN
+          WRITE(FileID,'(5x,"Aerosol adjoint data")')
+          DO na = 1, Atmosphere(m)%n_Aerosols
+            WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Aerosol(na)%Concentration
+            WRITE(FileID,'(8(2x,es16.9))') Atmosphere_AD(m)%Aerosol(na)%Effective_Radius
+          END DO
+        END IF
+      END DO Profile_Loop
+      
+      ! Close dump file for current sensor
+      CLOSE( FileID )
+      
+      ! Update channel begin index
+      l1 = l2 + 1
+    END DO Sensor_Loop
+  END SUBROUTINE Dump_AD_Model_Results
+
+
+  ! --------------------------------------
+  ! Subroutine to dump out results for the
+  ! K-matrix model tests
+  ! --------------------------------------
+  SUBROUTINE Dump_KM_Model_Results(ExperimentNumber    , &
+                                   ExperimentDescriptor, &
+                                   ChannelInfo         , &
+                                   Atmosphere          , &
+                                   Surface             , &
+                                   RTSolution          , &
+                                   RTSolution_K        , &
+                                   Atmosphere_K        , &
+                                   Surface_K             )
+    ! Arguments
+    INTEGER,                     INTENT(IN) :: ExperimentNumber
+    CHARACTER(*),                INTENT(IN) :: ExperimentDescriptor
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo(:)      ! N
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN) :: Atmosphere(:)       ! M
+    TYPE(CRTM_Surface_type)    , INTENT(IN) :: Surface(:)          ! M
+    TYPE(CRTM_RTSolution_type) , INTENT(IN) :: RTSolution(:,:)     ! L x M
+    TYPE(CRTM_RTSolution_type) , INTENT(IN) :: RTSolution_K(:,:)   ! L x M
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN) :: Atmosphere_K(:,:)   ! L x M
+    TYPE(CRTM_Surface_type)    , INTENT(IN) :: Surface_K(:,:)      ! L x M
+    ! Local variables
+    CHARACTER(7)   :: Status
+    CHARACTER(256) :: SensorID
+    CHARACTER(256) :: Filename
+    INTEGER :: j, l1, l2, l, m, n, nc, na
+    INTEGER :: nSensors, nChannels, nProfiles
+    INTEGER :: FileID
+
+    ! Obtain dimensions
+    nSensors  = SIZE(ChannelInfo)
+    nProfiles = SIZE(RTSolution,DIM=2)
+    
+    ! Open output file
+    IF ( ExperimentNumber == 0 ) THEN
+      Status = 'REPLACE'
+    ELSE
+      Status = 'OLD'
+    END IF
+
+    ! Initialise channel begin index
+    l1=1
+    
+    ! Loop over sensors
+    Sensor_Loop: DO n = 1, nSensors
+    
+      ! Initialise channel end index
+      l2 = l1 + ChannelInfo(n)%n_Channels - 1
+      nChannels = ChannelInfo(n)%n_Channels
+      
+      ! Assumption is one sensor per ChannelInfo element
+      SensorID = ChannelInfo(n)%SensorID(1)
+      Filename = TRIM(SensorID)//'.CRTM_Test_K_Matrix.dump'
+      
+      ! Open the dump file for the current sensor
+      FileID = Open_TestFile(Filename, Status)
+
+      ! Write information to file
+      WRITE(FileID,'(" Datatype: ",a)') TRIM(TYPE_NAME(KM_TYPE))
+      WRITE(FileID,'(" Filename: ",a)') TRIM(Filename)
+      WRITE(FileID,'(" Experiment: ", a)') TRIM(ExperimentDescriptor) 
+      WRITE(FileID,'(" Dimensions: nChannels, nProfiles ",/2i5)') nChannels, nProfiles
+
+      Profile_Loop: DO m = 1, nProfiles
+        ! Output the preamble for each profile
+        CALL Dump_ProfilePreamble(FileId, m, Atmosphere, Surface)
+        ! Output channel info
+        Channel_Loop: DO l = l1, l2
+          WRITE(FileID,'(i5,2x,a,6(2x,es16.9))') ChannelInfo(n)%Sensor_Channel(l-l1+1), &
+                                                 ChannelInfo(n)%SensorID(l-l1+1), &
+                                                 RTSolution(l,m)%Radiance, &
+                                                 RTSolution(l,m)%Brightness_Temperature, &
+                                                 RTSolution(l,m)%Surface_Emissivity, &
+                                                 RTSolution_K(l,m)%Surface_Emissivity
+          ! Output surface K-matrix data
+          WRITE(FileID,'(5x,"Surface K-matrix data")')
+          WRITE(FileID,'(5x,4(2x,es16.9))') Surface_K(l,m)%Land_Temperature, &
+                                            Surface_K(l,m)%Water_Temperature, &
+                                            Surface_K(l,m)%Snow_Temperature, &
+                                            Surface_K(l,m)%Ice_Temperature
+          ! Output atmospheric absorber K-matrix data
+          WRITE(FileID,'(5x,"Absorber K-matrix data")')
+          WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Pressure
+          WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Temperature
+          DO j = 1, Atmosphere(m)%n_Absorbers
+            WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Absorber(:,j)
+          END DO
+          ! Output atmospheric cloud K-matrix data
+          IF (Atmosphere(m)%n_Clouds > 0) THEN
+            WRITE(FileID,'(5x,"Cloud K-matrix data")')
+            DO nc = 1, Atmosphere(m)%n_Clouds
+              WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Cloud(nc)%Water_Content
+              WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Cloud(nc)%Effective_Radius
+            END DO
+          END IF
+          ! Output atmospheric aerosol K-matrix data
+          IF (Atmosphere(m)%n_Aerosols > 0) THEN
+            WRITE(FileID,'(5x,"Aerosol K-matrix data")')
+            DO na = 1, Atmosphere(m)%n_Aerosols
+              WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Aerosol(na)%Concentration
+              WRITE(FileID,'(8(2x,es16.9))') Atmosphere_K(l,m)%Aerosol(na)%Effective_Radius
+            END DO
+          END IF
+        END DO Channel_Loop
+      END DO Profile_Loop
+      
+      ! Close dump file for current sensor
+      CLOSE( FileID )
+      
+      ! Update channel begin index
+      l1 = l2 + 1
+    END DO Sensor_Loop
+  END SUBROUTINE Dump_KM_Model_Results
 
 END MODULE CRTM_Test_Utility
