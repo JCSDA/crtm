@@ -20,15 +20,12 @@ PROGRAM Test_Forward
   USE CRTM_Atmosphere_Binary_IO  ! Just for reading test datafiles
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
   USE CRTM_Test_Utility, &
-        ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, MAX_NPROFILES, &
+        ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_NPROFILES, &
               EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, MAX_NTESTS, &
-              MAX_NSENSORS, TEST_SENSORID, &
-              FWD_OUTPUT, Print_Results, &
+              MAX_NSENSORS, TEST_SENSORID, TEST_ANGLE, &
               Perform_Test, &
               Print_ChannelInfo, &
-              Dump_ForwardModel_Results
-
-  
+              Dump_FWD_Model_Results
   USE Timing_Utility             ! For timing runs
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -40,8 +37,6 @@ PROGRAM Test_Forward
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id: Test_Forward.f90,v 1.15 2006/09/22 20:07:56 wd20pd Exp $'
-  CHARACTER(*), PARAMETER :: OUTPUT_FILENAME = 'CRTM_Test_Forward.output'
-  REAL(fp), PARAMETER :: TEST_ZENITH_ANGLE = 30.0_fp
 
 
   ! ---------
@@ -52,14 +47,14 @@ PROGRAM Test_Forward
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
   CHARACTER(256) :: Experiment
-  INTEGER, DIMENSION(MAX_NPROFILES) :: nClouds
-  INTEGER, DIMENSION(MAX_NPROFILES) :: nAerosols
+  INTEGER, DIMENSION(USED_NPROFILES) :: nClouds
+  INTEGER, DIMENSION(USED_NPROFILES) :: nAerosols
   TYPE(CRTM_ChannelInfo_type),  DIMENSION(MAX_NSENSORS)     :: ChannelInfo
-  TYPE(CRTM_Atmosphere_type),   DIMENSION(MAX_NPROFILES)    :: Atmosphere
-  TYPE(CRTM_Surface_type),      DIMENSION(MAX_NPROFILES)    :: Surface
-  TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_NPROFILES)    :: GeometryInfo
+  TYPE(CRTM_Atmosphere_type),   DIMENSION(USED_NPROFILES)   :: Atmosphere
+  TYPE(CRTM_Surface_type),      DIMENSION(USED_NPROFILES)   :: Surface
+  TYPE(CRTM_GeometryInfo_type), DIMENSION(USED_NPROFILES)   :: GeometryInfo
   TYPE(CRTM_RTSolution_type),   DIMENSION(:,:), ALLOCATABLE :: RTSolution
-  TYPE(CRTM_Options_type),      DIMENSION(MAX_NPROFILES)    :: Options
+  TYPE(CRTM_Options_type),      DIMENSION(USED_NPROFILES)   :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -112,7 +107,7 @@ PROGRAM Test_Forward
   ! ----------------------
   ! Allocate output arrays
   ! ----------------------
-  ALLOCATE( RTSolution( SUM(ChannelInfo%n_Channels), MAX_NPROFILES ), &
+  ALLOCATE( RTSolution( SUM(ChannelInfo%n_Channels), USED_NPROFILES ), &
             STAT = Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
@@ -137,8 +132,8 @@ PROGRAM Test_Forward
   ! ------------------
   ! Assign some values
   ! ------------------
-  GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
-  DO m = 1, MAX_NPROFILES
+  GeometryInfo%Sensor_Zenith_Angle = TEST_ANGLE
+  DO m = 1, USED_NPROFILES
     Options(m)%Emissivity = 0.8_fp
   END DO
 
@@ -147,7 +142,7 @@ PROGRAM Test_Forward
   ! Print some initialisation info
   ! ------------------------------
   DO n=1, MAX_NSENSORS
-    CALL Print_ChannelInfo(TRIM(TEST_SENSORID(n))//'.'//OUTPUT_FILENAME, ChannelInfo(n))
+    CALL Print_ChannelInfo(ChannelInfo(n))
   END DO
   
 
@@ -184,17 +179,17 @@ PROGRAM Test_Forward
       Atmosphere%n_Aerosols = 0
       Experiment = TRIM(Experiment)//' Aerosols OFF'
     END IF
-    
+
     WRITE(*,'(/5x,a)') TRIM(Experiment)
 
     ! Call the CRTM
     CALL Begin_Timing( Timing )
-    Error_Status = CRTM_Forward( Atmosphere, &
-                                 Surface, &
-                                 GeometryInfo, &
-                                 ChannelInfo, &
-                                 RTSolution, &
-                                 Options = Options )
+    Error_Status = CRTM_Forward( Atmosphere     , &
+                                 Surface        , &
+                                 GeometryInfo   , &
+                                 ChannelInfo    , &
+                                 RTSolution     , &
+                                 Options=Options  )
     CALL End_Timing( Timing )
     IF ( Error_Status /= SUCCESS ) THEN 
        CALL Display_Message( PROGRAM_NAME, &
@@ -202,20 +197,11 @@ PROGRAM Test_Forward
                               Error_Status)  
      STOP
     END IF
-
-    ! Output some results
-    l1=1
-    DO n = 1, MAX_NSENSORS
-      l2 = l1 + ChannelInfo(n)%n_Channels - 1
-      CALL Print_Results(FWD_OUTPUT, &
-                         TRIM(TEST_SENSORID(n))//'.'//OUTPUT_FILENAME, Message, &
-                         ChannelInfo(n), Atmosphere, Surface, RTSolution(l1:l2,:))
-      l1 = l2 + 1
-    END DO
     CALL Display_Timing( Timing )
 
-    CALL Dump_ForwardModel_Results(i, Experiment, ChannelInfo, &
-                                   Atmosphere, Surface, RTSolution)
+    ! Output some results
+    CALL Dump_FWD_Model_Results(i, Experiment, ChannelInfo, &
+                                Atmosphere, Surface, RTSolution)
   END DO
 
 

@@ -19,7 +19,13 @@ PROGRAM Test_Adjoint
   USE CRTM_Module, fp=>fp_kind   ! The main CRTM module
   USE CRTM_Atmosphere_Binary_IO  ! Just for reading test datafiles
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
-  USE CRTM_Test_Utility          ! For test output
+  USE CRTM_Test_Utility, &
+        ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_NPROFILES, &
+              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, MAX_NTESTS, &
+              MAX_NSENSORS, TEST_SENSORID, TEST_ANGLE, &
+              Perform_Test, &
+              Print_ChannelInfo, &
+              Dump_AD_Model_Results
   USE Timing_Utility             ! For timing runs
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -31,23 +37,6 @@ PROGRAM Test_Adjoint
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Adjoint'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id: Test_Adjoint.f90,v 1.10 2006/09/22 20:07:56 wd20pd Exp $'
-  CHARACTER(*), PARAMETER :: TEST_ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
-  CHARACTER(*), PARAMETER :: TEST_SFCDATA_FILENAME = 'ECMWF-Surface.bin'
-  INTEGER,      PARAMETER :: MAX_TEST_CASES = 52
-  CHARACTER(*), PARAMETER :: TEST_OUTPUT_FILENAME = 'CRTM_Test_Adjoint.output'
-  INTEGER,      PARAMETER :: N_OPTIONS_CASES = 2
-  INTEGER,      PARAMETER :: NO_OPTIONS  = 1
-  INTEGER,      PARAMETER :: FWD_OPTIONS = 2
-  INTEGER,      PARAMETER, DIMENSION( N_OPTIONS_CASES ) :: &
-    OPTIONS_CASES = (/ NO_OPTIONS,  &
-                       FWD_OPTIONS /)
-  INTEGER, PARAMETER :: NSENSORS=4
-  CHARACTER(*), PARAMETER, DIMENSION(NSENSORS) :: SENSORID=&
-    (/ 'amsua_n17', &
-       'hirs3_n17', &
-       'ssmis_f16', &
-       'imgr_g11 ' /)
-  REAL(fp), PARAMETER :: TEST_ZENITH_ANGLE = 30.0_fp
 
 
   ! ---------
@@ -57,12 +46,15 @@ PROGRAM Test_Adjoint
   INTEGER :: i, l, m, n, iOptions, l1, l2, nChannels
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
-  TYPE(CRTM_ChannelInfo_type) , DIMENSION(NSENSORS)         :: ChannelInfo
-  TYPE(CRTM_Atmosphere_type)  , DIMENSION(MAX_TEST_CASES)   :: Atmosphere, Atmosphere_AD
-  TYPE(CRTM_Surface_type)     , DIMENSION(MAX_TEST_CASES)   :: Surface,    Surface_AD
-  TYPE(CRTM_GeometryInfo_type), DIMENSION(MAX_TEST_CASES)   :: GeometryInfo
+  CHARACTER(256) :: Experiment
+  INTEGER, DIMENSION(USED_NPROFILES) :: nClouds
+  INTEGER, DIMENSION(USED_NPROFILES) :: nAerosols
+  TYPE(CRTM_ChannelInfo_type) , DIMENSION(MAX_NSENSORS)     :: ChannelInfo
+  TYPE(CRTM_Atmosphere_type)  , DIMENSION(USED_NPROFILES)   :: Atmosphere, Atmosphere_AD
+  TYPE(CRTM_Surface_type)     , DIMENSION(USED_NPROFILES)   :: Surface,    Surface_AD
+  TYPE(CRTM_GeometryInfo_type), DIMENSION(USED_NPROFILES)   :: GeometryInfo
   TYPE(CRTM_RTSolution_type)  , DIMENSION(:,:), ALLOCATABLE :: RTSolution, RTSolution_AD
-  TYPE(CRTM_Options_type)     , DIMENSION(MAX_TEST_CASES)   :: Options
+  TYPE(CRTM_Options_type)     , DIMENSION(USED_NPROFILES)   :: Options
   TYPE(Timing_type) :: Timing
 
 
@@ -70,26 +62,31 @@ PROGRAM Test_Adjoint
   ! Read the atmosphere and surface structure data files
   ! ----------------------------------------------------
   WRITE( *, '( /5x, "Reading ECMWF Atmosphere structure file..." )' )
-  Error_Status = CRTM_Read_Atmosphere_Binary( TEST_ATMDATA_FILENAME, &
+  Error_Status = CRTM_Read_Atmosphere_Binary( ATMDATA_FILENAME, &
                                               Atmosphere )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error reading Atmosphere structure file '//&
-                           TEST_ATMDATA_FILENAME, & 
+                           ATMDATA_FILENAME, & 
                            Error_Status )
    STOP
   END IF
 
   WRITE( *, '( /5x, "Reading Surface structure file..." )' )
-  Error_Status = CRTM_Read_Surface_Binary( TEST_SFCDATA_FILENAME, &
+  Error_Status = CRTM_Read_Surface_Binary( SFCDATA_FILENAME, &
                                            Surface )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error reading Surface structure file '//&
-                           TEST_SFCDATA_FILENAME, & 
+                           SFCDATA_FILENAME, & 
                            Error_Status )
    STOP
   END IF
+
+  ! Save the number of clouds and
+  ! aerosols in each profile
+  nClouds   = Atmosphere%n_Clouds
+  nAerosols = Atmosphere%n_Aerosols
 
 
   ! -------------------
@@ -97,7 +94,7 @@ PROGRAM Test_Adjoint
   ! -------------------
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
   Error_Status = CRTM_Init( ChannelInfo, &
-                            SensorId=SENSORID )
+                            SensorId=TEST_SENSORID )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error initializing CRTM', & 
@@ -110,8 +107,8 @@ PROGRAM Test_Adjoint
   ! Allocate output arrays
   ! ----------------------
   nChannels = SUM(ChannelInfo%n_Channels)
-  ALLOCATE( RTSolution(    nChannels, MAX_TEST_CASES ), &
-            RTSolution_AD( nChannels, MAX_TEST_CASES ), &
+  ALLOCATE( RTSolution(    nChannels, USED_NPROFILES ), &
+            RTSolution_AD( nChannels, USED_NPROFILES ), &
             STAT = Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
@@ -142,12 +139,6 @@ PROGRAM Test_Adjoint
     STOP
   END IF
   CALL CRTM_Zero_Surface( Surface_AD )
-  ! Set the adjoint brightness temperature
-  DO m = 1, MAX_TEST_CASES
-    DO l = 1, nChannels
-      RTSolution_AD(l,m)%Brightness_Temperature = ONE
-    END DO
-  END DO
 
 
   ! --------------------------
@@ -165,48 +156,73 @@ PROGRAM Test_Adjoint
   ! ------------------
   ! Assign some values
   ! ------------------
-  GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
-  DO m = 1, MAX_TEST_CASES
+  GeometryInfo%Sensor_Zenith_Angle = TEST_ANGLE
+  DO m = 1, USED_NPROFILES
     Options(m)%Emissivity = 0.8_fp
+  END DO
+  ! Set the adjoint brightness temperature
+  DO m = 1, USED_NPROFILES
+    DO l = 1, nChannels
+      RTSolution_AD(l,m)%Brightness_Temperature = ONE
+    END DO
   END DO
 
 
   ! ------------------------------
   ! Print some initialisation info
   ! ------------------------------
-  DO n=1, NSENSORS
-    CALL Print_ChannelInfo(TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, ChannelInfo(n))
+  DO n=1, MAX_NSENSORS
+    CALL Print_ChannelInfo(ChannelInfo(n))
   END DO
 
 
   ! ----------------------
   ! Call the Adjoint model
   ! ----------------------
-  DO i = 1, N_OPTIONS_CASES
+  DO i = 0, MAX_NTESTS
 
-    ! Set the optional emissivity data switches
-    iOptions = OPTIONS_CASES( i )
-    SELECT CASE ( iOptions )
-      CASE ( NO_OPTIONS )
-        Options%Emissivity_Switch = 0
-        Message = 'Calling the Adjoint CRTM...'
-      CASE ( FWD_OPTIONS )
-        Options%Emissivity_Switch = 1
-        Message = 'Calling the Adjoint CRTM with Options...'
-    END SELECT
-    WRITE( *, '( /5x, a )' ) TRIM( Message )
+    Experiment = ''
+    
+    ! Turn emissivity option on and off
+    IF ( Perform_Test(i,EMISSIVITY_TEST) ) THEN
+      Options%Emissivity_Switch = 1
+      Experiment = TRIM(Experiment)//' Emissivity option ON'
+    ELSE
+      Options%Emissivity_Switch = 0
+      Experiment = TRIM(Experiment)//' Emissivity option OFF'
+    END IF
+    
+    ! Turn clouds on and off
+    IF ( Perform_Test(i,CLOUDS_TEST) ) THEN
+      Atmosphere%n_Clouds = nClouds
+      Experiment = TRIM(Experiment)//' Clouds ON'
+    ELSE
+      Atmosphere%n_Clouds = 0
+      Experiment = TRIM(Experiment)//' Clouds OFF'
+    END IF
+    
+    ! Turn aerosols on and off
+    IF ( Perform_Test(i,AEROSOLS_TEST) ) THEN
+      Atmosphere%n_Aerosols = nAerosols
+      Experiment = TRIM(Experiment)//' Aerosols ON'
+    ELSE
+      Atmosphere%n_Aerosols = 0
+      Experiment = TRIM(Experiment)//' Aerosols OFF'
+    END IF
+
+    WRITE(*,'(/5x,a)') TRIM(Experiment)
 
     ! Call the CRTM
     CALL Begin_Timing( Timing )
-    Error_Status = CRTM_Adjoint( Atmosphere,       &
-                                 Surface,          &
-                                 RTSolution_AD,    &
-                                 GeometryInfo,     &
-                                 ChannelInfo,      &
-                                 Atmosphere_AD,    &
-                                 Surface_AD,       &
-                                 RTSolution,       &
-                                 Options = Options )
+    Error_Status = CRTM_Adjoint( Atmosphere     , &
+                                 Surface        , &
+                                 RTSolution_AD  , &
+                                 GeometryInfo   , &
+                                 ChannelInfo    , &
+                                 Atmosphere_AD  , &
+                                 Surface_AD     , &
+                                 RTSolution     , &
+                                 Options=Options  )
     CALL End_Timing( Timing )
     IF ( Error_Status /= SUCCESS ) THEN 
        CALL Display_Message( PROGRAM_NAME, &
@@ -214,20 +230,12 @@ PROGRAM Test_Adjoint
                               Error_Status)  
      STOP
     END IF
-
-    ! Output some results
-    l1=1
-    DO n = 1, NSENSORS
-      l2 = l1 + ChannelInfo(n)%n_Channels - 1
-      CALL Print_Results(AD_OUTPUT, &
-                         TRIM(SENSORID(n))//'.'//TEST_OUTPUT_FILENAME, Message, &
-                         ChannelInfo(n), Atmosphere, Surface, RTSolution(l1:l2,:),&
-                         RTSolution_AD=RTSolution_AD(l1:l2,:), &
-                         Surface_AD=Surface_AD)
-      l1 = l2 + 1
-    END DO
     CALL Display_Timing( Timing )
 
+    ! Output some results
+    CALL Dump_AD_Model_Results(i, Experiment, ChannelInfo, &
+                               Atmosphere, Surface, RTSolution, &
+                               RTSolution_AD, Atmosphere_AD, Surface_AD)
   END DO
 
 
