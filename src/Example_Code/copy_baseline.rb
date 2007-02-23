@@ -90,13 +90,13 @@ if ARGV.empty?
   puts("Missing sensor_id argument (try --help)")
   exit 1
 end
-sensor_id=ARGV
+sensor_id = ARGV
 
 # Test each model
 models.each_key do |k|
-  next if not File.directory?(models[k][:dir]) or not models[k][:test]
+  next if not models[k][:test]
   sensor_id.each do |id|
-    new = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.output"
+    new = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump"
     old = "#{new}.Baseline"
     cmd = "cp #{new} #{old}"
     if noop

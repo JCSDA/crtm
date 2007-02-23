@@ -105,7 +105,7 @@ file_list = []
 models.each_key do |k|
   next if not models[k][:test]
   sensor_id.each do |id|
-    file = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.output.Baseline"
+    file = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump.Baseline"
     file_list << file if (`svn status #{file}`.length > 0)
   end
 end
