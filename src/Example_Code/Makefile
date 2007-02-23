@@ -81,6 +81,6 @@ TAR_FILE = CRTM_Test_software.tar
 tar:
 	$(TARBALL_CREATE) $(TAR_FILE) make.macros make.rules make.common
 	$(TARBALL_APPEND) $(TAR_FILE) Makefile
-	$(TARBALL_APPEND) $(TAR_FILE) Forward Tangent_Linear Adjoint K_Matrix
+	$(TARBALL_APPEND) $(TAR_FILE) --exclude .svn Forward Tangent_Linear Adjoint K_Matrix
 	compress $(TAR_FILE)
 
