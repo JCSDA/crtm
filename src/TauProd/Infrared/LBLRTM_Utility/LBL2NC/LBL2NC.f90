@@ -44,7 +44,7 @@ PROGRAM LBL2NC
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'LBL2NC'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: $'
+  '$Id$'
   INTEGER     , PARAMETER :: DOWNWELLING = 0
   INTEGER     , PARAMETER :: UPWELLING   = 1
   CHARACTER(*), PARAMETER :: DIRECTION_NAME(0:1) = (/ 'downwelling', &
@@ -80,7 +80,7 @@ PROGRAM LBL2NC
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to read LBLRTM format data files and write '//&
                         'netCDF format output files.', &
-                        '$Revision: $')
+                        '$Revision$')
 
   ! --------------
   ! Get user input
