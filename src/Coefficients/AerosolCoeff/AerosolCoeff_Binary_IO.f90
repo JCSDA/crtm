@@ -8,6 +8,7 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 04-Feb-2005
 !                       paul.vandelst@ssec.wisc.edu
+!       Modified by:    Quanhua Liu, Quanhua.Liu@noaa.gov
 !
 
 MODULE AerosolCoeff_Binary_IO
@@ -128,7 +129,10 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Inquire_AerosolCoeff_Binary( Filename,     &  ! Input
-                                        n_Channels,   &  ! Optional Output
+                                        n_Aerosol_Type,   &  ! Input
+                                        n_R_Humidity  ,   &  ! Input
+                                        n_Reff        ,   &  ! Input
+                                        n_Wavelength  ,   &  ! Input
                                         Release,      &  ! Optional Output
                                         Version,      &  ! Optional Output
                                         RCS_Id,       &  ! Revision control
@@ -136,7 +140,7 @@ CONTAINS
                                       RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Channels
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength 
     INTEGER,      OPTIONAL, INTENT(OUT) :: Release
     INTEGER,      OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
@@ -151,7 +155,10 @@ CONTAINS
     INTEGER :: FileID
     INTEGER(Long) :: File_Release
     INTEGER(Long) :: File_Version
-    INTEGER(Long) :: File_n_Channels
+    INTEGER(Long) :: File_n_Aerosol_Type
+    INTEGER(Long) :: File_n_R_Humidity
+    INTEGER(Long) :: File_n_Reff
+    INTEGER(Long) :: File_n_Wavelength
  
 
     ! ------
@@ -195,8 +202,12 @@ CONTAINS
       RETURN
     END IF
 
+    print *,' Inquire '
     ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) File_n_Channels
+    READ( FileID, IOSTAT=IO_Status ) File_n_Aerosol_Type,   &
+                                     File_n_R_Humidity,     &
+                                     File_n_Reff,     &
+                                     File_n_Wavelength 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error reading n_Channels dimension from ", a, &
@@ -215,9 +226,10 @@ CONTAINS
     ! Assign the return arguments
     ! ---------------------------
     ! Dimensions
-    IF ( PRESENT( n_Channels ) ) THEN
-      n_Channels = File_n_Channels
-    END IF
+    IF ( PRESENT( n_Aerosol_Type ) ) n_Aerosol_Type = File_n_Aerosol_Type 
+    IF ( PRESENT( n_R_Humidity ) )  n_R_Humidity = File_n_R_Humidity 
+    IF ( PRESENT( n_Reff ) ) n_Reff  = File_n_Reff 
+    IF ( PRESENT( n_Wavelength ) ) n_Wavelength = File_n_Wavelength 
     ! Ancillary info
     IF ( PRESENT( Release ) ) THEN
       Release = File_Release
@@ -371,11 +383,10 @@ CONTAINS
     CHARACTER(256) :: Message
     LOGICAL :: Noisy
     INTEGER :: IO_Status
+    INTEGER :: Destroy_Status
     CHARACTER(128) :: Process_ID_Tag
     INTEGER :: FileID
-    INTEGER(Long) :: n_Channels
-    INTEGER(Long) :: n_Items, n
-    INTEGER(Long), DIMENSION(N_AEROSOLCOEFF_ITEMS) :: Data_Type
+    INTEGER(LONG) :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,i,j
  
 
     ! ------
@@ -456,7 +467,7 @@ CONTAINS
     END IF
 
     ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) n_Channels
+    READ( FileID, IOSTAT=IO_Status ) n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error reading n_Channels dimension from ", a, &
@@ -470,99 +481,17 @@ CONTAINS
       RETURN
     END IF
 
+    Error_Status = Allocate_AerosolCoeff( n_Aerosol_Type,   &  ! Input
+                                  n_R_Humidity  ,   &  ! Input
+                                  n_Reff        ,   &  ! Input
+                                  n_Wavelength  ,   &  ! Input
+                                  AerosolCoeff  ,   &  ! Output
+                                  RCS_Id        ,   &  ! Revision control
+                                  Message_Log )
 
-    ! -----------------------------        
-    ! Read the number of data items
-    ! -----------------------------
-    READ( FileID, IOSTAT=IO_Status ) n_Items
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error reading the number of data items from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message )//TRIM( Process_ID_Tag ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      CLOSE( FileID )
-      RETURN
-    END IF
-
-    ! Check that the number of data items is correct
-    IF ( n_Items /= N_AEROSOLCOEFF_ITEMS ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Number of data items in ", a, " (", i2, &
-                        &") is inconsistent with definition (", i2, ")." )' ) &
-                      TRIM( Filename ), n_Items, N_AEROSOLCOEFF_ITEMS
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message )//TRIM( Process_ID_Tag ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      CLOSE( FileID )
-      RETURN
-    END IF
-
-
-    ! -------------------
-    ! Read the data types
-    ! -------------------
-    READ( FileID, IOSTAT=IO_Status ) Data_Type
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error reading the data items types from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message )//TRIM( Process_ID_Tag ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      CLOSE( FileID )
-      RETURN
-    END IF
-
-    ! Check that the data items types are correct
-    DO n = 1, n_Items
-      IF ( Data_Type( n ) /= AEROSOLCOEFF_DATA_TYPE( n ) ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Invalid type for data item #", i2, &
-                          &", ", a, ", in ", a )' ) &
-                        n, TRIM( AEROSOLCOEFF_DATA_NAME( n ) ), TRIM( Filename )
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message )//TRIM( Process_ID_Tag ), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        CLOSE( FileID )
-        RETURN
-      END IF
-    END DO
-
-
-
-    ! -----------------------------------
-    ! Allocate the AerosolCoeff structure
-    ! -----------------------------------
-    Error_Status = Allocate_AerosolCoeff( n_Channels, &
-                                          AerosolCoeff, &
-                                          Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error occurred allocating AerosolCoeff structure.'//&
-                            TRIM( Process_ID_Tag ), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      CLOSE( FileID )
-      RETURN
-    END IF
-
-
-    ! -------------------
-    ! Read the data items
-    ! -------------------
-    ! Absorption coefficient array
-    READ( FileID, IOSTAT=IO_Status ) AerosolCoeff%Absorption
-    IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error reading Absorption from ", a, &
+      WRITE( Message, '( "Error roccurred allocating AerosolCoeff structure ", a, &
                         &". IOSTAT = ", i5 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
@@ -573,11 +502,13 @@ CONTAINS
       RETURN
     END IF
 
-    ! Scattering coefficient array
-    READ( FileID, IOSTAT=IO_Status ) AerosolCoeff%Scattering
+    READ( FileID, IOSTAT=IO_Status ) AerosolCoeff%Aerosol_Type_Name, &
+                                     AerosolCoeff%R_Humidity, &
+                                     AerosolCoeff%Wavelength
+
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error reading Scattering from ", a, &
+      WRITE( Message, '( "Error reading Aerosol_Type_Name et al. ", a, &
                         &". IOSTAT = ", i5 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
@@ -588,6 +519,37 @@ CONTAINS
       RETURN
     END IF
 
+   READ( FileID, IOSTAT=IO_Status ) AerosolCoeff%Aerosol_Reff
+
+    IF ( IO_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error reading Aerosol_Reff ", a, &
+                        &". IOSTAT = ", i5 )' ) &
+                      TRIM( Filename ), IO_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM( Message )//TRIM( Process_ID_Tag ), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      CLOSE( FileID )
+      RETURN
+    END IF
+
+   READ( FileID, IOSTAT=IO_Status ) AerosolCoeff%Mass_Extinction,  &
+                                    AerosolCoeff%Scattering_Albedo,&
+                                    AerosolCoeff%Asymmetry_Factor
+
+    IF ( IO_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error reading Mass_Extinction ", a, &
+                        &". IOSTAT = ", i5 )' ) &
+                      TRIM( Filename ), IO_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM( Message )//TRIM( Process_ID_Tag ), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      CLOSE( FileID )
+      RETURN
+    END IF
 
     ! --------------
     ! Close the file
@@ -614,6 +576,9 @@ CONTAINS
                             INFORMATION, &
                             Message_Log=Message_Log )
     END IF
+
+    RETURN
+
 
   END FUNCTION Read_AerosolCoeff_Binary
 
@@ -755,10 +720,14 @@ CONTAINS
     END IF
 
     ! Check the AerosolCoeff structure dimensions
-    IF ( AerosolCoeff%n_Channels < 1 ) THEN
+    IF ( AerosolCoeff%n_Aerosol_Type < 1 .OR.  &
+         AerosolCoeff%n_R_Humidity   < 1 .OR.  &
+         AerosolCoeff%n_Reff   < 1 .OR.  &
+         AerosolCoeff%n_Wavelength   < 1       ) THEN
+
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
-                            'Channel dimension of AerosolCoeff structure is < or = 0.', &
+                            ' dimension of AerosolCoeff structure is < or = 0.', &
                             Error_Status,    &
                             Message_Log=Message_Log )
       RETURN
@@ -801,7 +770,10 @@ CONTAINS
     END IF
 
     ! Write the dimensions
-    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%n_Channels
+    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%n_Aerosol_Type,   &
+                                      AerosolCoeff%n_R_Humidity,     &
+                                      AerosolCoeff%n_Reff,     &
+                                      AerosolCoeff%n_Wavelength 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error writing n_Channels dimension to ", a, &
@@ -816,10 +788,12 @@ CONTAINS
     END IF
 
     ! Write the number of data items
-    WRITE( FileID, IOSTAT=IO_Status ) N_AEROSOLCOEFF_ITEMS
+    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%Aerosol_Type_Name, &
+                                     AerosolCoeff%R_Humidity, &
+                                     AerosolCoeff%Wavelength 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error writing the number of data items to ", a, &
+      WRITE( Message, '( "Error writing in LUT dimension vectors from ", a, &
                         &". IOSTAT = ", i5 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
@@ -829,12 +803,30 @@ CONTAINS
       CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
       RETURN
     END IF
+
+    ! Write Reff
+    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%Aerosol_Reff
+    IF ( IO_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error writing in Aerosol_Reff ", a, &
+                        &". IOSTAT = ", i5 )' ) &
+                      TRIM( Filename ), IO_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM( Message ), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
+      RETURN
+    END IF
+
 
     ! Write the data item types
-    WRITE( FileID, IOSTAT=IO_Status ) AEROSOLCOEFF_DATA_TYPE
+    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%Mass_Extinction,  &
+                                    AerosolCoeff%Scattering_Albedo,&
+                                    AerosolCoeff%Asymmetry_Factor 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error writing the data items types to ", a, &
+      WRITE( Message, '( "Error writing in data ", a, &
                         &". IOSTAT = ", i5 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
@@ -844,41 +836,6 @@ CONTAINS
       CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
       RETURN
     END IF
-
-
-    ! --------------------
-    ! Write the data items
-    ! --------------------
-    ! Absorption array
-    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%Absorption
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error writing Absorption to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
-      RETURN
-    END IF
-
-    ! Scattering array
-    WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%Scattering
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error writing Scattering to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
-      RETURN
-    END IF
-
 
     ! --------------
     ! Close the file
