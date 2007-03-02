@@ -11,7 +11,8 @@
 !         --------------------------------------------------
 !                 None           NO_AEROSOL   
 !                 Dust           DUST_AEROSOL   
-!                Sea salt        SEASALT_AEROSOL  
+!                Sea salt ssam   SEASALT_SSAM_AEROSOL 
+!                Sea salt sscm   SEASALT_SSCM_AEROSOL 
 !           Dry organic carbon   DRY_ORGANIC_CARBON_AEROSOL
 !           Wet organic carbon   WET_ORGANIC_CARBON_AEROSOL
 !            Dry black carbon    DRY_BLACK_CARBON_AEROSOL
@@ -34,6 +35,7 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 22-Feb-2005
 !                       paul.vandelst@ssec.wisc.edu
+!       Modified by     Quanhua Liu,  Quanhua.Liu@noaa.gov
 !
 
 MODULE CRTM_Aerosol_Define
@@ -58,7 +60,8 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: N_VALID_AEROSOL_TYPES
   PUBLIC ::                 NO_AEROSOL
   PUBLIC ::               DUST_AEROSOL
-  PUBLIC ::            SEASALT_AEROSOL
+  PUBLIC ::       SEASALT_SSAM_AEROSOL
+  PUBLIC ::       SEASALT_SSCM_AEROSOL
   PUBLIC :: DRY_ORGANIC_CARBON_AEROSOL
   PUBLIC :: WET_ORGANIC_CARBON_AEROSOL
   PUBLIC ::   DRY_BLACK_CARBON_AEROSOL
@@ -87,9 +90,7 @@ MODULE CRTM_Aerosol_Define
   INTERFACE CRTM_Allocate_Aerosol
     MODULE PROCEDURE Allocate_Scalar
     MODULE PROCEDURE Allocate_Rank001
-    MODULE PROCEDURE Allocate_Rank011
     MODULE PROCEDURE Allocate_Rank101
-    MODULE PROCEDURE Allocate_Rank111
   END INTERFACE CRTM_Allocate_Aerosol
 
   INTERFACE CRTM_Assign_Aerosol
@@ -112,19 +113,21 @@ MODULE CRTM_Aerosol_Define
   ! Module parameters
   ! -----------------
   ! Aerosol types and names
-  INTEGER, PARAMETER :: N_VALID_AEROSOL_TYPES = 7
+  INTEGER, PARAMETER :: N_VALID_AEROSOL_TYPES = 8
   INTEGER, PARAMETER ::                 NO_AEROSOL = 0
   INTEGER, PARAMETER ::               DUST_AEROSOL = 1
-  INTEGER, PARAMETER ::            SEASALT_AEROSOL = 2
-  INTEGER, PARAMETER :: DRY_ORGANIC_CARBON_AEROSOL = 3
-  INTEGER, PARAMETER :: WET_ORGANIC_CARBON_AEROSOL = 4
-  INTEGER, PARAMETER ::   DRY_BLACK_CARBON_AEROSOL = 5
-  INTEGER, PARAMETER ::   WET_BLACK_CARBON_AEROSOL = 6
-  INTEGER, PARAMETER ::            SULFATE_AEROSOL = 7
+  INTEGER, PARAMETER ::       SEASALT_SSAM_AEROSOL = 2
+  INTEGER, PARAMETER ::       SEASALT_SSCM_AEROSOL = 3
+  INTEGER, PARAMETER :: DRY_ORGANIC_CARBON_AEROSOL = 4
+  INTEGER, PARAMETER :: WET_ORGANIC_CARBON_AEROSOL = 5
+  INTEGER, PARAMETER ::   DRY_BLACK_CARBON_AEROSOL = 6
+  INTEGER, PARAMETER ::   WET_BLACK_CARBON_AEROSOL = 7
+  INTEGER, PARAMETER ::            SULFATE_AEROSOL = 8
   CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_AEROSOL_TYPES ) :: &
     AEROSOL_TYPE_NAME = (/ 'None              ', &
                            'Dust              ', &
-                           'Sea salt          ', &
+                           'Sea salt (SSAM)   ', &
+                           'Sea salt (SSCM)   ', &
                            'Dry organic carbon', &
                            'Wet organic carbon', &
                            'Dry black carbon  ', &
@@ -142,15 +145,11 @@ MODULE CRTM_Aerosol_Define
     INTEGER :: n_Allocates = 0
     ! Dimensions
     INTEGER :: n_Layers  = 0  ! K dimension
-    INTEGER :: Max_Modes = 0  ! Nm dimension
-    INTEGER :: n_Modes   = 0  ! NmUse dimension
     ! Aerosol type
     INTEGER :: Type = NO_AEROSOL
-    ! Particle size distribution parameters
-    REAL(fp), DIMENSION(:,:), POINTER :: Effective_Radius   => NULL() ! K x Nm
-    REAL(fp), DIMENSION(:,:), POINTER :: Effective_Variance => NULL() ! K x Nm
     ! Aerosol state variables
-    REAL(fp), DIMENSION(:,:), POINTER :: Concentration => NULL()      ! K x Nm
+    REAL(fp), DIMENSION(:), POINTER :: Concentration => NULL()      ! K  
+    REAL(fp), DIMENSION(:), POINTER :: Effective_Radius => NULL()   ! K 
   END TYPE CRTM_Aerosol_type
 
 
@@ -194,8 +193,6 @@ CONTAINS
   SUBROUTINE CRTM_Clear_Aerosol( Aerosol )
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
     Aerosol%n_Layers  = 0
-    Aerosol%Max_Modes = 0
-    Aerosol%n_Modes   = 0
     Aerosol%Type      = NO_AEROSOL
   END SUBROUTINE CRTM_Clear_Aerosol
 
@@ -290,15 +287,11 @@ CONTAINS
     ! ---------------------------------------------
     Association_Status = .FALSE.
     IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( Aerosol%Effective_Radius   ) .AND. &
-           ASSOCIATED( Aerosol%Effective_Variance ) .AND. &
-           ASSOCIATED( Aerosol%Concentration      )       ) THEN
+      IF ( ASSOCIATED(Aerosol%Concentration) .AND. ASSOCIATED(Aerosol%Effective_Radius) ) THEN
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF ( ASSOCIATED( Aerosol%Effective_Radius   ) .OR. &
-           ASSOCIATED( Aerosol%Effective_Variance ) .OR. &
-           ASSOCIATED( Aerosol%Concentration      )      ) THEN
+      IF ( ASSOCIATED(Aerosol%Concentration) .OR. ASSOCIATED(Aerosol%Effective_Radius) ) THEN
         Association_Status = .TRUE.
       END IF
     END IF
@@ -417,42 +410,27 @@ CONTAINS
     ! ------------------------------
     ! Deallocate the pointer members
     ! ------------------------------
-    ! Deallocate the Effective_Radius profile
-    IF ( ASSOCIATED( Aerosol%Effective_Radius ) ) THEN
-      DEALLOCATE( Aerosol%Effective_Radius, STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Aerosol Effective_Radius ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! Deallocate the Effective_Variance profile
-    IF ( ASSOCIATED( Aerosol%Effective_Variance ) ) THEN
-      DEALLOCATE( Aerosol%Effective_Variance, STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Aerosol Effective_Variance ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
     ! Deallocate the Concentration profile
     IF ( ASSOCIATED( Aerosol%Concentration ) ) THEN
       DEALLOCATE( Aerosol%Concentration, STAT = Allocate_Status )
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
         WRITE( Message, '( "Error deallocating CRTM_Aerosol Concentration ", &
+                          &"member. STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+      END IF
+    END IF
+
+    ! Deallocate the Effective_Radius profile
+    IF ( ASSOCIATED( Aerosol%Effective_Radius ) ) THEN
+      DEALLOCATE( Aerosol%Effective_Radius, STAT = Allocate_Status )
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error deallocating CRTM_Aerosol Effective_Radius ", &
                           &"member. STAT = ", i5 )' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
@@ -534,22 +512,12 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Allocate_Aerosol( n_Layers,                 &  ! Input
-!                                             n_Modes,                  &  ! Input
 !                                             Aerosol,                  &  ! Output
 !                                             RCS_Id = RCS_Id,          &  ! Revision control
 !                                             Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !         n_Layers:   Number of atmospheric layers dimension.
-!                     Must be > 0
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar OR Rank-1
-!                                 See output Aerosol argument
-!                                 dimensionality chart
-!                     ATTRIBUTES: INTENT(IN)
-!
-!         n_Modes:    Number of size distribution modes dimension.
 !                     Must be > 0
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
@@ -573,9 +541,9 @@ CONTAINS
 !                     following table shows the allowable dimension combinations
 !                     for the calling routine, where N == number of aerosol types:
 !
-!                        Input       Input       Output
-!                       n_Layers    n_Modes      Aerosol
-!                       dimension   dimension   dimension
+!                        Input         Output
+!                       n_Layers       Aerosol
+!                       dimension      dimension
 !                     -------------------------------------
 !                        scalar      scalar       scalar
 !                        scalar      scalar         N
@@ -623,14 +591,12 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Layers,     &  ! Input
-                            n_Modes,      &  ! Input
                             Aerosol,      &  ! Output
                             RCS_Id,       &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                 INTENT(IN)     :: n_Layers
-    INTEGER,                 INTENT(IN)     :: n_Modes
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
     CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
@@ -641,7 +607,6 @@ CONTAINS
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Allocate_Status
-
 
     ! ------
     ! Set up
@@ -654,15 +619,6 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers must be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    IF ( n_Modes < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Modes must be > 0.', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
@@ -687,9 +643,20 @@ CONTAINS
     ! ----------------------
     ! Perform the allocation
     ! ----------------------
-    ALLOCATE( Aerosol%Effective_Radius( n_Layers, n_Modes ), &
-              Aerosol%Effective_Variance( n_Layers, n_Modes ), &
-              Aerosol%Concentration( n_Layers, n_Modes ), &
+    ALLOCATE( Aerosol%Concentration( n_Layers ), &
+              STAT = Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error allocating Aerosol data arrays. STAT = ", i5 )' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM( Message ), &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    ALLOCATE( Aerosol%Effective_Radius( n_Layers ), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -707,11 +674,8 @@ CONTAINS
     ! Assign the dimensions and initalise arrays
     ! ------------------------------------------
     Aerosol%n_Layers  = n_Layers
-    Aerosol%Max_Modes = n_Modes
-    Aerosol%n_Modes   = n_Modes
-    Aerosol%Effective_Radius   = ZERO
-    Aerosol%Effective_Variance = ZERO
     Aerosol%Concentration      = ZERO
+    Aerosol%Effective_Radius   = ZERO
 
 
     ! -------------------------------------
@@ -732,14 +696,12 @@ CONTAINS
 
 
   FUNCTION Allocate_Rank001( n_Layers,     &  ! Input
-                             n_Modes,      &  ! Input
                              Aerosol,      &  ! Output
                              RCS_Id,       &  ! Revision control
                              Message_Log ) &  ! Error messaging
                            RESULT( Error_Status )
     ! Arguments
     INTEGER,                               INTENT(IN)     :: n_Layers
-    INTEGER,                               INTENT(IN)     :: n_Modes
     TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
     CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
     CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
@@ -760,7 +722,6 @@ CONTAINS
     ! Perform the allocation
     DO i = 1, SIZE( Aerosol )
       Scalar_Status = Allocate_Scalar( n_Layers, &
-                                       n_Modes, &
                                        Aerosol(i), &
                                        Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
@@ -777,71 +738,13 @@ CONTAINS
   END FUNCTION Allocate_Rank001
 
 
-  FUNCTION Allocate_Rank011( n_Layers,     &  ! Input
-                             n_Modes,      &  ! Input
-                             Aerosol,      &  ! Output
-                             RCS_Id,       &  ! Revision control
-                             Message_Log ) &  ! Error messaging
-                           RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                               INTENT(IN)     :: n_Layers
-    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Modes
-    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
-    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-011)'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, n
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Array arguments must conform
-    n = SIZE( Aerosol )
-    IF ( SIZE( n_Modes ) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Modes and CRTM_Aerosol arrays have different dimensions', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Perform the allocation
-    DO i = 1, n
-      Scalar_Status = Allocate_Scalar( n_Layers, &
-                                       n_Modes(i), &
-                                       Aerosol(i), &
-                                       Message_Log = Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Aerosol structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Allocate_Rank011
-
-
   FUNCTION Allocate_Rank101( n_Layers,     &  ! Input
-                             n_Modes,      &  ! Input
                              Aerosol,      &  ! Output
                              RCS_Id,       &  ! Revision control
                              Message_Log ) &  ! Error messaging
                            RESULT( Error_Status )
     ! Arguments
     INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Layers
-    INTEGER,                               INTENT(IN)     :: n_Modes
     TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
     CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
     CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
@@ -872,7 +775,6 @@ CONTAINS
     ! Perform the allocation
     DO i = 1, n
       Scalar_Status = Allocate_Scalar( n_Layers(i), &
-                                       n_Modes, &
                                        Aerosol(i), &
                                        Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
@@ -887,66 +789,6 @@ CONTAINS
     END DO
 
   END FUNCTION Allocate_Rank101
-
-
-  FUNCTION Allocate_Rank111( n_Layers,     &  ! Input
-                             n_Modes,      &  ! Input
-                             Aerosol,      &  ! Output
-                             RCS_Id,       &  ! Revision control
-                             Message_Log ) &  ! Error messaging
-                           RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Layers
-    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Modes
-    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
-    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-111)'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, n
-
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Array arguments must conform
-    n = SIZE( Aerosol )
-    IF ( SIZE( n_Layers ) /= n .OR. &
-         SIZE( n_Modes  ) /= n      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Layers, n_Modes and CRTM_Aerosol '//&
-                            'arrays have different dimensions', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Perform the allocation
-    DO i = 1, n
-      Scalar_Status = Allocate_Scalar( n_Layers(i), &
-                                       n_Modes(i), &
-                                       Aerosol(i), &
-                                       Message_Log = Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Aerosol structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Allocate_Rank111
-
 
 !--------------------------------------------------------------------------------
 !
@@ -1056,7 +898,6 @@ CONTAINS
     ! Allocate the structure
     ! ----------------------
     Error_Status = CRTM_Allocate_Aerosol( Aerosol_in%n_Layers, &
-                                          Aerosol_in%Max_Modes, &
                                           Aerosol_out, &
                                           Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -1077,9 +918,8 @@ CONTAINS
     ! -----------------
     ! Assign array data
     ! -----------------
-    Aerosol_out%Effective_Radius   = Aerosol_in%Effective_Radius  
-    Aerosol_out%Effective_Variance = Aerosol_in%Effective_Variance
     Aerosol_out%Concentration      = Aerosol_in%Concentration
+    Aerosol_out%Effective_Radius   = Aerosol_in%Effective_Radius
 
   END FUNCTION Assign_Scalar
 
@@ -1274,8 +1114,7 @@ CONTAINS
     END IF
 
     ! Array arguments must conform
-    IF ( A%n_Layers /= B%n_Layers .OR. &
-         A%n_Modes  /= B%n_Modes       ) THEN
+    IF ( A%n_Layers /= B%n_Layers  ) THEN 
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'A and B structure dimensions are different.', &
@@ -1303,7 +1142,6 @@ CONTAINS
     ! Perform the weighted sum
     ! ------------------------
     A%Effective_Radius   = A%Effective_Radius   + (w1*B%Effective_Radius)   + w2_Local
-    A%Effective_Variance = A%Effective_Variance + (w1*B%Effective_Variance) + w2_Local
     A%Concentration      = A%Concentration      + (w1*B%Concentration)      + w2_Local
 
   END FUNCTION WeightedSum_Scalar
@@ -1398,9 +1236,6 @@ CONTAINS
 !       - The dimension components of the structure are *NOT*
 !         set to zero.
 !
-!       - The n_Modes component is set to the value of the Max_Modes
-!         component.
-!
 !       - The aerosol type component is *NOT* reset.
 !
 !       - Note the INTENT on the output Aerosol argument is IN OUT rather than
@@ -1411,12 +1246,9 @@ CONTAINS
 
   SUBROUTINE Zero_Scalar( Aerosol )  ! Output
     TYPE(CRTM_Aerosol_type),  INTENT(IN OUT) :: Aerosol
-    ! Reset the multi-dimensional scalar components
-    Aerosol%n_Modes = Aerosol%Max_Modes
     ! Reset the array components
-    Aerosol%Effective_Radius   = ZERO
-    Aerosol%Effective_Variance = ZERO
     Aerosol%Concentration      = ZERO
+    Aerosol%Effective_Radius   = ZERO
   END SUBROUTINE Zero_Scalar
 
 
