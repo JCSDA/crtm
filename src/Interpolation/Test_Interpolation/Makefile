@@ -16,6 +16,7 @@ EXE_FILE = Test_Interpolation
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
             Compare_Float_Numbers.f90 \
+            Unit_Test.f90 \
             CRTM_Interpolation.f90
 
 # Obj files used in link phase
