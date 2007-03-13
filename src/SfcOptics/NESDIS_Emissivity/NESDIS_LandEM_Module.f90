@@ -1,123 +1,67 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_LandEM_Module
 !
-! PURPOSE:
-!       Module containing the microwave land emissivity model
+! NESDIS_LandEM_Module
 !
-! CATEGORY:
-!       Surface : MW Surface Land Emissivity
+! Module containing the NESDIS microwave land emissivity model
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE LandEM_Module
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types.
-!
-! CONTAINS:
-!       NESDIS_LandEM             : Subroutine to calculate the microwave land emissivity
-!
-!       Canopy_Diel        : Subroutine to calculate the dielectric constants of vegetation canopy
-!
-!       Soil_Diel          : Subroutine to calculate the dielectric properties of soil
-!
-!       Snow_Diel          : Subroutine to calculate the dielectric properties of snow
-!
-!       Reflectance        : Subroutine to compute the surface reflectivety using fresnel equations
-!
-!       Transmittance      : Subroutine to compute the surface transmitance using fresnel equations
-!
-!       Roughness_Reflectance : Subroutine to compute the surface reflectivety using fresnel equations
-!                                      for a rough surface having a standard deviation of height of sigma
-!       Canopy_Optic       : Subroutine to compute optic parameters for canopy
-!
-!       Snow_Optic         : Subroutine to compute optic parameters for snow
-!
-!       Two_Stream_Solution: Subroutine to simulate microwave emissivity over land conditions using
-!                                   two stream approximation RTEs
-!
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (06-01-2005)
+!       Written by:     Banghua Yan, QSS Group Inc., 01-Jun-2005
+!                       Banghua.Yan@noaa.gov
+!                       Fuzhong Weng, NOAA/NESDIS/ORA,
+!                       Fuzhong.Weng@noaa.gov
 !
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!     Fixed bugs and added quality control: Banghua Yan, Quanhua Liu, Hong Yan (09-10-2005)
-!
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE NESDIS_LandEM_Module
-
-
-
-
-
-  ! ----------
+ 
+  ! -----------------
+  ! Enviroment set up
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-
-
-  ! -----------------------
+  USE Type_Kinds, ONLY: fp
+  USE NESDIS_SnowEM_Parameters
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
-
 
   ! ------------
   ! Visibilities
   ! ------------
-
-
-
   PRIVATE
-
+  ! Procedures
   PUBLIC  :: NESDIS_LandEM
+  ! Parameters
+  PUBLIC :: ZERO
+  PUBLIC :: POINT1
+  PUBLIC :: POINT5
+  PUBLIC :: ONE
+  PUBLIC :: TWO
+  PUBLIC :: THREE
+  PUBLIC :: FOUR
+  PUBLIC :: PI
+  PUBLIC :: EMISSH_DEFAULT
+  PUBLIC :: EMISSV_DEFAULT
+  
+  PUBLIC :: ONE_TENTH
+  PUBLIC :: HALF
+  
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  REAL(fp), PARAMETER :: ZERO   = 0.0_fp
+  REAL(fp), PARAMETER :: POINT1 = 0.1_fp
+  REAL(fp), PARAMETER :: POINT5 = 0.5_fp
+  REAL(fp), PARAMETER :: ONE    = 1.0_fp
+  REAL(fp), PARAMETER :: TWO    = 2.0_fp
+  REAL(fp), PARAMETER :: THREE  = 3.0_fp
+  REAL(fp), PARAMETER :: FOUR   = 4.0_fp
+  REAL(fp), PARAMETER :: PI     = 3.141592653589793238462643_fp
+  REAL(fp), PARAMETER :: TWOPI  = TWO*PI
+  REAL(fp), PARAMETER :: EMISSH_DEFAULT = 0.25_fp
+  REAL(fp), PARAMETER :: EMISSV_DEFAULT = 0.30_fp
 
-  real(fp_kind),public, parameter:: zero = 0.0_fp_kind
-  real(fp_kind),public, parameter:: one_tenth = 0.1_fp_kind
-  real(fp_kind),public, parameter:: half = 0.5_fp_kind
-  real(fp_kind),public, parameter:: one = 1.0_fp_kind
-  real(fp_kind),public, parameter:: two = 2.0_fp_kind
-  real(fp_kind),public, parameter:: three = 3.0_fp_kind
-  real(fp_kind),public, parameter:: four = 4.0_fp_kind
-  real(fp_kind),public, parameter:: pi = 3.14159_fp_kind
-  real(fp_kind),public, parameter:: emissh_default = 0.25_fp_kind
-  real(fp_kind),public, parameter:: emissv_default = 0.30_fp_kind
-
+  REAL(fp), PARAMETER :: ONE_TENTH = POINT1
+  REAL(fp), PARAMETER :: HALF      = POINT5
+  
+  
 CONTAINS
 
 
@@ -129,7 +73,7 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-!-------------------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
 !       NESDIS_LandEM
@@ -138,78 +82,67 @@ CONTAINS
 !       Subroutine to simulate microwave emissivity over land conditions.
 !
 ! REFERENCES:
-!       Weng, F., B. Yan, and N. Grody, 2001: "A microwave land emissivity model", J. Geophys. Res., 106,
-!                                             20, 115-20, 123
-!
-! CATEGORY:
-!       CRTM : Surface : MW LandEM
-!
-! LANGUAGE:
-!       Fortran-95
+!       Weng, F., B. Yan, and N. Grody, 2001: "A microwave land emissivity model",
+!         J. Geophys. Res., 106, 20, 115-20, 123
 !
 ! CALLING SEQUENCE:
-!       CALL NESDIS_LandEM
+!       CALL NESDIS_LandEM(Angle,                 &   ! Input
+!                          Frequency,             &   ! Input
+!                          Soil_Moisture_Content, &   ! Input
+!                          Vegetation_Fraction,   &   ! Input
+!                          Soil_Temperature,      &   ! Input
+!                          Land_Temperature,      &   ! Input
+!                          Snow_Depth,            &   ! Input
+!                          Emissivity_H,          &   ! Output
+!                          Emissivity_V)              ! Output
 !
 ! INPUT ARGUMENTS:
+!         Angle:                   The angle values in degree.
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL(fp)
+!                                  DIMENSION:  Rank-1, (I)
 !
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!
-!         Angle:                   The angle values in degree.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
-!                                  DIMENSION:  Rank-1, (I)
-!         t_skin = Land_Temperature:        The land surface temperature.
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
-!                                  DIMENSION:  Scalar
-!
-!         mv = Soil_Moisture_Content:   The volumetric water content of the soil(0~1).
-!                                  UNITS:      demensionless
-!                                  TYPE:       REAL( fp_kind )
-!                                  DIMENSION:  Scalar
-!
-!         mg = Canopy_Water_Content:The gravimetric water content of the canopy (0~1)
-!                                  UNITS:      demensionless
-!                                  TYPE:       REAL( fp_kind )
-!                                  DIMENSION:  Scalar
-!
-!         veg_frac = Vegetation_Fraction:     The vegetation fraction of the surface(0:1).
+!         Soil_Moisture_Content:   The volumetric water content of the soil (0:1).
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         t_soil = Soil_Temperature:        The soil temperature.
+!         Vegetation_Fraction:     The vegetation fraction of the surface (0:1).
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL(fp)
+!                                  DIMENSION:  Scalar
+!
+!         Soil_Temperature:        The soil temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
+!                                  DIMENSION:  Scalar
+!
+!         Land_Temperature:        The land surface temperature.
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
 !         Snow_Depth:              The snow depth.
 !                                  UNITS:      mm
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!
 ! OUTPUT ARGUMENTS:
-!
-!         Emissivity_H:            The surface emissivity at a horizontal polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
+!         Emissivity_H:            The surface emissivity at a horizontal
+!                                  polarization.
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
 !
@@ -228,66 +161,13 @@ CONTAINS
 !       ep          -  dielectric constant of ice or sand particles, complex value
 !                               (e.g, 3.0+i0.0)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! CALLS:
-!       Canopy_Diel        : Subroutine to calculate the dielectric constants of vegetation canopy
-!
-!       Soil_Diel          : Subroutine to calculate the dielectric properties of soil
-!
-!       Snow_Diel          : Subroutine to calculate the dielectric properties of snow
-!
-!       Reflectance        : Subroutine to compute the surface reflectivety using fresnel equations
-!
-!       Transmittance      : Subroutine to compute the surface transmitance using fresnel equations
-!
-!       Roughness_Reflectance : Subroutine to compute the surface reflectivety using fresnel equations
-!                                      for a rough surface having a standard deviation of height of sigma
-!       Canopy_Optic       : Subroutine to compute optic parameters for canopy
-!
-!       Snow_Optic         : Subroutine to compute optic parameters for snow
-!
-!       Two_Stream_Solution: Subroutine to simulate microwave emissivity over land conditions using
-!                                   two stream approximation RTEs
-!
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (16-May-2005)
-!
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!      Fixed bugs and added quality controls:
-!
-!                        Banghua Yan, Quanhua Liu and Hong Han  (10-September-2005)
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+!       Written by:     Banghua Yan, QSS Group Inc., 16-May-2005
+!                       Banghua.Yan@noaa.gov
+!                       Fuzhong Weng, NOAA/NESDIS/ORA,
+!                       Fuzhong.Weng@noaa.gov
 !
 !------------------------------------------------------------------------------------------------------------
-
 
   SUBROUTINE NESDIS_LandEM(Angle,                 &   ! Input
                            Frequency,             &   ! Input
@@ -298,177 +178,129 @@ CONTAINS
                            Snow_Depth,            &   ! Input
                            Emissivity_H,          &   ! Output
                            Emissivity_V)              ! Output
-
-  USE NESDIS_SnowEM_Parameters
-  use type_kinds, only: fp_kind, ip_kind
-  implicit none
-
-! Declare passed variables
-  real(fp_kind),intent(in) :: Angle
-  real(fp_kind),intent(in) :: Frequency
-  real(fp_kind),intent(in) :: Soil_Moisture_Content
-  real(fp_kind),intent(in) :: Vegetation_Fraction
-  real(fp_kind),intent(in) :: Soil_Temperature
-  real(fp_kind),intent(in) :: t_skin
-  real(fp_kind),intent(in) :: Snow_Depth
-  real(fp_kind),intent(out):: Emissivity_V,Emissivity_H
-
-! Declare local parameters
-
-  integer(ip_kind),parameter :: PHYSICAL_MODEL = 1, EMPRIRICAL_METHOD = 2
-  real(fp_kind),parameter :: snow_depth_c = 10.0
-  real(fp_kind),parameter:: rhob = 1.18_fp_kind
-  real(fp_kind),parameter:: rhos = 2.65_fp_kind
-  real(fp_kind),parameter:: sand = 0.8_fp_kind
-  real(fp_kind),parameter:: clay = 0.2_fp_kind
-
-
-! Declare local variables
-
-  integer(ip_kind) SNOWEM_APPROACH
-  real(fp_kind) mv,veg_frac,theta,theta_i,theta_t,mu,r21_h,r21_v,r23_h,r23_v,  &
+    ! Arguments
+    REAL(fp), intent(in) :: Angle
+    REAL(fp), intent(in) :: Frequency
+    REAL(fp), intent(in) :: Soil_Moisture_Content
+    REAL(fp), intent(in) :: Vegetation_Fraction
+    REAL(fp), intent(in) :: Soil_Temperature
+    REAL(fp), intent(in) :: t_skin
+    REAL(fp), intent(in) :: Snow_Depth
+    REAL(fp), intent(out):: Emissivity_V,Emissivity_H
+    ! Local parameters
+    REAL(fp), PARAMETER :: snow_depth_c     = 10.0_fp
+    REAL(fp), PARAMETER :: tsoilc_undersnow = 280.0_fp
+    REAL(fp), PARAMETER :: rhob = 1.18_fp
+    REAL(fp), PARAMETER :: rhos = 2.65_fp
+    REAL(fp), PARAMETER :: sand = 0.8_fp
+    REAL(fp), PARAMETER :: clay = 0.2_fp
+    ! Local variables
+    REAL(fp) :: mv,veg_frac,theta,theta_i,theta_t,mu,r21_h,r21_v,r23_h,r23_v,  &
                 t21_v,t21_h,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v,mge, &
                 lai,leaf_thick,rad,sigma,va,ep_real,ep_imag
-  real(fp_kind) :: t_soil
-  real(fp_kind) :: local_snow_depth
+    REAL(fp) :: t_soil
+    REAL(fp) :: local_snow_depth
+    COMPLEX(fp) :: esoil, eveg, esnow, eair
+    LOGICAL :: SnowEM_Physical_Model
 
-  complex esoil, eveg, esnow, eair
+    eair = CMPLX(ONE,-ZERO,fp)
+    theta = Angle*PI/180.0_fp
 
-  eair = cmplx(one,-zero)
+    ! By default use the 
+    ! Assign local variable
+    mv               = Soil_Moisture_Content
+    veg_frac         = Vegetation_Fraction
+    t_soil           = Soil_Temperature
+    local_snow_depth = Snow_Depth
 
-  theta = Angle*pi/180.0_fp_kind
+    ! Check soil/skin temperature
+    if ( (t_soil <= 100.0_fp .OR.  t_soil >= 350.0_fp) .AND. &
+         (t_skin >= 100.0_fp .AND. t_skin <= 350.0_fp) ) t_soil = t_skin
 
-! Assign local variable
-  mv               = Soil_Moisture_Content
-  veg_frac         = Vegetation_Fraction
-  t_soil           = Soil_Temperature
-  local_snow_depth = Snow_Depth
+    ! Check soil moisture content range
+    mv = MAX(MIN(mv,ONE),ZERO)
 
-!Quality Control
+    ! Surface type based on snow depth
+    IF (local_snow_depth > POINT1) THEN
 
-  if ( (t_soil .le. 100.0_fp_kind .or. t_soil .ge. 350.0_fp_kind) .AND.    &
+      ! O.k.; we're going to compute snow emissivities....
+      
+      ! By default use the physical model for snow
+      SnowEM_Physical_Model = .TRUE.
+      if (local_snow_depth > snow_depth_c) SnowEM_Physical_Model = .FALSE.
 
-       (t_skin .ge. 100.0_fp_kind .and. t_skin .le. 350.0_fp_kind) ) t_soil = t_skin
+      ! Compute the snow emissivity
+      IF ( SnowEM_Physical_Model ) THEN
 
+        ep_real = 3.2_fp
+        ep_imag = -0.0005_fp
+        sigma = ONE
 
-  if (mv > one)  mv = one         !domensional (zero ~ one)
+        ! For deep snow, the performance of the model is poor
+        local_snow_depth = MIN(local_snow_depth,1000.0_fp)
 
-  if (mv < zero) mv = zero        !domensional (zero ~ one)
+        ! The fraction volume of dense medium
+        ! scatterers must be in the range (0-1)
+        va = 0.4_fp + 0.0004_fp*local_snow_depth
+        va = MAX(MIN(va,ONE),ZERO)
 
-  if (local_snow_depth .gt.one_tenth) then
+        ! Limit for snow grain size
+        rad = MIN((POINT5 + 0.005_fp*local_snow_depth),ONE)
 
-     SNOWEM_APPROACH = PHYSICAL_MODEL
+        ! Limit for soil temperature
+        t_soil = MIN(t_soil,tsoilc_undersnow)
 
-     if (local_snow_depth .gt. snow_depth_c)  SNOWEM_APPROACH = EMPRIRICAL_METHOD
+        CALL Snow_Diel(Frequency, ep_real, ep_imag, rad, va, esnow)
+        CALL Soil_Diel(Frequency, t_soil, mv, rhob, rhos, sand, clay, esoil)
 
-     GET_SNOWEM: SELECT CASE (SNOWEM_APPROACH)
+        theta_i = ASIN(REAL(SIN(theta)*SQRT(eair)/SQRT(esnow),fp))
 
-     CASE (PHYSICAL_MODEL)
+        CALL Reflectance(esnow, eair, theta_i,  theta, r21_v, r21_h)
+        CALL Transmittance(esnow, eair, theta_i, theta, t21_v, t21_h)
 
-      ep_real = 3.2_fp_kind
+        mu      = COS(theta_i)
+        theta_t = ASIN(REAL(SIN(theta_i)*SQRT(esnow)/SQRT(esoil),fp))
 
-      ep_imag = -0.0005_fp_kind
+        CALL Reflectance(esnow, esoil, theta_i, theta_t, r23_v, r23_h)
+        CALL Roughness_Reflectance(Frequency, sigma, r23_v, r23_h)
+        CALL Snow_Optic(Frequency,rad,local_snow_depth,va,ep_real, ep_imag,gv,gh,&
+                        ssalb_v,ssalb_h,tau_v,tau_h)
+        CALL Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
+                                 r21_h,r21_v,r23_h,r23_v,t21_v,t21_h,Emissivity_V,Emissivity_H)
+      ELSE
+        ! Use the empirical method 
+        CALL SnowEM_Default(Frequency,t_skin, local_snow_depth,Emissivity_V,Emissivity_H)
+      END IF
 
-      sigma = one
+    ELSE
 
-!     For deep snow, the performance of the model is poor
-      if (local_snow_depth > 1000.0_fp_kind) local_snow_depth = 1000.0_fp_kind
+      ! No snow, so we're going to compute canopy emissivities....
+      
+      ! Limit for vegetation fraction
+      veg_frac = MAX(MIN(veg_frac,ONE),ZERO)
 
-      va = 0.4_fp_kind + 0.0004_fp_kind*local_snow_depth
+      lai = THREE*veg_frac + POINT5
+      mge = POINT5*veg_frac
+      leaf_thick = 0.07_fp
+      mu  = COS(theta)
+      sigma = POINT5
 
-!     the fraction volume of dense medium scatterers must be less than one.
-      if( va > one ) va = one
-!     the fraction volume of dense medium scatterers must be greater than/equal to zero.
-      if( va < zero ) va = zero
+      r21_h    = ZERO
+      r21_v    = ZERO
+      t21_h    = ONE
+      t21_v    = ONE
 
-      rad = half + 0.005_fp_kind*local_snow_depth
-
-      if( rad > one ) rad = one  ! Limit for snow grain size
-
-      if (t_soil .ge. 280.5_fp_kind) t_soil = 285.0_fp_kind
-
-      call Snow_Diel(Frequency, ep_real, ep_imag, rad, va, esnow)
-
-      call Soil_Diel(Frequency, t_soil, mv, rhob, rhos, sand, clay, esoil)
-
-      theta_i = asin(real(sin(theta)*csqrt(eair)/csqrt(esnow)))
-
-      call Reflectance(esnow, eair, theta_i,  theta, r21_v, r21_h)
-
-      call Transmittance(esnow, eair, theta_i, theta, t21_v, t21_h)
-
-      mu  = cos(theta_i)
-
-      theta_t = asin(real(sin(theta_i)*csqrt(esnow)/csqrt(esoil)))
-
-      call Reflectance(esnow, esoil, theta_i, theta_t, r23_v, r23_h)
-
-      call Roughness_Reflectance(Frequency, sigma, r23_v, r23_h)
-
-      call Snow_Optic(Frequency,rad,local_snow_depth,va,ep_real, ep_imag,gv,gh,&
-
-                      ssalb_v,ssalb_h,tau_v,tau_h)
-
-
-      call Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
-
+      CALL Soil_Diel(Frequency, t_soil, mv, rhob, rhos, sand, clay, esoil)
+      theta_t = ASIN(REAL(SIN(theta)*SQRT(eair)/SQRT(esoil),fp))
+      CALL Reflectance(eair, esoil, theta, theta_t, r23_v, r23_h)
+      CALL Roughness_Reflectance(Frequency, sigma, r23_v, r23_h)
+      CALL Canopy_Diel(Frequency, mge, eveg)
+      CALL Canopy_Optic(lai,Frequency,theta,eveg,leaf_thick,gv,gh,ssalb_v,ssalb_h,tau_v,tau_h)
+      CALL Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
                                r21_h,r21_v,r23_h,r23_v,t21_v,t21_h,Emissivity_V,Emissivity_H)
+    END IF
 
-
-    CASE (EMPRIRICAL_METHOD)
-
-
-      CALL SnowEM_Default(Frequency,t_skin, local_snow_depth,Emissivity_V,Emissivity_H)
-
-
-    END SELECT GET_SNOWEM
-
-
-  else
-
-     sigma = half
-
-     if (veg_frac > one) veg_frac = one
-
-     if (veg_frac < zero) veg_frac = zero
-
-     lai = three*veg_frac + half
-
-     mge = half*veg_frac
-
-     leaf_thick = 0.07_fp_kind
-
-     mu  = cos(theta)
-
-     r21_h    = zero
-
-     r21_v    = zero
-
-     t21_h    = one
-
-     t21_v    = one
-
-     call Soil_Diel(Frequency, t_soil, mv, rhob, rhos, sand, clay, esoil)
-
-     theta_t = asin(real(sin(theta)*csqrt(eair)/csqrt(esoil)))
-
-     call Reflectance(eair, esoil, theta, theta_t, r23_v, r23_h)
-
-     call Roughness_Reflectance(Frequency, sigma, r23_v, r23_h)
-
-     call Canopy_Diel(Frequency, mge, eveg)
-
-     call Canopy_Optic(lai,Frequency,theta,eveg,leaf_thick,gv,gh,ssalb_v,ssalb_h,tau_v,tau_h)
-
-     call Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
-
-                                      r21_h,r21_v,r23_h,r23_v,t21_v,t21_h,Emissivity_V,Emissivity_H)
-  endif
-
-  return
-
-
-END SUBROUTINE NESDIS_LandEM
+  END SUBROUTINE NESDIS_LandEM
 
 
 
@@ -509,132 +341,83 @@ subroutine SnowEM_Default(frequency,ts, depth,Emissivity_V,Emissivity_H)
 !
 !------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind, ip_kind
+  ! Arguments
+  REAL(fp) :: frequency,ts, depth,Emissivity_V,Emissivity_H
+  ! Local parameters  
+  INTEGER , PARAMETER :: new = 7
+  INTEGER , PARAMETER :: NFRESH_SHALLOW_SNOW = 1
+  INTEGER , PARAMETER :: NPOWDER_SNOW        = 2
+  INTEGER , PARAMETER :: NWET_SNOW           = 3
+  INTEGER , PARAMETER :: NDEEP_SNOW          = 4
+  REAL(fp), PARAMETER :: twet    = 270.0_fp
+  REAL(fp), PARAMETER :: tcrust  = 235.0_fp
+  REAL(fp), PARAMETER :: depth_s =  50.0_fp
+  REAL(fp), PARAMETER :: depth_c = 100.0_fp
+  ! Local variables
+  INTEGER :: ich,basic_snow_type
+  REAL(fp), DIMENSION(new) :: ev, eh, freq
+  REAL(fp) :: df, df0
 
-  USE NESDIS_SnowEM_Parameters
 
-  implicit none
-
-  integer(ip_kind), parameter :: new = 7
-
-  integer(ip_kind), parameter :: NFRESH_SHALLOW_SNOW = 1, NPOWDER_SNOW = 2, NWET_SNOW = 3, NDEEP_SNOW = 4
-
-  real(fp_kind), parameter :: twet = 270.0, tcrust = 235.0, depth_s = 50.0, depth_c = 100.0
-
-  integer(ip_kind) :: ich,basic_snow_type
-
-  real(fp_kind)    :: frequency,ts, depth,Emissivity_V,Emissivity_H
-
-  real(fp_kind), dimension(new) :: ev, eh, freq
-
-
-  freq(1:new) = FREQUENCY_AMSRE(1:new)
-
+  freq = FREQUENCY_AMSRE(1:new)
+  
+  ! Determine the snow type based on temperatures
   basic_snow_type = NFRESH_SHALLOW_SNOW
-
-  if (ts .ge. twet .and. depth .le. depth_s) then
-
-     basic_snow_type = NWET_SNOW
-
+  if (ts >= twet .and. depth <= depth_s) then
+    basic_snow_type = NWET_SNOW
   else
-
-     if (depth .le. depth_s) then
-
-         basic_snow_type = NFRESH_SHALLOW_SNOW
-
-     else
-
-        basic_snow_type = NPOWDER_SNOW
-
-     endif
-
+    if (depth <= depth_s) then
+      basic_snow_type = NFRESH_SHALLOW_SNOW
+    else
+      basic_snow_type = NPOWDER_SNOW
+    endif
   endif
+  if (ts <= tcrust .and. depth >= depth_c) basic_snow_type = NDEEP_SNOW
 
-  if (ts .le. tcrust .and. depth .ge. depth_c) basic_snow_type = NDEEP_SNOW
+  ! Assign the emissivity spectrum
+  SELECT CASE (basic_snow_type)
+    CASE (NFRESH_SHALLOW_SNOW)
+      ev = GRASS_AFTER_SNOW_EV_AMSRE(1:new)
+      eh = GRASS_AFTER_SNOW_EH_AMSRE(1:new)
+    CASE (NPOWDER_SNOW)
+      ev = POWDER_SNOW_EV_AMSRE(1:new)
+      eh = POWDER_SNOW_EH_AMSRE(1:new)
+    CASE (NWET_SNOW)
+      ev = WET_SNOW_EV_AMSRE(1:new)
+      eh = WET_SNOW_EH_AMSRE(1:new)
+    CASE (NDEEP_SNOW)
+      ev = DEEP_SNOW_EV_AMSRE(1:new)
+      eh = DEEP_SNOW_EH_AMSRE(1:new)
+  END SELECT
 
-! INITIALIZATION
+  ! Handle possible extrapolation
+  if (frequency <= freq(1)) then
+    Emissivity_H = eh(1)
+    Emissivity_V = ev(1)
+    return
+  end if
+  if (frequency >= freq(new)) then
+    Emissivity_H = eh(new)
+    Emissivity_V = ev(new)
+    return
+  end if
 
-  ev(1:new) = GRASS_AFTER_SNOW_EV_AMSRE(1:new)
-
-  eh(1:new) = GRASS_AFTER_SNOW_EH_AMSRE(1:new)
-
-  GET_SNOWTYPE: SELECT CASE (basic_snow_type)
-
-     CASE (NFRESH_SHALLOW_SNOW)
-
-          ev(1:new) = GRASS_AFTER_SNOW_EV_AMSRE(1:new)
-
-          eh(1:new) = GRASS_AFTER_SNOW_EH_AMSRE(1:new)
-
-     CASE (NPOWDER_SNOW)
-
-          ev(1:new) = POWDER_SNOW_EV_AMSRE(1:new)
-
-          eh(1:new) = POWDER_SNOW_EH_AMSRE(1:new)
-
-     CASE (NWET_SNOW)
-
-         ev(1:new) = WET_SNOW_EV_AMSRE(1:new)
-
-         eh(1:new) = WET_SNOW_EH_AMSRE(1:new)
-
-     CASE (NDEEP_SNOW)
-
-         ev(1:new) = DEEP_SNOW_EV_AMSRE(1:new)
-
-         eh(1:new) = DEEP_SNOW_EH_AMSRE(1:new)
-
-   END SELECT GET_SNOWTYPE
-
-
-
-
-! Interpolate emissivity at a certain frequency
-
-  do ich=1,new
-
-     if (frequency .le. freq(1)) then
-
-         Emissivity_H = eh(1)
-
-         Emissivity_V = ev(1)
-
-         exit
-
-      endif
-
-     if (frequency .ge. freq(new)) then
-
-         Emissivity_H = eh(new)
-
-         Emissivity_V = ev(new)
-
-         exit
-
-      endif
-
-
-      if (frequency .le. freq(ich)) then
-
-           Emissivity_H = eh(ich-1) + &
-
-                          (frequency-freq(ich-1))*(eh(ich) - eh(ich-1))/(freq(ich)-freq(ich-1))
-
-           Emissivity_V = ev(ich-1) + &
-
-                          (frequency-freq(ich-1))*(ev(ich) - ev(ich-1))/(freq(ich)-freq(ich-1))
-
-          exit
-
-      endif
-
-  enddo
+  ! Interpolate emissivity at a certain frequency
+  Channel_loop: do ich=2,new
+    if (frequency <= freq(ich)) then
+      df  = frequency-freq(ich-1)
+      df0 = freq(ich)-freq(ich-1)
+      Emissivity_H = eh(ich-1) + (df*(eh(ich)-eh(ich-1))/df0)
+      Emissivity_V = ev(ich-1) + (df*(ev(ich)-ev(ich-1))/df0)
+      exit Channel_loop
+    end if
+  end do Channel_loop
 
 end subroutine SnowEM_Default
 
 
 subroutine Canopy_Optic(lai,frequency,theta,esv,d,gv,gh,&
-     ssalb_v,ssalb_h,tau_v, tau_h)
+                        ssalb_v,ssalb_h,tau_v, tau_h)
 
 !----------------------------------------------------------------------------------
 !$$$  subprogram documentation block
@@ -672,64 +455,40 @@ subroutine Canopy_Optic(lai,frequency,theta,esv,d,gv,gh,&
 !
 !------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: frequency,theta,d,lai,ssalb_v,ssalb_h,tau_v,tau_h,gv, gh, mu
+  COMPLEX(fp) :: ix,k0,kz0,kz1,rhc,rvc,esv,expval1,factt,factrvc,factrhc
+  REAL(fp) :: rh,rv,th,tv
+  REAL(fp), PARAMETER :: threshold = 0.999_fp
 
-  implicit none
+  mu = COS(theta)
+  ix = CMPLX(ZERO, ONE, fp)
 
-  real(fp_kind) threshold
-
-  real(fp_kind) frequency,theta,d,lai,ssalb_v,ssalb_h,tau_v,tau_h,gv, gh, mu
-
-  complex  ix,k0,kz0,kz1,rhc,rvc,esv,expval1,factt,factrvc,factrhc
-
-  real(fp_kind) rh,rvert,th,tv
-
-
-  threshold=0.999_fp_kind
-
-  mu = cos(theta)
-
-  ix  = cmplx(zero,one)
-
-  k0  = cmplx(two*pi*frequency/300.0_fp_kind, zero)   ! 1/mm
-
+  k0  = CMPLX(TWOPI*frequency/300.0_fp, ZERO, fp)   ! 1/mm
   kz0 = k0*mu
-
-  kz1 = k0*sqrt(esv - sin(theta)**2)
+  kz1 = k0*SQRT(esv - SIN(theta)**2)
 
   rhc = (kz0 - kz1)/(kz0 + kz1)
-
   rvc = (esv*kz0 - kz1)/(esv*kz0 + kz1)
 
-  expval1=exp(-two*ix*kz1*d)
+  expval1 = EXP(-TWO*ix*kz1*d)
+  factrvc = ONE-rvc**2*expval1
+  factrhc = ONE-rhc**2*expval1
+  factt   = FOUR*kz0*kz1*EXP(ix*(kz0-kz1)*d)
 
-  factrvc=one-rvc**2*expval1
+  rv = ABS(rvc*(ONE - expval1)/factrvc)**2
+  rh = ABS(rhc*(ONE - expval1)/factrhc)**2
 
-  factrhc=one-rhc**2*expval1
+  th = ABS(factt/((kz1+kz0)**2*factrhc))**2
+  tv = ABS(esv*factt/((kz1+esv*kz0)**2*factrvc))**2
 
-  factt=four*kz0*kz1*exp(ix*(kz0-kz1)*d)
+  gv = POINT5
+  gh = POINT5
 
-  rvert = abs(rvc*(one - expval1)/factrvc)**2
-
-  rh = abs(rhc*(one - expval1)/factrhc)**2
-
-  th = abs(factt/((kz1+kz0)**2*factrhc))**2
-
-  tv = abs(esv*factt/((kz1+esv*kz0)**2*factrvc))**2
-
-  gv = half
-
-  gh = half
-
-  tau_v = half*lai*(two-tv-th)
-
+  tau_v = POINT5*lai*(TWO-tv-th)
   tau_h = tau_v
 
-  ssalb_v = min((rvert+rh)/ (two-tv-th),threshold)
-
+  ssalb_v = MIN((rv+rh)/(TWO-tv-th),threshold)
   ssalb_h = ssalb_v
-
-  return
 
 end subroutine Canopy_Optic
 
@@ -778,74 +537,44 @@ subroutine Snow_Optic(frequency,a,h,f,ep_real,ep_imag,gv,gh, ssalb_v,ssalb_h,tau
 !
 !----------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: yr,yi,ep_real,ep_imag
+  REAL(fp) :: frequency,a,h,f,ssalb_v,ssalb_h,tau_v,tau_h,gv,gh,k
+  REAL(fp) :: ks1,ks2,ks3,ks,kr1,kr2,kr3,kr,ki1,ki2,ki3,ki
+  REAL(fp) :: fact1,fact2,fact3,fact4,fact5
 
-  implicit none
+  k = TWOPI/(300._fp/frequency)
 
-  real(fp_kind) yr,yi,ep_real,ep_imag
+  yr = (ep_real - ONE)/(ep_real + TWO)
+  yi = -ep_imag/(ep_real + TWO)
 
-  real(fp_kind) frequency,a,h,f,ssalb_v,ssalb_h,tau_v,tau_h,gv,gh,k
-
-  real(fp_kind) ks1,ks2,ks3,ks,kr1,kr2,kr3,kr,ki1,ki2,ki3,ki
-
-  real(fp_kind) fact1,fact2,fact3,fact4,fact5
-
-
-  k = two*pi/(300._fp_kind/frequency)
-
-  yr  = (ep_real - one)/(ep_real + two)
-
-  yi =  - ep_imag/(ep_real + two)
-
-  fact1 = (one+two*f)**2
-
-  fact2 = one-f*yr
-
-  fact3 = (one-f)**4
-
+  fact1 = (ONE+TWO*f)**2
+  fact2 = ONE-f*yr
+  fact3 = (ONE-f)**4
   fact4 = f*(k*a)**3
+  fact5 = ONE+TWO*f*yr
 
-  fact5 = one+two*f*yr
-
-  ks1 = k*sqrt(fact2/fact5)
-
+  ks1 = k*SQRT(fact2/fact5)
   ks2 = fact4*fact3/fact1
-
   ks3 = (yr/fact2)**2
-
   ks = ks1*ks2*ks3
 
   kr1 = fact5/fact2
+  kr2 = TWO*ks2
+  kr3 = TWO*yi*yr/(fact2**3)
+  kr = k*SQRT(kr1+kr2*kr3)
 
-  kr2 = two*ks2
-
-  kr3 = two*yi*yr/(fact2**3)
-
-  kr = k*sqrt(kr1+kr2*kr3)
-
-  ki1 = three*f*yi/fact2**2
-
+  ki1 = THREE*f*yi/fact2**2
   ki2 = kr2
-
   ki3 = ks3
+  ki  = k**2/(TWO*kr)*(ki1+ki2*ki3)
 
-  ki  = k**2/(two*kr)*(ki1+ki2*ki3)
+  gv = POINT5
+  gh = POINT5
 
-  gv = half
-
-  gh = half
-
-  ssalb_v = ks / ki
-
-  if(ssalb_v .gt. 0.999_fp_kind) ssalb_v = 0.999_fp_kind
-
+  ssalb_v = MIN(ks/ki, 0.999_fp)
   ssalb_h = ssalb_v
-
-  tau_v = two*ki*h
-
+  tau_v = TWO*ki*h
   tau_h = tau_v
-
-  return
 
 end subroutine Snow_Optic
 
@@ -894,66 +623,40 @@ subroutine Soil_Diel(freq,t_soil,vmc,rhob,rhos,sand,clay,esm)
 !
 !----------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: f,tauw,freq,t_soil,vmc,rhob,rhos,sand,clay
+  REAL(fp) :: alpha,beta,ess,rhoef,t,eswi,eswo
+  REAL(fp) :: esof
+  COMPLEX(fp) :: esm,esw,es1,es2
 
-  implicit none
+  alpha = 0.65_fp
+  beta  = 1.09_fp - 0.11_fp*sand + 0.18_fp*clay
+  ess = (1.01_fp + 0.44_fp*rhos)**2 - 0.062_fp
+  rhoef = -1.645_fp + 1.939_fp*rhob - 0.020213_fp*sand + 0.01594_fp*clay
+  t = t_soil - 273.0_fp
+  f = freq*1.0e9_fp
 
-  real(fp_kind) esof
+  ! the permittivity at the high frequency limit
+  eswi = 5.5_fp
 
-  real(fp_kind)    f,tauw,freq,t_soil,vmc,rhob,rhos,sand,clay
+  ! the permittivity of free space (esof)
+  esof = 8.854e-12_fp
 
-  real(fp_kind)    alpha,beta,ess,rhoef,t,eswi,eswo
+  ! static dieletric constant (eswo)
+  eswo = 87.134_fp+(-1.949e-1_fp+(-1.276e-2_fp+2.491e-4_fp*t)*t)*t
+  tauw = 1.1109e-10_fp+(-3.824e-12_fp+(6.938e-14_fp-5.096e-16_fp*t)*t)*t
 
-  complex esm,esw,es1,es2
-
-
-  alpha = 0.65_fp_kind
-
-  beta  = 1.09_fp_kind - 0.11_fp_kind*sand + 0.18_fp_kind*clay
-
-  ess = (1.01_fp_kind + 0.44_fp_kind*rhos)**2 - 0.062_fp_kind
-
-  rhoef = -1.645_fp_kind + 1.939_fp_kind*rhob - 0.020213_fp_kind*sand + 0.01594_fp_kind*clay
-
-  t = t_soil - 273.0_fp_kind
-
-  f = freq*1.0e9_fp_kind
-
-! the permittivity at the high frequency limit
-
-  eswi = 5.5_fp_kind
-
-! the permittivity of free space (esof)
-
-  esof = 8.854e-12_fp_kind
-
-! static dieletric constant (eswo)
-
-  eswo = 87.134_fp_kind+(-1.949e-1_fp_kind+(-1.276e-2_fp_kind+2.491e-4_fp_kind*t)*t)*t
-
-  tauw = 1.1109e-10_fp_kind+(-3.824e-12_fp_kind+(6.938e-14_fp_kind-5.096e-16_fp_kind*t)*t)*t
-
-  if (vmc .gt. zero) then
-
-     es1 = cmplx(eswi, - rhoef *(rhos - rhob)/(two*pi*f*esof*rhos*vmc))
-
+  if (vmc > ZERO) then
+     es1 = CMPLX(eswi, -rhoef*(rhos-rhob)/(TWOPI*f*esof*rhos*vmc), fp)
   else
-
-     es1 = cmplx(eswi, zero)
-
+     es1 = CMPLX(eswi, ZERO, fp)
   endif
 
-  es2 = cmplx(eswo - eswi,zero)/cmplx(one, f*tauw)
-
+  es2 = CMPLX(eswo-eswi, ZERO, fp)/CMPLX(ONE, f*tauw, fp)
   esw = es1 + es2
+  esm = ONE + (ess**alpha - ONE)*rhob/rhos + vmc**beta*esw**alpha - vmc
+  esm = esm**(ONE/alpha)
 
-  esm = one + (ess**alpha - one)*rhob/rhos + vmc**beta*esw**alpha - vmc
-
-  esm = esm**(one/alpha)
-
-  if(aimag(esm) .ge. zero) esm = cmplx(real(esm), -0.0001_fp_kind)
-
-  return
+  if(AIMAG(esm) >= ZERO) esm = CMPLX(REAL(esm,fp),-0.0001_fp, fp)
 
 end subroutine Soil_Diel
 
@@ -1004,35 +707,23 @@ subroutine Snow_Diel(frequency,ep_real,ep_imag,rad,frac,ep_eff)
 !  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 !----------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: ep_imag,ep_real
+  REAL(fp) :: frequency,rad,frac,k0,yr,yi
+  COMPLEX(fp) :: y,ep_r,ep_i,ep_eff,fracy
 
-  implicit none
+  k0 = TWOPI/(300.0_fp/frequency)
 
-  real(fp_kind) ep_imag,ep_real
+  yr = (ep_real - ONE)/(ep_real + TWO)
+  yi = ep_imag/(ep_real + TWO)
 
-  real(fp_kind) frequency,rad,frac,k0,yr,yi
-
-  complex  y,ep_r,ep_i,ep_eff,fracy
-
-  k0 = two*pi/(300.0_fp_kind/frequency)
-
-  yr  = (ep_real - one)/(ep_real + two)
-
-  yi =   ep_imag/(ep_real + two)
-
-  y = cmplx(yr, yi)
-
+  y = CMPLX(yr, yi, fp)
   fracy=frac*y
 
-  ep_r = (one + two*fracy)/(one - fracy)
+  ep_r = (ONE + TWO*fracy)/(ONE - fracy)
+  ep_i = TWO*fracy*y*(k0*rad)**3*(ONE-frac)**4/((ONE-fracy)**2*(ONE+TWO*frac)**2)
+  ep_eff = ep_r - CMPLX(ZERO,ONE,fp)*ep_i
 
-  ep_i = two*fracy*y*(k0*rad)**3*(one-frac)**4/((one-fracy)**2*(one+two*frac)**2)
-
-  ep_eff = ep_r - cmplx(zero,one)*ep_i
-
-  if (aimag(ep_eff).ge.zero) ep_eff = cmplx(real(ep_eff), -0.0001_fp_kind)
-
-  return
+  if (AIMAG(ep_eff) >= ZERO) ep_eff = CMPLX(REAL(ep_eff), -0.0001_fp, fp)
 
 end subroutine Snow_Diel
 
@@ -1075,34 +766,25 @@ subroutine Canopy_Diel(frequency,mg,esv)
 !
 !----------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: frequency,  mg, en, vf, vb
+  COMPLEX(fp) :: esv, xx
 
-  implicit none
+  en = 1.7_fp - (0.74_fp - 6.16_fp*mg)*mg
 
-  real(fp_kind)  frequency,  mg, en, vf, vb
+  vf = mg*(0.55_fp*mg - 0.076_fp)
+  vb = 4.64_fp*mg*mg/( ONE + 7.36_fp*mg*mg)
 
-  complex  esv, xx
+  xx = CMPLX(ZERO,ONE,fp)
 
-  en = 1.7_fp_kind - (0.74_fp_kind - 6.16_fp_kind*mg)*mg
+  esv = en + vf*(4.9_fp + 75.0_fp/(ONE + xx*frequency/18.0_fp)-xx*(18.0_fp/frequency)) + &
+        vb*(2.9_fp + 55.0_fp/(ONE + SQRT(xx*frequency/0.18_fp)))
 
-  vf = mg*(0.55_fp_kind*mg - 0.076_fp_kind)
-
-  vb = 4.64_fp_kind*mg*mg/( one + 7.36_fp_kind*mg*mg)
-
-  xx = cmplx(zero,one)
-
-  esv = en + vf*(4.9_fp_kind + 75.0_fp_kind/(one + xx*frequency/18.0_fp_kind)-xx*(18.0_fp_kind/frequency)) + &
-
-       vb*(2.9_fp_kind + 55.0_fp_kind/(one + sqrt(xx*frequency/0.18_fp_kind)))
-
-  if (aimag(esv).ge.zero) esv = cmplx(real(esv), -0.0001_fp_kind)
-
-  return
+  if (AIMAG(esv) >= ZERO) esv = CMPLX(REAL(esv), -0.0001_fp, fp)
 
 end subroutine Canopy_Diel
 
 
-subroutine Reflectance(em1, em2, theta_i, theta_t, rvert, rh)
+subroutine Reflectance(em1, em2, theta_i, theta_t, rv, rh)
 
 !----------------------------------------------------------------------------------
 !$$$  subprogram documentation block
@@ -1124,7 +806,7 @@ subroutine Reflectance(em1, em2, theta_i, theta_t, rvert, rh)
 !
 ! output argument list:
 !
-!      rvert        -  reflectivity at vertical polarization
+!      rv           -  reflectivity at vertical polarization
 !      rh           -  reflectivity at horizontal polarization
 !
 ! remarks:
@@ -1135,37 +817,26 @@ subroutine Reflectance(em1, em2, theta_i, theta_t, rvert, rh)
 !
 !----------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: theta_i, theta_t
+  REAL(fp) :: rh, rv,cos_i,cos_t
+  COMPLEX(fp) :: em1, em2, m1, m2, angle_i, angle_t
 
-  implicit none
+  ! compute the refractive index ratio between medium 2 and 1
+  ! using dielectric constant (n = SQRT(e))
+  cos_i = COS(theta_i)
+  cos_t = COS(theta_t)
 
-  real(fp_kind) theta_i, theta_t
+  angle_i = CMPLX(cos_i, ZERO, fp)
+  angle_t = CMPLX(cos_t, ZERO, fp)
 
-  real(fp_kind) rh, rvert,cos_i,cos_t
+  m1 = SQRT(em1)
+  m2 = SQRT(em2)
 
-  complex em1, em2, m1, m2, angle_i, angle_t
-
-! compute the refractive index ratio between medium 2 and 1 using dielectric constant (n = sqrt(e))
-
-  cos_i=cos(theta_i)
-
-  cos_t=cos(theta_t)
-
-  angle_i = cmplx(cos_i, zero)
-
-  angle_t = cmplx(cos_t, zero)
-
-  m1 = csqrt(em1)
-
-  m2 = csqrt(em2)
-
-  rvert = (cabs((m1*angle_t-m2*angle_i)/(m1*angle_t+m2*angle_i)))**2
-
-  rh = (cabs((m1*angle_i-m2*angle_t)/(m1*angle_i+m2*angle_t)))**2
-
-  return
+  rv = (ABS((m1*angle_t-m2*angle_i)/(m1*angle_t+m2*angle_i)))**2
+  rh = (ABS((m1*angle_i-m2*angle_t)/(m1*angle_i+m2*angle_t)))**2
 
 end subroutine Reflectance
+
 
 subroutine Transmittance(em1,em2,theta_i,theta_t,tv,th)
 
@@ -1201,42 +872,29 @@ subroutine Transmittance(em1,em2,theta_i,theta_t,tv,th)
 !
 !----------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: theta_i, theta_t
+  REAL(fp) :: th, tv, rr, cos_i,cos_t
+  COMPLEX(fp) :: em1, em2, m1, m2, angle_i, angle_t
 
-  implicit none
+  ! compute the refractive index ratio between medium 2 and 1
+  ! using dielectric constant (n = SQRT(e))
+  cos_i = COS(theta_i)
+  cos_t = COS(theta_t)
 
-  real(fp_kind) theta_i, theta_t
+  angle_i = CMPLX(cos_i, ZERO, fp)
+  angle_t = CMPLX(cos_t, ZERO, fp)
 
-  real(fp_kind) th, tv, rr, cos_i,cos_t
+  m1 = SQRT(em1)
+  m2 = SQRT(em2)
 
-  complex em1, em2, m1, m2, angle_i, angle_t
-
-! compute the refractive index ratio between medium 2 and 1 using dielectric constant (n = sqrt(e))
-
-  cos_i=cos(theta_i)
-
-  cos_t=cos(theta_t)
-
-  angle_i = cmplx(cos_i, zero)
-
-  angle_t = cmplx(cos_t, zero)
-
-  m1 = csqrt(em1)
-
-  m2 = csqrt(em2)
-
-  rr = cabs(m2/m1)*cos_t/cos_i
-
-  tv =  rr*(abs(two*m1*angle_i/(m1*angle_t + m2*angle_i)))**2
-
-  th =  rr*(abs(two*m1*angle_i/(m1*angle_i + m2*angle_t)))**2
-
-  return
+  rr = ABS(m2/m1)*cos_t/cos_i
+  tv = rr*(ABS(TWO*m1*angle_i/(m1*angle_t + m2*angle_i)))**2
+  th = rr*(ABS(TWO*m1*angle_i/(m1*angle_i + m2*angle_t)))**2
 
 end subroutine Transmittance
 
 
-subroutine Roughness_Reflectance(frequency,sigma,rvert,rh)
+subroutine Roughness_Reflectance(frequency,sigma,rv,rh)
 
 !-------------------------------------------------------------------------------------------------------------
 !$$$  subprogram documentation block
@@ -1265,8 +923,7 @@ subroutine Roughness_Reflectance(frequency,sigma,rvert,rh)
 !
 ! output argument list:
 !
-!      rvert         -  reflectivity at vertical polarization
-!
+!      rv            -  reflectivity at vertical polarization
 !      rh            -  reflectivity at horizontal polarization
 !
 !
@@ -1288,32 +945,20 @@ subroutine Roughness_Reflectance(frequency,sigma,rvert,rh)
 !
 !-------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: frequency
+  REAL(fp) :: q, rh, rv, rh_s, rv_s, sigma
 
-  implicit none
-
-  real(fp_kind) frequency
-
-  real(fp_kind) q, rh, rvert, rh_s, rv_s, sigma
-
-  rh_s = 0.3_fp_kind*rh
-
-  rv_s = 0.3_fp_kind*rvert
-
-  q = 0.35_fp_kind*(one - exp(-0.60_fp_kind*frequency*sigma**two))
-
+  rh_s = 0.3_fp*rh
+  rv_s = 0.3_fp*rv
+  q = 0.35_fp*(ONE - EXP(-0.60_fp*frequency*sigma**TWO))
   rh = rh_s + q*(rv_s-rh_s)
-
-  rvert = rv_s + q*(rh_s-rv_s)
-
-  return
+  rv = rv_s + q*(rh_s-rv_s)
 
 end subroutine Roughness_Reflectance
 
 
 subroutine Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
-
-                                      r21_h,r21_v,r23_h,r23_v,t21_v,t21_h,esv,esh)
+                               r21_h,r21_v,r23_h,r23_v,t21_v,t21_h,esv,esh)
 
 !-------------------------------------------------------------------------------------------------------------
 !$$$  subprogram documentation block
@@ -1365,54 +1010,33 @@ subroutine Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
 !
 !-------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind
+  REAL(fp) :: mu, gv, gh, ssalb_h, ssalb_v, tau_h,tau_v,                 &
+              r21_h, r21_v, r23_h, r23_v, t21_v, t21_h, esv, esh
+  REAL(fp) :: alfa_v, alfa_h, kk_h, kk_v, gamma_h, gamma_v, beta_v, beta_h
+  REAL(fp) :: fact1,fact2
 
-  implicit none
+  alfa_h  = SQRT((ONE - ssalb_h)/(ONE - gh*ssalb_h))
+  kk_h    = SQRT((ONE - ssalb_h)*(ONE -  gh*ssalb_h))/mu
+  beta_h  = (ONE - alfa_h)/(ONE + alfa_h)
+  gamma_h = (beta_h -r23_h)/(ONE-beta_h*r23_h)
 
-  real(fp_kind) mu, gv, gh, ssalb_h, ssalb_v, tau_h,tau_v,                 &
+  alfa_v  = SQRT((ONE-ssalb_v)/(ONE - gv*ssalb_v))
+  kk_v    = SQRT((ONE-ssalb_v)*(ONE - gv*ssalb_v))/mu
+  beta_v  = (ONE - alfa_v)/(ONE + alfa_v)
+  gamma_v = (beta_v -r23_v)/(ONE-beta_v*r23_v)
 
-                r21_h, r21_v, r23_h, r23_v, t21_v, t21_h, esv, esh
+  fact1=gamma_h*EXP(-TWO*kk_h*tau_h)
+  fact2=gamma_v*EXP(-TWO*kk_v*tau_v)
 
-  real(fp_kind) alfa_v, alfa_h, kk_h, kk_v, gamma_h, gamma_v, beta_v, beta_h
+  esh  = t21_h*(ONE - beta_h)*(ONE + fact1) /(ONE-beta_h*r21_h-(beta_h-r21_h)*fact1)
+  esv  = t21_v*(ONE - beta_v)*(ONE + fact2) /(ONE-beta_v*r21_v-(beta_v-r21_v)*fact2)
 
-  real(fp_kind) fact1,fact2
+  if (esh < EMISSH_DEFAULT) esh = EMISSH_DEFAULT
+  if (esv < EMISSV_DEFAULT) esv = EMISSV_DEFAULT
 
-  alfa_h = sqrt((one - ssalb_h)/(one - gh*ssalb_h))
-
-  kk_h = sqrt ((one - ssalb_h)*(one -  gh*ssalb_h))/mu
-
-  beta_h = (one - alfa_h)/(one + alfa_h)
-
-  gamma_h = (beta_h -r23_h)/(one-beta_h*r23_h)
-
-  alfa_v = sqrt((one-ssalb_v)/(one - gv*ssalb_v))
-
-  kk_v = sqrt ((one-ssalb_v)*(one - gv*ssalb_v))/mu
-
-  beta_v = (one - alfa_v)/(one + alfa_v)
-
-  gamma_v = (beta_v -r23_v)/(one-beta_v*r23_v)
-
-  fact1=gamma_h*exp(-two*kk_h*tau_h)
-
-  fact2=gamma_v*exp(-two*kk_v*tau_v)
-
-  esh  = t21_h*(one - beta_h)*(one + fact1) /(one-beta_h*r21_h-(beta_h-r21_h)*fact1)
-
-  esv  = t21_v*(one - beta_v)*(one + fact2) /(one-beta_v*r21_v-(beta_v-r21_v)*fact2)
-
-  if (esh .lt. emissh_default) esh = emissh_default
-
-  if (esv .lt. emissv_default) esv = emissv_default
-
-  if (esh .gt. one) esh = one
-
-  if (esv .gt. one) esv = one
-
-  return
+  if (esh > ONE) esh = ONE
+  if (esv > ONE) esv = ONE
 
 end subroutine Two_Stream_Solution
-
-
 
 END MODULE NESDIS_LandEM_Module
