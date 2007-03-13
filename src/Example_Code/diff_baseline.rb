@@ -92,7 +92,7 @@ sensor_id = ARGV.uniq
 models.each_key do |k|
   next if not models[k][:test]
   sensor_id.each do |id|
-    new = "#{dir}/${id}.CRTM_Test_#{dir}.dump"
+    new = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump"
     baseline = "#{new}.Baseline"
     system("tkdiff #{baseline} #{new}") if File.file?(baseline) and File.file?(new)
   end

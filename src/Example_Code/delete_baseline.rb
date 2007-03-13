@@ -2,18 +2,21 @@
 
 # == Synopsis
 #
-# delBaseline.rb:: Delete current CRTM baseline output for a specified model and
-#                  sensor.
+# delete_baseline.rb:: Delete current CRTM dump output for a specified model and
+#                      sensor.
 #
 # == Usage
 #
-# delBaseline.rb [OPTION] sensorId1 [ sensorId2 sensorId3 ...]
+# delete_baseline.rb [OPTION] sensorId1 [ sensorId2 sensorId3 ...]
 #
 # If no options are specified, then no CRTM model results (forward, tangent-linear,
 # adjoint, and K-matrix) are deleted.
 # 
 # --help  (-h)
 #    you're looking at it.
+#
+# --dry-run  (-n)
+#    echo the commands to be executed, but do nothing
 #
 # --forward  (-f)
 #    Delete the forward model results
@@ -38,15 +41,17 @@
 require 'getoptlong'
 require 'rdoc/usage'
  
-# Specify defaults
-forward      =false
-tangentlinear=false
-adjoint      =false
-kmatrix      =false
-
+# Specify directories and defaults
+models={:fwd => {:dir => "Forward"       , :test => false},
+        :tl  => {:dir => "Tangent_Linear", :test => false},
+        :ad  => {:dir => "Adjoint"       , :test => false},
+        :k   => {:dir => "K_Matrix"      , :test => false} }
+noop = false
+        
 # Specify accepted options
 options=GetoptLong.new(
   [ "--help",           "-h", GetoptLong::NO_ARGUMENT ],
+  [ "--dry-run",        "-n", GetoptLong::NO_ARGUMENT ],
   [ "--forward",        "-f", GetoptLong::NO_ARGUMENT ],
   [ "--tangent-linear", "-t", GetoptLong::NO_ARGUMENT ],
   [ "--adjoint",        "-a", GetoptLong::NO_ARGUMENT ],
@@ -60,19 +65,18 @@ begin
       when "--help"
         RDoc::usage
         exit 0
+      when "--dry-run"
+        noop = true
       when "--forward"
-        forward=true
+        models[:fwd][:test] = true
       when "--tangent-linear"
-        tangentlinear=true
+        models[:tl][:test]  = true
       when "--adjoint"
-        adjoint=true
+        models[:ad][:test]  = true
       when "--k-matrix"
-        kmatrix=true
+        models[:k][:test]   = true
       when "--everything"
-        forward      =true
-        tangentlinear=true
-        adjoint      =true
-        kmatrix      =true
+        models.each_key {|k| models[k][:test] = true}
     end
   end
 rescue StandardError=>error_message
@@ -81,22 +85,23 @@ rescue StandardError=>error_message
   exit 1
 end
 
-# Get the sensorID
+# Get the sensor_id
 if ARGV.empty?
-  puts("Missing sensorId argument (try --help)")
+  puts("Missing sensor_id argument (try --help)")
   exit 1
 end
-sensorId=ARGV
-
-# The test directory names
-modelDir =["Forward","Tangent_Linear","Adjoint","K_Matrix"]
-modelTest=[forward  , tangentlinear  , adjoint , kmatrix  ]
+sensor_id=ARGV
 
 # Test each model
-modelDir.each_with_index do |dir, index|
-  next if not File.directory?(dir) or not modelTest[index]
-  sensorId.each do |id|
-    file=dir+"/"+id+".CRTM_Test_"+dir+".output"
-    File.delete(file) if File.file?(file)
+models.each_key do |k|
+  next if not models[k][:test]
+  sensor_id.each do |id|
+    file = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump"
+    cmd = "rm -f #{file}"
+    if noop
+      puts cmd
+    else
+      system(cmd) if File.file?(file)
+    end
   end
 end
