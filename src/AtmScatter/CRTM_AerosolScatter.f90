@@ -376,16 +376,18 @@ CONTAINS
     INTEGER :: Aerosol_Type
     REAL( fp_kind ) :: Scattering_Coefficient, ext, w0, g, Aerosol_Content
     REAL( fp_kind ) :: Aerosol_Reff, Wavelength
+    REAL( fp_kind ) :: p_coef(0:32,6) 
+    INTEGER :: n_Legendre_Terms, n_Phase_Elements
     !#--------------------------------------------------------------------------#
     !#                -- INITIALISE SUCCESSFUL RETURN STATUS --                 #
     !#--------------------------------------------------------------------------#
 
     Error_Status = SUCCESS
-    AerosolScatter%Asymmetry_Factor = ZERO 
-    AerosolScatter%Single_Scatter_Albedo = ZERO 
-    AerosolScatter%Optical_Depth = ZERO
-    AerosolScatter%Phase_Coefficient = ZERO
+
     IF(Atmosphere%n_Aerosols == 0) RETURN
+
+      n_Legendre_Terms = AeroC%n_Legendre_Terms
+      n_Phase_Elements = AeroC%n_Phase_Elements 
 
     Sensor_Type = SC%Sensor_Type(Channel_Index)
     ! wavelength in micron
@@ -401,7 +403,7 @@ CONTAINS
        kidx(1:kuse) = PACK((/(k,k=1,Atmosphere%aerosol(n)%n_layers)/), &
                            Atmosphere%aerosol(n)%Concentration(:) > AEROSOL_CONTENT_THRESHOLD)
        Aerosol_Type = Atmosphere%aerosol(n)%Type
-                                                                                                                        
+
       !  LOOP OVER LAYERS
       DO i = 1, kuse
          j = kidx(i)
@@ -409,58 +411,55 @@ CONTAINS
          Aerosol_Reff = Atmosphere%aerosol(n)%Effective_Radius(j)
         !   INFRARED RANGE
         IF( Sensor_Type == INFRARED_SENSOR .OR. Sensor_Type == VISIBLE_SENSOR) THEN
-          call Get_Aerosol_Opt(Aerosol_Type, Aerosol_Reff, Wavelength, & !INPUT
-                               ext, w0, g) !OUTPUT
+          call Get_Aerosol_Opt(n_Legendre_Terms,n_Phase_Elements,Aerosol_Type,Aerosol_Reff,Wavelength, & !INPUT
+                ext,w0,g,p_coef) !OUTPUT
 
-         Scattering_Coefficient = ext * Aerosol_Content * w0
+         Scattering_Coefficient = ext * Aerosol_Content * w0 
          AerosolScatter%Optical_Depth(j) = AerosolScatter%Optical_Depth(j)  &
                                          + ext * Aerosol_Content
          AerosolScatter%Single_Scatter_Albedo(j) =  &
            AerosolScatter%Single_Scatter_Albedo(j) + Scattering_Coefficient
          AerosolScatter%Asymmetry_Factor(j) = AerosolScatter%Asymmetry_Factor(j) &
                                             + g * Scattering_Coefficient
+
+       IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
+          DO k = 1, n_Phase_Elements
+           DO L = 0, n_Legendre_Terms
+           AerosolScatter%Phase_Coefficient(L, k, j) =   &
+             AerosolScatter%Phase_Coefficient(L, k, j)   &
+             + p_coef(L,k)*Scattering_Coefficient
+           ENDDO
+          ENDDO
+        ENDIF
+
         ENDIF
       ENDDO     ! END of LOOP over layers (i)
      ENDIF      ! kuse
-  ENDDO       ! END of LOOP over cloud type (n)
+  ENDDO       ! END of LOOP over aerosol type (n)
                                                                                                                         
-  DO i = 1, Atmosphere%n_Layers
-    IF(AerosolScatter%Single_Scatter_Albedo(i) > SCATTERING_ALBEDO_THRESHOLD) THEN
-     AerosolScatter%Asymmetry_Factor(i) = AerosolScatter%Asymmetry_Factor(i)  &
-                                        /AerosolScatter%Single_Scatter_Albedo(i)
-     AerosolScatter%Single_Scatter_Albedo(i) = AerosolScatter%Single_Scatter_Albedo(i) &
-                                             /AerosolScatter%Optical_Depth(i)
-
-  ! Phase coefficients
-       DO l = 1, AerosolScatter%n_Legendre_Terms - 1
-          AerosolScatter%Phase_Coefficient(l,1,i) = REAL((2*l)+1, fp_kind ) / TWO  &
-                                             * AerosolScatter%Asymmetry_Factor(i) ** l
-       END DO
-         AerosolScatter%Phase_Coefficient(0,1,i) = POINT_5
-
-    ELSE
-     AerosolScatter%Asymmetry_Factor(i) = ZERO
-     AerosolScatter%Single_Scatter_Albedo(i) = ZERO
-    END IF
-  ENDDO
 !
 
   END FUNCTION CRTM_Compute_AerosolScatter
 
 
 !
-  SUBROUTINE Get_Aerosol_Opt(Aerosol_Type, Aerosol_Reff, Wavelength, & !INPUT
-                                   ext, w0, g) !OUTPUT
+  SUBROUTINE Get_Aerosol_Opt(n_Legendre_Terms,n_Phase_Elements,Aerosol_Type, Aerosol_Reff, Wavelength, & !INPUT
+                                   ext, w0, g, p_coef) !OUTPUT
 ! ---------------------------------------------------------------------------------------
 !    Function:
 !      obtaining extinction (ext), scattereing (w0) coefficients
 !      asymmetry factor (g)
 ! ---------------------------------------------------------------------------------------
     REAL( fp_kind ) , INTENT( IN ) ::  Aerosol_Reff, Wavelength 
-    INTEGER, INTENT( IN ) :: Aerosol_Type
+    INTEGER, INTENT( IN ) :: Aerosol_Type,n_Legendre_Terms,n_Phase_Elements
+    INTEGER :: Offset_LegTerm
     REAL( fp_kind ) , INTENT( OUT ) :: ext, w0, g
-    REAL( fp_kind ) :: d1, d2 
-    INTEGER :: i, j, i1, i2, j1, j2
+    REAL( fp_kind ) :: d1, d2, a1,a2 
+    REAL( fp_kind ) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef
+    INTEGER :: i, j, k, L, i1, i2, j1, j2,L1,L2,L3A
+! temporal set Offset_LegTerm = 0
+    Offset_LegTerm = 0
+
   ! find index for wavelength (micron)
     DO i = 1, AeroC%n_Wavelength - 1
         IF( Wavelength <= AeroC%Wavelength(i) ) GO TO 101
@@ -509,6 +508,15 @@ CONTAINS
          + (ONE-d1)*d2*AeroC%Asymmetry_Factor(j1,Aerosol_Type,i2)          &
          + (ONE-d2)*d1*AeroC%Asymmetry_Factor(j2,Aerosol_Type,i1)      &
          + d1*d2*AeroC%Asymmetry_Factor(j2,Aerosol_Type,i2)
+
+       IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
+          DO L = 0, n_Legendre_Terms
+           p_coef(L,1) = (ONE-d1)*(ONE-d2)*AeroC%Phase_Coef(L+Offset_LegTerm,j1,Aerosol_Type,i1)  &
+               + (ONE-d1)*d2*AeroC%Phase_Coef(L+Offset_LegTerm,j1,Aerosol_Type,i2)  &
+               + (ONE-d2)*d1*AeroC%Phase_Coef(L+Offset_LegTerm,j2,Aerosol_Type,i1)  &
+               +  d1*d2*AeroC%Phase_Coef(L+Offset_LegTerm,j2,Aerosol_Type,i2)
+          ENDDO
+       ENDIF
 
     RETURN
   END SUBROUTINE Get_Aerosol_Opt
