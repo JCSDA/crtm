@@ -399,7 +399,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 11-Jul-2003
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
 !------------------------------------------------------------------------------
 
   FUNCTION Read_LBLRTM_GAtts( NC_Filename,   &  ! Input
@@ -500,7 +500,7 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Create_LBLRTM_netCDF
 !
@@ -630,7 +630,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
 !--------------------------------------------------------------------------------
 
   FUNCTION Create_LBLRTM_netCDF( NC_Filename       , &  ! Input
@@ -1081,7 +1081,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Inquire_LBLRTM_netCDF
 !
@@ -1217,7 +1217,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
 !------------------------------------------------------------------------------
 
   FUNCTION Inquire_LBLRTM_netCDF( NC_Filename       , &  ! Input
@@ -1432,7 +1432,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Write_LBLRTM_netCDF
 !
@@ -1497,7 +1497,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
 !------------------------------------------------------------------------------
 
   FUNCTION Write_LBLRTM_netCDF( NC_Filename  , &  ! Input
@@ -1614,7 +1614,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Read_LBLRTM_netCDF
 !
@@ -1679,7 +1679,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
 !------------------------------------------------------------------------------
 
   FUNCTION Read_LBLRTM_netCDF( NC_Filename  , &  ! Input
