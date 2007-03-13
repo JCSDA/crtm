@@ -146,7 +146,6 @@ CONTAINS
       ! ----------------------
 
       Error_Status = CRTM_Allocate_Aerosol( n_Layers, &
-                                            n_Modes, &
                                             Aerosol, &
                                             Message_Log = Message_Log )
 
@@ -173,18 +172,10 @@ CONTAINS
       ! Check the dimension values
       ! --------------------------
 
-      IF ( n_Layers /= Aerosol%n_Layers .OR. &
-           n_Modes  >  Aerosol%Max_Modes     ) THEN
+      IF ( n_Layers /= Aerosol%n_Layers ) THEN 
         Message = 'Aerosol data dimensions are inconsistent with structure definition'
         GOTO 1000  ! Clean up
       END IF
-
-
-      ! ------------------
-      ! Set the mode value
-      ! ------------------
-
-      Aerosol%n_Modes = n_Modes
 
     END IF
 
@@ -195,9 +186,7 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     READ( FileID, IOSTAT = IO_Status ) Aerosol%Type, &
-                                       Aerosol%Effective_Radius(:,1:n_Modes), &
-                                       Aerosol%Effective_Variance(:,1:n_Modes), &
-                                       Aerosol%Concentration(:,1:n_Modes)
+                                       Aerosol%Concentration(:), Aerosol%Effective_Radius(:)
 
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error reading Aerosol data. IOSTAT = ", i5 )' ) &
@@ -266,7 +255,7 @@ CONTAINS
     !#                    -- WRITE THE Aerosol DIMENSIONS --                    #
     !#--------------------------------------------------------------------------#
 
-    WRITE( FileID, IOSTAT = IO_Status ) Aerosol%n_Layers, Aerosol%n_Modes
+    WRITE( FileID, IOSTAT = IO_Status ) Aerosol%n_Layers
 
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error writing Aerosol data dimensions. IOSTAT = ", i5 )' ) &
@@ -281,9 +270,7 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     WRITE( FileID, IOSTAT = IO_Status ) Aerosol%Type, &
-                                        Aerosol%Effective_Radius(:,1:Aerosol%n_Modes), &
-                                        Aerosol%Effective_Variance(:,1:Aerosol%n_Modes), &
-                                        Aerosol%Concentration(:,1:Aerosol%n_Modes)
+                                        Aerosol%Concentration(:), Aerosol%Effective_Radius(:)
 
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error writing Aerosol data. IOSTAT = ", i5 )' ) &
@@ -1084,8 +1071,7 @@ CONTAINS
     ! --------------------------------------
     ! Check the Aerosol structure dimensions
     ! --------------------------------------
-    IF ( Aerosol%n_Layers < 1 .OR. &
-         Aerosol%n_Modes  < 1      ) THEN
+    IF ( Aerosol%n_Layers < 1 ) THEN 
       Message = 'Dimensions of Aerosol structure are < or = 0.'
       GOTO 1000
     END IF
@@ -1233,8 +1219,7 @@ CONTAINS
     ! --------------------------------------
     ! Check the Aerosol structure dimensions
     ! --------------------------------------
-    IF ( ANY( Aerosol%n_Layers < 1 ) .OR. &
-         ANY( Aerosol%n_Modes  < 1 )      ) THEN
+    IF ( ANY( Aerosol%n_Layers < 1 )  ) THEN 
       Message = 'Dimensions of some Aerosol structures is < or = 0.'
       GOTO 1000
     END IF
