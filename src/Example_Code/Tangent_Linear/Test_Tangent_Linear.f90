@@ -16,7 +16,7 @@ PROGRAM Test_Tangent_Linear
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE CRTM_Module, fp=>fp_kind   ! The main CRTM module
+  USE CRTM_Module                ! The main CRTM module
   USE CRTM_Atmosphere_Binary_IO  ! Just for reading test datafiles
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
   USE CRTM_Test_Utility, &
