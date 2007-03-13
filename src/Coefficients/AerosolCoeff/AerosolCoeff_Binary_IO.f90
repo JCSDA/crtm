@@ -133,6 +133,7 @@ CONTAINS
                                         n_R_Humidity  ,   &  ! Input
                                         n_Reff        ,   &  ! Input
                                         n_Wavelength  ,   &  ! Input
+                                        n_Legendre_Terms,   &  ! Input
                                         Release,      &  ! Optional Output
                                         Version,      &  ! Optional Output
                                         RCS_Id,       &  ! Revision control
@@ -140,7 +141,7 @@ CONTAINS
                                       RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength 
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,n_Legendre_Terms 
     INTEGER,      OPTIONAL, INTENT(OUT) :: Release
     INTEGER,      OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
@@ -159,6 +160,7 @@ CONTAINS
     INTEGER(Long) :: File_n_R_Humidity
     INTEGER(Long) :: File_n_Reff
     INTEGER(Long) :: File_n_Wavelength
+    INTEGER(Long) :: File_n_Legendre_Terms
  
 
     ! ------
@@ -207,7 +209,8 @@ CONTAINS
     READ( FileID, IOSTAT=IO_Status ) File_n_Aerosol_Type,   &
                                      File_n_R_Humidity,     &
                                      File_n_Reff,     &
-                                     File_n_Wavelength 
+                                     File_n_Wavelength, &
+                                     File_n_Legendre_Terms 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error reading n_Channels dimension from ", a, &
@@ -230,6 +233,7 @@ CONTAINS
     IF ( PRESENT( n_R_Humidity ) )  n_R_Humidity = File_n_R_Humidity 
     IF ( PRESENT( n_Reff ) ) n_Reff  = File_n_Reff 
     IF ( PRESENT( n_Wavelength ) ) n_Wavelength = File_n_Wavelength 
+    IF ( PRESENT( n_Legendre_Terms ) ) n_Legendre_Terms = File_n_Legendre_Terms 
     ! Ancillary info
     IF ( PRESENT( Release ) ) THEN
       Release = File_Release
@@ -386,7 +390,7 @@ CONTAINS
     INTEGER :: Destroy_Status
     CHARACTER(128) :: Process_ID_Tag
     INTEGER :: FileID
-    INTEGER(LONG) :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,i,j
+    INTEGER(LONG) :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,n_Legendre_Terms,i,j
  
 
     ! ------
@@ -466,8 +470,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength 
+    READ( FileID, IOSTAT=IO_Status ) n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,n_Legendre_Terms
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error reading n_Channels dimension from ", a, &
@@ -481,10 +486,12 @@ CONTAINS
       RETURN
     END IF
 
+    print *,' step1 ',n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,n_Legendre_Terms
     Error_Status = Allocate_AerosolCoeff( n_Aerosol_Type,   &  ! Input
                                   n_R_Humidity  ,   &  ! Input
                                   n_Reff        ,   &  ! Input
                                   n_Wavelength  ,   &  ! Input
+                                  n_Legendre_Terms, &  ! Input
                                   AerosolCoeff  ,   &  ! Output
                                   RCS_Id        ,   &  ! Revision control
                                   Message_Log )
@@ -536,7 +543,8 @@ CONTAINS
 
    READ( FileID, IOSTAT=IO_Status ) AerosolCoeff%Mass_Extinction,  &
                                     AerosolCoeff%Scattering_Albedo,&
-                                    AerosolCoeff%Asymmetry_Factor
+                                    AerosolCoeff%Asymmetry_Factor, &
+                                    AerosolCoeff%Phase_Coef
 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -773,7 +781,8 @@ CONTAINS
     WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%n_Aerosol_Type,   &
                                       AerosolCoeff%n_R_Humidity,     &
                                       AerosolCoeff%n_Reff,     &
-                                      AerosolCoeff%n_Wavelength 
+                                      AerosolCoeff%n_Wavelength , &
+                                      AerosolCoeff%n_Legendre_Terms 
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error writing n_Channels dimension to ", a, &
@@ -822,8 +831,9 @@ CONTAINS
 
     ! Write the data item types
     WRITE( FileID, IOSTAT=IO_Status ) AerosolCoeff%Mass_Extinction,  &
-                                    AerosolCoeff%Scattering_Albedo,&
-                                    AerosolCoeff%Asymmetry_Factor 
+                                    AerosolCoeff%Scattering_Albedo,  &
+                                    AerosolCoeff%Asymmetry_Factor,   &
+                                    AerosolCoeff%Phase_Coef
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error writing in data ", a, &

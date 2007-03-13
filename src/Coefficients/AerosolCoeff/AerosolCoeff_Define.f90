@@ -90,6 +90,8 @@ MODULE AerosolCoeff_Define
     INTEGER(Long) :: n_R_Humidity        = 0   ! I2 dimension
     INTEGER(Long) :: n_Reff              = 0   ! I3 dimension
     INTEGER(Long) :: n_Wavelength        = 0   ! I4 dimension
+    INTEGER(Long) :: n_Legendre_Terms   = 0
+    INTEGER(Long) :: n_Phase_Elements   = 1
     ! LUT dimension vectors
     CHARACTER(20), POINTER, DIMENSION(:)     :: Aerosol_Type_Name     => NULL()  ! I1
     REAL(Double),  POINTER, DIMENSION(:,:)   :: Aerosol_Reff   => NULL()         ! I3xI1
@@ -98,6 +100,7 @@ MODULE AerosolCoeff_Define
     REAL(Double),  POINTER, DIMENSION(:,:,:) :: Mass_Extinction => NULL()        ! I3xI1xI4
     REAL(Double),  POINTER, DIMENSION(:,:,:) :: Scattering_Albedo => NULL()      ! I3xI1xI4 
     REAL(Double),  POINTER, DIMENSION(:,:,:) :: Asymmetry_Factor => NULL()       ! I3xI1xI4
+    REAL(Double),  POINTER, DIMENSION(:,:,:,:) :: Phase_Coef => NULL()           ! I5xI3xI1xI4
   END TYPE AerosolCoeff_type
 
 
@@ -146,6 +149,7 @@ CONTAINS
     AerosolCoeff%n_R_Humidity = 0
     AerosolCoeff%n_Reff = 0
     AerosolCoeff%n_Wavelength = 0
+    AerosolCoeff%n_Legendre_Terms = 0
   END SUBROUTINE Clear_AerosolCoeff
 
 
@@ -243,6 +247,7 @@ CONTAINS
            ASSOCIATED( AerosolCoeff%Wavelength            ) .AND. &
            ASSOCIATED( AerosolCoeff%Mass_Extinction       ) .AND. &
            ASSOCIATED( AerosolCoeff%Scattering_Albedo     ) .AND. &
+           ASSOCIATED( AerosolCoeff%Phase_Coef     ) .AND. &
            ASSOCIATED( AerosolCoeff%Asymmetry_Factor )    ) THEN
         Association_Status = .TRUE.
       END IF
@@ -253,6 +258,7 @@ CONTAINS
            ASSOCIATED( AerosolCoeff%Wavelength )        .OR. &
            ASSOCIATED( AerosolCoeff%Mass_Extinction )   .OR. &
            ASSOCIATED( AerosolCoeff%Scattering_Albedo ) .OR. &
+           ASSOCIATED( AerosolCoeff%Phase_Coef ) .OR. &
            ASSOCIATED( AerosolCoeff%Asymmetry_Factor )      ) THEN
         Association_Status = .TRUE.
       END IF
@@ -474,6 +480,21 @@ CONTAINS
       END IF
     END IF
 
+    ! Deallocate Phase_Coef 
+    IF ( ASSOCIATED( AerosolCoeff%Phase_Coef ) ) THEN
+      DEALLOCATE( AerosolCoeff%Phase_Coef, STAT = Allocate_Status )
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error deallocating AerosolCoeff Phase_Coef ", &
+                          &"member. STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log=Message_Log )
+      END IF
+    END IF
+
 
     ! -------------------------------------
     ! Decrement and test allocation counter
@@ -568,12 +589,13 @@ CONTAINS
                                   n_R_Humidity  ,   &  ! Input
                                   n_Reff        ,   &  ! Input
                                   n_Wavelength  ,   &  ! Input
+                                  n_Legendre_Terms, &  ! Input
                                   AerosolCoeff  ,   &  ! Output
                                   RCS_Id        ,   &  ! Revision control
                                   Message_Log ) &  ! Error messaging
                                 RESULT( Error_Status )
     ! Arguments
-    INTEGER,                 INTENT(IN)     :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength 
+    INTEGER,                 INTENT(IN)     :: n_Aerosol_Type,n_R_Humidity,n_Reff,n_Wavelength,n_Legendre_Terms
     TYPE(AerosolCoeff_type), INTENT(IN OUT) :: AerosolCoeff
     CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
@@ -596,6 +618,7 @@ CONTAINS
     IF ( n_Aerosol_Type < 1 .OR.  &
          n_R_Humidity   < 1 .OR.  &
          n_Reff         < 1 .OR.  &
+         n_Legendre_Terms  < 0 .OR.  &
          n_Wavelength   < 1       ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -631,6 +654,7 @@ CONTAINS
               AerosolCoeff%Mass_Extinction(n_Reff,n_Aerosol_Type,n_Wavelength ), &
               AerosolCoeff%Scattering_Albedo(n_Reff,n_Aerosol_Type,n_Wavelength ), &
               AerosolCoeff%Asymmetry_Factor(n_Reff,n_Aerosol_Type,n_Wavelength ), &
+              AerosolCoeff%Phase_Coef(0:n_Legendre_Terms,n_Reff,n_Aerosol_Type,n_Wavelength ), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -651,6 +675,7 @@ CONTAINS
     AerosolCoeff%n_R_Humidity       = n_R_Humidity 
     AerosolCoeff%n_Reff             = n_Reff 
     AerosolCoeff%n_Wavelength       = n_Wavelength 
+    AerosolCoeff%n_Legendre_Terms   = n_Legendre_Terms 
     AerosolCoeff%Aerosol_Type_Name  = ' ' 
     AerosolCoeff%Aerosol_Reff       = FP_INIT
     AerosolCoeff%R_Humidity         = FP_INIT
@@ -658,6 +683,7 @@ CONTAINS
     AerosolCoeff%Mass_Extinction    = FP_INIT
     AerosolCoeff%Scattering_Albedo  = FP_INIT
     AerosolCoeff%Asymmetry_Factor   = FP_INIT
+    AerosolCoeff%Phase_Coef   = FP_INIT
 
     ! -------------------------------------
     ! Increment and test allocation counter
@@ -795,7 +821,8 @@ CONTAINS
     Error_Status = Allocate_AerosolCoeff( AerosolCoeff_in%n_Aerosol_Type,  &
                                           AerosolCoeff_in%n_R_Humidity  ,  &
                                           AerosolCoeff_in%n_Reff        ,  &
-                                          AerosolCoeff_in%n_Wavelength        ,  &
+                                          AerosolCoeff_in%n_Wavelength  ,  &
+                                          AerosolCoeff_in%n_Legendre_Terms,  &
                                           AerosolCoeff_out, &
                                           Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -823,6 +850,7 @@ CONTAINS
     AerosolCoeff_out%Mass_Extinction   = AerosolCoeff_in%Mass_Extinction
     AerosolCoeff_out%Scattering_Albedo = AerosolCoeff_in%Scattering_Albedo
     AerosolCoeff_out%Asymmetry_Factor  = AerosolCoeff_in%Asymmetry_Factor
+    AerosolCoeff_out%Phase_Coef  = AerosolCoeff_in%Phase_Coef
 
   END FUNCTION Assign_AerosolCoeff
 
@@ -1113,6 +1141,19 @@ CONTAINS
                             Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
+
+    ! Phase_Coef array
+!!    Compare = Compare_Float( AerosolCoeff_LHS%Phase_Coef, &
+!!                             AerosolCoeff_RHS%Phase_Coef, &
+!!                             ULP = ULP                    )
+!!    IF ( ANY( .NOT. Compare ) ) THEN
+!!      Error_Status = FAILURE
+!!      CALL Display_Message( ROUTINE_NAME, &
+!!                            'Phase_Coef values are different.', &
+!!                            Error_Status, &
+!!                            Message_Log=Message_Log )
+!!      IF ( Check_Once ) RETURN
+!!    END IF
 
   END FUNCTION Equal_AerosolCoeff
 
