@@ -1,144 +1,18 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       CRTM_AerosolScatter
+! 
+! CRTM_AerosolScatter
 !
-! PURPOSE:
-!       Module to compute the aerosol absorption and scattering properties
-!       required for radiative transfer in an atmosphere with aerosols.
+! 
+! Module to compute the aerosol absorption and scattering properties
+! required for radiative transfer in an atmosphere with aerosols.
 !       
-! CATEGORY:
-!       CRTM : AtmScatter
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE CRTM_AerosolScatter
-!
-! MODULES:
-!       Type_Kinds:                Module containing definitions for kinds
-!                                  of variable types.
-!
-!       Message_Handler:           Module to define simple error codes and
-!                                  handle error conditions
-!                                  USEs: FILE_UTILITY module
-!
-!       CRTM_Parameters:           Module of parameter definitions for the CRTM.
-!                                  USEs: TYPE_KINDS module
-!
-!       CRTM_SpcCoeff:             Module containing the shared CRTM spectral
-!                                  coefficients (SpcCoeff) and their
-!                                  load/destruction routines. 
-!                                  USEs TYPE_KINDS module
-!                                       ERROR_HANDLER module
-!                                       SPCCOEFF_DEFINE module
-!                                       SPCCOEFF_BINARY_IO module
-!                                       CRTM_PARAMETERS module
-!
-!       CRTM_AerosolCoeff:         Module containing the shared CRTM aerosol
-!                                  coefficients (AerosolCoeff) and their
-!                                  load/destruction routines. 
-!                                  USEs TYPE_KINDS module
-!                                       ERROR_HANDLER module
-!                                       AEROSOLCOEFF_DEFINE module
-!                                       AEROSOLCOEFF_BINARY_IO module
-!                                       CRTM_PARAMETERS module
-!
-!       CRTM_Atmosphere_Define:    Module defining the CRTM Atmosphere
-!                                  structure and containing routines to 
-!                                  manipulate it.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!                                        CRTM_CLOUD_DEFINE module
-!
-!       CRTM_GeometryInfo_Define:  Module defining the CRTM GeometryInfo
-!                                  structure and containing routines to 
-!                                  manipulate it.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!
-!       CRTM_AtmScatter_Define:    Module defining the CRTM AtmScatter
-!                                  structure and containing routines to 
-!                                  manipulate it.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!
-! CONTAINS:
-!       PUBLIC subprograms
-!       ------------------
-!         CRTM_Compute_AerosolScatter:     Function to compute aerosol absorption
-!                                          and scattering properties.
-!
-!         CRTM_Compute_AerosolScatter_TL:  Function to compute the tangent-linear
-!                                          aerosol absorption and scattering
-!                                          properties.
-!
-!         CRTM_Compute_AerosolScatter_AD:  Function to compute the adjoint
-!                                          of the aerosol absorption and scattering
-!                                          properties.
-!
-!       PRIVATE subprograms
-!       -------------------
-!       
-!         *** USERS ADD INFO HERE FOR ANY PRIVATE SUBPROGRAMS ***
-!
-!
-!
-! USE ASSOCIATED PUBLIC SUBPROGRAMS:
-!       CRTM_Associated_AtmScatter:  Function to test the association status of
-!                                    the pointer members of a AtmScatter
-!                                    structure.
-!                                    SOURCE: CRTM_ATMSCATTER_DEFINE module
-!
-!       CRTM_Destroy_AtmScatter:     Function to re-initialize an
-!                                    CRTM_AtmScatter structure.
-!                                    SOURCE: CRTM_ATMSCATTER_DEFINE module
-!
-!       CRTM_Allocate_AtmScatter:    Function to allocate the pointer
-!                                    members of an CRTM_AtmScatter
-!                                    structure.
-!                                    SOURCE: CRTM_ATMSCATTER_DEFINE module
-!
-!       CRTM_Assign_AtmScatter:      Function to copy an CRTM_AtmScatter
-!                                    structure.
-!                                    SOURCE: CRTM_ATMSCATTER_DEFINE module
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 15-Feb-2005
 !                       paul.vandelst@ssec.wisc.edu
 !       Modified by     Quanhua Liu, 03-Oct-2006
 !                       Quanhua.Liu@noaa.gov
-!
-!  Copyright (C) 2005 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
+                        
+
 
 MODULE CRTM_AerosolScatter
 
@@ -147,21 +21,35 @@ MODULE CRTM_AerosolScatter
   ! Module use
   ! ----------
 
-  USE Type_Kinds
-  USE Message_Handler
-
+  USE Type_Kinds,               ONLY: fp
+  USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
   ! -- CRTM modules
-  USE CRTM_Parameters
-  USE CRTM_SpcCoeff
+  USE CRTM_Parameters          
+  USE CRTM_SpcCoeff,            ONLY: SC, INFRARED_SENSOR, VISIBLE_SENSOR
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
+  USE CRTM_Interpolation,       ONLY: INTERP_NPTS=>NPTS, &
+                                      find_index       , &
+                                      interp_1D        , &
+                                      interp_2D        , &
+                                      interp_3D        , &
+                                      interp_2D_TL     , &
+                                      interp_3D_TL     , &
+                                      interp_2D_AD     , &
+                                      interp_3D_AD     , &
+                                      dlpoly           , &
+                                      lpoly
 
   ! -- The AtmScatter structure definition module
   ! -- The PUBLIC entities in CRTM_AtmScatter_Define
   ! -- are also explicitly defined as PUBLIC here
   ! -- (down below) so a user need only USE this
   ! -- module (CRTM_AerosolScatter).
-  USE CRTM_AtmScatter_Define
+  USE CRTM_AtmScatter_Define,  ONLY: CRTM_AtmScatter_type        , &
+                                     CRTM_Associated_AtmScatter  , &
+                                     CRTM_Destroy_AtmScatter     , &
+                                     CRTM_Allocate_AtmScatter    , &
+                                     CRTM_Assign_AtmScatter
 
   USE CRTM_Aerosol_Define
   USE CRTM_AerosolCoeff,   ONLY: AeroC 
@@ -193,7 +81,7 @@ MODULE CRTM_AerosolScatter
 
   ! -- Science routines in this modules
   PUBLIC :: CRTM_Compute_AerosolScatter
-  PUBLIC :: CRTM_Compute_AerosolScatter_TL
+  !PUBLIC :: CRTM_Compute_AerosolScatter_TL
   PUBLIC :: CRTM_Compute_AerosolScatter_AD
 
 
@@ -204,27 +92,38 @@ MODULE CRTM_AerosolScatter
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  
+  
+  ! Number of stream angle definitions
+  INTEGER, PARAMETER :: TWO_STREAMS       =  2
+  INTEGER, PARAMETER :: FOUR_STREAMS      =  4
+  INTEGER, PARAMETER :: SIX_STREAMS       =  6
+  INTEGER, PARAMETER :: EIGHT_STREAMS     =  8
+  INTEGER, PARAMETER :: SIXTEEN_STREAMS   = 16
+  INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
+  
+  
+    
+  
+  
+  ! --------------------------------------
+  ! Structure definition to hold forward
+  ! variables across FWD, TL and AD calls
+  ! --------------------------------------
+  TYPE, PUBLIC :: CRTM_ASVariables_type
+    PRIVATE
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_AEROSOLS) :: ext = ZERO  !ke  ! Mass extinction coefficient
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_AEROSOLS) :: w0  = ZERO  !w   ! Single Scatter Albedo
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_AEROSOLS) :: g   = ZERO  !g   ! Asymmetry factor
+    REAL(fp), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
+                        MAX_N_PHASE_ELEMENTS,  &
+                        MAX_N_LAYERS,          &
+                        MAX_N_AEROSOLS         )  :: p_coef    !p      ! Phase coefficients
+    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Total_bs = ZERO  !bs  ! Volume scattering coefficient
+  END TYPE CRTM_ASVariables_type
 
 
 CONTAINS
-
-
-
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-
-
-!  *** USERS INSERT PRIVATE SUBPROGRAMS HERE ***
-
-
 
 
 !################################################################################
@@ -329,9 +228,10 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_AerosolScatter( Atmosphere,     &  ! Input
-                                        GeometryInfo,   &  ! Input
-                                        Channel_Index,  &  ! Input
+                                        SensorIndex,    &  ! Input
+                                        ChannelIndex,   &  ! Input
                                         AerosolScatter, &  ! Output
+                                        ASV           , &  ! Internal variable output
                                         Message_Log )   &  ! Error messaging
                                       RESULT ( Error_Status )
 
@@ -345,9 +245,12 @@ CONTAINS
     ! ---------
 
     ! -- Input
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere
-    TYPE( CRTM_GeometryInfo_type ), INTENT( IN )     :: GeometryInfo
-    INTEGER,                        INTENT( IN )     :: Channel_Index
+    TYPE(CRTM_Atmosphere_type),   INTENT( IN )     :: Atmosphere
+    INTEGER,                      INTENT( IN )     :: ChannelIndex
+    INTEGER,                      INTENT( IN )     :: SensorIndex
+    
+    ! -- Internal variable output
+    TYPE(CRTM_ASVariables_type), INTENT(OUT) :: ASV
 
     ! -- Output 
     TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: AerosolScatter
@@ -367,160 +270,182 @@ CONTAINS
     ! Local parameters
     ! ----------------
 
+    CHARACTER(256) :: Message
     CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter'
-    INTEGER :: i, j, k, n, L, kuse
-    INTEGER :: Sensor_Type
-    REAL( fp_kind ) :: Wavenumber
-    INTEGER, DIMENSION( Atmosphere%Max_Layers ) :: kidx
-    REAL( fp_kind ) :: Water_Content,eff_radius,eff_v,Temperature
-    INTEGER :: Aerosol_Type
-    REAL( fp_kind ) :: Scattering_Coefficient, ext, w0, g, Aerosol_Content
-    REAL( fp_kind ) :: Aerosol_Reff, Wavelength
-    REAL( fp_kind ) :: p_coef(0:32,6) 
-    INTEGER :: n_Legendre_Terms, n_Phase_Elements
+    INTEGER :: k, ka, l, m, n
+    REAL(fp) :: Wavenumber, Wavelength
+    LOGICAL  :: Layer_Mask(Atmosphere%n_Layers)
+    INTEGER  :: Layer_Index(Atmosphere%n_Layers)
+    INTEGER  :: nAerosol_Layers
+    INTEGER  :: Sensor_Type
+    REAL(fp) :: bs
+    
     !#--------------------------------------------------------------------------#
     !#                -- INITIALISE SUCCESSFUL RETURN STATUS --                 #
     !#--------------------------------------------------------------------------#
 
     Error_Status = SUCCESS
+    ! Initialize and return if no aerosols
+    AerosolScatter%Optical_Depth         = ZERO
+    AerosolScatter%Single_Scatter_Albedo = ZERO
+    AerosolScatter%Asymmetry_Factor      = ZERO
+    IF (AeroC%n_Phase_Elements > 0) AerosolScatter%Phase_Coefficient = ZERO
+    IF (Atmosphere%n_Aerosols == 0) RETURN
+    ! Wavelength in Microns
+    Wavelength = 10000.0_fp/SC(SensorIndex)%Wavenumber(ChannelIndex)
+    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    ! Determine offset for Legendre coefficients in the
+    ! AeroC lookup table corresponding to the 
+    ! number of streams
+    SELECT CASE(AerosolScatter%n_Legendre_Terms)
+      CASE (TWO_STREAMS)    ; AerosolScatter%lOffset = 0
+      CASE (FOUR_STREAMS)   ; AerosolScatter%lOffset = 0
+      CASE (SIX_STREAMS)    ; AerosolScatter%lOffset = 5
+      CASE (EIGHT_STREAMS)  ; AerosolScatter%lOffset = 12
+      CASE (SIXTEEN_STREAMS); AerosolScatter%lOffset = 21
+      CASE DEFAULT
+        AerosolScatter%lOffset = 0  
+        ! Use two-stream model or HG and RAYLEIGH Phase function
+        IF( HGPHASE ) THEN
+          AerosolScatter%n_Legendre_Terms = 0
+        ELSE
+          Error_Status = FAILURE
+          WRITE(Message,'("The n_Legendre_Terms in AerosolScatter, ",i0,", do not fit model")') &
+                        AerosolScatter%n_Legendre_Terms
+          CALL Display_Message(ROUTINE_NAME,           &
+                               TRIM(Message),          &
+                               Error_Status,           &
+                               Message_Log=Message_Log )
+          RETURN
+        END IF
+    END SELECT
+    !PRINT *, AerosolScatter%n_Legendre_Terms
+    ! -----------------------------------------------
+    ! Loop over the different Aerosols in the profile
+    ! -----------------------------------------------
+    Aerosol_loop: DO n = 1, Atmosphere%n_Aerosols
+    
+    
+      
+                
+      ! Only process aerosols with more
+      ! than the threshold Aerosol amount
+      Layer_Mask  = Atmosphere%Aerosol(n)%Concentration > AEROSOL_CONTENT_THRESHOLD
+      nAerosol_Layers = COUNT(Layer_Mask)
+      IF ( nAerosol_Layers == 0 ) CYCLE Aerosol_loop
+      
+        ! --------------------------------------
+        ! Loop over the current Aerosol's Layers
+        ! --------------------------------------
+        Layer_Index(1:nAerosol_Layers) = PACK((/(k,k=1,Atmosphere%Aerosol(n)%n_Layers)/), Layer_Mask)
+          Aerosol_Layer_loop: DO k = 1, nAerosol_Layers
+            ka = Layer_Index(k)
+        
+            IF( Sensor_Type == INFRARED_SENSOR .OR. Sensor_Type == VISIBLE_SENSOR) THEN
+              ! Forward AerosolScatter interpolation routine
+              CALL Get_Aerosol_Opt(AerosolScatter                              , & ! Input
+                                   Wavelength                                  , & ! Input
+                                   Atmosphere%Aerosol(n)%Type                  , & ! Input
+                                   Atmosphere%Aerosol(n)%Effective_Radius(ka)  , & ! Input                               
+                                   ASV%ext(ka,n)                               , & ! Output
+                                   ASV%w0(ka,n)                                , & ! Output
+                                   ASV%g(ka,n)                                 , & ! Output
+                                   ASV%p_coef(:,:,ka,n)                          )
 
-    IF(Atmosphere%n_Aerosols == 0) RETURN
+              ! Compute the volume scattering coefficient for the current
+              ! aerosol layer and accumulate it for the layer total for the
+              ! profile (i.e. all aerosols)
+              !   bs = rho.w.ke
+              ! where
+              !   bs  = volume scattering coefficient for a layer [dimensionless]
+              !   rho = integrated aerosol concentration for a layer (g/m^2) [M.L^-2]
+              !   w   = single scatter albedo [dimensionless]
+              !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
 
-      n_Legendre_Terms = AeroC%n_Legendre_Terms
-      n_Phase_Elements = AeroC%n_Phase_Elements 
+              bs = Atmosphere%Aerosol(n)%Concentration(ka) * ASV%w0(ka,n) * ASV%ext(ka,n)
+              ASV%Total_bs(ka) = ASV%Total_bs(ka) + bs 
 
-    Sensor_Type = SC%Sensor_Type(Channel_Index)
-    ! wavelength in micron
-    Wavelength = 10000.0_fp_kind/SC%Wavenumber(Channel_Index)
+              ! Compute the optical depth (absorption + scattering)
+              !   tau = rho.ke
+              ! where
+              !   rho = Integrated Aerosol Concentration for a layer(g/m^2) [M.L^-2]
+              !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
+              ! Note that since all these computations are done for a given
+              ! layer, the optical depth is the same as the volume extinction
+              ! coefficient, be. Usually,
+              !   tau = be.d(z)
+              ! but we are working with height/thickness independent quantities
+              ! so that
+              !   tau = be
+              ! This is why the optical depth is used in the denominator to
+              ! compute the single scatter albedo in the Layer_loop below.
+              AerosolScatter%Optical_Depth(ka) = AerosolScatter%Optical_Depth(ka) + &
+                                               (ASV%ext(ka,n)*Atmosphere%Aerosol(n)%Concentration(ka))
 
-    !#--------------------------------------------------------------------------#
-    !#                -- LOOP OVER CLOUD TYPE --                                #
-    !#--------------------------------------------------------------------------#
-                                                                                                                        
-  DO n = 1, Atmosphere%n_Aerosols
-     kuse = count(Atmosphere%aerosol(n)%Concentration(:) > AEROSOL_CONTENT_THRESHOLD)
-     IF(kuse > 0 ) THEN
-       kidx(1:kuse) = PACK((/(k,k=1,Atmosphere%aerosol(n)%n_layers)/), &
-                           Atmosphere%aerosol(n)%Concentration(:) > AEROSOL_CONTENT_THRESHOLD)
-       Aerosol_Type = Atmosphere%aerosol(n)%Type
+              ! Compute and sum the asymmetry factor
+              !   g = g + g(LUT)*bs
+              ! where
+              !   g(LUT) = the asymmetry factor from the LUT
+              AerosolScatter%Asymmetry_Factor(ka) = AerosolScatter%Asymmetry_Factor(ka) + &
+                                                    (ASV%g(ka,n) * bs)
+            END IF
+            ! Compute the phase matrix coefficients
+            ! p = p + p(LUT)*bs
+            ! where
+            !   p(LUT) = the phase coefficient from the LUT
+            IF( AerosolScatter%n_Phase_Elements > 0 ) THEN
+              DO m = 1, AerosolScatter%n_Phase_Elements
+                DO l = 0, AerosolScatter%n_Legendre_Terms
+                  AerosolScatter%Phase_Coefficient(l,m,ka) = AerosolScatter%Phase_Coefficient(l,m,ka) + &
+                                                           (ASV%p_coef(l,m,ka,n) * bs) 
+                END DO
+              END DO
+            END IF
+          END DO Aerosol_Layer_loop
+    END DO Aerosol_loop                                      
 
-      !  LOOP OVER LAYERS
-      DO i = 1, kuse
-         j = kidx(i)
-         Aerosol_Content = Atmosphere%aerosol(n)%Concentration(j)
-         Aerosol_Reff = Atmosphere%aerosol(n)%Effective_Radius(j)
-        !   INFRARED RANGE
-        IF( Sensor_Type == INFRARED_SENSOR .OR. Sensor_Type == VISIBLE_SENSOR) THEN
-          call Get_Aerosol_Opt(n_Legendre_Terms,n_Phase_Elements,Aerosol_Type,Aerosol_Reff,Wavelength, & !INPUT
-                ext,w0,g,p_coef) !OUTPUT
+    ! --------------------------------------------
+    ! Accumulate optical properties for all Aerosols
+    ! --------------------------------------------
+    ! Some short names
+    l = AerosolScatter%n_Legendre_Terms
 
-         Scattering_Coefficient = ext * Aerosol_Content * w0 
-         AerosolScatter%Optical_Depth(j) = AerosolScatter%Optical_Depth(j)  &
-                                         + ext * Aerosol_Content
-         AerosolScatter%Single_Scatter_Albedo(j) =  &
-           AerosolScatter%Single_Scatter_Albedo(j) + Scattering_Coefficient
-         AerosolScatter%Asymmetry_Factor(j) = AerosolScatter%Asymmetry_Factor(j) &
-                                            + g * Scattering_Coefficient
+    ! Begin full atmosphere layer loop                                                                                                                          
+    Layer_Loop: DO k = 1, Atmosphere%n_Layers
 
-       IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
-          DO k = 1, n_Phase_Elements
-           DO L = 0, n_Legendre_Terms
-           AerosolScatter%Phase_Coefficient(L, k, j) =   &
-             AerosolScatter%Phase_Coefficient(L, k, j)   &
-             + p_coef(L,k)*Scattering_Coefficient
-           ENDDO
-          ENDDO
-        ENDIF
+      ! Only process layers that scatter
+      IF (ASV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
 
-        ENDIF
-      ENDDO     ! END of LOOP over layers (i)
-     ENDIF      ! kuse
-  ENDDO       ! END of LOOP over aerosol type (n)
-                                                                                                                        
-!
+        ! Normalize the asymmetry factor with the total
+        ! volume scattering coefficient, bs.
+        AerosolScatter%Asymmetry_Factor(k) = AerosolScatter%Asymmetry_Factor(k) / ASV%Total_bs(k)
 
+        IF ( AerosolScatter%n_Phase_Elements > 0 ) THEN
+          IF (l > 2) THEN
+            ! Normalize the phase matrix coefficients with
+            ! the total volume scattering coefficient, bs.
+            DO m = 1, AerosolScatter%n_Phase_Elements
+              AerosolScatter%Phase_Coefficient(0:l,m,k) = AerosolScatter%Phase_Coefficient(0:l,m,k) / &
+                                                          ASV%Total_bs(k)
+            END DO
+          ELSE
+            ! Henyey-Greenstein phase function
+            AerosolScatter%Phase_Coefficient(1,1,k) = ONEpointFIVE * AerosolScatter%Asymmetry_Factor(k)
+            AerosolScatter%Phase_Coefficient(2,1,k) = ZERO
+          END IF
+          
+          ! Normalization requirement
+          AerosolScatter%Phase_Coefficient(0,1,k) = POINT_5
+          AerosolScatter%Single_Scatter_Albedo(k) = ASV%Total_bs(k) / AerosolScatter%Optical_Depth(k)
+
+          AerosolScatter%Delta_Truncation(k) = AerosolScatter%Phase_Coefficient(l,1,k)
+        END IF
+    END DO Layer_loop
+                                                     
   END FUNCTION CRTM_Compute_AerosolScatter
 
 
-!
-  SUBROUTINE Get_Aerosol_Opt(n_Legendre_Terms,n_Phase_Elements,Aerosol_Type, Aerosol_Reff, Wavelength, & !INPUT
-                                   ext, w0, g, p_coef) !OUTPUT
-! ---------------------------------------------------------------------------------------
-!    Function:
-!      obtaining extinction (ext), scattereing (w0) coefficients
-!      asymmetry factor (g)
-! ---------------------------------------------------------------------------------------
-    REAL( fp_kind ) , INTENT( IN ) ::  Aerosol_Reff, Wavelength 
-    INTEGER, INTENT( IN ) :: Aerosol_Type,n_Legendre_Terms,n_Phase_Elements
-    INTEGER :: Offset_LegTerm
-    REAL( fp_kind ) , INTENT( OUT ) :: ext, w0, g
-    REAL( fp_kind ) :: d1, d2, a1,a2 
-    REAL( fp_kind ) , INTENT( INOUT ), DIMENSION(0:,:) :: p_coef
-    INTEGER :: i, j, k, L, i1, i2, j1, j2,L1,L2,L3A
-! temporal set Offset_LegTerm = 0
-    Offset_LegTerm = 0
-
-  ! find index for wavelength (micron)
-    DO i = 1, AeroC%n_Wavelength - 1
-        IF( Wavelength <= AeroC%Wavelength(i) ) GO TO 101
-    END DO
-    i = AeroC%n_Wavelength
- 101 CONTINUE
-    ! find index for wavelength
-    IF( i == 1 ) THEN
-       d2 = ZERO
-       i1 = 1
-       i2 = 1
-    ELSE
-      i1 = i-1
-      i2 = i
-      d2 = (Wavelength - AeroC%Wavelength(i1))/(AeroC%Wavelength(i2)-AeroC%Wavelength(i1)) 
-    END IF
-    ! find index for effective radius
-    DO j = 1, AeroC%n_Reff
-        IF( Aerosol_Reff <= AeroC%Aerosol_Reff(j,Aerosol_Type) ) GO TO 102 
-    END DO
-
-     j = AeroC%n_Reff
- 102 IF( j == 1 ) THEN
-       j1 = 1
-       j2 = 1
-       d1 = ZERO
-      ELSE
-        j1 = j-1
-        j2 = j
-        d1 = (Aerosol_Reff - AeroC%Aerosol_Reff(j1,Aerosol_Type))/  &
-        (AeroC%Aerosol_Reff(j2,Aerosol_Type)-AeroC%Aerosol_Reff(j1,Aerosol_Type))
-      END IF
-
-     ! interpolation for both wavelength and relative humidity
-     ext = (ONE-d1)*(ONE-d2)*AeroC%Mass_Extinction(j1,Aerosol_Type,i1)  &
-         + (ONE-d1)*d2*AeroC%Mass_Extinction(j1,Aerosol_Type,i2)          &
-         + (ONE-d2)*d1*AeroC%Mass_Extinction(j2,Aerosol_Type,i1)      &
-         + d1*d2*AeroC%Mass_Extinction(j2,Aerosol_Type,i2)
- 
-     w0  = (ONE-d1)*(ONE-d2)*AeroC%Scattering_Albedo(j1,Aerosol_Type,i1)  &
-         + (ONE-d1)*d2*AeroC%Scattering_Albedo(j1,Aerosol_Type,i2)          &
-         + (ONE-d2)*d1*AeroC%Scattering_Albedo(j2,Aerosol_Type,i1)      &
-         + d1*d2*AeroC%Scattering_Albedo(j2,Aerosol_Type,i2)
-
-     g   = (ONE-d1)*(ONE-d2)*AeroC%Asymmetry_Factor(j1,Aerosol_Type,i1)  &
-         + (ONE-d1)*d2*AeroC%Asymmetry_Factor(j1,Aerosol_Type,i2)          &
-         + (ONE-d2)*d1*AeroC%Asymmetry_Factor(j2,Aerosol_Type,i1)      &
-         + d1*d2*AeroC%Asymmetry_Factor(j2,Aerosol_Type,i2)
-
-       IF(n_Phase_Elements > 0 .AND. n_Legendre_Terms > 2) THEN
-          DO L = 0, n_Legendre_Terms
-           p_coef(L,1) = (ONE-d1)*(ONE-d2)*AeroC%Phase_Coef(L+Offset_LegTerm,j1,Aerosol_Type,i1)  &
-               + (ONE-d1)*d2*AeroC%Phase_Coef(L+Offset_LegTerm,j1,Aerosol_Type,i2)  &
-               + (ONE-d2)*d1*AeroC%Phase_Coef(L+Offset_LegTerm,j2,Aerosol_Type,i1)  &
-               +  d1*d2*AeroC%Phase_Coef(L+Offset_LegTerm,j2,Aerosol_Type,i2)
-          ENDDO
-       ENDIF
-
-    RETURN
-  END SUBROUTINE Get_Aerosol_Opt
-!
+  !
 !------------------------------------------------------------------------------
 !S+
 ! NAME:
@@ -632,37 +557,28 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AerosolScatter_TL( Atmosphere,        &  ! Input
-                                           AerosolScatter,    &  ! Input
-                                           Atmosphere_TL,     &  ! Input
-                                           GeometryInfo,      &  ! Input
-                                           Channel_Index,     &  ! Input
-                                           AerosolScatter_TL, &  ! Output
-                                           Message_Log )      &  ! Error messaging
-                                         RESULT ( Error_Status )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
+  FUNCTION CRTM_Compute_AerosolScatter_TL( Atmosphere             , & ! Input
+                                           AerosolScatter         , & ! Input
+                                           Atmosphere_TL          , & ! Input
+                                           SensorIndex            , & ! Input
+                                           ChannelIndex           , & ! Input
+                                           AerosolScatter_TL      , & ! Input
+                                           ASV                    , & ! Internal variable input
+                                           Message_Log            ) & ! Error messaging
+                                         RESULT( Error_Status )
+    
     ! ---------
     ! Arguments
     ! ---------
 
     ! -- Input
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN )     :: AerosolScatter
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere_TL
-    TYPE( CRTM_GeometryInfo_type ), INTENT( IN )     :: GeometryInfo
-    INTEGER,                        INTENT( IN )     :: Channel_Index
-
-    ! -- Output 
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: AerosolScatter_TL
-
-    ! -- Error messaging
-    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
-
+    TYPE(CRTM_Atmosphere_type) ,   INTENT(IN)     :: Atmosphere,Atmosphere_TL
+    INTEGER                    ,   INTENT(IN)     :: SensorIndex
+    INTEGER                    ,   INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_AtmScatter_type) ,   INTENT(IN OUT) :: AerosolScatter
+    TYPE(CRTM_AtmScatter_type) ,   INTENT(IN OUT) :: AerosolScatter_TL
+    TYPE(CRTM_ASVariables_type),   INTENT(IN)     :: ASV
+    CHARACTER(*),      OPTIONAL,   INTENT(IN)     :: Message_Log
 
     ! ---------------
     ! Function result
@@ -670,39 +586,26 @@ CONTAINS
 
     INTEGER :: Error_Status
 
-
     ! ----------------
     ! Local parameters
     ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter_TL'
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
+     
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter_TL'
 
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- INITIALISE SUCCESSFUL RETURN STATUS --                 #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! ------
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
-
-
-
-!  *** USERS INSERT CODE HERE ***
-
-
 
 
   END FUNCTION CRTM_Compute_AerosolScatter_TL
 
+  
 
 
-
+ 
 
 !------------------------------------------------------------------------------
 !S+
@@ -889,6 +792,94 @@ CONTAINS
 
 
   END FUNCTION CRTM_Compute_AerosolScatter_AD
+  
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                        ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+  
+    ! ----------------------------------------
+    ! Subroutine to obtain the bulk 
+    ! optical properties of aerosol
+    ! extinction coefficient (ext),
+    ! scattering coefficient (w0)
+    ! asymmetry factor (g), and
+    ! spherical Legendre coefficients (p_coef)
+    ! ----------------------------------------
+    SUBROUTINE Get_Aerosol_Opt(AerosolScatter,  &  ! Input AerosolScatter structure
+                               Wavelength    ,  &  ! Input in microns
+                               Aerosol_Type  ,  &  ! Input see CRTM_Aerosol_Define.f90
+                               Reff          ,  &  ! Input effective radius (mm)
+                               ext           ,  &  ! Output optical depth
+                               w0            ,  &  ! Output single scattering albedo
+                               g             ,  &  ! Output asymmetry factor
+                               p_coef           )  ! Output spherical Legendre coefficients
+      ! Arguments
+      TYPE(CRTM_AtmScatter_type), INTENT(IN)      :: AerosolScatter
+      REAL(fp)                  , INTENT(IN)      :: Wavelength
+      INTEGER                   , INTENT(IN)      :: Aerosol_Type
+      REAL(fp)                  , INTENT(IN)      :: Reff
+      REAL(fp)                  , INTENT(OUT)     :: ext
+      REAL(fp)                  , INTENT(OUT)     :: w0
+      REAL(fp)                  , INTENT(OUT)     :: g
+      REAL(fp)                  , INTENT(IN OUT)  :: p_coef(0:,:)
+      ! Local variables
+      INTEGER  :: k
+      INTEGER  :: l, lOffset
+      INTEGER  :: i1, i2
+      INTEGER  :: j1, j2
+      REAL(fp) :: f_int, r_int
+      REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
+      REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
+
+      ! Temporarily assign lOffset to ZERO
+      lOffset = 0
+
+      ! Assign a type index
+      SELECT CASE (Aerosol_Type)
+        CASE(DUST_AEROSOL)  ; k=1
+        CASE(SEASALT_SSAM_AEROSOL)  ; k=2
+        CASE(SEASALT_SSCM_AEROSOL)  ; k=3
+        CASE(DRY_ORGANIC_CARBON_AEROSOL)  ; k=4
+        CASE(WET_ORGANIC_CARBON_AEROSOL)  ; k=5
+        CASE(DRY_BLACK_CARBON_AEROSOL)  ; k=6
+        CASE(WET_BLACK_CARBON_AEROSOL)  ; k=7
+        CASE(SULFATE_AEROSOL)  ; k=8
+      END SELECT
+
+      ! Find the wavelength and effective
+      ! radius indices for interpolation
+      f_int = MAX(MIN(AeroC%Wavelength(AeroC%n_Wavelength),Wavelength),AeroC%Wavelength(1))
+      CALL find_index(AeroC%Wavelength(:),f_int,i1,i2)
+      f = AeroC%Wavelength(i1:i2)
+
+      r_int = MAX(MIN(AeroC%Aerosol_Reff(AeroC%n_Reff,Aerosol_Type),Reff),AeroC%Aerosol_Reff(1,Aerosol_Type)) 
+      CALL find_index(AeroC%Aerosol_Reff(:,k), r_int, j1, j2)
+      r = AeroC%Aerosol_Reff(j1:j2,k) 
+
+      ! Calculate the Lagrange polynomials
+      wlp = lpoly(f, f_int)
+      xlp = lpoly(r, r_int)
+
+
+      ! Perform Interpolation
+      CALL interp_2D(AeroC%Mass_Extinction(j1:j2,k,i1:i2), xlp, wlp, ext)
+      CALL interp_2D(AeroC%Scattering_Albedo(j1:j2,k,i1:i2), xlp, wlp, w0)
+      CALL interp_2D(AeroC%Asymmetry_Factor(j1:j2,k,i1:i2), xlp, wlp, g)
+
+      IF (AerosolScatter%n_Phase_Elements > 0 .AND.  &
+          AerosolScatter%n_Legendre_Terms > 2        ) THEN
+        DO l = 0, AerosolScatter%n_Legendre_Terms
+          CALL interp_2D(AeroC%Phase_Coef(l+lOffset,j1:j2,k,i1:i2), xlp, wlp, p_coef(l,1))
+        END DO
+      END IF
+
+
+
+    END SUBROUTINE Get_Aerosol_Opt
 
 END MODULE CRTM_AerosolScatter
 
@@ -922,5 +913,4 @@ END MODULE CRTM_AerosolScatter
 !
 !
 !
-
 
