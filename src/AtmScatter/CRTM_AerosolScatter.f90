@@ -726,6 +726,173 @@ CONTAINS
     END DO Layer_loop
 
   END FUNCTION CRTM_Compute_AerosolScatter_TL
+  
+!------------------------------------------------------------------------------
+!S+
+! NAME:
+!       CRTM_Compute_AerosolScatter_AD
+!
+! PURPOSE:
+!       Function to compute the adjoint aerosol absorption and scattering
+!       properties for a single channel.
+!
+! CATEGORY:
+!       CRTM : AtmScatter
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Compute_AerosolScatter_AD(  Atmosphere,               &  ! Input
+!                                                       AerosolScatter,           &  ! Input
+!                                                       AerosolScatter_AD,        &  ! Input
+!                                                       SensorIndex,              &  ! Input
+!                                                       ChannelIndex,             &  ! Input
+!                                                       Atmosphere_AD,            &  ! Output
+!                                                       ASV,                      &  ! Internal Variable Output  
+!                                                       Message_Log = Message_Log )  ! Error messaging 
+!
+! INPUT ARGUMENTS:
+!       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
+!                           profile data.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE( CRTM_Atmosphere_type )
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( IN )
+!
+!       AerosolScatter:     CRTM_AtmScatter structure containing the forward model
+!                           aerosol absorption and scattering properties required
+!                           for radiative transfer.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE( CRTM_AtmScatter_type )
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( IN )
+!
+!       AerosolScatter_AD:  CRTM_AtmScatter structure containing the adjoint
+!                           aerosol absorption and scattering properties.
+!                           **NOTE: On EXIT from this function, the contents of
+!                                   this structure may be modified (e.g. set to
+!                                   zero.)
+!                           UNITS:      N/A
+!                           TYPE:       TYPE( CRTM_AtmScatter_type )
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( IN OUT )
+!
+!       SensorIndex:     Sensor index id. This ia a unique index associated
+!                        with a sensor. 
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( IN )
+!
+!
+!
+!       Channel_Index:      Channel index id. This is a unique index associated
+!                           with a (supported) sensor channel used to access the
+!                           shared coefficient data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( IN )
+!
+!  INTERNAL ARGUMENTS:    
+!                 ASV:    UNITS:      N/A
+!                         TYYE:       TYPE( CRTM_ASVariables_type )
+!                         DIMENSION:  Scalar
+!
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
+!
+! OUTPUT ARGUMENTS:
+!       Atmosphere_AD:      CRTM Atmosphere structure containing the adjoint
+!                           atmospheric state data.
+!                           **NOTE: On ENTRY to this function, the contents of
+!                                   this structure should be defined (e.g.
+!                                   initialized to some value based on the
+!                                   position of this function in the call chain.)
+!                           UNITS:      N/A
+!                           TYPE:       TYPE( CRTM_Atmosphere_type )
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( IN OUT )
+!
+!
+! OPTIONAL OUTUPT ARGUMENTS:
+!       None.
+!
+! FUNCTION RESULT:
+!       Error_Status:       The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           ERROR_HANDLER module.
+!                           If == SUCCESS the computation was sucessful
+!                              == FAILURE an unrecoverable error occurred
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!
+! CALLS:
+!
+! SIDE EFFECTS:
+!
+! RESTRICTIONS:
+!
+! COMMENTS:
+!       Note the INTENT on all of the adjoint arguments (whether input or output)
+!       is IN OUT rather than just OUT. This is necessary because the INPUT
+!       adjoint arguments are modified, and the OUTPUT adjoint arguments must
+!       be defined prior to entry to this routine. So, anytime a structure is
+!       to be output, to prevent memory leaks the IN OUT INTENT is a must.
+!
+!S-
+!------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Compute_AerosolScatter_AD( Atmosphere,        &  ! Input
+                                           AerosolScatter,    &  ! Input
+                                           AerosolScatter_AD, &  ! Input
+                                           SensorIndex,       &  ! Input
+                                           ChannelIndex,      &  ! Input
+                                           Atmosphere_AD,     &  ! Output
+                                           ASV,               &  ! Internal Variable Output
+                                           Message_Log )      &  ! Error messaging
+                                         RESULT ( Error_Status )               
+    ! Arguments
+    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere
+    TYPE( CRTM_AtmScatter_type ),   INTENT( IN )     :: AerosolScatter
+    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: AerosolScatter_AD
+    INTEGER,                        INTENT( IN )     :: SensorIndex
+    INTEGER,                        INTENT( IN )     :: ChannelIndex
+    ! Output 
+    TYPE( CRTM_Atmosphere_type ),   INTENT( IN OUT ) :: Atmosphere_AD
+    ! Error messaging
+    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
+    ! Internal Variables
+    TYPE(CRTM_ASVariables_type),    INTENT( IN )     :: ASV
+
+    ! Function result
+    INTEGER :: Error_Status
+
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter_AD'
+
+    ! Local variables
+    ! INITIALISE SUCCESSFUL RETURN STATUS 
+    Error_Status = SUCCESS
+
+
+
+!  *** USERS INSERT CODE HERE ***
+
+
+
+
+  END FUNCTION CRTM_Compute_AerosolScatter_AD
 
   
 !################################################################################
@@ -912,173 +1079,5 @@ CONTAINS
     END IF
   
   END SUBROUTINE Get_Aerosol_Opt_TL
-
-
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       CRTM_Compute_AerosolScatter_AD
-!
-! PURPOSE:
-!       Function to compute the adjoint aerosol absorption and scattering
-!       properties for a single channel.
-!
-! CATEGORY:
-!       CRTM : AtmScatter
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AerosolScatter_AD(  Atmosphere,               &  ! Input
-!                                                       AerosolScatter,           &  ! Input
-!                                                       AerosolScatter_AD,        &  ! Input
-!                                                       SensorIndex,              &  ! Input
-!                                                       ChannelIndex,             &  ! Input
-!                                                       Atmosphere_AD,            &  ! Output
-!                                                       ASV,                      &  ! Internal Variable Output  
-!                                                       Message_Log = Message_Log )  ! Error messaging 
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
-!                           profile data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE( CRTM_Atmosphere_type )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       AerosolScatter:     CRTM_AtmScatter structure containing the forward model
-!                           aerosol absorption and scattering properties required
-!                           for radiative transfer.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE( CRTM_AtmScatter_type )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       AerosolScatter_AD:  CRTM_AtmScatter structure containing the adjoint
-!                           aerosol absorption and scattering properties.
-!                           **NOTE: On EXIT from this function, the contents of
-!                                   this structure may be modified (e.g. set to
-!                                   zero.)
-!                           UNITS:      N/A
-!                           TYPE:       TYPE( CRTM_AtmScatter_type )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN OUT )
-!
-!       SensorIndex:     Sensor index id. This ia a unique index associated
-!                        with a sensor. 
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
-!
-!
-!
-!       Channel_Index:      Channel index id. This is a unique index associated
-!                           with a (supported) sensor channel used to access the
-!                           shared coefficient data.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!  INTERNAL ARGUMENTS:    
-!                 ASV:    UNITS:      N/A
-!                         TYYE:       TYPE( CRTM_ASVariables_type )
-!                         DIMENSION:  Scalar
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Atmosphere_AD:      CRTM Atmosphere structure containing the adjoint
-!                           atmospheric state data.
-!                           **NOTE: On ENTRY to this function, the contents of
-!                                   this structure should be defined (e.g.
-!                                   initialized to some value based on the
-!                                   position of this function in the call chain.)
-!                           UNITS:      N/A
-!                           TYPE:       TYPE( CRTM_Atmosphere_type )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN OUT )
-!
-!
-! OPTIONAL OUTUPT ARGUMENTS:
-!       None.
-!
-! FUNCTION RESULT:
-!       Error_Status:       The return value is an integer defining the error
-!                           status. The error codes are defined in the
-!                           ERROR_HANDLER module.
-!                           If == SUCCESS the computation was sucessful
-!                              == FAILURE an unrecoverable error occurred
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!
-! CALLS:
-!
-! SIDE EFFECTS:
-!
-! RESTRICTIONS:
-!
-! COMMENTS:
-!       Note the INTENT on all of the adjoint arguments (whether input or output)
-!       is IN OUT rather than just OUT. This is necessary because the INPUT
-!       adjoint arguments are modified, and the OUTPUT adjoint arguments must
-!       be defined prior to entry to this routine. So, anytime a structure is
-!       to be output, to prevent memory leaks the IN OUT INTENT is a must.
-!
-!S-
-!------------------------------------------------------------------------------
-
-  FUNCTION CRTM_Compute_AerosolScatter_AD( Atmosphere,        &  ! Input
-                                           AerosolScatter,    &  ! Input
-                                           AerosolScatter_AD, &  ! Input
-                                           SensorIndex,       &  ! Input
-                                           ChannelIndex,      &  ! Input
-                                           Atmosphere_AD,     &  ! Output
-                                           ASV,               &  ! Internal Variable Output
-                                           Message_Log )      &  ! Error messaging
-                                         RESULT ( Error_Status )               
-    ! Arguments
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN )     :: Atmosphere
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN )     :: AerosolScatter
-    TYPE( CRTM_AtmScatter_type ),   INTENT( IN OUT ) :: AerosolScatter_AD
-    INTEGER,                        INTENT( IN )     :: SensorIndex
-    INTEGER,                        INTENT( IN )     :: ChannelIndex
-    ! Output 
-    TYPE( CRTM_Atmosphere_type ),   INTENT( IN OUT ) :: Atmosphere_AD
-    ! Error messaging
-    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
-    ! Internal Variables
-    TYPE(CRTM_ASVariables_type),    INTENT( IN )     :: ASV
-
-    ! Function result
-    INTEGER :: Error_Status
-
-    ! Local parameters
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter_AD'
-
-    ! Local variables
-    ! INITIALISE SUCCESSFUL RETURN STATUS 
-    Error_Status = SUCCESS
-
-
-
-!  *** USERS INSERT CODE HERE ***
-
-
-
-
-  END FUNCTION CRTM_Compute_AerosolScatter_AD
 
 END MODULE CRTM_AerosolScatter
