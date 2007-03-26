@@ -20,7 +20,8 @@ MODULE CRTM_Cloud_Binary_IO
   USE File_Utility,        ONLY: File_Open, File_Exists
   USE Message_Handler,     ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
-  USE CRTM_Cloud_Define,   ONLY: CRTM_Cloud_type, &
+  USE CRTM_Parameters    , ONLY: SET
+  USE CRTM_Cloud_Define  , ONLY: CRTM_Cloud_type, &
                                  CRTM_Associated_Cloud, &
                                  CRTM_Destroy_Cloud, &
                                  CRTM_Allocate_Cloud
@@ -35,21 +36,6 @@ MODULE CRTM_Cloud_Binary_IO
   PUBLIC :: CRTM_Inquire_Cloud_Binary
   PUBLIC :: CRTM_Read_Cloud_Binary
   PUBLIC :: CRTM_Write_Cloud_Binary
-
-
-  ! ---------------------
-  ! Procedure overloading
-  ! ---------------------
-
-  INTERFACE CRTM_Read_Cloud_Binary
-    MODULE PROCEDURE Read_Cloud_Scalar
-    MODULE PROCEDURE Read_Cloud_Rank1
-  END INTERFACE CRTM_Read_Cloud_Binary
-
-  INTERFACE CRTM_Write_Cloud_Binary
-    MODULE PROCEDURE Write_Cloud_Scalar
-    MODULE PROCEDURE Write_Cloud_Rank1
-  END INTERFACE CRTM_Write_Cloud_Binary
 
 
   ! -----------------
@@ -70,10 +56,13 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-  FUNCTION Read_Cloud_Record( FileID,       &  ! Input
-                              Cloud,        &  ! Output
-                              No_Allocate,  &  ! Optional input
-                              Message_Log ) &  ! Error messaging
+  ! -------------------------------------------
+  ! Function to read a single cloud data record
+  ! -------------------------------------------
+  FUNCTION Read_Cloud_Record( FileID     , &  ! Input
+                              Cloud      , &  ! Output
+                              No_Allocate, &  ! Optional input
+                              Message_Log) &  ! Error messaging
                             RESULT ( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: FileID
@@ -88,29 +77,34 @@ CONTAINS
     CHARACTER(256) :: Message
     LOGICAL :: Yes_Allocate
     INTEGER :: IO_Status
+    INTEGER :: Destroy_Status
     INTEGER :: n_Layers
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
-
     ! Default action is to allocate the structure....
     Yes_Allocate = .TRUE.
     ! ...unless the No_Allocate optional argument is set.
     IF ( PRESENT( No_Allocate ) ) THEN
-      IF ( No_Allocate == 1 ) Yes_Allocate = .FALSE.
+      IF ( No_Allocate == SET ) Yes_Allocate = .FALSE.
     END IF
 
-    ! Read the cloud dimensions
+    ! Read the dimensions
+    ! -------------------
     READ( FileID, IOSTAT=IO_Status ) n_Layers
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading Cloud data dimensions. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading Cloud data dimensions. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
-    ! Allocate or check the Cloud structure as required
+
+    ! Allocate the structure if required
+    ! ----------------------------------
     IF ( Yes_Allocate ) THEN
-      ! Allocate the structure
+
+      ! Perform the allocation
       Error_Status = CRTM_Allocate_Cloud( n_Layers, &
                                           Cloud, &
                                           Message_Log=Message_Log )
@@ -118,64 +112,62 @@ CONTAINS
         Message = 'Error allocating Cloud structure.'
         GOTO 1000
       END IF
+      
     ELSE
+    
       ! Structure already allocated. Check the association status
       IF ( .NOT. CRTM_Associated_Cloud( Cloud ) ) THEN
         Message = 'Cloud structure components are not associated.'
         GOTO 1000  ! Clean up
       END IF
+      
       ! Check the dimension values
       IF ( n_Layers /= Cloud%n_Layers ) THEN
-        WRITE( Message, '( "Cloud data dimensions, ", i5, &
-                          &" are inconsistent with structure definition, ", i5, "." )' ) &
+        WRITE( Message, '( "Cloud data dimensions, ", i0, &
+                          &" are inconsistent with structure definition, ", i0, "." )' ) &
                         n_Layers, Cloud%n_Layers
         GOTO 1000  ! Clean up
       END IF
     END IF
 
     ! Read the cloud data
+    ! -------------------
     READ( FileID, IOSTAT=IO_Status ) Cloud%Type, &
-                                       Cloud%Effective_Radius, &
-                                       Cloud%Effective_Variance, &
-                                       Cloud%Water_Content
+                                     Cloud%Effective_Radius, &
+                                     Cloud%Effective_Variance, &
+                                     Cloud%Water_Content
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading Cloud data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading Cloud data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
-    ! Destroy the cloud structure
-    IF ( CRTM_Associated_Cloud(Cloud) ) THEN
-      Error_Status = CRTM_Destroy_Cloud( Cloud, Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) &
-        Message = TRIM(Message)//'; Error destroying Cloud structure during error cleanup.'
-    END IF
-    ! Close the file
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) &
-      Message = TRIM(Message)//'; Error closing file during error cleanup.'
-    ! Set error
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
+                          TRIM( Message ), &
                           Error_Status, &
-                          Message_Log=Message_Log )
+                          Message_Log = Message_Log )
+    IF ( CRTM_Associated_Cloud(Cloud) ) THEN
+      Destroy_Status = CRTM_Destroy_Cloud( Cloud, Message_Log=Message_Log )
+    END IF
+    CLOSE( FileID, IOSTAT=IO_Status )
 
   END FUNCTION Read_Cloud_Record
 
 
-  FUNCTION Write_Cloud_Record( FileID,       &  ! Input
-                               Cloud,        &  ! Input
-                               Message_Log ) &  ! Error messaging
+  ! --------------------------------------------
+  ! Function to write a single cloud data record
+  ! ---------------------------------------------
+  FUNCTION Write_Cloud_Record( FileID     , &  ! Input
+                               Cloud      , &  ! Input
+                               Message_Log) &  ! Error messaging
                              RESULT ( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)  :: FileID
@@ -191,55 +183,52 @@ CONTAINS
     INTEGER :: IO_Status
  
     ! Set up
+    ! -----
     Error_Status = SUCCESS
-
-    ! Check structure status
     IF ( .NOT. CRTM_Associated_Cloud( Cloud ) ) THEN
       Message = 'Some or all INPUT Cloud pointer members are NOT associated.'
       GOTO 1000
     END IF
 
-    ! Write the cloud dimensions
+
+    ! Write the dimensions
+    ! --------------------
     WRITE( FileID, IOSTAT=IO_Status ) Cloud%n_Layers
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing Cloud data dimensions. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing Cloud data dimensions. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
-    ! Write the cloud data
+
+    ! Write the data
+    ! --------------
     WRITE( FileID, IOSTAT=IO_Status ) Cloud%Type, &
-                                        Cloud%Effective_Radius, &
-                                        Cloud%Effective_Variance, &
-                                        Cloud%Water_Content
+                                      Cloud%Effective_Radius, &
+                                      Cloud%Effective_Variance, &
+                                      Cloud%Water_Content
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing Cloud data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing Cloud data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
+    !=====
     RETURN
+    !=====
 
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
-    CLOSE( FileID, STATUS=FILE_STATUS_ON_ERROR, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) &
-      Message = TRIM(Message)//'; Error closing file during error cleanup.'
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
+                          TRIM( Message ), &
                           Error_Status, &
-                          Message_Log=Message_Log )
+                          Message_Log = Message_Log )
+    CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR, IOSTAT = IO_Status )
 
   END FUNCTION Write_Cloud_Record
-
-
-
 
 
 !################################################################################
@@ -262,7 +251,7 @@ CONTAINS
 !       Error_Status = CRTM_Inquire_Cloud_Binary( Filename,                 &  ! Input
 !                                                 n_Clouds    = n_Clouds,   &  ! Optional output
 !                                                 RCS_Id      = RCS_Id,     &  ! Revision control
-!                                                 Message_Log=Message_Log )  ! Error messaging
+!                                                 Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of a
@@ -325,12 +314,12 @@ CONTAINS
     CHARACTER(256) :: Message
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: File_n_Clouds
+    INTEGER :: n_Clouds_in_File
 
     ! Set up
+    ! -----
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
       Error_Status = FAILURE
@@ -341,7 +330,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Open the Cloud data file
+    ! ------------------------
     Error_Status = Open_Binary_File( TRIM( Filename ), &
                                      FileID, &
                                      Message_Log=Message_Log )
@@ -353,13 +344,15 @@ CONTAINS
                             Message_Log=Message_Log )
       RETURN
     END IF
-
+    
+    
     ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) File_n_Clouds
+    ! -------------------
+    READ( FileID, IOSTAT=IO_Status ) n_Clouds_in_File
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error reading n_Clouds data dimension from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
+                        &". IOSTAT = ", i0 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
@@ -369,20 +362,21 @@ CONTAINS
       RETURN
     END IF
 
+    ! Assign the return arguments
+    IF ( PRESENT( n_Clouds ) ) n_Clouds = n_Clouds_in_File
+
+
     ! Close the file
-    CLOSE( FileID, STATUS='KEEP', &
-                   IOSTAT=IO_Status )
+    ! --------------
+    CLOSE( FileID, IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             WARNING, &
                             Message_Log=Message_Log )
     END IF
-
-    ! Assign the return arguments
-    IF ( PRESENT( n_Clouds ) ) n_Clouds = File_n_Clouds
 
   END FUNCTION CRTM_Inquire_Cloud_Binary
 
@@ -487,17 +481,17 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_Cloud_Scalar( Filename,      &  ! Input
-                              Cloud,         &  ! Output
-                              No_File_Close, &  ! Optional input
-                              No_Allocate,   &  ! Optional input
-                              n_Clouds,      &  ! Optional output
-                              RCS_Id,        &  ! Revision control
-                              Message_Log )  &  ! Error messaging
-                            RESULT ( Error_Status )
+  FUNCTION CRTM_Read_Cloud_Binary( Filename     , &  ! Input
+                                   Cloud        , &  ! Output
+                                   No_File_Close, &  ! Optional input
+                                   No_Allocate  , &  ! Optional input
+                                   n_Clouds     , &  ! Optional output
+                                   RCS_Id       , &  ! Revision control
+                                   Message_Log  ) &  ! Error messaging
+                                 RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: Filename
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud
+    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_File_Close
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Allocate
     INTEGER,      OPTIONAL, INTENT(OUT)    :: n_Clouds
@@ -506,162 +500,30 @@ CONTAINS
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Cloud_Binary(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Cloud_Binary'
     ! Function variables
     CHARACTER(256) :: Message
     LOGICAL :: Yes_File_Close
     INTEGER :: IO_Status
-    INTEGER :: FileID
-    INTEGER :: n_Input_Clouds
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check that the file is open. If not, open it.
-    ! Otherwise get its file id
-    IF ( .NOT. File_Open( FileName ) ) THEN
-      ! Check that the file exists
-      IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
-        Message = 'File '//TRIM( Filename )//' not found.'
-        GOTO 2000  ! Clean up
-      END IF 
-      ! Open the file
-      Error_Status = Open_Binary_File( TRIM( Filename ), &
-                                       FileID, &
-                                       Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error opening '//TRIM( Filename )
-        GOTO 2000  ! Clean up
-      END IF
-    ELSE
-      ! Inquire for the logical unit number
-      INQUIRE( FILE=Filename, NUMBER=FileID )
-      ! Ensure it's valid
-      IF ( FileID == -1 ) THEN
-        Message = 'Error inquiring '//TRIM( Filename )//' for its FileID'
-        GOTO 2000  ! Clean up
-      END IF
-    END IF
-
-    ! Default action is to close the file on exit....
-    Yes_File_Close = .TRUE.
-    ! ...unless the No_File_Close optional argument is set.
-    IF ( PRESENT( No_File_Close ) ) THEN
-      IF ( No_File_Close == 1 ) Yes_File_Close = .FALSE.
-    END IF
-
-    ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) n_Input_Clouds
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading n_Clouds data dimension from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-    ! Check if n_Clouds > 1
-    IF ( n_Input_Clouds > 1 ) THEN
-      WRITE( Message, '( "Number of clouds > 1 (",i5,") and output Cloud structure ", &
-                        &"is scalar." )' ) n_Input_Clouds
-      GOTO 1000  ! Clean up
-    END IF
-
-    ! Read the structure data
-    Error_Status = Read_Cloud_Record( FileID, &
-                                      Cloud, &
-                                      No_Allocate = No_Allocate, &
-                                      Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Cloud record from '//TRIM( Filename )
-      GOTO 2000  ! Clean up (file already closed)
-    END IF
-
-    ! Save the number of clouds read
-    IF ( PRESENT( n_Clouds ) ) n_Clouds = 1
-
-    ! Close the file
-    IF ( Yes_File_Close ) THEN
-      CLOSE( FileID, IOSTAT=IO_Status )
-      IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                        TRIM( Filename ), IO_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              WARNING, &
-                              Message_Log=Message_Log )
-      END IF
-    END IF
-
-    RETURN
-
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
-    1000 CONTINUE
-    IF ( File_Open( FileID ) ) THEN
-      CLOSE( FileID, IOSTAT=IO_Status )
-      IF ( IO_Status /= 0 ) &
-        Message = TRIM(Message)//'; Error closing file during error cleanup.'
-    END IF
-
-    2000 CONTINUE
-    IF ( CRTM_Associated_Cloud(Cloud) ) THEN
-      Error_Status = CRTM_Destroy_Cloud( Cloud, Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) &
-        Message = TRIM(Message)//'; Error destroying Cloud structure during error cleanup.'
-    END IF
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-
-  END FUNCTION Read_Cloud_Scalar
-
-
-  FUNCTION Read_Cloud_Rank1( Filename,      &  ! Input
-                             Cloud,         &  ! Output
-                             No_File_Close, &  ! Optional input
-                             No_Allocate,   &  ! Optional input
-                             n_Clouds,      &  ! Optional output
-                             RCS_Id,        &  ! Revision control
-                             Message_Log )  &  ! Error messaging
-                           RESULT ( Error_Status )
-    ! Arguments
-    CHARACTER(*),                        INTENT(IN)     :: Filename
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    INTEGER,               OPTIONAL,     INTENT(IN)     :: No_File_Close
-    INTEGER,               OPTIONAL,     INTENT(IN)     :: No_Allocate
-    INTEGER,               OPTIONAL,     INTENT(OUT)    :: n_Clouds
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Cloud_Binary(Rank-1)'
-    ! Function variables
-    CHARACTER(256) :: Message
-    LOGICAL :: Yes_File_Close
-    INTEGER :: IO_Status
+    INTEGER :: Destroy_Status
     INTEGER :: FileID
     INTEGER :: m, n_Input_Clouds
 
     ! Set up
+    ! -----
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file is open. If not, open it.
     ! Otherwise get its FileID.
     IF ( .NOT. File_Open( FileName ) ) THEN
+
       ! Check that the file exists
       IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
         Message = 'File '//TRIM( Filename )//' not found.'
         GOTO 2000  ! Clean up
       END IF 
+
       ! Open the file
       Error_Status = Open_Binary_File( TRIM( Filename ), &
                                        FileID, &
@@ -670,9 +532,12 @@ CONTAINS
         Message = 'Error opening '//TRIM( Filename )
         GOTO 2000  ! Clean up
       END IF
+
     ELSE
+
       ! Inquire for the logical unit number
       INQUIRE( FILE=Filename, NUMBER=FileID )
+
       ! Ensure it's valid
       IF ( FileID == -1 ) THEN
         Message = 'Error inquiring '//TRIM( Filename )//' for its FileID'
@@ -687,43 +552,54 @@ CONTAINS
       IF ( No_File_Close == 1 ) Yes_File_Close = .FALSE.
     END IF
 
+
     ! Read the dimensions
+    ! -------------------
     READ( FileID, IOSTAT=IO_Status ) n_Input_Clouds
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error reading n_Clouds data dimension from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
+                        &". IOSTAT = ", i0 )' ) &
                       TRIM( Filename ), IO_Status
       GOTO 1000  ! Clean up
     END IF
+    
     ! Check if n_Clouds > size of output array
     IF ( n_Input_Clouds > SIZE( Cloud ) ) THEN
-      WRITE( Message, '( "Number of clouds, ", i5, " > size of the output Cloud ", &
-                        &"structure array, ", i5, "." )' ) &
+      WRITE( Message, '( "Number of clouds, ", i0, " > size of the output Cloud ", &
+                        &"structure array, ", i0, "." )' ) &
                       n_Input_Clouds, SIZE( Cloud )
       GOTO 1000  ! Clean up
     END IF
 
-    ! Read all the cloud records
+
+    ! Read the cloud data
+    ! -------------------
     Cloud_Loop: DO m = 1, n_Input_Clouds
+    
       Error_Status = Read_Cloud_Record( FileID, &
                                         Cloud(m), &
                                         No_Allocate = No_Allocate, &
                                         Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error reading Cloud element #", i5, " from ", a )' ) &
+        WRITE( Message, '( "Error reading Cloud element #", i0, " from ", a )' ) &
                         m, TRIM( Filename )
         GOTO 1000  ! Clean up
       END IF
+      
     END DO Cloud_Loop
 
-    ! Save the number of clouds read
+
+    ! Save optional return arguments
+    ! ------------------------------
     IF ( PRESENT( n_Clouds ) ) n_Clouds = n_Input_Clouds
 
+
     ! Close the file
+    ! --------------
     IF ( Yes_File_Close ) THEN
       CLOSE( FileID, IOSTAT=IO_Status )
       IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
+        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
                         TRIM( Filename ), IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -732,37 +608,23 @@ CONTAINS
       END IF
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
-    IF ( File_Open( FileID ) ) THEN
-      CLOSE( FileID, IOSTAT=IO_Status )
-      IF ( IO_Status /= 0 ) &
-        Message = TRIM(Message)//'; Error closing file during error cleanup.'
-    END IF
-
+    CLOSE( FileID, IOSTAT = IO_Status )
     2000 CONTINUE
-    IF ( ANY(CRTM_Associated_Cloud(Cloud)) ) THEN
-      Error_Status = CRTM_Destroy_Cloud( Cloud, Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) &
-        Message = TRIM(Message)//'; Error destroying Cloud structure(s) during error cleanup.'
-    END IF
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
+                          TRIM( Message ), &
                           Error_Status, &
-                          Message_Log=Message_Log )
+                          Message_Log = Message_Log )
+    Destroy_Status = CRTM_Destroy_Cloud( Cloud, Message_Log=Message_Log )
 
-  END FUNCTION Read_Cloud_Rank1
-
-
-
+  END FUNCTION CRTM_Read_Cloud_Binary
 
 
 !------------------------------------------------------------------------------
@@ -839,140 +701,22 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_Cloud_Scalar( Filename,      &  ! Input
-                               Cloud,         &  ! Input
-                               No_File_Close, &  ! Optional input
-                               RCS_Id,        &  ! Revision control
-                               Message_Log )  &  ! Error messaging
-                             RESULT ( Error_Status )
+  FUNCTION CRTM_Write_Cloud_Binary( Filename,      &  ! Input
+                                    Cloud,         &  ! Input
+                                    No_File_Close, &  ! Optional input
+                                    RCS_Id,        &  ! Revision control
+                                    Message_Log )  &  ! Error messaging
+                                  RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    TYPE(CRTM_Cloud_type),  INTENT(IN)  :: Cloud
+    TYPE(CRTM_Cloud_type),  INTENT(IN)  :: Cloud(:)
     INTEGER,      OPTIONAL, INTENT(IN)  :: No_File_Close
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Cloud_Binary(Scalar)'
-    CHARACTER(*), PARAMETER :: FILE_STATUS_ON_ERROR = 'DELETE'
-    ! Function variables
-    CHARACTER(256) :: Message
-    LOGICAL :: Yes_File_Close
-    INTEGER :: IO_Status
-    INTEGER :: FileID
- 
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check that the file is open. If not, open it.
-    ! Otherwise get the file ID.
-    IF ( .NOT. File_Open( FileName ) ) THEN
-      Error_Status = Open_Binary_File( TRIM( Filename ), &
-                                       FileID, &
-                                       For_Output  = 1, &
-                                       Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error opening '//TRIM( Filename )
-        GOTO 2000  ! Clean up
-      END IF
-    ELSE
-      ! Inquire for the logical unit number
-      INQUIRE( FILE = Filename, NUMBER = FileID )
-      ! Ensure it's valid
-      IF ( FileID == -1 ) THEN
-        Message = 'Error inquiring '//TRIM( Filename )//' for its FileID'
-        GOTO 1000  ! Clean up
-      END IF
-    END IF
-
-    ! Check the Cloud structure dimensions
-    IF ( Cloud%n_Layers  < 1 ) THEN
-      Message = 'n_Layers dimension of Cloud structure is < or = 0.'
-      GOTO 1000
-    END IF
-
-    ! Default action is to close the file on exit....
-    Yes_File_Close = .TRUE.
-    ! ...unless the No_File_Close optional argument is set.
-    IF ( PRESENT( No_File_Close ) ) THEN
-      IF ( No_File_Close == 1 ) Yes_File_Close = .FALSE.
-    END IF
-
-    ! WRite the number of clouds
-    WRITE( FileID, IOSTAT=IO_Status ) 1
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing n_Clouds data dimension to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
-      GOTO 1000
-    END IF
-
-    ! Write the structure data
-    Error_Status = Write_Cloud_Record( FileID, &
-                                       Cloud, &
-                                       Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Cloud record to '//TRIM( Filename )
-      GOTO 1000
-    END IF
-
-    ! Close the file
-    IF ( Yes_File_Close ) THEN
-      CLOSE( FileID, IOSTAT=IO_Status )
-      IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                        TRIM( Filename ), IO_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              WARNING, &
-                              Message_Log=Message_Log )
-      END IF
-    END IF
-
-    RETURN
-
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
-    1000 CONTINUE
-    IF ( File_Open( FileID ) ) THEN
-      CLOSE( FileID, IOSTAT=IO_Status )
-      IF ( IO_Status /= 0 ) &
-        Message = TRIM(Message)//'; Error closing file during error cleanup.'
-    END IF
-
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-
-  END FUNCTION Write_Cloud_Scalar
-
-
-  FUNCTION Write_Cloud_Rank1( Filename,      &  ! Input
-                              Cloud,         &  ! Input
-                              No_File_Close, &  ! Optional input
-                              RCS_Id,        &  ! Revision control
-                              Message_Log )  &  ! Error messaging
-                            RESULT ( Error_Status )
-    ! Arguments
-    CHARACTER(*),                          INTENT(IN)  :: Filename
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN)  :: Cloud
-    INTEGER,                 OPTIONAL,       INTENT(IN)  :: No_File_Close
-    CHARACTER(*),          OPTIONAL,       INTENT(OUT) :: RCS_Id
-    CHARACTER(*),          OPTIONAL,       INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Cloud_Binary(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Cloud_Binary'
     CHARACTER(*), PARAMETER :: FILE_STATUS_ON_ERROR = 'DELETE'
     ! Function variables
     CHARACTER(256) :: Message
@@ -982,12 +726,14 @@ CONTAINS
     INTEGER :: m
  
     ! Set up
+    ! -----
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file is open. If not, open it.
     ! Otherwise get the file ID.
     IF ( .NOT. File_Open( FileName ) ) THEN
+    
       Error_Status = Open_Binary_File( TRIM( Filename ), &
                                        FileID, &
                                        For_Output  = 1, &
@@ -998,13 +744,16 @@ CONTAINS
         GOTO 2000  ! Clean up
       END IF
     ELSE
+    
       ! Inquire for the logical unit number
       INQUIRE( FILE = Filename, NUMBER = FileID )
+      
       ! Ensure it's valid
       IF ( FileID == -1 ) THEN
         Message = 'Error inquiring '//TRIM( Filename )//' for its FileID'
         GOTO 1000  ! Clean up
       END IF
+      
     END IF
 
     ! Check the Cloud structure dimensions
@@ -1021,32 +770,37 @@ CONTAINS
     END IF
 
     ! Write the number of clouds
+    ! --------------------------
     WRITE( FileID, IOSTAT=IO_Status ) SIZE( Cloud )
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error writing n_Clouds data dimension to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
+                        &". IOSTAT = ", i0 )' ) &
                       TRIM( Filename ), IO_Status
       CLOSE( FileID, STATUS=FILE_STATUS_ON_ERROR )
       GOTO 2000
     END IF
 
-    ! Write all the cloud records
+
+    ! Write the cloud data
+    ! --------------------
     Cloud_Loop: DO m = 1, SIZE( Cloud )
       Error_Status = Write_Cloud_Record( FileID, &
                                          Cloud(m), &
                                          Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error writing Cloud element #", i5, " to ", a )' ) &
+        WRITE( Message, '( "Error writing Cloud element #", i0, " to ", a )' ) &
                       m, TRIM( Filename )
         GOTO 2000
       END IF
     END DO Cloud_Loop
 
+
     ! Close the file
+    ! --------------
     IF ( Yes_File_Close ) THEN
       CLOSE( FileID, IOSTAT=IO_Status )
       IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
+        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
                         TRIM( Filename ), IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -1055,28 +809,22 @@ CONTAINS
       END IF
     END IF
 
+    !=====
     RETURN
+    !=====
 
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
-    IF ( File_Open( FileID ) ) THEN
-      CLOSE( FileID, IOSTAT=IO_Status )
-      IF ( IO_Status /= 0 ) &
-        Message = TRIM(Message)//'; Error closing file during error cleanup.'
-    END IF
-
+    CLOSE( FileID, IOSTAT = IO_Status )
     2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
+                          TRIM( Message ), &
                           Error_Status, &
-                          Message_Log=Message_Log )
+                          Message_Log = Message_Log )
 
-  END FUNCTION Write_Cloud_Rank1
+  END FUNCTION CRTM_Write_Cloud_Binary
 
 END MODULE CRTM_Cloud_Binary_IO
