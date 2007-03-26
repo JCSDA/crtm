@@ -264,10 +264,11 @@ MODULE CRTM_Parameters
 
   !#----------------------------------------------------------------------------#
   !#            -- CloudScatter, RTSolution, AtmOptics PARAMETERS --            #
-! This will be further broken down when it becomes more clear exactly where they are used.
   !#----------------------------------------------------------------------------#
   INTEGER, PUBLIC, PARAMETER :: MAX_N_CLOUDS = 4 ! Max. number of clouds/profile. Needed for CSV...
-
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_AEROSOLS = 8 ! Max. number of aerosols/profile
+  
+  REAL(fp), PUBLIC, PARAMETER :: AEROSOL_CONTENT_THRESHOLD = 0.000001_fp
   REAL(fp), PUBLIC, PARAMETER :: WATER_CONTENT_THRESHOLD = 0.000001_fp
   REAL(fp), PUBLIC, PARAMETER :: OPTICAL_DEPTH_THRESHOLD = 0.000001_fp
 
