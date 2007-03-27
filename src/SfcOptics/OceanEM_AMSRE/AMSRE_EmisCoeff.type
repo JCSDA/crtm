@@ -1,0 +1,14 @@
+RELEASE: 1
+VERSION: 1
+TYPE :: AMSRE_EmisCoeff
+  # Dimensions
+  INTEGER :: n_Wind_Speeds = 0
+  INTEGER :: n_Frequencies = 0
+  # Scalars
+  CHARACTER(SL) :: Sensor_Id = ' '
+  # Arrays
+  REAL(fp), DIMENSION(n_Wind_Speeds) :: Wind_Speed
+  REAL(fp), DIMENSION(n_Frequencies) :: Frequency
+  REAL(fp), DIMENSION(n_Wind_Speeds,n_Frequencies) :: sdd
+END TYPE AMSRE_EmisCoeff
+
