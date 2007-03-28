@@ -67,6 +67,10 @@ LINKFILE_LIST=$*
 
 # Search for and link the file
 for FILE in ${LINKFILE_LIST}; do
+  # Skip if file already exists
+  if [ -f ${FILE} ]; then
+    continue
+  fi
   # Search
   if [ -z "${FILTER_DIR}" ]; then
     LINKFILE=$(find ${LINKFILE_ROOT}/ -name ${FILE} -type f)
@@ -75,9 +79,7 @@ for FILE in ${LINKFILE_LIST}; do
   fi
   # Link
   if [ -n "${LINKFILE}" ]; then
-    if [ ! -f ${FILE} ]; then
-      ln -sf ${LINKFILE} .
-    fi
+    ln -sf ${LINKFILE} .
   else
     echo "File ${FILE} not found in ${LINKFILE_ROOT} heirarchy."
   fi
