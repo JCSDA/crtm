@@ -15,8 +15,9 @@ module FGenMod
       # i.e. read, write, etc
       def io_action
         case self.class_name.downcase
-          when "read" , "read_gatts", "inquire"  : "read"
+          when "read" , "read_gatts"             : "read"
           when "write", "write_gatts", "create"  : "write"
+          when "inquire"                         : "inquire"
         end
       end
 
@@ -26,8 +27,8 @@ module FGenMod
       # for messages
       def io_ing
         case io_action
-          when "read"   : "reading"
-          when "write"  : "writing"
+          when "read", "inquire"  : "reading"
+          when "write"            : "writing"
         end
       end
 
@@ -41,8 +42,8 @@ module FGenMod
       # intent based on class
       def io_intent
         case io_action
-          when "read"  : "OUT"
-          when "write" : "IN"
+          when "read", "inquire"  : "OUT"
+          when "write"            : "IN"
         end
       end
 
@@ -50,8 +51,8 @@ module FGenMod
       # direction label based on class
       def io_dir
         case io_action
-          when "read"  : "Output"
-          when "write" : "Input"
+          when "read", "inquire"  : "Output"
+          when "write"            : "Input"
         end
       end
     end

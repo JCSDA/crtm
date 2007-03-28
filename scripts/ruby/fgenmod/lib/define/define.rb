@@ -2,9 +2,9 @@ require 'define/base'
 require 'define/header'
 require 'define/struct'
 require 'define/clear'
-require 'define/assoc'
+require 'define/associated'
 require 'define/destroy'
-require 'define/alloc'
+require 'define/allocate'
 require 'define/assign'
 require 'define/equal'
 require 'define/info'
@@ -26,9 +26,9 @@ module FGenMod
       ]
       
       PUBLIC_GENERATORS = [
-        Assoc,
+        Associated,
         Destroy,
-        Alloc,
+        Allocate,
         Assign,
         Equal,
         Info,
@@ -38,7 +38,7 @@ module FGenMod
       # Method to generate the
       # structure definition module
       def generate
-      
+
         # Output the module header
         h=Header.new
         h.config = self.config

@@ -37,12 +37,9 @@ module FGenMod
         nspaces = args[:nspaces] ? args[:nspaces] : NSPACES
 
         # Construct the definitions
-        defn=""
-        if config.release and config.version
-          defn  = "! Release and version information\n"
-          defn << indent(nspaces)<<"INTEGER :: Release = #{config.struct_name.upcase}_RELEASE\n"
-          defn << indent(nspaces)<<"INTEGER :: Version = #{config.struct_name.upcase}_VERSION"
-        end
+        defn  = "! Release and version information\n"
+        defn << indent(nspaces)<<"INTEGER :: Release = #{config.struct_name.upcase}_RELEASE\n"
+        defn << indent(nspaces)<<"INTEGER :: Version = #{config.struct_name.upcase}_VERSION"
       end
 
       # Method to construct the dimension

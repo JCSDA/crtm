@@ -47,6 +47,7 @@ module FGenMod
               INTEGER :: Scalar_IO_Status(#{config.scalar_list.length})
               INTEGER :: Array_IO_Status(#{config.array_list.length})
               INTEGER :: i
+              INTEGER :: #{config.dimdecl.join(",")}
 
               ! Set up
               Error_Status = SUCCESS
@@ -72,7 +73,7 @@ module FGenMod
               #{dimension_io(:nspaces=>nspaces)}
 
               ! Allocate the structure            
-              #{alloc_struct(:nspaces=>nspaces)}
+              #{allocate_struct(:dim_list=>config.dimdecl,:nspaces=>nspaces)}
               IF ( Error_Status /= SUCCESS ) THEN
                 CLOSE(FileID)
                 #{fail_return("'Error allocating #{config.struct_name} structure'",:nspaces=>nspaces+2,:lstrip=>true)}

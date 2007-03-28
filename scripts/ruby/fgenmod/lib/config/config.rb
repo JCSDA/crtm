@@ -91,16 +91,16 @@ module FGenMod
     # Class constructor
     # =================
     def initialize(debug=false)
-      @namespace  =""
-      @struct_name=""
-      @release    =nil
-      @version    =nil
-      @dim_list   =[]
-      @scalar_list=[]
-      @array_list =[]
-      @gatts      =[]
-      @debug      =debug
-      @dimdecl    =""
+      @namespace   = ""
+      @struct_name = ""
+      @release     =  1  # Default release number
+      @version     =  1  # Default version number
+      @dim_list    = []
+      @scalar_list = []
+      @array_list  = []
+      @gatts       = []
+      @debug       = debug
+      @dimdecl     = ""
     end
 
     # ========================================

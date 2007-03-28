@@ -61,7 +61,7 @@ module FGenMod
               END IF
 
               ! Check structure association status
-              #{struct_assoc_test("",:nspaces=>nspaces)}
+              #{struct_associated_test("",:nspaces=>nspaces)}
               
               ! Check the release
               #{check_release(:nspaces=>nspaces)}

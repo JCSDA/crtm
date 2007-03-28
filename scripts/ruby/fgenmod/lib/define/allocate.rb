@@ -2,14 +2,14 @@ require 'define/base'
 module FGenMod
   module Define
   
-    class Alloc < FGenMod::Define::Base
+    class Allocate < FGenMod::Define::Base
     
       def generate
         name=procedure_name
         type="TYPE(#{config.namespace}#{config.struct_name}_type)"
 
         # Classes "called" in this procedure
-        (assoc=Assoc.new).config=self.config
+        (associated=Associated.new).config=self.config
         (destroy=Destroy.new).config=self.config
         
         # Declaration and argument type definition format
@@ -49,7 +49,7 @@ module FGenMod
             
             ! Check if ANY pointers are already associated.
             ! If they are, deallocate them but leave scalars.
-            IF ( #{assoc.procedure_name}( #{config.struct_name}, ANY_Test=1 ) ) THEN
+            IF ( #{associated.procedure_name}( #{config.struct_name}, ANY_Test=1 ) ) THEN
               Error_Status = #{destroy.procedure_name}( &
                                #{config.struct_name}, &
                                No_Clear=1, &
@@ -60,7 +60,7 @@ module FGenMod
             END IF
             
             ! Perform the pointer allocation
-            #{array_alloc(:nspaces=>nspaces)}
+            #{array_allocate(:nspaces=>nspaces)}
             IF ( Allocate_Status /= 0 ) THEN
               WRITE(Message,'("Error allocating #{config.struct_name} data arrays. STAT = ",i0)') &
                             Allocate_Status
@@ -91,7 +91,7 @@ module FGenMod
       # Method to construct the
       # allocate statement in the
       # allocate function
-      def array_alloc(args={})
+      def array_allocate(args={})
         nspaces = args[:nspaces] ? args[:nspaces] : 0
         cmd="ALLOCATE( "; n=cmd.length+nspaces
         str=""

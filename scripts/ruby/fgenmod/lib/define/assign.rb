@@ -40,10 +40,10 @@ module FGenMod
             IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
             ! ALL *input* pointers must be associated
-            #{struct_assoc_test("_in",:nspaces=>nspaces)}
+            #{struct_associated_test("_in",:nspaces=>nspaces)}
             
             ! Allocate data arrays
-            #{alloc_struct(:nspaces=>nspaces)}
+            #{allocate_struct(:nspaces=>nspaces)}
             IF ( Error_Status /= SUCCESS ) THEN
               #{fail_return("'Error allocating output structure'",:nspaces=>nspaces+2,:lstrip=>true)}
             END IF

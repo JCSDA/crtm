@@ -41,11 +41,11 @@ module FGenMod
   
     # Generate the structure
     # association test
-    def struct_assoc_test(suffix="",args={})
+    def struct_associated_test(suffix="",args={})
       nspaces = args[:nspaces] ? args[:nspaces] : 0
-      (assoc=Define::Assoc.new).config=self.config
+      (associated=Define::Associated.new).config=self.config
       struct_name=config.struct_name+suffix
-      cmd ="IF ( .NOT. #{assoc.procedure_name}( #{struct_name} ) ) THEN\n"
+      cmd ="IF ( .NOT. #{associated.procedure_name}( #{struct_name} ) ) THEN\n"
       cmd<<fail_return("'Some or all INPUT #{struct_name} pointer members are NOT associated.'",:nspaces=>nspaces+2)+"\n"
       cmd<<indent(nspaces)<<"END IF"
     end
@@ -77,19 +77,22 @@ module FGenMod
     
     # Method to construct a structure
     # allocation statement
-    def alloc_struct(args={})
-      nspaces = args[:nspaces] ? args[:nspaces] : 0
-      (alloc=Define::Alloc.new).config=self.config
+    def allocate_struct(args={})
+      nspaces  = args[:nspaces] ? args[:nspaces] : 0
+      dim_list = args[:dim_list] ? args[:dim_list] : config.dim_list
+      in_struct_name  = args[:in_struct_name] ? "#{args[:in_struct_name]}%" : ""
+      out_struct_name = args[:out_struct_name] ? args[:out_struct_name] : config.struct_name
+      (allocate=Define::Allocate.new).config=self.config
       # Build the pretty output format
-      dfmt=string_format(config.dim_list)
+      dfmt=string_format(dim_list)
       # Build the structure allocation call
-      cmd="Error_Status = #{alloc.procedure_name}( "; n=cmd.length+nspaces
+      cmd="Error_Status = #{allocate.procedure_name}( "; n=cmd.length+nspaces
       str=""
-      config.dim_list.each do |d|
-        str<<indent(n)+"#{config.struct_name}_in%#{dfmt%d}, &\n"
+      dim_list.each do |d|
+        str<<indent(n)+"#{in_struct_name}#{dfmt%d}, &\n"
       end
       cmd<<str.lstrip
-      cmd<<indent(n)<<"#{config.struct_name}_out, &\n"
+      cmd<<indent(n)<<"#{out_struct_name}, &\n"
       cmd<<indent(n)<<"Message_Log=Message_Log )"
     end
 

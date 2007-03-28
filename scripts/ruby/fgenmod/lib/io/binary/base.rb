@@ -92,7 +92,7 @@ module FGenMod
           nspaces = args[:nspaces] ? args[:nspaces] : 0
 
           # Build the I/O list
-          unless io_action == "inquire"
+          if io_action == "write"
             io_list = config.dim_list.collect {|d| "#{config.struct_name}%#{d}"}.join(", ")
             io_cmd  = io_action
           else
@@ -130,10 +130,10 @@ module FGenMod
           # Construct the command
           cmd=""
           list.each_index do |i|
-            cmd << indent(nspaces)<<"#{io_action.upcase}(FileID, IOSTAT=#{kind.capitalize}_IO_Status(#{i+1})) #{list[i]}\n"
+            cmd << indent(nspaces)<<"#{io_action.upcase}(FileID, IOSTAT=#{kind.capitalize}_IO_Status(#{i+1})) #{config.struct_name}%#{list[i]}\n"
           end
           cmd << indent(nspaces)<<"IF ( ANY( #{kind.capitalize}_IO_Status /= 0 ) ) THEN\n"
-          cmd << indent(nspaces)<<"  WRITE(Message,'(\"Error #{io_ing} #{config.struct_name} #{kind} variable(s) \",#{list.length}(1x,i0,:))')\n"
+          cmd << indent(nspaces)<<"  WRITE(Message,'(\"Error #{io_ing} #{config.struct_name} #{kind} variable(s) \",#{list.length}(1x,i0,:))') &\n"
           cmd << indent(nspaces)<<"                PACK( (/(i,i=1,#{list.length})/), &\n"
           cmd << indent(nspaces)<<"                      #{kind.capitalize}_IO_Status /= 0 )\n"
           cmd << indent(nspaces)<<"  CLOSE(FileID)\n"

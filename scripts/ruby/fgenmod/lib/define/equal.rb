@@ -52,8 +52,8 @@ module FGenMod
             END IF
 
             ! Check the structure association status
-            #{struct_assoc_test("_LHS",:nspaces=>nspaces)}
-            #{struct_assoc_test("_RHS",:nspaces=>nspaces)}
+            #{struct_associated_test("_LHS",:nspaces=>nspaces)}
+            #{struct_associated_test("_RHS",:nspaces=>nspaces)}
             
             ! Check dimensions
             #{dim_equal_test(:nspaces=>nspaces)}
@@ -138,12 +138,12 @@ module FGenMod
       # in the equal function
       #
       # Build the loop DO statements
-      def begin_loop(a,args={})
+      def begin_loop(sn,a,args={})
         nspaces = args[:nspaces] ? args[:nspaces] : 0
         cmd=""
         0.upto(a[:ndims]-1) do |i|
           n=nspaces+(i*2)
-          cmd<<indent(n)<<"DO #{a[:dimidx].reverse[i]}=#{a[:dims].reverse[i][0]},#{a[:dims].reverse[i][1]}\n"
+          cmd<<indent(n)<<"DO #{a[:dimidx].reverse[i]}=#{a[:dims].reverse[i][0]},#{sn}_LHS%#{a[:dims].reverse[i][1]}\n"
         end
         cmd
       end
@@ -180,7 +180,7 @@ module FGenMod
               # Floating point values
               # use Compare_Float
               nin = a[:ndims]*2 + nspaces
-              cmd<<begin_loop(a,:nspaces=>nspaces)
+              cmd<<begin_loop(sn,a,:nspaces=>nspaces)
               str =indent(nin)<<"IF ( .NOT. Compare_Float( "; n=str.length
               str<<"#{sn}_LHS%#{a[:name]}(#{a[:dimidx].join(",")}), &\n"
               str<<indent(n)<<"#{sn}_RHS%#{a[:name]}(#{a[:dimidx].join(",")}), &\n"

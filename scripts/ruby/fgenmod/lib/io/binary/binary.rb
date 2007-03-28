@@ -13,7 +13,8 @@ module FGenMod
         DEPENDENCIES=[
           {:mod=>"Type_Kinds",:only_list=>%w{ fp }},
           {:mod=>"File_Utility",:only_list=>%w{ Get_Lun }},
-          {:mod=>"Message_Handler",:only_list=>%w{ SUCCESS FAILURE Display_Message }},
+          {:mod=>"Binary_File_Utility",:only_list=>%w{ Open_Binary_File }},
+          {:mod=>"Message_Handler",:only_list=>%w{ SUCCESS FAILURE INFORMATION Display_Message }},
           {:mod=>"Compare_Float_Numbers",:only_list=>%w{ Compare_Float }}
         ]
 

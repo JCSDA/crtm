@@ -10,7 +10,7 @@ module FGenMod
 
         # Classes "called" in this procedure
         (clear=Clear.new).config=self.config
-        (assoc=Assoc.new).config=self.config
+        (associated=Associated.new).config=self.config
         
         # Declaration and argument type definition format
         dfmt=string_format(["#{config.struct_name}","Message_Log"])
@@ -42,18 +42,19 @@ module FGenMod
             Error_Status = SUCCESS
             IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
             
+            ! Reset the dimension indicators
+            #{dim_clear(:nspaces=>12)}
+            
             ! Default is to clear scalar members...
             Clear = .TRUE.
             ! ....unless the No_Clear argument is set
             IF ( PRESENT( No_Clear ) ) THEN
               IF ( No_Clear == 1 ) Clear = .FALSE.
             END IF
-            
-            ! Initialise the scalar members
             IF ( Clear ) CALL #{clear.procedure_name}(#{config.struct_name})
             
             ! If ALL pointer members are NOT associated, do nothing
-            IF ( .NOT. #{assoc.procedure_name}(#{config.struct_name}) ) RETURN
+            IF ( .NOT. #{associated.procedure_name}(#{config.struct_name}) ) RETURN
             
             ! Deallocate the pointer members
             #{deallocate(:nspaces=>12)}
@@ -63,9 +64,6 @@ module FGenMod
               #{fail_return("TRIM(Message)",:nspaces=>14,:lstrip=>true)}
             END IF
 
-            ! Reset the dimension indicators
-            #{dim_clear(:nspaces=>12)}
-            
             ! Decrement and test allocation counter
             #{config.struct_name}%n_Allocates = #{config.struct_name}%n_Allocates - 1
             IF ( #{config.struct_name}%n_Allocates /= 0 ) THEN

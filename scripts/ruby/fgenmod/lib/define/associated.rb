@@ -2,7 +2,7 @@ require 'define/base'
 module FGenMod
   module Define
   
-    class Assoc < FGenMod::Define::Base
+    class Associated < FGenMod::Define::Base
     
       def generate
         name=procedure_name
@@ -37,9 +37,9 @@ module FGenMod
             ! Test the structure associations    
             Association_Status = .FALSE.
             IF (ALL_Test) THEN
-              #{assoc_test("AND",:nspaces=>14)}
+              #{associated_test("AND",:nspaces=>14)}
             ELSE
-              #{assoc_test("OR",:nspaces=>14)}
+              #{associated_test("OR",:nspaces=>14)}
             END IF
             
           END FUNCTION #{name}
@@ -51,7 +51,7 @@ module FGenMod
       # --------------
       # Method to generate the IF statements
       # in the associated function
-      def assoc_test(operator,args={})
+      def associated_test(operator,args={})
         nspaces = args[:nspaces] ? args[:nspaces] : 0
         # Build a formatted list
         afmt=string_format(config.array_list.collect {|a| a[:name]})

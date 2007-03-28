@@ -2,7 +2,7 @@ require 'io/binary/base'
 module FGenMod
   module IO
     module Binary
-  
+
       class Inquire < FGenMod::IO::Binary::Base
     
         # Method to generate the inquire procedure.
