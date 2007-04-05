@@ -626,7 +626,7 @@ CONTAINS
 
 	! Obtain bulk aerosol optical properties
 	CALL Get_Aerosol_Opt_TL(AerosolScatter_TL                              , & ! Input
-                                Wavenumber                                     , & ! Input
+                                Wavelength                                     , & ! Input
                                 Atmosphere%Aerosol(n)%Type                     , & ! Input
                                 Atmosphere%Aerosol(n)%Effective_Radius(ka)     , & ! FWD Input
                                 Atmosphere_TL%Aerosol(n)%Effective_Radius(ka)  , & ! TL  Input
