@@ -18,9 +18,22 @@ MODULE CRTM_OCEANEM_AMSRE
   ! -----------------
   ! Module use
   USE Type_Kinds        , ONLY: fp
-  USE CRTM_Parameters   , ONLY: PI, DEGREES_TO_RADIANS
-  USE CRTM_Interpolation, ONLY: NPTS, find_index, lpoly, &
-                                interp_2D
+  USE Fresnel           , ONLY: FresnelVariables_type, &
+                                Fresnel_Reflectivity, &
+                                Fresnel_Reflectivity_TL, &
+                                Fresnel_Reflectivity_AD
+  USE Ocean_Permittivity, ONLY: GuillouVariables_type, &
+                                Guillou_Ocean_Permittivity, &
+                                Guillou_Ocean_Permittivity_TL, &
+                                Guillou_Ocean_Permittivity_AD, &
+                                EllisonVariables_type, &
+                                Ellison_Ocean_Permittivity, &
+                                Ellison_Ocean_Permittivity_TL, &
+                                Ellison_Ocean_Permittivity_AD
+  USE CRTM_Parameters   , ONLY: PI, DEGREES_TO_RADIANS, &
+                                ZERO, ONE, TWO, POINT_5
+  USE CRTM_Interpolation, ONLY: NPTS, find_index, lpoly, dlpoly, &
+                                interp_2D, interp_2D_TL, interp_2D_AD
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -33,48 +46,27 @@ MODULE CRTM_OCEANEM_AMSRE
   ! Data types
   PUBLIC :: LFMWWSOVariables_type
   ! Science routines
-  PUBLIC :: OCEANEM_AMSRE
-  PUBLIC :: OCEANEM_AMSRE_TL
-  PUBLIC :: OCEANEM_AMSRE_AD
-!  PUBLIC :: Compute_Ellison_eps_ocean
-!  PUBLIC :: Compute_Ellison_eps_ocean_TL
-!  PUBLIC :: Compute_Ellison_eps_ocean_AD
-!  PUBLIC :: Compute_Guillou_eps_ocean
-!  PUBLIC :: Compute_Guillou_eps_ocean_TL
-!  PUBLIC :: Compute_Guillou_eps_ocean_AD
-!  PUBLIC :: FRESNEL
-!  PUBLIC :: FRESNEL_TL
-!  PUBLIC :: FRESNEL_AD
+  PUBLIC :: OceanEM_AMSRE
+  PUBLIC :: OceanEM_AMSRE_TL
+  PUBLIC :: OceanEM_AMSRE_AD
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
   ! RCS Id for the module
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id: $'
-  ! Low frequency threshold
-  REAL(fp), PARAMETER :: FREQUENCY_THRESHOLD = 20.0_fp
-  ! Default salinity
-  REAL(fp), PARAMETER :: DEFAULT_SALINITY = 35.0_fp
+  
+  ! Various quantities
+  REAL(fp), PARAMETER :: LOW_F_THRESHOLD        = 20.0_fp  ! Frequency threshold for permittivity models(GHz)
+  REAL(fp), PARAMETER :: SMALLSCALE_F_THRESHOLD = 15.0_fp  ! Frequency threshold for small scale limit(GHz)
+  REAL(fp), PARAMETER :: FOAM_THRESHOLD   = 7.0_fp         ! Wind speed threshold (m/s) for foam
+  REAL(fp), PARAMETER :: DEFAULT_SALINITY = 35.0_fp        ! Default salinity
+  REAL(fp), PARAMETER :: GHZ_TO_HZ        = 1.0e+09_fp     ! Frequency units conversion
 
-
-  ! --------------------------------------
-  ! Structure definition to hold forward
-  ! variables across FWD, TL, and AD calls
-  ! --------------------------------------
-  TYPE :: LFMWWSOVariables_type
-    PRIVATE
-    INTEGER :: Dummy
-  END TYPE LFMWWSOVariables_type
-
-
-  ! --------
-  ! LUT data
-  ! --------
-  INTEGER, PARAMETER :: N_WIND_SPEEDS = 40
-  INTEGER, PARAMETER :: N_FREQUENCIES = 100
-
+  ! LUT dimension arrays
+  INTEGER,  PARAMETER :: N_WIND_SPEEDS = 40
   REAL(fp), PARAMETER :: WIND_SPEED_SDD_SPACING = 0.5_fp
   REAL(fp), PARAMETER :: WIND_SPEED_SDD(N_WIND_SPEEDS) = &
     (/  0.5_fp, 1.0_fp, 1.5_fp, 2.0_fp, 2.5_fp, 3.0_fp, 3.5_fp, 4.0_fp, &
@@ -83,6 +75,7 @@ MODULE CRTM_OCEANEM_AMSRE
        12.5_fp,13.0_fp,13.5_fp,14.0_fp,14.5_fp,15.0_fp,15.5_fp,16.0_fp, &
        16.5_fp,17.0_fp,17.5_fp,18.0_fp,18.5_fp,19.0_fp,19.5_fp,20.0_fp /)
 
+  INTEGER,  PARAMETER :: N_FREQUENCIES = 100
   REAL(fp), PARAMETER :: FREQUENCY_SDD_SPACING = 2.0_fp
   REAL(fp), PARAMETER :: FREQUENCY_SDD(N_FREQUENCIES) = &
     (/   3.0_fp,  5.0_fp,  7.0_fp,  9.0_fp, 11.0_fp, &
@@ -106,17 +99,72 @@ MODULE CRTM_OCEANEM_AMSRE
        183.0_fp,185.0_fp,187.0_fp,189.0_fp,191.0_fp, &
        193.0_fp,195.0_fp,197.0_fp,199.0_fp,201.0_fp /)
 
-  REAL(fp), SAVE :: sdd(N_WIND_SPEEDS,N_FREQUENCIES)
-  REAL(fp), SAVE :: Coeff(8)
+  ! Foam coverage coefficients
+  ! See Eqn.(1) in 
+  !   Liu, Q. et al. (1998) Monte Carlo simulations of the
+  !     microwave emissivity of the sea surface.
+  !     JGR, Volume 103, No.C11, Pages 24983-24989
+  REAL(fp), PARAMETER :: FC1 = 7.751e-6_fp  ! FWD model
+  REAL(fp), PARAMETER :: FC2 = 3.231_fp     ! FWD model
+  REAL(fp), PARAMETER :: FC3 = FC1*FC2      ! TL model
+  REAL(fp), PARAMETER :: FC4 = FC2-ONE      ! TL model
+  
+  ! Reflectivity large scale correction coefficients
+  REAL(fp), PARAMETER :: LSC_COEFF(8) = &
+    (/ 5.209e-04_fp,  1.582e-05_fp, -3.510e-07_fp, &  ! Rv coefficients 
+       5.209e-04_fp, -1.550e-05_fp, -1.356e-07_fp, &  ! Rh coefficients
+         1.90896_fp,   0.120448_fp /)                 ! Frequency coefficients
+      
 
+  ! --------------------------------------
+  ! Structure definition to hold forward
+  ! variables across FWD, TL, and AD calls
+  ! --------------------------------------
+  TYPE :: LFMWWSOVariables_type
+    PRIVATE
+    ! The Fresnel routines internal variable
+    TYPE(FresnelVariables_type) :: fVar
+    ! The Permittivity routines internal variable
+    TYPE(EllisonVariables_type) :: epVar
+    TYPE(GuillouVariables_type) :: gpVar
+    ! The LUT interpolation indices
+    INTEGER :: i1, i2  ! Frequency
+    INTEGER :: j1, j2  ! Wind speed
+    ! The interpolation input
+    REAL(fp) :: f_int, w_int
+    ! The interpolation output
+    REAL(fp) :: sdd_int
+    ! The interpolating polynomials
+    REAL(fp), DIMENSION(NPTS) :: flp, wlp
+    REAL(fp), DIMENSION(NPTS) :: wdlp
+    ! The zenith angle terms
+    REAL(fp) :: cos_z, cos2_z
+    ! Ocean permittivity
+    COMPLEX(fp) :: Permittivity
+    ! Fresnel reflectivties
+    REAL(fp) :: Rv_Fresnel, Rh_Fresnel
+    ! Foam reflectivties
+    REAL(fp) :: Rv_Foam, Rh_Foam
+    ! Foam coverage
+    REAL(fp) :: Foam_Cover
+    ! Small scale correction intermediate term
+    REAL(fp) :: R_STerm
+    ! Small scale correction to reflectivities
+    REAL(fp) :: Rv_Small, Rh_Small
+    ! Large scale correction intermediate terms
+    REAL(fp) :: Rv_LTerm, Rh_LTerm
+    ! Final reflectivity
+    REAL(fp) :: Rv, Rh
+  END TYPE LFMWWSOVariables_type
+
+
+  ! -----------------------------------------------------
+  ! LUT data. Ocean surface height variance. Units of m^2
+  ! -----------------------------------------------------
+  REAL(fp), SAVE :: sdd(N_WIND_SPEEDS,N_FREQUENCIES)
   INTEGER :: j
 
-  DATA (Coeff(j),j=1,8) / &
-  -2.616e-05_fp, 1.407e-05_fp,-1.738e-07_fp, &
-  -2.616e-05_fp,-1.389e-05_fp,-6.106e-08_fp, &
-   1.90896_fp, 0.120448_fp/
-
-DATA (sdd(1,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(1,j),j=1,N_FREQUENCIES) / &
  0.34570E-02_fp, 0.96028E-02_fp, 0.18661E-01_fp, 0.26397E-01_fp, 0.29960E-01_fp,&
  0.31163E-01_fp, 0.31130E-01_fp, 0.30225E-01_fp, 0.28781E-01_fp, 0.27321E-01_fp,&
  0.25720E-01_fp, 0.24130E-01_fp, 0.22348E-01_fp, 0.20483E-01_fp, 0.20208E-01_fp,&
@@ -138,7 +186,7 @@ DATA (sdd(1,j),j=1,N_FREQUENCIES) / &
  0.10242E-01_fp, 0.10091E-01_fp, 0.99343E-02_fp, 0.97724E-02_fp, 0.97294E-02_fp,&
  0.95568E-02_fp, 0.95038E-02_fp, 0.94462E-02_fp, 0.96390E-02_fp, 0.97032E-02_fp/
 
-DATA (sdd(2,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(2,j),j=1,N_FREQUENCIES) / &
  0.40478E-01_fp, 0.42657E-01_fp, 0.43063E-01_fp, 0.42265E-01_fp, 0.40754E-01_fp,&
  0.39474E-01_fp, 0.37890E-01_fp, 0.36005E-01_fp, 0.34181E-01_fp, 0.32422E-01_fp,&
  0.30415E-01_fp, 0.28573E-01_fp, 0.28867E-01_fp, 0.29091E-01_fp, 0.29244E-01_fp,&
@@ -160,7 +208,7 @@ DATA (sdd(2,j),j=1,N_FREQUENCIES) / &
  0.15010E-01_fp, 0.14866E-01_fp, 0.14717E-01_fp, 0.14562E-01_fp, 0.14402E-01_fp,&
  0.14237E-01_fp, 0.14066E-01_fp, 0.14122E-01_fp, 0.13941E-01_fp, 0.13756E-01_fp/
 
-DATA (sdd(3,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(3,j),j=1,N_FREQUENCIES) / &
  0.45959E-01_fp, 0.44809E-01_fp, 0.44642E-01_fp, 0.43633E-01_fp, 0.42489E-01_fp,&
  0.41514E-01_fp, 0.40195E-01_fp, 0.38867E-01_fp, 0.37478E-01_fp, 0.36003E-01_fp,&
  0.35326E-01_fp, 0.35519E-01_fp, 0.35983E-01_fp, 0.36334E-01_fp, 0.36577E-01_fp,&
@@ -182,7 +230,7 @@ DATA (sdd(3,j),j=1,N_FREQUENCIES) / &
  0.18967E-01_fp, 0.18726E-01_fp, 0.18480E-01_fp, 0.18229E-01_fp, 0.17974E-01_fp,&
  0.18031E-01_fp, 0.17764E-01_fp, 0.17494E-01_fp, 0.17533E-01_fp, 0.17252E-01_fp/
 
-DATA (sdd(4,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(4,j),j=1,N_FREQUENCIES) / &
  0.45945E-01_fp, 0.45855E-01_fp, 0.44704E-01_fp, 0.44627E-01_fp, 0.44112E-01_fp,&
  0.43270E-01_fp, 0.42801E-01_fp, 0.41951E-01_fp, 0.41044E-01_fp, 0.40817E-01_fp,&
  0.41171E-01_fp, 0.41824E-01_fp, 0.41939E-01_fp, 0.42316E-01_fp, 0.42557E-01_fp,&
@@ -204,7 +252,7 @@ DATA (sdd(4,j),j=1,N_FREQUENCIES) / &
  0.22193E-01_fp, 0.21867E-01_fp, 0.21536E-01_fp, 0.21597E-01_fp, 0.21255E-01_fp,&
  0.20910E-01_fp, 0.20950E-01_fp, 0.20594E-01_fp, 0.20622E-01_fp, 0.20255E-01_fp/
 
-DATA (sdd(5,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(5,j),j=1,N_FREQUENCIES) / &
  0.46455E-01_fp, 0.45636E-01_fp, 0.45913E-01_fp, 0.45552E-01_fp, 0.45316E-01_fp,&
  0.45144E-01_fp, 0.45307E-01_fp, 0.45161E-01_fp, 0.45272E-01_fp, 0.45909E-01_fp,&
  0.46722E-01_fp, 0.46917E-01_fp, 0.47397E-01_fp, 0.47714E-01_fp, 0.47877E-01_fp,&
@@ -226,7 +274,7 @@ DATA (sdd(5,j),j=1,N_FREQUENCIES) / &
  0.25032E-01_fp, 0.24629E-01_fp, 0.24689E-01_fp, 0.24274E-01_fp, 0.23856E-01_fp,&
  0.23894E-01_fp, 0.23466E-01_fp, 0.23489E-01_fp, 0.23051E-01_fp, 0.23061E-01_fp/
 
-DATA (sdd(6,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(6,j),j=1,N_FREQUENCIES) / &
  0.46620E-01_fp, 0.45952E-01_fp, 0.45859E-01_fp, 0.46020E-01_fp, 0.45948E-01_fp,&
  0.46469E-01_fp, 0.46514E-01_fp, 0.47047E-01_fp, 0.47274E-01_fp, 0.48506E-01_fp,&
  0.49051E-01_fp, 0.49433E-01_fp, 0.50083E-01_fp, 0.50135E-01_fp, 0.50437E-01_fp,&
@@ -248,7 +296,7 @@ DATA (sdd(6,j),j=1,N_FREQUENCIES) / &
  0.26565E-01_fp, 0.26122E-01_fp, 0.25678E-01_fp, 0.25726E-01_fp, 0.25271E-01_fp,&
  0.25304E-01_fp, 0.24839E-01_fp, 0.24857E-01_fp, 0.24382E-01_fp, 0.24386E-01_fp/
 
-DATA (sdd(7,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(7,j),j=1,N_FREQUENCIES) / &
  0.46143E-01_fp, 0.46246E-01_fp, 0.46381E-01_fp, 0.46743E-01_fp, 0.47704E-01_fp,&
  0.48584E-01_fp, 0.49564E-01_fp, 0.51213E-01_fp, 0.52502E-01_fp, 0.52983E-01_fp,&
  0.53846E-01_fp, 0.54489E-01_fp, 0.54444E-01_fp, 0.54713E-01_fp, 0.55248E-01_fp,&
@@ -270,7 +318,7 @@ DATA (sdd(7,j),j=1,N_FREQUENCIES) / &
  0.28715E-01_fp, 0.28773E-01_fp, 0.28259E-01_fp, 0.28300E-01_fp, 0.27775E-01_fp,&
  0.27800E-01_fp, 0.27265E-01_fp, 0.27274E-01_fp, 0.26731E-01_fp, 0.26724E-01_fp/
 
-DATA (sdd(8,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(8,j),j=1,N_FREQUENCIES) / &
  0.46692E-01_fp, 0.46031E-01_fp, 0.46687E-01_fp, 0.47713E-01_fp, 0.48612E-01_fp,&
  0.49918E-01_fp, 0.51796E-01_fp, 0.53723E-01_fp, 0.54680E-01_fp, 0.55440E-01_fp,&
  0.56001E-01_fp, 0.56366E-01_fp, 0.57066E-01_fp, 0.57042E-01_fp, 0.57336E-01_fp,&
@@ -292,7 +340,7 @@ DATA (sdd(8,j),j=1,N_FREQUENCIES) / &
  0.30412E-01_fp, 0.29868E-01_fp, 0.29915E-01_fp, 0.29360E-01_fp, 0.29389E-01_fp,&
  0.28825E-01_fp, 0.28837E-01_fp, 0.28264E-01_fp, 0.28260E-01_fp, 0.27678E-01_fp/
 
-DATA (sdd(9,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(9,j),j=1,N_FREQUENCIES) / &
  0.46363E-01_fp, 0.46985E-01_fp, 0.47964E-01_fp, 0.49421E-01_fp, 0.53062E-01_fp,&
  0.55018E-01_fp, 0.55902E-01_fp, 0.57514E-01_fp, 0.58856E-01_fp, 0.59931E-01_fp,&
  0.60096E-01_fp, 0.60706E-01_fp, 0.61085E-01_fp, 0.61254E-01_fp, 0.61767E-01_fp,&
@@ -314,7 +362,7 @@ DATA (sdd(9,j),j=1,N_FREQUENCIES) / &
  0.32709E-01_fp, 0.32104E-01_fp, 0.32144E-01_fp, 0.31529E-01_fp, 0.31551E-01_fp,&
  0.30925E-01_fp, 0.30929E-01_fp, 0.30925E-01_fp, 0.30282E-01_fp, 0.30262E-01_fp/
 
-DATA (sdd(10,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(10,j),j=1,N_FREQUENCIES) / &
  0.46588E-01_fp, 0.47102E-01_fp, 0.48724E-01_fp, 0.50841E-01_fp, 0.54640E-01_fp,&
  0.56552E-01_fp, 0.58288E-01_fp, 0.59786E-01_fp, 0.61027E-01_fp, 0.62006E-01_fp,&
  0.62049E-01_fp, 0.62570E-01_fp, 0.63473E-01_fp, 0.63524E-01_fp, 0.63386E-01_fp,&
@@ -336,7 +384,7 @@ DATA (sdd(10,j),j=1,N_FREQUENCIES) / &
  0.33881E-01_fp, 0.33245E-01_fp, 0.33283E-01_fp, 0.32637E-01_fp, 0.32655E-01_fp,&
  0.32000E-01_fp, 0.32000E-01_fp, 0.31992E-01_fp, 0.31319E-01_fp, 0.31293E-01_fp/
 
-DATA (sdd(11,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(11,j),j=1,N_FREQUENCIES) / &
  0.46377E-01_fp, 0.47979E-01_fp, 0.50789E-01_fp, 0.54962E-01_fp, 0.58333E-01_fp,&
  0.60205E-01_fp, 0.61913E-01_fp, 0.63379E-01_fp, 0.64578E-01_fp, 0.65504E-01_fp,&
  0.66163E-01_fp, 0.66571E-01_fp, 0.67405E-01_fp, 0.67333E-01_fp, 0.67677E-01_fp,&
@@ -358,7 +406,7 @@ DATA (sdd(11,j),j=1,N_FREQUENCIES) / &
  0.36269E-01_fp, 0.35573E-01_fp, 0.35606E-01_fp, 0.34900E-01_fp, 0.34912E-01_fp,&
  0.34197E-01_fp, 0.34190E-01_fp, 0.34174E-01_fp, 0.33440E-01_fp, 0.33406E-01_fp/
 
-DATA (sdd(12,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(12,j),j=1,N_FREQUENCIES) / &
  0.46649E-01_fp, 0.48763E-01_fp, 0.54884E-01_fp, 0.56655E-01_fp, 0.60105E-01_fp,&
  0.62009E-01_fp, 0.63743E-01_fp, 0.65227E-01_fp, 0.66433E-01_fp, 0.67358E-01_fp,&
  0.68009E-01_fp, 0.68401E-01_fp, 0.69232E-01_fp, 0.69134E-01_fp, 0.69466E-01_fp,&
@@ -380,7 +428,7 @@ DATA (sdd(12,j),j=1,N_FREQUENCIES) / &
  0.36720E-01_fp, 0.36760E-01_fp, 0.36035E-01_fp, 0.36054E-01_fp, 0.36063E-01_fp,&
  0.35319E-01_fp, 0.35308E-01_fp, 0.34554E-01_fp, 0.34525E-01_fp, 0.34486E-01_fp/
 
-DATA (sdd(13,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(13,j),j=1,N_FREQUENCIES) / &
  0.47337E-01_fp, 0.50407E-01_fp, 0.57899E-01_fp, 0.59865E-01_fp, 0.63558E-01_fp,&
  0.65595E-01_fp, 0.67436E-01_fp, 0.69000E-01_fp, 0.70262E-01_fp, 0.71220E-01_fp,&
  0.71885E-01_fp, 0.72276E-01_fp, 0.72415E-01_fp, 0.73009E-01_fp, 0.73344E-01_fp,&
@@ -402,7 +450,7 @@ DATA (sdd(13,j),j=1,N_FREQUENCIES) / &
  0.39139E-01_fp, 0.39176E-01_fp, 0.38392E-01_fp, 0.38406E-01_fp, 0.37613E-01_fp,&
  0.37606E-01_fp, 0.37589E-01_fp, 0.36775E-01_fp, 0.36738E-01_fp, 0.35917E-01_fp/
 
-DATA (sdd(14,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(14,j),j=1,N_FREQUENCIES) / &
  0.47988E-01_fp, 0.54397E-01_fp, 0.60890E-01_fp, 0.63126E-01_fp, 0.65663E-01_fp,&
  0.69325E-01_fp, 0.70174E-01_fp, 0.71948E-01_fp, 0.73371E-01_fp, 0.74453E-01_fp,&
  0.75212E-01_fp, 0.75671E-01_fp, 0.76611E-01_fp, 0.76522E-01_fp, 0.76225E-01_fp,&
@@ -424,7 +472,7 @@ DATA (sdd(14,j),j=1,N_FREQUENCIES) / &
  0.41615E-01_fp, 0.40785E-01_fp, 0.40806E-01_fp, 0.39965E-01_fp, 0.39963E-01_fp,&
  0.39112E-01_fp, 0.39088E-01_fp, 0.39053E-01_fp, 0.38183E-01_fp, 0.38127E-01_fp/
 
-DATA (sdd(15,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(15,j),j=1,N_FREQUENCIES) / &
  0.48891E-01_fp, 0.58705E-01_fp, 0.63081E-01_fp, 0.65810E-01_fp, 0.68701E-01_fp,&
  0.71373E-01_fp, 0.73701E-01_fp, 0.75645E-01_fp, 0.77204E-01_fp, 0.78390E-01_fp,&
  0.78362E-01_fp, 0.78928E-01_fp, 0.79982E-01_fp, 0.79962E-01_fp, 0.79723E-01_fp,&
@@ -446,7 +494,7 @@ DATA (sdd(15,j),j=1,N_FREQUENCIES) / &
  0.43228E-01_fp, 0.43258E-01_fp, 0.42370E-01_fp, 0.42375E-01_fp, 0.41477E-01_fp,&
  0.41458E-01_fp, 0.41428E-01_fp, 0.40508E-01_fp, 0.40456E-01_fp, 0.40392E-01_fp/
 
-DATA (sdd(16,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(16,j),j=1,N_FREQUENCIES) / &
  0.50895E-01_fp, 0.63162E-01_fp, 0.65839E-01_fp, 0.71307E-01_fp, 0.74545E-01_fp,&
  0.76130E-01_fp, 0.78842E-01_fp, 0.79971E-01_fp, 0.81855E-01_fp, 0.82340E-01_fp,&
  0.83447E-01_fp, 0.84191E-01_fp, 0.84614E-01_fp, 0.84757E-01_fp, 0.84661E-01_fp,&
@@ -468,7 +516,7 @@ DATA (sdd(16,j),j=1,N_FREQUENCIES) / &
  0.46055E-01_fp, 0.46079E-01_fp, 0.45119E-01_fp, 0.45117E-01_fp, 0.45102E-01_fp,&
  0.44118E-01_fp, 0.44078E-01_fp, 0.43085E-01_fp, 0.43021E-01_fp, 0.42945E-01_fp/
 
-DATA (sdd(17,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(17,j),j=1,N_FREQUENCIES) / &
  0.55476E-01_fp, 0.64634E-01_fp, 0.68113E-01_fp, 0.74147E-01_fp, 0.76142E-01_fp,&
  0.79603E-01_fp, 0.81289E-01_fp, 0.83843E-01_fp, 0.84820E-01_fp, 0.85477E-01_fp,&
  0.86752E-01_fp, 0.87637E-01_fp, 0.87340E-01_fp, 0.87627E-01_fp, 0.87662E-01_fp,&
@@ -490,7 +538,7 @@ DATA (sdd(17,j),j=1,N_FREQUENCIES) / &
  0.48604E-01_fp, 0.47600E-01_fp, 0.47608E-01_fp, 0.46592E-01_fp, 0.46572E-01_fp,&
  0.46539E-01_fp, 0.45498E-01_fp, 0.45440E-01_fp, 0.45369E-01_fp, 0.44306E-01_fp/
 
-DATA (sdd(18,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(18,j),j=1,N_FREQUENCIES) / &
  0.58744E-01_fp, 0.69111E-01_fp, 0.73141E-01_fp, 0.77740E-01_fp, 0.80361E-01_fp,&
  0.82891E-01_fp, 0.86408E-01_fp, 0.88103E-01_fp, 0.89409E-01_fp, 0.90332E-01_fp,&
  0.90897E-01_fp, 0.92052E-01_fp, 0.91962E-01_fp, 0.92461E-01_fp, 0.92689E-01_fp,&
@@ -512,7 +560,7 @@ DATA (sdd(18,j),j=1,N_FREQUENCIES) / &
  0.51413E-01_fp, 0.50340E-01_fp, 0.50341E-01_fp, 0.49255E-01_fp, 0.49227E-01_fp,&
  0.49186E-01_fp, 0.48073E-01_fp, 0.48004E-01_fp, 0.47922E-01_fp, 0.46785E-01_fp/
 
-DATA (sdd(19,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(19,j),j=1,N_FREQUENCIES) / &
  0.63745E-01_fp, 0.71144E-01_fp, 0.76434E-01_fp, 0.81856E-01_fp, 0.85024E-01_fp,&
  0.87979E-01_fp, 0.90532E-01_fp, 0.92623E-01_fp, 0.93109E-01_fp, 0.94372E-01_fp,&
  0.95224E-01_fp, 0.96655E-01_fp, 0.96780E-01_fp, 0.96648E-01_fp, 0.97120E-01_fp,&
@@ -534,7 +582,7 @@ DATA (sdd(19,j),j=1,N_FREQUENCIES) / &
  0.54179E-01_fp, 0.53038E-01_fp, 0.53034E-01_fp, 0.51878E-01_fp, 0.51843E-01_fp,&
  0.51793E-01_fp, 0.50609E-01_fp, 0.50529E-01_fp, 0.50437E-01_fp, 0.49226E-01_fp/
 
-DATA (sdd(20,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(20,j),j=1,N_FREQUENCIES) / &
  0.67533E-01_fp, 0.71480E-01_fp, 0.77854E-01_fp, 0.83961E-01_fp, 0.87599E-01_fp,&
  0.90910E-01_fp, 0.92360E-01_fp, 0.94796E-01_fp, 0.96705E-01_fp, 0.97042E-01_fp,&
  0.98091E-01_fp, 0.98751E-01_fp, 0.99080E-01_fp, 0.99998E-01_fp, 0.99790E-01_fp,&
@@ -556,7 +604,7 @@ DATA (sdd(20,j),j=1,N_FREQUENCIES) / &
  0.55598E-01_fp, 0.54418E-01_fp, 0.54410E-01_fp, 0.54386E-01_fp, 0.53174E-01_fp,&
  0.53118E-01_fp, 0.53047E-01_fp, 0.51806E-01_fp, 0.51705E-01_fp, 0.51590E-01_fp/
 
-DATA (sdd(21,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(21,j),j=1,N_FREQUENCIES) / &
  0.68364E-01_fp, 0.74260E-01_fp, 0.81647E-01_fp, 0.86336E-01_fp, 0.90788E-01_fp,&
  0.94713E-01_fp, 0.96605E-01_fp, 0.99434E-01_fp, 0.10046E+00_fp, 0.10112E+00_fp,&
  0.10247E+00_fp, 0.10339E+00_fp, 0.10396E+00_fp, 0.10423E+00_fp, 0.10427E+00_fp,&
@@ -578,7 +626,7 @@ DATA (sdd(21,j),j=1,N_FREQUENCIES) / &
  0.58267E-01_fp, 0.57020E-01_fp, 0.57006E-01_fp, 0.56976E-01_fp, 0.55694E-01_fp,&
  0.55630E-01_fp, 0.55550E-01_fp, 0.54236E-01_fp, 0.54124E-01_fp, 0.53996E-01_fp/
 
-DATA (sdd(22,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(22,j),j=1,N_FREQUENCIES) / &
  0.73496E-01_fp, 0.79530E-01_fp, 0.84585E-01_fp, 0.90082E-01_fp, 0.95138E-01_fp,&
  0.97904E-01_fp, 0.10030E+00_fp, 0.10224E+00_fp, 0.10493E+00_fp, 0.10586E+00_fp,&
  0.10641E+00_fp, 0.10763E+00_fp, 0.10750E+00_fp, 0.10807E+00_fp, 0.10839E+00_fp,&
@@ -600,7 +648,7 @@ DATA (sdd(22,j),j=1,N_FREQUENCIES) / &
  0.60886E-01_fp, 0.59573E-01_fp, 0.59553E-01_fp, 0.59516E-01_fp, 0.58166E-01_fp,&
  0.58092E-01_fp, 0.58002E-01_fp, 0.56618E-01_fp, 0.56493E-01_fp, 0.56353E-01_fp/
 
-DATA (sdd(23,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(23,j),j=1,N_FREQUENCIES) / &
  0.71097E-01_fp, 0.80287E-01_fp, 0.89572E-01_fp, 0.93240E-01_fp, 0.98978E-01_fp,&
  0.10223E+00_fp, 0.10353E+00_fp, 0.10591E+00_fp, 0.10775E+00_fp, 0.10907E+00_fp,&
  0.10996E+00_fp, 0.11150E+00_fp, 0.11165E+00_fp, 0.11157E+00_fp, 0.11219E+00_fp,&
@@ -622,7 +670,7 @@ DATA (sdd(23,j),j=1,N_FREQUENCIES) / &
  0.63453E-01_fp, 0.62075E-01_fp, 0.62048E-01_fp, 0.62004E-01_fp, 0.60585E-01_fp,&
  0.60502E-01_fp, 0.60402E-01_fp, 0.58946E-01_fp, 0.58809E-01_fp, 0.58656E-01_fp/
 
-DATA (sdd(24,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(24,j),j=1,N_FREQUENCIES) / &
  0.73682E-01_fp, 0.84018E-01_fp, 0.91212E-01_fp, 0.98167E-01_fp, 0.10237E+00_fp,&
  0.10447E+00_fp, 0.10785E+00_fp, 0.11058E+00_fp, 0.11143E+00_fp, 0.11309E+00_fp,&
  0.11427E+00_fp, 0.11505E+00_fp, 0.11550E+00_fp, 0.11570E+00_fp, 0.11573E+00_fp,&
@@ -644,7 +692,7 @@ DATA (sdd(24,j),j=1,N_FREQUENCIES) / &
  0.65965E-01_fp, 0.64522E-01_fp, 0.64488E-01_fp, 0.64436E-01_fp, 0.62950E-01_fp,&
  0.62857E-01_fp, 0.62746E-01_fp, 0.61219E-01_fp, 0.61069E-01_fp, 0.60902E-01_fp/
 
-DATA (sdd(25,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(25,j),j=1,N_FREQUENCIES) / &
  0.81821E-01_fp, 0.87202E-01_fp, 0.95201E-01_fp, 0.10040E+00_fp, 0.10537E+00_fp,&
  0.10802E+00_fp, 0.11186E+00_fp, 0.11355E+00_fp, 0.11610E+00_fp, 0.11682E+00_fp,&
  0.11831E+00_fp, 0.11831E+00_fp, 0.11908E+00_fp, 0.11959E+00_fp, 0.11991E+00_fp,&
@@ -666,7 +714,7 @@ DATA (sdd(25,j),j=1,N_FREQUENCIES) / &
  0.68420E-01_fp, 0.66912E-01_fp, 0.66872E-01_fp, 0.66811E-01_fp, 0.65257E-01_fp,&
  0.65154E-01_fp, 0.65031E-01_fp, 0.63434E-01_fp, 0.63271E-01_fp, 0.63089E-01_fp/
 
-DATA (sdd(26,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(26,j),j=1,N_FREQUENCIES) / &
  0.82802E-01_fp, 0.89906E-01_fp, 0.98825E-01_fp, 0.10226E+00_fp, 0.10803E+00_fp,&
  0.11126E+00_fp, 0.11558E+00_fp, 0.11765E+00_fp, 0.11920E+00_fp, 0.12028E+00_fp,&
  0.12211E+00_fp, 0.12239E+00_fp, 0.12344E+00_fp, 0.12325E+00_fp, 0.12389E+00_fp,&
@@ -688,7 +736,7 @@ DATA (sdd(26,j),j=1,N_FREQUENCIES) / &
  0.70816E-01_fp, 0.69243E-01_fp, 0.69195E-01_fp, 0.69126E-01_fp, 0.67504E-01_fp,&
  0.67390E-01_fp, 0.67256E-01_fp, 0.65588E-01_fp, 0.65410E-01_fp, 0.65213E-01_fp/
 
-DATA (sdd(27,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(27,j),j=1,N_FREQUENCIES) / &
  0.83173E-01_fp, 0.92191E-01_fp, 0.99140E-01_fp, 0.10614E+00_fp, 0.11039E+00_fp,&
  0.11600E+00_fp, 0.11746E+00_fp, 0.12005E+00_fp, 0.12205E+00_fp, 0.12351E+00_fp,&
  0.12568E+00_fp, 0.12626E+00_fp, 0.12658E+00_fp, 0.12673E+00_fp, 0.12769E+00_fp,&
@@ -710,7 +758,7 @@ DATA (sdd(27,j),j=1,N_FREQUENCIES) / &
  0.73150E-01_fp, 0.71513E-01_fp, 0.71457E-01_fp, 0.71378E-01_fp, 0.69689E-01_fp,&
  0.69563E-01_fp, 0.69416E-01_fp, 0.69248E-01_fp, 0.67485E-01_fp, 0.67272E-01_fp/
 
-DATA (sdd(28,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(28,j),j=1,N_FREQUENCIES) / &
  0.83070E-01_fp, 0.94113E-01_fp, 0.10209E+00_fp, 0.10979E+00_fp, 0.11452E+00_fp,&
  0.11874E+00_fp, 0.12229E+00_fp, 0.12367E+00_fp, 0.12601E+00_fp, 0.12777E+00_fp,&
  0.12905E+00_fp, 0.12995E+00_fp, 0.13056E+00_fp, 0.13100E+00_fp, 0.13134E+00_fp,&
@@ -732,7 +780,7 @@ DATA (sdd(28,j),j=1,N_FREQUENCIES) / &
  0.75420E-01_fp, 0.73720E-01_fp, 0.73655E-01_fp, 0.73566E-01_fp, 0.71809E-01_fp,&
  0.71671E-01_fp, 0.71511E-01_fp, 0.71328E-01_fp, 0.69493E-01_fp, 0.69263E-01_fp/
 
-DATA (sdd(29,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(29,j),j=1,N_FREQUENCIES) / &
  0.89117E-01_fp, 0.99844E-01_fp, 0.10478E+00_fp, 0.11321E+00_fp, 0.11637E+00_fp,&
  0.12124E+00_fp, 0.12531E+00_fp, 0.12710E+00_fp, 0.12979E+00_fp, 0.13058E+00_fp,&
  0.13222E+00_fp, 0.13346E+00_fp, 0.13334E+00_fp, 0.13414E+00_fp, 0.13484E+00_fp,&
@@ -754,7 +802,7 @@ DATA (sdd(29,j),j=1,N_FREQUENCIES) / &
  0.77626E-01_fp, 0.77580E-01_fp, 0.75786E-01_fp, 0.75687E-01_fp, 0.75564E-01_fp,&
  0.73711E-01_fp, 0.73537E-01_fp, 0.73339E-01_fp, 0.71431E-01_fp, 0.71184E-01_fp/
 
-DATA (sdd(30,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(30,j),j=1,N_FREQUENCIES) / &
  0.88106E-01_fp, 0.10116E+00_fp, 0.10723E+00_fp, 0.11394E+00_fp, 0.12009E+00_fp,&
  0.12539E+00_fp, 0.12814E+00_fp, 0.13034E+00_fp, 0.13341E+00_fp, 0.13450E+00_fp,&
  0.13522E+00_fp, 0.13680E+00_fp, 0.13700E+00_fp, 0.13813E+00_fp, 0.13820E+00_fp,&
@@ -776,7 +824,7 @@ DATA (sdd(30,j),j=1,N_FREQUENCIES) / &
  0.79764E-01_fp, 0.79710E-01_fp, 0.77850E-01_fp, 0.77740E-01_fp, 0.77604E-01_fp,&
  0.75682E-01_fp, 0.75493E-01_fp, 0.75279E-01_fp, 0.75041E-01_fp, 0.73033E-01_fp/
 
-DATA (sdd(31,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(31,j),j=1,N_FREQUENCIES) / &
  0.93581E-01_fp, 0.10222E+00_fp, 0.11260E+00_fp, 0.11694E+00_fp, 0.12365E+00_fp,&
  0.12751E+00_fp, 0.13078E+00_fp, 0.13341E+00_fp, 0.13544E+00_fp, 0.13827E+00_fp,&
  0.13928E+00_fp, 0.14000E+00_fp, 0.14054E+00_fp, 0.14200E+00_fp, 0.14239E+00_fp,&
@@ -798,7 +846,7 @@ DATA (sdd(31,j),j=1,N_FREQUENCIES) / &
  0.81833E-01_fp, 0.81769E-01_fp, 0.79844E-01_fp, 0.79721E-01_fp, 0.79573E-01_fp,&
  0.77581E-01_fp, 0.77376E-01_fp, 0.77145E-01_fp, 0.76890E-01_fp, 0.74807E-01_fp/
 
-DATA (sdd(32,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(32,j),j=1,N_FREQUENCIES) / &
  0.93550E-01_fp, 0.10471E+00_fp, 0.11322E+00_fp, 0.12153E+00_fp, 0.12671E+00_fp,&
  0.13131E+00_fp, 0.13518E+00_fp, 0.13830E+00_fp, 0.14076E+00_fp, 0.14131E+00_fp,&
  0.14285E+00_fp, 0.14406E+00_fp, 0.14506E+00_fp, 0.14596E+00_fp, 0.14688E+00_fp,&
@@ -820,7 +868,7 @@ DATA (sdd(32,j),j=1,N_FREQUENCIES) / &
  0.85121E-01_fp, 0.85045E-01_fp, 0.83022E-01_fp, 0.82884E-01_fp, 0.82718E-01_fp,&
  0.80624E-01_fp, 0.80398E-01_fp, 0.80145E-01_fp, 0.79866E-01_fp, 0.77673E-01_fp/
 
-DATA (sdd(33,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(33,j),j=1,N_FREQUENCIES) / &
  0.98513E-01_fp, 0.10959E+00_fp, 0.11824E+00_fp, 0.12417E+00_fp, 0.12991E+00_fp,&
  0.13496E+00_fp, 0.13745E+00_fp, 0.14103E+00_fp, 0.14387E+00_fp, 0.14476E+00_fp,&
  0.14661E+00_fp, 0.14812E+00_fp, 0.14832E+00_fp, 0.14958E+00_fp, 0.15085E+00_fp,&
@@ -842,7 +890,7 @@ DATA (sdd(33,j),j=1,N_FREQUENCIES) / &
  0.87040E-01_fp, 0.86952E-01_fp, 0.84864E-01_fp, 0.84712E-01_fp, 0.84531E-01_fp,&
  0.82366E-01_fp, 0.82123E-01_fp, 0.81851E-01_fp, 0.81551E-01_fp, 0.81223E-01_fp/
 
-DATA (sdd(34,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(34,j),j=1,N_FREQUENCIES) / &
  0.96196E-01_fp, 0.10996E+00_fp, 0.11992E+00_fp, 0.12666E+00_fp, 0.13299E+00_fp,&
  0.13653E+00_fp, 0.14132E+00_fp, 0.14362E+00_fp, 0.14686E+00_fp, 0.14809E+00_fp,&
  0.15027E+00_fp, 0.15090E+00_fp, 0.15257E+00_fp, 0.15310E+00_fp, 0.15378E+00_fp,&
@@ -864,7 +912,7 @@ DATA (sdd(34,j),j=1,N_FREQUENCIES) / &
  0.88885E-01_fp, 0.88785E-01_fp, 0.86630E-01_fp, 0.86462E-01_fp, 0.86265E-01_fp,&
  0.86038E-01_fp, 0.83767E-01_fp, 0.83476E-01_fp, 0.83155E-01_fp, 0.82805E-01_fp/
 
-DATA (sdd(35,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(35,j),j=1,N_FREQUENCIES) / &
  0.10072E+00_fp, 0.11461E+00_fp, 0.12145E+00_fp, 0.12902E+00_fp, 0.13594E+00_fp,&
  0.13992E+00_fp, 0.14332E+00_fp, 0.14769E+00_fp, 0.14973E+00_fp, 0.15131E+00_fp,&
  0.15255E+00_fp, 0.15477E+00_fp, 0.15563E+00_fp, 0.15654E+00_fp, 0.15759E+00_fp,&
@@ -886,7 +934,7 @@ DATA (sdd(35,j),j=1,N_FREQUENCIES) / &
  0.90654E-01_fp, 0.90540E-01_fp, 0.90395E-01_fp, 0.88135E-01_fp, 0.87920E-01_fp,&
  0.87674E-01_fp, 0.87398E-01_fp, 0.85019E-01_fp, 0.84675E-01_fp, 0.84302E-01_fp/
 
-DATA (sdd(36,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(36,j),j=1,N_FREQUENCIES) / &
  0.10672E+00_fp, 0.11612E+00_fp, 0.12438E+00_fp, 0.13286E+00_fp, 0.13818E+00_fp,&
  0.14496E+00_fp, 0.14877E+00_fp, 0.15026E+00_fp, 0.15288E+00_fp, 0.15498E+00_fp,&
  0.15670E+00_fp, 0.15819E+00_fp, 0.15958E+00_fp, 0.16100E+00_fp, 0.16257E+00_fp,&
@@ -908,7 +956,7 @@ DATA (sdd(36,j),j=1,N_FREQUENCIES) / &
  0.93609E-01_fp, 0.93479E-01_fp, 0.93315E-01_fp, 0.90953E-01_fp, 0.90716E-01_fp,&
  0.90447E-01_fp, 0.87996E-01_fp, 0.87655E-01_fp, 0.87283E-01_fp, 0.86879E-01_fp/
 
-DATA (sdd(37,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(37,j),j=1,N_FREQUENCIES) / &
  0.10361E+00_fp, 0.11599E+00_fp, 0.12895E+00_fp, 0.13494E+00_fp, 0.14086E+00_fp,&
  0.14610E+00_fp, 0.15050E+00_fp, 0.15410E+00_fp, 0.15701E+00_fp, 0.15797E+00_fp,&
  0.16003E+00_fp, 0.16184E+00_fp, 0.16356E+00_fp, 0.16427E+00_fp, 0.16528E+00_fp,&
@@ -930,7 +978,7 @@ DATA (sdd(37,j),j=1,N_FREQUENCIES) / &
  0.95212E-01_fp, 0.95066E-01_fp, 0.94885E-01_fp, 0.92454E-01_fp, 0.92197E-01_fp,&
  0.91906E-01_fp, 0.91582E-01_fp, 0.89018E-01_fp, 0.88620E-01_fp, 0.88190E-01_fp/
 
-DATA (sdd(38,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(38,j),j=1,N_FREQUENCIES) / &
  0.10910E+00_fp, 0.12163E+00_fp, 0.13154E+00_fp, 0.13845E+00_fp, 0.14505E+00_fp,&
  0.15082E+00_fp, 0.15383E+00_fp, 0.15798E+00_fp, 0.15984E+00_fp, 0.16274E+00_fp,&
  0.16390E+00_fp, 0.16620E+00_fp, 0.16726E+00_fp, 0.16852E+00_fp, 0.17301E+00_fp,&
@@ -952,7 +1000,7 @@ DATA (sdd(38,j),j=1,N_FREQUENCIES) / &
  0.97983E-01_fp, 0.97817E-01_fp, 0.97615E-01_fp, 0.95080E-01_fp, 0.94798E-01_fp,&
  0.94481E-01_fp, 0.94128E-01_fp, 0.93740E-01_fp, 0.91021E-01_fp, 0.90556E-01_fp/
 
-DATA (sdd(39,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(39,j),j=1,N_FREQUENCIES) / &
  0.11321E+00_fp, 0.12119E+00_fp, 0.13251E+00_fp, 0.14030E+00_fp, 0.14751E+00_fp,&
  0.15376E+00_fp, 0.15715E+00_fp, 0.15995E+00_fp, 0.16377E+00_fp, 0.16552E+00_fp,&
  0.16704E+00_fp, 0.16847E+00_fp, 0.17109E+00_fp, 0.17269E+00_fp, 0.17958E+00_fp,&
@@ -974,7 +1022,7 @@ DATA (sdd(39,j),j=1,N_FREQUENCIES) / &
  0.10177E+00_fp, 0.99227E-01_fp, 0.99005E-01_fp, 0.98746E-01_fp, 0.96095E-01_fp,&
  0.95754E-01_fp, 0.95376E-01_fp, 0.94962E-01_fp, 0.94512E-01_fp, 0.91671E-01_fp/
 
-DATA (sdd(40,j),j=1,N_FREQUENCIES) / &
+  DATA (sdd(40,j),j=1,N_FREQUENCIES) / &
  0.10699E+00_fp, 0.12254E+00_fp, 0.13395E+00_fp, 0.14181E+00_fp, 0.14910E+00_fp,&
  0.15334E+00_fp, 0.15885E+00_fp, 0.16170E+00_fp, 0.16403E+00_fp, 0.16596E+00_fp,&
  0.16895E+00_fp, 0.17043E+00_fp, 0.17197E+00_fp, 0.17372E+00_fp, 0.18179E+00_fp,&
@@ -1018,230 +1066,176 @@ CONTAINS
 !       Subroutine to compute microwave ocean emissivity
 !
 ! CALLING SEQUENCE:
-!       CALL OceanEM_AMSRE( Frequency          , &  ! Input
-!                           Sat_Zenith_Angle   , &  ! Input
-!                           Surface_Temperature, &  ! Input
-!                           Wind_Speed         , &  ! Input
-!                           Emissivity           )  ! Output
+!       CALL OceanEM_AMSRE( Frequency   , &  ! Input
+!                           Zenith_Angle, &  ! Input
+!                           Temperature , &  ! Input
+!                           Wind_Speed  , &  ! Input
+!                           Emissivity  , &  ! Output
+!                           iVar          )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!         Frequency:           Microwave frequency
-!                              UNITS:      GHz
-!                              TYPE:       REAL(fp)
-!                              DIMENSION:  Scalar
+!       Frequency:           Microwave frequency
+!                            UNITS:      GHz
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Scalar
 !
-!         Sat_Zenith_Angle:    Satellite zenith angle at the
-!                              ocean surface
-!                              UNITS:      Degrees
-!                              TYPE:       REAL(fp)
-!                              DIMENSION:  Scalar
+!       Zenith_Angle:        Satellite zenith angle at the
+!                            ocean surface
+!                            UNITS:      Degrees
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Scalar
 !
-!         Surface_Temperature: Ocean surface temperature
-!                              UNITS:      Kelvin, K
-!                              TYPE:       REAL(fp)
-!                              DIMENSION:  Scalar
+!       Temperature:         Ocean surface temperature
+!                            UNITS:      Kelvin, K
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Scalar
 !
-!         Wind_Speed:          Ocean surface wind speed
-!                              UNITS:      m/s
-!                              TYPE:       REAL(fp)
-!                              DIMENSION:  Scalar
+!       Wind_Speed:          Ocean surface wind speed
+!                            UNITS:      m/s
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Scalar
 !
 ! OUTPUT ARGUMENTS:
-!         Emissivity:          The surface emissivity at vertical
-!                              and horizontal polarizations.
-!                              UNITS:      N/A
-!                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-1
+!       Emissivity:          The surface emissivity at vertical
+!                            and horizontal polarizations.
+!                            UNITS:      N/A
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Rank-1
+!
+!       iVar:                Structure containing internal variables required for
+!                            subsequent tangent-linear or adjoint model calls.
+!                            The contents of this structure are NOT accessible
+!                            outside of this module.
+!                            UNITS:      N/A
+!                            TYPE:       LFMWWSOVariables_type
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(OUT)
 !
 !--------------------------------------------------------------------------------
 !
-  SUBROUTINE OCEANEM_AMSRE(Frequency          , &  ! Input
-                           Sat_Zenith_Angle   , &  ! Input
-                           Surface_Temperature, &  ! Input
-                           Wind_Speed         , &  ! Input
-                           Emissivity           )  ! Output
+  SUBROUTINE OCEANEM_AMSRE( Frequency   , &  ! Input
+                            Zenith_Angle, &  ! Input
+                            Temperature , &  ! Input
+                            Wind_Speed  , &  ! Input
+                            Emissivity  , &  ! Output
+                            iVar          )  ! Internal variable output
     ! Arguments
-    REAL(fp), INTENT(IN)  ::  Frequency
-    REAL(fp), INTENT(IN)  ::  Sat_Zenith_Angle
-    REAL(fp), INTENT(IN)  ::  Surface_Temperature
-    REAL(fp), INTENT(IN)  ::  Wind_Speed
-    REAL(fp), INTENT(OUT) :: Emissivity(4)
+    REAL(fp),                    INTENT(IN)     :: Frequency
+    REAL(fp),                    INTENT(IN)     :: Zenith_Angle
+    REAL(fp),                    INTENT(IN)     :: Temperature
+    REAL(fp),                    INTENT(IN)     :: Wind_Speed
+    REAL(fp),                    INTENT(OUT)    :: Emissivity(4)
+    TYPE(LFMWWSOVariables_type), INTENT(IN OUT) :: iVar
     ! Local variables
-    INTEGER i,j
-    REAL(fp) freq,x1,x2,y1,y2,sdd_intrp,satellite_zenith,salinity
-    REAL(fp) csl,csl2
-    COMPLEX(fp) :: eps_ocean,Rvv,Rhh
-    REAL(fp) :: real_Rvv,imag_Rvv
-    REAL(fp) :: real_Rhh,imag_Rhh
-    REAL(fp) ::  wind,sst
-    REAL(fp) ::  Rv_Fresnel, Rh_Fresnel 
-    REAL(fp) ::  Rv_modified_fresnel, Rh_modified_fresnel
-    REAL(fp) ::  Fv, Fh, Rv_Foam, Rh_Foam, Foam_Coverage
-    REAL(fp) ::  Rv_Small,Rh_Small
-    REAL(fp) ::  Rv_Large,Rh_Large
-    REAL(fp) ::  Rv_Clear,Rh_Clear
-    REAL(fp) :: wind_index
-    INTEGER Index_x,Index_y
-    
-    INTEGER :: i1, i2
-    INTEGER :: j1, j2
-    REAL(fp) :: w_int, f_int, sdd_int
-    REAL(fp), DIMENSION(NPTS) :: wlp, flp
+    REAL(fp) :: Salinity
+    REAL(fp) :: Rv_Large, Rh_Large
+
+    ! TEMPORARY
+    REAL(fp) :: new_sdd(NPTS,NPTS)
+    ! TEMPORARY
 
 
-    ! Assign arguments
-    freq = Frequency
-    wind = Wind_Speed
-    sst = Surface_Temperature
-    satellite_zenith = Sat_Zenith_Angle
-    salinity = DEFAULT_SALINITY
-
-    ! Interpolate LUT data to user
-    ! specified frequency and wind speed
-    wind_index = wind
-    IF(wind >= 20.0_fp ) wind_index = 19.9_fp
-    IF(wind <= 2.0_fp) wind_index = 2.001_fp
-    IF(freq >= 201.0_fp) freq = 200.9_fp
-    IF(freq <= 3.0_fp) freq = 3.1_fp
+    ! Assign default salinity
+    ! -----------------------
+    Salinity = DEFAULT_SALINITY
 
 
-    Index_x = int(wind_index)
-    IF(Index_x < 1) Index_x = 1
-    Index_y = int((freq - 1.0_fp)/2.0_fp)
-
-    y1 = ( frequency_sdd(Index_y+1) - freq ) / 2.0_fp
-    y2 = ( freq - frequency_sdd(Index_y) ) / 2.0_fp
-    x1 = ( wind_speed_sdd(Index_x+1) - wind ) / 0.5_fp
-    x2 = ( wind - wind_speed_sdd(Index_x) ) / 0.5_fp
-    sdd_intrp = x2 * y2 * sdd(Index_x,Index_y) + x2 * y1 * sdd(Index_x,Index_y+1) + &
-                x1 * y2 * sdd(Index_x+1,Index_y) + x1 * y1 * sdd(Index_x+1,Index_y+1)
-
-    print *, 'old'
-    print *, 'w:',wind_speed_sdd(Index_x), wind, wind_speed_sdd(Index_x+1)
-    print *, 'f:',frequency_sdd(Index_y), freq, frequency_sdd(Index_y+1)
-    
+    ! LUT interpolation
+    ! -----------------
     ! Find the wind speed and frequency
     ! radius indices for interpolation
-    print *, 'new'
-    w_int = MAX(MIN(WIND_SPEED_SDD(N_WIND_SPEEDS),Wind_Speed),WIND_SPEED_SDD(1))
-    CALL find_index(WIND_SPEED_SDD, WIND_SPEED_SDD_SPACING, w_int, i1,i2)
-    print *, 'w:',WIND_SPEED_SDD(i1),w_int,WIND_SPEED_SDD(i2)
-    f_int = MAX(MIN(FREQUENCY_SDD(N_FREQUENCIES),Frequency),FREQUENCY_SDD(1))
-    CALL find_index(FREQUENCY_SDD, FREQUENCY_SDD_SPACING, f_int, j1,j2)
-    print *, 'f:',FREQUENCY_SDD(j1),f_int,FREQUENCY_SDD(j2)
+    iVar%f_int = MAX(MIN(FREQUENCY_SDD(N_FREQUENCIES),Frequency),FREQUENCY_SDD(1))
+    CALL find_index(FREQUENCY_SDD, FREQUENCY_SDD_SPACING, iVar%f_int, iVar%i1,iVar%i2)
+
+    iVar%w_int = MAX(MIN(WIND_SPEED_SDD(N_WIND_SPEEDS),Wind_Speed),WIND_SPEED_SDD(1))
+    CALL find_index(WIND_SPEED_SDD, WIND_SPEED_SDD_SPACING, iVar%w_int, iVar%j1,iVar%j2)
 
     ! Calculate the interpolating polynomials
-    wlp = lpoly(WIND_SPEED_SDD(i1:i2),w_int)
-    flp = lpoly(FREQUENCY_SDD(j1:j2),f_int)
+    iVar%flp = lpoly(FREQUENCY_SDD(iVar%i1:iVar%i2),iVar%f_int)
+    iVar%wlp = lpoly(WIND_SPEED_SDD(iVar%j1:iVar%j2),iVar%w_int)
+
+    ! Calculate the interpolating polynomial derivatives
+    ! for those variables that can vary
+    iVar%wdlp = dlpoly(WIND_SPEED_SDD(iVar%j1:iVar%j2),iVar%w_int)
 
     ! Perform the 2-D interpolation
-    CALL interp_2D(sdd(i1:i2,j1:j2), wlp, flp, sdd_int)
-    print *, 'sdd_intrp old: ',sdd_intrp
-    print *, 'sdd_intrp new: ',sdd_int
-    print *
+    new_sdd = TRANSPOSE(sdd(iVar%j1:iVar%j2,iVar%i1:iVar%i2))  ! TEMPORARY
+    CALL interp_2D(new_sdd, iVar%flp, iVar%wlp, iVar%sdd_int)
 
 
-  ! Permittivity Calculation
-  IF(freq < FREQUENCY_THRESHOLD) THEN
-    CALL Compute_Guillou_eps_ocean(sst,salinity,freq,eps_ocean)
-  ELSE
-    CALL Compute_Ellison_eps_ocean(sst,salinity,freq,eps_ocean)
-  END IF
-  csl = cos(satellite_zenith*DEGREES_TO_RADIANS)
-  csl2 = csl*csl
+    ! Angle calculations
+    ! ------------------
+    iVar%cos_z  = COS(Zenith_Angle*DEGREES_TO_RADIANS)
+    iVar%cos2_z = iVar%cos_z * iVar%cos_z
+    
+    
+    ! Permittivity Calculation
+    ! ------------------------
+    IF( Frequency < LOW_F_THRESHOLD ) THEN
+      CALL Guillou_Ocean_Permittivity( Temperature, Salinity, Frequency, &
+                                       iVar%Permittivity, &
+                                       iVar%gpVar )
+    ELSE
+      CALL Ellison_Ocean_Permittivity( Temperature, Salinity, Frequency, &
+                                       iVar%Permittivity, &
+                                       iVar%epVar )
+    END IF
 
 
+    ! Fresnel reflectivity calculation
+    ! --------------------------------
+    CALL Fresnel_Reflectivity( iVar%Permittivity,iVar%cos_z, &
+                               iVar%Rv_Fresnel,iVar%Rh_Fresnel,&
+                               iVar%fVar )
+
+
+    ! Foam reflectivity calculation
+    ! -----------------------------
+    CALL Foam_Reflectivity( Zenith_Angle, iVar%Rv_Foam, iVar%Rh_Foam )
+
+
+    ! Foam Coverage calculation
+    ! -------------------------
+    CALL Foam_Coverage( Wind_Speed, iVar%Foam_Cover )
+
+
+    ! Small scale correction calculation
+    ! ----------------------------------
+    CALL Small_Scale_Correction( iVar%sdd_int, iVar%cos2_z, Frequency, &
+                                 iVar%Rv_Small, iVar%Rh_Small, &
+                                 iVar%R_STerm )
+    iVar%Rv = iVar%Rv_Fresnel * iVar%Rv_Small
+    iVar%Rh = iVar%Rh_Fresnel * iVar%Rh_Small
+
+
+    ! Large Scale Correction Calculation
+    ! ----------------------------------
+    CALL Large_Scale_Correction( Wind_Speed, Zenith_Angle, Frequency, &
+                                 Rv_Large, Rh_Large, &
+                                 iVar%Rv_Lterm, iVar%Rh_Lterm )
+    iVar%Rv = iVar%Rv + Rv_Large
+    iVar%Rh = iVar%Rh + Rh_Large
+
+
+    ! Emissivity Calculation
+    ! ----------------------
+    Emissivity(1) = ONE - (ONE-iVar%Foam_Cover)*iVar%Rv - iVar%Foam_Cover*iVar%Rv_Foam
+    Emissivity(2) = ONE - (ONE-iVar%Foam_Cover)*iVar%Rh - iVar%Foam_Cover*iVar%Rh_Foam
+
+  END SUBROUTINE OCEANEM_AMSRE
+  
+  
 !
-!---- Fresnel reflectivity Calculation
+!--------------------------------------------------------------------------------
 !
-  call FRESNEL(eps_ocean,csl,Rv_Fresnel,Rh_Fresnel)
-
-
-!
-!---- Foam reflectivity Calculation
-!
-  Fv = 1.0_fp - 9.946e-4_fp*satellite_zenith+ &
-       3.218e-5_fp*satellite_zenith**2 -1.187e-6_fp*satellite_zenith**3+ &
-       7.e-20_fp*satellite_zenith**10
-  Rv_Foam = 0.07_fp
-  Fh = 1.0_fp - 1.748e-3_fp*satellite_zenith- &
-       7.336e-5_fp*satellite_zenith**2+1.044e-7_fp*satellite_zenith**3
-  Rh_Foam = 1.0_fp - 0.93_fp*Fh
-
-
-!
-!---- Foam Coverage Calculation
-!
-  IF(wind .lt. 7.0_fp) THEN
-     Foam_Coverage = 0.0_fp
-  ELSE
-!     Foam_Coverage = 0.006_fp*(1.0_fp-exp(-freq*1.0e-9/7.5_fp))*(wind-7.0_fp)
-     Foam_Coverage = 7.751e-6_fp*wind**3.231
-  END IF
-
-
-!
-!---- Small Scale Correction Calculation
-!
-  IF ( freq > 15.0_fp) THEN
-    Rv_Small = exp( - sdd_intrp * csl2)
-    Rh_Small = exp( - sdd_intrp * csl2)
-  ELSE
-    Rv_Small = 1.0_fp
-    Rh_Small = 1.0_fp
-  END IF
-
-
-!
-!---- Modified Fresnel reflectivity Calculation
-!
-  Rv_modified_fresnel = Rv_Fresnel * Rv_Small
-  Rh_modified_fresnel = Rh_Fresnel * Rh_Small
-
-
-!
-!---- Large Scale Correction Calculation
-!
-  Rv_Large = wind * ( Coeff(1) + Coeff(2) * satellite_zenith + &
-            Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-  Rh_Large = wind * ( Coeff(4) + Coeff(5) * satellite_zenith + &
-            Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-
-
-!
-!---- Foam Clear Reflectivity Calculation
-!
-  Rv_Clear = Rv_modified_fresnel + Rv_Large 
-  Rh_Clear = Rh_modified_fresnel + Rh_Large 
-
-
-!
-!---- Emissivity Calculation
-!
-  Emissivity(1) = 1.0_fp - ( 1.0_fp - Foam_Coverage )* Rv_Clear - Foam_Coverage * Rv_Foam
-  Emissivity(2) = 1.0_fp - ( 1.0_fp - Foam_Coverage )* Rh_Clear - Foam_Coverage * Rh_Foam
-
-  RETURN   
-
-
- END SUBROUTINE OCEANEM_AMSRE
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
 ! NAME:
-!       OCEANEM_AMSRE_TL
+!       OceanEM_AMSRE_TL
 !
 ! PURPOSE:
 !       Subroutine to compute ocean emissivity tangent liner
 !
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       CALL OCEANEM_AMSRE_TL
+!       CALL OceanEM_AMSRE_TL
 !
 ! INPUT ARGUMENTS:
 !
@@ -1251,17 +1245,17 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         Sat_Zenith_Angle         The angle values in degree
+!         Zenith_Angle             The angle values in degree
 !                                  UNITS:      Degrees
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Rank-1, (I)
 !
-!         Surface_Temperature      Ocean surface temperature
+!         Temperature              Ocean surface temperature
 !                                  UNITS:      Kelvin, K
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         Surface_Temperature_tl   Ocean surface temperature tangent liner
+!         Temperature_TL           Ocean surface temperature tangent liner
 !                                  UNITS:      Kelvin, K
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
@@ -1271,243 +1265,127 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         Wind_Speed_tl            Ocean surface wind speed tangent liner
+!         Wind_Speed_TL            Ocean surface wind speed tangent liner
 !                                  UNITS:      m/s
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
 ! OUTPUT ARGUMENTS:
 ! 
-!         Emissivity_tl            The surface emissivity tangent liner at vertical and horizontal polarizations.
+!         Emissivity_TL            The tangent-linear surface emissivity at
+!                                  vertical and horizontal polarizations.
 !                                  UNITS:      N/A
 !                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  ONE
+!                                  DIMENSION:  Rank-1
 !
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!M-
-!------------------------------------------------------------------------------------------------------------
-  SUBROUTINE OCEANEM_AMSRE_TL(Frequency,                                         & ! INPUT
-                              Sat_Zenith_Angle,                                  & ! INPUT
-                              Surface_Temperature,                               & ! INPUT
-                              Surface_Temperature_tl,                            & ! INPUT
-                              Wind_Speed,                                        & ! INPUT
-                              Wind_Speed_tl,                                     & ! INPUT
-                              Emissivity_tl)                                       ! OUTPUT)
-!------------------------------------------------------------------------------------------------------------
-!
-  IMPLICIT NONE
+!--------------------------------------------------------------------------------
+  SUBROUTINE OCEANEM_AMSRE_TL(Frequency     , &  ! Input
+                              Zenith_Angle  , &  ! Input
+                              Temperature   , &  ! Input
+                              Temperature_TL, &  ! Input
+                              Wind_Speed    , &  ! Input
+                              Wind_Speed_TL , &  ! Input
+                              Emissivity_TL , &  ! Output
+                              iVar            )  ! Internal variable input
+    ! Arguments
+    REAL(fp),                    INTENT(IN)  :: Frequency
+    REAL(fp),                    INTENT(IN)  :: Zenith_Angle
+    REAL(fp),                    INTENT(IN)  :: Temperature
+    REAL(fp),                    INTENT(IN)  :: Wind_Speed
+    REAL(fp),                    INTENT(IN)  :: Temperature_TL
+    REAL(fp),                    INTENT(IN)  :: Wind_Speed_TL
+    REAL(fp),                    INTENT(OUT) :: Emissivity_TL(4)
+    TYPE(LFMWWSOVariables_type), INTENT(INout)  :: iVar
+    ! Local variables
+    REAL(fp)    :: Salinity, Salinity_TL
+    REAL(fp)    :: sdd_int_TL
+    COMPLEX(fp) :: Permittivity_TL
+    REAL(fp)    :: Foam_Cover_TL
+    REAL(fp)    :: Rv_Fresnel_TL, Rh_Fresnel_TL
+    REAL(fp)    :: Rv_Foam_TL   , Rh_Foam_TL
+    REAL(fp)    :: Rv_Small_TL  , Rh_Small_TL
+    REAL(fp)    :: Rv_Large_TL  , Rh_Large_TL
+    REAL(fp)    :: Rv_TL        , Rh_TL
 
-!
-! Declare passed variables.
-!
-  REAL(fp), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
-  REAL(fp), INTENT( IN ) ::  Surface_Temperature,Surface_Temperature_tl, Wind_Speed,Wind_Speed_tl
-  REAL(fp), INTENT( OUT ) ::  Emissivity_tl(4)
-
-!
-! Declare local variables
-!
-  INTEGER i,j
-
-  REAL(fp) frequency_sdd(100),wind_speed_sdd(40)
-  REAL(fp) freq,satellite_zenith,salinity
-
-  REAL(fp) x1,x2,y1,y2,sdd_intrp
-  REAL(fp) x1_tl,x2_tl,sdd_intrp_tl
-  REAL(fp) csl,csl2
-
-  REAL(fp) wind, wind_tl
-  REAL(fp) sst, sst_tl
-
-  COMPLEX(fp) :: eps_ocean,Rvv,Rhh
-  REAL(fp) :: real_Rvv,imag_Rvv
-  REAL(fp) :: real_Rhh,imag_Rhh
-  REAL(fp) :: real_Rvv_tl,imag_Rvv_tl
-  REAL(fp) :: real_Rhh_tl,imag_Rhh_tl
-  COMPLEX(fp) :: eps_ocean_tl,Rvv_tl,Rhh_tl
-
-  REAL(fp) ::  Rv_Fresnel, Rh_Fresnel 
-  REAL(fp) ::  Rv_modified_fresnel, Rh_modified_fresnel
-  REAL(fp) ::  Fv, Fh, Rv_Foam, Rh_Foam, Foam_Coverage
-  REAL(fp) ::  Rv_Small,Rh_Small
-  REAL(fp) ::  Rv_Large,Rh_Large
-  REAL(fp) ::  Rv_Clear,Rh_Clear
-
-  REAL(fp) ::  Rv_Fresnel_tl,Rh_Fresnel_tl
-  REAL(fp) ::  Rv_modified_fresnel_tl, Rh_modified_fresnel_tl
-  REAL(fp) ::  Rv_Foam_tl,Rh_Foam_tl, Foam_Coverage_tl
-  REAL(fp) ::  Rv_Small_tl,Rh_Small_tl
-  REAL(fp) ::  Rv_Large_tl,Rh_Large_tl
-  REAL(fp) ::  Rv_Clear_tl,Rh_Clear_tl
-
-  REAL(fp) :: wind_index
-  INTEGER Index_x,Index_y
+    ! TEMPORARY
+    REAL(fp) :: new_sdd(NPTS,NPTS)
+    ! TEMPORARY
 
 
-  DO i = 1,40  ! Wind speed
-    DO j = 1,100  ! Frequency
-      frequency_sdd(j) = 1.0_fp + 2.0_fp * real(j)
-      wind_speed_sdd(i) = 0.5_fp + (real(i) - 1.0_fp) * 0.5_fp
-    END DO
-  END DO
-
-  freq = Frequency
-  wind = Wind_Speed
-  wind_tl = Wind_Speed_tl
-  sst = Surface_Temperature
-  sst_tl = Surface_Temperature_tl
-
-  satellite_zenith = Sat_Zenith_Angle
-  salinity = 35.0_fp
-
-  wind_index = wind
-  IF(wind >= 20.0_fp ) wind_index = 19.9_fp
-  IF(wind <= 2.0_fp) wind_index = 2.001_fp
-  IF(freq >= 201.0_fp) freq = 200.9_fp
-  IF(freq <= 3.0_fp) freq = 3.1_fp
-
-  Index_x = int(wind_index)
-  IF(Index_x < 1) Index_x = 1
-  Index_y = int((freq - 1.0_fp)/2.0_fp)
+    ! Assign salinity defaults
+    ! ------------------------
+    Salinity    = DEFAULT_SALINITY
+    Salinity_TL = ZERO
 
 
-  y1 = ( frequency_sdd(Index_y+1) - freq ) / 2.0_fp
-  y2 = ( freq - frequency_sdd(Index_y) ) / 2.0_fp
-
-  x1 = ( wind_speed_sdd(Index_x+1) - wind ) / 0.5_fp
-  x1_tl = ( - wind_tl ) / 0.5_fp
-  x2 = ( wind - wind_speed_sdd(Index_x) ) / 0.5_fp
-  x2_tl = ( wind_tl ) / 0.5_fp
-
-  sdd_intrp = x2 * y2 * sdd(Index_x,Index_y) + x2 * y1 * sdd(Index_x,Index_y+1) + &
-              x1 * y2 * sdd(Index_x+1,Index_y) + x1 * y1 * sdd(Index_x+1,Index_y+1)
-  sdd_intrp_tl = x2_tl * y2 * sdd(Index_x,Index_y) + x2_tl * y1 * sdd(Index_x,Index_y+1) + &
-                 x1_tl * y2 * sdd(Index_x+1,Index_y) + x1_tl * y1 * sdd(Index_x+1,Index_y+1)
+    ! LUT interpolation
+    ! -----------------
+    new_sdd = TRANSPOSE(sdd(iVar%j1:iVar%j2,iVar%i1:iVar%i2))  ! TEMPORARY
+    CALL interp_2D_TL( new_sdd, &
+                       iVar%flp, iVar%wdlp, &
+                       Wind_Speed_TL, &
+                       sdd_int_TL )
 
 
-!
-!---- Permittivity Calculation
-!
-  IF(freq < 20.0_fp) THEN
-    CALL Compute_Guillou_eps_ocean(sst,salinity,freq,eps_ocean)
-    CALL Compute_Guillou_eps_ocean_TL(sst,sst_tl,salinity,freq,eps_ocean,eps_ocean_tl)
-  ELSE
-    CALL Compute_Ellison_eps_ocean(sst,salinity,freq,eps_ocean)
-    CALL Compute_Ellison_eps_ocean_TL(sst,sst_tl,salinity,freq,eps_ocean,eps_ocean_tl)
-  END IF
-  csl = cos(satellite_zenith*DEGREES_TO_RADIANS)
-  csl2 = csl*csl
+    ! Permittivity Calculation
+    ! ------------------------
+    IF( Frequency < LOW_F_THRESHOLD ) THEN
+      CALL Guillou_Ocean_Permittivity_TL( Temperature_TL, Salinity_TL, Frequency,&
+                                          Permittivity_TL, &
+                                          iVar%gpVar)
+    ELSE
+      CALL Ellison_Ocean_Permittivity_TL( Temperature_TL, Salinity_TL, Frequency, &
+                                          Permittivity_TL, &
+                                          iVar%epVar )
+    END IF
 
 
-!
-!---- Fresnel reflectivity Calculation
-!
-  call FRESNEL(eps_ocean,csl,Rv_Fresnel,Rh_Fresnel)
-  call FRESNEL_TL(eps_ocean,eps_ocean_tl,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_tl,Rh_Fresnel_tl)
+    ! Fresnel reflectivity calculation
+    ! --------------------------------
+    CALL Fresnel_Reflectivity_TL( Permittivity_TL, iVar%cos_z, &
+                                  Rv_Fresnel_TL, Rh_Fresnel_TL, &
+                                  iVar%fVar )
 
 
-!
-!---- Foam reflectivity Calculation
-!
-  Fv = 1.0_fp - 9.946e-4_fp*satellite_zenith+ &
-       3.218e-5_fp*satellite_zenith**2 -1.187e-6_fp*satellite_zenith**3+ &
-       7.e-20_fp*satellite_zenith**10
-  Rv_Foam = 0.07_fp
-  Rv_Foam_tl =  0.0_fp
-  Fh = 1.0_fp - 1.748e-3_fp*satellite_zenith- &
-       7.336e-5_fp*satellite_zenith**2+1.044e-7_fp*satellite_zenith**3
-  Rh_Foam = 1.0_fp - 0.93_fp*Fh
-  Rh_Foam_tl =  0.0_fp
+    ! Foam reflectivity "calculation"
+    ! -------------------------------
+    Rv_Foam_TL = ZERO
+    Rh_Foam_TL = ZERO
 
 
-!
-!---- Foam Coverage Calculation
-!
-  IF(wind .lt. 7.0_fp) THEN
-     Foam_Coverage = 0.0_fp
-  ELSE
-!     Foam_Coverage = 0.006_fp*(1.0_fp-exp(-freq*1.0e-9/7.5_fp))*(wind-7.0_fp)
-     Foam_Coverage = 7.751e-6_fp*wind**3.231
-  END IF
-
-  IF(wind .lt. 7.0_fp) THEN
-     Foam_Coverage_tl = 0.0_fp
-  ELSE
-!     Foam_Coverage_tl = 0.006_fp*(1.0_fp-exp(-freq*1.0e-9/7.5_fp))*wind_tl
-     Foam_Coverage_tl = 3.231_fp * 7.751e-6_fp*wind**2.231 * wind_tl
-  END IF
+    ! Foam coverage calculation
+    ! -------------------------
+    CALL Foam_Coverage_TL( Wind_Speed, Wind_Speed_TL, Foam_Cover_TL )
 
 
-!
-!---- Small Scale Correction Calculation
-!
-  IF ( freq > 15.0_fp) THEN
-    Rv_Small = exp( - sdd_intrp * csl2)
-    Rh_Small = exp( - sdd_intrp * csl2)
-    Rv_Small_tl = -csl2 * exp( - sdd_intrp * csl2) * sdd_intrp_tl
-    Rh_Small_tl = -csl2 * exp( - sdd_intrp * csl2) * sdd_intrp_tl
-  ELSE
-    Rv_Small = 1.0_fp
-    Rh_Small = 1.0_fp
-    Rv_Small_tl = 0.0_fp
-    Rh_Small_tl = 0.0_fp
-  END IF
+    ! Small scale correction calculation
+    ! ----------------------------------
+    CALL Small_Scale_Correction_TL( sdd_int_TL, iVar%cos2_z, Frequency, &
+                                    Rv_Small_TL, Rh_Small_TL, &
+                                    iVar%R_STerm )
+    Rv_TL = iVar%Rv_Fresnel*Rv_Small_TL + Rv_Fresnel_TL*iVar%Rv_Small
+    Rh_TL = iVar%Rh_Fresnel*Rh_Small_TL + Rh_Fresnel_TL*iVar%Rh_Small
 
 
-!
-!---- Modified Fresnel reflectivity Calculation
-!
-  Rv_modified_fresnel = Rv_Fresnel * Rv_Small
-  Rh_modified_fresnel = Rh_Fresnel * Rh_Small
+    ! Large scale correction calculation
+    ! ----------------------------------
+    CALL Large_Scale_Correction_TL( Wind_Speed_TL, Rv_Large_TL, Rh_Large_TL, &
+                                    iVar%Rv_Lterm, iVar%Rh_Lterm )
+    Rv_TL = Rv_TL + Rv_Large_TL
+    Rh_TL = Rh_TL + Rh_Large_TL
 
-  Rv_modified_fresnel_tl = Rv_Fresnel_tl * Rv_Small + Rv_Fresnel * Rv_Small_tl
-  Rh_modified_fresnel_tl = Rh_Fresnel_tl * Rh_Small + Rh_Fresnel * Rh_Small_tl
+    
+    ! Emissivity calculation
+    ! ----------------------
+    Emissivity_TL(1) = (iVar%Foam_Cover-ONE)*Rv_TL + &
+                       (iVar%Rv-iVar%Rv_Foam)*Foam_Cover_TL - &
+                       iVar%Foam_Cover*Rv_Foam_TL
+    Emissivity_TL(2) = (iVar%Foam_Cover-ONE)*Rh_TL + &
+                       (iVar%Rh-iVar%Rh_Foam)*Foam_Cover_TL - &
+                       iVar%Foam_Cover*Rh_Foam_TL
 
-!
-!---- Large Scale Correction Calculation
-!
-  Rv_Large = wind * ( Coeff(1) + Coeff(2) * satellite_zenith + &
-            Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-  Rh_Large = wind * ( Coeff(4) + Coeff(5) * satellite_zenith + &
-            Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-
-  Rv_Large_tl = wind_tl * ( Coeff(1) + Coeff(2) * satellite_zenith + &
-                Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-  Rh_Large_tl = wind_tl * ( Coeff(4) + Coeff(5) * satellite_zenith + &
-                Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-
-!
-!---- Foam Clear Reflectivity Calculation
-!
-  Rv_Clear = Rv_modified_fresnel + Rv_Large
-  Rh_Clear = Rh_modified_fresnel + Rh_Large
-  Rv_Clear_tl = Rv_modified_fresnel_tl + Rv_Large_tl
-  Rh_Clear_tl = Rh_modified_fresnel_tl + Rh_Large_tl
-
-!
-!---- Emissivity Calculation
-!
-
-  Emissivity_tl(1) =  - ( - Foam_Coverage_tl )* Rv_Clear  - &
-                        ( 1.0_fp - Foam_Coverage )* Rv_Clear_tl - &
-                        Foam_Coverage_tl * Rv_Foam - Foam_Coverage * Rv_Foam_tl
-  Emissivity_tl(2) =  - ( - Foam_Coverage_tl )* Rh_Clear  - &
-                        ( 1.0_fp - Foam_Coverage )* Rh_Clear_tl - &
-                        Foam_Coverage_tl * Rh_Foam - Foam_Coverage * Rh_Foam_tl
-
-
-  RETURN  
-
-
- END SUBROUTINE OCEANEM_AMSRE_TL
+  END SUBROUTINE OCEANEM_AMSRE_TL
+  
 !
 !!------------------------------------------------------------------------------------------------------------
 !M+
@@ -1534,7 +1412,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         Sat_Zenith_Angle         The angle values in degree
+!         Zenith_Angle             The angle values in degree
 !                                  UNITS:      Degrees
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Rank-1, (I)
@@ -1549,19 +1427,19 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         Emissivity_ad            The surface emissivity adjoint at vertical and horizontal polarizations.
+!         Emissivity_AD            The surface emissivity adjoint at vertical and horizontal polarizations.
 !                                  UNITS:      N/A
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  ONE
 !
 ! OUTPUT ARGUMENTS:
 ! 
-!         Surface_Temperature_ad   Ocean surface temperature adjoint
+!         Surface_Temperature_AD   Ocean surface temperature adjoint
 !                                  UNITS:      Kelvin, K
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !
-!         Wind_Speed_ad            Ocean surface wind speed adjoint
+!         Wind_Speed_AD            Ocean surface wind speed adjoint
 !                                  UNITS:      m/s
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
@@ -1576,1604 +1454,312 @@ CONTAINS
 !       None.
 !
 !------------------------------------------------------------------------------------------------------------
-  SUBROUTINE OCEANEM_AMSRE_AD(Frequency,                                         & ! INPUT
-                              Sat_Zenith_Angle,                                  & ! INPUT
-                              Surface_Temperature,                               & ! INPUT
-                              Surface_Temperature_ad,                            & ! INPUT/OUTPUT
-                              Wind_Speed,                                        & ! INPUT
-                              Wind_Speed_ad,                                     & ! INPUT/OUTPUT
-                              Emissivity_ad)                                       ! INPUT)
-!------------------------------------------------------------------------------------------------------------
-  USE TYPE_Kinds
-!
-  IMPLICIT NONE
-! Declare passed variables.
-!
-  REAL(fp), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
-  REAL(fp), INTENT( IN ) ::  Surface_Temperature,Wind_Speed
-  REAL(fp), INTENT( IN OUT ) ::  Surface_Temperature_ad,Wind_Speed_ad
-  REAL(fp), INTENT( IN ) ::  Emissivity_ad(4)
-
-!
-! Declare local variables
-!
-  INTEGER i,j
-
-  REAL(fp) frequency_sdd(100),wind_speed_sdd(40)
-  REAL(fp) freq,satellite_zenith,salinity
-
-  REAL(fp) x1,x2,y1,y2,sdd_intrp
-  REAL(fp) x1_ad,x2_ad,sdd_intrp_ad
-
-  REAL(fp) csl,csl2
-
-  REAL(fp) ::  wind,wind_ad
-  REAL(fp) ::  sst,sst_ad
-
-  COMPLEX(fp) :: eps_ocean,Rvv,Rhh
-  COMPLEX(fp) :: eps_ocean_ad,Rvv_ad,Rhh_ad
-
-
-  REAL(fp) ::  Rv_Fresnel, Rh_Fresnel
-  REAL(fp) ::  Rv_modified_fresnel, Rh_modified_fresnel
-  REAL(fp) ::  Fv, Fh, Rv_Foam, Rh_Foam, Foam_Coverage
-  REAL(fp) ::  Rv_Small,Rh_Small
-  REAL(fp) ::  Rv_Large,Rh_Large
-  REAL(fp) ::  Rv_Clear,Rh_Clear
-
-  REAL(fp) ::  Rv_Fresnel_ad,Rh_Fresnel_ad
-  REAL(fp) ::  Rv_modified_fresnel_ad, Rh_modified_fresnel_ad
-  REAL(fp) ::  Rv_Foam_ad,Rh_Foam_ad, Foam_Coverage_ad
-  REAL(fp) ::  Rv_Small_ad,Rh_Small_ad
-  REAL(fp) ::  Rv_Large_ad,Rh_Large_ad
-  REAL(fp) ::  Rv_Clear_ad,Rh_Clear_ad
-
-  REAL(fp) :: real_Rhh,imag_Rhh
-  REAL(fp) :: real_Rvv,imag_Rvv
-  REAL(fp) :: real_Rhh_ad,imag_Rhh_ad
-  REAL(fp) :: real_Rvv_ad,imag_Rvv_ad
-
-  REAL(fp) :: wind_index
-  INTEGER Index_x,Index_y
-
-! Initialization
-  wind_ad = 0.0_fp
-  sst_ad = 0.0_fp
-  x1_ad = 0.0_fp
-  x2_ad = 0.0_fp
-  sdd_intrp_ad = 0.0_fp
-  eps_ocean_ad = (0.0_fp,0.0_fp)
-  Rvv_ad = (0.0_fp,0.0_fp)
-  Rhh_ad = (0.0_fp,0.0_fp)
-  Rv_Fresnel_ad = 0.0_fp
-  Rh_Fresnel_ad = 0.0_fp
-  Rv_modified_fresnel_ad = 0.0_fp
-  Rh_modified_fresnel_ad = 0.0_fp
-  Rv_Foam_ad = 0.0_fp
-  Rh_Foam_ad = 0.0_fp
-  Foam_Coverage_ad = 0.0_fp
-  Rv_Small_ad = 0.0_fp
-  Rh_Small_ad = 0.0_fp
-  Rv_Large_ad = 0.0_fp
-  Rh_Large_ad = 0.0_fp
-  real_Rhh_ad = 0.0_fp
-  imag_Rhh_ad = 0.0_fp
-  real_Rvv_ad = 0.0_fp
-  imag_Rvv_ad = 0.0_fp
-
-  Surface_Temperature_ad = 0.0_fp
-  Wind_Speed_ad = 0.0_fp
-!-----------------------------
-!
-!---- START Forward model ----
-!
-!-----------------------------
-  DO i = 1,40  ! Wind speed
-    DO j = 1,100  ! Frequency
-      frequency_sdd(j) = 1.0_fp + 2.0_fp * real(j)
-      wind_speed_sdd(i) = 0.5_fp + (real(i) - 1.0_fp) * 0.5_fp
-    END DO
-  END DO
-
-  freq = Frequency
-  wind = Wind_Speed
-  sst = Surface_Temperature
-  satellite_zenith = Sat_Zenith_Angle
-  salinity = 35.0_fp
-
-  wind_index = wind
-  IF(wind >= 20.0_fp ) wind_index = 19.9_fp
-  IF(wind <= 2.0_fp) wind_index = 2.001_fp
-  IF(freq >= 201.0_fp) freq = 200.9_fp
-  IF(freq <= 3.0_fp) freq = 3.1_fp
-
-  Index_x = int(wind_index)
-  IF(Index_x < 1) Index_x = 1
-  Index_y = int((freq - 1.0_fp)/2.0_fp)
-
-  y1 = ( frequency_sdd(Index_y+1) - freq ) / 2.0_fp
-  y2 = ( freq - frequency_sdd(Index_y) ) / 2.0_fp
-  x1 = ( wind_speed_sdd(Index_x+1) - wind ) / 0.5_fp
-  x2 = ( wind - wind_speed_sdd(Index_x) ) / 0.5_fp
-  sdd_intrp = x2 * y2 * sdd(Index_x,Index_y) + x2 * y1 * sdd(Index_x,Index_y+1) + &
-              x1 * y2 * sdd(Index_x+1,Index_y) + x1 * y1 * sdd(Index_x+1,Index_y+1)
-
-!
-!---- Permittivity Calculation
-!
-  IF(freq < 20.0_fp) THEN
-    CALL Compute_Guillou_eps_ocean(sst,salinity,freq,eps_ocean)
-  ELSE
-    CALL Compute_Ellison_eps_ocean(sst,salinity,freq,eps_ocean)
-  END IF
-  csl = cos(satellite_zenith*DEGREES_TO_RADIANS)
-  csl2 = csl*csl
-
-
-!
-!---- Fresnel reflectivity Calculation
-!
-  call FRESNEL(eps_ocean,csl,Rv_Fresnel,Rh_Fresnel)
-
-
-!
-!---- Foam reflectivity Calculation
-!
-  Fv = 1.0_fp - 9.946e-4_fp*satellite_zenith+ &
-       3.218e-5_fp*satellite_zenith**2 -1.187e-6_fp*satellite_zenith**3+ &
-       7.e-20_fp*satellite_zenith**10
-  Rv_Foam = 0.07_fp
-  Fh = 1.0_fp - 1.748e-3_fp*satellite_zenith- &
-       7.336e-5_fp*satellite_zenith**2+1.044e-7_fp*satellite_zenith**3
-  Rh_Foam = 1.0_fp - 0.93_fp*Fh
-
-
-!
-!---- Foam Coverage Calculation
-!
-  IF(wind .lt. 7.0_fp) THEN
-     Foam_Coverage = 0.0_fp
-  ELSE
-!     Foam_Coverage = 0.006_fp*(1.0_fp-exp(-freq*1.0e-9/7.5_fp))*(wind-7.0_fp)
-     Foam_Coverage = 7.751e-6_fp*wind**3.231
-  END IF
-
-
-!
-!---- Small Scale Correction Calculation
-!
-  IF ( freq > 15.0_fp) THEN
-    Rv_Small = exp( - sdd_intrp * csl2)
-    Rh_Small = exp( - sdd_intrp * csl2)
-  ELSE
-    Rv_Small = 1.0_fp
-    Rh_Small = 1.0_fp
-  END IF
-
-
-!
-!---- Modified Fresnel reflectivity Calculation
-!
-  Rv_modified_fresnel = Rv_Fresnel * Rv_Small
-  Rh_modified_fresnel = Rh_Fresnel * Rh_Small
-
-
-!
-!---- Large Scale Correction Calculation
-!
-  Rv_Large = wind * ( Coeff(1) + Coeff(2) * satellite_zenith + &
-            Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-  Rh_Large = wind * ( Coeff(4) + Coeff(5) * satellite_zenith + &
-            Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
-
-
-!
-!---- Foam Clear Reflectivity Calculation
-!
-  Rv_Clear = Rv_modified_fresnel + Rv_Large 
-  Rh_Clear = Rh_modified_fresnel + Rh_Large 
-
-
-
-!-----------------------------
-!
-!---- START Adjoint model ----
-!
-!-----------------------------
-!
-!
-!---- Emissivity Calculation
-!
-   Foam_Coverage_ad =  + (Rh_Clear - Rh_Foam ) * Emissivity_ad(2)
-   Rh_Clear_ad      =  - ( 1.0_fp - Foam_Coverage ) * Emissivity_ad(2)
-   Rh_Foam_ad       =  - Foam_Coverage * Emissivity_ad(2)
-
-   Foam_Coverage_ad = Foam_Coverage_ad +  (Rv_Clear - Rv_Foam ) * Emissivity_ad(1)
-   Rv_Clear_ad      =  -  ( 1.0_fp - Foam_Coverage ) * Emissivity_ad(1)
-   Rv_Foam_ad       =  - Foam_Coverage * Emissivity_ad(1)
-
-
-!
-!---- Foam Clear Reflectivity Calculation
-!
-   Rh_modified_fresnel_ad = Rh_Clear_ad
-   Rh_Large_ad            = Rh_Clear_ad
-   Rv_modified_fresnel_ad = Rv_Clear_ad
-   Rv_Large_ad            = Rv_Clear_ad
-
-
-!
-!---- Large Scale Correction Calculation
-!
-   wind_ad = ( Coeff(4) + Coeff(5) * satellite_zenith + &
-               Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)*Rh_Large_ad
-   wind_ad = wind_ad + ( Coeff(1) + Coeff(2) * satellite_zenith + &
-               Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)*Rv_Large_ad
-
-
-!
-!---- Modified Fresnel reflectivity Calculation
-!
-   Rh_Fresnel_ad = Rh_Small   * Rh_modified_fresnel_ad
-   Rh_Small_ad   = Rh_Fresnel * Rh_modified_fresnel_ad
-   Rv_Fresnel_ad = Rv_Small   * Rv_modified_fresnel_ad
-   Rv_Small_ad   = Rv_Fresnel * Rv_modified_fresnel_ad
-
-
-!
-!---- Small Scale Correction Calculation
-!
-  IF ( freq > 15.0_fp) THEN  
-   sdd_intrp_ad = - csl2 * exp( - sdd_intrp * csl2) * Rh_Small_ad
-   sdd_intrp_ad = sdd_intrp_ad  -csl2  * exp( - sdd_intrp * csl2)  * Rv_Small_ad
-  ELSE
-   sdd_intrp_ad = 0.0_fp
-  END IF
-
-
-!
-!---- Foam Coverage Calculation
-!
-   IF(wind .ge. 7.0_fp) THEN
-!     wind_ad = wind_ad + ( 0.006_fp*(1.0_fp-exp(-freq*1.0e-9/7.5_fp)) ) * Foam_Coverage_ad
-     wind_ad = wind_ad + (3.231_fp * 7.751e-6_fp*wind**2.231 ) * Foam_Coverage_ad
-   END IF
-
-!
-!---- Foam reflectivity Calculation
-!
-
-!   SST_ad = ((208.0_fp+1.29e-9_fp*freq)/SST**2)*Fh * Rh_Foam_ad
-!   SST_ad = SST_ad +  ((208.0_fp+1.29e-9_fp*freq)/SST**2)*Fv * Rv_Foam_ad
-
-
-
-!
-!---- Fresnel reflectivity Calculation
-!
-  call FRESNEL_AD(eps_ocean,eps_ocean_ad,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_ad,Rh_Fresnel_ad)
-
-
-!
-!---- Permittivity Calculation
-!
-  IF(freq < 20.0_fp) THEN
-    CALL Compute_Guillou_eps_ocean_AD(sst,sst_ad,salinity,freq,eps_ocean,eps_ocean_ad)
-  ELSE
-    CALL Compute_Ellison_eps_ocean_AD(sst,sst_ad,salinity,freq,eps_ocean,eps_ocean_ad)
-  END IF
-
-
-  x2_ad =  ( y2 * sdd(Index_x,Index_y) +  y1 * sdd(Index_x,Index_y+1) ) * sdd_intrp_ad
-  x1_ad =  ( y2 * sdd(Index_x+1,Index_y) + y1 * sdd(Index_x+1,Index_y+1) )  * sdd_intrp_ad
-
-  wind_ad = wind_ad + x2_ad/0.5_fp
-  wind_ad = wind_ad - x1_ad/0.5_fp
-
-
-  Surface_Temperature_ad =  sst_ad
-  Wind_Speed_ad =  wind_ad
-
-
-  RETURN
-
-END SUBROUTINE OCEANEM_AMSRE_AD
-
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Ellison_eps_ocean
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Ellison_eps_ocean
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!
-!  Ellison, W. J. et al. (2003) A comparison of ocean emissivity models using the Advanced Microwave Sounding Unit,
-!                               the Special Sensor Microwave Imager, the TRMM Microwave Imager, and 
-!                               airborne radiometer observations. Journal of Geophysical Research, 108, 4663
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-  SUBROUTINE Compute_Ellison_eps_ocean(SST, & ! Input, Water temperature in Kelvin
-                                       S, & ! Input, Salinity in parts per thousand
-                                       f, & ! Input, Frequency in GHz
-                                       eps_ocean) ! Output, permitivity
-!------------------------------------------------------------------------------------------------------------
-  USE Type_Kinds
-  IMPLICIT NONE
-  REAL(fp), INTENT( IN ) :: SST, S, F
-  COMPLEX(fp), INTENT( OUT ) :: eps_ocean
-
-  ! internal variables
-  REAL(fp) :: t,t2,eswi,eo,eswo,a,b,d,esw,tswo,tsw,sswo,fi,ssw,eps_imag,eps_real
-  REAL(fp) :: fen,fen_sq,den1,den2,perm_real1,perm_real2,perm_imag1,perm_imag2
-  REAL(fp) :: tcelsius,tcelsius_sq,tcelsius_cu,f1,f2,del1,del2,einf
-  REAL(fp) :: perm_free,sigma,perm_imag3,perm_Real,perm_imag
-
-    !-----------------------------------------------------
-    !1.2 calculate permittivity using double-debye formula
-    !-----------------------------------------------------
-    !Set values for temperature polynomials (convert from kelvin to celsius)
-    tcelsius = SST - 273.15_fp
-    tcelsius_sq = tcelsius * tcelsius     !quadratic
-    tcelsius_cu = tcelsius_sq * tcelsius  !cubic
-
-    !Define two relaxation frequencies, f1 and f2
-    f1 = 17.5350_fp - 0.617670_fp * tcelsius + 0.00894800_fp * tcelsius_sq
-    f2 = 3.18420_fp + 0.0191890_fp * tcelsius - 0.0108730_fp * tcelsius_sq + 0.000258180_fp * tcelsius_cu
-
-    !Static permittivity estatic = del1+del2+einf
-    del1 = 68.3960_fp - 0.406430_fp * tcelsius + 0.0228320_fp * tcelsius_sq - 0.000530610_fp * tcelsius_cu
-    del2 = 4.76290_fp + 0.154100_fp * tcelsius - 0.0337170_fp * tcelsius_sq + 0.000844280_fp * tcelsius_cu
-    einf = 5.31250_fp - 0.0114770_fp * tcelsius
-    fen          = 2.0_fp * PI * f * 0.001_fp
-    fen_sq       = fen*fen
-    den1         = 1.0_fp + fen_sq * f1 * f1
-    den2         = 1.0_fp + fen_sq * f2 * f2
-    perm_real1   = del1 / den1
-    perm_real2   = del2 / den2
-    perm_imag1   = del1 * fen * f1 / den1
-    perm_imag2   = del2 * fen * f2 / den2
-    ! perm_free = 8.854E-3_fp not 8.854E-12 as multiplied by 1E9 for GHz
-    perm_free    = 8.854E-3_fp
-    sigma        = 2.906_fp + 0.09437_fp * tcelsius
-    perm_imag3   = sigma / (2.0_fp * PI * perm_free * f)
-    perm_Real    = perm_real1 + perm_real2 + einf
-    perm_imag    = perm_imag1 + perm_imag2 + perm_imag3
-    eps_ocean = cmplx(perm_Real,perm_imag,fp)
-
-  RETURN
- END SUBROUTINE Compute_Ellison_eps_ocean
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Ellison_eps_ocean_TL
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Ellison_eps_ocean_TL
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         SST_tl                   Sea Surface Temperature tangent liner
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_tl             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!
-!  Ellison, W. J. et al. (2003) A comparison of ocean emissivity models using the Advanced Microwave Sounding Unit,
-!                               the Special Sensor Microwave Imager, the TRMM Microwave Imager, and 
-!                               airborne radiometer observations. Journal of Geophysical Research, 108, 4663
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-  SUBROUTINE Compute_Ellison_eps_ocean_TL(SST, & ! Input, Water temperature in Kelvin
-                                          SST_tl, & 
-                                          S, & ! Input, Salinity in parts per thousand
-                                          f, & ! Input, Frequency in GHz
-                                          eps_ocean, & ! Output, permitivity
-                                          eps_ocean_tl) ! Output
-!------------------------------------------------------------------------------------------------------------
-  USE Type_Kinds
-  IMPLICIT NONE
-  REAL(fp), INTENT( IN ) :: SST, SST_tl, S, F
-  COMPLEX(fp), INTENT( OUT ) :: eps_ocean,eps_ocean_tl
-
-  ! internal variables
-  REAL(fp) :: t,t2,eswi,eo,eswo,a,b,d,esw,tswo,tsw,sswo,fi,ssw,eps_imag,eps_real
-  REAL(fp) :: fen,fen_sq,den1,den2,perm_real1,perm_real2,perm_imag1,perm_imag2
-  REAL(fp) :: tcelsius,tcelsius_sq,tcelsius_cu,f1,f2,del1,del2,einf
-  REAL(fp) :: perm_free,sigma,perm_imag3,perm_Real,perm_imag
-
-  REAL(fp) :: tcelsius_tl,tcelsius_sq_tl,tcelsius_cu_tl
-  REAL(fp) :: f1_tl,f2_tl
-  REAL(fp) :: del1_tl,del2_tl,einf_tl
-  REAL(fp) :: den1_tl,den2_tl,perm_real1_tl,perm_real2_tl
-  REAL(fp) :: perm_imag1_tl,perm_imag2_tl,sigma_tl,perm_imag3_tl
-  REAL(fp) :: perm_Real_tl,perm_imag_tl
-
-    !-----------------------------------------------------
-    !1.2 calculate permittivity using double-debye formula
-    !-----------------------------------------------------
-    !Set values for temperature polynomials (convert from kelvin to celsius)
-    tcelsius = SST - 273.15_fp
-    tcelsius_sq = tcelsius * tcelsius     !quadratic
-    tcelsius_cu = tcelsius_sq * tcelsius  !cubic
-    tcelsius_tl = SST_tl
-    tcelsius_sq_tl = 2.0_fp * tcelsius * tcelsius_tl
-    tcelsius_cu_tl = 3.0_fp * tcelsius_sq * tcelsius_tl
-
-    !Define two relaxation frequencies, f1 and f2
-    f1 = 17.5350_fp - 0.617670_fp * tcelsius + 0.00894800_fp * tcelsius_sq
-    f2 = 3.18420_fp + 0.0191890_fp * tcelsius - 0.0108730_fp * tcelsius_sq + 0.000258180_fp * tcelsius_cu
-    f1_tl = - 0.617670_fp * tcelsius_tl + 0.00894800_fp * tcelsius_sq_tl
-    f2_tl =  0.0191890_fp * tcelsius_tl - 0.0108730_fp * tcelsius_sq_tl + 0.000258180_fp * tcelsius_cu_tl
-
-    !Static permittivity estatic = del1+del2+einf
-    del1 = 68.3960_fp -0.406430_fp * tcelsius + 0.0228320_fp * tcelsius_sq - 0.000530610_fp * tcelsius_cu
-    del2 = 4.76290_fp + 0.154100_fp * tcelsius -0.0337170_fp * tcelsius_sq + 0.000844280_fp * tcelsius_cu
-    einf = 5.31250_fp - 0.0114770_fp * tcelsius
-    del1_tl = -0.406430_fp * tcelsius_tl + 0.0228320_fp * tcelsius_sq_tl - 0.000530610_fp * tcelsius_cu_tl
-    del2_tl =  0.154100_fp * tcelsius_tl -0.0337170_fp * tcelsius_sq_tl + 0.000844280_fp * tcelsius_cu_tl
-    einf_tl = -0.0114770_fp * tcelsius_tl
-
-
-    fen          = 2.0_fp * PI * f * 0.001_fp
-    fen_sq       = fen*fen
-    den1         = 1.0_fp + fen_sq * f1 * f1
-    den2         = 1.0_fp + fen_sq * f2 * f2
-    perm_real1   = del1 / den1
-    perm_real2   = del2 / den2
-    perm_imag1   = del1 * fen * f1 / den1
-    perm_imag2   = del2 * fen * f2 / den2
-    ! perm_free = 8.854E-3_fp not 8.854E-12 as multiplied by 1E9 for GHz
-    perm_free    = 8.854E-3_fp
-    sigma        = 2.906_fp + 0.09437_fp * tcelsius
-    perm_imag3   = sigma / (2.0_fp * PI * perm_free * f)
-    perm_Real    = perm_real1 + perm_real2 + einf
-    perm_imag    = perm_imag1 + perm_imag2 + perm_imag3
-    eps_ocean = cmplx(perm_Real,perm_imag,fp)
-
-
-    den1_tl         = 2.0_fp * fen_sq * f1 * f1_tl
-    den2_tl         = 2.0_fp * fen_sq * f2 * f2_tl
-    perm_real1_tl   = (den1 * del1_tl - del1 * den1_tl) / (den1 * den1)
-    perm_real2_tl   = (den2 * del2_tl - del2 * den2_tl) / (den2 * den2)
-    perm_imag1_tl   = fen * ( den1 * ( del1_tl * f1 + del1 * f1_tl)&
-                    & - (del1 * f1 * den1_tl) )  / (den1 * den1)
-    perm_imag2_tl   = fen * ( den2 * ( del2_tl * f2 + del2 * f2_tl)&
-                    & - (del2 * f2 * den2_tl) )  / (den2 * den2)
-    sigma_tl        = 0.09437_fp * tcelsius_tl
-    perm_imag3_tl   = sigma_tl / (2.0_fp * PI * perm_free * f)
-    perm_Real_tl    = perm_real1_tl + perm_real2_tl + einf_tl
-    perm_imag_tl    = perm_imag1_tl + perm_imag2_tl + perm_imag3_tl
-    eps_ocean_tl = cmplx(perm_Real_tl,perm_imag_tl,fp)
-
-  RETURN
-
- END SUBROUTINE Compute_Ellison_eps_ocean_TL
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Ellison_eps_ocean_AD
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity adjoint
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Ellison_eps_ocean_AD
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_ad             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         SST_ad                   Sea Surface Temperature adjoint
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!
-!  Ellison, W. J. et al. (2003) A comparison of ocean emissivity models using the Advanced Microwave Sounding Unit,
-!                               the Special Sensor Microwave Imager, the TRMM Microwave Imager, and 
-!                               airborne radiometer observations. Journal of Geophysical Research, 108, 4663
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-SUBROUTINE Compute_Ellison_eps_ocean_AD(SST, & ! Input, Water temperature in Kelvin
-                                        SST_ad, & 
-                                        S, & ! Input, Salinity in parts per thousand
-                                        f, & ! Input, Frequency in GHz
-                                        eps_ocean, & ! Output, permitivity
-                                        eps_ocean_ad)
-!------------------------------------------------------------------------------------------------------------
-  USE Type_Kinds
-  IMPLICIT NONE
-  REAL(fp), INTENT( IN ) :: SST, S, F
-  COMPLEX(fp), INTENT( OUT ) :: eps_ocean
-  REAL(fp), INTENT( IN OUT ) :: SST_ad
-  COMPLEX(fp), INTENT( IN ) :: eps_ocean_ad
-
-  REAL(fp) :: t,t2,eswi,eo,eswo,a,b,d,esw,tswo,tsw,sswo,fi,ssw,eps_imag,eps_real
-  REAL(fp) :: fen,fen_sq,den1,den2,perm_real1,perm_real2,perm_imag1,perm_imag2
-  REAL(fp) :: tcelsius,tcelsius_sq,tcelsius_cu,f1,f2,del1,del2,einf
-  REAL(fp) :: perm_free,sigma,perm_imag3,perm_Real,perm_imag
-
-  REAL(fp) :: tcelsius_ad,tcelsius_sq_ad,tcelsius_cu_ad
-  REAL(fp) :: f1_ad,f2_ad
-  REAL(fp) :: del1_ad,del2_ad,einf_ad
-  REAL(fp) :: den1_ad,den2_ad,perm_real1_ad,perm_real2_ad
-  REAL(fp) :: perm_imag1_ad,perm_imag2_ad,sigma_ad,perm_imag3_ad
-  REAL(fp) :: perm_Real_ad,perm_imag_ad
-
-! Initialize
-     tcelsius_ad = 0.0_fp
-     tcelsius_sq_ad = 0.0_fp
-     tcelsius_cu_ad = 0.0_fp
-     f1_ad = 0.0_fp
-     f2_ad = 0.0_fp
-     del1_ad = 0.0_fp
-     del2_ad = 0.0_fp
-     einf_ad = 0.0_fp
-     den1_ad = 0.0_fp
-     den2_ad = 0.0_fp
-     perm_real1_ad = 0.0_fp
-     perm_real2_ad = 0.0_fp
-     perm_imag1_ad = 0.0_fp
-     perm_imag2_ad = 0.0_fp
-     sigma_ad = 0.0_fp
-     perm_imag3_ad = 0.0_fp
-     perm_Real_ad = 0.0_fp
-     perm_imag_ad = 0.0_fp
-
-!----------- forward
-
-    !-----------------------------------------------------
-    !1.2 calculate permittivity using double-debye formula
-    !-----------------------------------------------------
-    !Set values for temperature polynomials (convert from kelvin to celsius)
-    tcelsius = SST - 273.15_fp
-    tcelsius_sq = tcelsius * tcelsius     !quadratic
-    tcelsius_cu = tcelsius_sq * tcelsius  !cubic
-
-    !Define two relaxation frequencies, f1 and f2
-    f1 = 17.5350_fp -0.617670_fp * tcelsius + 0.00894800_fp * tcelsius_sq
-    f2 = 3.18420_fp + 0.0191890_fp * tcelsius -0.0108730_fp * tcelsius_sq + 0.000258180_fp * tcelsius_cu
-
-    !Static permittivity estatic = del1+del2+einf
-    del1 = 68.3960_fp - 0.406430_fp * tcelsius + 0.0228320_fp * tcelsius_sq -0.000530610_fp * tcelsius_cu
-    del2 = 4.76290_fp + 0.154100_fp * tcelsius -0.0337170_fp * tcelsius_sq + 0.000844280_fp * tcelsius_cu
-    einf = 5.31250_fp - 0.0114770_fp * tcelsius
-    fen          = 2.0_fp * PI * f * 0.001_fp
-    fen_sq       = fen*fen
-    den1         = 1.0_fp + fen_sq * f1 * f1
-    den2         = 1.0_fp + fen_sq * f2 * f2
-    perm_real1   = del1 / den1
-    perm_real2   = del2 / den2
-    perm_imag1   = del1 * fen * f1 / den1
-    perm_imag2   = del2 * fen * f2 / den2
-    ! perm_free = 8.854E-3_fp not 8.854E-12 as multiplied by 1E9 for GHz
-    perm_free    = 8.854E-3_fp
-    sigma        = 2.906_fp + 0.09437_fp * tcelsius
-    perm_imag3   = sigma / (2.0_fp * PI * perm_free * f)
-    perm_Real    = perm_real1 + perm_real2 + einf
-    perm_imag    = perm_imag1 + perm_imag2 + perm_imag3
-    eps_ocean = cmplx(perm_Real,perm_imag,fp)
-
-
-!----------- adjoint
-
-        perm_Real_ad =  real( eps_ocean_ad )
-        perm_imag_ad =  -aimag( eps_ocean_ad )
-
-        perm_imag1_ad = perm_imag_ad
-        perm_imag2_ad = perm_imag_ad
-        perm_imag3_ad = perm_imag_ad
-
-        einf_ad       = perm_real_ad
-        perm_real1_ad = perm_real_ad
-        perm_real2_ad = perm_real_ad
-
-        sigma_ad = perm_imag3_ad / (2.0_fp * PI * perm_free * f)
-        tcelsius_ad = 0.09437_fp * sigma_ad
-
-        del2_ad =  perm_imag2_ad * fen * den2 * f2  / (den2 * den2)
-        den2_ad = -perm_imag2_ad * fen * del2 * f2  / (den2 * den2)
-        f2_ad   =  perm_imag2_ad * fen * den2 * del2/ (den2 * den2)
-
-        del1_ad =  perm_imag1_ad * fen * den1 * f1  / (den1 * den1)
-        den1_ad = -perm_imag1_ad * fen * del1 * f1  / (den1 * den1)
-        f1_ad   =  perm_imag1_ad * fen * den1 * del1/ (den1 * den1)
-
-
-        del2_ad = del2_ad + perm_real2_ad * den2 / (den2 * den2)
-        den2_ad = den2_ad - perm_real2_ad * del2 / (den2 * den2)
-
-        del1_ad = del1_ad + perm_real1_ad * den1 / (den1 * den1)
-        den1_ad = den1_ad - perm_real1_ad * del1 / (den1 * den1)
-
-
-        f2_ad = f2_ad + den2_ad * 2 * fen_sq * f2
-        f1_ad = f1_ad + den1_ad * 2 * fen_sq * f1
-
-        !Static permittivity estatic = del1+del2+einf
-        tcelsius_ad    = tcelsius_ad - 0.0114770_fp * einf_ad
-        tcelsius_ad    = tcelsius_ad + del2_ad * 0.154100_fp
-        tcelsius_sq_ad = del2_ad * ( -0.0337170_fp )
-        tcelsius_cu_ad = del2_ad * 0.000844280_fp
-
-        tcelsius_ad    = tcelsius_ad    + del1_ad * (-0.406430_fp)
-        tcelsius_sq_ad = tcelsius_sq_ad + del1_ad * 0.0228320_fp
-        tcelsius_cu_ad = tcelsius_cu_ad + del1_ad * (-0.000530610_fp)
-
-
-        !Define two relaxation frequencies, f1 and f2
-        tcelsius_ad    = tcelsius_ad    + f2_ad * 0.0191890_fp
-        tcelsius_sq_ad = tcelsius_sq_ad + f2_ad * (-0.0108730_fp)
-        tcelsius_cu_ad = tcelsius_cu_ad + f2_ad * (0.000258180_fp)
-
-        tcelsius_ad    = tcelsius_ad    + f1_ad * ( -0.617670_fp)
-        tcelsius_sq_ad = tcelsius_sq_ad + f1_ad * (0.00894800_fp)
-
-
-        !Set values for temperature polynomials (convert from kelvin to celsius)
-        tcelsius_ad    = tcelsius_ad + tcelsius_cu_ad * 3.0_fp * tcelsius_sq
-
-        tcelsius_ad    = tcelsius_ad + tcelsius_sq_ad * 2.0_fp * tcelsius
-        sst_ad = sst_ad + tcelsius_ad
-
-
-  RETURN
-
-END SUBROUTINE Compute_Ellison_eps_ocean_AD
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Guillou_eps_ocean
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Guillou_eps_ocean
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!   
-!  Guillou, C. et al. (1998) Impact of new permittivity measurements on sea surface emissivity modeling in 
-!                            microwaves. Radio Science, Volume 33, Number 3, Pages 649-667
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-  SUBROUTINE Compute_Guillou_eps_ocean(SST,     & ! Input, Water temperature in Kelvin
-                                       S,       & ! Input, Salinity in parts per thousand
-                                       f,       & ! Input, Frequency in GHz
-                                       eps_ocean) ! Output, permitivity
-!------------------------------------------------------------------------------------------------------------
-  USE Type_Kinds
-  IMPLICIT NONE
-  REAL(fp), INTENT( IN ) :: SST, S, F
-  COMPLEX(fp), INTENT( OUT ) :: eps_ocean
-
-  ! internal variables
-  REAL(fp) tcelsius,tcelsius_sq,tcelsius_cu,tcelsius4,tcelsius5
-  REAL(fp) c1,c2,sigma,a1,a2,b1,b2,tau,eps0
-  REAL(fp) eps_real,eps_imag,mu,epss,epsinf
-  REAL(fp)mu_sq,tau_sq
-
-  tcelsius = SST - 273.16_fp
-  tcelsius_sq = tcelsius * tcelsius     !quadratic
-  tcelsius_cu = tcelsius_sq * tcelsius  !cubic
-  tcelsius4  = tcelsius_sq * tcelsius_sq  !4
-  tcelsius5  = tcelsius_sq * tcelsius_cu  !5
-  mu = f * 1.0E09_fp   ! Herz
-  mu_sq = mu*mu
-  epss= 8.8419E-12_fp
-
-  c1 = 0.086374_fp + 0.030606_fp*tcelsius - 0.0004121_fp*tcelsius_sq
-  c2 = 0.077454_fp + 0.001687_fp*tcelsius + 0.00001937_fp*tcelsius_sq
-  sigma = c1 + c2 * S
-
-  epsinf = 6.4587_fp - 0.04203_fp*tcelsius - 0.0065881_fp*tcelsius_sq &
-         + 0.00064924_fp*tcelsius_cu - 1.2328E-05_fp*tcelsius4 + 5.0433E-08_fp *tcelsius5
-
-  a1 = 81.820_fp - 6.0503E-02_fp*tcelsius - 3.1661E-02_fp*tcelsius_sq  &
-     + 3.1097E-03_fp*tcelsius_cu - 1.1791E-04_fp*tcelsius4 + 1.4838E-06_fp*tcelsius5
-
-  a2 = 0.12544_fp + 9.4037E-03_fp*tcelsius - 9.5551E-04_fp*tcelsius_sq &
-     + 9.0888E-05_fp*tcelsius_cu - 3.6011E-06_fp*tcelsius4 + 4.7130E-08_fp*tcelsius5
-
-  b1 = 17.303_fp - 0.66651_fp*tcelsius + 5.1482E-03_fp*tcelsius_sq + 1.2145E-03_fp*tcelsius_cu &
-     -5.0325E-05_fp*tcelsius4 + 5.8272E-07_fp*tcelsius5
-
-  b2 = -6.272E-03_fp + 2.357E-04_fp*tcelsius + 5.075E-04_fp*tcelsius_sq - 6.3983E-05_fp*tcelsius_cu &
-     + 2.463E-06_fp*tcelsius4 - 3.0676E-08_fp*tcelsius5
-
-  tau = (b1 + S*b2 ) * 1.0E-12_fp
-  tau_sq = tau*tau
-  eps0 = a1 - S*a2
-
-  eps_real = epsinf + (eps0 - epsinf)/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)
-
-  eps_imag = ( (eps0 - epsinf)*2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) + &
-             sigma/(2.0_fp*PI*epss*mu)
-  eps_ocean = cmplx(eps_real,eps_imag,fp)
-
-
-  RETURN
- END SUBROUTINE Compute_Guillou_eps_ocean
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Guillou_eps_ocean_TL
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Guillou_eps_ocean_TL
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         SST_tl                   Sea Surface Temperature tangent liner
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_tl             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!   
-!  Guillou, C. et al. (1998) Impact of new permittivity measurements on sea surface emissivity modeling in 
-!                            microwaves. Radio Science, Volume 33, Number 3, Pages 649-667
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-  SUBROUTINE Compute_Guillou_eps_ocean_TL(SST, & ! Input, Water temperature in Kelvin
-                                          SST_tl, &
-                                          S, & ! Input, Salinity in parts per thousand
-                                          f, & ! Input, Frequency in GHz
-                                          eps_ocean, & ! Output, permitivity
-                                          eps_ocean_tl) ! Output
-!------------------------------------------------------------------------------------------------------------
-  USE Type_Kinds
-  IMPLICIT NONE
-  REAL(fp), INTENT( IN ) :: SST, SST_tl, S, F
-  COMPLEX(fp), INTENT( OUT ) :: eps_ocean,eps_ocean_tl
-
-  ! internal variables
-  REAL(fp) tcelsius,tcelsius_sq,tcelsius_cu,tcelsius4,tcelsius5,tcelsius_tl
-  REAL(fp) c1,c2,sigma,a1,a2,b1,b2,tau,eps0
-  REAL(fp) eps_real,eps_imag,mu,epss,epsinf
-  REAL(fp) c1_tl,c2_tl,sigma_tl,a1_tl,a2_tl,b1_tl,b2_tl,tau_tl,eps0_tl
-  REAL(fp) eps_real_tl,eps_imag_tl,epsinf_tl
-  REAL(fp) mu_sq,tau_sq
-
-  tcelsius = SST - 273.16_fp
-  tcelsius_sq = tcelsius * tcelsius     !quadratic
-  tcelsius_cu = tcelsius_sq * tcelsius  !cubic
-  tcelsius4  = tcelsius_sq * tcelsius_sq  !4
-  tcelsius5  = tcelsius_sq * tcelsius_cu  !5
-  tcelsius_tl = SST_tl
-  mu = f * 1.0E09_fp   ! Herz
-  mu_sq = mu*mu
-  epss= 8.8419E-12_fp
-
-  c1 = 0.086374_fp + 0.030606_fp*tcelsius - 0.0004121_fp*tcelsius_sq
-  c1_tl =  + 0.030606_fp*tcelsius_tl - 2.0_fp*0.0004121_fp*tcelsius*tcelsius_tl
-  c2 = 0.077454_fp + 0.001687_fp*tcelsius + 0.00001937_fp*tcelsius_sq
-  c2_tl =  + 0.001687_fp*tcelsius_tl + 2.0_fp*0.00001937_fp*tcelsius*tcelsius_tl
-  sigma = c1 + c2 * S
-  sigma_tl = c1_tl + c2_tl * S
-
-  epsinf = 6.4587_fp &
-         - 0.04203_fp*tcelsius &
-         - 0.0065881_fp*tcelsius_sq &
-         + 0.00064924_fp*tcelsius_cu &
-         - 1.2328E-05_fp*tcelsius4 &
-         + 5.0433E-08_fp*tcelsius5
-
-  epsinf_tl = - 0.04203_fp*tcelsius_tl &
-              - 2.0_fp*0.0065881_fp*tcelsius*tcelsius_tl &
-              + 3.0_fp*0.00064924_fp*tcelsius_sq*tcelsius_tl &
-              - 4.0_fp*1.2328E-05_fp*tcelsius_cu*tcelsius_tl &
-              + 5.0_fp*5.0433E-08_fp*tcelsius4*tcelsius_tl
-
-  a1 = 81.820_fp &
-      - 6.0503E-02_fp*tcelsius &
-      - 3.1661E-02_fp*tcelsius_sq &
-      + 3.1097E-03_fp*tcelsius_cu &
-      - 1.1791E-04_fp*tcelsius4 &
-      + 1.4838E-06_fp*tcelsius5
-
-  a1_tl = - 6.0503E-02_fp*tcelsius_tl &
-          - 2.0_fp*3.1661E-02_fp*tcelsius*tcelsius_tl  &
-          + 3.0_fp*3.1097E-03_fp*tcelsius_sq*tcelsius_tl &
-          - 4.0_fp*1.1791E-04_fp*tcelsius_cu*tcelsius_tl &
-          + 5.0_fp*1.4838E-06_fp*tcelsius4*tcelsius_tl
-
-  a2 = 0.12544_fp &
-     + 9.4037E-03_fp*tcelsius &
-     - 9.5551E-04_fp*tcelsius_sq &
-     + 9.0888E-05_fp*tcelsius_cu &
-     - 3.6011E-06_fp*tcelsius4 &
-     + 4.7130E-08_fp*tcelsius5
-
-  a2_tl = + 9.4037E-03_fp*tcelsius_tl &
-          - 2.0_fp*9.5551E-04_fp*tcelsius*tcelsius_tl &
-          + 3.0_fp*9.0888E-05_fp*tcelsius_sq*tcelsius_tl &
-          - 4.0_fp*3.6011E-06_fp*tcelsius_cu*tcelsius_tl &
-          + 5.0_fp*4.7130E-08_fp*tcelsius4*tcelsius_tl
-
-  b1 = 17.303_fp &
-      - 0.66651_fp*tcelsius &
-      + 5.1482E-03_fp*tcelsius_sq &
-      + 1.2145E-03_fp*tcelsius_cu &
-      - 5.0325E-05_fp*tcelsius4 &
-      + 5.8272E-07_fp*tcelsius5
-
-  b1_tl = - 0.66651_fp*tcelsius_tl &
-          + 2.0_fp*5.1482E-03_fp*tcelsius*tcelsius_tl &
-          + 3.0_fp*1.2145E-03_fp*tcelsius_sq*tcelsius_tl &
-          - 4.0_fp*5.0325E-05_fp*tcelsius_cu*tcelsius_tl &
-          + 5.0_fp*5.8272E-07_fp*tcelsius4*tcelsius_tl
-
-  b2 = -6.272E-03_fp &
-      + 2.357E-04_fp*tcelsius &
-      + 5.075E-04_fp*tcelsius_sq &
-      - 6.3983E-05_fp*tcelsius_cu &
-      + 2.463E-06_fp*tcelsius4 &
-      - 3.0676E-08_fp*tcelsius5
-
-  b2_tl = + 2.357E-04_fp*tcelsius_tl &
-          + 2.0_fp*5.075E-04_fp*tcelsius*tcelsius_tl &
-          - 3.0_fp*6.3983E-05_fp*tcelsius_sq*tcelsius_tl &
-          + 4.0_fp*2.463E-06_fp*tcelsius_cu*tcelsius_tl &
-          - 5.0_fp*3.0676E-08_fp*tcelsius4*tcelsius_tl
-
-  tau = (b1 + S*b2 ) * 1.0E-12_fp
-  tau_sq = tau*tau
-  tau_tl = (b1_tl + S*b2_tl ) * 1.0E-12_fp
-  eps0 = a1 - S*a2
-  eps0_tl = a1_tl - S*a2_tl
-
-  eps_real = epsinf + (eps0 - epsinf)/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)
-  eps_real_tl = epsinf_tl + (eps0_tl - epsinf_tl)/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)  &
-   - (eps0 - epsinf)/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)**2 * 2.0_fp*4.0_fp * PI*PI*mu_sq*tau*tau_tl
-
-  eps_imag = ((eps0 - epsinf)*2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) + &
-             sigma/(2.0_fp*PI*epss*mu)
-
-  eps_imag_tl = ((eps0_tl - epsinf_tl)*2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) + &
-                ((eps0 - epsinf)*2.0_fp*PI*mu*tau_tl)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq)  &
-              - 2.0_fp*4.0_fp*PI*PI*mu_sq*tau*tau_tl &
-              *((eps0 - epsinf)*2.0_fp*PI*mu*tau) &
-              /(1.0_fp+4.0_fp*PI*PI*mu*mu*tau*tau)**2 &
-              + sigma_tl/(2.0_fp*PI*epss*mu)
-
-  eps_ocean = cmplx(eps_real,eps_imag,fp)
-  eps_ocean_tl = cmplx(eps_real_tl,eps_imag_tl,fp)
-
-  RETURN
-
- END SUBROUTINE Compute_Guillou_eps_ocean_TL
-
-
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Guillou_eps_ocean_AD
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity adjoint
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Guillou_eps_ocean_AD
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_ad             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         SST_ad                   Sea Surface Temperature adjoint
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!   
-!  Guillou, C. et al. (1998) Impact of new permittivity measurements on sea surface emissivity modeling in 
-!                            microwaves. Radio Science, Volume 33, Number 3, Pages 649-667
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-  SUBROUTINE Compute_Guillou_eps_ocean_AD(SST, & ! Input, Water temperature in Kelvin
-                                          SST_ad, &
-                                          S, & ! Input, Salinity in parts per thousand
-                                          f, & ! Input, Frequency in GHz
-                                          eps_ocean, & ! Output, permitivity
-                                          eps_ocean_ad) 
-!------------------------------------------------------------------------------------------------------------
-  USE Type_Kinds
-  IMPLICIT NONE
-  REAL(fp), INTENT( IN ) :: SST, S, F
-  REAL(fp), INTENT( IN OUT ) :: SST_ad
-  COMPLEX(fp), INTENT( OUT ) :: eps_ocean
-  COMPLEX(fp), INTENT( IN ) :: eps_ocean_ad
-
-  ! internal variables
-  REAL(fp) tcelsius,tcelsius_sq,tcelsius_cu,tcelsius4,tcelsius5
-  REAL(fp) c1,c2,sigma,a1,a2,b1,b2,tau,eps0
-  REAL(fp) eps_real,eps_imag,mu,epss,epsinf
-  REAL(fp) tcelsius_ad,c1_ad,c2_ad,sigma_ad,a1_ad,a2_ad,b1_ad,b2_ad,tau_ad,eps0_ad
-  REAL(fp) eps_real_ad,eps_imag_ad,epsinf_ad
-  REAL(fp) mu_sq,tau_sq
-!
-! Initialize
- tcelsius_ad = 0.0
- c1_ad = 0.0_fp
- c2_ad = 0.0_fp
- sigma_ad = 0.0_fp
- a1_ad = 0.0_fp
- a2_ad = 0.0_fp
- b1_ad = 0.0_fp
- b2_ad = 0.0_fp
- tau_ad = 0.0_fp
- eps0_ad = 0.0_fp
- eps_real_ad = 0.0_fp
- eps_imag_ad = 0.0_fp
- epsinf_ad = 0.0_fp
-
-
-!  Forward
-  tcelsius = SST - 273.16_fp
-  tcelsius_sq = tcelsius * tcelsius     !quadratic
-  tcelsius_cu = tcelsius_sq * tcelsius  !cubic
-  tcelsius4 = tcelsius_sq * tcelsius_sq  !4
-  tcelsius5 = tcelsius_sq * tcelsius_cu  !5
-  mu = f * 1.0E09_fp   ! Herz
-  mu_sq = mu*mu
-  epss= 8.8419E-12_fp
-
-  c1 = 0.086374_fp + 0.030606_fp*tcelsius - 0.0004121_fp*tcelsius_sq
-  c2 = 0.077454_fp + 0.001687_fp*tcelsius + 0.00001937_fp*tcelsius_sq
-  sigma = c1 + c2 * S
-
-  epsinf = 6.4587_fp - 0.04203_fp*tcelsius - 0.0065881_fp*tcelsius_sq &
-         + 0.00064924_fp*tcelsius_cu - 1.2328E-05_fp*tcelsius4 + 5.0433E-08_fp *tcelsius5
-
-  a1 = 81.820_fp - 6.0503E-02_fp*tcelsius - 3.1661E-02_fp*tcelsius_sq  &
-     + 3.1097E-03_fp*tcelsius_cu - 1.1791E-04_fp*tcelsius4 + 1.4838E-06_fp*tcelsius5
-
-  a2 = 0.12544_fp + 9.4037E-03_fp*tcelsius - 9.5551E-04_fp*tcelsius_sq &
-     + 9.0888E-05_fp*tcelsius_cu - 3.6011E-06_fp*tcelsius4 + 4.7130E-08_fp*tcelsius5
-
-  b1 = 17.303_fp - 0.66651_fp*tcelsius + 5.1482E-03_fp*tcelsius_sq + 1.2145E-03_fp*tcelsius_cu &
-     -5.0325E-05_fp*tcelsius4 + 5.8272E-07_fp*tcelsius5
-
-  b2 = -6.272E-03_fp + 2.357E-04_fp*tcelsius + 5.075E-04_fp*tcelsius_sq - 6.3983E-05_fp*tcelsius_cu &
-     + 2.463E-06_fp*tcelsius4 - 3.0676E-08_fp*tcelsius5
-
-  tau = (b1 + S*b2 ) * 1.0E-12_fp
-  tau_sq = tau*tau
-  eps0 = a1 - S*a2
-
-  eps_real = epsinf + (eps0 - epsinf)/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)
-
-  eps_imag = ( (eps0 - epsinf)*2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) + &
-             sigma/(2.0_fp*PI*epss*mu)
-  eps_ocean = cmplx(eps_real,eps_imag,fp)
-
-
-!  Adjoint
-  eps_real_ad = real(eps_ocean_ad)
-  eps_imag_ad = -aimag(eps_ocean_ad)
-
-  eps0_ad = (2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) * eps_imag_ad
-  epsinf_ad = (-2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) *eps_imag_ad
-  tau_ad = (((eps0 - epsinf)*2.0_fp*PI*mu)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq) &
-           - 2.0_fp*4.0_fp*PI*PI*mu_sq*tau* &
-           ((eps0 - epsinf)*2.0_fp*PI*mu*tau)/(1.0_fp+4.0_fp*PI*PI*mu_sq*tau_sq)**2 )*eps_imag_ad
-  sigma_ad = 1.0_fp/(2.0_fp*PI*epss*mu) * eps_imag_ad
-
-  epsinf_ad = epsinf_ad + (1.0_fp - 1.0_fp/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq) )*eps_real_ad
-  eps0_ad = eps0_ad + 1.0_fp/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)*eps_real_ad
-  tau_ad = tau_ad - (eps0 - epsinf)/(1.0_fp + 4.0_fp * PI*PI*mu_sq*tau_sq)**2 &
-           * 2.0_fp*4.0_fp * PI*PI*mu_sq*tau * eps_real_ad
-
-  a1_ad = eps0_ad
-  a2_ad = -S*eps0_ad
-
-  b1_ad = tau_ad*1.0E-12_fp
-  b2_ad = tau_ad*S*1.0E-12_fp
-
-  tcelsius_ad = +( 2.357E-04_fp + 2.0_fp*5.075E-04_fp*tcelsius - 3.0_fp*6.3983E-05_fp*tcelsius_sq &
-         + 4.0_fp*2.463E-06_fp*tcelsius_cu - 5.0_fp*3.0676E-08_fp*tcelsius4 ) * b2_ad
-
-  tcelsius_ad = tcelsius_ad + (-0.66651_fp + 2.0_fp*5.1482E-03_fp*tcelsius &
-                + 3.0_fp*1.2145E-03_fp*tcelsius_sq &
-                 -4.0_fp*5.0325E-05_fp*tcelsius_cu + 5.0_fp*5.8272E-07_fp*tcelsius4 ) * b1_ad
-
-  tcelsius_ad = tcelsius_ad + (9.4037E-03_fp - 2.0_fp*9.5551E-04_fp*tcelsius &
-          + 3.0_fp*9.0888E-05_fp*tcelsius_sq - 4.0_fp*3.6011E-06_fp*tcelsius_cu &
-          + 5.0_fp*4.7130E-08_fp*tcelsius4 )*a2_ad
-
-  tcelsius_ad = tcelsius_ad + (-6.0503E-02_fp - 2.0_fp*3.1661E-02_fp*tcelsius &
-          + 3.0_fp*3.1097E-03_fp*tcelsius_sq - 4.0_fp*1.1791E-04_fp*tcelsius_cu &
-          + 5.0_fp*1.4838E-06_fp*tcelsius4 )*a1_ad
-
-  tcelsius_ad = tcelsius_ad + (-0.04203_fp - 2.0_fp*0.0065881_fp*tcelsius &
-          + 3.0_fp*0.00064924_fp*tcelsius_sq - 4.0_fp*1.2328E-05_fp*tcelsius_cu &
-          + 5.0_fp*5.0433E-08_fp*tcelsius4 )*epsinf_ad
-
-  c1_ad = sigma_ad
-  c2_ad = sigma_ad*S
-
-  tcelsius_ad = tcelsius_ad + (+ 0.001687_fp + 2.0_fp*0.00001937_fp*tcelsius)*c2_ad
-  tcelsius_ad = tcelsius_ad + (+ 0.030606_fp - 2.0_fp*0.0004121_fp*tcelsius)*c1_ad
-
-  SST_ad = SST_ad + tcelsius_ad
-
-  RETURN
-
- END SUBROUTINE Compute_Guillou_eps_ocean_AD
-!
-!
-!
-!
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       FRESNEL
-!
-! PURPOSE:
-!       Subroutine to compute Fresnel reflectivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL FRESNEL
-!
-! INPUT ARGUMENTS:
-!
-!         e                        Emissivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-!         csl                      Cosine of incidence angle
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Rv_Fresnel               Reflectivity for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel               Reflectivity for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-subroutine FRESNEL(e,csl,Rv_Fresnel,Rh_Fresnel)
-!------------------------------------------------------------------------------------------------------------
-use type_kinds
-implicit none
-  COMPLEX(fp),INTENT(IN)  :: e
-  REAL(fp),   INTENT(IN)  :: csl
-  REAL(fp),   INTENT(OUT) :: Rv_Fresnel,Rh_Fresnel
-  REAL(fp)                   :: real_Rvv,imag_Rvv,real_Rhh,imag_Rhh
-  COMPLEX(fp)                :: perm1,perm2,Rvv,Rhh
-
-    perm1          = sqrt(e - 1.0_fp+csl*csl)
-    perm2          = e* csl
-    Rhh           = (csl-perm1) / (csl+perm1)
-    Rvv           = (perm2-perm1) / (perm2+perm1)
-
-    real_Rvv = real(Rvv)
-    imag_Rvv = aimag(Rvv)
-    Rv_Fresnel = real_Rvv * real_Rvv + imag_Rvv * imag_Rvv
-
-    real_Rhh = real(Rhh)
-    imag_Rhh = aimag(Rhh)
-    Rh_Fresnel = real_Rhh * real_Rhh + imag_Rhh * imag_Rhh
-
-  return
-
-end subroutine fresnel
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       FRESNEL_TL
-!
-! PURPOSE:
-!       Subroutine to compute Fresnel reflectivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL FRESNEL_TL
-!
-! INPUT ARGUMENTS:
-!
-!         e                        Emissivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-!         e_tl                     Emissivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-!         csl                      Cosine of incidence angle
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Rv_Fresnel               Reflectivity for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel               Reflectivity for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rv_Fresnel_tl            Reflectivity tangent liner for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel_tl            Reflectivity tangent liner for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-subroutine FRESNEL_TL(e,e_tl,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_tl,Rh_Fresnel_tl)
-!------------------------------------------------------------------------------------------------------------
-  COMPLEX(fp),INTENT(IN)  :: e
-  COMPLEX(fp),INTENT(IN)  :: e_tl
-  REAL(fp),   INTENT(IN)  :: csl
-  REAL(fp),   INTENT(OUT) :: Rv_Fresnel,Rh_Fresnel
-  REAL(fp),   INTENT(OUT) :: Rv_Fresnel_tl,Rh_Fresnel_tl
-  REAL(fp)                   :: real_Rvv,imag_Rvv,real_Rhh,imag_Rhh
-  COMPLEX(fp)                :: perm1,perm2,Rvv,Rhh
-
-  REAL(fp) Rv_Fresnel_real_tl,Rh_Fresnel_real_tl
-  REAL(fp) Rv_Fresnel_imag_tl,Rh_Fresnel_imag_tl
-  COMPLEX(fp) perm1_tl,perm2_tl,Rvv_tl,Rhh_tl
-
-    perm1          = sqrt(e - 1.0_fp+csl*csl)
-    perm1_tl       = 0.5_fp * e_tl / perm1
-    perm2          = e* csl
-    perm2_tl          = e_tl * csl
-    Rhh           = (csl-perm1) / (csl+perm1)
-    Rhh_tl           = - 2.0_fp * csl * perm1_tl / (csl+perm1)**2
-    Rvv           = (perm2-perm1) / (perm2+perm1)
-    Rvv_tl           = 2.0_fp * (perm1 * perm2_tl - perm1_tl * perm2) / (perm2+perm1)**2
-
-    real_Rvv = real(Rvv)
-    imag_Rvv = aimag(Rvv)
-    Rv_Fresnel = real_Rvv * real_Rvv + imag_Rvv * imag_Rvv
-
-    real_Rhh = real(Rhh)
-    imag_Rhh = aimag(Rhh)
-    Rh_Fresnel = real_Rhh * real_Rhh + imag_Rhh * imag_Rhh
-
-
-    Rv_Fresnel_real_tl = real(Rvv_tl)
-    Rv_Fresnel_imag_tl = aimag(Rvv_tl)
-    Rv_Fresnel_tl = 2.0_fp * (real_Rvv * Rv_Fresnel_real_tl) + &
-                    2.0_fp * (imag_Rvv * Rv_Fresnel_imag_tl)
-
-    Rh_Fresnel_real_tl = Real(Rhh_tl)
-    Rh_Fresnel_imag_tl = aimag(Rhh_tl)
-    Rh_Fresnel_tl = 2.0_fp * (real_Rhh * Rh_Fresnel_real_tl) + &
-                    2.0_fp * (imag_Rhh * Rh_Fresnel_imag_tl)
-
-end subroutine fresnel_TL
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       FRESNEL_AD
-!
-! PURPOSE:
-!       Subroutine to compute Fresnel reflectivity adjoint
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL FRESNEL_AD
-!
-! INPUT ARGUMENTS:
-!
-!         e                        Emissivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-!         csl                      Cosine of incidence angle
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rv_Fresnel_ad            Reflectivity adjoint for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel_ad            Reflectivity adjoint for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Rv_Fresnel               Reflectivity for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel               Reflectivity for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         e_ad                     Emissivity adjoint
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX(fp)
-!                                  DIMENSION:  Scalar
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
-subroutine FRESNEL_AD(e,e_ad,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_ad,Rh_Fresnel_ad)
-!------------------------------------------------------------------------------------------------------------
-  COMPLEX(fp),INTENT(IN)  :: e
-  COMPLEX(fp),INTENT(IN OUT) :: e_ad
-  REAL(fp),   INTENT(IN)  :: csl
-  REAL(fp),   INTENT(OUT) :: Rv_Fresnel,Rh_Fresnel
-  REAL(fp),   INTENT(IN)  :: Rv_Fresnel_ad,Rh_Fresnel_ad
-  REAL(fp)                   :: real_Rvv,imag_Rvv,real_Rhh,imag_Rhh
-  COMPLEX(fp)                :: perm1,perm2,Rvv,Rhh
-
-  REAL(fp) Rv_Fresnel_real_ad,Rh_Fresnel_real_ad
-  REAL(fp) Rv_Fresnel_imag_ad,Rh_Fresnel_imag_ad
-  COMPLEX(fp) perm1_ad,perm2_ad,Rvv_ad,Rhh_ad
-
-
-! ---- forward
-
-    perm1          = sqrt(e - 1.0_fp+csl*csl)
-    perm2          = e* csl
-    Rhh           = (csl-perm1) / (csl+perm1)
-    Rvv           = (perm2-perm1) / (perm2+perm1)
-
-    real_Rvv = real(Rvv)
-    imag_Rvv = aimag(Rvv)
-    Rv_Fresnel = real_Rvv * real_Rvv + imag_Rvv * imag_Rvv
-
-    real_Rhh = real(Rhh)
-    imag_Rhh = aimag(Rhh)
-    Rh_Fresnel = real_Rhh * real_Rhh + imag_Rhh * imag_Rhh
-
-! ---- adjoint
-    Rh_Fresnel_real_ad = Rh_Fresnel_ad * 2.0_fp * real_Rhh
-    Rh_Fresnel_imag_ad = Rh_Fresnel_ad * 2.0_fp * imag_Rhh
-
-    Rhh_ad = cmplx(Rh_Fresnel_real_ad,-Rh_Fresnel_imag_ad,fp)
-
-    Rv_Fresnel_real_ad = Rv_Fresnel_ad * 2.0_fp * real_Rvv
-    Rv_Fresnel_imag_ad = Rv_Fresnel_ad * 2.0_fp * imag_Rvv
-
-    Rvv_ad = cmplx(Rv_Fresnel_real_ad,-Rv_Fresnel_imag_ad,fp)
-
-    perm1_ad = - Rvv_ad * 2.0_fp * perm2 / (perm2+perm1)**2
-    perm2_ad =   Rvv_ad * 2.0_fp * perm1 / (perm2+perm1)**2
-
-    perm1_ad = perm1_ad - Rhh_ad * 2.0_fp * csl / (csl+perm1)**2
-
-    e_ad = e_ad + perm2_ad * csl
-
-    e_ad =  e_ad + perm1_ad * 0.5_fp / perm1
-
-end subroutine fresnel_AD
+  SUBROUTINE OCEANEM_AMSRE_AD( Frequency     , &  ! Input
+                               Zenith_Angle  , &  ! Input
+                               Temperature   , &  ! Input
+                               Temperature_AD, &  ! Output
+                               Wind_Speed    , &  ! Input
+                               Wind_Speed_AD , &  ! Output
+                               Emissivity_AD , &  ! Input
+                               iVar            )  ! Internal variable input)                                       ! INPUT)
+    ! Arguments
+    REAL(fp),                    INTENT(IN)     :: Frequency
+    REAL(fp),                    INTENT(IN)     :: Zenith_Angle
+    REAL(fp),                    INTENT(IN)     :: Temperature
+    REAL(fp),                    INTENT(IN OUT) :: Temperature_AD
+    REAL(fp),                    INTENT(IN)     :: Wind_Speed
+    REAL(fp),                    INTENT(IN OUT) :: Wind_Speed_AD
+    REAL(fp),                    INTENT(IN)     :: Emissivity_AD(4)
+    TYPE(LFMWWSOVariables_type), INTENT(IN)     :: iVar
+    ! Local variables
+    REAL(fp)    :: Salinity, Salinity_AD
+    REAL(fp)    :: sdd_int_AD
+    COMPLEX(fp) :: Permittivity_AD
+    REAL(fp)    :: Foam_Cover_AD
+    REAL(fp)    :: Rv_Fresnel_AD, Rh_Fresnel_AD
+    REAL(fp)    :: Rv_Foam_AD   , Rh_Foam_AD
+    REAL(fp)    :: Rv_Small_AD  , Rh_Small_AD
+    REAL(fp)    :: Rv_Large_AD  , Rh_Large_AD
+    REAL(fp)    :: Rv_AD        , Rh_AD
+
+    ! TEMPORARY
+    REAL(fp) :: new_sdd(NPTS,NPTS)
+    ! TEMPORARY
+
+
+    ! Assign salinity defaults
+    ! ------------------------
+    Salinity    = DEFAULT_SALINITY
+    Salinity_AD = ZERO
+
+
+    ! Initialise local adjoint variables
+    ! ----------------------------------
+    Permittivity_AD = ZERO
+    sdd_int_AD = ZERO
+
+
+    ! Emissivity calculation
+    ! ----------------------
+    Rh_Foam_AD    = -iVar%Foam_Cover      *Emissivity_AD(2)
+    Foam_Cover_AD = (iVar%Rh-iVar%Rh_Foam)*Emissivity_AD(2)
+    Rh_AD         = (iVar%Foam_Cover-ONE) *Emissivity_AD(2)
+
+    Rv_Foam_AD    = -iVar%Foam_Cover      *Emissivity_AD(1)
+    Foam_Cover_AD = (iVar%Rv-iVar%Rv_Foam)*Emissivity_AD(1) + Foam_Cover_AD
+    Rv_AD         = (iVar%Foam_Cover-ONE) *Emissivity_AD(1)
+
+
+    ! Large scale correction calculation
+    ! ----------------------------------
+    Rh_Large_AD = Rh_AD
+    Rv_Large_AD = Rv_AD
+  
+    CALL Large_Scale_Correction_AD( Rv_Large_AD, Rh_Large_AD, Wind_Speed_AD,  &
+                                    iVar%Rv_Lterm, iVar%Rh_Lterm )
+
+  
+    ! Small scale correction calculation
+    ! ----------------------------------
+    Rv_Small_AD   = iVar%Rv_Fresnel*Rv_AD
+    Rv_Fresnel_AD = iVar%Rv_Small*Rv_AD
+    Rv_AD = ZERO
+    Rh_Small_AD   = iVar%Rh_Fresnel*Rh_AD
+    Rh_Fresnel_AD = iVar%Rh_Small*Rh_AD
+    Rh_AD = ZERO
+  
+    CALL Small_Scale_Correction_AD( Rv_Small_AD, Rh_Small_AD, iVar%cos2_z, Frequency, &
+                                    sdd_int_AD, &
+                                    iVar%R_STerm )
+
+    ! Foam coverage calculation
+    ! -------------------------
+    CALL Foam_Coverage_AD( Wind_Speed, Foam_Cover_AD, Wind_Speed_AD)
+
+
+    ! Fresnel reflectivity calculation
+    ! --------------------------------
+    CALL Fresnel_Reflectivity_AD( Rv_Fresnel_AD, Rh_Fresnel_AD, iVar%cos_z, &
+                                  Permittivity_AD, &
+                                  iVar%fVar)
+
+
+    ! Permittivity Calculation
+    ! ------------------------
+    IF( Frequency < LOW_F_THRESHOLD ) THEN
+      CALL Guillou_Ocean_Permittivity_AD( Permittivity_AD, Frequency, &
+                                          Temperature_AD, Salinity_AD, &
+                                          iVar%gpVar)
+    ELSE
+      CALL Ellison_Ocean_Permittivity_AD( Permittivity_AD, Frequency, &
+                                          Temperature_AD, Salinity_AD, &
+                                          iVar%epVar)
+    END IF
+
+
+    ! LUT intepolation
+    ! ----------------
+    new_sdd = TRANSPOSE(sdd(iVar%j1:iVar%j2,iVar%i1:iVar%i2))  ! TEMPORARY
+    CALL interp_2D_AD( new_sdd, &
+                       iVar%flp, iVar%wdlp, &
+                       sdd_int_AD, &
+                       Wind_Speed_AD)
+
+  END SUBROUTINE OCEANEM_AMSRE_AD
+
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                        ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+  ! ===========================================  
+  ! Routine for forward model foam reflectivity
+  ! Function dependence is on zenith anlge only
+  ! so no TL or AD routine
+  ! ===========================================  
+  SUBROUTINE Foam_Reflectivity(z, Rv, Rh)
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: z ! Zenith angle
+    REAL(fp), INTENT(OUT) :: Rv, Rh
+    ! Parameters
+    REAL(fp), PARAMETER :: FR_COEFF(9) = &
+      (/ -9.946e-4_fp, 3.218e-5_fp, -1.187e-6_fp, &
+            7.e-20_fp,     0.07_fp, -1.748e-3_fp, &
+         -7.336e-5_fp, 1.044e-7_fp,     -0.93_fp /)
+    ! Local variables
+    REAL(fp) :: Fv, Fh
+    ! The vertical component    
+    Fv = ONE + z*(FR_COEFF(1)+ z*(FR_COEFF(2) + z*FR_COEFF(3))) + FR_COEFF(4)*z**10
+    Rv = FR_COEFF(5)
+    ! The horizontal component
+    Fh = ONE + z*(FR_COEFF(6) +  z*(FR_COEFF(7) + z*FR_COEFF(8)))
+    Rh = ONE + FR_COEFF(9)*Fh
+  END SUBROUTINE Foam_Reflectivity
+
+
+  ! ======================================================
+  ! Foam coverage routines
+  ! See Eqn.(1) in 
+  !   Liu, Q. et al. (1998) Monte Carlo simulations of the
+  !     microwave emissivity of the sea surface.
+  !     JGR, Volume 103, No.C11, Pages 24983-24989
+  ! ======================================================
+  ! Forward model
+  SUBROUTINE Foam_Coverage(wind_speed, coverage)
+    REAL(fp), INTENT(IN)  :: wind_speed
+    REAL(fp), INTENT(OUT) :: coverage
+    IF ( wind_speed < FOAM_THRESHOLD ) THEN
+       coverage = ZERO
+    ELSE
+       coverage = FC1 * (wind_speed**FC2)
+    END IF
+  END SUBROUTINE Foam_Coverage
+  
+  ! Tangent-linear model
+  SUBROUTINE Foam_Coverage_TL(wind_speed, wind_speed_TL, coverage_TL)
+    REAL(fp), INTENT(IN)  :: wind_speed
+    REAL(fp), INTENT(IN)  :: wind_speed_TL
+    REAL(fp), INTENT(OUT) :: coverage_TL
+    IF ( wind_speed < FOAM_THRESHOLD ) THEN
+       coverage_TL = ZERO
+    ELSE
+       coverage_TL = FC3 * (wind_speed**FC4) * wind_speed_TL
+    END IF
+  END SUBROUTINE Foam_Coverage_TL
+
+  ! Adjoint model
+  SUBROUTINE Foam_Coverage_AD(wind_speed, coverage_AD, wind_speed_AD)
+    REAL(fp), INTENT(IN)     :: wind_speed     ! Input
+    REAL(fp), INTENT(IN OUT) :: coverage_AD    ! Input
+    REAL(fp), INTENT(IN OUT) :: wind_speed_AD  ! Output
+    IF ( .NOT. (wind_speed < FOAM_THRESHOLD) ) THEN
+      wind_speed_AD = wind_speed_AD + FC3*(wind_speed**FC4)*coverage_AD
+    END IF
+    coverage_AD = ZERO
+  END SUBROUTINE Foam_Coverage_AD
+
+
+  ! ======================================================
+  ! Reflectivity small scale correction routines
+  ! See Eqns.(17a) and (17b) in 
+  !   Liu, Q. et al. (1998) Monte Carlo simulations of the
+  !     microwave emissivity of the sea surface.
+  !     JGR, Volume 103, No.C11, Pages 24983-24989
+  ! ======================================================
+  ! Forward model
+  SUBROUTINE Small_Scale_Correction( sdd, cos2_z, f, Rv, Rh, &
+                                     R_term )
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: sdd     ! ??
+    REAL(fp), INTENT(IN)  :: cos2_z  ! cos^2 of zenith angle
+    REAL(fp), INTENT(IN)  :: f       ! Frequency
+    REAL(fp), INTENT(OUT) :: Rv, Rh  ! Reflectivity correction
+    REAL(fp), INTENT(OUT) :: R_term  ! Intermediate variable output
+  
+    IF ( f > SMALLSCALE_F_THRESHOLD ) THEN
+      R_term = EXP(-sdd*cos2_z)
+    ELSE
+      R_term = ONE
+    END IF
+    Rv = R_term
+    Rh = R_term
+  END SUBROUTINE Small_Scale_Correction
+  
+  ! Tangent-linear model
+  SUBROUTINE Small_Scale_Correction_TL( sdd_TL, cos2_z, f, Rv_TL, Rh_TL, &
+                                        R_term )
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: sdd_TL
+    REAL(fp), INTENT(IN)  :: cos2_z
+    REAL(fp), INTENT(IN)  :: f
+    REAL(fp), INTENT(OUT) :: Rv_TL, Rh_TL
+    REAL(fp), INTENT(IN)  :: R_term  ! Intermediate variable input
+    ! Local variables
+    REAL(fp) :: R_term_TL
+  
+    IF ( f > SMALLSCALE_F_THRESHOLD ) THEN
+      R_term_TL = -cos2_z * R_term * sdd_TL
+    ELSE
+      R_term_TL = ZERO
+    END IF
+    Rv_TL = R_term_TL
+    Rh_TL = R_term_TL
+  END SUBROUTINE Small_Scale_Correction_TL
+  
+  ! Adjoint model
+  SUBROUTINE Small_Scale_Correction_AD( Rv_AD, Rh_AD, cos2_z, f, sdd_AD, &
+                                        R_term )
+    ! Arguments
+    REAL(fp), INTENT(IN OUT) :: Rv_AD, Rh_AD  ! Input
+    REAL(fp), INTENT(IN)     :: cos2_z        ! Input
+    REAL(fp), INTENT(IN)     :: f             ! Input
+    REAL(fp), INTENT(IN OUT) :: sdd_AD        ! Output
+    REAL(fp), INTENT(IN)     :: R_term  ! Intermediate variable input
+    ! Local variables
+    REAL(fp) :: R_term_AD
+  
+    R_term_AD = Rv_AD            ;  Rv_AD = ZERO
+    R_term_AD = R_term_AD + Rh_AD;  Rh_AD = ZERO
+    IF ( f > SMALLSCALE_F_THRESHOLD ) THEN
+      sdd_AD = sdd_AD - cos2_z*R_term*R_term_AD
+    ELSE
+      sdd_AD = ZERO
+    END IF
+  END SUBROUTINE Small_Scale_Correction_AD
+  
+
+  ! ============================================
+  ! Reflectivity large scale correction routines
+  ! ============================================
+  ! Forward model
+  SUBROUTINE Large_Scale_Correction( v, z, f, Rv, Rh, &
+                                     Rv_term, Rh_term )
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: v       ! Wind speed
+    REAL(fp), INTENT(IN)  :: z       ! Zenith angle
+    REAL(fp), INTENT(IN)  :: f       ! Frequency
+    REAL(fp), INTENT(OUT) :: Rv, Rh  ! Reflectivity correction
+    REAL(fp), INTENT(OUT) :: Rv_term, Rh_term  ! Intermediate variable output
+    ! Local variables
+    REAL(fp) :: f_term
+    
+    f_term  = f / (LSC_COEFF(7) + f*LSC_COEFF(8))
+    Rv_Term = (LSC_COEFF(1) + z*(LSC_COEFF(2) + z*LSC_COEFF(3))) * f_term
+    Rh_term = (LSC_COEFF(4) + z*(LSC_COEFF(5) + z*LSC_COEFF(6))) * f_term
+    
+    Rv = Rv_term * v
+    Rh = Rh_term * v
+  END SUBROUTINE Large_Scale_Correction
+
+  ! Tangent-linear model
+  SUBROUTINE Large_Scale_Correction_TL( v_TL, Rv_TL, Rh_TL, &
+                                        Rv_term, Rh_term )
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: v_TL
+    REAL(fp), INTENT(OUT) :: Rv_TL, Rh_TL
+    REAL(fp), INTENT(IN)  :: Rv_term, Rh_term  ! Intermediate variable input
+
+    Rv_TL = Rv_term * v_TL
+    Rh_TL = Rh_term * v_TL
+  END SUBROUTINE Large_Scale_Correction_TL
+
+  ! Adjoint model
+  SUBROUTINE Large_Scale_Correction_AD( Rv_AD, Rh_AD, v_AD, &
+                                        Rv_term, Rh_term )
+    ! Arguments
+    REAL(fp), INTENT(IN OUT) :: Rv_AD, Rh_AD      ! Input
+    REAL(fp), INTENT(IN OUT) :: v_AD              ! Output
+    REAL(fp), INTENT(IN)     :: Rv_term, Rh_term  ! Intermediate variable input
+
+    v_AD = v_AD + Rv_term*Rv_AD
+    v_AD = v_AD + Rh_term*Rh_AD
+    
+    Rv_AD = ZERO
+    Rh_AD = ZERO
+  END SUBROUTINE Large_Scale_Correction_AD
 
 END MODULE CRTM_OCEANEM_AMSRE
