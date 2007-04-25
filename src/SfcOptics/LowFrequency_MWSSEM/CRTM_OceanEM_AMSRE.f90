@@ -37,7 +37,7 @@
 !M-
 !------------------------------------------------------------------------------------------------------------
 
-MODULE CRTM_OCEANEM_AMSRE_OLD
+MODULE CRTM_OCEANEM_AMSRE
 
   ! ----------
   ! Module use
@@ -3159,23 +3159,5 @@ END FUNCTION Compute_Fh
 !
 
 
-END MODULE CRTM_OCEANEM_AMSRE_OLD
-
-
-!---------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!---------------------------------------------------------------------------------
-!
-! $Id$
-!
-! $Date:  $
-!
-! $Revision$
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log:  $
-!
+END MODULE CRTM_OCEANEM_AMSRE
 
