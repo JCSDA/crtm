@@ -26,7 +26,7 @@ MODULE Fundamental_Constants
   ! Environment setup
   ! -----------------
   ! Modules used
-  USE Type_Kinds, ONLY: fp=>fp_kind
+  USE Type_Kinds, ONLY: fp
   ! Disable implicit typing
   IMPLICIT NONE
 
