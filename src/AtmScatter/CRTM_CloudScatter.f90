@@ -40,16 +40,16 @@ MODULE CRTM_CloudScatter
                                       GRAUPEL_CLOUD, &
                                       HAIL_CLOUD
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
-  USE CRTM_Interpolation,       ONLY: INTERP_NPTS=>NPTS, &
-                                      find_index       , &
-                                      interp_1D        , &
-                                      interp_2D        , &
-                                      interp_3D        , &
-                                      interp_2D_TL     , &
-                                      interp_3D_TL     , &
-                                      interp_2D_AD     , &
-                                      interp_3D_AD     , &
-                                      dlpoly           , &
+  USE CRTM_Interpolation,       ONLY: NPTS        , &
+                                      find_index  , &
+                                      interp_1D   , &
+                                      interp_2D   , &
+                                      interp_3D   , &
+                                      interp_2D_TL, &
+                                      interp_3D_TL, &
+                                      interp_2D_AD, &
+                                      interp_3D_AD, &
+                                      dlpoly      , &
                                       lpoly
   ! The AtmScatter structure definition module
   ! The PUBLIC entities in CRTM_AtmScatter_Define
@@ -112,14 +112,14 @@ MODULE CRTM_CloudScatter
   ! --------------------------------------
   TYPE, PUBLIC :: CRTM_CSVariables_type
     PRIVATE
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: ext = ZERO  !ke  ! Mass extinction coefficient
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: w0  = ZERO  !w   ! Single scatter albedo
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: g   = ZERO  !g   ! Asymmetry factor
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: ke = ZERO  ! Mass extinction coefficient
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: w  = ZERO  ! Single scatter albedo
+    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: g  = ZERO  ! Asymmetry factor
     REAL(fp), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
                         MAX_N_PHASE_ELEMENTS,  &
                         MAX_N_LAYERS,          &
-                        MAX_N_CLOUDS           ) :: p_coef  !p      ! Phase coefficients
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Total_bs = ZERO  !bs  ! Volume scattering coefficient
+                        MAX_N_CLOUDS           ) :: pcoeff        ! Phase coefficients
+    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Total_bs = ZERO          ! Volume scattering coefficient
   END TYPE CRTM_CSVariables_type
 
 
@@ -238,7 +238,7 @@ CONTAINS
     CHARACTER(256) :: Message
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: Sensor_Type
-    REAL(fp) :: Frequency, Wavenumber
+    REAL(fp) :: Frequency_MW, Frequency_IR
     LOGICAL  :: Layer_Mask(Atmosphere%n_Layers)
     INTEGER  :: Layer_Index(Atmosphere%n_Layers)
     INTEGER  :: nCloud_Layers
@@ -256,8 +256,8 @@ CONTAINS
     IF (Atmosphere%n_Clouds == 0) RETURN
     ! Spectral variables
     Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
-    Frequency   = SC(SensorIndex)%Frequency(ChannelIndex)
-    Wavenumber  = SC(SensorIndex)%Wavenumber(ChannelIndex)
+    Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
+    Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Determine offset for Legendre coefficients in
     ! the CloudC lookup table corresponding to the
     ! number of streams
@@ -307,30 +307,30 @@ CONTAINS
         SELECT CASE (Sensor_Type)
           CASE (MICROWAVE_SENSOR)
             CALL Get_Cloud_Opt_MW(CloudScatter                              , & ! Input
-                                  Frequency                                 , & ! Input
+                                  Frequency_MW                              , & ! Input
                                   Atmosphere%Cloud(n)%Type                  , & ! Input
                                   Atmosphere%Cloud(n)%Effective_Radius(kc)  , & ! Input
                                   Atmosphere%Cloud(n)%Effective_Variance(kc), & ! Input
                                   Atmosphere%Temperature(kc)                , & ! Input
-                                  CSV%ext(kc,n)                             , & ! Output
-                                  CSV%w0(kc,n)                              , & ! Output
+                                  CSV%ke(kc,n)                              , & ! Output
+                                  CSV%w(kc,n)                               , & ! Output
                                   CSV%g(kc,n)                               , & ! Output
-                                  CSV%p_coef(:,:,kc,n)                        ) ! Output
+                                  CSV%pcoeff(:,:,kc,n)                        ) ! Output
           CASE (INFRARED_SENSOR)
             CALL Get_Cloud_Opt_IR(CloudScatter                              , & ! Input
-                                  Wavenumber                                , & ! Input
+                                  Frequency_IR                              , & ! Input
                                   Atmosphere%Cloud(n)%Type                  , & ! Input
                                   Atmosphere%Cloud(n)%Effective_Radius(kc)  , & ! Input
                                   Atmosphere%Cloud(n)%Effective_Variance(kc), & ! Input
-                                  CSV%ext(kc,n)                             , & ! Output
-                                  CSV%w0(kc,n)                              , & ! Output
+                                  CSV%ke(kc,n)                              , & ! Output
+                                  CSV%w(kc,n)                               , & ! Output
                                   CSV%g(kc,n)                               , & ! Output
-                                  CSV%p_coef(:,:,kc,n)                        ) ! Output
+                                  CSV%pcoeff(:,:,kc,n)                        ) ! Output
           CASE DEFAULT
-            CSV%ext(kc,n)        = ZERO
-            CSV%w0(kc,n)         = ZERO
+            CSV%ke(kc,n)         = ZERO
+            CSV%w(kc,n)          = ZERO
             CSV%g(kc,n)          = ZERO
-            CSV%p_coef(:,:,kc,n) = ZERO
+            CSV%pcoeff(:,:,kc,n) = ZERO
         END SELECT
 
         ! Compute the volume scattering coefficient for the current
@@ -342,7 +342,7 @@ CONTAINS
         !   rho = integrated cloud water density for a layer (g/m^2) [M.L^-2]
         !   w   = single scatter albedo [dimensionless]
         !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
-        bs = Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w0(kc,n) * CSV%ext(kc,n)
+        bs = Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)
         CSV%Total_bs(kc) = CSV%Total_bs(kc) + bs
              
         ! Compute the optical depth (absorption + scattering)
@@ -360,7 +360,7 @@ CONTAINS
         ! This is why the optical depth is used in the denominator to
         ! compute the single scatter albedo in the Layer_loop below.
         CloudScatter%Optical_Depth(kc) = CloudScatter%Optical_Depth(kc) + &
-                                         (CSV%ext(kc,n)*Atmosphere%Cloud(n)%Water_Content(kc))
+                                         (CSV%ke(kc,n)*Atmosphere%Cloud(n)%Water_Content(kc))
 
         ! Compute and sum the asymmetry factor
         !   g = g + g(LUT).bs
@@ -377,7 +377,7 @@ CONTAINS
           DO m = 1, CloudScatter%n_Phase_Elements
             DO l = 0, CloudScatter%n_Legendre_Terms
               CloudScatter%Phase_Coefficient(l,m,kc) = CloudScatter%Phase_Coefficient(l,m,kc) + &
-                                                       (CSV%p_coef(l,m,kc,n) * bs)
+                                                       (CSV%pcoeff(l,m,kc,n) * bs)
             END DO
           END DO
         END IF
@@ -532,20 +532,21 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter_TL( Atmosphere     , &  ! Input
-                                         CloudScatter   , &  ! Input
-                                         Atmosphere_TL  , &  ! Input
+  FUNCTION CRTM_Compute_CloudScatter_TL( Atmosphere     , &  ! FWD Input
+                                         CloudScatter   , &  ! FWD Input
+                                         Atmosphere_TL  , &  ! TL  Input
                                          SensorIndex    , &  ! Input
                                          ChannelIndex   , &  ! Input
-                                         CloudScatter_TL, &  ! Output
+                                         CloudScatter_TL, &  ! TL  Output
                                          CSV            , &  ! Internal variable input
                                          Message_Log    ) &  ! Error messaging
                                        RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atmosphere,Atmosphere_TL
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atmosphere
+    TYPE(CRTM_AtmScatter_type) , INTENT(IN)     :: CloudScatter
+    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atmosphere_TL
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CloudScatter
     TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CloudScatter_TL
     TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
@@ -558,12 +559,12 @@ CONTAINS
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
-    REAL(fp) :: Frequency, Wavenumber
+    REAL(fp) :: Frequency_MW, Frequency_IR
     LOGICAL  :: Layer_Mask(Atmosphere%n_Layers)
     INTEGER  :: Layer_Index(Atmosphere%n_Layers)
     INTEGER  :: nCloud_Layers
-    REAL(fp) :: ext_TL, w0_TL, g_TL
-    REAL(fp) :: p_coef_TL(0:CloudScatter%n_Legendre_Terms, CloudScatter%n_Phase_Elements)
+    REAL(fp) :: ke_TL, w_TL, g_TL
+    REAL(fp) :: pcoeff_TL(0:CloudScatter%n_Legendre_Terms, CloudScatter%n_Phase_Elements)
     REAL(fp) :: bs, bs_TL
     REAL(fp) :: Total_bs_TL(Atmosphere%n_Layers)
 
@@ -581,8 +582,8 @@ CONTAINS
     Total_bs_TL = ZERO
     ! Spectral variables
     Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
-    Frequency   = SC(SensorIndex)%Frequency(ChannelIndex)
-    Wavenumber  = SC(SensorIndex)%Wavenumber(ChannelIndex)
+    Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
+    Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
     n_Legendre_Terms = CloudScatter_TL%n_Legendre_Terms
     n_Phase_Elements = CloudScatter_TL%n_Phase_Elements
@@ -611,7 +612,7 @@ CONTAINS
         SELECT CASE (Sensor_Type)
           CASE (MICROWAVE_SENSOR)
             CALL Get_Cloud_Opt_MW_TL(CloudScatter_TL                              , & ! Input
-                                     Frequency                                    , & ! Input
+                                     Frequency_MW                                 , & ! Input
                                      Atmosphere%Cloud(n)%Type                     , & ! Input
                                      Atmosphere%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
                                      Atmosphere%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
@@ -619,40 +620,40 @@ CONTAINS
                                      Atmosphere_TL%Cloud(n)%Effective_Radius(kc)  , & ! TL  Input
                                      Atmosphere_TL%Cloud(n)%Effective_Variance(kc), & ! TL  Input
                                      Atmosphere_TL%Temperature(kc)                , & ! TL  Input
-                                     ext_TL                                       , & ! TL  Output
-                                     w0_TL                                        , & ! TL  Output
+                                     ke_TL                                        , & ! TL  Output
+                                     w_TL                                         , & ! TL  Output
                                      g_TL                                         , & ! TL  Output
-                                     p_coef_TL                                      ) ! TL  Output
+                                     pcoeff_TL                                      ) ! TL  Output
           CASE (INFRARED_SENSOR)
             CALL Get_Cloud_Opt_IR_TL(CloudScatter_TL                              , & ! Input
-                                     Wavenumber                                   , & ! Input
+                                     Frequency_IR                                 , & ! Input
                                      Atmosphere%Cloud(n)%Type                     , & ! Input
                                      Atmosphere%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
                                      Atmosphere%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
                                      Atmosphere_TL%Cloud(n)%Effective_Radius(kc)  , & ! TL  Input
                                      Atmosphere_TL%Cloud(n)%Effective_Variance(kc), & ! TL  Input
-                                     ext_TL                                       , & ! TL  Output
-                                     w0_TL                                        , & ! TL  Output
+                                     ke_TL                                        , & ! TL  Output
+                                     w_TL                                         , & ! TL  Output
                                      g_TL                                         , & ! TL  Output
-                                     p_coef_TL                                      ) ! TL  Output
+                                     pcoeff_TL                                      ) ! TL  Output
           CASE DEFAULT
-            ext_TL    = ZERO
-            w0_TL     = ZERO
+            ke_TL     = ZERO
+            w_TL      = ZERO
             g_TL      = ZERO
-            p_coef_TL = ZERO
+            pcoeff_TL = ZERO
         END SELECT
 
         ! Compute the volume scattering coefficient
-        bs = Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w0(kc,n) * CSV%ext(kc,n)
-        bs_TL = (Atmosphere_TL%Cloud(n)%Water_Content(kc) * CSV%w0(kc,n) * CSV%ext(kc,n)) + &
-                (Atmosphere%Cloud(n)%Water_Content(kc)    * w0_TL        * CSV%ext(kc,n)) + &
-                (Atmosphere%Cloud(n)%Water_Content(kc)    * CSV%w0(kc,n) * ext_TL       )
+        bs = Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)
+        bs_TL = (Atmosphere_TL%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)) + &
+                (Atmosphere%Cloud(n)%Water_Content(kc)    * w_TL        * CSV%ke(kc,n)) + &
+                (Atmosphere%Cloud(n)%Water_Content(kc)    * CSV%w(kc,n) * ke_TL       )
         Total_bs_TL(kc) = Total_bs_TL(kc) + bs_TL
 
         ! Compute the optical depth (absorption + scattering)
         CloudScatter_TL%Optical_Depth(kc) = CloudScatter_TL%Optical_Depth(kc) + &
-                                            (ext_TL        * Atmosphere%Cloud(n)%Water_Content(kc)) + &
-                                            (CSV%ext(kc,n) * Atmosphere_TL%Cloud(n)%Water_Content(kc))
+                                            (ke_TL        * Atmosphere%Cloud(n)%Water_Content(kc)) + &
+                                            (CSV%ke(kc,n) * Atmosphere_TL%Cloud(n)%Water_Content(kc))
         
         ! Compute the asymmetry factor
         CloudScatter_TL%Asymmetry_Factor(kc) = CloudScatter_TL%Asymmetry_Factor(kc) + &
@@ -664,8 +665,8 @@ CONTAINS
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               CloudScatter_TL%Phase_Coefficient(l,m,kc) = CloudScatter_TL%Phase_Coefficient(l,m,kc) + &
-                                                          (p_coef_TL(l,m)       * bs   ) + &
-                                                          (CSV%p_coef(l,m,kc,n) * bs_TL)
+                                                          (pcoeff_TL(l,m)       * bs   ) + &
+                                                          (CSV%pcoeff(l,m,kc,n) * bs_TL)
             END DO
           END DO
         END IF
@@ -800,12 +801,12 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       CSVariables:      Structure containing internal variables required for
+!       ASVariables:      Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
 !                         The contents of this structure are NOT accessible
-!                         outside of the CRTM_CloudScatter module.
+!                         outside of the CRTM_AerosolScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_CSVariables_type)
+!                         TYPE:       TYPE(CRTM_ASVariables_type)
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
@@ -822,10 +823,6 @@ CONTAINS
 ! OUTPUT ARGUMENTS:
 !       Atmosphere_AD:    CRTM Atmosphere structure containing the adjoint
 !                         atmospheric state data.
-!                         **NOTE: On ENTRY to this function, the contents of
-!                                 this structure should be defined (e.g.
-!                                 initialized to some value based on the
-!                                 position of this function in the call chain.)
 !                         UNITS:      N/A
 !                         TYPE:       TYPE(CRTM_Atmosphere_type)
 !                         DIMENSION:  Scalar
@@ -848,15 +845,14 @@ CONTAINS
 !       be defined prior to entry to this routine. So, anytime a structure is
 !       to be output, to prevent memory leaks the IN OUT INTENT is a must.
 !
-!
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter_AD( Atmosphere     , &  ! Input
-                                         CloudScatter   , &  ! Input
-                                         CloudScatter_AD, &  ! Input
+  FUNCTION CRTM_Compute_CloudScatter_AD( Atmosphere     , &  ! FWD Input
+                                         CloudScatter   , &  ! FWD Input
+                                         CloudScatter_AD, &  ! AD  Input
                                          SensorIndex    , &  ! Input
                                          ChannelIndex   , &  ! Input
-                                         Atmosphere_AD  , &  ! Output
+                                         Atmosphere_AD  , &  ! AD  Output
                                          CSV            , &  ! Internal variable input
                                          Message_Log    ) &  ! Error messaging
                                        RESULT( Error_Status )
@@ -878,12 +874,12 @@ CONTAINS
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
-    REAL(fp) :: Frequency, Wavenumber
+    REAL(fp) :: Frequency_MW, Frequency_IR
     LOGICAL  :: Layer_Mask(Atmosphere%n_Layers)
     INTEGER  :: Layer_Index(Atmosphere%n_Layers)
     INTEGER  :: nCloud_Layers
-    REAL(fp) :: ext_AD, w0_AD, g_AD
-    REAL(fp) :: p_coef_AD(0:CloudScatter%n_Legendre_Terms, CloudScatter%n_Phase_Elements)
+    REAL(fp) :: ke_AD, w_AD, g_AD
+    REAL(fp) :: pcoeff_AD(0:CloudScatter%n_Legendre_Terms, CloudScatter%n_Phase_Elements)
     REAL(fp) :: bs, bs_AD
     REAL(fp) :: Total_bs_AD(Atmosphere%n_Layers)
 
@@ -896,8 +892,8 @@ CONTAINS
     Total_bs_AD = ZERO
     ! Spectral variables
     Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
-    Frequency   = SC(SensorIndex)%Frequency(ChannelIndex)
-    Wavenumber  = SC(SensorIndex)%Wavenumber(ChannelIndex)
+    Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
+    Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
     n_Legendre_Terms = CloudScatter_AD%n_Legendre_Terms
     n_Phase_Elements = CloudScatter_AD%n_Phase_Elements
@@ -983,22 +979,22 @@ CONTAINS
         ! Initialise the individual
         ! cloud adjoint variables
         bs_AD = ZERO
-        p_coef_AD = ZERO  ! Should this be here of in outer loop?
+        pcoeff_AD = ZERO  ! Should this be here of in outer loop?
         g_AD      = ZERO  ! Should this be here of in outer loop?
-        ext_AD    = ZERO  ! Should this be here of in outer loop?
-        w0_AD     = ZERO  ! Should this be here of in outer loop?
+        ke_AD     = ZERO  ! Should this be here of in outer loop?
+        w_AD      = ZERO  ! Should this be here of in outer loop?
 
         ! Recompute the forward model volume scattering
         ! coefficient for the current cloud ONLY
-        bs = Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w0(kc,n) * CSV%ext(kc,n)
+        bs = Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)
 
         ! Compute the adjoint of the
         ! phase matrix coefficients
         IF( n_Phase_Elements > 0 ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
-              bs_AD = bs_AD + (CSV%p_coef(l,m,kc,n) * CloudScatter_AD%Phase_Coefficient(l,m,kc))
-              p_coef_AD(l,m) = p_coef_AD(l,m) + (bs * CloudScatter_AD%Phase_Coefficient(l,m,kc))
+              bs_AD = bs_AD + (CSV%pcoeff(l,m,kc,n) * CloudScatter_AD%Phase_Coefficient(l,m,kc))
+              pcoeff_AD(l,m) = pcoeff_AD(l,m) + (bs * CloudScatter_AD%Phase_Coefficient(l,m,kc))
             END DO
           END DO
         END IF
@@ -1011,8 +1007,8 @@ CONTAINS
         ! Compute the adjoint of the optical 
         ! depth (absorption + scattering)
         Atmosphere_AD%Cloud(n)%Water_Content(kc) = Atmosphere_AD%Cloud(n)%Water_Content(kc) + &
-                                                   (CSV%ext(kc,n) * CloudScatter_AD%Optical_Depth(kc))
-        ext_AD = ext_AD + (Atmosphere%Cloud(n)%Water_Content(kc) * CloudScatter_AD%Optical_Depth(kc))
+                                                   (CSV%ke(kc,n) * CloudScatter_AD%Optical_Depth(kc))
+        ke_AD = ke_AD + (Atmosphere%Cloud(n)%Water_Content(kc) * CloudScatter_AD%Optical_Depth(kc))
 
         ! Compute the adjoint of the volume
         ! scattering coefficient.
@@ -1021,44 +1017,44 @@ CONTAINS
         !       start of the Cloud_Layer_loop.
         bs_AD = bs_AD + Total_bs_AD(kc)
         
-        ext_AD = ext_AD + (Atmosphere%Cloud(n)%Water_Content(kc)    * CSV%w0(kc,n)  * bs_AD )
-        w0_AD  = w0_AD  + (Atmosphere%Cloud(n)%Water_Content(kc)    * CSV%ext(kc,n) * bs_AD )
+        ke_AD = ke_AD + (Atmosphere%Cloud(n)%Water_Content(kc) * CSV%w(kc,n)  * bs_AD )
+        w_AD  = w_AD  + (Atmosphere%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * bs_AD )
         Atmosphere_AD%Cloud(n)%Water_Content(kc) = Atmosphere_AD%Cloud(n)%Water_Content(kc) + &
-                                                   (CSV%w0(kc,n) * CSV%ext(kc,n) * bs_AD)
+                                                   ( CSV%w(kc,n) * CSV%ke(kc,n) * bs_AD )
 
         ! Call sensor specific routines
         SELECT CASE (Sensor_Type)
           CASE (MICROWAVE_SENSOR)
             CALL Get_Cloud_Opt_MW_AD(CloudScatter_AD                              , & ! Input
-                                     Frequency                                    , & ! Input
+                                     Frequency_MW                                 , & ! Input
                                      Atmosphere%Cloud(n)%Type                     , & ! Input
                                      Atmosphere%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
                                      Atmosphere%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
                                      Atmosphere%Temperature(kc)                   , & ! FWD Input
-                                     ext_AD                                       , & ! AD  Input
-                                     w0_AD                                        , & ! AD  Input
+                                     ke_AD                                        , & ! AD  Input
+                                     w_AD                                         , & ! AD  Input
                                      g_AD                                         , & ! AD  Input
-                                     p_coef_AD                                    , & ! AD  Input
+                                     pcoeff_AD                                    , & ! AD  Input
                                      Atmosphere_AD%Cloud(n)%Effective_Radius(kc)  , & ! AD  Input
                                      Atmosphere_AD%Cloud(n)%Effective_Variance(kc), & ! AD  Input
                                      Atmosphere_AD%Temperature(kc)                  ) ! AD  Input
           CASE (INFRARED_SENSOR)
             CALL Get_Cloud_Opt_IR_AD(CloudScatter_AD                              , & ! Input
-                                     Wavenumber                                   , & ! Input
+                                     Frequency_IR                                 , & ! Input
                                      Atmosphere%Cloud(n)%Type                     , & ! Input
                                      Atmosphere%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
                                      Atmosphere%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
-                                     ext_AD                                       , & ! AD  Input
-                                     w0_AD                                        , & ! AD  Input
+                                     ke_AD                                        , & ! AD  Input
+                                     w_AD                                         , & ! AD  Input
                                      g_AD                                         , & ! AD  Input
-                                     p_coef_AD                                    , & ! AD  Input
+                                     pcoeff_AD                                    , & ! AD  Input
                                      Atmosphere_AD%Cloud(n)%Effective_Radius(kc)  , & ! AD  Output
                                      Atmosphere_AD%Cloud(n)%Effective_Variance(kc)  ) ! AD  Output
           CASE DEFAULT
-            ext_AD    = ZERO
-            w0_AD     = ZERO
+            ke_AD     = ZERO
+            w_AD      = ZERO
             g_AD      = ZERO
-            p_coef_AD = ZERO
+            pcoeff_AD = ZERO
         END SELECT
       END DO Cloud_Layer_loop
     END DO Cloud_loop
@@ -1079,47 +1075,46 @@ CONTAINS
   ! ------------------------------------------
   ! Subroutine to obtain the IR bulk
   ! optical properties of a cloud:
-  !   extinction coefficient (ext),
-  !   scattering coefficient (w0)
+  !   extinction coefficient (ke),
+  !   scattering coefficient (w)
   !   asymmetry factor (g), and
-  !   spherical Legendre coefficients (p_coef)
+  !   spherical Legendre coefficients (pcoeff)
   ! ------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR(CloudScatter, &  ! Input  CloudScatter structure
-                              Wavenumber  , &  ! Input  wavenumber in 1/cm 
+                              Frequency   , &  ! Input  Frequency (cm^-1) 
                               cloud_type  , &  ! Input  see CRTM_Cloud_Define.f90
                               Reff        , &  ! Input  effective radius (mm)
                               Reff_Var    , &  ! Input  variance of effective radius
-                              ext         , &  ! Output optical depth for 1 mm water content
-                              w0          , &  ! Output single scattering albedo
+                              ke          , &  ! Output optical depth for 1 mm water content
+                              w           , &  ! Output single scattering albedo
                               g           , &  ! Output asymmetry factor
-                              p_coef        )  ! Output spherical Legendre coefficients
+                              pcoeff        )  ! Output spherical Legendre coefficients
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter
-    REAL(fp)                  , INTENT(IN)     :: Wavenumber
+    REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Cloud_Type
     REAL(fp)                  , INTENT(IN)     :: Reff
     REAL(fp)                  , INTENT(IN)     :: Reff_Var
-    REAL(fp)                  , INTENT(OUT)    :: ext
-    REAL(fp)                  , INTENT(OUT)    :: w0
+    REAL(fp)                  , INTENT(OUT)    :: ke
+    REAL(fp)                  , INTENT(OUT)    :: w
     REAL(fp)                  , INTENT(OUT)    :: g
-    REAL(fp)                  , INTENT(IN OUT) :: p_coef(0:,:)
+    REAL(fp)                  , INTENT(IN OUT) :: pcoeff(0:,:)
     ! Local variables
-    LOGICAL  :: Solid
     INTEGER  :: i1, i2
     INTEGER  :: j1, j2
     INTEGER  :: k
     INTEGER  :: l
     REAL(fp) :: f_int, r_int
-    REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
+    REAL(fp), DIMENSION(NPTS) :: f, r
+    REAL(fp), DIMENSION(NPTS) :: wlp, xlp
     
     ! Find the frequency and effective
     ! radius indices for interpolation
-    f_int = MAX(MIN(CloudC%Wavenumber(CloudC%n_Wavenumbers),Wavenumber),CloudC%Wavenumber(1))
-    CALL find_index(CloudC%Wavenumber, WAVENUMBER_SPACING, f_int, i1,i2)
-    f = CloudC%Wavenumber(i1:i2)
+    f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
+    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+    f = CloudC%Frequency_IR(i1:i2)
 
-    r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_Reff_IR),Reff),CloudC%Reff_IR(1))
+    r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_IR_Radii),Reff),CloudC%Reff_IR(1))
     CALL find_index(CloudC%Reff_IR, r_int, j1,j2)
     r = CloudC%Reff_IR(j1:j2)
     
@@ -1130,93 +1125,80 @@ CONTAINS
     ! Determine the density index, k, for the clouds
     ! based on CloudC LUT organisation
     SELECT CASE (Cloud_Type)
-      CASE(WATER_CLOUD)  ; Solid=.FALSE.
-      CASE(ICE_CLOUD)    ; Solid=.TRUE. ; k=3
-      CASE(RAIN_CLOUD)   ; Solid=.FALSE.
-      CASE(SNOW_CLOUD)   ; Solid=.TRUE. ; k=1
-      CASE(GRAUPEL_CLOUD); Solid=.TRUE. ; k=2
-      CASE(HAIL_CLOUD)   ; Solid=.TRUE. ; k=3
+      CASE(WATER_CLOUD)  ; k=0  ! Liquid
+      CASE(ICE_CLOUD)    ; k=3  ! Solid
+      CASE(RAIN_CLOUD)   ; k=0  ! Liquid
+      CASE(SNOW_CLOUD)   ; k=1  ! Solid
+      CASE(GRAUPEL_CLOUD); k=2  ! Solid
+      CASE(HAIL_CLOUD)   ; k=3  ! Solid
     END SELECT
     
-    ! Perform interpolation based on cloud type
-    IF (Solid) THEN
-      CALL interp_2D(CloudC%ext_S_IR(i1:i2,j1:j2,k), wlp, xlp, ext)
-      CALL interp_2D(CloudC%w_S_IR(i1:i2,j1:j2,k)  , wlp, xlp, w0 )
-      CALL interp_2D(CloudC%g_S_IR(i1:i2,j1:j2,k)  , wlp, xlp, g  )
-      IF (CloudScatter%n_Phase_Elements > 0 .AND. &
-          CloudScatter%n_Legendre_Terms > 2       ) THEN
-        DO l = 0, CloudScatter%n_Legendre_Terms
-          CALL interp_2D(CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+CloudScatter%lOffset), &
-                         wlp, xlp, p_coef(l,1))
-        END DO
-      END IF
-    ELSE
-      CALL interp_2D(CloudC%ext_L_IR(i1:i2,j1:j2), wlp, xlp, ext)
-      CALL interp_2D(CloudC%w_L_IR(i1:i2,j1:j2)  , wlp, xlp, w0 )
-      CALL interp_2D(CloudC%g_L_IR(i1:i2,j1:j2)  , wlp, xlp, g  )
-      IF (CloudScatter%n_Phase_Elements > 0 .AND. &
-          CloudScatter%n_Legendre_Terms > 2       ) THEN
-        DO l = 0, CloudScatter%n_Legendre_Terms
-          CALL interp_2D(CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+CloudScatter%lOffset), &
-                         wlp, xlp, p_coef(l,1))
-        END DO
-      END IF
+    ! Perform interpolation
+    CALL interp_2D(CloudC%ke_IR(i1:i2,j1:j2,k), wlp, xlp, ke)
+    CALL interp_2D(CloudC%w_IR(i1:i2,j1:j2,k) , wlp, xlp, w )
+    CALL interp_2D(CloudC%g_IR(i1:i2,j1:j2,k) , wlp, xlp, g )
+    IF (CloudScatter%n_Phase_Elements > 0 .AND. &
+        CloudScatter%n_Legendre_Terms > 2       ) THEN
+      DO l = 0, CloudScatter%n_Legendre_Terms
+        CALL interp_2D(CloudC%pcoeff_IR(i1:i2,j1:j2,k,l+CloudScatter%lOffset), &
+                       wlp, xlp, pcoeff(l,1))
+      END DO
     END IF
+    
   END SUBROUTINE Get_Cloud_Opt_IR
 
 
   ! ---------------------------------------------
   ! Subroutine to obtain the tangent-linear
   ! IR bulk optical properties of a cloud:
-  !   extinction coefficient (ext_TL),
-  !   scattereing coefficient (w0_TL)
+  !   extinction coefficient (ke_TL),
+  !   scattereing coefficient (w_TL)
   !   asymmetry factor (g_TL), and
-  !   spherical Legendre coefficients (p_coef_TL)
+  !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR_TL(CloudScatter_TL, &  ! Input      CloudScatter TL structure
-                                 Wavenumber     , &  ! Input      wavenumber in unit 1/cm 
+                                 Frequency      , &  ! Input      Frequency (cm^-1) 
                                  cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90
                                  Reff           , &  ! FWD Input  effective radius (mm)
                                  Reff_Var       , &  ! FWD Input  variance of effective radius
                                  Reff_TL        , &  ! TL  Input  effective radius (mm)
                                  Reff_Var_TL    , &  ! TL  Input  variance of effective radius
-                                 ext_TL         , &  ! TL  Output optical depth for 1 mm water content
-                                 w0_TL          , &  ! TL  Output single scattering albedo
+                                 ke_TL          , &  ! TL  Output extinction coefficient (=~ optical depth for 1 mm water content)
+                                 w_TL           , &  ! TL  Output single scattering albedo
                                  g_TL           , &  ! TL  Output asymmetry factor
-                                 p_coef_TL        )  ! TL  Output spherical Legendre coefficients
+                                 pcoeff_TL        )  ! TL  Output spherical Legendre coefficients
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_TL
-    REAL(fp),                   INTENT(IN)     :: Wavenumber
+    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
     REAL(fp),                   INTENT(IN)     :: Reff
     REAL(fp),                   INTENT(IN)     :: Reff_Var
     REAL(fp),                   INTENT(IN)     :: Reff_TL
     REAL(fp),                   INTENT(IN)     :: Reff_Var_TL
-    REAL(fp),                   INTENT(OUT)    :: ext_TL
-    REAL(fp),                   INTENT(OUT)    :: w0_TL
+    REAL(fp),                   INTENT(OUT)    :: ke_TL
+    REAL(fp),                   INTENT(OUT)    :: w_TL
     REAL(fp),                   INTENT(OUT)    :: g_TL
-    REAL(fp),                   INTENT(IN OUT) :: p_coef_TL(0:,:)
+    REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
     ! Local variables
-    LOGICAL  :: Solid
     INTEGER  :: i1, i2
     INTEGER  :: j1, j2
     INTEGER  :: k
     INTEGER  :: l
     REAL(fp) :: f_int   , r_int
     REAL(fp) :: f_int_TL, r_int_TL
-    REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wdlp, xdlp
+    REAL(fp), DIMENSION(NPTS) :: f, r
+    REAL(fp), DIMENSION(NPTS) :: wlp, xlp
+    REAL(fp), DIMENSION(NPTS) :: wdlp, xdlp
     
 
     ! No TL output when effective radius
     ! is outside LUT bounds
     IF ( Reff < CloudC%Reff_IR(1) .OR. &
-         Reff > CloudC%Reff_IR(CloudC%n_Reff_IR) ) THEN
-      ext_TL    = ZERO
-      w0_TL     = ZERO
+         Reff > CloudC%Reff_IR(CloudC%n_IR_Radii) ) THEN
+      ke_TL     = ZERO
+      w_TL      = ZERO
       g_TL      = ZERO
-      p_coef_TL = ZERO
+      pcoeff_TL = ZERO
       RETURN
     END IF
     
@@ -1226,11 +1208,11 @@ CONTAINS
     
     ! Find the frequency and effective
     ! radius indices for interpolation
-    f_int = MAX(MIN(CloudC%Wavenumber(CloudC%n_Wavenumbers),Wavenumber),CloudC%Wavenumber(1))
-    CALL find_index(CloudC%Wavenumber, WAVENUMBER_SPACING, f_int, i1,i2)
-    f = CloudC%Wavenumber(i1:i2)
+    f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
+    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+    f = CloudC%Frequency_IR(i1:i2)
 
-    r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_Reff_IR),Reff),CloudC%Reff_IR(1))
+    r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_IR_Radii),Reff),CloudC%Reff_IR(1))
     CALL find_index(CloudC%Reff_IR, r_int, j1,j2)
     r = CloudC%Reff_IR(j1:j2)
     
@@ -1243,38 +1225,26 @@ CONTAINS
     ! Determine the density index, k, for the clouds
     ! based on CloudC LUT organisation
     SELECT CASE (Cloud_Type)
-      CASE(WATER_CLOUD)  ; Solid=.FALSE.
-      CASE(ICE_CLOUD)    ; Solid=.TRUE. ; k=3
-      CASE(RAIN_CLOUD)   ; Solid=.FALSE.
-      CASE(SNOW_CLOUD)   ; Solid=.TRUE. ; k=1
-      CASE(GRAUPEL_CLOUD); Solid=.TRUE. ; k=2
-      CASE(HAIL_CLOUD)   ; Solid=.TRUE. ; k=3
+      CASE(WATER_CLOUD)  ; k=0  ! Liquid
+      CASE(ICE_CLOUD)    ; k=3  ! Solid
+      CASE(RAIN_CLOUD)   ; k=0  ! Liquid
+      CASE(SNOW_CLOUD)   ; k=1  ! Solid
+      CASE(GRAUPEL_CLOUD); k=2  ! Solid
+      CASE(HAIL_CLOUD)   ; k=3  ! Solid
     END SELECT
     
     ! Perform interpolation based on cloud type
-    IF (Solid) THEN
-      CALL interp_2D_TL(CloudC%ext_S_IR(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, ext_TL)
-      CALL interp_2D_TL(CloudC%w_S_IR(i1:i2,j1:j2,k)  , wlp, xdlp, r_int_TL, w0_TL )
-      CALL interp_2D_TL(CloudC%g_S_IR(i1:i2,j1:j2,k)  , wlp, xdlp, r_int_TL, g_TL  )
-      IF (CloudScatter_TL%n_Phase_Elements > 0 .AND. &
-          CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
-        DO l = 0, CloudScatter_TL%n_Legendre_Terms
-          CALL interp_2D_TL(CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+CloudScatter_TL%lOffset), &
-                            wlp, xdlp, r_int_TL, p_coef_TL(l,1))
-        END DO
-      END IF
-    ELSE
-      CALL interp_2D_TL(CloudC%ext_L_IR(i1:i2,j1:j2), wlp, xdlp, r_int_TL, ext_TL)
-      CALL interp_2D_TL(CloudC%w_L_IR(i1:i2,j1:j2)  , wlp, xdlp, r_int_TL, w0_TL )
-      CALL interp_2D_TL(CloudC%g_L_IR(i1:i2,j1:j2)  , wlp, xdlp, r_int_TL, g_TL  )
-      IF (CloudScatter_TL%n_Phase_Elements > 0 .AND. &
-          CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
-        DO l = 0, CloudScatter_TL%n_Legendre_Terms
-          CALL interp_2D_TL(CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+CloudScatter_TL%lOffset), &
-                            wlp, xdlp, r_int_TL, p_coef_TL(l,1))
-        END DO
-      END IF
+    CALL interp_2D_TL(CloudC%ke_IR(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, ke_TL)
+    CALL interp_2D_TL(CloudC%w_IR(i1:i2,j1:j2,k) , wlp, xdlp, r_int_TL, w_TL )
+    CALL interp_2D_TL(CloudC%g_IR(i1:i2,j1:j2,k) , wlp, xdlp, r_int_TL, g_TL )
+    IF (CloudScatter_TL%n_Phase_Elements > 0 .AND. &
+        CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
+      DO l = 0, CloudScatter_TL%n_Legendre_Terms
+        CALL interp_2D_TL(CloudC%pcoeff_IR(i1:i2,j1:j2,k,l+CloudScatter_TL%lOffset), &
+                          wlp, xdlp, r_int_TL, pcoeff_TL(l,1))
+      END DO
     END IF
+
   END SUBROUTINE Get_Cloud_Opt_IR_TL
 
 
@@ -1285,50 +1255,49 @@ CONTAINS
   !   effective variance (Reff_Var_AD)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR_AD(CloudScatter_AD, &  ! Input      CloudScatter AD structure
-                                 Wavenumber     , &  ! Input      wavenumber in unit 1/cm 
+                                 Frequency      , &  ! Input      Frequency (cm^-1) 
                                  cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90
                                  Reff           , &  ! FWD Input  effective radius (mm)
                                  Reff_Var       , &  ! FWD Input  variance of effective radius
-                                 ext_AD         , &  ! AD  Input  optical depth for 1 mm water content
-                                 w0_AD          , &  ! AD  Input  single scattering albedo
+                                 ke_AD          , &  ! AD  Input  extinction coefficient (=~ optical depth for 1 mm water content)
+                                 w_AD           , &  ! AD  Input  single scattering albedo
                                  g_AD           , &  ! AD  Input  asymmetry factor
-                                 p_coef_AD      , &  ! AD  Input  spherical Legendre coefficients
+                                 pcoeff_AD      , &  ! AD  Input  spherical Legendre coefficients
                                  Reff_AD        , &  ! AD  Output effective radius (mm)
                                  Reff_Var_AD      )  ! AD  Output variance of effective radius
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_AD
-    REAL(fp),                   INTENT(IN)     :: Wavenumber
+    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
     REAL(fp),                   INTENT(IN)     :: Reff
     REAL(fp),                   INTENT(IN)     :: Reff_Var
-    REAL(fp),                   INTENT(IN OUT) :: ext_AD          ! AD  Input 
-    REAL(fp),                   INTENT(IN OUT) :: w0_AD           ! AD  Input 
+    REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
+    REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: g_AD            ! AD  Input 
-    REAL(fp),                   INTENT(IN OUT) :: p_coef_AD(0:,:) ! AD  Input 
+    REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:) ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: Reff_AD         ! AD  Output
     REAL(fp),                   INTENT(IN OUT) :: Reff_Var_AD     ! AD  Output
     ! Local variables
-    LOGICAL  :: Solid
     INTEGER  :: i1, i2
     INTEGER  :: j1, j2
     INTEGER  :: k
     INTEGER  :: l
     REAL(fp) :: f_int   , r_int
     REAL(fp) :: f_int_AD
-    REAL(fp), DIMENSION(INTERP_NPTS) :: f, r
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wdlp, xdlp
+    REAL(fp), DIMENSION(NPTS) :: f, r
+    REAL(fp), DIMENSION(NPTS) :: wlp, xlp
+    REAL(fp), DIMENSION(NPTS) :: wdlp, xdlp
 
     ! No TL output when effective radius
     ! is outside LUT bounds
     IF ( Reff < CloudC%Reff_IR(1) .OR. &
-         Reff > CloudC%Reff_IR(CloudC%n_Reff_IR) ) THEN
+         Reff > CloudC%Reff_IR(CloudC%n_IR_Radii) ) THEN
       Reff_AD     = ZERO
       Reff_Var_AD = ZERO
-      ext_AD    = ZERO
-      w0_AD     = ZERO
+      ke_AD     = ZERO
+      w_AD      = ZERO
       g_AD      = ZERO
-      p_coef_AD = ZERO
+      pcoeff_AD = ZERO
       RETURN
     END IF
     
@@ -1337,77 +1306,64 @@ CONTAINS
     
     ! Find the frequency and effective
     ! radius indices for interpolation
-    f_int = MAX(MIN(CloudC%Wavenumber(CloudC%n_Wavenumbers),Wavenumber),CloudC%Wavenumber(1))
-    CALL find_index(CloudC%Wavenumber, WAVENUMBER_SPACING, f_int, i1,i2)
-    f = CloudC%Wavenumber(i1:i2)
+    f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
+    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+    f = CloudC%Frequency_IR(i1:i2)
 
-    r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_Reff_IR),Reff),CloudC%Reff_IR(1))
+    r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_IR_Radii),Reff),CloudC%Reff_IR(1))
     CALL find_index(CloudC%Reff_IR, r_int, j1,j2)
     r = CloudC%Reff_IR(j1:j2)
  
     ! Calculate the Forward Lagrange Polynomials
     wlp = lpoly(f,f_int)
-    
-    
+        
     ! Calculate the TL Lagrange Polynomials
     xdlp = dlpoly(r,r_int) 
      
     ! Determine the density index, k, for the clouds
     ! based on CloudC LUT organisation
     SELECT CASE (Cloud_Type)
-      CASE(WATER_CLOUD)  ; Solid=.FALSE.
-      CASE(ICE_CLOUD)    ; Solid=.TRUE. ; k=3
-      CASE(RAIN_CLOUD)   ; Solid=.FALSE.
-      CASE(SNOW_CLOUD)   ; Solid=.TRUE. ; k=1
-      CASE(GRAUPEL_CLOUD); Solid=.TRUE. ; k=2
-      CASE(HAIL_CLOUD)   ; Solid=.TRUE. ; k=3
+      CASE(WATER_CLOUD)  ; k=0  ! Liquid
+      CASE(ICE_CLOUD)    ; k=3  ! Solid
+      CASE(RAIN_CLOUD)   ; k=0  ! Liquid
+      CASE(SNOW_CLOUD)   ; k=1  ! Solid
+      CASE(GRAUPEL_CLOUD); k=2  ! Solid
+      CASE(HAIL_CLOUD)   ; k=3  ! Solid
     END SELECT
     
     ! Perform interpolation based on cloud type
-    IF (Solid) THEN
-      CALL interp_2D_AD(CloudC%ext_S_IR(i1:i2,j1:j2,k), wlp, xdlp, ext_AD, Reff_AD)
-      CALL interp_2D_AD(CloudC%w_S_IR(i1:i2,j1:j2,k)  , wlp, xdlp, w0_AD , Reff_AD)
-      CALL interp_2D_AD(CloudC%g_S_IR(i1:i2,j1:j2,k)  , wlp, xdlp, g_AD  , Reff_AD)
-      IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
-          CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
-        DO l = 0, CloudScatter_AD%n_Legendre_Terms
-          CALL interp_2D_AD(CloudC%phase_coeff_S_IR(i1:i2,j1:j2,k,l+CloudScatter_AD%lOffset), &
-                            wlp, xdlp, p_coef_AD(l,1), Reff_AD)
-        END DO
-      END IF
-    ELSE
-      CALL interp_2D_AD(CloudC%ext_L_IR(i1:i2,j1:j2), wlp, xdlp, ext_AD, Reff_AD)
-      CALL interp_2D_AD(CloudC%w_L_IR(i1:i2,j1:j2)  , wlp, xdlp, w0_AD , Reff_AD)
-      CALL interp_2D_AD(CloudC%g_L_IR(i1:i2,j1:j2)  , wlp, xdlp, g_AD  , Reff_AD)
-      IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
-          CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
-        DO l = 0, CloudScatter_AD%n_Legendre_Terms
-          CALL interp_2D_AD(CloudC%phase_coeff_L_IR(i1:i2,j1:j2,l+CloudScatter_AD%lOffset), &
-                            wlp, xdlp, p_coef_AD(l,1), Reff_AD)
-        END DO
-      END IF
+    CALL interp_2D_AD(CloudC%ke_IR(i1:i2,j1:j2,k), wlp, xdlp, ke_AD, Reff_AD)
+    CALL interp_2D_AD(CloudC%w_IR(i1:i2,j1:j2,k) , wlp, xdlp, w_AD , Reff_AD)
+    CALL interp_2D_AD(CloudC%g_IR(i1:i2,j1:j2,k) , wlp, xdlp, g_AD , Reff_AD)
+    IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
+        CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
+      DO l = 0, CloudScatter_AD%n_Legendre_Terms
+        CALL interp_2D_AD(CloudC%pcoeff_IR(i1:i2,j1:j2,k,l+CloudScatter_AD%lOffset), &
+                          wlp, xdlp, pcoeff_AD(l,1), Reff_AD)
+      END DO
     END IF
+
   END SUBROUTINE Get_Cloud_Opt_IR_AD
 
 
   ! ------------------------------------------
   ! Subroutine to obtain the MW bulk
   ! optical properties of a cloud:
-  !   extinction coefficient (ext),
-  !   scattereing coefficient (w0)
+  !   extinction coefficient (ke),
+  !   scattereing coefficient (w)
   !   asymmetry factor (g), and
-  !   spherical Legendre coefficients (p_coef)
+  !   spherical Legendre coefficients (pcoeff)
   ! ------------------------------------------
   SUBROUTINE Get_Cloud_Opt_MW(CloudScatter, &  ! Input  CloudScatter structure
-                              Frequency   , &  ! Input  Frequency in GHz 
+                              Frequency   , &  ! Input  Frequency (GHz) 
                               cloud_type  , &  ! Input  see CRTM_Cloud_Define.f90
                               Reff        , &  ! Input  effective radius (mm)
                               Reff_Var    , &  ! Input  variance of effective radius
                               Temperature , &  ! Input  cloudy temperature
-                              ext         , &  ! Input optical depth for 1 mm water content
-                              w0          , &  ! Input single scattering albedo
+                              ke          , &  ! Input optical depth for 1 mm water content
+                              w           , &  ! Input single scattering albedo
                               g           , &  ! Input asymmetry factor
-                              p_coef        )  ! Output spherical Legendre coefficients
+                              pcoeff        )  ! Output spherical Legendre coefficients
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter
     REAL(fp)                  , INTENT(IN)     :: Frequency
@@ -1415,32 +1371,32 @@ CONTAINS
     REAL(fp)                  , INTENT(IN)     :: Reff
     REAL(fp)                  , INTENT(IN)     :: Reff_Var
     REAL(fp)                  , INTENT(IN)     :: Temperature
-    REAL(fp)                  , INTENT(OUT)    :: ext
-    REAL(fp)                  , INTENT(OUT)    :: w0
+    REAL(fp)                  , INTENT(OUT)    :: ke
+    REAL(fp)                  , INTENT(OUT)    :: w
     REAL(fp)                  , INTENT(OUT)    :: g
-    REAL(fp)                  , INTENT(IN OUT) :: p_coef(0:,:)
+    REAL(fp)                  , INTENT(IN OUT) :: pcoeff(0:,:)
     ! Local variables
     INTEGER  :: i1, i2
     INTEGER  :: j1, j2
     INTEGER  :: k1, k2
     INTEGER  :: j, k, l, m
     REAL(fp) :: f_int, r_int, t_int
-    REAL(fp), DIMENSION(INTERP_NPTS) :: f, r, t
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp, ylp
+    REAL(fp), DIMENSION(NPTS) :: f, r, t
+    REAL(fp), DIMENSION(NPTS) :: wlp, xlp, ylp
 
     ! Initialise results that may
     ! not be interpolated
-    w0     = ZERO
+    w      = ZERO
     g      = ZERO
-    p_coef = ZERO
+    pcoeff = ZERO
     
     ! Find the frequency, effective radius
     ! and temperature indices for interpolation
-    f_int = MAX(MIN(CloudC%Frequency(CloudC%n_Frequencies),Frequency),CloudC%Frequency(1))
-    CALL find_index(CloudC%Frequency, f_int, i1,i2)
-    f = CloudC%Frequency(i1:i2)
+    f_int = MAX(MIN(CloudC%Frequency_MW(CloudC%n_MW_Frequencies),Frequency),CloudC%Frequency_MW(1))
+    CALL find_index(CloudC%Frequency_MW, f_int, i1,i2)
+    f = CloudC%Frequency_MW(i1:i2)
 
-    r_int = MAX(MIN(CloudC%Reff_MW(CloudC%n_Reff_MW),Reff),CloudC%Reff_MW(1))
+    r_int = MAX(MIN(CloudC%Reff_MW(CloudC%n_MW_Radii),Reff),CloudC%Reff_MW(1))
     CALL find_index(CloudC%Reff_MW, r_int, j1,j2)
     r = CloudC%Reff_MW(j1:j2)
  
@@ -1456,25 +1412,25 @@ CONTAINS
     ! Perform interpolation based on cloud type
     SELECT CASE (Cloud_Type)
       CASE (WATER_CLOUD)
-        CALL interp_2D(CloudC%ext_L_MW(i1:i2,1,k1:k2), wlp, ylp, ext)
+        CALL interp_2D(CloudC%ke_L_MW(i1:i2,1,k1:k2), wlp, ylp, ke)
 
       CASE (RAIN_CLOUD)
-        CALL interp_3D(CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, ext)
-        CALL interp_3D(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2)  , wlp, xlp, ylp, w0 )
-        CALL interp_3D(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)  , wlp, xlp, ylp, g  )
+        CALL interp_3D(CloudC%ke_L_MW(i1:i2,j1:j2,k1:k2), wlp, xlp, ylp, ke)
+        CALL interp_3D(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2) , wlp, xlp, ylp, w )
+        CALL interp_3D(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2) , wlp, xlp, ylp, g )
         IF (CloudScatter%n_Phase_Elements > 0 .AND. &
             CloudScatter%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter%n_Phase_Elements
             DO l = 0, CloudScatter%n_Legendre_Terms
-              CALL interp_3D(CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter%lOffset,m), &
-                             wlp, xlp, ylp, p_coef(l,m))
+              CALL interp_3D(CloudC%pcoeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter%lOffset,m), &
+                             wlp, xlp, ylp, pcoeff(l,m))
             END DO
           END DO
         END IF
 
       CASE (ICE_CLOUD)
         j = 1; k = 3
-        CALL interp_1D(CloudC%ext_S_MW(i1:i2,j,k), wlp, ext)
+        CALL interp_1D(CloudC%ke_S_MW(i1:i2,j,k), wlp, ke)
 
       CASE DEFAULT
         SELECT CASE (Cloud_Type)
@@ -1482,15 +1438,15 @@ CONTAINS
           CASE (HAIL_CLOUD)   ; k = 3
           CASE DEFAULT        ; k = 1
         END SELECT
-        CALL interp_2D(CloudC%ext_S_MW(i1:i2,j1:j2,k), wlp, xlp, ext)
-        CALL interp_2D(CloudC%w_S_MW(i1:i2,j1:j2,k)  , wlp, xlp, w0 )
-        CALL interp_2D(CloudC%g_S_MW(i1:i2,j1:j2,k)  , wlp, xlp, g  )
+        CALL interp_2D(CloudC%ke_S_MW(i1:i2,j1:j2,k), wlp, xlp, ke)
+        CALL interp_2D(CloudC%w_S_MW(i1:i2,j1:j2,k) , wlp, xlp, w )
+        CALL interp_2D(CloudC%g_S_MW(i1:i2,j1:j2,k) , wlp, xlp, g )
         IF (CloudScatter%n_Phase_Elements > 0 .AND. &
             CloudScatter%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter%n_Phase_Elements
             DO l = 0, CloudScatter%n_Legendre_Terms
-              CALL interp_2D(CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter%lOffset,m), &
-                             wlp, xlp, p_coef(l,m))
+              CALL interp_2D(CloudC%pcoeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter%lOffset,m), &
+                             wlp, xlp, pcoeff(l,m))
             END DO
           END DO
         END IF
@@ -1501,10 +1457,10 @@ CONTAINS
   ! ---------------------------------------------
   ! Subroutine to obtain the tangent-linear
   ! MW bulk optical properties of a cloud:
-  !   extinction coefficient (ext_TL),
-  !   scattereing coefficient (w0_TL)
+  !   extinction coefficient (ke_TL),
+  !   scattereing coefficient (w_TL)
   !   asymmetry factor (g_TL), and
-  !   spherical Legendre coefficients (p_coef_TL)
+  !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_MW_TL(CloudScatter_TL, &  ! Input      CloudScatter TL structure
                                  Frequency      , &  ! Input  frequency in GHz 
@@ -1515,10 +1471,10 @@ CONTAINS
                                  Reff_TL        , &  ! Input  effective radius (mm)
                                  Reff_Var_TL    , &  ! Input  variance of effective radius
                                  Temperature_TL , &  ! Input  cloudy temperature
-                                 ext_TL         , &  ! Output optical depth for 1 mm water content
-                                 w0_TL          , &  ! Output single scattering albedo
+                                 ke_TL          , &  ! Output extinction coefficient (=~ optical depth for 1 mm water content)
+                                 w_TL           , &  ! Output single scattering albedo
                                  g_TL           , &  ! Output asymmetry factor
-                                 p_coef_TL        )  ! Output spherical Legendre coefficients
+                                 pcoeff_TL        )  ! Output spherical Legendre coefficients
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_TL
     REAL(fp),                   INTENT(IN)     :: Frequency
@@ -1529,10 +1485,10 @@ CONTAINS
     REAL(fp),                   INTENT(IN)     :: Reff_TL
     REAL(fp),                   INTENT(IN)     :: Reff_Var_TL
     REAL(fp),                   INTENT(IN)     :: Temperature_TL
-    REAL(fp),                   INTENT(OUT)    :: ext_TL
-    REAL(fp),                   INTENT(OUT)    :: w0_TL
+    REAL(fp),                   INTENT(OUT)    :: ke_TL
+    REAL(fp),                   INTENT(OUT)    :: w_TL
     REAL(fp),                   INTENT(OUT)    :: g_TL
-    REAL(fp),                   INTENT(IN OUT) :: p_coef_TL(0:,:)
+    REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
     ! Local variables
     INTEGER  :: i1, i2
     INTEGER  :: j1, j2
@@ -1540,25 +1496,25 @@ CONTAINS
     INTEGER  :: k, l, m
     REAL(fp) :: f_int   , r_int   , t_int
     REAL(fp) :: f_int_TL, r_int_TL, t_int_TL
-    REAL(fp), DIMENSION(INTERP_NPTS) :: f, r, t
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp, ylp
-    REAL(fp), DIMENSION(INTERP_NPTS) :: xdlp, ydlp
+    REAL(fp), DIMENSION(NPTS) :: f, r, t
+    REAL(fp), DIMENSION(NPTS) :: wlp, xlp, ylp
+    REAL(fp), DIMENSION(NPTS) :: xdlp, ydlp
 
     ! Initialise results that may
     ! not be interpolated
-    w0_TL     = ZERO
+    w_TL      = ZERO
     g_TL      = ZERO
-    p_coef_TL = ZERO
+    pcoeff_TL = ZERO
     
     
     ! Find the frequency, effective radius
     ! and temperature indices for interpolation
-    f_int = MAX(MIN(CloudC%Frequency(CloudC%n_Frequencies),Frequency),CloudC%Frequency(1))
-    CALL find_index(CloudC%Frequency, f_int, i1,i2)
-    f = CloudC%Frequency(i1:i2)
+    f_int = MAX(MIN(CloudC%Frequency_MW(CloudC%n_MW_Frequencies),Frequency),CloudC%Frequency_MW(1))
+    CALL find_index(CloudC%Frequency_MW, f_int, i1,i2)
+    f = CloudC%Frequency_MW(i1:i2)
     f_int_TL = ZERO
 
-    r_int = MAX(MIN(CloudC%Reff_MW(CloudC%n_Reff_MW),Reff),CloudC%Reff_MW(1))
+    r_int = MAX(MIN(CloudC%Reff_MW(CloudC%n_MW_Radii),Reff),CloudC%Reff_MW(1))
     CALL find_index(CloudC%Reff_MW, r_int, j1,j2)
     r = CloudC%Reff_MW(j1:j2)
     r_int_TL = Reff_TL
@@ -1584,29 +1540,29 @@ CONTAINS
         ! is outside LUT bounds
         IF ( Temperature < CloudC%Temperature(1) .OR. &
              Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) THEN
-          ext_TL = ZERO
+          ke_TL = ZERO
           RETURN
         END IF
-        CALL interp_2D_TL(CloudC%ext_L_MW(i1:i2,1,k1:k2), wlp, ydlp, t_int_TL, ext_TL)
+        CALL interp_2D_TL(CloudC%ke_L_MW(i1:i2,1,k1:k2), wlp, ydlp, t_int_TL, ke_TL)
 
       CASE (RAIN_CLOUD)
         ! No TL output when both effective radius
         ! and temperature are outside LUT bounds
         IF ( (Reff < CloudC%Reff_MW(1) .OR. &
-              Reff > CloudC%Reff_MW(CloudC%n_Reff_MW)) .AND. &
+              Reff > CloudC%Reff_MW(CloudC%n_MW_Radii)) .AND. &
              (Temperature < CloudC%Temperature(1) .OR. &
               Temperature > CloudC%Temperature(CloudC%n_Temperatures)) ) THEN
-          ext_TL = ZERO
+          ke_TL = ZERO
           RETURN
         END IF
-        CALL interp_3D_TL(CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), &
+        CALL interp_3D_TL(CloudC%ke_L_MW(i1:i2,j1:j2,k1:k2), &
                           wlp, xlp, ylp, &
                           xdlp, ydlp, &
-                          r_int_TL, t_int_TL, ext_TL)
+                          r_int_TL, t_int_TL, ke_TL)
         CALL interp_3D_TL(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2)  , &
                           wlp, xlp, ylp, &
                           xdlp, ydlp, &
-                          r_int_TL, t_int_TL, w0_TL )
+                          r_int_TL, t_int_TL, w_TL )
         CALL interp_3D_TL(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)  , &
                           wlp, xlp, ylp, &
                           xdlp, ydlp, &
@@ -1615,17 +1571,17 @@ CONTAINS
             CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter_TL%n_Phase_Elements
             DO l = 0, CloudScatter_TL%n_Legendre_Terms
-              CALL interp_3D_TL(CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter_TL%lOffset,m), &
+              CALL interp_3D_TL(CloudC%pcoeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter_TL%lOffset,m), &
                                 wlp, xlp, ylp, &
                                 xdlp, ydlp,    &
                                 r_int_TL, t_int_TL, &
-                                p_coef_TL(l,m))
+                                pcoeff_TL(l,m))
             END DO
           END DO
         END IF
 
       CASE (ICE_CLOUD)
-        ext_TL = ZERO
+        ke_TL = ZERO
 
       CASE DEFAULT
         SELECT CASE (Cloud_Type)
@@ -1636,22 +1592,22 @@ CONTAINS
         ! No TL output when effective radius
         ! is outside LUT bounds
         IF ( Reff < CloudC%Reff_MW(1) .OR. &
-             Reff > CloudC%Reff_MW(CloudC%n_Reff_MW) ) THEN
-          ext_TL = ZERO
+             Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) THEN
+          ke_TL = ZERO
           RETURN
         END IF
-        CALL interp_2D_TL(CloudC%ext_S_MW(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, ext_TL)
-        CALL interp_2D_TL(CloudC%w_S_MW(i1:i2,j1:j2,k)  , wlp, xdlp, r_int_TL, w0_TL )
-        CALL interp_2D_TL(CloudC%g_S_MW(i1:i2,j1:j2,k)  , wlp, xdlp, r_int_TL, g_TL  )
+        CALL interp_2D_TL(CloudC%ke_S_MW(i1:i2,j1:j2,k), wlp, xdlp, r_int_TL, ke_TL)
+        CALL interp_2D_TL(CloudC%w_S_MW(i1:i2,j1:j2,k) , wlp, xdlp, r_int_TL, w_TL )
+        CALL interp_2D_TL(CloudC%g_S_MW(i1:i2,j1:j2,k) , wlp, xdlp, r_int_TL, g_TL )
         IF (CloudScatter_TL%n_Phase_Elements > 0 .AND. &
             CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter_TL%n_Phase_Elements
             DO l = 0, CloudScatter_TL%n_Legendre_Terms
-              CALL interp_2D_TL(CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter_TL%lOffset,m), &
+              CALL interp_2D_TL(CloudC%pcoeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter_TL%lOffset,m), &
                                 wlp, &
                                 xdlp, &
                                 r_int_TL, &
-                                p_coef_TL(l,m))
+                                pcoeff_TL(l,m))
             END DO
           END DO
         END IF
@@ -1672,10 +1628,10 @@ CONTAINS
                                  Reff           , &  ! FWD Input  effective radius (mm)
                                  Reff_Var       , &  ! FWD Input  variance of effective radius
                                  Temperature    , &  ! FWD Input  cloudy temperature
-                                 ext_AD         , &  ! AD  Input  optical depth for 1 mm water content
-                                 w0_AD          , &  ! AD  Input  single scattering albedo
+                                 ke_AD          , &  ! AD  Input  extinction coefficient (=~ optical depth for 1 mm water content)
+                                 w_AD           , &  ! AD  Input  single scattering albedo
                                  g_AD           , &  ! AD  Input  asymmetry factor
-                                 p_coef_AD      , &  ! AD  Input  spherical Legendre coefficients
+                                 pcoeff_AD      , &  ! AD  Input  spherical Legendre coefficients
                                  Reff_AD        , &  ! AD  Output effective radius (mm)
                                  Reff_Var_AD    , &  ! AD  Output variance of effective radius
                                  Temperature_AD   )  ! AD  Output temperature
@@ -1686,10 +1642,10 @@ CONTAINS
     REAL(fp),                   INTENT(IN)     :: Reff
     REAL(fp),                   INTENT(IN)     :: Reff_Var
     REAL(fp),                   INTENT(IN)     :: Temperature
-    REAL(fp),                   INTENT(IN OUT) :: ext_AD          ! AD  Input 
-    REAL(fp),                   INTENT(IN OUT) :: w0_AD           ! AD  Input 
+    REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
+    REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: g_AD            ! AD  Input 
-    REAL(fp),                   INTENT(IN OUT) :: p_coef_AD(0:,:) ! AD  Input 
+    REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:) ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: Reff_AD         ! AD  Output
     REAL(fp),                   INTENT(IN OUT) :: Reff_Var_AD     ! AD  Output
     REAL(fp),                   INTENT(IN OUT) :: Temperature_AD  ! AD  Output
@@ -1700,9 +1656,9 @@ CONTAINS
     INTEGER  :: k, l, m
     REAL(fp) :: f_int   , r_int   , t_int
     REAL(fp) :: f_int_AD
-    REAL(fp), DIMENSION(INTERP_NPTS) :: f, r, t
-    REAL(fp), DIMENSION(INTERP_NPTS) :: wlp, xlp, ylp
-    REAL(fp), DIMENSION(INTERP_NPTS) :: xdlp, ydlp
+    REAL(fp), DIMENSION(NPTS) :: f, r, t
+    REAL(fp), DIMENSION(NPTS) :: wlp, xlp, ylp
+    REAL(fp), DIMENSION(NPTS) :: xdlp, ydlp
 
     ! Effective variance isn't used yet
     Reff_Var_AD = ZERO
@@ -1712,11 +1668,11 @@ CONTAINS
     
     ! Find the frequency, effective radius
     ! and temperature indices for interpolation
-    f_int = MAX(MIN(CloudC%Frequency(CloudC%n_Frequencies),Frequency),CloudC%Frequency(1))
-    CALL find_index(CloudC%Frequency, f_int, i1,i2)
-    f = CloudC%Frequency(i1:i2)
+    f_int = MAX(MIN(CloudC%Frequency_MW(CloudC%n_MW_Frequencies),Frequency),CloudC%Frequency_MW(1))
+    CALL find_index(CloudC%Frequency_MW, f_int, i1,i2)
+    f = CloudC%Frequency_MW(i1:i2)
 
-    r_int = MAX(MIN(CloudC%Reff_MW(CloudC%n_Reff_MW),Reff),CloudC%Reff_MW(1))
+    r_int = MAX(MIN(CloudC%Reff_MW(CloudC%n_MW_Radii),Reff),CloudC%Reff_MW(1))
     CALL find_index(CloudC%Reff_MW, r_int, j1,j2)
     r = CloudC%Reff_MW(j1:j2)
  
@@ -1740,35 +1696,35 @@ CONTAINS
         ! is outside LUT bounds
         IF ( Temperature < CloudC%Temperature(1) .OR. &
              Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) THEN
-          ext_AD    = ZERO
-          w0_AD     = ZERO
+          ke_AD     = ZERO
+          w_AD      = ZERO
           g_AD      = ZERO
-          p_coef_AD = ZERO
+          pcoeff_AD = ZERO
           RETURN
         END IF
-        CALL interp_2D_AD(CloudC%ext_L_MW(i1:i2,1,k1:k2), wlp, ydlp, ext_AD, Temperature_AD)
+        CALL interp_2D_AD(CloudC%ke_L_MW(i1:i2,1,k1:k2), wlp, ydlp, ke_AD, Temperature_AD)
 
       CASE (RAIN_CLOUD)
         ! No TL output when both effective radius
         ! and temperature are outside LUT bounds
         IF ( (Reff < CloudC%Reff_MW(1) .OR. &
-              Reff > CloudC%Reff_MW(CloudC%n_Reff_MW)) .AND. &
+              Reff > CloudC%Reff_MW(CloudC%n_MW_Radii)) .AND. &
              (Temperature < CloudC%Temperature(1) .OR. &
               Temperature > CloudC%Temperature(CloudC%n_Temperatures)) ) THEN
-          ext_AD    = ZERO
-          w0_AD     = ZERO
+          ke_AD     = ZERO
+          w_AD      = ZERO
           g_AD      = ZERO
-          p_coef_AD = ZERO
+          pcoeff_AD = ZERO
           RETURN
         END IF
-        CALL interp_3D_AD(CloudC%ext_L_MW(i1:i2,j1:j2,k1:k2), &
+        CALL interp_3D_AD(CloudC%ke_L_MW(i1:i2,j1:j2,k1:k2), &
                           wlp, xlp, ylp, &
                           xdlp, ydlp, &
-                          ext_AD, Reff_AD, Temperature_AD)
+                          ke_AD, Reff_AD, Temperature_AD)
         CALL interp_3D_AD(CloudC%w_L_MW(i1:i2,j1:j2,k1:k2)  , &
                           wlp, xlp, ylp, &
                           xdlp, ydlp, &
-                          w0_AD, Reff_AD, Temperature_AD)
+                          w_AD, Reff_AD, Temperature_AD)
         CALL interp_3D_AD(CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)  , &
                           wlp, xlp, ylp, &
                           xdlp, ydlp, &
@@ -1777,20 +1733,20 @@ CONTAINS
             CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter_AD%n_Phase_Elements
             DO l = 0, CloudScatter_AD%n_Legendre_Terms
-              CALL interp_3D_AD(CloudC%phase_coeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter_AD%lOffset,m), &
+              CALL interp_3D_AD(CloudC%pcoeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter_AD%lOffset,m), &
                                 wlp, xlp, ylp, &
                                 xdlp, ydlp,    &
-                                p_coef_AD(l,m), &
+                                pcoeff_AD(l,m), &
                                 Reff_AD, Temperature_AD)
             END DO
           END DO
         END IF
 
       CASE (ICE_CLOUD)
-        ext_AD    = ZERO
-        w0_AD     = ZERO
+        ke_AD     = ZERO
+        w_AD      = ZERO
         g_AD      = ZERO
-        p_coef_AD = ZERO
+        pcoeff_AD = ZERO
 
       CASE DEFAULT
         SELECT CASE (Cloud_Type)
@@ -1801,23 +1757,23 @@ CONTAINS
         ! No TL output when effective radius
         ! is outside LUT bounds
         IF ( Reff < CloudC%Reff_MW(1) .OR. &
-             Reff > CloudC%Reff_MW(CloudC%n_Reff_MW) ) THEN
-          ext_AD    = ZERO
-          w0_AD     = ZERO
+             Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) THEN
+          ke_AD     = ZERO
+          w_AD      = ZERO
           g_AD      = ZERO
-          p_coef_AD = ZERO
+          pcoeff_AD = ZERO
           RETURN
         END IF
-        CALL interp_2D_AD(CloudC%ext_S_MW(i1:i2,j1:j2,k), wlp, xdlp, ext_AD, Reff_AD)
-        CALL interp_2D_AD(CloudC%w_S_MW(i1:i2,j1:j2,k)  , wlp, xdlp, w0_AD , Reff_AD)
-        CALL interp_2D_AD(CloudC%g_S_MW(i1:i2,j1:j2,k)  , wlp, xdlp, g_AD  , Reff_AD)
+        CALL interp_2D_AD(CloudC%ke_S_MW(i1:i2,j1:j2,k), wlp, xdlp, ke_AD, Reff_AD)
+        CALL interp_2D_AD(CloudC%w_S_MW(i1:i2,j1:j2,k) , wlp, xdlp, w_AD , Reff_AD)
+        CALL interp_2D_AD(CloudC%g_S_MW(i1:i2,j1:j2,k) , wlp, xdlp, g_AD , Reff_AD)
         IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
             CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter_AD%n_Phase_Elements
             DO l = 0, CloudScatter_AD%n_Legendre_Terms
-              CALL interp_2D_AD(CloudC%phase_coeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter_AD%lOffset,m), &
+              CALL interp_2D_AD(CloudC%pcoeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter_AD%lOffset,m), &
                                 wlp, xdlp, &
-                                p_coef_AD(l,m), &
+                                pcoeff_AD(l,m), &
                                 Reff_AD)
             END DO
           END DO
