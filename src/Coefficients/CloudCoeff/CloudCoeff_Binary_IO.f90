@@ -17,7 +17,8 @@ MODULE CloudCoeff_Binary_IO
   ! ------------------
   ! Module use
   USE Type_Kinds,          ONLY: Long
-  USE Message_Handler,     ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
+  USE Message_Handler,     ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                                 Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
   USE CloudCoeff_Define,   ONLY: CloudCoeff_Type, &
                                  Associated_CloudCoeff, &
@@ -42,7 +43,9 @@ MODULE CloudCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CloudCoeff_Binary_IO.f90,v 1.4 2006/07/12 14:09:18 wd20pd Exp $'
+    '$Id$'
+  ! Keyword set value
+  INTEGER, PARAMETER :: SET = 1
 
 
 CONTAINS
@@ -57,18 +60,18 @@ CONTAINS
 !       Function to inquire a Binary format CloudCoeff file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_CloudCoeff_Binary( Filename,                            &  ! Input
-!                                                 n_Frequencies    = n_Frequencies,    &  ! Optional Output
-!                                                 n_Reff_MW        = n_Reff_MW,        &  ! Optional Output
-!                                                 n_Wavenumbers    = n_Wavenumbers,    &  ! Optional Output
-!                                                 n_Reff_IR        = n_Reff_IR,        &  ! Optional Output
-!                                                 n_Temperatures   = n_Temperatures,   &  ! Optional Output
-!                                                 n_Densities      = n_Densities,      &  ! Optional Output
+!       Error_Status = Inquire_CloudCoeff_Binary( Filename                           , &  ! Input
+!                                                 n_MW_Frequencies = n_MW_Frequencies, &  ! Optional Output
+!                                                 n_MW_Radii       = n_MW_Radii      , &  ! Optional Output
+!                                                 n_IR_Frequencies = n_IR_Frequencies, &  ! Optional Output
+!                                                 n_IR_Radii       = n_IR_Radii      , &  ! Optional Output
+!                                                 n_Temperatures   = n_Temperatures  , &  ! Optional Output
+!                                                 n_Densities      = n_Densities     , &  ! Optional Output
 !                                                 n_Legendre_Terms = n_Legendre_Terms, &  ! Optional Output
 !                                                 n_Phase_Elements = n_Phase_Elements, &  ! Optional Output
-!                                                 Release          = Release,          &  ! Optional Output
-!                                                 Version          = Version,          &  ! Optional Output
-!                                                 RCS_Id           = RCS_Id,           &  ! Revision control
+!                                                 Release          = Release         , &  ! Optional Output
+!                                                 Version          = Version         , &  ! Optional Output
+!                                                 RCS_Id           = RCS_Id          , &  ! Revision control
 !                                                 Message_Log      = Message_Log       )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -90,68 +93,60 @@ CONTAINS
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Frequencies:     The number of monocromatic microwave frequencies 
-!                          within look-up table (LUT) 
-!                          The "I1" dimension. Must be > 0.
+!       n_MW_Frequencies:  The number of microwave frequencies in
+!                          the look-up table (LUT)
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Reff_MW:         The number of discrete effective radii 
-!                          of MW scatterers.
-!                          The "I2" dimension. Must be > 0.
+!       n_MW_Radii:        The number of discrete effective radii 
+!                          for MW scatterers in the LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Wavenumbers:     The number of monocromatic infrared wavenumbers
-!                          within LUT 
-!                          The "I3" dimension. Must be > 0.
+!       n_IR_Frequencies:  The number of infrared frequencies in
+!                          the LUT 
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Reff_IR:         The number of discrete effective radii 
-!                          of IR scatterers
-!                          The "I4" dimension. Must be > 0.
+!       n_IR_Radii:        The number of discrete effective radii 
+!                          for IR scatterers in the LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Temperatures:    The number of discrete layer temperatures
-!                          within LUT 
-!                          The "I5" dimension. Must be > 0.
+!                          in the LUT. 
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Densities:       The number of fixed densities for snow, graupel,
-!                          and hail/ice 
-!                          The "I6" dimension. Must be > 0.
+!                          and hail/ice in the LUT. 
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Legendre_Terms:  The number of Legendre polynomial
-!                          terms.
-!                          The "I7" dimension. Must be > 0.
+!       n_Legendre_Terms:  The maximum number of Legendre polynomial
+!                          terms in the LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Phase_Elements:  The number of phase elements 
-!                          The "I8" dimension. Must be > 0.
+!       n_Phase_Elements:  The maximum number of phase elements in the LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Release:           The coefficient file release number.
 !                          UNITS:      N/A
@@ -183,26 +178,26 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_CloudCoeff_Binary( Filename,         &  ! Input
-                                      n_Frequencies,    &  ! Input
-                                      n_Reff_MW,        &  ! Input
-                                      n_Wavenumbers,    &  ! Input
-                                      n_Reff_IR,        &  ! Input
-                                      n_Temperatures,   &  ! Input
-                                      n_Densities,      &  ! Input
-                                      n_Legendre_Terms, &  ! Input
-                                      n_Phase_Elements, &  ! Input
-                                      Release,          &  ! Optional Output
-                                      Version,          &  ! Optional Output
-                                      RCS_Id,           &  ! Revision control
-                                      Message_Log )     &  ! Error messaging
+  FUNCTION Inquire_CloudCoeff_Binary( Filename        , &  ! Input
+                                      n_MW_Frequencies, &  ! Optional Output
+                                      n_MW_Radii      , &  ! Optional Output
+                                      n_IR_Frequencies, &  ! Optional Output
+                                      n_IR_Radii      , &  ! Optional Output
+                                      n_Temperatures  , &  ! Optional Output
+                                      n_Densities     , &  ! Optional Output
+                                      n_Legendre_Terms, &  ! Optional Output
+                                      n_Phase_Elements, &  ! Optional Output
+                                      Release         , &  ! Optional Output
+                                      Version         , &  ! Optional Output
+                                      RCS_Id          , &  ! Revision control
+                                      Message_Log     ) &  ! Error messaging
                                     RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Frequencies
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Reff_MW
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavenumbers
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Reff_IR
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Frequencies
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Radii
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Frequencies
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Radii
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Temperatures
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Densities
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
@@ -219,10 +214,10 @@ CONTAINS
     CHARACTER(256) :: Message
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER(Long) :: File_n_Frequencies
-    INTEGER(Long) :: File_n_Reff_MW
-    INTEGER(Long) :: File_n_Wavenumbers
-    INTEGER(Long) :: File_n_Reff_IR
+    INTEGER(Long) :: File_n_MW_Frequencies
+    INTEGER(Long) :: File_n_MW_Radii
+    INTEGER(Long) :: File_n_IR_Frequencies
+    INTEGER(Long) :: File_n_IR_Radii
     INTEGER(Long) :: File_n_Temperatures
     INTEGER(Long) :: File_n_Densities
     INTEGER(Long) :: File_n_Legendre_Terms
@@ -231,10 +226,13 @@ CONTAINS
     INTEGER(Long) :: File_Version
  
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Open the Binary format TauCoeff file
+
+    ! Open the Binary format CloudCoeff file
+    ! --------------------------------------
     Error_Status = Open_Binary_File( TRIM( Filename ), &
                                      FileID, &
                                      Message_Log = Message_Log )
@@ -246,12 +244,14 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read the Release/Version information
+    ! ------------------------------------
     READ( FileID, IOSTAT = IO_Status ) File_Release, &
                                        File_Version
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error reading TauCoeff file Release/Version values from ", a, &
+      WRITE( Message, '( "Error reading CloudCoeff file Release/Version values from ", a, &
                         &". IOSTAT = ", i5 )' ) &
                       TRIM( Filename ), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
@@ -262,9 +262,11 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) File_n_Frequencies,    File_n_Reff_MW, &
-                                     File_n_Wavenumbers,    File_n_Reff_IR, &
+    ! -------------------
+    READ( FileID, IOSTAT=IO_Status ) File_n_MW_Frequencies, File_n_MW_Radii, &
+                                     File_n_IR_Frequencies, File_n_IR_Radii, &
                                      File_n_Temperatures,   File_n_Densities, &
                                      File_n_Legendre_Terms, File_n_Phase_Elements 
     IF ( IO_Status /= 0 ) THEN
@@ -280,7 +282,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Close the file
+    ! --------------
     CLOSE( FileID, STATUS='KEEP', &
                    IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
@@ -292,11 +296,13 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Assign the return arguments
-    IF ( PRESENT( n_Frequencies    ) ) n_Frequencies    = File_n_Frequencies
-    IF ( PRESENT( n_Reff_MW        ) ) n_Reff_MW        = File_n_Reff_MW
-    IF ( PRESENT( n_Wavenumbers    ) ) n_Wavenumbers    = File_n_Wavenumbers
-    IF ( PRESENT( n_Reff_IR        ) ) n_Reff_IR        = File_n_Reff_IR
+    ! ---------------------------
+    IF ( PRESENT( n_MW_Frequencies ) ) n_MW_Frequencies = File_n_MW_Frequencies
+    IF ( PRESENT( n_MW_Radii       ) ) n_MW_Radii       = File_n_MW_Radii
+    IF ( PRESENT( n_IR_Frequencies ) ) n_IR_Frequencies = File_n_IR_Frequencies
+    IF ( PRESENT( n_IR_Radii       ) ) n_IR_Radii       = File_n_IR_Radii
     IF ( PRESENT( n_Temperatures   ) ) n_Temperatures   = File_n_Temperatures
     IF ( PRESENT( n_Densities      ) ) n_Densities      = File_n_Densities
     IF ( PRESENT( n_Legendre_Terms ) ) n_Legendre_Terms = File_n_Legendre_Terms
@@ -316,13 +322,13 @@ CONTAINS
 !       Function to read Binary format CloudCoeff files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_CloudCoeff_Binary( Filename,                              &  ! Input
-!                                              CloudCoeff,                            &  ! Output
-!                                              Quiet             = Quiet,             &  ! Optional input
-!                                              Process_ID        = Process_ID,        &  ! Optional input
-!                                              Output_Process_ID = Output_Process_ID, &  ! Optional input
-!                                              RCS_Id            = RCS_Id,            &  ! Revision control
-!                                              Message_Log       = Message_Log        )  ! Error messaging
+!       Error_Status = Read_CloudCoeff_Binary( Filename                           , &  ! Input
+!                                              CloudCoeff                         , &  ! Output
+!                                              Quiet            =Quiet            , &  ! Optional input
+!                                              Process_ID       =Process_ID       , &  ! Optional input
+!                                              Output_Process_ID=Output_Process_ID, &  ! Optional input
+!                                              RCS_Id           =RCS_Id           , &  ! Revision control
+!                                              Message_Log      =Message_Log        )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Filename:           Character string specifying the name of the
@@ -376,7 +382,7 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       CloudCoeff:         Structure to contain the cloud scattering coefficient
+!       CloudCoeff:         Structure to contain the cloud optical property
 !                           data read from the file.
 !                           UNITS:      N/A
 !                           TYPE:       CloudCoeff_type
@@ -412,13 +418,13 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_CloudCoeff_Binary( Filename,          &  ! Input
-                                   CloudCoeff,        &  ! Output
-                                   Quiet,             &  ! Optional input
-                                   Process_ID,        &  ! Optional input
+  FUNCTION Read_CloudCoeff_Binary( Filename         , &  ! Input
+                                   CloudCoeff       , &  ! Output
+                                   Quiet            , &  ! Optional input
+                                   Process_ID       , &  ! Optional input
                                    Output_Process_ID, &  ! Optional input
-                                   RCS_Id,            &  ! Revision control
-                                   Message_Log )      &  ! Error messaging
+                                   RCS_Id           , &  ! Revision control
+                                   Message_Log      ) &  ! Error messaging
                                  RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: Filename
@@ -439,18 +445,18 @@ CONTAINS
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
     INTEGER :: FileID
-    INTEGER(Long) :: n_Frequencies, n_Wavenumbers
-    INTEGER(Long) :: n_Reff_MW, n_Reff_IR
-    INTEGER(Long) :: n_Temperatures
-    INTEGER(Long) :: n_Densities
+    INTEGER(Long) :: n_MW_Frequencies, n_IR_Frequencies
+    INTEGER(Long) :: n_MW_Radii      , n_IR_Radii
+    INTEGER(Long) :: n_Temperatures  , n_Densities
     INTEGER(Long) :: n_Legendre_Terms, n_Phase_Elements 
     INTEGER(Long) :: i, j, k, l, m
  
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Output informational Messages....
+    ! Output informational messages....
     Noisy = .TRUE.
     ! ....unless....
     IF ( PRESENT( Quiet ) ) THEN
@@ -463,15 +469,17 @@ CONTAINS
       END IF
     END IF
 
-    ! Create a process ID Message tag for
-    ! WARNING and FAILURE Messages
+    ! Create a process ID message tag for
+    ! WARNING and FAILURE messages
     IF ( PRESENT( Process_ID ) ) THEN
       WRITE( Process_ID_Tag, '( ";  MPI Prcess ID: ", i5 )' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF
 
+
     ! Open the CloudCoeff file
+    ! ------------------------
     Error_Status = Open_Binary_File( TRIM( Filename ), &
                                      FileID,   &
                                      Message_Log = Message_Log )
@@ -483,7 +491,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read the Release/Version information
+    ! ------------------------------------
     READ( FileID, IOSTAT=IO_Status ) CloudCoeff%Release, &
                                      CloudCoeff%Version
     IF ( IO_Status /= 0 ) THEN
@@ -501,10 +511,12 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Read the dimensions
-    READ( FileID, IOSTAT=IO_Status ) n_Frequencies, n_Reff_MW, &
-                                     n_Wavenumbers, n_Reff_IR, &
-                                     n_Temperatures, n_Densities, &
+    ! -------------------
+    READ( FileID, IOSTAT=IO_Status ) n_MW_Frequencies, n_MW_Radii, &
+                                     n_IR_Frequencies, n_IR_Radii, &
+                                     n_Temperatures  , n_Densities, &
                                      n_Legendre_Terms, n_Phase_Elements 
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error reading data dimensions from ", a, &
@@ -513,11 +525,13 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Allocate the CloudCoeff structure for reading
-    Error_Status = Allocate_CloudCoeff( n_Frequencies   , &
-                                        n_Reff_MW       , &
-                                        n_Wavenumbers   , &
-                                        n_Reff_IR       , &
+    ! ---------------------------------------------
+    Error_Status = Allocate_CloudCoeff( n_MW_Frequencies, &
+                                        n_MW_Radii      , &
+                                        n_IR_Frequencies, &
+                                        n_IR_Radii      , &
                                         n_Temperatures  , &
                                         n_Densities     , &
                                         n_Legendre_Terms, &
@@ -529,125 +543,67 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Read the lookup table dimension vectors
-    READ( FileID, IOSTAT=IO_Status ) CloudCoeff%Frequency  , &
-                                     CloudCoeff%Wavenumber , &
-                                     CloudCoeff%Reff_MW    , &
-                                     CloudCoeff%Reff_IR    , &
-                                     CloudCoeff%Temperature, &
+    ! ---------------------------------------
+    READ( FileID, IOSTAT=IO_Status ) CloudCoeff%Frequency_MW, &
+                                     CloudCoeff%Frequency_IR, &
+                                     CloudCoeff%Reff_MW     , &
+                                     CloudCoeff%Reff_IR     , &
+                                     CloudCoeff%Temperature , &
                                      CloudCoeff%Density
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading LUT dimension vectors from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      WRITE( Message,'( "Error reading LUT dimension vectors from ", a, &
+                       &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
       GOTO 1000
     END IF
 
+
     ! Read the microwave liquid phase data
-    DO k = 1, n_Frequencies
-      DO i = 1, n_Reff_MW 
-        DO j = 1, n_Temperatures
-          READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_L_MW(k,i,j), &
-                                           CloudCoeff%w_L_MW(k,i,j)  , &
-                                           CloudCoeff%g_L_MW(k,i,j)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE(Message,'("Error reading MW (L) extinction, single scattering albedo, ",&
-                          &" and asymmetry factor from ",a,". IOSTAT = ", i5 )' ) &
-                          TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
+    ! ------------------------------------
+    READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ke_L_MW    , &
+                                     CloudCoeff%w_L_MW     , &
+                                     CloudCoeff%g_L_MW     , &
+                                     CloudCoeff%pcoeff_L_MW
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading microwave liquid phase data from ",a,&
+                      &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
+      GOTO 1000
+    END IF
 
-          DO l = 0, n_Legendre_Terms 
-            READ( FileID, IOSTAT=IO_Status ) (CloudCoeff%Phase_Coeff_L_MW(k,i,j,l,m),m=1,n_Phase_Elements)
-            IF ( IO_Status /= 0 ) THEN
-              Error_Status = FAILURE
-              WRITE( Message, '( "Error reading MW (L) expansion coefficients for phase functions from ", a, &
-                               &". IOSTAT = ", i5 )' ) &
-                             TRIM( Filename ), IO_Status
-              GOTO 1000
-            END IF
-          END DO
-        END DO
-      END DO
-    END DO
-           
+
     ! Read the microwave solid phase data
-    DO k = 1, n_Frequencies
-      DO i = 1, n_Reff_MW 
-        DO j = 1, n_Densities
-          READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_S_MW(k,i,j), &
-                                           CloudCoeff%w_S_MW(k,i,j)  , &
-                                           CloudCoeff%g_S_MW(k,i,j)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Message, '( "Error reading MW (S) extinction, single scattering albedo, ",&
-                            &"asymmetry factor from ",a,". IOSTAT = ", i5 )' ) &
-                            TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
-          DO l = 0, n_Legendre_Terms 
-            READ( FileID, IOSTAT=IO_Status ) (CloudCoeff%Phase_Coeff_S_MW(k,i,j,l,m),m=1,n_Phase_Elements)
-            IF ( IO_Status /= 0 ) THEN
-              WRITE( Message, '( "Error reading MW (S) expansion coefficients for phase functions from ", a, &
-                               &". IOSTAT = ", i5 )' ) &
-                             TRIM( Filename ), IO_Status
-              GOTO 1000
-            END IF
-          END DO 
-        END DO
-      END DO
-    END DO
+    ! -----------------------------------
+    READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ke_S_MW    , &
+                                     CloudCoeff%w_S_MW     , &
+                                     CloudCoeff%g_S_MW     , &
+                                     CloudCoeff%pcoeff_S_MW
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading microwave solid phase data from ",a,&
+                      &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
+      GOTO 1000
+    END IF
 
-    ! Read the infrared liquid phase data
-    DO k = 1, n_Wavenumbers
-      DO i = 1, n_Reff_IR 
-        READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_L_IR(k,i), &
-                                         CloudCoeff%w_L_IR(k,i)  , &
-                                         CloudCoeff%g_L_IR(k,i)
-        IF ( IO_Status /= 0 ) THEN
-          WRITE( Message, '( "Error reading IR (L) extinction, single scattering albedo, ",&
-                          &"asymmetry factor from ",a,". IOSTAT = ", i5 )' ) &
-                          TRIM( Filename ), IO_Status
-          GOTO 1000
-        END IF
-        DO l = 0, n_Legendre_Terms 
-          READ( FileID, IOSTAT=IO_Status ) CloudCoeff%phase_coeff_L_IR(k,i,l)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Message, '( "Error reading IR (L) expansion coefficients for phase functions from ", a, &
-                             &". IOSTAT = ", i5 )' ) &
-                           TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
-        END DO 
-      END DO
-    END DO
 
-    ! Read the infrared solid phase data
-    DO k = 1, n_Wavenumbers
-      DO i = 1, n_Reff_IR 
-        DO j = 1, n_Densities
-          READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_S_IR(k,i,j), &
-                                           CloudCoeff%w_S_IR(k,i,j)  , &
-                                           CloudCoeff%g_S_IR(k,i,j)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Message, '( "Error reading IR (S) extinction, single scattering albedo, ",&
-                            &"asymmetry factor from ",a,". IOSTAT = ", i5 )' ) &
-                            TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
-          DO l = 0, n_Legendre_Terms 
-            READ( FileID, IOSTAT=IO_Status ) CloudCoeff%phase_coeff_S_IR(k,i,j,l)
-            IF ( IO_Status /= 0 ) THEN
-              WRITE( Message, '( "Error reading IR (S) expansion coefficients for phase functions from ", a, &
-                              &". IOSTAT = ", i5 )' ) &
-                              TRIM( Filename ), IO_Status
-              GOTO 1000
-            END IF
-          END DO 
-        END DO
-      END DO
-    END DO
+    ! Read the infrared data
+    ! ----------------------
+    READ( FileID, IOSTAT=IO_Status ) CloudCoeff%ke_IR    , &
+                                     CloudCoeff%w_IR     , &
+                                     CloudCoeff%g_IR     , &
+                                     CloudCoeff%pcoeff_IR
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading infrared data from ",a,&
+                      &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
+      GOTO 1000
+    END IF
+
 
     ! Close the file
+    ! --------------
     CLOSE( FileID, STATUS = 'KEEP', &
                    IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
@@ -659,7 +615,9 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       CALL Info_CloudCoeff( CloudCoeff, Message )
       CALL Display_Message( ROUTINE_NAME, &
@@ -668,15 +626,15 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
-    Destroy_Status = Destroy_CloudCoeff(CloudCoeff, Message_Log=Message_Log)
+    Destroy_Status = Destroy_CloudCoeff( CloudCoeff, &
+                                         Message_Log=Message_Log)
     IF ( Destroy_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error destroying CloudCoeff during error cleanup.'
 
@@ -700,11 +658,11 @@ CONTAINS
 !       Function to write Binary format CloudCoeff files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_CloudCoeff_Binary( Filename,                 &  ! Input
-!                                               CloudCoeff,               &  ! Input
-!                                               Quiet       = Quiet,      &  ! Optional input
-!                                               RCS_Id      = RCS_Id,     &  ! Revision control
-!                                               Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Write_CloudCoeff_Binary( Filename               , &  ! Input
+!                                               CloudCoeff             , &  ! Input
+!                                               Quiet      =Quiet      , &  ! Optional input
+!                                               RCS_Id     =RCS_Id     , &  ! Revision control
+!                                               Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an output
@@ -714,7 +672,7 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-!       CloudCoeff:   Structure containing the cloud scattering coefficient
+!       CloudCoeff:   Structure containing the cloud optical property
 !                     data to write to file.
 !                     UNITS:      N/A
 !                     TYPE:       CloudCoeff_type
@@ -767,12 +725,13 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_CloudCoeff_Binary( Filename,     &  ! Input
-                                    CloudCoeff,   &  ! Input
-                                    Quiet,        &  ! Optional input
-                                    RCS_Id,       &  ! Revision control
+  FUNCTION Write_CloudCoeff_Binary( Filename    , &  ! Input
+                                    CloudCoeff  , &  ! Input
+                                    Quiet       , &  ! Optional input
+                                    RCS_Id      , &  ! Revision control
                                     Message_Log ) &  ! Error messaging
                                   RESULT ( Error_Status )
+    ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     TYPE(CloudCoeff_type),  INTENT(IN)  :: CloudCoeff
     INTEGER,      OPTIONAL, INTENT(IN)  :: Quiet
@@ -791,6 +750,7 @@ CONTAINS
     INTEGER :: i, j, k, l 
  
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -816,32 +776,35 @@ CONTAINS
     END IF
 
     ! Check the CloudCoeff structure dimensions
-    IF ( CloudCoeff%n_Frequencies    < 1 .OR. &
-         CloudCoeff%n_Reff_MW        < 1 .OR. &
-         CloudCoeff%n_Wavenumbers    < 1 .OR. &
-         CloudCoeff%n_Reff_IR        < 1 .OR. &
+    IF ( CloudCoeff%n_MW_Frequencies < 1 .OR. &
+         CloudCoeff%n_MW_Radii       < 1 .OR. &
+         CloudCoeff%n_IR_Frequencies < 1 .OR. &
+         CloudCoeff%n_IR_Radii       < 1 .OR. &
          CloudCoeff%n_Temperatures   < 1 .OR. &
          CloudCoeff%n_Densities      < 1 .OR. &
-         CloudCoeff%n_Legendre_Terms < 1 .OR. &
+         CloudCoeff%n_Legendre_Terms < 0 .OR. &
          CloudCoeff%n_Phase_Elements < 1      ) THEN
       Message = 'One or more dimensions of CloudCoeff structure are < or = 0.'
       GOTO 2000
     END IF
 
+
     ! Open the CloudCoeff data file
+    ! -----------------------------
     Error_Status = Open_Binary_File( TRIM( Filename ), &
                                      FileID, &
-                                     For_Output  = 1, &
+                                     For_Output  = SET, &
                                      Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM( Filename )
       GOTO 2000
     END IF
 
+
     ! Write the Release/Version information
+    ! -------------------------------------
     WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%Release, &
                                       CloudCoeff%Version
-
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Error writing CloudCoeff file Release/Version values to ", a, &
@@ -850,10 +813,12 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Write the dimensions
-    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%n_Frequencies, CloudCoeff%n_Reff_MW, &
-                                      CloudCoeff%n_Wavenumbers, CloudCoeff%n_Reff_IR, &
-                                      CloudCoeff%n_Temperatures, CloudCoeff%n_Densities, &
+    ! --------------------
+    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%n_MW_Frequencies, CloudCoeff%n_MW_Radii, &
+                                      CloudCoeff%n_IR_Frequencies, CloudCoeff%n_IR_Radii, &
+                                      CloudCoeff%n_Temperatures  , CloudCoeff%n_Densities, &
                                       CloudCoeff%n_Legendre_Terms, CloudCoeff%n_Phase_Elements 
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error writing data dimensions to ", a, &
@@ -862,127 +827,67 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Write the lookup table dimension vectors
-    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%Frequency  , &
-                                      CloudCoeff%Wavenumber , &
-                                      CloudCoeff%Reff_MW    , &
-                                      CloudCoeff%Reff_IR    , &
-                                      CloudCoeff%Temperature, &
+    ! ---------------------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%Frequency_MW, &
+                                      CloudCoeff%Frequency_IR, &
+                                      CloudCoeff%Reff_MW     , &
+                                      CloudCoeff%Reff_IR     , &
+                                      CloudCoeff%Temperature , &
                                       CloudCoeff%Density
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing LUT dimension vectors to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      WRITE( Message,'( "Error writing LUT dimension vectors to ", a, &
+                       &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
       GOTO 1000
     END IF
 
+
     ! Write the microwave liquid phase data
-    DO k = 1, CloudCoeff%n_Frequencies
-      DO i = 1, CloudCoeff%n_Reff_MW 
-        DO j = 1, CloudCoeff%n_Temperatures
-          WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_L_MW(k,i,j), &
-                                            CloudCoeff%w_L_MW(k,i,j)  , &
-                                            CloudCoeff%g_L_MW(k,i,j)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE(Message,'("Error writing MW (L) extinction, single scattering albedo, ",&
-                          &" and asymmetry factor to ",a,". IOSTAT = ", i5 )' ) &
-                          TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
+    ! ------------------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ke_L_MW    , &
+                                      CloudCoeff%w_L_MW     , &
+                                      CloudCoeff%g_L_MW     , &
+                                      CloudCoeff%pcoeff_L_MW
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error writing microwave liquid phase data to ",a,&
+                      &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
+      GOTO 1000
+    END IF
 
-          DO l = 0, CloudCoeff%n_Legendre_Terms 
-            WRITE( FileID, IOSTAT=IO_Status ) &
-              CloudCoeff%Phase_Coeff_L_MW(k,i,j,l,1:CloudCoeff%n_Phase_Elements)
-            IF ( IO_Status /= 0 ) THEN
-              Error_Status = FAILURE
-              WRITE( Message, '( "Error writing MW (L) expansion coefficients for phase functions to ", a, &
-                               &". IOSTAT = ", i5 )' ) &
-                             TRIM( Filename ), IO_Status
-              GOTO 1000
-            END IF
-          END DO
-        END DO
-      END DO
-    END DO
-           
+
     ! Write the microwave solid phase data
-    DO k = 1, CloudCoeff%n_Frequencies
-      DO i = 1, CloudCoeff%n_Reff_MW 
-        DO j = 1, CloudCoeff%n_Densities
-          WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_S_MW(k,i,j), &
-                                            CloudCoeff%w_S_MW(k,i,j)  , &
-                                            CloudCoeff%g_S_MW(k,i,j)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Message, '( "Error writing MW (S) extinction, single scattering albedo, ",&
-                            &"asymmetry factor to ",a,". IOSTAT = ", i5 )' ) &
-                            TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
-          DO l = 0, CloudCoeff%n_Legendre_Terms 
-            WRITE( FileID, IOSTAT=IO_Status ) &
-              CloudCoeff%Phase_Coeff_S_MW(k,i,j,l,1:CloudCoeff%n_Phase_Elements)
-            IF ( IO_Status /= 0 ) THEN
-              WRITE( Message, '( "Error writing MW (S) expansion coefficients for phase functions to ", a, &
-                               &". IOSTAT = ", i5 )' ) &
-                             TRIM( Filename ), IO_Status
-              GOTO 1000
-            END IF
-          END DO 
-        END DO
-      END DO
-    END DO
+    ! -----------------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ke_S_MW    , &
+                                      CloudCoeff%w_S_MW     , &
+                                      CloudCoeff%g_S_MW     , &
+                                      CloudCoeff%pcoeff_S_MW
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error writing microwave solid phase data to ",a,&
+                      &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
+      GOTO 1000
+    END IF
 
-    ! Write the infrared liquid phase data
-    DO k = 1, CloudCoeff%n_Wavenumbers
-      DO i = 1, CloudCoeff%n_Reff_IR 
-        WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_L_IR(k,i), &
-                                          CloudCoeff%w_L_IR(k,i)  , &
-                                          CloudCoeff%g_L_IR(k,i)
-        IF ( IO_Status /= 0 ) THEN
-          WRITE( Message, '( "Error writing IR (L) extinction, single scattering albedo, ",&
-                          &"asymmetry factor to ",a,". IOSTAT = ", i5 )' ) &
-                          TRIM( Filename ), IO_Status
-          GOTO 1000
-        END IF
-        DO l = 0, CloudCoeff%n_Legendre_Terms 
-          WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%phase_coeff_L_IR(k,i,l)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Message, '( "Error writing IR (L) expansion coefficients for phase functions to ", a, &
-                             &". IOSTAT = ", i5 )' ) &
-                           TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
-        END DO 
-      END DO
-    END DO
 
-    ! Write the infrared solid phase data
-    DO k = 1, CloudCoeff%n_Wavenumbers
-      DO i = 1, CloudCoeff%n_Reff_IR 
-        DO j = 1, CloudCoeff%n_Densities
-          WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ext_S_IR(k,i,j), &
-                                            CloudCoeff%w_S_IR(k,i,j)  , &
-                                            CloudCoeff%g_S_IR(k,i,j)
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Message, '( "Error writing IR (S) extinction, single scattering albedo, ",&
-                            &"asymmetry factor to ",a,". IOSTAT = ", i5 )' ) &
-                            TRIM( Filename ), IO_Status
-            GOTO 1000
-          END IF
-          DO l = 0, CloudCoeff%n_Legendre_Terms 
-            WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%phase_coeff_S_IR(k,i,j,l)
-            IF ( IO_Status /= 0 ) THEN
-              WRITE( Message, '( "Error writing IR (S) expansion coefficients for phase functions to ", a, &
-                              &". IOSTAT = ", i5 )' ) &
-                              TRIM( Filename ), IO_Status
-              GOTO 1000
-            END IF
-          END DO 
-        END DO
-      END DO
-    END DO
+    ! Write the infrared data
+    ! ----------------------
+    WRITE( FileID, IOSTAT=IO_Status ) CloudCoeff%ke_IR    , &
+                                      CloudCoeff%w_IR     , &
+                                      CloudCoeff%g_IR     , &
+                                      CloudCoeff%pcoeff_IR
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error writing infrared data to ",a,&
+                      &". IOSTAT = ", i5 )' ) &
+                     TRIM( Filename ), IO_Status
+      GOTO 1000
+    END IF
+
 
     ! Close the file
+    ! --------------
     CLOSE( FileID, STATUS = 'KEEP',   &
                    IOSTAT = IO_Status )
     IF ( IO_Status /= 0 ) THEN
@@ -994,7 +899,9 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       CALL Info_CloudCoeff( CloudCoeff, Message )
       CALL Display_Message( ROUTINE_NAME, &
@@ -1003,13 +910,12 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     CLOSE(FileID,STATUS=FILE_STATUS_ON_ERROR)
 

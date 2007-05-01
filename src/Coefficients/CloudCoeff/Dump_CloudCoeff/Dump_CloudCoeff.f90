@@ -21,7 +21,8 @@ PROGRAM Dump_CloudCoeff
                                   Program_Message, Display_Message
   USE CloudCoeff_Define,    ONLY: CloudCoeff_type, &
                                   Destroy_CloudCoeff
-  USE CloudCoeff_Binary_IO, ONLY: Read_CloudCoeff_Binary, Write_CloudCoeff_Binary
+  USE CloudCoeff_Binary_IO, ONLY: Read_CloudCoeff_Binary, &
+                                  Write_CloudCoeff_Binary
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -30,7 +31,7 @@ PROGRAM Dump_CloudCoeff
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Dump_CloudCoeff'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Dump_CloudCoeff.f90,v 1.3 2006/06/23 22:02:32 wd20pd Exp $'
+  '$Id$'
 
   ! ---------
   ! Variables
@@ -42,11 +43,13 @@ PROGRAM Dump_CloudCoeff
   CHARACTER(256) :: ASC_Filename
   TYPE(CloudCoeff_type) :: C
 
+  ! Set up
+  ! ------
   ! Output program header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to dump the contents of a CRTM Binary format '//&
                         'CloudCoeff file to an ASCII dumpfile.', &
-                        '$Revision: 1.3 $' )
+                        '$Revision$' )
 
   ! Get the filename
   WRITE( *, FMT     = '( /5x, "Enter the Binary CloudCoeff file: " )', &
@@ -92,35 +95,36 @@ PROGRAM Dump_CloudCoeff
   END IF
 
   ! Dump the structure contents
-  !
+  ! ---------------------------
   ! Release version info
   WRITE(FileID,'("Release.Version: ",i2,".",i2.2)')C%Release,C%Version
   ! Dimensions
-  WRITE(FileID,'(   "n_Frequencies      = ",i5,&
-                 &/,"n_Reff_MW          = ",i5,&
-                 &/,"n_Wavenumbers      = ",i5,&
-                 &/,"n_Reff_IR          = ",i5,&
+  WRITE(FileID,'(   "n_MW_Frequencies   = ",i5,&
+                 &/,"n_MW_Radii         = ",i5,&
+                 &/,"n_IR_Frequencies   = ",i5,&
+                 &/,"n_IR_Radii         = ",i5,&
                  &/,"n_Temperatures     = ",i5,&
                  &/,"n_Densities        = ",i5,&
                  &/,"Max_Legendre_Terms = ",i5,&
                  &/,"n_Legendre_Terms   = ",i5,&
                  &/,"Max_Phase_Elements = ",i5,&
                  &/,"n_Phase_Elements   = ",i5 )' ) &
-                 C%n_Frequencies     , &
-                 C%n_Reff_MW         , &
-                 C%n_Wavenumbers     , &
-                 C%n_Reff_IR         , &
+                 C%n_MW_Frequencies  , &
+                 C%n_MW_Radii        , &
+                 C%n_IR_Frequencies  , &
+                 C%n_IR_Radii        , &
                  C%n_Temperatures    , &
                  C%n_Densities       , &
                  C%Max_Legendre_Terms, &
                  C%n_Legendre_Terms  , &
                  C%Max_Phase_Elements, &
                  C%n_Phase_Elements  
-  ! Data
-  WRITE(FileID,'("frequency:")')
-  WRITE(FileID,100)C%frequency
-  WRITE(FileID,'("wavenumber:")')        
-  WRITE(FileID,100)C%wavenumber
+                 
+  ! Dimension vector data
+  WRITE(FileID,'("Frequency_MW:")')
+  WRITE(FileID,100)C%Frequency_MW
+  WRITE(FileID,'("Frequency_IR:")')        
+  WRITE(FileID,100)C%Frequency_IR
   WRITE(FileID,'("Reff_MW:")')           
   WRITE(FileID,100)C%Reff_MW
   WRITE(FileID,'("Reff_IR:")')           
@@ -129,41 +133,43 @@ PROGRAM Dump_CloudCoeff
   WRITE(FileID,100)C%Temperature
   WRITE(FileID,'("Density:")')           
   WRITE(FileID,100)C%Density
-  WRITE(FileID,'("ext_L_MW:")')          
-  WRITE(FileID,100)C%ext_L_MW
+  
+  ! Microwave data for liquid phase clouds
+  WRITE(FileID,'("ke_L_MW:")')          
+  WRITE(FileID,100)C%ke_L_MW
   WRITE(FileID,'("w_L_MW:")')            
   WRITE(FileID,100)C%w_L_MW
   WRITE(FileID,'("g_L_MW:")')            
   WRITE(FileID,100)C%g_L_MW
-  WRITE(FileID,'("ext_S_MW:")')          
-  WRITE(FileID,100)C%ext_S_MW
+  WRITE(FileID,'("pcoeff_L_MW:")')  
+  WRITE(FileID,100)C%pcoeff_L_MW
+  
+  ! Microwave data for solid phase clouds
+  WRITE(FileID,'("ke_S_MW:")')          
+  WRITE(FileID,100)C%ke_S_MW
   WRITE(FileID,'("w_S_MW:")')            
   WRITE(FileID,100)C%w_S_MW
   WRITE(FileID,'("g_S_MW:")')            
   WRITE(FileID,100)C%g_S_MW
-  WRITE(FileID,'("phase_coeff_L_MW:")')  
-  WRITE(FileID,100)C%phase_coeff_L_MW
-  WRITE(FileID,'("phase_coeff_S_MW:")')  
-  WRITE(FileID,100)C%phase_coeff_S_MW
-  WRITE(FileID,'("ext_L_IR:")')          
-  WRITE(FileID,100)C%ext_L_IR
-  WRITE(FileID,'("w_L_IR:")')            
-  WRITE(FileID,100)C%w_L_IR
-  WRITE(FileID,'("g_L_IR:")')            
-  WRITE(FileID,100)C%g_L_IR
-  WRITE(FileID,'("ext_S_IR:")')          
-  WRITE(FileID,100)C%ext_S_IR
-  WRITE(FileID,'("w_S_IR:")')            
-  WRITE(FileID,100)C%w_S_IR
-  WRITE(FileID,'("g_S_IR:")')            
-  WRITE(FileID,100)C%g_S_IR
-  WRITE(FileID,'("phase_coeff_L_IR:")')  
-  WRITE(FileID,100)C%phase_coeff_L_IR
-  WRITE(FileID,'("phase_coeff_S_IR:")')  
-  WRITE(FileID,100)C%phase_coeff_S_IR
+  WRITE(FileID,'("pcoeff_S_MW:")')  
+  WRITE(FileID,100)C%pcoeff_S_MW
+  
+  ! Infrared data.
+  WRITE(FileID,'("ke_IR:")')          
+  WRITE(FileID,100)C%ke_IR
+  WRITE(FileID,'("w_IR:")')            
+  WRITE(FileID,100)C%w_IR
+  WRITE(FileID,'("g_IR:")')            
+  WRITE(FileID,100)C%g_IR
+  WRITE(FileID,'("pcoeff_IR:")')  
+  WRITE(FileID,100)C%pcoeff_IR
 
+
+  ! Clean up
+  ! --------
   ! Close the dumpfile
   CLOSE(FileID)
+  WRITE(*,'(/5x,a," data dumped to ",a)') TRIM(BIN_Filename), TRIM(ASC_Filename)
 
   ! Destroy the structures
   Error_Status = Destroy_CloudCoeff(C)
@@ -173,7 +179,9 @@ PROGRAM Dump_CloudCoeff
                           WARNING )
   END IF
 
+
   ! Format statements
+  ! -----------------
   100 FORMAT(8(1x,es13.6))
 
 END PROGRAM Dump_CloudCoeff
