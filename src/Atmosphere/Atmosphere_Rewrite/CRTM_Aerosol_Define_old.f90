@@ -1,44 +1,42 @@
 !
-! CRTM_Cloud_Define
+! CRTM_Aerosol_Define
 !
-! Module defining the CRTM_Cloud structure and containing routines to 
-! manipulate it.
-!
+! Module defining the CRTM Aerosol structure and containing
+! routines to manipulate it.
+!       
 ! PUBLIC PARAMETERS:
-!       1) The valid cloud type values used in the Cloud%Type field:
+!       1) The valid aerosol type values used in the Aerosol%Type field:
 !
-!           Cloud Type      Parameter Name
-!         ----------------------------------
-!             None          NO_CLOUD
-!             Water         WATER_CLOUD
-!             Ice           ICE_CLOUD
-!             Rain          RAIN_CLOUD
-!             Snow          SNOW_CLOUD
-!             Graupel       GRAUPEL_CLOUD
-!             Hail          HAIL_CLOUD
+!              Aerosol Type      Parameter Name
+!         --------------------------------------------------
+!                 None           NO_AEROSOL   
+!                 Dust           DUST_AEROSOL   
+!                Sea salt        SEASALT_AEROSOL  
+!           Dry organic carbon   DRY_ORGANIC_CARBON_AEROSOL
+!           Wet organic carbon   WET_ORGANIC_CARBON_AEROSOL
+!            Dry black carbon    DRY_BLACK_CARBON_AEROSOL
+!            Wet black carbon    WET_BLACK_CARBON_AEROSOL
+!                Sulfate         SULFATE_AEROSOL  
 !
-!       2) The number of valid cloud types is specified by the 
-!            N_VALID_CLOUD_TYPES
+!       2) The number of valid aerosol types is specified by the 
+!            N_VALID_AEROSOL_TYPES
 !          parameter.
 !
 !       3) The character string array parameter
-!            CLOUD_TYPE_NAME
-!          uses the above cloud type definitions to provide a string value for
-!          the type of cloud. For example,
-!            CLOUD_TYPE_NAME( GRAUPEL_CLOUD )
+!            AEROSOL_TYPE_NAME
+!          uses the above aerosol type definitions to provide a string value for
+!          the type of aerosol. For example,
+!            AEROSOL_TYPE_NAME( DRY_BLACK_CARBON_AEROSOL )
 !          contains the string
-!            'Graupel'
+!            'Dry black carbon'
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                       Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov
-!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
-!                       20-Feb-2004
+!       Written by:     Paul van Delst, CIMSS/SSEC 22-Feb-2005
+!                       paul.vandelst@ssec.wisc.edu
 !
 
-MODULE CRTM_Cloud_Define_old
-
+MODULE CRTM_Aerosol_Define_old
 
   ! -----------------
   ! Environment setup
@@ -56,99 +54,104 @@ MODULE CRTM_Cloud_Define_old
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_Cloud Parameters
-  PUBLIC :: N_VALID_CLOUD_TYPES
-  PUBLIC ::      NO_CLOUD 
-  PUBLIC ::   WATER_CLOUD 
-  PUBLIC ::     ICE_CLOUD 
-  PUBLIC ::    RAIN_CLOUD 
-  PUBLIC ::    SNOW_CLOUD 
-  PUBLIC :: GRAUPEL_CLOUD 
-  PUBLIC ::    HAIL_CLOUD 
-  PUBLIC :: CLOUD_TYPE_NAME
-  ! CRTM_Cloud data structure definition
-  PUBLIC :: CRTM_Cloud_type
-  ! CRTM_Cloud structure routines
-  PUBLIC :: CRTM_Associated_Cloud
-  PUBLIC :: CRTM_Destroy_Cloud
-  PUBLIC :: CRTM_Allocate_Cloud
-  PUBLIC :: CRTM_Assign_Cloud
-  PUBLIC :: CRTM_WeightedSum_Cloud
-  PUBLIC :: CRTM_Zero_Cloud
+  ! CRTM_Aerosol parameters
+  PUBLIC :: N_VALID_AEROSOL_TYPES
+  PUBLIC ::                 NO_AEROSOL
+  PUBLIC ::               DUST_AEROSOL
+  PUBLIC ::            SEASALT_AEROSOL
+  PUBLIC :: DRY_ORGANIC_CARBON_AEROSOL
+  PUBLIC :: WET_ORGANIC_CARBON_AEROSOL
+  PUBLIC ::   DRY_BLACK_CARBON_AEROSOL
+  PUBLIC ::   WET_BLACK_CARBON_AEROSOL
+  PUBLIC ::            SULFATE_AEROSOL
+  PUBLIC :: AEROSOL_TYPE_NAME
+  ! CRTM_Aerosol data structure definition
+  PUBLIC :: CRTM_Aerosol_type
+  ! CRTM_Aerosol structure routines
+  PUBLIC :: CRTM_Associated_Aerosol
+  PUBLIC :: CRTM_Destroy_Aerosol
+  PUBLIC :: CRTM_Allocate_Aerosol
+  PUBLIC :: CRTM_Assign_Aerosol
+  PUBLIC :: CRTM_WeightedSum_Aerosol
+  PUBLIC :: CRTM_Zero_Aerosol
 
 
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-  INTERFACE CRTM_Destroy_Cloud
+  INTERFACE CRTM_Destroy_Aerosol
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
-  END INTERFACE CRTM_Destroy_Cloud
+  END INTERFACE CRTM_Destroy_Aerosol
 
-  INTERFACE CRTM_Allocate_Cloud
+  INTERFACE CRTM_Allocate_Aerosol
     MODULE PROCEDURE Allocate_Scalar
-    MODULE PROCEDURE Allocate_Rank01
-    MODULE PROCEDURE Allocate_Rank11
-  END INTERFACE CRTM_Allocate_Cloud
+    MODULE PROCEDURE Allocate_Rank001
+    MODULE PROCEDURE Allocate_Rank011
+    MODULE PROCEDURE Allocate_Rank101
+    MODULE PROCEDURE Allocate_Rank111
+  END INTERFACE CRTM_Allocate_Aerosol
 
-  INTERFACE CRTM_Assign_Cloud
+  INTERFACE CRTM_Assign_Aerosol
     MODULE PROCEDURE Assign_Scalar
     MODULE PROCEDURE Assign_Rank1
-  END INTERFACE CRTM_Assign_Cloud
+  END INTERFACE CRTM_Assign_Aerosol
 
-  INTERFACE CRTM_WeightedSum_Cloud
+  INTERFACE CRTM_WeightedSum_Aerosol
     MODULE PROCEDURE WeightedSum_Scalar
     MODULE PROCEDURE WeightedSum_Rank1
-  END INTERFACE CRTM_WeightedSum_Cloud
+  END INTERFACE CRTM_WeightedSum_Aerosol
 
-  INTERFACE CRTM_Zero_Cloud
+  INTERFACE CRTM_Zero_Aerosol
     MODULE PROCEDURE Zero_Scalar
     MODULE PROCEDURE Zero_Rank1
-  END INTERFACE CRTM_Zero_Cloud
+  END INTERFACE CRTM_Zero_Aerosol
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! The valid cloud types and names
-  INTEGER, PARAMETER :: N_VALID_CLOUD_TYPES = 6
-  INTEGER, PARAMETER ::      NO_CLOUD = 0
-  INTEGER, PARAMETER ::   WATER_CLOUD = 1
-  INTEGER, PARAMETER ::     ICE_CLOUD = 2
-  INTEGER, PARAMETER ::    RAIN_CLOUD = 3
-  INTEGER, PARAMETER ::    SNOW_CLOUD = 4
-  INTEGER, PARAMETER :: GRAUPEL_CLOUD = 5
-  INTEGER, PARAMETER ::    HAIL_CLOUD = 6
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_CLOUD_TYPES ) :: &
-    CLOUD_TYPE_NAME = (/ 'None   ', &
-                         'Water  ', &
-                         'Ice    ', &
-                         'Rain   ', &
-                         'Snow   ', &
-                         'Graupel', &
-                         'Hail   ' /)
-
+  ! Aerosol types and names
+  INTEGER, PARAMETER :: N_VALID_AEROSOL_TYPES = 7
+  INTEGER, PARAMETER ::                 NO_AEROSOL = 0
+  INTEGER, PARAMETER ::               DUST_AEROSOL = 1
+  INTEGER, PARAMETER ::            SEASALT_AEROSOL = 2
+  INTEGER, PARAMETER :: DRY_ORGANIC_CARBON_AEROSOL = 3
+  INTEGER, PARAMETER :: WET_ORGANIC_CARBON_AEROSOL = 4
+  INTEGER, PARAMETER ::   DRY_BLACK_CARBON_AEROSOL = 5
+  INTEGER, PARAMETER ::   WET_BLACK_CARBON_AEROSOL = 6
+  INTEGER, PARAMETER ::            SULFATE_AEROSOL = 7
+  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_AEROSOL_TYPES ) :: &
+    AEROSOL_TYPE_NAME = (/ 'None              ', &
+                           'Dust              ', &
+                           'Sea salt          ', &
+                           'Dry organic carbon', &
+                           'Wet organic carbon', &
+                           'Dry black carbon  ', &
+                           'Wet black carbon  ', &
+                           'Sulfate           ' /)
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
 
 
-
-  ! --------------------------
-  ! Cloud data type definition
-  ! --------------------------
-  TYPE :: CRTM_Cloud_type
+  ! ----------------------------
+  ! Aerosol data type definition
+  ! ----------------------------
+  TYPE :: CRTM_Aerosol_type
     INTEGER :: n_Allocates = 0
-    ! Dimension values
-    INTEGER :: n_Layers = 0  ! K dimension.
-    ! Cloud type
-    INTEGER :: Type = NO_CLOUD
+    ! Dimensions
+    INTEGER :: n_Layers  = 0  ! K dimension
+    INTEGER :: Max_Modes = 0  ! Nm dimension
+    INTEGER :: n_Modes   = 0  ! NmUse dimension
+    ! Aerosol type
+    INTEGER :: Type = NO_AEROSOL
     ! Particle size distribution parameters
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Radius   => NULL() ! K. Units are microns
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Variance => NULL() ! K. Units are Dimensionless
-    ! Cloud state variables
-    REAL(fp), DIMENSION(:), POINTER :: Water_Content => NULL()      ! K. Units are kg/m^2
-  END TYPE CRTM_Cloud_type
+    REAL(fp), DIMENSION(:,:), POINTER :: Effective_Radius   => NULL() ! K x Nm
+    REAL(fp), DIMENSION(:,:), POINTER :: Effective_Variance => NULL() ! K x Nm
+    ! Aerosol state variables
+    REAL(fp), DIMENSION(:,:), POINTER :: Concentration => NULL()      ! K x Nm
+  END TYPE CRTM_Aerosol_type
 
 
 CONTAINS
@@ -165,34 +168,36 @@ CONTAINS
 !----------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Clear_Cloud
+!       CRTM_Clear_Aerosol
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a Cloud structure.
+!       Subroutine to clear the scalar members of a CRTM_Aerosol structure.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Cloud( Cloud ) ! Output
+!       CALL CRTM_Clear_Aerosol( Aerosol ) ! Output
 !
 ! OUTPUT ARGUMENTS:
-!       Cloud:       Cloud structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_Cloud_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
+!       Aerosol:  CRTM_Aerosol structure for which the scalar members have
+!                 been cleared.
+!                 UNITS:      N/A
+!                 TYPE:       CRTM_Aerosol_type
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
-!       Note the INTENT on the output Cloud argument is IN OUT rather than
+!       Note the INTENT on the output Aerosol argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !----------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Clear_Cloud( Cloud )
-    TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud
-    Cloud%n_Layers = 0
-    Cloud%Type     = NO_CLOUD
-  END SUBROUTINE CRTM_Clear_Cloud
+  SUBROUTINE CRTM_Clear_Aerosol( Aerosol )
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
+    Aerosol%n_Layers  = 0
+    Aerosol%Max_Modes = 0
+    Aerosol%n_Modes   = 0
+    Aerosol%Type      = NO_AEROSOL
+  END SUBROUTINE CRTM_Clear_Aerosol
 
 
 
@@ -209,26 +214,27 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Associated_Cloud
+!       CRTM_Associated_Aerosol
 !
 ! PURPOSE:
-!       Function to test the association status of a CRTM_Cloud structure.
+!       Function to test the association status of the pointer members of a
+!       CRTM_Aerosol structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Cloud( Cloud,              &  ! Input
-!                                                   ANY_Test = Any_Test )  ! Optional input
+!       Association_Status = CRTM_Associated_Aerosol( Aerosol,            &  ! Input
+!                                                     ANY_Test = Any_Test )  ! Optional input
 !
 ! INPUT ARGUMENTS:
-!       Cloud:               Cloud structure which is to have its pointer
+!       Aerosol:             CRTM_Aerosol structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
-!                            TYPE:       CRTM_Cloud_type
+!                            TYPE:       CRTM_Aerosol_type
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       ANY_Test:            Set this argument to test if ANY of the
-!                            Cloud structure pointer members are associated.
+!                            CRTM_Aerosol structure pointer members are associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
 !                            If ANY_Test = 0, test if ALL the pointer members
@@ -242,12 +248,12 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating the
-!                            association status of the Cloud pointer members.
-!                            .TRUE.  - if ALL the Cloud pointer members are
+!                            association status of the CRTM_Aerosol pointer members.
+!                            .TRUE.  - if ALL the CRTM_Aerosol pointer members are
 !                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the Cloud pointer
+!                                      is set and ANY of the CRTM_Aerosol pointer
 !                                      members are associated.
-!                            .FALSE. - some or all of the Cloud pointer
+!                            .FALSE. - some or all of the CRTM_Aerosol pointer
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
@@ -255,12 +261,12 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_Cloud( Cloud,     & ! Input
-                                  ANY_Test ) & ! Optional input
-                                RESULT( Association_Status )
+  FUNCTION CRTM_Associated_Aerosol( Aerosol,   & ! Input
+                                    ANY_Test ) & ! Optional input
+                                  RESULT( Association_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
-    INTEGER,     OPTIONAL, INTENT(IN) :: ANY_Test
+    TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol
+    INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -278,54 +284,56 @@ CONTAINS
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
 
+
     ! ---------------------------------------------
     ! Test the structure pointer member association
     ! ---------------------------------------------
     Association_Status = .FALSE.
     IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( Cloud%Effective_Radius   ) .AND. &
-           ASSOCIATED( Cloud%Effective_Variance ) .AND. &
-           ASSOCIATED( Cloud%Water_Content      )       ) THEN
+      IF ( ASSOCIATED( Aerosol%Effective_Radius   ) .AND. &
+           ASSOCIATED( Aerosol%Effective_Variance ) .AND. &
+           ASSOCIATED( Aerosol%Concentration      )       ) THEN
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF ( ASSOCIATED( Cloud%Effective_Radius   ) .OR. &
-           ASSOCIATED( Cloud%Effective_Variance ) .OR. &
-           ASSOCIATED( Cloud%Water_Content      )      ) THEN
+      IF ( ASSOCIATED( Aerosol%Effective_Radius   ) .OR. &
+           ASSOCIATED( Aerosol%Effective_Variance ) .OR. &
+           ASSOCIATED( Aerosol%Concentration      )      ) THEN
         Association_Status = .TRUE.
       END IF
     END IF
 
-  END FUNCTION CRTM_Associated_Cloud
+  END FUNCTION CRTM_Associated_Aerosol
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Destroy_Cloud
+!       CRTM_Destroy_Aerosol
 ! 
 ! PURPOSE:
-!       Function to re-initialize CRTM_Cloud structures.
+!       Function to re-initialize the scalar and pointer members of
+!       a CRTM_Aerosol data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Cloud( Cloud,                    &  ! Output
-!                                          RCS_Id = RCS_Id,          &  ! Revision control
-!                                          Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Aerosol( Aerosol,                  &  ! Output
+!                                            RCS_Id = RCS_Id,          &  ! Revision control
+!                                            Message_Log = Message_Log )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
 !                     messages will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
 !                     is to output messages to standard output.
-!                     UNITS:      N/A
+!                     UNITS:      None
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Cloud:        Re-initialized Cloud structure.
+!       Aerosol:      Re-initialized CRTM_Aerosol structure.
 !                     UNITS:      N/A
-!                     TYPE:       CRTM_Cloud_type
+!                     TYPE:       CRTM_Aerosol_type
 !                     DIMENSION:  Scalar
 !                                   OR
 !                                 Rank1 array
@@ -334,7 +342,7 @@ CONTAINS
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
 !                     System Id field for the module.
-!                     UNITS:      N/A
+!                     UNITS:      None
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT), OPTIONAL
@@ -354,26 +362,26 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !
 ! COMMENTS:
-!       Note the INTENT on the output Cloud argument is IN OUT rather than
+!       Note the INTENT on the output Aerosol argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( Cloud,        &  ! Output
+  FUNCTION Destroy_Scalar( Aerosol,      &  ! Output
                            No_Clear,     &  ! Optional input
                            RCS_Id,       &  ! Revision control
                            Message_Log ) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud
-    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
+    INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Cloud(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Aerosol(Scalar)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     LOGICAL :: Clear
@@ -397,24 +405,24 @@ CONTAINS
     ! -----------------------------
     ! Initialise the scalar members
     ! -----------------------------
-    IF ( Clear ) CALL CRTM_Clear_Cloud( Cloud )
+    IF ( Clear ) CALL CRTM_Clear_Aerosol( Aerosol )
 
 
     ! -----------------------------------------------------
     ! If ALL pointer members are NOT associated, do nothing
     ! -----------------------------------------------------
-    IF ( .NOT. CRTM_Associated_Cloud( Cloud ) ) RETURN
+    IF ( .NOT. CRTM_Associated_Aerosol( Aerosol ) ) RETURN
 
 
     ! ------------------------------
     ! Deallocate the pointer members
     ! ------------------------------
     ! Deallocate the Effective_Radius profile
-    IF ( ASSOCIATED( Cloud%Effective_Radius ) ) THEN
-      DEALLOCATE( Cloud%Effective_Radius, STAT = Allocate_Status )
+    IF ( ASSOCIATED( Aerosol%Effective_Radius ) ) THEN
+      DEALLOCATE( Aerosol%Effective_Radius, STAT = Allocate_Status )
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Cloud Effective_Radius ", &
+        WRITE( Message, '( "Error deallocating CRTM_Aerosol Effective_Radius ", &
                           &"member. STAT = ", i5 )' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
@@ -425,11 +433,11 @@ CONTAINS
     END IF
 
     ! Deallocate the Effective_Variance profile
-    IF ( ASSOCIATED( Cloud%Effective_Variance ) ) THEN
-      DEALLOCATE( Cloud%Effective_Variance, STAT = Allocate_Status )
+    IF ( ASSOCIATED( Aerosol%Effective_Variance ) ) THEN
+      DEALLOCATE( Aerosol%Effective_Variance, STAT = Allocate_Status )
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Cloud Effective_Variance ", &
+        WRITE( Message, '( "Error deallocating CRTM_Aerosol Effective_Variance ", &
                           &"member. STAT = ", i5 )' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
@@ -439,12 +447,12 @@ CONTAINS
       END IF
     END IF
 
-    ! Deallocate the water content profile
-    IF ( ASSOCIATED( Cloud%Water_Content ) ) THEN
-      DEALLOCATE( Cloud%Water_Content, STAT = Allocate_Status )
+    ! Deallocate the Concentration profile
+    IF ( ASSOCIATED( Aerosol%Concentration ) ) THEN
+      DEALLOCATE( Aerosol%Concentration, STAT = Allocate_Status )
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Cloud Water_Content ", &
+        WRITE( Message, '( "Error deallocating CRTM_Aerosol Concentration ", &
                           &"member. STAT = ", i5 )' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
@@ -458,11 +466,11 @@ CONTAINS
     ! -------------------------------------
     ! Decrement and test allocation counter
     ! -------------------------------------
-    Cloud%n_Allocates = Cloud%n_Allocates - 1
-    IF ( Cloud%n_Allocates /= 0 ) THEN
+    Aerosol%n_Allocates = Aerosol%n_Allocates - 1
+    IF ( Aerosol%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-                      Cloud%n_Allocates
+                      Aerosol%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
                             Error_Status,    &
@@ -472,38 +480,39 @@ CONTAINS
   END FUNCTION Destroy_Scalar
 
 
-  FUNCTION Destroy_Rank1( Cloud,        &  ! Output
+  FUNCTION Destroy_Rank1( Aerosol,      &  ! Output
                           No_Clear,     &  ! Optional input
                           RCS_Id,       &  ! Revision control
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    INTEGER,               OPTIONAL,     INTENT(IN)     :: No_Clear
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
+    INTEGER,                 OPTIONAL,     INTENT(IN)     :: No_Clear
+    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Cloud(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Aerosol(Rank-1)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
+
 
     ! Set up
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise array
-    DO n = 1, SIZE( Cloud )
-      Scalar_Status = Destroy_Scalar( Cloud(n), &
+    DO n = 1, SIZE( Aerosol )
+      Scalar_Status = Destroy_Scalar( Aerosol(n), &
                                       No_Clear = No_Clear, &
                                       Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error destroying element #", i5, &
-                          &" of Cloud structure array." )' ) n
+                          &" of Aerosol structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
                               Error_Status, &
@@ -517,24 +526,36 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Allocate_Cloud
+!       CRTM_Allocate_Aerosol
 ! 
 ! PURPOSE:
-!       Function to allocate CRTM_Cloud structures.
+!       Function to allocate the pointer members of the CRTM_Aerosol
+!       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Cloud( n_Layers,                 &  ! Input
-!                                           Cloud,                    &  ! Output
-!                                           RCS_Id = RCS_Id,          &  ! Revision control
-!                                           Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Aerosol( n_Layers,                 &  ! Input
+!                                             n_Modes,                  &  ! Input
+!                                             Aerosol,                  &  ! Output
+!                                             RCS_Id = RCS_Id,          &  ! Revision control
+!                                             Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       n_Layers:     Number of layers for which there is cloud data.
-!                     Must be > 0.
+!         n_Layers:   Number of atmospheric layers dimension.
+!                     Must be > 0
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar OR Rank-1
-!                                 See output Cloud dimensionality chart
+!                                 See output Aerosol argument
+!                                 dimensionality chart
+!                     ATTRIBUTES: INTENT(IN)
+!
+!         n_Modes:    Number of size distribution modes dimension.
+!                     Must be > 0
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar OR Rank-1
+!                                 See output Aerosol argument
+!                                 dimensionality chart
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -542,29 +563,31 @@ CONTAINS
 !                     messages will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
 !                     is to output messages to standard output.
-!                     UNITS:      N/A
+!                     UNITS:      None
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Cloud:        Cloud structure with allocated pointer members. The
+!       Aerosol:      CRTM_Aerosol structure with allocated pointer members. The
 !                     following table shows the allowable dimension combinations
-!                     for the calling routine, where N == number of clouds:
+!                     for the calling routine, where N == number of aerosol types:
 !
-!                        Input       Output
-!                       n_Layers      Cloud
-!                       dimension   dimension
-!                     ---------------------------
-!                        scalar       scalar
-!                        scalar         N
-!                          N            N
+!                        Input       Input       Output
+!                       n_Layers    n_Modes      Aerosol
+!                       dimension   dimension   dimension
+!                     -------------------------------------
+!                        scalar      scalar       scalar
+!                        scalar      scalar         N
+!                        scalar        N            N
+!                          N         scalar         N
+!                          N           N            N
 !
 !                     These multiple interfaces are supplied purely for ease of
 !                     use depending on what data is available.
 !                     
 !                     UNITS:      N/A
-!                     TYPE:       CRTM_Cloud_type
+!                     TYPE:       CRTM_Aerosol_type
 !                     DIMENSION:  Scalar OR Rank-1
 !                                 See table above.
 !                     ATTRIBUTES: INTENT(IN OUT)
@@ -573,7 +596,7 @@ CONTAINS
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
 !                     System Id field for the module.
-!                     UNITS:      N/A
+!                     UNITS:      None
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT), OPTIONAL
@@ -593,26 +616,28 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !
 ! COMMENTS:
-!       Note the INTENT on the output Cloud argument is IN OUT rather than
+!       Note the INTENT on the output Aerosol argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Layers,     &  ! Input
-                            Cloud,        &  ! Output
+                            n_Modes,      &  ! Input
+                            Aerosol,      &  ! Output
                             RCS_Id,       &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
-    INTEGER,                INTENT(IN)     :: n_Layers
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,                 INTENT(IN)     :: n_Layers
+    INTEGER,                 INTENT(IN)     :: n_Modes
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
+    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Scalar)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Allocate_Status
@@ -624,7 +649,7 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Layer dimension
+    ! Dimensions
     IF ( n_Layers < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -634,15 +659,24 @@ CONTAINS
       RETURN
     END IF
 
+    IF ( n_Modes < 1 ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input n_Modes must be > 0.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
     ! Check if ANY pointers are already associated
     ! If they are, deallocate them but leave scalars.
-    IF ( CRTM_Associated_Cloud( Cloud, ANY_Test = SET ) ) THEN
-      Error_Status = CRTM_Destroy_Cloud( Cloud, &
-                                         No_Clear = SET, &
-                                         Message_Log = Message_Log )
+    IF ( CRTM_Associated_Aerosol( Aerosol, ANY_Test = SET ) ) THEN
+      Error_Status = CRTM_Destroy_Aerosol( Aerosol, &
+                                           No_Clear = SET, &
+                                           Message_Log = Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CRTM_Cloud pointer members.', &
+                              'Error deallocating CRTM_Aerosol pointer members.', &
                               Error_Status,    &
                               Message_Log = Message_Log )
         RETURN
@@ -650,17 +684,16 @@ CONTAINS
     END IF
 
 
-
     ! ----------------------
     ! Perform the allocation
     ! ----------------------
-    ALLOCATE( Cloud%Effective_Radius( n_Layers ), &
-              Cloud%Effective_Variance( n_Layers ), &
-              Cloud%Water_Content( n_Layers ), &
+    ALLOCATE( Aerosol%Effective_Radius( n_Layers, n_Modes ), &
+              Aerosol%Effective_Variance( n_Layers, n_Modes ), &
+              Aerosol%Concentration( n_Layers, n_Modes ), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating CRTM_Cloud data arrays. STAT = ", i5 )' ) &
+      WRITE( Message, '( "Error allocating Aerosol data arrays. STAT = ", i5 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
@@ -673,20 +706,22 @@ CONTAINS
     ! ------------------------------------------
     ! Assign the dimensions and initalise arrays
     ! ------------------------------------------
-    Cloud%n_Layers = n_Layers
-    Cloud%Effective_Radius   = ZERO
-    Cloud%Effective_Variance = ZERO
-    Cloud%Water_Content      = ZERO
+    Aerosol%n_Layers  = n_Layers
+    Aerosol%Max_Modes = n_Modes
+    Aerosol%n_Modes   = n_Modes
+    Aerosol%Effective_Radius   = ZERO
+    Aerosol%Effective_Variance = ZERO
+    Aerosol%Concentration      = ZERO
 
 
     ! -------------------------------------
     ! Increment and test allocation counter
     ! -------------------------------------
-    Cloud%n_Allocates = Cloud%n_Allocates + 1
-    IF ( Cloud%n_Allocates /= 1 ) THEN
+    Aerosol%n_Allocates = Aerosol%n_Allocates + 1
+    IF ( Aerosol%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
-                      Cloud%n_Allocates
+                      Aerosol%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
                             Error_Status,    &
@@ -696,38 +731,42 @@ CONTAINS
   END FUNCTION Allocate_Scalar
 
 
-  FUNCTION Allocate_Rank01( n_Layers,     &  ! Input
-                            Cloud,        &  ! Output
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
+  FUNCTION Allocate_Rank001( n_Layers,     &  ! Input
+                             n_Modes,      &  ! Input
+                             Aerosol,      &  ! Output
+                             RCS_Id,       &  ! Revision control
+                             Message_Log ) &  ! Error messaging
+                           RESULT( Error_Status )
     ! Arguments
-    INTEGER,                             INTENT(IN)     :: n_Layers
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
+    INTEGER,                               INTENT(IN)     :: n_Layers
+    INTEGER,                               INTENT(IN)     :: n_Modes
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
+    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Rank-01)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-001)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i
+
 
     ! Set up
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Perform the allocation
-    DO i = 1, SIZE( Cloud )
+    DO i = 1, SIZE( Aerosol )
       Scalar_Status = Allocate_Scalar( n_Layers, &
-                                       Cloud(i), &
+                                       n_Modes, &
+                                       Aerosol(i), &
                                        Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Cloud structure array." )' ) i
+                          &" of CRTM_Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
                               Error_Status, &
@@ -735,23 +774,25 @@ CONTAINS
       END IF
     END DO
 
-  END FUNCTION Allocate_Rank01
+  END FUNCTION Allocate_Rank001
 
 
-  FUNCTION Allocate_Rank11( n_Layers,     &  ! Input
-                            Cloud,        &  ! Output
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
+  FUNCTION Allocate_Rank011( n_Layers,     &  ! Input
+                             n_Modes,      &  ! Input
+                             Aerosol,      &  ! Output
+                             RCS_Id,       &  ! Revision control
+                             Message_Log ) &  ! Error messaging
+                           RESULT( Error_Status )
     ! Arguments
-    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Layers
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    CHARACTER(*),          OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,       INTENT(IN)     :: Message_Log
+    INTEGER,                               INTENT(IN)     :: n_Layers
+    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Modes
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
+    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Rank-11)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-011)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Scalar_Status
@@ -762,11 +803,67 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
-    n = SIZE( n_Layers )
-    IF ( SIZE( Cloud ) /= n ) THEN
+    n = SIZE( Aerosol )
+    IF ( SIZE( n_Modes ) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Layers and CRTM_Cloud arrays have different dimensions', &
+                            'Input n_Modes and CRTM_Aerosol arrays have different dimensions', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    ! Perform the allocation
+    DO i = 1, n
+      Scalar_Status = Allocate_Scalar( n_Layers, &
+                                       n_Modes(i), &
+                                       Aerosol(i), &
+                                       Message_Log = Message_Log )
+      IF ( Scalar_Status /= SUCCESS ) THEN
+        Error_Status = Scalar_Status
+        WRITE( Message, '( "Error allocating element #", i5, &
+                          &" of CRTM_Aerosol structure array." )' ) i
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM( Message ), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+      END IF
+    END DO
+
+  END FUNCTION Allocate_Rank011
+
+
+  FUNCTION Allocate_Rank101( n_Layers,     &  ! Input
+                             n_Modes,      &  ! Input
+                             Aerosol,      &  ! Output
+                             RCS_Id,       &  ! Revision control
+                             Message_Log ) &  ! Error messaging
+                           RESULT( Error_Status )
+    ! Arguments
+    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Layers
+    INTEGER,                               INTENT(IN)     :: n_Modes
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
+    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-101)'
+    ! Local variables
+    CHARACTER( 256 ) :: Message
+    INTEGER :: Scalar_Status
+    INTEGER :: i, n
+
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Array arguments must conform
+    n = SIZE( Aerosol )
+    IF ( SIZE( n_Layers ) /= n ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input n_Layers and CRTM_Aerosol arrays have different dimensions', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
@@ -775,12 +872,13 @@ CONTAINS
     ! Perform the allocation
     DO i = 1, n
       Scalar_Status = Allocate_Scalar( n_Layers(i), &
-                                       Cloud(i), &
+                                       n_Modes, &
+                                       Aerosol(i), &
                                        Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Cloud structure array." )' ) i
+                          &" of CRTM_Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
                               Error_Status, &
@@ -788,88 +886,147 @@ CONTAINS
       END IF
     END DO
 
-  END FUNCTION Allocate_Rank11
+  END FUNCTION Allocate_Rank101
+
+
+  FUNCTION Allocate_Rank111( n_Layers,     &  ! Input
+                             n_Modes,      &  ! Input
+                             Aerosol,      &  ! Output
+                             RCS_Id,       &  ! Revision control
+                             Message_Log ) &  ! Error messaging
+                           RESULT( Error_Status )
+    ! Arguments
+    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Layers
+    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Modes
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
+    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-111)'
+    ! Local variables
+    CHARACTER( 256 ) :: Message
+    INTEGER :: Scalar_Status
+    INTEGER :: i, n
+
+
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Array arguments must conform
+    n = SIZE( Aerosol )
+    IF ( SIZE( n_Layers ) /= n .OR. &
+         SIZE( n_Modes  ) /= n      ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input n_Layers, n_Modes and CRTM_Aerosol '//&
+                            'arrays have different dimensions', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    ! Perform the allocation
+    DO i = 1, n
+      Scalar_Status = Allocate_Scalar( n_Layers(i), &
+                                       n_Modes(i), &
+                                       Aerosol(i), &
+                                       Message_Log = Message_Log )
+      IF ( Scalar_Status /= SUCCESS ) THEN
+        Error_Status = Scalar_Status
+        WRITE( Message, '( "Error allocating element #", i5, &
+                          &" of CRTM_Aerosol structure array." )' ) i
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM( Message ), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+      END IF
+    END DO
+
+  END FUNCTION Allocate_Rank111
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Assign_Cloud
+!       CRTM_Assign_Aerosol
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_Cloud structures.
+!       Function to copy valid CRTM_Aerosol structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Cloud( Cloud_in,                 &  ! Input  
-!                                         Cloud_out,                &  ! Output 
-!                                         RCS_Id = RCS_Id,          &  ! Revision control
-!                                         Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Assign_Aerosol( Aerosol_in,               &  ! Input
+!                                           Aerosol_out,              &  ! Output
+!                                           RCS_Id = RCS_Id,          &  ! Revision control
+!                                           Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       Cloud_in:      Cloud structure which is to be copied.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Scalar
-!                                    OR
-!                                  Rank1 array
-!                      ATTRIBUTES: INTENT(IN)
+!       Aerosol_in:      CRTM_Aerosol structure which is to be copied.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Aerosol_type
+!                        DIMENSION:  Scalar
+!                                      OR
+!                                    Rank1 array
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Message_Log:     Character string specifying a filename in which any
+!                        messages will be logged. If not specified, or if an
+!                        error occurs opening the log file, the default action
+!                        is to output messages to standard output.
+!                        UNITS:      None
+!                        TYPE:       CHARACTER(*)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Cloud_out:     Copy of the input structure, Cloud_in.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Same as Cloud_in argument
-!                      ATTRIBUTES: INTENT(IN OUT)
+!       Aerosol_out:     Copy of the input structure, CRTM_Aerosol_in.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Aerosol_type
+!                        DIMENSION:  Same as Aerosol_in argument
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       RCS_Id:          Character string containing the Revision Control
+!                        System Id field for the module.
+!                        UNITS:      None
+!                        TYPE:       CHARACTER(*)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure assignment was successful
-!                         == FAILURE an error occurred
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the structure assignment was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
 !
 ! COMMENTS:
-!       Note the INTENT on the output Cloud argument is IN OUT rather than
+!       Note the INTENT on the output Aerosol argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_Scalar( Cloud_in,     &  ! Input
-                          Cloud_out,    &  ! Output
+  FUNCTION Assign_Scalar( Aerosol_in,   &  ! Input
+                          Aerosol_out,  &  ! Output
                           RCS_Id,       &  ! Revision control
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type),  INTENT(IN)     :: Cloud_in
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Aerosol_type), INTENT(IN)     :: Aerosol_in
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol_out
+    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Cloud(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Aerosol(Scalar)'
 
 
     ! ------
@@ -882,12 +1039,12 @@ CONTAINS
     ! If this test succeeds, then some or all of the
     ! input pointers are NOT associated, so destroy
     ! the output structure and return.
-    IF ( .NOT. CRTM_Associated_Cloud( Cloud_In ) ) THEN
-      Error_Status = CRTM_Destroy_Cloud( Cloud_Out, &
-                                         Message_Log = Message_Log )
+    IF ( .NOT. CRTM_Associated_Aerosol( Aerosol_In ) ) THEN
+      Error_Status = CRTM_Destroy_Aerosol( Aerosol_Out, &
+                                           Message_Log = Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output CRTM_Cloud pointer members.', &
+                              'Error deallocating output CRTM_Aerosol pointer members.', &
                               Error_Status,    &
                               Message_Log = Message_Log )
       END IF
@@ -898,12 +1055,13 @@ CONTAINS
     ! ----------------------
     ! Allocate the structure
     ! ----------------------
-    Error_Status = CRTM_Allocate_Cloud( Cloud_in%n_Layers, &
-                                        Cloud_out, &
-                                        Message_Log = Message_Log )
+    Error_Status = CRTM_Allocate_Aerosol( Aerosol_in%n_Layers, &
+                                          Aerosol_in%Max_Modes, &
+                                          Aerosol_out, &
+                                          Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output CRTM_Cloud arrays.', &
+                            'Error allocating output CRTM_Aerosol arrays.', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
@@ -913,33 +1071,33 @@ CONTAINS
     ! -----------------------------------
     ! Assign non-dimension scalar members
     ! -----------------------------------
-    Cloud_out%Type = Cloud_in%Type
+    Aerosol_out%Type = Aerosol_in%Type
 
 
     ! -----------------
     ! Assign array data
     ! -----------------
-    Cloud_out%Effective_Radius   = Cloud_in%Effective_Radius  
-    Cloud_out%Effective_Variance = Cloud_in%Effective_Variance
-    Cloud_out%Water_Content      = Cloud_in%Water_Content
+    Aerosol_out%Effective_Radius   = Aerosol_in%Effective_Radius  
+    Aerosol_out%Effective_Variance = Aerosol_in%Effective_Variance
+    Aerosol_out%Concentration      = Aerosol_in%Concentration
 
   END FUNCTION Assign_Scalar
 
 
-  FUNCTION Assign_Rank1( Cloud_in,     &  ! Input
-                         Cloud_out,    &  ! Output
+  FUNCTION Assign_Rank1( Aerosol_in,   &  ! Input
+                         Aerosol_out,  &  ! Output
                          RCS_Id,       &  ! Revision control
                          Message_Log ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN)     :: Cloud_in
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud_out
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN)     :: Aerosol_in
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol_out
     CHARACTER(*),          OPTIONAL,       INTENT(OUT)    :: RCS_Id
     CHARACTER(*),          OPTIONAL,       INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Cloud(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Aerosol(Rank-1)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Scalar_Status
@@ -950,11 +1108,11 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
-    n = SIZE( Cloud_in )
-    IF ( SIZE( Cloud_out ) /= n ) THEN
+    n = SIZE( Aerosol_in )
+    IF ( SIZE( Aerosol_out ) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input Cloud_in and Cloud_out arrays have different dimensions', &
+                            'Input Aerosol_in and Aerosol_out arrays have different dimensions', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
@@ -962,13 +1120,13 @@ CONTAINS
 
     ! Perform the assignment
     DO i = 1, n
-      Scalar_Status = Assign_Scalar( Cloud_in(i), &
-                                     Cloud_out(i), &
+      Scalar_Status = Assign_Scalar( Aerosol_in(i), &
+                                     Aerosol_out(i), &
                                      Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i5, &
-                          &" of CRTM_Cloud structure array." )' ) i
+                          &" of CRTM_Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
                               Error_Status, &
@@ -982,34 +1140,34 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_WeightedSum_Cloud
+!       CRTM_WeightedSum_Aerosol
 !
 ! PURPOSE:
-!       Function to perform a weighted sum of two valid CRTM_Cloud
+!       Function to perform a weighted sum of two valid CRTM_Aerosol
 !       structures. The weighted summation performed is:
 !         A = A + w1*B + w2
-!       where A and B are the CRTM_Cloud structures, and w1 and w2
+!       where A and B are the CRTM_Aerosol structures, and w1 and w2
 !       are the weighting factors. Note that w2 is optional.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_WeightedSum_Cloud( A,                        &  ! In/Output
-!                                              B,                        &  ! Input
-!                                              w1,                       &  ! Input
-!                                              w2 = w2,                  &  ! Optional input
-!                                              RCS_Id = RCS_Id,          &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_WeightedSum_Aerosol( A,                        &  ! In/Output
+!                                                B,                        &  ! Input
+!                                                w1,                       &  ! Input
+!                                                w2 = w2,                  &  ! Optional input
+!                                                RCS_Id = RCS_Id,          &  ! Revision control
+!                                                Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       A:             Cloud structure that is to be added to.
+!       A:             Aerosol structure that is to be added to.
 !                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
+!                      TYPE:       CRTM_Aerosol_type
 !                      DIMENSION:  Scalar OR Rank-1
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
-!       B:             Cloud structure that is to be weighted and
+!       B:             Aerosol structure that is to be weighted and
 !                      added to structure A.
 !                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
+!                      TYPE:       CRTM_Aerosol_type
 !                      DIMENSION:  Same as A
 !                      ATTRIBUTES: INTENT(IN)
 !
@@ -1041,7 +1199,7 @@ CONTAINS
 !       A:             Structure containing the weight sum result,
 !                        A = A + w1*B + w2
 !                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
+!                      TYPE:       CRTM_Aerosol_type
 !                      DIMENSION:  Same as B
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
@@ -1076,16 +1234,16 @@ CONTAINS
                                Message_Log )   &  ! Error messaging
                              RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: A
-    TYPE(CRTM_Cloud_type),  INTENT(IN)     :: B
-    REAL(fp),               INTENT(IN)     :: w1
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: A
+    TYPE(CRTM_Aerosol_type), INTENT(IN)     :: B
+    REAL(fp),                INTENT(IN)     :: w1
+    REAL(fp),     OPTIONAL,  INTENT(IN)     :: w2
+    CHARACTER(*), OPTIONAL,  INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL,  INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Cloud(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Aerosol(Scalar)'
     ! Local variables
     REAL(fp) :: w2_Local
 
@@ -1097,7 +1255,7 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
-    IF ( .NOT. CRTM_Associated_Cloud( A ) ) THEN
+    IF ( .NOT. CRTM_Associated_Aerosol( A ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'On input, structure argument A appears empty.', &
@@ -1105,7 +1263,8 @@ CONTAINS
                             Message_Log = Message_Log )
       RETURN
     END IF
-    IF ( .NOT. CRTM_Associated_Cloud( B ) ) THEN
+
+    IF ( .NOT. CRTM_Associated_Aerosol( B ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'On input, structure argument B appears empty.', &
@@ -1115,7 +1274,8 @@ CONTAINS
     END IF
 
     ! Array arguments must conform
-    IF ( A%n_Layers /= B%n_Layers ) THEN
+    IF ( A%n_Layers /= B%n_Layers .OR. &
+         A%n_Modes  /= B%n_Modes       ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'A and B structure dimensions are different.', &
@@ -1123,12 +1283,12 @@ CONTAINS
                             Message_Log = Message_Log )
       RETURN
     END IF
-         
-    ! Cloud types must be the same
+
+    ! Aerosol types must be the same
     IF ( A%Type /= B%Type ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
-                            'A and B structure Cloud types are different.', &
+                            'A and B structure Aerosol types are different.', &
                             Error_Status,    &
                             Message_Log = Message_Log )
       RETURN
@@ -1144,7 +1304,7 @@ CONTAINS
     ! ------------------------
     A%Effective_Radius   = A%Effective_Radius   + (w1*B%Effective_Radius)   + w2_Local
     A%Effective_Variance = A%Effective_Variance + (w1*B%Effective_Variance) + w2_Local
-    A%Water_Content      = A%Water_Content      + (w1*B%Water_Content)      + w2_Local
+    A%Concentration      = A%Concentration      + (w1*B%Concentration)      + w2_Local
 
   END FUNCTION WeightedSum_Scalar
 
@@ -1157,16 +1317,16 @@ CONTAINS
                               Message_Log )   &  ! Error messaging
                             RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: A
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN)     :: B
-    REAL(fp),                            INTENT(IN)     :: w1
-    REAL(fp),              OPTIONAL,     INTENT(IN)     :: w2
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: A
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN)     :: B
+    REAL(fp),                              INTENT(IN)     :: w1
+    REAL(fp),                OPTIONAL,     INTENT(IN)     :: w2
+    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Cloud(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Aerosol(Rank-1)'
     ! Local variables
     CHARACTER( 256 ) :: Message
     INTEGER :: Scalar_Status
@@ -1197,7 +1357,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error computing weighted sum for element #", i5, &
-                          &" of CRTM_Cloud structure arrays." )' ) i
+                          &" of CRTM_Aerosol structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
                               Error_Status, &
@@ -1211,19 +1371,19 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Zero_Cloud
+!       CRTM_Zero_Aerosol
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out all members of a CRTM_Cloud structure - both
+!       Subroutine to zero-out all members of a CRTM_Aerosol structure - both
 !       scalar and pointer.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Zero_Cloud( Cloud )
+!       CALL CRTM_Zero_Aerosol( Aerosol )
 !
 ! OUTPUT ARGUMENTS:
-!       Cloud:        Zeroed out Cloud structure.
+!       Aerosol:      Zeroed out Aerosol structure.
 !                     UNITS:      N/A
-!                     TYPE:       CRTM_Cloud_type
+!                     TYPE:       CRTM_Aerosol_type
 !                     DIMENSION:  Scalar
 !                                   OR
 !                                 Rank1 array
@@ -1231,36 +1391,41 @@ CONTAINS
 !
 ! COMMENTS:
 !       - No checking of the input structure is performed, so there are no
-!         tests for pointer member association status. This means the Cloud
+!         tests for pointer member association status. This means the Aerosol
 !         structure must have allocated pointer members upon entry to this
 !         routine.
 !
 !       - The dimension components of the structure are *NOT*
 !         set to zero.
 !
-!       - The cloud type component is *NOT* reset.
+!       - The n_Modes component is set to the value of the Max_Modes
+!         component.
 !
-!       - Note the INTENT on the output Cloud argument is IN OUT rather than
+!       - The aerosol type component is *NOT* reset.
+!
+!       - Note the INTENT on the output Aerosol argument is IN OUT rather than
 !         just OUT. This is necessary because the argument must be defined upon
 !         input.
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Zero_Scalar( Cloud )  ! Output
-    TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud
+  SUBROUTINE Zero_Scalar( Aerosol )  ! Output
+    TYPE(CRTM_Aerosol_type),  INTENT(IN OUT) :: Aerosol
+    ! Reset the multi-dimensional scalar components
+    Aerosol%n_Modes = Aerosol%Max_Modes
     ! Reset the array components
-    Cloud%Effective_Radius   = ZERO
-    Cloud%Effective_Variance = ZERO
-    Cloud%Water_Content      = ZERO
+    Aerosol%Effective_Radius   = ZERO
+    Aerosol%Effective_Variance = ZERO
+    Aerosol%Concentration      = ZERO
   END SUBROUTINE Zero_Scalar
 
 
-  SUBROUTINE Zero_Rank1( Cloud )  ! Output
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
+  SUBROUTINE Zero_Rank1( Aerosol )  ! Output
+    TYPE(CRTM_Aerosol_type), DIMENSION(:), INTENT(IN OUT) :: Aerosol
     INTEGER :: n
-    DO n = 1, SIZE( Cloud )
-      CALL Zero_Scalar( Cloud(n) )
+    DO n = 1, SIZE( Aerosol )
+      CALL Zero_Scalar( Aerosol(n) )
     END DO
   END SUBROUTINE Zero_Rank1
 
-END MODULE CRTM_Cloud_Define_old
+END MODULE CRTM_Aerosol_Define_old
