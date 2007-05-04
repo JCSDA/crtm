@@ -3554,8 +3554,6 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-
-
   FUNCTION CRTM_Compute_nStreams( Atmosphere  , &  ! Input
                                   SensorIndex , &  ! Input
                                   ChannelIndex, &  ! Input
@@ -3577,13 +3575,18 @@ CONTAINS
     RTSolution%n_full_Streams = nStreams
     RTSolution%Scattering_FLAG = .FALSE.
 
-    ! If no clouds, no scattering, so return
-    IF(Atmosphere%n_Clouds == 0 ) RETURN
+    ! If no clouds and no aerosols, no scattering, so return
+    IF ( Atmosphere%n_Clouds   == 0 .AND. &
+         Atmosphere%n_Aerosols == 0       ) RETURN
     
     ! Determine the maximum cloud particle size
     maxReff = ZERO
     DO n = 1, Atmosphere%n_Clouds
       Reff = MAXVAL(Atmosphere%Cloud(n)%Effective_Radius)
+      IF( Reff > maxReff) maxReff = Reff
+    END DO
+    DO n = 1, Atmosphere%n_Aerosols
+      Reff = MAXVAL(Atmosphere%Aerosol(n)%Effective_Radius)
       IF( Reff > maxReff) maxReff = Reff
     END DO
 
@@ -3600,7 +3603,7 @@ CONTAINS
     END IF
 
     ! Set RTSolution scattering info
-    RTSolution%Scattering_FLAG = .TRUE.
+    RTSolution%Scattering_Flag = .TRUE.
     RTSolution%n_full_Streams  = nStreams + 2
 
   END FUNCTION CRTM_Compute_nStreams
