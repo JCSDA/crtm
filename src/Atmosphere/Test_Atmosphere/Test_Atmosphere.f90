@@ -34,14 +34,16 @@ PROGRAM Test_Atmosphere
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'Test_Atmosphere'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Atmosphere.f90,v 1.4 2006/05/02 14:58:34 dgroff Exp $'
+    '$Id$'
 
-  CHARACTER(*), PARAMETER ::    AEROSOL_FILENAME = 'Test.Aerosol.bin'
-  CHARACTER(*), PARAMETER ::      CLOUD_FILENAME = 'Test.Cloud.bin'
-  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'Test.Atmosphere.bin'
+  CHARACTER(*), PARAMETER :: TEST_AEROSOL_FILENAME    = 'Test.Aerosol.bin'
+  CHARACTER(*), PARAMETER :: TEST_CLOUD_FILENAME      = 'Test.Cloud.bin'
+  CHARACTER(*), PARAMETER :: TEST_ATMOSPHERE_FILENAME = 'Test.Atmosphere.bin'
 
-  INTEGER, PARAMETER :: MAX_N_LOOPS  = 100000
-  INTEGER, PARAMETER :: INFO_N_LOOPS = 5000
+  CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'Atmosphere.bin'
+  
+  INTEGER, PARAMETER :: MAX_N_LOOPS  = 10000
+  INTEGER, PARAMETER :: INFO_N_LOOPS = 1000
   ! Structure dimensions
   INTEGER, PARAMETER :: N_PROFILES  = 6
   INTEGER, PARAMETER :: N_LAYERS    = 100
@@ -58,18 +60,21 @@ PROGRAM Test_Atmosphere
   ! ---------
   CHARACTER(256) :: Message
   INTEGER :: Error_Status
+  INTEGER :: Allocate_Status
   INTEGER :: j, m, mc, ma, n
   TYPE(CRTM_Cloud_type),      DIMENSION(N_CLOUDS)   :: Cloud
   TYPE(CRTM_Aerosol_type),    DIMENSION(N_AEROSOLS) :: Aerosol
   TYPE(CRTM_Atmosphere_type), DIMENSION(N_PROFILES) :: Atmosphere, &
                                                        Atmosphere_Copy
+  TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: Atm(:)
+
                                                            
   ! Output header
   ! -------------
   CALL PRogram_Message( PROGRAM_NAME, &
                         'Program to test all the CRTM Atmosphere structure '//&
                         'manipulation and I/O functions.', &
-                        '$Revision: 1.4 $' )
+                        '$Revision$' )
 
 
   ! Allocate the Atmosphere structure
@@ -198,7 +203,7 @@ PROGRAM Test_Atmosphere
 
   ! Write the test datafile
   WRITE(*,'( 10x, "Writing test Cloud datafile ..." )' )
-  Error_Status = CRTM_Write_Cloud_Binary( CLOUD_FILENAME, &
+  Error_Status = CRTM_Write_Cloud_Binary( TEST_CLOUD_FILENAME, &
                                           Atmosphere(1)%Cloud )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
@@ -210,7 +215,7 @@ PROGRAM Test_Atmosphere
   ! Test read the datafile
   WRITE( *, '( 10x, "Looping for Cloud Binary read memory leak test ..." )' )
   DO n = 1, MAX_N_LOOPS
-    Error_Status = CRTM_Read_Cloud_Binary( CLOUD_FILENAME, &
+    Error_Status = CRTM_Read_Cloud_Binary( TEST_CLOUD_FILENAME, &
                                            Cloud )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message, '( "Error reading Cloud datafile on attempt # ", i0 )' ) n
@@ -234,7 +239,7 @@ PROGRAM Test_Atmosphere
 
   ! Write the test datafile
   WRITE(*,'( 10x, "Writing test Aerosol datafile ..." )' )
-  Error_Status = CRTM_Write_Aerosol_Binary( AEROSOL_FILENAME, &
+  Error_Status = CRTM_Write_Aerosol_Binary( TEST_AEROSOL_FILENAME, &
                                             Atmosphere(1)%Aerosol )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
@@ -246,7 +251,7 @@ PROGRAM Test_Atmosphere
   ! Test read the datafile
   WRITE(*,'( 10x, "Looping for Aerosol Binary read memory leak test ..." )' )
   DO n = 1, MAX_N_LOOPS
-    Error_Status = CRTM_Read_Aerosol_Binary( AEROSOL_FILENAME, &
+    Error_Status = CRTM_Read_Aerosol_Binary( TEST_AEROSOL_FILENAME, &
                                              Aerosol )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message, '( "Error reading Aerosol datafile on attempt # ", i0 )' ) n
@@ -270,7 +275,7 @@ PROGRAM Test_Atmosphere
 
   ! Write the test datafile
   WRITE(*,'( 10x, "Writing test Atmosphere datafile ..." )' )
-  Error_Status = CRTM_Write_Atmosphere_Binary( ATMOSPHERE_FILENAME, &
+  Error_Status = CRTM_Write_Atmosphere_Binary( TEST_ATMOSPHERE_FILENAME, &
                                                Atmosphere )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
@@ -282,7 +287,7 @@ PROGRAM Test_Atmosphere
   ! Test read the datafile
   WRITE(*,'( 10x, "Looping for Atmosphere Binary read memory leak test ..." )' )
   DO n = 1, MAX_N_LOOPS
-    Error_Status = CRTM_Read_Atmosphere_Binary( ATMOSPHERE_FILENAME, &
+    Error_Status = CRTM_Read_Atmosphere_Binary( TEST_ATMOSPHERE_FILENAME, &
                                                 Atmosphere, &
                                                 Quiet = SET )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -321,6 +326,53 @@ PROGRAM Test_Atmosphere
     END IF
   END DO
 
+
+  ! Read the file to be used in CRTM testing
+  ! ----------------------------------------
+  WRITE(*,'( /5x, "Reading the CRTM test Atmosphere file..." )' )
+
+  ! Inquire the datafile
+  Error_Status = CRTM_Inquire_Atmosphere_Binary( ATMOSPHERE_FILENAME, &
+                                                 n_Profiles = m )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error inquiring CRTM test Atmophere datafile', &
+                          FAILURE )
+    STOP
+  END IF
+
+  ! Allocate the array
+  ALLOCATE( Atm(m), STAT=Allocate_Status)
+  IF ( Allocate_Status /= 0 ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error allocating Atm array for CRTM test Atmophere datafile I/O', &
+                          FAILURE )
+    STOP
+  END IF
+  
+  ! Read the datafile
+  Error_Status = CRTM_Read_Atmosphere_Binary( ATMOSPHERE_FILENAME, &
+                                              Atm )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error reading CRTM test Atmophere datafile', &
+                          FAILURE )
+    STOP
+  END IF
+  
+  ! Write the datafile
+  Error_Status = CRTM_Write_Atmosphere_Binary( ATMOSPHERE_FILENAME//'.copy', &
+                                               Atm )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error writing CRTM test Atmosphere datafile.', &
+                          FAILURE )
+    STOP
+  END IF
+
+  ! Deallocate
+  DEALLOCATE(Atm)
+  
 
   ! Destroy the structure arrays
   ! ----------------------------
