@@ -134,7 +134,7 @@ MODULE CRTM_Cloud_Define
 
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Cloud_Define.f90,v 1.18 2006/06/29 19:42:11 wd20pd Exp $'
+  '$Id$'
 
 
 

@@ -47,7 +47,7 @@ MODULE CRTM_Atmosphere_Binary_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CRTM_Atmosphere_Binary_IO.f90,v 2.4 2006/05/25 19:34:49 wd20pd Exp $'
+    '$Id$'
 
 
 CONTAINS

@@ -42,7 +42,7 @@ MODULE CRTM_Cloud_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CRTM_Cloud_Binary_IO.f90,v 1.4 2006/06/29 19:44:23 wd20pd Exp $'
+    '$Id$'
 
 
 CONTAINS

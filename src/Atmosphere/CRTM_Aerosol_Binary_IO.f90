@@ -43,7 +43,7 @@ MODULE CRTM_Aerosol_Binary_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CRTM_Aerosol_Binary_IO.f90,v 1.4 2006/05/02 14:58:34 dgroff Exp $'
+    '$Id$'
 
 
 CONTAINS

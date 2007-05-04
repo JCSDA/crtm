@@ -143,7 +143,7 @@ MODULE CRTM_Aerosol_Define
                            'Sulfate           ' /)
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Aerosol_Define.f90,v 2.7 2006/05/25 19:33:27 wd20pd Exp $'
+  '$Id$'
 
 
   ! ----------------------------

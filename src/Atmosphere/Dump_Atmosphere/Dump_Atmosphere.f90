@@ -32,7 +32,7 @@ PROGRAM Dump_Atmosphere
   ! ----------
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME   = 'Dump_Atmosphere'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Dump_Atmosphere.f90,v 1.1 2006/05/08 13:26:08 wd20pd Exp $'
+    '$Id$'
   CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin.Big_Endian'
   INTEGER,      PARAMETER :: MAX_N_PROFILES = 52
 
@@ -52,7 +52,7 @@ PROGRAM Dump_Atmosphere
   ! --------------
   CALL Program_Message(PROGRAM_NAME, &
                        'Program to dump the test CRTM Atmosphere datafile to stdout', &
-                       '$Revision: 1.1 $' )
+                       '$Revision$' )
 
   ! ----------------------------------------
   ! Read the atmosphere structure data files
