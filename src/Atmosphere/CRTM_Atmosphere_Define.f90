@@ -369,6 +369,7 @@ MODULE CRTM_Atmosphere_Define
   INTERFACE CRTM_Destroy_Atmosphere
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
+    MODULE PROCEDURE Destroy_Rank2
   END INTERFACE CRTM_Destroy_Atmosphere
 
   INTERFACE CRTM_Allocate_Atmosphere
@@ -385,6 +386,7 @@ MODULE CRTM_Atmosphere_Define
   INTERFACE CRTM_Assign_Atmosphere
     MODULE PROCEDURE Assign_Scalar
     MODULE PROCEDURE Assign_Rank1
+    MODULE PROCEDURE Assign_Rank2
   END INTERFACE CRTM_Assign_Atmosphere
 
   INTERFACE CRTM_WeightedSum_Atmosphere
@@ -1022,6 +1024,52 @@ CONTAINS
 
   END FUNCTION Destroy_Rank1
 
+
+  FUNCTION Destroy_Rank2( Atmosphere , &  ! Output
+                          No_Clear   , &  ! Optional input
+                          RCS_Id     , &  ! Revision control
+                          Message_Log) &  ! Error messaging
+                        RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere(:,:)
+    INTEGER     ,     OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Atmosphere(Rank-2)'
+    ! Local variables
+    CHARACTER(256) :: Message
+    INTEGER :: Scalar_Status
+    INTEGER :: l, m
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Reinitialise array
+    ! ------------------
+    DO m = 1, SIZE(Atmosphere,2)
+      DO l = 1, SIZE(Atmosphere,1)
+        Scalar_Status = Destroy_Scalar( Atmosphere(l,m), &
+                                        No_Clear = No_Clear, &
+                                        Message_Log = Message_Log )
+        IF ( Scalar_Status /= SUCCESS ) THEN
+          Error_Status = Scalar_Status
+          WRITE( Message, '( "Error destroying element (",i0,",",i0,")", &
+                            &" of CRTM_Atmosphere structure array." )' ) l, m
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM( Message ), &
+                                Error_Status, &
+                                Message_Log = Message_Log )
+        END IF
+      END DO
+    END DO
+
+  END FUNCTION Destroy_Rank2
+  
 
 !--------------------------------------------------------------------------------
 !
@@ -2076,6 +2124,67 @@ CONTAINS
     END DO
 
   END FUNCTION Assign_Rank1
+
+
+  FUNCTION Assign_Rank2( Atmosphere_in , &  ! Input
+                         Atmosphere_out, &  ! Output
+                         RCS_Id        , &  ! Revision control
+                         Message_Log   ) &  ! Error messaging
+                       RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere_in(:,:)
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere_out(:,:)
+    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Atmosphere(Rank-2)'
+    ! Local variables
+    CHARACTER(256) :: Message
+    INTEGER :: Scalar_Status
+    INTEGER :: i, j, l, m
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Array arguments must conform
+    l = SIZE(Atmosphere_in,1)
+    m = SIZE(Atmosphere_in,2)
+    IF ( SIZE(Atmosphere_out,1) /= l .OR. &
+         SIZE(Atmosphere_out,2) /= m      ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input Atmosphere_in and Atmosphere_out arrays'//&
+                            ' have different dimensions', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+
+    ! Perform the assignment
+    ! ----------------------
+    DO j = 1, m
+      DO i = 1, l
+        Scalar_Status = Assign_Scalar( Atmosphere_in(i,j), &
+                                       Atmosphere_out(i,j), &
+                                       Message_Log = Message_Log )
+        IF ( Scalar_Status /= SUCCESS ) THEN
+          Error_Status = Scalar_Status
+          WRITE( Message, '( "Error copying element (",i0,",",i0,")",&
+                            &" of CRTM_Atmosphere structure array." )' ) i,j
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM( Message ), &
+                                Error_Status, &
+                                Message_Log = Message_Log )
+        END IF
+      END DO
+    END DO
+
+  END FUNCTION Assign_Rank2
 
 
 !--------------------------------------------------------------------------------
