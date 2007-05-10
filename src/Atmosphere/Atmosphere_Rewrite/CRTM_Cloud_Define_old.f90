@@ -44,7 +44,7 @@ MODULE CRTM_Cloud_Define_old
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,      ONLY: fp=>fp_kind
+  USE Type_Kinds,      ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters, ONLY: ZERO, SET
   ! Disable implicit typing
@@ -80,6 +80,11 @@ MODULE CRTM_Cloud_Define_old
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
+  INTERFACE CRTM_Associated_Cloud
+    MODULE PROCEDURE Associated_Scalar
+    MODULE PROCEDURE Associated_Rank1
+  END INTERFACE CRTM_Associated_Cloud
+
   INTERFACE CRTM_Destroy_Cloud
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
@@ -87,8 +92,7 @@ MODULE CRTM_Cloud_Define_old
 
   INTERFACE CRTM_Allocate_Cloud
     MODULE PROCEDURE Allocate_Scalar
-    MODULE PROCEDURE Allocate_Rank01
-    MODULE PROCEDURE Allocate_Rank11
+    MODULE PROCEDURE Allocate_Rank1
   END INTERFACE CRTM_Allocate_Cloud
 
   INTERFACE CRTM_Assign_Cloud
@@ -143,10 +147,9 @@ MODULE CRTM_Cloud_Define_old
     INTEGER :: n_Layers = 0  ! K dimension.
     ! Cloud type
     INTEGER :: Type = NO_CLOUD
-    ! Particle size distribution parameters
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Radius   => NULL() ! K. Units are microns
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Variance => NULL() ! K. Units are Dimensionless
     ! Cloud state variables
+    REAL(fp), DIMENSION(:), POINTER :: Effective_Radius   => NULL() ! K. Units are microns
+    REAL(fp), DIMENSION(:), POINTER :: Effective_Variance => NULL() ! K. Units are microns^2
     REAL(fp), DIMENSION(:), POINTER :: Water_Content => NULL()      ! K. Units are kg/m^2
   END TYPE CRTM_Cloud_type
 
@@ -190,12 +193,8 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_Cloud( Cloud )
     TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud
-    Cloud%n_Layers = 0
-    Cloud%Type     = NO_CLOUD
+    Cloud%Type = NO_CLOUD
   END SUBROUTINE CRTM_Clear_Cloud
-
-
-
 
 
 !################################################################################
@@ -255,9 +254,9 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_Cloud( Cloud,     & ! Input
-                                  ANY_Test ) & ! Optional input
-                                RESULT( Association_Status )
+  FUNCTION Associated_Scalar( Cloud,     & ! Input
+                              ANY_Test ) & ! Optional input
+                            RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
     INTEGER,     OPTIONAL, INTENT(IN) :: ANY_Test
@@ -266,8 +265,6 @@ CONTAINS
     ! Local variables
     LOGICAL :: ALL_Test
 
-
-    ! ------
     ! Set up
     ! ------
     ! Default is to test ALL the pointer members
@@ -278,7 +275,7 @@ CONTAINS
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
 
-    ! ---------------------------------------------
+
     ! Test the structure pointer member association
     ! ---------------------------------------------
     Association_Status = .FALSE.
@@ -296,7 +293,24 @@ CONTAINS
       END IF
     END IF
 
-  END FUNCTION CRTM_Associated_Cloud
+  END FUNCTION Associated_Scalar
+
+  FUNCTION Associated_Rank1( Cloud,     & ! Input
+                             ANY_Test ) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN) :: Cloud
+    INTEGER,               OPTIONAL,     INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL, DIMENSION(SIZE(Cloud)) :: Association_Status
+    ! Local variables
+    INTEGER :: n
+
+    DO n = 1, SIZE(Cloud)
+      Association_Status(n) = Associated_Scalar(Cloud(n), ANY_Test=ANY_Test)
+    END DO
+
+  END FUNCTION Associated_Rank1
 
 
 !--------------------------------------------------------------------------------
@@ -308,9 +322,9 @@ CONTAINS
 !       Function to re-initialize CRTM_Cloud structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Cloud( Cloud,                    &  ! Output
-!                                          RCS_Id = RCS_Id,          &  ! Revision control
-!                                          Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Cloud( Cloud                  , &  ! Output
+!                                          RCS_Id     =RCS_Id     , &  ! Revision control
+!                                          Message_Log=Message_Log  )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
@@ -360,13 +374,13 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( Cloud,        &  ! Output
-                           No_Clear,     &  ! Optional input
-                           RCS_Id,       &  ! Revision control
-                           Message_Log ) &  ! Error messaging
+  FUNCTION Destroy_Scalar( Cloud      , &  ! Output
+                           No_Clear   , &  ! Optional input
+                           RCS_Id     , &  ! Revision control
+                           Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud
+    TYPE(CRTM_Cloud_type) ,  INTENT(IN OUT) :: Cloud
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -375,93 +389,54 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Cloud(Scalar)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+    ! Reinitialise the dimensions
+    Cloud%n_Layers = 0
+    
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
-
-
-    ! -----------------------------
-    ! Initialise the scalar members
-    ! -----------------------------
     IF ( Clear ) CALL CRTM_Clear_Cloud( Cloud )
 
-
-    ! -----------------------------------------------------
     ! If ALL pointer members are NOT associated, do nothing
-    ! -----------------------------------------------------
     IF ( .NOT. CRTM_Associated_Cloud( Cloud ) ) RETURN
 
 
-    ! ------------------------------
     ! Deallocate the pointer members
     ! ------------------------------
-    ! Deallocate the Effective_Radius profile
-    IF ( ASSOCIATED( Cloud%Effective_Radius ) ) THEN
-      DEALLOCATE( Cloud%Effective_Radius, STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Cloud Effective_Radius ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! Deallocate the Effective_Variance profile
-    IF ( ASSOCIATED( Cloud%Effective_Variance ) ) THEN
-      DEALLOCATE( Cloud%Effective_Variance, STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Cloud Effective_Variance ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! Deallocate the water content profile
-    IF ( ASSOCIATED( Cloud%Water_Content ) ) THEN
-      DEALLOCATE( Cloud%Water_Content, STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_Cloud Water_Content ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
+    DEALLOCATE( Cloud%Effective_Radius, &
+                Cloud%Effective_Variance, &
+                Cloud%Water_Content, &
+                STAT = Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error deallocating CRTM_Cloud pointer components.", &
+                      &" STAT = ", i0 )' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM( Message ), &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
     END IF
 
 
-    ! -------------------------------------
     ! Decrement and test allocation counter
     ! -------------------------------------
     Cloud%n_Allocates = Cloud%n_Allocates - 1
     IF ( Cloud%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
+      WRITE( Message, '( "Allocation counter /= 0, Value = ", i0 )' ) &
                       Cloud%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
@@ -472,37 +447,40 @@ CONTAINS
   END FUNCTION Destroy_Scalar
 
 
-  FUNCTION Destroy_Rank1( Cloud,        &  ! Output
-                          No_Clear,     &  ! Optional input
-                          RCS_Id,       &  ! Revision control
-                          Message_Log ) &  ! Error messaging
+  FUNCTION Destroy_Rank1( Cloud      , &  ! Output
+                          No_Clear   , &  ! Optional input
+                          RCS_Id     , &  ! Revision control
+                          Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    INTEGER,               OPTIONAL,     INTENT(IN)     :: No_Clear
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: Cloud(:)
+    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+
     ! Reinitialise array
+    ! ------------------
     DO n = 1, SIZE( Cloud )
       Scalar_Status = Destroy_Scalar( Cloud(n), &
                                       No_Clear = No_Clear, &
                                       Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error destroying element #", i5, &
+        WRITE( Message, '( "Error destroying element #", i0, &
                           &" of Cloud structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
@@ -523,10 +501,10 @@ CONTAINS
 !       Function to allocate CRTM_Cloud structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Cloud( n_Layers,                 &  ! Input
-!                                           Cloud,                    &  ! Output
-!                                           RCS_Id = RCS_Id,          &  ! Revision control
-!                                           Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Cloud( n_Layers               , &  ! Input
+!                                           Cloud                  , &  ! Output
+!                                           RCS_Id     =RCS_Id     , &  ! Revision control
+!                                           Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     Number of layers for which there is cloud data.
@@ -548,25 +526,10 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Cloud:        Cloud structure with allocated pointer members. The
-!                     following table shows the allowable dimension combinations
-!                     for the calling routine, where N == number of clouds:
-!
-!                        Input       Output
-!                       n_Layers      Cloud
-!                       dimension   dimension
-!                     ---------------------------
-!                        scalar       scalar
-!                        scalar         N
-!                          N            N
-!
-!                     These multiple interfaces are supplied purely for ease of
-!                     use depending on what data is available.
-!                     
+!       Cloud:        Cloud structure with allocated pointer members.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Cloud_type
-!                     DIMENSION:  Scalar OR Rank-1
-!                                 See table above.
+!                     DIMENSION:  Same as input n_Layers argument
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 !
@@ -599,10 +562,10 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_Scalar( n_Layers,     &  ! Input
-                            Cloud,        &  ! Output
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
+  FUNCTION Allocate_Scalar( n_Layers   , &  ! Input
+                            Cloud      , &  ! Output
+                            RCS_Id     , &  ! Revision control
+                            Message_Log) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: n_Layers
@@ -614,17 +577,16 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Scalar)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Allocate_Status
 
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Layer dimension
+    ! Dimensions
     IF ( n_Layers < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -650,8 +612,6 @@ CONTAINS
     END IF
 
 
-
-    ! ----------------------
     ! Perform the allocation
     ! ----------------------
     ALLOCATE( Cloud%Effective_Radius( n_Layers ), &
@@ -660,7 +620,7 @@ CONTAINS
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating CRTM_Cloud data arrays. STAT = ", i5 )' ) &
+      WRITE( Message, '( "Error allocating CRTM_Cloud data arrays. STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
@@ -670,7 +630,6 @@ CONTAINS
     END IF
 
 
-    ! ------------------------------------------
     ! Assign the dimensions and initalise arrays
     ! ------------------------------------------
     Cloud%n_Layers = n_Layers
@@ -679,13 +638,12 @@ CONTAINS
     Cloud%Water_Content      = ZERO
 
 
-    ! -------------------------------------
     ! Increment and test allocation counter
     ! -------------------------------------
     Cloud%n_Allocates = Cloud%n_Allocates + 1
     IF ( Cloud%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
+      WRITE( Message, '( "Allocation counter /= 1, Value = ", i0 )' ) &
                       Cloud%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
@@ -696,74 +654,33 @@ CONTAINS
   END FUNCTION Allocate_Scalar
 
 
-  FUNCTION Allocate_Rank01( n_Layers,     &  ! Input
-                            Cloud,        &  ! Output
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
+  FUNCTION Allocate_Rank1( n_Layers   , &  ! Input
+                           Cloud      , &  ! Output
+                           RCS_Id     , &  ! Revision control
+                           Message_Log) &  ! Error messaging
+                         RESULT( Error_Status )
     ! Arguments
-    INTEGER,                             INTENT(IN)     :: n_Layers
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Rank-01)'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Perform the allocation
-    DO i = 1, SIZE( Cloud )
-      Scalar_Status = Allocate_Scalar( n_Layers, &
-                                       Cloud(i), &
-                                       Message_Log = Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Cloud structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Allocate_Rank01
-
-
-  FUNCTION Allocate_Rank11( n_Layers,     &  ! Input
-                            Cloud,        &  ! Output
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Layers
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
-    CHARACTER(*),          OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,       INTENT(IN)     :: Message_Log
+    INTEGER,                INTENT(IN)     :: n_Layers(:)
+    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud(:)
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Rank-11)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
-    n = SIZE( n_Layers )
-    IF ( SIZE( Cloud ) /= n ) THEN
+    n = SIZE( Cloud )
+    IF ( SIZE( n_Layers ) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers and CRTM_Cloud arrays have different dimensions', &
@@ -773,13 +690,14 @@ CONTAINS
     END IF
 
     ! Perform the allocation
+    ! ----------------------
     DO i = 1, n
       Scalar_Status = Allocate_Scalar( n_Layers(i), &
                                        Cloud(i), &
                                        Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
+        WRITE( Message, '( "Error allocating element #", i0, &
                           &" of CRTM_Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
@@ -788,7 +706,7 @@ CONTAINS
       END IF
     END DO
 
-  END FUNCTION Allocate_Rank11
+  END FUNCTION Allocate_Rank1
 
 
 !--------------------------------------------------------------------------------
@@ -800,18 +718,16 @@ CONTAINS
 !       Function to copy valid CRTM_Cloud structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Cloud( Cloud_in,                 &  ! Input  
-!                                         Cloud_out,                &  ! Output 
-!                                         RCS_Id = RCS_Id,          &  ! Revision control
-!                                         Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Assign_Cloud( Cloud_in               , &  ! Input  
+!                                         Cloud_out              , &  ! Output 
+!                                         RCS_Id     =RCS_Id,    , &  ! Revision control
+!                                         Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Cloud_in:      Cloud structure which is to be copied.
 !                      UNITS:      N/A
 !                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Scalar
-!                                    OR
-!                                  Rank1 array
+!                      DIMENSION:  Scalar or Rank-1 array
 !                      ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -856,10 +772,10 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_Scalar( Cloud_in,     &  ! Input
-                          Cloud_out,    &  ! Output
-                          RCS_Id,       &  ! Revision control
-                          Message_Log ) &  ! Error messaging
+  FUNCTION Assign_Scalar( Cloud_in   , &  ! Input
+                          Cloud_out  , &  ! Output
+                          RCS_Id     , &  ! Revision control
+                          Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type),  INTENT(IN)     :: Cloud_in
@@ -871,8 +787,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Cloud(Scalar)'
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
@@ -895,7 +809,6 @@ CONTAINS
     END IF
 
 
-    ! ----------------------
     ! Allocate the structure
     ! ----------------------
     Error_Status = CRTM_Allocate_Cloud( Cloud_in%n_Layers, &
@@ -910,15 +823,9 @@ CONTAINS
     END IF
 
 
-    ! -----------------------------------
-    ! Assign non-dimension scalar members
-    ! -----------------------------------
+    ! Assign data
+    ! -----------
     Cloud_out%Type = Cloud_in%Type
-
-
-    ! -----------------
-    ! Assign array data
-    ! -----------------
     Cloud_out%Effective_Radius   = Cloud_in%Effective_Radius  
     Cloud_out%Effective_Variance = Cloud_in%Effective_Variance
     Cloud_out%Water_Content      = Cloud_in%Water_Content
@@ -926,26 +833,27 @@ CONTAINS
   END FUNCTION Assign_Scalar
 
 
-  FUNCTION Assign_Rank1( Cloud_in,     &  ! Input
-                         Cloud_out,    &  ! Output
-                         RCS_Id,       &  ! Revision control
+  FUNCTION Assign_Rank1( Cloud_in   , &  ! Input
+                         Cloud_out  , &  ! Output
+                         RCS_Id     , &  ! Revision control
                          Message_Log ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN)     :: Cloud_in
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud_out
-    CHARACTER(*),          OPTIONAL,       INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,       INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Cloud_type),  INTENT(IN)     :: Cloud_in(:)
+    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud_out(:)
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -960,14 +868,16 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Perform the assignment
+    ! ----------------------
     DO i = 1, n
       Scalar_Status = Assign_Scalar( Cloud_in(i), &
                                      Cloud_out(i), &
                                      Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error copying element #", i5, &
+        WRITE( Message, '( "Error copying element #", i0, &
                           &" of CRTM_Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
@@ -992,12 +902,12 @@ CONTAINS
 !       are the weighting factors. Note that w2 is optional.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_WeightedSum_Cloud( A,                        &  ! In/Output
-!                                              B,                        &  ! Input
-!                                              w1,                       &  ! Input
-!                                              w2 = w2,                  &  ! Optional input
-!                                              RCS_Id = RCS_Id,          &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_WeightedSum_Cloud( A                      , &  ! In/Output
+!                                              B                      , &  ! Input
+!                                              w1                     , &  ! Input
+!                                              w2         =w2         , &  ! Optional input
+!                                              RCS_Id     =RCS_Id     , &  ! Revision control
+!                                              Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       A:             Cloud structure that is to be added to.
@@ -1068,12 +978,12 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION WeightedSum_Scalar( A,              &  ! Input/Output
-                               B,              &  ! Input
-                               w1,             &  ! Input
-                               w2,             &  ! optional input
-                               RCS_Id,         &  ! Revision control
-                               Message_Log )   &  ! Error messaging
+  FUNCTION WeightedSum_Scalar( A          , &  ! Input/Output
+                               B          , &  ! Input
+                               w1         , &  ! Input
+                               w2         , &  ! optional input
+                               RCS_Id     , &  ! Revision control
+                               Message_Log) &  ! Error messaging
                              RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: A
@@ -1089,8 +999,6 @@ CONTAINS
     ! Local variables
     REAL(fp) :: w2_Local
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
@@ -1139,7 +1047,6 @@ CONTAINS
     IF ( PRESENT( w2 ) ) w2_Local = w2
 
 
-    ! ------------------------
     ! Perform the weighted sum
     ! ------------------------
     A%Effective_Radius   = A%Effective_Radius   + (w1*B%Effective_Radius)   + w2_Local
@@ -1149,30 +1056,31 @@ CONTAINS
   END FUNCTION WeightedSum_Scalar
 
 
-  FUNCTION WeightedSum_Rank1( A,              &  ! Input/Output
-                              B,              &  ! Input
-                              w1,             &  ! Input
-                              w2,             &  ! optional input
-                              RCS_Id,         &  ! Revision control
-                              Message_Log )   &  ! Error messaging
+  FUNCTION WeightedSum_Rank1( A          , &  ! Input/Output
+                              B          , &  ! Input
+                              w1         , &  ! Input
+                              w2         , &  ! optional input
+                              RCS_Id     , &  ! Revision control
+                              Message_Log) &  ! Error messaging
                             RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: A
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN)     :: B
-    REAL(fp),                            INTENT(IN)     :: w1
-    REAL(fp),              OPTIONAL,     INTENT(IN)     :: w2
-    CHARACTER(*),          OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),          OPTIONAL,     INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: A(:)
+    TYPE(CRTM_Cloud_type),  INTENT(IN)     :: B(:)
+    REAL(fp),               INTENT(IN)     :: w1
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: w2
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -1187,7 +1095,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Perform the summation
+    ! ---------------------
     DO i = 1, n
       Scalar_Status = WeightedSum_Scalar( A(i), &
                                           B(i), &
@@ -1196,7 +1106,7 @@ CONTAINS
                                           Message_Log = Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error computing weighted sum for element #", i5, &
+        WRITE( Message, '( "Error computing weighted sum for element #", i0, &
                           &" of CRTM_Cloud structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
@@ -1224,9 +1134,7 @@ CONTAINS
 !       Cloud:        Zeroed out Cloud structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Cloud_type
-!                     DIMENSION:  Scalar
-!                                   OR
-!                                 Rank1 array
+!                     DIMENSION:  Scalar or Rank-1 array
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
@@ -1256,7 +1164,7 @@ CONTAINS
 
 
   SUBROUTINE Zero_Rank1( Cloud )  ! Output
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN OUT) :: Cloud
+    TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud(:)
     INTEGER :: n
     DO n = 1, SIZE( Cloud )
       CALL Zero_Scalar( Cloud(n) )

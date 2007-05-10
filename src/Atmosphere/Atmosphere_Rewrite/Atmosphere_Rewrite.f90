@@ -38,7 +38,7 @@ PROGRAM Atmosphere_Rewrite
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Atmosphere_Rewrite'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Atmosphere_Rewrite.f90,v 1.2 2006/05/02 14:58:34 dgroff Exp $'
+    '$Id$'
   INTEGER,      PARAMETER :: SET = 1
   CHARACTER(*), PARAMETER :: OLD_ATM_FILE = 'Old_Data/ECMWF-Atmosphere.Cloud.Aerosol.bin.old'
   CHARACTER(*), PARAMETER :: NEW_ATM_FILE = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
@@ -63,7 +63,7 @@ PROGRAM Atmosphere_Rewrite
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to read old format Atmosphere datafiles and '//&
                         'write new format files.', &
-                        '$Revision: 1.2 $' )
+                        '$Revision$' )
 
 
   ! Inquire the old file
@@ -99,18 +99,11 @@ PROGRAM Atmosphere_Rewrite
   ! Transfer over the data
   DO m = 1, n_Profiles
 
-    ! Determine the number of aerosols
-    ! (treating multiple modes as different aerosols)
-      n_Aerosols = 0
-    DO na = 1, Atm_old(m)%n_Aerosols
-      n_Aerosols = n_Aerosols + Atm_old(m)%Aerosol(na)%n_Modes
-    END DO
-     
     ! Allocate the new structure
     Error_Status = CRTM_Allocate_Atmosphere( Atm_old(m)%n_Layers   , &  ! Input
                                              Atm_old(m)%n_Absorbers, &  ! Input
                                              Atm_old(m)%n_Clouds   , &  ! Input
-                                             n_Aerosols            , &  ! Input
+                                             Atm_old(m)%n_Aerosols , &  ! Input
                                              Atm(m)                  )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE(Message,'("Error allocating new Atmosphere structure for profile #",i0)') m
@@ -138,14 +131,10 @@ PROGRAM Atmosphere_Rewrite
     END DO
     
     ! Copy over the aerosol bits
-    nna = 0
     DO na = 1, Atm_old(m)%n_Aerosols
-      DO nam = 1, Atm_old(m)%Aerosol(na)%n_Modes
-        nna = nna+1
-        Atm(m)%Aerosol(nna)%Type             = Atm_old(m)%Aerosol(na)%Type
-        Atm(m)%Aerosol(nna)%Effective_Radius = Atm_old(m)%Aerosol(na)%Effective_Radius(:,nam)
-        Atm(m)%Aerosol(nna)%Concentration    = Atm_old(m)%Aerosol(na)%Concentration(:,nam)   
-      END DO
+      Atm(m)%Aerosol(na)%Type             = Atm_old(m)%Aerosol(na)%Type
+      Atm(m)%Aerosol(na)%Effective_Radius = Atm_old(m)%Aerosol(na)%Effective_Radius
+      Atm(m)%Aerosol(na)%Concentration    = Atm_old(m)%Aerosol(na)%Concentration
     END DO
 
   END DO
