@@ -19,12 +19,12 @@ MODULE CRTM_Surface_Binary_IO
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,          ONLY: fp=>fp_kind
-  USE File_Utility,        ONLY: File_Exists
-  USE Message_Handler,     ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+  USE Type_Kinds         , ONLY: fp
+  USE File_Utility       , ONLY: File_Exists
+  USE Message_Handler    , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                  Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
-  USE CRTM_Parameters,     ONLY: ZERO, ONE, SET
+  USE CRTM_Parameters    , ONLY: ZERO, ONE, SET
   USE CRTM_Surface_Define
   ! Disable implicit typing
   IMPLICIT NONE
@@ -45,13 +45,13 @@ MODULE CRTM_Surface_Binary_IO
   ! Procedure overloading
   ! ---------------------
   INTERFACE CRTM_Read_Surface_Binary
-    MODULE PROCEDURE Read_Surface_Scalar
     MODULE PROCEDURE Read_Surface_Rank1
+    MODULE PROCEDURE Read_Surface_Rank2
   END INTERFACE CRTM_Read_Surface_Binary
 
   INTERFACE CRTM_Write_Surface_Binary
-    MODULE PROCEDURE Write_Surface_Scalar
     MODULE PROCEDURE Write_Surface_Rank1
+    MODULE PROCEDURE Write_Surface_Rank2
   END INTERFACE CRTM_Write_Surface_Binary
 
 
@@ -60,7 +60,8 @@ MODULE CRTM_Surface_Binary_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CRTM_Surface_Binary_IO.f90,v 1.12 2006/05/25 19:36:53 wd20pd Exp $'
+    '$Id$'
+  CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
 
 
 CONTAINS
@@ -74,20 +75,23 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-  FUNCTION Read_Surface_Record( FileID,       &  ! Input
-                                Surface,      &  ! Output
-                                Message_Log ) &  ! Error messaging
+  ! ---------------------------------------------
+  ! Function to read a single surface data record
+  ! ---------------------------------------------
+  FUNCTION Read_Surface_Record( FileID     , &  ! Input
+                                Surface    , &  ! Output
+                                Message_Log) &  ! Error messaging
                               RESULT ( Error_Status )
     ! Arguments
-    INTEGER,                  INTENT(IN)     :: FileID
-    TYPE(CRTM_Surface_type),  INTENT(IN OUT) :: Surface
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,                 INTENT(IN)     :: FileID
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(Record)'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
     INTEGER :: Allocate_Status
@@ -96,32 +100,29 @@ CONTAINS
     REAL(fp) :: Total_Coverage
     INTEGER :: n_Channels
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
 
 
-    ! ---------------------------
-    ! Read the gross surface type
-    ! ---------------------------
-    READ( FileID, IOSTAT = IO_Status ) Type_in_File, &
-                                       Surface%Land_Coverage, &
-                                       Surface%Water_Coverage, &
-                                       Surface%Snow_Coverage, &
-                                       Surface%Ice_Coverage
+    ! Read the gross surface type and check it
+    ! ----------------------------------------
+    READ( FileID, IOSTAT=IO_Status ) Type_in_File, &
+                                     Surface%Land_Coverage, &
+                                     Surface%Water_Coverage, &
+                                     Surface%Snow_Coverage, &
+                                     Surface%Ice_Coverage
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading surface type and coverage. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading surface type and coverage. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
     ! Simple check of coverage
-    Surface%Land_Coverage  = MAX( Surface%Land_Coverage,  ZERO )
-    Surface%Water_Coverage = MAX( Surface%Water_Coverage, ZERO )
-    Surface%Snow_Coverage  = MAX( Surface%Snow_Coverage,  ZERO )
-    Surface%Ice_Coverage   = MAX( Surface%Ice_Coverage,   ZERO )
+    Surface%Land_Coverage  = MAX(Surface%Land_Coverage,  ZERO)
+    Surface%Water_Coverage = MAX(Surface%Water_Coverage, ZERO)
+    Surface%Snow_Coverage  = MAX(Surface%Snow_Coverage,  ZERO)
+    Surface%Ice_Coverage   = MAX(Surface%Ice_Coverage,   ZERO)
 
     ! Check the total coverage
     Total_Coverage = Surface%Land_Coverage  + &
@@ -133,7 +134,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Total coverage fraction sum > 1.0', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
     ! Compute the coverage type
@@ -147,59 +148,57 @@ CONTAINS
     IF ( Type_in_File /= Type_by_Coverage ) THEN
       Error_Status = WARNING
       CALL Display_Message( ROUTINE_NAME, &
-                            'Coverage surface type, '//TRIM( SURFACE_TYPE_NAME( Type_by_Coverage ) )//&
+                            'Coverage surface type, '//TRIM(SURFACE_TYPE_NAME( Type_by_Coverage ))//&
                             ', inconsistent with that specified in file.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
 
-    ! ---------------------------
     ! Read the surface wind speed
     ! ---------------------------
-    READ( FileID, IOSTAT = IO_Status ) Surface%Wind_Speed
+    READ( FileID, IOSTAT=IO_Status ) Surface%Wind_Speed
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading surface wind speed data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading surface wind speed data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! -------------------------------
     ! Read the land surface type data
     ! -------------------------------
-    READ( FileID, IOSTAT = IO_Status ) Surface%Land_Type, &
-                                       Surface%Land_Temperature, &
-                                       Surface%Soil_Moisture_Content, &
-                                       Surface%Canopy_Water_Content , &
-                                       Surface%Vegetation_Fraction, &
-                                       Surface%Soil_Temperature
+    READ( FileID, IOSTAT=IO_Status ) Surface%Land_Type, &
+                                     Surface%Land_Temperature, &
+                                     Surface%Soil_Moisture_Content, &
+                                     Surface%Canopy_Water_Content , &
+                                     Surface%Vegetation_Fraction, &
+                                     Surface%Soil_Temperature
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading land surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading land surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
     ! Check the type
-    IF ( Surface%Land_Type < 0 .OR. Surface%Land_Type > N_VALID_LAND_TYPES ) THEN
+    IF ( Surface%Land_Type < 0 .OR. &
+         Surface%Land_Type > N_VALID_LAND_TYPES ) THEN
       Error_Status = WARNING
       CALL Display_Message( ROUTINE_NAME, &
                             'Unrecognised land surface type', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       Surface%Land_Type = INVALID_LAND
     END IF
 
 
-    ! --------------------------------
     ! Read the water surface type data
     ! --------------------------------
-    READ( FileID, IOSTAT = IO_Status ) Surface%Water_Type, &
-                                       Surface%Water_Temperature, &
-                                       Surface%Wind_Direction, &
-                                       Surface%Salinity
+    READ( FileID, IOSTAT=IO_Status ) Surface%Water_Type, &
+                                     Surface%Water_Temperature, &
+                                     Surface%Wind_Direction, &
+                                     Surface%Salinity
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading water surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading water surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
@@ -210,21 +209,20 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Unrecognised water surface type', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       Surface%Water_Type = INVALID_WATER
     END IF
 
 
-    ! -------------------------------
     ! Read the snow surface type data
     ! -------------------------------
-    READ( FileID, IOSTAT = IO_Status ) Surface%Snow_Type, &
-                                       Surface%Snow_Temperature, &
-                                       Surface%Snow_Depth, &
-                                       Surface%Snow_Density, &
-                                       Surface%Snow_Grain_Size
+    READ( FileID, IOSTAT=IO_Status ) Surface%Snow_Type, &
+                                     Surface%Snow_Temperature, &
+                                     Surface%Snow_Depth, &
+                                     Surface%Snow_Density, &
+                                     Surface%Snow_Grain_Size
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading snow surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading snow surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
@@ -235,21 +233,20 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Unrecognised snow surface type', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       Surface%Snow_Type = INVALID_SNOW
     END IF
 
 
-    ! ------------------------------
     ! Read the ice surface type data
     ! ------------------------------
-    READ( FileID, IOSTAT = IO_Status ) Surface%Ice_Type, &
-                                       Surface%Ice_Temperature, &
-                                       Surface%Ice_Thickness, &
-                                       Surface%Ice_Density, &
-                                       Surface%Ice_Roughness
+    READ( FileID, IOSTAT=IO_Status ) Surface%Ice_Type, &
+                                     Surface%Ice_Temperature, &
+                                     Surface%Ice_Thickness, &
+                                     Surface%Ice_Density, &
+                                     Surface%Ice_Roughness
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading ice surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading ice surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
@@ -260,108 +257,104 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Unrecognised ice surface type', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       Surface%Ice_Type = INVALID_ICE
     END IF
 
 
-    ! ---------------------------------------------------------
     ! Destroy the SensorData structure. This step will be taken
     ! care of in the calling routine, Read_Surface_Binary(), so
     ! the following is a belt-and-braces thing. :o)
     ! ---------------------------------------------------------
     Destroy_Status = CRTM_Destroy_SensorData( Surface%SensorData, &
-                                              Message_Log = Message_Log )
+                                              Message_Log=Message_Log )
     IF ( Destroy_Status /= SUCCESS ) THEN
       Message = 'Error destroying SensorData structure.'
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! ------------------------
-    ! Read the data dimensions
-    ! ------------------------
-    READ( FileID, IOSTAT = IO_Status ) n_Channels
+    ! Read the SensorData dimensions
+    ! ------------------------------
+    READ( FileID, IOSTAT=IO_Status ) n_Channels
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading SensorData dimensions. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error reading SensorData dimensions. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! -------------------------
-    ! Read the data if required
-    ! -------------------------
+    ! Read the SensorData if required
+    ! -------------------------------
     IF ( n_Channels > 0 ) THEN
 
       ! Allocate the structure
       Allocate_Status = CRTM_Allocate_SensorData( n_Channels, &
                                                   Surface%SensorData, &
-                                                  Message_Log = Message_Log )
+                                                  Message_Log=Message_Log )
       IF ( Allocate_Status /= SUCCESS ) THEN
         Message = 'Error allocating SensorData structure.'
         GOTO 1000  ! Clean up
       END IF
 
       ! Read the Sensor data
-      READ( FileID, IOSTAT = IO_Status ) Surface%SensorData%NCEP_Sensor_ID, &  
-                                         Surface%SensorData%WMO_Satellite_ID, &
-                                         Surface%SensorData%WMO_Sensor_ID, &   
-                                         Surface%SensorData%Sensor_Channel, &
-                                         Surface%SensorData%Tb
+      READ( FileID, IOSTAT=IO_Status ) Surface%SensorData%Sensor_ID       , &  
+                                       Surface%SensorData%SensorData_ID   , &  
+                                       Surface%SensorData%WMO_Satellite_ID, &
+                                       Surface%SensorData%WMO_Sensor_ID   , &   
+                                       Surface%SensorData%Sensor_Channel  , &
+                                       Surface%SensorData%Tb
       IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error reading SensorData. IOSTAT = ", i5 )' ) IO_Status
+        WRITE( Message, '( "Error reading SensorData. IOSTAT = ", i0 )' ) IO_Status
         GOTO 1000  ! Clean up
       END IF
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
-                          Message_Log = Message_Log )
+                          Message_Log=Message_Log )
     Destroy_Status = CRTM_Destroy_Surface( Surface )
     CLOSE( FileID )
 
   END FUNCTION Read_Surface_Record
 
 
-  FUNCTION Write_Surface_Record( FileID,       &  ! Input
-                                 Surface,      &  ! Input
-                                 Message_Log ) &  ! Error messaging
+  ! ----------------------------------------------
+  ! Function to write a single surface data record
+  ! ----------------------------------------------
+  FUNCTION Write_Surface_Record( FileID     , &  ! Input
+                                 Surface    , &  ! Input
+                                 Message_Log) &  ! Error messaging
                                RESULT ( Error_Status )
     ! Arguments
-    INTEGER,                  INTENT(IN)  :: FileID
-    TYPE(CRTM_Surface_type),  INTENT(IN)  :: Surface
-    CHARACTER(*),   OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER,                 INTENT(IN) :: FileID
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Surface
+    CHARACTER(*),  OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(Record)'
-    CHARACTER(*), PARAMETER :: FILE_STATUS_ON_ERROR = 'DELETE'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: IO_Status
     INTEGER :: Type_by_Coverage
     INTEGER :: l 
 
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
 
 
-    ! ----------------------------
     ! Write the gross surface type
     ! ----------------------------
     ! Compute the coverage type
@@ -370,130 +363,122 @@ CONTAINS
     IF ( Surface%Water_Coverage > ZERO ) Type_by_Coverage = Type_by_Coverage + WATER_SURFACE
     IF ( Surface%Snow_Coverage  > ZERO ) Type_by_Coverage = Type_by_Coverage + SNOW_SURFACE
     IF ( Surface%Ice_Coverage   > ZERO ) Type_by_Coverage = Type_by_Coverage + ICE_SURFACE
-    WRITE( FileID, IOSTAT = IO_Status ) Type_by_Coverage, &
-                                        Surface%Land_Coverage, &
-                                        Surface%Water_Coverage, &
-                                        Surface%Snow_Coverage, &
-                                        Surface%Ice_Coverage
+    WRITE( FileID, IOSTAT=IO_Status ) Type_by_Coverage, &
+                                      Surface%Land_Coverage, &
+                                      Surface%Water_Coverage, &
+                                      Surface%Snow_Coverage, &
+                                      Surface%Ice_Coverage
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing surface type and coverage fractions. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing surface type and coverage fractions. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! ----------------------------
     ! Write the surface wind speed
     ! ----------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) Surface%Wind_Speed
+    WRITE( FileID, IOSTAT=IO_Status ) Surface%Wind_Speed
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing surface wind speed data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing surface wind speed data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! --------------------------------
     ! Write the land surface type data
     ! --------------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) Surface%Land_Type, &
-                                        Surface%Land_Temperature, &
-                                        Surface%Soil_Moisture_Content, &
-                                        Surface%Canopy_Water_Content, &
-                                        Surface%Vegetation_Fraction, &
-                                        Surface%Soil_Temperature
+    WRITE( FileID, IOSTAT=IO_Status ) Surface%Land_Type, &
+                                      Surface%Land_Temperature, &
+                                      Surface%Soil_Moisture_Content, &
+                                      Surface%Canopy_Water_Content, &
+                                      Surface%Vegetation_Fraction, &
+                                      Surface%Soil_Temperature
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing land surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing land surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! ---------------------------------
     ! Write the water surface type data
     ! ---------------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) Surface%Water_Type, &
-                                        Surface%Water_Temperature, &
-                                        Surface%Wind_Direction, &
-                                        Surface%Salinity
+    WRITE( FileID, IOSTAT=IO_Status ) Surface%Water_Type, &
+                                      Surface%Water_Temperature, &
+                                      Surface%Wind_Direction, &
+                                      Surface%Salinity
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing water surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing water surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! --------------------------------
     ! Write the snow surface type data
     ! --------------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) Surface%Snow_Type, &
-                                        Surface%Snow_Temperature, &
-                                        Surface%Snow_Depth, &
-                                        Surface%Snow_Density, &
-                                        Surface%Snow_Grain_Size
+    WRITE( FileID, IOSTAT=IO_Status ) Surface%Snow_Type, &
+                                      Surface%Snow_Temperature, &
+                                      Surface%Snow_Depth, &
+                                      Surface%Snow_Density, &
+                                      Surface%Snow_Grain_Size
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing snow surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing snow surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! -------------------------------
     ! Write the ice surface type data
     ! -------------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) Surface%Ice_Type, &
-                                        Surface%Ice_Temperature, &
-                                        Surface%Ice_Thickness, &
-                                        Surface%Ice_Density, &
-                                        Surface%Ice_Roughness
+    WRITE( FileID, IOSTAT=IO_Status ) Surface%Ice_Type, &
+                                      Surface%Ice_Temperature, &
+                                      Surface%Ice_Thickness, &
+                                      Surface%Ice_Density, &
+                                      Surface%Ice_Roughness
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing ice surface type data. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing ice surface type data. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! -------------------------------
     ! Write the SensorData dimensions
     ! -------------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) Surface%SensorData%n_Channels
+    WRITE( FileID, IOSTAT=IO_Status ) Surface%SensorData%n_Channels
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing SensorData dimensions. IOSTAT = ", i5 )' ) &
+      WRITE( Message, '( "Error writing SensorData dimensions. IOSTAT = ", i0 )' ) &
                       IO_Status
       GOTO 1000  ! Clean up
     END IF
 
 
-    ! -----------------------------
-    ! Write the sensor ids and data
-    ! -----------------------------
+    ! Write the SensorData
+    ! --------------------
     IF ( Surface%SensorData%n_Channels > 0 ) THEN
-      WRITE( FileID, IOSTAT = IO_Status ) Surface%SensorData%NCEP_Sensor_ID, &
-                                          Surface%SensorData%WMO_Satellite_ID, &
-                                          Surface%SensorData%WMO_Sensor_ID, &
-                                          Surface%SensorData%Sensor_Channel, &
-                                          Surface%SensorData%Tb
+      WRITE( FileID, IOSTAT=IO_Status ) Surface%SensorData%Sensor_ID       , &
+                                        Surface%SensorData%SensorData_ID   , &
+                                        Surface%SensorData%WMO_Satellite_ID, &
+                                        Surface%SensorData%WMO_Sensor_ID   , &
+                                        Surface%SensorData%Sensor_Channel  , &
+                                        Surface%SensorData%Tb
       IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error writing SensorData. IOSTAT = ", i5 )' ) IO_Status
+        WRITE( Message, '( "Error writing SensorData. IOSTAT = ", i0 )' ) IO_Status
         GOTO 1000  ! Clean up
       END IF
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
-                          Message_Log = Message_Log )
-    CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
+                          Message_Log=Message_Log )
+    CLOSE( FileID, STATUS=WRITE_ERROR_STATUS )
 
   END FUNCTION Write_Surface_Record
 
@@ -518,10 +503,11 @@ CONTAINS
 !       Function to inquire Binary format CRTM Surface structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Inquire_Surface_Binary( Filename,                  &  ! Input
-!                                                   n_Locations = n_Locations, &  ! Optional output
-!                                                   RCS_Id      = RCS_Id,      &  ! Revision control
-!                                                   Message_Log = Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Inquire_Surface_Binary( Filename               , &  ! Input
+!                                                   n_Channels =n_Channels , &  ! Optional output
+!                                                   n_Profiles =n_Profiles , &  ! Optional output
+!                                                   RCS_Id     =RCS_Id     , &  ! Revision control
+!                                                   Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an
@@ -542,14 +528,23 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Locations:  The number of surface data locations in the file.
+!       n_Channels:   The number of spectral channels for which there is
+!                     data in the file. Note that this value will always
+!                     be 0 for a profile-only dataset-- it only has meaning
+!                     for K-matrix data.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
+!       n_Profiles:   The number of profiles in the data file.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+!       RCS_Id:       Character string containing the version control Id
+!                     field for the module.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
@@ -566,93 +561,92 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Inquire_Surface_Binary( Filename,     &  ! Input
-                                        n_Locations,  &  ! Optional output
-                                        RCS_Id,       &  ! Revision control
-                                        Message_Log ) &  ! Error messaging
+  FUNCTION CRTM_Inquire_Surface_Binary( Filename   , &  ! Input
+                                        n_Channels , &  ! Optional output
+                                        n_Profiles , &  ! Optional output
+                                        RCS_Id     , &  ! Revision control
+                                        Message_Log) &  ! Error messaging
                                       RESULT ( Error_Status )
     ! Arguments
-    CHARACTER(*),            INTENT(IN)  :: Filename
-    INTEGER,       OPTIONAL, INTENT(OUT) :: n_Locations
-    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Profiles
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Inquire_Surface_Binary'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: n_Locations_in_File
+    INTEGER :: n_Channels_in_File
+    INTEGER :: n_Profiles_in_File
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file exists
-    IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'File '//TRIM( Filename )//' not found.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      Message = 'File '//TRIM(Filename)//' not found.'
+      GOTO 2000  ! Clean up
     END IF
 
 
-    ! -------------
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM( Filename ), &
+    Error_Status = Open_Binary_File( TRIM(Filename), &
                                      FileID, &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening '//TRIM( Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error opening '//TRIM(Filename)
+      GOTO 2000
     END IF
 
 
-    ! ---------------------------------
-    ! Read the number of data locations
-    ! ---------------------------------
-    READ( FileID, IOSTAT = IO_Status ) n_Locations_in_File
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error reading n_Locations data dimension from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      CLOSE( FileID, IOSTAT = IO_Status )
-      RETURN
-    END IF
-
-    ! Save the value
-    IF ( PRESENT( n_Locations ) ) n_Locations = n_Locations_in_File
+    ! Read the number of profiles
+    ! ---------------------------
+    CALL Read_Dimensions( Filename, FileID, &
+                          n_Channels_in_File, n_Profiles_in_File, &
+                          IO_Status, Message )
+    IF ( IO_Status /= 0 ) GOTO 1000
 
 
-    ! --------------
+    ! Save optional return arguments
+    ! ------------------------------
+    IF ( PRESENT( n_Channels ) ) n_Channels = n_Channels_in_File
+    IF ( PRESENT( n_Profiles ) ) n_Profiles = n_Profiles_in_File
+
+
     ! Close the file
     ! --------------
-    CLOSE( FileID, IOSTAT = IO_Status )
+    CLOSE( FileID, IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
+                      TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
+
+    !=====
+    RETURN
+    !=====
+
+    ! Clean up after an error
+    ! -----------------------
+    1000 CONTINUE
+    CLOSE( FileID )
+    2000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
 
   END FUNCTION CRTM_Inquire_Surface_Binary
 
@@ -666,11 +660,13 @@ CONTAINS
 !       Function to read Binary format CRTM Surface structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Read_Surface_Binary( Filename,                  &  ! Input
-!                                                Surface,                   &  ! output
-!                                                n_Locations = n_Locations, &  ! Optional output
-!                                                RCS_Id      = RCS_Id,      &  ! Revision control
-!                                                Message_Log = Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Read_Surface_Binary( Filename               , &  ! Input
+!                                                Surface                , &  ! output
+!                                                Quiet      =Quiet      , &  ! Optional input
+!                                                n_Channels =n_Channels , &  ! Optional output
+!                                                n_Profiles =n_Profiles , &  ! Optional output
+!                                                RCS_Id     =RCS_Id     , &  ! Revision control
+!                                                Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an
@@ -680,7 +676,40 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
+! OUTPUT ARGUMENTS:
+!       Surface:      Structure containing the Surface data. Note the
+!                     following meanings attributed to the dimensions of
+!                     the structure array:
+!                     Rank-1: M profiles.
+!                             Only profile data are to be read in. The file
+!                             does not contain channel information. The
+!                             dimension of the structure is understood to
+!                             be the PROFILE dimension.
+!                     Rank-2: L channels  x  M profiles
+!                             Channel and profile data are to be read in.
+!                             The file contains both channel and profile
+!                             information. The first dimension of the 
+!                             structure is the CHANNEL dimension, the second
+!                             is the PROFILE dimension. This is to allow
+!                             K-matrix structures to be read in with the
+!                             same function.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Surface_type
+!                     DIMENSION:  Rank-1 (M) or Rank-2 (L x M)
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this argument to suppress INFORMATION messages
+!                     being printed to standard output (or the message
+!                     log file if the Message_Log optional argument is
+!                     used.) By default, INFORMATION messages are printed.
+!                     If QUIET = 0, INFORMATION messages are OUTPUT.
+!                        QUIET = 1, INFORMATION messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Message_Log:  Character string specifying a filename in which any
 !                     messages will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
@@ -690,23 +719,23 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OUTPUT ARGUMENTS:
-!       Surface:      Structure containing the Surface data.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar or Rank-1
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-!
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Locations:  The actual number of surface data locations read in.
+!       n_Channels:   The number of channels for which data was read. Note that
+!                     this value will always be 0 for a profile-only dataset--
+!                     it only has meaning for K-matrix data.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
+!       n_Profiles:   The number of profiles for which data was read.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+!       RCS_Id:       Character string containing the version control Id
+!                     field for the module.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
@@ -728,362 +757,348 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_Surface_Scalar( Filename,     &  ! Input
-                                Surface,      &  ! Output
-                                n_Locations,  &  ! Optional output
-                                RCS_Id,       &  ! Revision control
-                                Message_Log ) &  ! Error messaging
-                              RESULT ( Error_Status )
+  FUNCTION Read_Surface_Rank1( Filename    , &  ! Input
+                               Surface     , &  ! Output
+                               Quiet       , &  ! Optional input
+                               n_Channels  , &  ! Optional output
+                               n_Profiles  , &  ! Optional output
+                               RCS_Id      , &  ! Revision control
+                               Message_Log ) &  ! Error messaging
+                             RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),            INTENT(IN)     :: Filename
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
-    INTEGER,       OPTIONAL, INTENT(OUT)    :: n_Locations
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:)  ! M
+    INTEGER,       OPTIONAL, INTENT(IN)     :: Quiet
+    INTEGER,       OPTIONAL, INTENT(OUT)    :: n_Channels
+    INTEGER,       OPTIONAL, INTENT(OUT)    :: n_Profiles
     CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(M)'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
+    LOGICAL :: Noisy
     INTEGER :: IO_Status
-    INTEGER :: FileID
     INTEGER :: Destroy_Status
-    INTEGER :: n_Input_Locations
-    INTEGER :: n_Locations_Read
-    TYPE(CRTM_Surface_type) :: Dummy_Surface
+    INTEGER :: FileID
+    INTEGER :: n_File_Channels
+    INTEGER :: m, n_File_Profiles, n_Input_Profiles
  
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file exists
-    IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
-      Message = 'File '//TRIM( Filename )//' not found.'
-      GOTO 1000
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      Message = 'File '//TRIM(Filename)//' not found.'
+      GOTO 2000
+    END IF
+
+    ! Check Quiet optional argument
+    Noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
 
-    ! -------------
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM( Filename ), &
+    Error_Status = Open_Binary_File( TRIM(Filename), &
                                      FileID, &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM( Filename )
-      GOTO 1000
+      Message = 'Error opening '//TRIM(Filename)
+      GOTO 2000
     END IF
 
 
-    ! ---------------------------------
-    ! Read the number of data locations
-    ! ---------------------------------
-    READ( FileID, IOSTAT = IO_Status ) n_Input_Locations
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading n_Locations data dimension from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+    ! Read the dimensions     
+    ! -------------------
+    CALL Read_Dimensions( Filename, FileID, &
+                          n_File_Channels, n_File_Profiles, &
+                          IO_Status, Message )
+    IF ( IO_Status /= 0 ) GOTO 1000
+
+    ! Check that n_Channels is zero
+    IF ( n_File_Channels /= 0 ) THEN
+      WRITE( Message, '("n_Channels dimensions in ",a," is not zero for a rank-1 ",&
+                        &"(i.e. profiles only) Surface structure read." )' ) &
+                      TRIM(Filename)
       GOTO 1000
     END IF
-
-    ! Issue warning message if n_Locations > 1
-    IF ( n_Input_Locations > 1 ) THEN
+    
+    ! Check if n_Profiles > size of output array
+    n_Input_Profiles = SIZE(Surface)
+    IF ( n_File_Profiles > n_Input_Profiles ) THEN
+      WRITE( Message, '( "Number of profiles, ", i0, " > size of the output Surface ", &
+                        &"structure array, ", i0, ". Only the first ", i0, &
+                        &" Surface structures will be read." )' ) &
+                      n_File_Profiles, n_Input_Profiles, n_Input_Profiles
       CALL Display_Message( ROUTINE_NAME, &
-                            'Number of locations > 1 and output Surface structure '//&
-                            'is scalar. Only the first Surface structure will be read.', &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
+    n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
 
+    ! Loop over all the profiles
+    ! --------------------------
+    Profile_Loop: DO m = 1, n_Input_Profiles
+
+      ! Read the structure
+      Error_Status = Read_Surface_Record( FileID, &
+                                             Surface(m), &
+                                             Message_Log=Message_Log )
+
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message, '( "Error reading Surface element (",i0,") from ", a )' ) &
+                        m, TRIM(Filename)
+        GOTO 1000  ! Clean up
+      END IF
+
+    END DO Profile_Loop
+
+
+    ! Save optional return arguments
     ! ------------------------------
-    ! Initialize data locations read
-    ! ------------------------------
-    n_Locations_Read = 0
+    IF ( PRESENT(n_Channels) ) n_Channels = 0
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
 
 
-    ! ----------------------------------------------
-    ! Read the structure data into a dummy structure
-    ! ----------------------------------------------
-    Error_Status = Read_Surface_Record( FileID, &
-                                        Dummy_Surface, &
-                                        Message_Log = Message_Log )
-    IF ( Error_Status == FAILURE ) THEN
-      Message = 'Error reading Surface record from '//TRIM( Filename )
-      GOTO 1000
-    END IF
-    IF ( Error_Status == WARNING ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Warning flagged in surface record read.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! ------------------------------
-    ! Copy dummy structure to output
-    ! ------------------------------
-    ! Copy the data into the output array
-    Error_Status = CRTM_Assign_Surface( Dummy_Surface, &
-                                        Surface, &
-                                        Message_Log = Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error copying Surface structure.'
-      GOTO 1000
-    END IF
-    ! Set value for the number of locations read
-    n_Locations_Read = 1
-
-
-    ! ---------------------------
-    ! Destroy the dummy structure
-    ! ---------------------------
-    Error_Status = CRTM_Destroy_Surface( Dummy_Surface )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying dummy Surface structure.', &
-                            WARNING, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! --------------------------------------
-    ! Save the number of data locations read
-    ! --------------------------------------
-    IF ( PRESENT( n_Locations ) ) n_Locations = n_Locations_Read
-
-
-    ! --------------
     ! Close the file
     ! --------------
-    CLOSE( FileID, IOSTAT = IO_Status )
+    CLOSE( FileID, IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
+                      TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      WRITE( Message, '( "Number of profiles read from ", a, ": ", i0 )' ) &
+                      TRIM(Filename), n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log=Message_Log )
+    END IF
+
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
+    CLOSE( FileID )
+    2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
-                          Message_Log = Message_Log )
-    Destroy_Status = CRTM_Destroy_Surface( Surface, Dummy_Surface )
-    CLOSE( FileID )
+                          Message_Log=Message_Log )
+    Destroy_Status = CRTM_Destroy_Surface( Surface, &
+                                           Message_Log=Message_Log )
+  END FUNCTION Read_Surface_Rank1
 
-  END FUNCTION Read_Surface_Scalar
 
-
-  FUNCTION Read_Surface_Rank1( Filename,     &  ! Input
-                               Surface,      &  ! Output
-                               n_Locations,  &  ! Optional output
-                               RCS_Id,       &  ! Revision control
-                               Message_Log ) &  ! Error messaging
+  FUNCTION Read_Surface_Rank2( Filename   , &  ! Input
+                               Surface    , &  ! Output
+                               Quiet      , &  ! Optional input
+                               n_Channels , &  ! Optional output
+                               n_Profiles , &  ! Optional output
+                               RCS_Id     , &  ! Revision control
+                               Message_Log) &  ! Error messaging
                              RESULT ( Error_Status )
     ! Arguments
-    CHARACTER(*),                          INTENT(IN)     :: Filename
-    TYPE(CRTM_Surface_type), DIMENSION(:), INTENT(IN OUT) :: Surface
-    INTEGER,                 OPTIONAL,     INTENT(OUT)    :: n_Locations
-    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
+    CHARACTER(*),            INTENT(IN)     :: Filename
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:,:)  ! L x M
+    INTEGER,       OPTIONAL, INTENT(IN)     :: Quiet
+    INTEGER,       OPTIONAL, INTENT(OUT)    :: n_Channels
+    INTEGER,       OPTIONAL, INTENT(OUT)    :: n_Profiles
+    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(L x M)'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
+    LOGICAL :: Noisy
     INTEGER :: IO_Status
-    INTEGER :: FileID
     INTEGER :: Destroy_Status
-    INTEGER :: n_Input_Locations
-    INTEGER :: m, n_Locations_Read
-    TYPE(CRTM_Surface_type) :: Dummy_Surface
+    INTEGER :: FileID
+    INTEGER :: l, n_File_Channels, n_Input_Channels
+    INTEGER :: m, n_File_Profiles, n_Input_Profiles
  
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file exists
-    IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'File '//TRIM( Filename )//' not found.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      Message = 'File '//TRIM(Filename)//' not found.'
+      GOTO 2000  ! Clean up
+    END IF
+
+    ! Check Quiet optional argument
+    Noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
 
-    ! -------------
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM( Filename ), &
+    Error_Status = Open_Binary_File( TRIM(Filename), &
                                      FileID, &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening '//TRIM( Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error opening '//TRIM(Filename)
+      GOTO 2000  ! Clean up
     END IF
 
 
-    ! ---------------------------------
-    ! Read the number of data locations
-    ! ---------------------------------
-    READ( FileID, IOSTAT = IO_Status ) n_Input_Locations
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading n_Locations data dimension from ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      GOTO 1000
-    END IF
+    ! Read the dimensions     
+    ! -------------------
+    CALL Read_Dimensions( Filename, FileID, &
+                          n_File_Channels, n_File_Profiles, &
+                          IO_Status, Message )
+    IF ( IO_Status /= 0 ) GOTO 1000
 
-    ! Issue warning message if n_Locations > size of output array
-    IF ( n_Input_Locations > SIZE( Surface ) ) THEN
-      WRITE( Message, '( "Number of data locations, ", i5, " > size of the output Surface ", &
-                        &"structure array, ", i5, ". Only the first ", i5, &
-                        &" Surface structures will be read." )' ) &
-                      n_Input_Locations, SIZE( Surface ), SIZE( Surface )
+    ! Check if n_Channels in file is > size of output array
+    n_Input_Channels = SIZE(Surface,1)
+    IF ( n_File_Channels > n_Input_Channels ) THEN
+      WRITE( Message, '( "Number of channels, ",i0," > size of the output Surface ", &
+                        &"structure array dimension, ",i0,". Only the first ",i0, &
+                        &" channel Surface structures will be read." )' ) &
+                      n_File_Channels, n_Input_Channels, n_Input_Channels
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
-      n_Input_Locations = SIZE( Surface )
+                            Message_Log=Message_Log )
     END IF
+    n_Input_Channels = MIN(n_Input_Channels, n_File_Channels)
+    
+    ! Check if n_Profiles in file is > size of output array
+    n_Input_Profiles = SIZE(Surface,2)
+    IF ( n_File_Profiles > n_Input_Profiles ) THEN
+      WRITE( Message, '( "Number of profiles, ",i0," > size of the output Surface ", &
+                        &"structure array dimension, ",i0,". Only the first ",i0, &
+                        &" profile Surface structures will be read." )' ) &
+                      n_File_Profiles, n_Input_Profiles, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            WARNING, &
+                            Message_Log=Message_Log )
+    END IF
+    n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
 
-    ! ------------------------
-    ! Initialize profiles read
-    ! ------------------------
-    n_Locations_Read = 0
+    ! Loop over all the profiles
+    ! --------------------------
+    Profile_Loop: DO m = 1, n_Input_Profiles
+      Channel_Loop: DO l = 1, n_Input_Channels
+  
+        ! Read the structure
+        Error_Status = Read_Surface_Record( FileID, &
+                                            Surface(l,m), &
+                                            Message_Log=Message_Log )
+
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message, '( "Error reading Surface element (",i0,",",i0,") from ", a )' ) &
+                          l, m, TRIM(Filename)
+          GOTO 1000  ! Clean up
+        END IF
+
+      END DO Channel_Loop
+    END DO Profile_Loop
 
 
-    ! --------------------------------------------------------------
-    ! Loop over all the data locations (even potentially empty ones)
-    ! --------------------------------------------------------------
-    Location_Loop: DO m = 1, n_Input_Locations
+    ! Save optional return arguments
+    ! ------------------------------
+    IF ( PRESENT(n_Channels) ) n_Channels = n_Input_Channels
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
 
 
-      ! ----------------------------------------------
-      ! Read the structure data into a dummy structure
-      ! ----------------------------------------------
-      Error_Status = Read_Surface_Record( FileID, &
-                                          Dummy_Surface, &
-                                          Message_Log = Message_Log )
-      IF ( Error_Status == FAILURE ) THEN
-        WRITE( Message, '( "Error reading Surface element #", i5, " from ", a )' ) &
-                        m, TRIM( Filename )
-        GOTO 1000
-      END IF
-      IF ( Error_Status == WARNING ) THEN
-        WRITE( Message, '( "Warning flagged in reading surface record #", i5, " from ", a )' ) &
-                        m, TRIM( Filename )
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-
-      ! ------------------------------------
-      ! Copy dummy structure to output array
-      ! ------------------------------------
-      ! Increment profiles read
-      n_Locations_Read = n_Locations_Read + 1
-      ! Copy the data into the output array
-      Error_Status = CRTM_Assign_Surface( Dummy_Surface, &
-                                          Surface( n_Locations_Read ), &
-                                          Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error copying Surface element #", i5, "." )' ) m
-        GOTO 1000
-      END IF
-
-
-      ! ---------------------------
-      ! Destroy the dummy structure
-      ! ---------------------------
-      Error_Status = CRTM_Destroy_Surface( Dummy_Surface )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error destroying dummy Surface structure at element #", i5, "." )' ) m
-        GOTO 1000
-      END IF
-
-    END DO Location_Loop
-
-
-    ! ----------------------
-    ! Output an info message
-    ! ----------------------
-    WRITE( Message, '( "Number of surface data locations read from ", a, ": ", i5 )' ) &
-                    TRIM( Filename ), n_Locations_Read
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( MEssage ), &
-                          INFORMATION, &
-                          Message_Log = Message_Log )
-
-
-    ! ---------------------------------------
-    ! Assign a value to the optional argument
-    ! ---------------------------------------
-    IF ( PRESENT( n_Locations ) ) n_Locations = n_Locations_Read
-
-
-    ! --------------
     ! Close the file
     ! --------------
-    CLOSE( FileID, STATUS = 'KEEP',   &
-                   IOSTAT = IO_Status )
+    CLOSE( FileID, STATUS='KEEP',   &
+                   IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      Error_Status = WARNING
+      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
+                      TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            WARNING, &
-                            Message_Log = Message_Log )
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
     END IF
 
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      WRITE( Message, '("Number of channels and profiles read from ",a,": ",i0,1x,i0 )' ) &
+                      TRIM(Filename), n_Input_Channels, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log=Message_Log )
+    END IF
+
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
+    CLOSE( FileID )
+    2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
-                          Message_Log = Message_Log )
-    Destroy_Status = CRTM_Destroy_Surface( Surface )
-    Destroy_Status = CRTM_Destroy_Surface( Dummy_Surface )
-    CLOSE( FileID )
+                          Message_Log=Message_Log )
+    Destroy_Status = CRTM_Destroy_Surface( Surface, &
+                                              Message_Log=Message_Log )
+  END FUNCTION Read_Surface_Rank2
 
 
-  END FUNCTION Read_Surface_Rank1
+  ! -------------------------------------------
+  ! Utility routine to read the file dimensions
+  ! -------------------------------------------
+  SUBROUTINE Read_Dimensions( Filename, FileID, &
+                              n_Channels, n_Profiles, &
+                              IO_Status, Message )
+    ! Arguments
+    CHARACTER(*), INTENT(IN)  :: Filename
+    INTEGER,      INTENT(IN)  :: FileID
+    INTEGER,      INTENT(OUT) :: n_Channels
+    INTEGER,      INTENT(OUT) :: n_Profiles
+    INTEGER,      INTENT(OUT) :: IO_Status
+    CHARACTER(*), INTENT(OUT) :: Message
+    ! Read the dimensions from file    
+    READ( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '("Error reading data dimensions from ", a, &
+                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+    END IF
+  END SUBROUTINE Read_Dimensions
 
 
 !------------------------------------------------------------------------------
@@ -1092,13 +1107,14 @@ CONTAINS
 !       CRTM_Write_Surface_Binary
 !
 ! PURPOSE:
-!       Function to write Binary format CRTM Surface files.
+!       Function to write Binary format Surface files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Write_Surface_Binary( Filename,                 &  ! Input
-!                                                 Surface,                  &  ! Input
-!                                                 RCS_Id      = RCS_Id,     &  ! Revision control
-!                                                 Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Write_Surface_Binary( Filename               , &  ! Input
+!                                                 Surface                , &  ! Input
+!                                                 Quiet      =Quiet      , &  ! Optional input
+!                                                 RCS_Id     =RCS_Id     , &  ! Revision control
+!                                                 Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an output
@@ -1108,13 +1124,39 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-!       Surface:      Structure containing the Surface data.
+!       Surface:      Structure containing the Surface data to write.
+!                     Note the following meanings attributed to the
+!                     dimensions of the structure array:
+!                     Rank-1: M profiles.
+!                             Only profile data are to be read in. The file
+!                             does not contain channel information. The
+!                             dimension of the structure is understood to
+!                             be the PROFILE dimension.
+!                     Rank-2: L channels  x  M profiles
+!                             Channel and profile data are to be read in.
+!                             The file contains both channel and profile
+!                             information. The first dimension of the 
+!                             structure is the CHANNEL dimension, the second
+!                             is the PROFILE dimension. This is to allow
+!                             K-matrix structures to be read in with the
+!                             same function.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar or Rank-1
+!                     DIMENSION:  Rank-1 (M) or Rank-2 (L x M)
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this argument to suppress INFORMATION messages
+!                     being printed to standard output (or the message
+!                     log file if the Message_Log optional argument is
+!                     used.) By default, INFORMATION messages are printed.
+!                     If QUIET = 0, INFORMATION messages are OUTPUT.
+!                        QUIET = 1, INFORMATION messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Message_Log:  Character string specifying a filename in which any
 !                     messages will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
@@ -1125,8 +1167,8 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
+!       RCS_Id:       Character string containing the version control Id
+!                     field for the module.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
@@ -1148,217 +1190,259 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_Surface_Scalar( Filename,     &  ! Input
-                                 Surface,      &  ! Input
-                                 RCS_Id,       &  ! Revision control
-                                 Message_Log ) &  ! Error messaging
-                               RESULT ( Error_Status )
+  FUNCTION Write_Surface_Rank1( Filename   , &  ! Input
+                                Surface    , &  ! Input
+                                Quiet      , &  ! Optional input
+                                RCS_Id     , &  ! Revision control
+                                Message_Log) &  ! Error messaging
+                              RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),            INTENT(IN)  :: Filename
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface
+    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface(:)  ! M
+    INTEGER,       OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(Scalar)'
-    CHARACTER(*), PARAMETER :: FILE_STATUS_ON_ERROR = 'DELETE'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(M)'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
+    LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
+    INTEGER :: m, n_Output_Profiles
  
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+    ! Get dimensions
+    n_Output_Profiles = SIZE(Surface)
 
-    ! -------------
+    ! Check Quiet optional argument
+    Noisy = .TRUE.
+    IF ( PRESENT( Quiet ) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+
+
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM( Filename ), &
+    Error_Status = Open_Binary_File( TRIM(Filename), &
                                      FileID, &
-                                     For_Output  = SET, &
-                                     Message_Log = Message_Log )
-
+                                     For_Output =SET, &
+                                     Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM( Filename )
+      Message = 'Error opening '//TRIM(Filename)
       GOTO 1000
     END IF
 
 
-    ! ----------------------------
-    ! Write the number of lcations
-    ! ----------------------------
-    WRITE( FileID, IOSTAT = IO_Status ) 1
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing n_Locations data dimension to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
-      GOTO 1000
-    END IF
+    ! Write the dimensions
+    ! --------------------
+    CALL Write_Dimensions( Filename, FileID, 0, n_Output_Profiles, IO_Status, Message )
+    IF ( IO_Status /= 0 ) GOTO 1000
+
+    
+    ! Loop over all the profiles
+    ! --------------------------
+    Profile_Loop: DO m = 1, n_Output_Profiles
+
+      ! Write the structure data
+      Error_Status = Write_Surface_Record( FileID, &
+                                           Surface(m), &
+                                           Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message, '( "Error writing Surface element (",i0,") to ", a )' ) &
+                        m, TRIM(Filename)
+        GOTO 1000
+      END IF
+
+    END DO Profile_Loop
 
 
-    ! ------------------------
-    ! Write the structure data
-    ! ------------------------
-    Error_Status = Write_Surface_Record( FileID, &
-                                         Surface, &
-                                         Message_Log = Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Surface record to '//TRIM( Filename )
-      GOTO 1000
-    END IF
-
-
-    ! --------------
     ! Close the file
     ! --------------
-    CLOSE( FileID, STATUS = 'KEEP',   &
-                   IOSTAT = IO_Status )
+    CLOSE( FileID, STATUS='KEEP',   &
+                   IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
+                      TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      WRITE( Message, '( "Number of profiles written to ", a, ": ", i0 )' ) &
+                      TRIM(Filename), n_Output_Profiles
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log=Message_Log )
+    END IF
+
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
-                          Message_Log = Message_Log )
+                          Message_Log=Message_Log )
 
-  END FUNCTION Write_Surface_Scalar
+  END FUNCTION Write_Surface_Rank1
 
 
-  FUNCTION Write_Surface_Rank1( Filename,     &  ! Input
-                                Surface,      &  ! Input
-                                RCS_Id,       &  ! Revision control
-                                Message_Log ) &  ! Error messaging
+  FUNCTION Write_Surface_Rank2( Filename   , &  ! Input
+                                Surface    , &  ! Input
+                                Quiet      , &  ! Optional input
+                                RCS_Id     , &  ! Revision control
+                                Message_Log) &  ! Error messaging
                               RESULT ( Error_Status )
     ! Arguments
-    CHARACTER(*),                          INTENT(IN)  :: Filename
-    TYPE(CRTM_Surface_type), DIMENSION(:), INTENT(IN)  :: Surface
-    CHARACTER(*),            OPTIONAL,     INTENT(OUT) :: RCS_Id
-    CHARACTER(*),            OPTIONAL,     INTENT(IN)  :: Message_Log
+    CHARACTER(*),            INTENT(IN)  :: Filename
+    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface(:,:)  ! L x M
+    INTEGER,       OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(Rank-1)'
-    CHARACTER(*), PARAMETER :: FILE_STATUS_ON_ERROR = 'DELETE'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(L x M)'
     ! Function variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(256) :: Message
+    LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: m, n_Output_Locations
+    INTEGER :: l, n_Output_Channels
+    INTEGER :: m, n_Output_Profiles
  
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+    ! Get dimensions
+    n_Output_Channels = SIZE(Surface,1)
+    n_Output_Profiles = SIZE(Surface,2)
 
-    ! -------------
+    ! Check Quiet optional argument
+    Noisy = .TRUE.
+    IF ( PRESENT( Quiet ) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+
+
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM( Filename ), &
+    Error_Status = Open_Binary_File( TRIM(Filename), &
                                      FileID, &
-                                     For_Output  = SET, &
-                                     Message_Log = Message_Log )
+                                     For_Output =SET, &
+                                     Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM( Filename )
+      Message = 'Error opening '//TRIM(Filename)
       GOTO 1000
     END IF
 
 
-    ! -----------------------------
-    ! Write the number of locations
-    ! -----------------------------
-    n_Output_Locations = SIZE( Surface )
-    WRITE( FileID, IOSTAT = IO_Status ) n_Output_Locations
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing n_Locations data dimension to ", a, &
-                        &". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CLOSE( FileID, STATUS = FILE_STATUS_ON_ERROR )
-      GOTO 1000
-    END IF
+    ! Write the dimensions
+    ! --------------------
+    CALL Write_Dimensions( Filename, FileID, n_Output_Channels, n_Output_Profiles, &
+                           IO_Status, Message )
+    IF ( IO_Status /= 0 ) GOTO 1000
 
 
-    ! ---------------------------
-    ! Loop over all the locations
-    ! ---------------------------
-    Location_Loop: DO m = 1, n_Output_Locations
-      Error_Status = Write_Surface_Record( FileID, &
-                                           Surface(m), &
-                                           Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error writing Surface element #", i5, " to ", a )' ) &
-                        m, TRIM( Filename )
-        GOTO 1000
-      END IF
-    END DO Location_Loop
-
-
-
+    ! Loop over all the data
     ! ----------------------
-    ! Output an info message
-    ! ----------------------
-    WRITE( Message, '( "Number of surface data elements written to ", a, ": ", i5 )' ) &
-                    TRIM( Filename ), n_Output_Locations
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( MEssage ), &
-                          INFORMATION, &
-                          Message_Log = Message_Log )
+    Profile_Loop: DO m = 1, n_Output_Profiles
+      Channel_Loop: DO l = 1, n_Output_Channels
+
+        ! Write the structure data
+        Error_Status = Write_Surface_Record( FileID, &
+                                             Surface(l,m), &
+                                             Message_Log=Message_Log )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message, '("Error writing Surface element (",i0,",",i0,") to ",a)' ) &
+                          l, m, TRIM(Filename)
+          GOTO 1000
+        END IF
+
+      END DO Channel_Loop
+    END DO Profile_Loop
 
 
-    ! --------------
     ! Close the file
     ! --------------
-    CLOSE( FileID, STATUS = 'KEEP',   &
-                   IOSTAT = IO_Status )
+    CLOSE( FileID, STATUS='KEEP',   &
+                   IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
+      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
+                      TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      WRITE( Message, '("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
+                      TRIM(Filename), n_Output_Channels, n_Output_Profiles
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log=Message_Log )
+    END IF
+
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
-                          Message_Log = Message_Log )
+                          Message_Log=Message_Log )
 
-  END FUNCTION Write_Surface_Rank1
+  END FUNCTION Write_Surface_Rank2
+
+
+  ! --------------------------------------------
+  ! Utility routine to write the file dimensions
+  ! --------------------------------------------
+  SUBROUTINE Write_Dimensions( Filename, FileID, n_Channels, n_Profiles, &
+                               IO_Status, Message )
+    ! Arguments
+    CHARACTER(*), INTENT(IN)  :: Filename
+    INTEGER,      INTENT(IN)  :: FileID
+    INTEGER,      INTENT(IN)  :: n_Channels
+    INTEGER,      INTENT(IN)  :: n_Profiles
+    INTEGER,      INTENT(OUT) :: IO_Status
+    CHARACTER(*), INTENT(OUT) :: Message
+    ! Write the dimensions to file    
+    WRITE( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '("Error writing data dimensions to ", a, &
+                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+      CLOSE( FileID, STATUS=WRITE_ERROR_STATUS )
+    END IF
+  
+  END SUBROUTINE Write_Dimensions
 
 END MODULE CRTM_Surface_Binary_IO

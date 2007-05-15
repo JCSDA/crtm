@@ -293,11 +293,11 @@ END MODULE CRTM_SensorInfo
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CRTM_SensorInfo.f90,v 1.1 2005/08/19 20:54:10 yhan Exp $
+! $Id$
 !
 ! $Date: 2005/08/19 20:54:10 $
 !
-! $Revision: 1.1 $
+! $Revision$
 !
 ! $Name:  $
 !
