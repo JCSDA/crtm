@@ -69,6 +69,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Fastem1.f90 \
             CRTM_AtmOptics.f90 \
             CRTM_RTSolution_Define.f90 \
+            CRTM_RTSolution_Binary_IO.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \
             CRTM_Options_Define.f90 \
