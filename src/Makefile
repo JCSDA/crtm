@@ -41,6 +41,8 @@ clean:
 distclean:
 	@cd $(BUILD_DIR); make distclean; cd ..
 
+realclean: distclean remove_links
+
 
 # File link creation and removal
 macro_links:
