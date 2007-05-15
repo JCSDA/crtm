@@ -100,8 +100,8 @@ CONTAINS
     INTEGER :: n_Clouds
     INTEGER :: n_Aerosols
 
-    ! ------
     ! Set up
+    ! ------
     Error_Status = SUCCESS
 
 
@@ -388,14 +388,14 @@ CONTAINS
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       n_Channels:   The number of spectral channels for which there is
 !                     data in the file. Note that this value will always
-!                     be 0 for a profile-only Atmosphere dataset-- it only
-!                     has meaning for K-matrix Atmosphere data.
+!                     be 0 for a profile-only dataset-- it only has meaning
+!                     for K-matrix data.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
-!       n_Profiles:   The number of atmospheric profiles in the data file.
+!       n_Profiles:   The number of profiles in the data file.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -549,13 +549,12 @@ CONTAINS
 !                             information. The first dimension of the 
 !                             structure is the CHANNEL dimension, the second
 !                             is the PROFILE dimension. This is to allow
-!                             K-matrix atmosphere structures to be read in
-!                             with the same function.
+!                             K-matrix structures to be read in with the
+!                             same function.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Atmosphere_type
 !                     DIMENSION:  Rank-1 (M) or Rank-2 (L x M)
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Quiet:        Set this argument to suppress INFORMATION messages
@@ -580,8 +579,8 @@ CONTAINS
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       n_Channels:   The number of channels for which data was read. Note that
-!                     this value will always be 0 for a profile-only Atmosphere
-!                     dataset-- it only has meaning for K-matrix Atmosphere data.
+!                     this value will always be 0 for a profile-only dataset--
+!                     it only has meaning for K-matrix data.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -644,7 +643,6 @@ CONTAINS
     INTEGER :: FileID
     INTEGER :: n_File_Channels
     INTEGER :: m, n_File_Profiles, n_Input_Profiles
-    TYPE(CRTM_Atmosphere_type) :: Dummy_Atmosphere
  
 
     ! Set up
@@ -772,9 +770,6 @@ CONTAINS
                           Message_Log=Message_Log )
     Destroy_Status = CRTM_Destroy_Atmosphere( Atmosphere, &
                                               Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_Atmosphere( Dummy_Atmosphere, &
-                                              Message_Log=Message_Log )
-
   END FUNCTION Read_Atmosphere_Rank1
 
 
@@ -806,7 +801,6 @@ CONTAINS
     INTEGER :: FileID
     INTEGER :: l, n_File_Channels, n_Input_Channels
     INTEGER :: m, n_File_Profiles, n_Input_Profiles
-    TYPE(CRTM_Atmosphere_type) :: Dummy_Atmosphere
  
 
     ! Set up
@@ -872,7 +866,6 @@ CONTAINS
                             Message_Log=Message_Log )
     END IF
     n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
-
 
 
     ! Loop over all the profiles
@@ -943,9 +936,6 @@ CONTAINS
                           Message_Log=Message_Log )
     Destroy_Status = CRTM_Destroy_Atmosphere( Atmosphere, &
                                               Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_Atmosphere( Dummy_Atmosphere, &
-                                              Message_Log=Message_Log )
-
   END FUNCTION Read_Atmosphere_Rank2
 
 
@@ -965,7 +955,7 @@ CONTAINS
     ! Read the dimensions from file    
     READ( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '("Error reading Atmosphere data dimensions from ", a, &
+      WRITE( Message, '("Error reading data dimensions from ", a, &
                         &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
     END IF
   END SUBROUTINE Read_Dimensions
@@ -1008,8 +998,8 @@ CONTAINS
 !                             information. The first dimension of the 
 !                             structure is the CHANNEL dimension, the second
 !                             is the PROFILE dimension. This is to allow
-!                             K-matrix atmosphere structures to be read in
-!                             with the same function.
+!                             K-matrix structures to be read in with the
+!                             same function.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Atmosphere_type
 !                     DIMENSION:  Rank-1 (M) or Rank-2 (L x M)
@@ -1318,7 +1308,7 @@ CONTAINS
     ! Write the dimensions to file    
     WRITE( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '("Error writing Atmosphere data dimensions to ", a, &
+      WRITE( Message, '("Error writing data dimensions to ", a, &
                         &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
       CLOSE( FileID, STATUS=WRITE_ERROR_STATUS )
     END IF

@@ -44,9 +44,10 @@ MODULE CRTM_Cloud_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,      ONLY: fp
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters, ONLY: ZERO, SET
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE CRTM_Parameters      , ONLY: ZERO, SET
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -73,6 +74,7 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: CRTM_Destroy_Cloud
   PUBLIC :: CRTM_Allocate_Cloud
   PUBLIC :: CRTM_Assign_Cloud
+  PUBLIC :: CRTM_Equal_Cloud
   PUBLIC :: CRTM_WeightedSum_Cloud
   PUBLIC :: CRTM_Zero_Cloud
 
@@ -99,6 +101,11 @@ MODULE CRTM_Cloud_Define
     MODULE PROCEDURE Assign_Scalar
     MODULE PROCEDURE Assign_Rank1
   END INTERFACE CRTM_Assign_Cloud
+
+  INTERFACE CRTM_Equal_Cloud
+    MODULE PROCEDURE Equal_Scalar
+    MODULE PROCEDURE Equal_Rank1
+  END INTERFACE CRTM_Equal_Cloud
 
   INTERFACE CRTM_WeightedSum_Cloud
     MODULE PROCEDURE WeightedSum_Scalar
@@ -214,8 +221,8 @@ CONTAINS
 !       Function to test the association status of a CRTM_Cloud structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Cloud( Cloud,              &  ! Input
-!                                                   ANY_Test = Any_Test )  ! Optional input
+!       Association_Status = CRTM_Associated_Cloud( Cloud            , &  ! Input
+!                                                   ANY_Test=Any_Test  )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       Cloud:               Cloud structure which is to have its pointer
@@ -425,9 +432,9 @@ CONTAINS
                       &" STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
 
@@ -439,9 +446,9 @@ CONTAINS
       WRITE( Message, '( "Allocation counter /= 0, Value = ", i0 )' ) &
                       Cloud%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
   END FUNCTION Destroy_Scalar
@@ -477,15 +484,15 @@ CONTAINS
     DO n = 1, SIZE( Cloud )
       Scalar_Status = Destroy_Scalar( Cloud(n), &
                                       No_Clear = No_Clear, &
-                                      Message_Log = Message_Log )
+                                      Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error destroying element #", i0, &
                           &" of Cloud structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
 
@@ -515,6 +522,13 @@ CONTAINS
 !                                 See output Cloud dimensionality chart
 !                     ATTRIBUTES: INTENT(IN)
 !
+! OUTPUT ARGUMENTS:
+!       Cloud:        Cloud structure with allocated pointer members.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Cloud_type
+!                     DIMENSION:  Same as input n_Layers argument
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
 !                     messages will be logged. If not specified, or if an
@@ -524,14 +538,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Cloud:        Cloud structure with allocated pointer members.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Cloud_type
-!                     DIMENSION:  Same as input n_Layers argument
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
@@ -592,7 +598,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers must be > 0.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -601,12 +607,12 @@ CONTAINS
     IF ( CRTM_Associated_Cloud( Cloud, ANY_Test = SET ) ) THEN
       Error_Status = CRTM_Destroy_Cloud( Cloud, &
                                          No_Clear = SET, &
-                                         Message_Log = Message_Log )
+                                         Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
                               'Error deallocating CRTM_Cloud pointer members.', &
                               Error_Status,    &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
     END IF
@@ -623,9 +629,9 @@ CONTAINS
       WRITE( Message, '( "Error allocating CRTM_Cloud data arrays. STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -646,9 +652,9 @@ CONTAINS
       WRITE( Message, '( "Allocation counter /= 1, Value = ", i0 )' ) &
                       Cloud%n_Allocates
       CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
+                            TRIM(Message), &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
   END FUNCTION Allocate_Scalar
@@ -685,7 +691,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers and CRTM_Cloud arrays have different dimensions', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -694,15 +700,15 @@ CONTAINS
     DO i = 1, n
       Scalar_Status = Allocate_Scalar( n_Layers(i), &
                                        Cloud(i), &
-                                       Message_Log = Message_Log )
+                                       Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
                           &" of CRTM_Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
 
@@ -720,7 +726,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Assign_Cloud( Cloud_in               , &  ! Input  
 !                                         Cloud_out              , &  ! Output 
-!                                         RCS_Id     =RCS_Id,    , &  ! Revision control
+!                                         RCS_Id     =RCS_Id     , &  ! Revision control
 !                                         Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -729,6 +735,13 @@ CONTAINS
 !                      TYPE:       CRTM_Cloud_type
 !                      DIMENSION:  Scalar or Rank-1 array
 !                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Cloud_out:     Copy of the input structure, Cloud_in.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_Cloud_type
+!                      DIMENSION:  Same as Cloud_in argument
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:   Character string specifying a filename in which any
@@ -739,14 +752,6 @@ CONTAINS
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Cloud_out:     Copy of the input structure, Cloud_in.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Same as Cloud_in argument
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:        Character string containing the Revision Control
@@ -798,12 +803,12 @@ CONTAINS
     ! the output structure and return.
     IF ( .NOT. CRTM_Associated_Cloud( Cloud_In ) ) THEN
       Error_Status = CRTM_Destroy_Cloud( Cloud_Out, &
-                                         Message_Log = Message_Log )
+                                         Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
                               'Error deallocating output CRTM_Cloud pointer members.', &
                               Error_Status,    &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
       RETURN
     END IF
@@ -813,12 +818,12 @@ CONTAINS
     ! ----------------------
     Error_Status = CRTM_Allocate_Cloud( Cloud_in%n_Layers, &
                                         Cloud_out, &
-                                        Message_Log = Message_Log )
+                                        Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error allocating output CRTM_Cloud arrays.', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -864,7 +869,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Cloud_in and Cloud_out arrays have different dimensions', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -874,19 +879,309 @@ CONTAINS
     DO i = 1, n
       Scalar_Status = Assign_Scalar( Cloud_in(i), &
                                      Cloud_out(i), &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i0, &
                           &" of CRTM_Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
 
   END FUNCTION Assign_Rank1
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Equal_Cloud
+!
+! PURPOSE:
+!       Function to test if two Cloud structures are equal.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Equal_Cloud( Cloud_LHS              , &  ! Input
+!                                        Cloud_RHS              , &  ! Input
+!                                        ULP_Scale  =ULP_Scale  , &  ! Optional input
+!                                        Check_All  =Check_All  , &  ! Optional input
+!                                        RCS_Id     =RCS_Id     , &  ! Optional output
+!                                        Message_Log=Message_Log  )  ! Error messaging
+!
+!
+! INPUT ARGUMENTS:
+!       Cloud_LHS:         Cloud structure to be compared; equivalent to the
+!                          left-hand side of a lexical comparison, e.g.
+!                            IF ( Cloud_LHS == Cloud_RHS ).
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_Cloud_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       Cloud_RHS:         Cloud structure to be compared to; equivalent to
+!                          right-hand side of a lexical comparison, e.g.
+!                            IF ( Cloud_LHS == Cloud_RHS ).
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_Cloud_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       ULP_Scale:         Unit of data precision used to scale the floating
+!                          point comparison. ULP stands for "Unit in the Last Place,"
+!                          the smallest possible increment or decrement that can be
+!                          made using a machine's floating point arithmetic.
+!                          Value must be positive - if a negative value is supplied,
+!                          the absolute value is used. If not specified, the default
+!                          value is 1.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Check_All:         Set this argument to check ALL the floating point
+!                          channel data of the Cloud structures. The default
+!                          action is return with a FAILURE status as soon as
+!                          any difference is found. This optional argument can
+!                          be used to get a listing of ALL the differences
+!                          between data in Cloud structures.
+!                          If == 0, Return with FAILURE status as soon as
+!                                   ANY difference is found  *DEFAULT*
+!                             == 1, Set FAILURE status if ANY difference is
+!                                   found, but continue to check ALL data.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:       Character string specifying a filename in which any
+!                          messages will be logged. If not specified, or if an
+!                          error occurs opening the log file, the default action
+!                          is to output messages to standard output.
+!                          UNITS:      None
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:            Character string containing the Revision Control
+!                          System Id field for the module.
+!                          UNITS:      None
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:      The return value is an integer defining the error status.
+!                          The error codes are defined in the Message_Handler module.
+!                          If == SUCCESS the structures were equal
+!                             == FAILURE - an error occurred, or
+!                                        - the structures were different.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION Equal_Scalar( Cloud_LHS  , &  ! Input
+                         Cloud_RHS  , &  ! Input
+                         ULP_Scale  , &  ! Optional input
+                         Check_All  , &  ! Optional input
+                         RCS_Id     , &  ! Revision control
+                         Message_Log) &  ! Error messaging
+                       RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Cloud_type) , INTENT(IN)  :: Cloud_LHS
+    TYPE(CRTM_Cloud_type) , INTENT(IN)  :: Cloud_RHS
+    INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Check_All
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Cloud(scalar)'
+    ! Local variables
+    CHARACTER(256) :: Message
+    INTEGER :: ULP
+    LOGICAL :: Check_Once
+    INTEGER :: i, j, k, m, n
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Default precision is a single unit in last place
+    ULP = 1
+    ! ... unless the ULP_Scale argument is set and positive
+    IF ( PRESENT( ULP_Scale ) ) THEN
+      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
+    END IF
+
+    ! Default action is to return on ANY difference...
+    Check_Once = .TRUE.
+    ! ...unless the Check_All argument is set
+    IF ( PRESENT( Check_All ) ) THEN
+      IF ( Check_All == SET ) Check_Once = .FALSE.
+    END IF
+
+    ! Check the structure association status
+    IF ( .NOT. CRTM_Associated_Cloud( Cloud_LHS ) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Some or all INPUT Cloud_LHS pointer '//&
+                            'members are NOT associated.', &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+    IF ( .NOT. CRTM_Associated_Cloud( Cloud_RHS ) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,    &
+                            'Some or all INPUT Cloud_RHS pointer '//&
+                            'members are NOT associated.', &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Check dimensions
+    ! ----------------
+    IF ( Cloud_LHS%n_Layers /= Cloud_RHS%n_Layers ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Structure dimensions are different', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Compare the values
+    ! ------------------
+    IF ( Cloud_LHS%Type /= Cloud_RHS%Type ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Type values are different', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    
+    DO k = 1, Cloud_LHS%n_Layers
+      IF ( .NOT. Compare_Float( Cloud_LHS%Effective_Radius(k), &
+                                Cloud_RHS%Effective_Radius(k), &
+                                ULP = ULP ) ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Effective_Radius values are different', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    
+    DO k = 1, Cloud_LHS%n_Layers
+      IF ( .NOT. Compare_Float( Cloud_LHS%Effective_Variance(k), &
+                                Cloud_RHS%Effective_Variance(k), &
+                                ULP = ULP ) ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Effective_Variance values are different', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    
+    DO k = 1, Cloud_LHS%n_Layers
+      IF ( .NOT. Compare_Float( Cloud_LHS%Water_Content(k), &
+                                Cloud_RHS%Water_Content(k), &
+                                ULP = ULP ) ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Water_Content values are different', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+  END FUNCTION Equal_Scalar
+
+
+  FUNCTION Equal_Rank1( Cloud_LHS  , &  ! Input
+                        Cloud_RHS  , &  ! Output
+                        ULP_Scale  , &  ! Optional input
+                        Check_All  , &  ! Optional input
+                        RCS_Id     , &  ! Revision control
+                        Message_Log) &  ! Error messaging
+                      RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Cloud_type) , INTENT(IN)  :: Cloud_LHS(:)
+    TYPE(CRTM_Cloud_type) , INTENT(IN)  :: Cloud_RHS(:)
+    INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Check_All
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Cloud(Rank-1)'
+    ! Local variables
+    CHARACTER(256) :: Message
+    LOGICAL :: Check_Once
+    INTEGER :: Scalar_Status
+    INTEGER :: n, nClouds
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Default action is to return on ANY difference...
+    Check_Once = .TRUE.
+    ! ...unless the Check_All argument is set
+    IF ( PRESENT( Check_All ) ) THEN
+      IF ( Check_All == SET ) Check_Once = .FALSE.
+    END IF
+
+    ! Dimensions
+    nClouds = SIZE( Cloud_LHS )
+    IF ( SIZE( Cloud_RHS ) /= nClouds ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input Cloud_LHS and Cloud_RHS arrays'//&
+                            ' have different sizes', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Test for equality
+    ! -----------------
+    DO n = 1, nClouds
+      Scalar_Status = Equal_Scalar( Cloud_LHS(n), &
+                                    Cloud_RHS(n), &
+                                    ULP_Scale  =ULP_Scale, &
+                                    Check_All  =Check_All, &
+                                    Message_Log=Message_Log )
+      IF ( Scalar_Status /= SUCCESS ) THEN
+        Error_Status = Scalar_Status
+        WRITE( Message, '( "Error comparing element (",i0,")", &
+                          &" of rank-1 CRTM_Cloud structure array." )' ) n
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+  END FUNCTION Equal_Rank1
 
 
 !--------------------------------------------------------------------------------
@@ -1010,7 +1305,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,    &
                             'On input, structure argument A appears empty.', &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
     IF ( .NOT. CRTM_Associated_Cloud( B ) ) THEN
@@ -1018,7 +1313,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,    &
                             'On input, structure argument B appears empty.', &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -1028,7 +1323,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,    &
                             'A and B structure dimensions are different.', &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
          
@@ -1038,7 +1333,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,    &
                             'A and B structure Cloud types are different.', &
                             Error_Status,    &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -1091,7 +1386,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Input structure arguments have different dimensions', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
@@ -1103,15 +1398,15 @@ CONTAINS
                                           B(i), &
                                           w1, &
                                           w2 = w2, &
-                                          Message_Log = Message_Log )
+                                          Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error computing weighted sum for element #", i0, &
                           &" of CRTM_Cloud structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
       END IF
     END DO
 
