@@ -16,7 +16,7 @@ MODULE CRTM_RTSolution
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,                ONLY: fp=>fp_kind
+  USE Type_Kinds,                ONLY: fp
   USE Message_Handler
   USE CRTM_Parameters,           ONLY: SET, ZERO, ONE, TWO, PI, &
                                        MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
@@ -52,6 +52,7 @@ MODULE CRTM_RTSolution
   PUBLIC :: CRTM_Destroy_RTSolution
   PUBLIC :: CRTM_Allocate_RTSolution
   PUBLIC :: CRTM_Assign_RTSolution
+  PUBLIC :: CRTM_Equal_RTSolution
   ! Forward variable container data type
   PUBLIC :: CRTM_RTVariables_type
   ! Public procedures
@@ -67,7 +68,7 @@ MODULE CRTM_RTSolution
 
   ! RCS Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_RTSolution.f90,v 1.20.2.1 2006/09/07 09:48:02 frpv Exp $'
+  '$Id$'
 
   ! Threshold for determing if an additional stream
   ! angle is required for the satellite zenith angle
