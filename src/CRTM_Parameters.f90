@@ -11,24 +11,18 @@
 
 MODULE CRTM_Parameters
 
-  ! ------------------
-  ! Environment set up
-  ! ------------------
-  ! Modules used
-  USE Type_Kinds           , ONLY: fp
-  USE Fundamental_Constants, ONLY: PI, PI_SQUARED, &
-                                   STANDARD_GRAVITY
-  ! Disable implicit typing
-  IMPLICIT NONE
+
+  ! ---------------------
+  ! Module use statements
+  ! ---------------------
+  USE Type_Kinds, ONLY: fp
 
 
   ! ------------------
   ! Default visibility
   ! ------------------
+  ! Everything PRIVATE by default
   PRIVATE
-  ! Inherited parameters to be made public
-  PUBLIC :: PI
-  PUBLIC :: PI_SQUARED
   ! The MAX_N_CHANNELS methods
   PUBLIC :: CRTM_Set_Max_nChannels    ! Subroutine
   PUBLIC :: CRTM_Reset_Max_nChannels  ! Subroutine
@@ -51,7 +45,7 @@ MODULE CRTM_Parameters
   ! and SET, during the model initialisation.
   !
   ! In this module it is a protected variable in that it can
-  ! only be set, reset, or retrieved via the *_Max_nChannels
+  ! only be set, reset, or retrieved via the *_N_CHANNELS
   ! methods.
   ! ----------------------------------------------------------
   INTEGER, PRIVATE, PARAMETER :: RESET_VALUE = -1
@@ -63,7 +57,6 @@ MODULE CRTM_Parameters
   ! specified in a single initialisation call
   ! -----------------------------------------
   INTEGER, PUBLIC, PARAMETER :: MAX_N_SENSORS = 100
-
 
   ! -----------------------------------------------------
   ! The maximum number of atmospheric profiles and layers
@@ -92,21 +85,15 @@ MODULE CRTM_Parameters
   ! -----------------------------
   ! Numerical precision/tolerance
   ! -----------------------------
-  REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = EPSILON(ONE)
+  REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = EPSILON( ONE )
 
 
   ! --------------------
   ! PI-related constants
   ! --------------------
-  REAL(fp), PUBLIC, PARAMETER :: TWOPI = TWO*PI
-  REAL(fp), PUBLIC, PARAMETER :: DEGREES_TO_RADIANS = PI/180.0_fp
-
-
-  ! ------------------
-  ! Conversion factors
-  ! ------------------
-  REAL(fp), PUBLIC, PARAMETER :: HPA_TO_PA = 100.0_fp
-  REAL(fp), PUBLIC, PARAMETER :: PA_TO_HPA = ONE/HPA_TO_PA
+  REAL(fp), PUBLIC, PARAMETER :: PI = 3.141592653589793238462643383279_fp
+  REAL(fp), PUBLIC, PARAMETER :: TWOPI = TWO * PI
+  REAL(fp), PUBLIC, PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
 
 
   ! -------------------------
@@ -212,7 +199,7 @@ MODULE CRTM_Parameters
   ! Reciprocal gravity (scaled by 100 for use with pressure
   ! in hPa) used in computing integrated absorber amounts
   ! -------------------------------------------------------
-  REAL(fp), PUBLIC, PARAMETER :: RECIPROCAL_GRAVITY = PA_TO_HPA/STANDARD_GRAVITY
+  REAL(fp), PUBLIC, PARAMETER :: RECIPROCAL_GRAVITY = ONE / 980.665_fp
 
 
 
@@ -278,12 +265,12 @@ MODULE CRTM_Parameters
   !#----------------------------------------------------------------------------#
   !#            -- CloudScatter, RTSolution, AtmOptics PARAMETERS --            #
   !#----------------------------------------------------------------------------#
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_CLOUDS   =  4 ! Max. number of clouds/profile. Needed for CloudScatter CSV
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_AEROSOLS = 20 ! Max. number of aerosols/profile. Needed for AerosolScatter ASV
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_CLOUDS   = 4 ! Max. number of clouds/profile. Needed for CSV...
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_AEROSOLS = 20 ! Max. number of aerosols/profile. Needed for ASV
   
   REAL(fp), PUBLIC, PARAMETER :: AEROSOL_CONTENT_THRESHOLD = 0.000001_fp
-  REAL(fp), PUBLIC, PARAMETER :: WATER_CONTENT_THRESHOLD   = 0.000001_fp
-  REAL(fp), PUBLIC, PARAMETER :: OPTICAL_DEPTH_THRESHOLD   = 0.000001_fp
+  REAL(fp), PUBLIC, PARAMETER :: WATER_CONTENT_THRESHOLD = 0.000001_fp
+  REAL(fp), PUBLIC, PARAMETER :: OPTICAL_DEPTH_THRESHOLD = 0.000001_fp
 
   REAL(fp), PUBLIC, PARAMETER :: BS_THRESHOLD  = 0.000001_fp  ! Was SCATTERING_ALBEDO_THRESHOLD
   REAL(fp), PUBLIC, PARAMETER :: SCATTERING_ALBEDO_THRESHOLD  = 0.000001_fp  ! Eventually replace this with BS_THRESHOLD
