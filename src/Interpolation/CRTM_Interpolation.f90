@@ -79,7 +79,8 @@ MODULE CRTM_Interpolation
   '$Id: $'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
-  INTEGER,  PARAMETER :: ORDER = 3
+!  INTEGER,  PARAMETER :: ORDER = 3
+  INTEGER,  PARAMETER :: ORDER = 1
   INTEGER,  PARAMETER :: NPTS  = ORDER+1
 
 
@@ -569,68 +570,68 @@ CONTAINS
   ! Polynomial functions
   ! --------------------
   ! Function to compute the Lagrangian polynomials
-  FUNCTION lpoly(x, x_int) RESULT(lp)
-    REAL(fp), INTENT(IN)  :: x(:)
-    REAL(fp), INTENT(IN)  :: x_int
-    REAL(fp) :: lp(SIZE(x))
-    REAL(fp) :: xi
-
-    lp(1) =  (x_int-x(2))*(x_int-x(3))*(x_int-x(4))  / &
-            ((x(1) -x(2))*(x(1) -x(3))*(x(1) -x(4)))
-
-    lp(2) =  (x_int-x(1))*(x_int-x(3))*(x_int-x(4))  / &
-            ((x(2) -x(1))*(x(2) -x(3))*(x(2) -x(4)))
-    
-    lp(3) =  (x_int-x(1))*(x_int-x(2))*(x_int-x(4))  / &
-            ((x(3) -x(1))*(x(3) -x(2))*(x(3) -x(4)))
-    
-    lp(4) =  (x_int-x(1))*(x_int-x(2))*(x_int-x(3))  / &
-            ((x(4) -x(1))*(x(4) -x(2))*(x(4) -x(3)))
-  END FUNCTION lpoly
 !  FUNCTION lpoly(x, x_int) RESULT(lp)
 !    REAL(fp), INTENT(IN)  :: x(:)
 !    REAL(fp), INTENT(IN)  :: x_int
 !    REAL(fp) :: lp(SIZE(x))
-!    lp(1) = (x_int-x(2)) / (x(1)-x(2))
-!    lp(2) = (x_int-x(1)) / (x(2)-x(1))
+!    REAL(fp) :: xi
+!
+!    lp(1) =  (x_int-x(2))*(x_int-x(3))*(x_int-x(4))  / &
+!            ((x(1) -x(2))*(x(1) -x(3))*(x(1) -x(4)))
+!
+!    lp(2) =  (x_int-x(1))*(x_int-x(3))*(x_int-x(4))  / &
+!            ((x(2) -x(1))*(x(2) -x(3))*(x(2) -x(4)))
+!    
+!    lp(3) =  (x_int-x(1))*(x_int-x(2))*(x_int-x(4))  / &
+!            ((x(3) -x(1))*(x(3) -x(2))*(x(3) -x(4)))
+!    
+!    lp(4) =  (x_int-x(1))*(x_int-x(2))*(x_int-x(3))  / &
+!            ((x(4) -x(1))*(x(4) -x(2))*(x(4) -x(3)))
 !  END FUNCTION lpoly
+  FUNCTION lpoly(x, x_int) RESULT(lp)
+    REAL(fp), INTENT(IN)  :: x(:)
+    REAL(fp), INTENT(IN)  :: x_int
+    REAL(fp) :: lp(SIZE(x))
+    lp(1) = (x_int-x(2)) / (x(1)-x(2))
+    lp(2) = (x_int-x(1)) / (x(2)-x(1))
+  END FUNCTION lpoly
 
   
   ! Function to compute the derivatives
   ! of the Lagrangian polynomials
-  FUNCTION dlpoly(x, x_int) RESULT(dlp)
-    REAL(fp), INTENT(IN) :: x(:)
-    REAL(fp), INTENT(IN) :: x_int
-    REAL(fp) :: dlp(SIZE(x))
-            
-    ! Compute derivative of Lagrangian polynomials
-    dlp(1) = ((x_int-x(2))*(x_int-x(3)) + &
-              (x_int-x(2))*(x_int-x(4)) + &
-              (x_int-x(3))*(x_int-x(4))) / &
-             ((x(1)-x(2))*(x(1)-x(3))*(x(1)-x(4)))
-
-    dlp(2) = ((x_int-x(1))*(x_int-x(3)) + &
-              (x_int-x(1))*(x_int-x(4)) + &
-              (x_int-x(3))*(x_int-x(4))) / &
-             ((x(2)-x(1))*(x(2)-x(3))*(x(2)-x(4)))
-
-    dlp(3) = ((x_int-x(1))*(x_int-x(2)) + &
-              (x_int-x(2))*(x_int-x(4)) + &
-              (x_int-x(1))*(x_int-x(4))) / &
-             ((x(3)-x(1))*(x(3)-x(2))*(x(3)-x(4)))
-    
-    dlp(4) = ((x_int-x(2))*(x_int-x(3)) + &
-              (x_int-x(1))*(x_int-x(2)) + &
-              (x_int-x(1))*(x_int-x(3))) / &
-             ((x(4)-x(1))*(x(4)-x(2))*(x(4)-x(3)))
-  END FUNCTION dlpoly
 !  FUNCTION dlpoly(x, x_int) RESULT(dlp)
 !    REAL(fp), INTENT(IN) :: x(:)
 !    REAL(fp), INTENT(IN) :: x_int
 !    REAL(fp) :: dlp(SIZE(x))
-!    dlp(1) = ONE / (x(1)-x(2))
-!    dlp(2) = ONE / (x(2)-x(1))
+!            
+!    ! Compute derivative of Lagrangian polynomials
+!    dlp(1) = ((x_int-x(2))*(x_int-x(3)) + &
+!              (x_int-x(2))*(x_int-x(4)) + &
+!              (x_int-x(3))*(x_int-x(4))) / &
+!             ((x(1)-x(2))*(x(1)-x(3))*(x(1)-x(4)))
+!
+!    dlp(2) = ((x_int-x(1))*(x_int-x(3)) + &
+!              (x_int-x(1))*(x_int-x(4)) + &
+!              (x_int-x(3))*(x_int-x(4))) / &
+!             ((x(2)-x(1))*(x(2)-x(3))*(x(2)-x(4)))
+!
+!    dlp(3) = ((x_int-x(1))*(x_int-x(2)) + &
+!              (x_int-x(2))*(x_int-x(4)) + &
+!              (x_int-x(1))*(x_int-x(4))) / &
+!             ((x(3)-x(1))*(x(3)-x(2))*(x(3)-x(4)))
+!    
+!    dlp(4) = ((x_int-x(2))*(x_int-x(3)) + &
+!              (x_int-x(1))*(x_int-x(2)) + &
+!              (x_int-x(1))*(x_int-x(3))) / &
+!             ((x(4)-x(1))*(x(4)-x(2))*(x(4)-x(3)))
 !  END FUNCTION dlpoly
+  FUNCTION dlpoly(x, x_int) RESULT(dlp)
+    REAL(fp), INTENT(IN) :: x(:)
+    REAL(fp), INTENT(IN) :: x_int
+    REAL(fp) :: dlp(SIZE(x))
+    dlp(1) = ONE / (x(1)-x(2))
+    dlp(2) = ONE / (x(2)-x(1))
+  END FUNCTION dlpoly
 
 END MODULE CRTM_Interpolation
 
