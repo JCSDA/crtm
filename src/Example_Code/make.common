@@ -13,12 +13,30 @@ include ../make.macros
 # This makefile
 MAKE_FILE = Makefile
 
-# OBJ_FILES
-OBJ_FILES = Timing_Utility.o CRTM_Test_Utility.o \
+# Source and obj files
+UTILITY_SRC_FILES = CRTM_Test_Utility.f90 \
+                    Timing_Utility.f90 \
+                    Unit_Test.f90 \
+                    SignalFile_Utility.f90
+SRC_FILES = $(UTILITY_SRC_FILES) \
             $(EXE_FILE).o
+OBJ_FILES = ${SRC_FILES:.f90=.o}
 
-# Library and include macros
-# *** MODIFY THESE TO THE LOCATION OF THE CRTM LIBRARY ON YOUR SYSTEM ***
+# The linkfile script
+LINK_SCRIPT = linkfiles
+UNLINK_SCRIPT = unlinkfiles
+
+# The test input data files
+ATM_DATA_FILES = ECMWF-Atmosphere.Cloud.Aerosol.bin
+SFC_DATA_FILES = ECMWF-Surface.bin
+
+# The instrument independent coefficient files
+COEFF_DATA_FILES = EmisCoeff.bin AerosolCoeff.bin CloudCoeff.bin
+
+# The sensors Ids for the sensors to test
+SENSOR_IDS = amsua_n17 hirs3_n17 ssmis_f16 imgr_g11 hirs3_n16
+
+# CRTM Library and include macros
 INCLUDES = -I$(CRTM_SOURCE_ROOT)/Build/include
 LIBRARIES = -L$(CRTM_SOURCE_ROOT)/Build/lib -lCRTM
 
@@ -68,14 +86,41 @@ build: $(OBJ_FILES)
 	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
 
 
+# Run target
+DATA_ENDIAN_TAG = Big_Endian
+RUN_OPTS = "-Wl,-T"
+run:
+	$(REMOVE) $(EXE_FILE).signal
+	$(EXE_FILE) $(RUN_OPTS)
+
+# Create/remove the source and data links
+create_links:
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(UTILITY_SRC_FILES); \
+	$(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_SOURCE_ROOT} ${ATM_DATA_FILES}; \
+	$(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_SOURCE_ROOT} ${SFC_DATA_FILES}; \
+	$(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_FIXFILE_ROOT} ${COEFF_DATA_FILES}; \
+	for id in ${SENSOR_IDS}; do \
+	  $(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_FIXFILE_ROOT} $$id.SpcCoeff.bin; \
+	  $(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_FIXFILE_ROOT} $$id.TauCoeff.bin; \
+	done
+
+remove_links:
+	@$(UNLINK_SCRIPT) $(UTILITY_SRC_FILES); \
+	$(UNLINK_SCRIPT) ${ATM_DATA_FILES}; \
+	$(UNLINK_SCRIPT) ${SFC_DATA_FILES}; \
+	$(UNLINK_SCRIPT) ${COEFF_DATA_FILES}; \
+	for id in ${SENSOR_IDS}; do \
+	  $(UNLINK_SCRIPT) $$id.SpcCoeff.bin; \
+	  $(UNLINK_SCRIPT) $$id.TauCoeff.bin; \
+	done
+
+
 # Clean up
 clean:
 	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD *.stb
 
-# Source dependency list
-Timing_Utility.o : Timing_Utility.f90
-CRTM_Test_Utility.o : CRTM_Test_Utility.f90
-$(EXE_FILE).o : $(EXE_FILE).f90 Timing_Utility.o CRTM_Test_Utility.o
+realclean: remove_links clean
+	$(REMOVE) *.signal *.bin
 
 
 # --------------------
