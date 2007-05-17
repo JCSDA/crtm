@@ -31,7 +31,8 @@ EXE_FILE = Generate_CRTM_Stats
 # Object files
 # ------------
 
-SRC_FILES =         Type_Kinds.f90 \
+SRC_FILES =         CRTM_AerosolCoeff.f90 \
+                    Type_Kinds.f90 \
                     Sort_Utility.f90 \
                     File_Utility.f90 \
                     CRTM_Parameters.f90 \
@@ -55,7 +56,6 @@ SRC_FILES =         Type_Kinds.f90 \
                     SpcCoeff_Binary_IO.f90 \
                     CRTM_SpcCoeff.f90 \
                     CRTM_ChannelInfo_Define.f90 \
-                    CRTM_ChannelInfo.f90 \
                     netCDF_Dimension_Utility.f90 \
                     netCDF_Variable_Utility.f90 \
                     netCDF_Attribute_Utility.f90 \
@@ -64,7 +64,6 @@ SRC_FILES =         Type_Kinds.f90 \
                     TauCoeff_Define.f90 \
                     TauCoeff_Binary_IO.f90 \
                     CRTM_TauCoeff.f90 \
-                    CRTM_AerosolCoeff.f90 \
                     CRTM_LifeCycle.f90 \
                     List_File_Utility.f90 \
                     Endian_Utility.f90 \
@@ -78,6 +77,7 @@ SRC_FILES =         Type_Kinds.f90 \
                     CRTM_AtmAbsorption.f90 \
  	            CRTM_AtmScatter_Define.f90 \
 	            CRTM_AerosolScatter.f90 \
+                    CRTM_Interpolation.f90 \
 	            CRTM_CloudScatter.f90 \
  		    CRTM_AtmOptics.f90 \
                     CRTM_LifeCycle.f90 \
@@ -197,7 +197,7 @@ remove_links:
 # Dependency list
 # ---------------
 
-#	include make.dependencies
+include make.dependencies
 
 # -------------------------------
 # Create tarball for distribution
