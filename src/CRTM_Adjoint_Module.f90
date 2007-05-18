@@ -747,6 +747,7 @@ CONTAINS
           ! Compute the adjoint aerosol absorption/scattering properties
           ! ------------------------------------------------------------
           IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
+            AerosolScatter_AD%n_Legendre_Terms = n_Full_Streams
             Error_Status = CRTM_Compute_AerosolScatter_AD( Atmosphere(m)          , &  ! FWD Input
                                                            AerosolScatter         , &  ! FWD Input
                                                            AerosolScatter_AD      , &  ! AD  Input
@@ -773,6 +774,7 @@ CONTAINS
           ! Compute the adjoint cloud absorption/scattering properties
           ! ----------------------------------------------------------
           IF ( Atmosphere(m)%n_Clouds > 0 ) THEN
+            CloudScatter_AD%n_Legendre_Terms = n_Full_Streams
             Error_Status = CRTM_Compute_CloudScatter_AD( Atmosphere(m)          , &  ! FWD Input
                                                          CloudScatter           , &  ! FWD Input
                                                          CloudScatter_AD        , &  ! AD  Input

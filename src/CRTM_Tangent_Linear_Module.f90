@@ -572,7 +572,8 @@ CONTAINS
           ! Compute the cloud particle absorption/scattering properties
           ! -----------------------------------------------------------
           IF( Atmosphere(m)%n_Clouds > 0 ) THEN
-            CloudScatter%n_Legendre_Terms = n_Full_Streams
+            CloudScatter%n_Legendre_Terms    = n_Full_Streams
+            CloudScatter_TL%n_Legendre_Terms = n_Full_Streams
             Status_FWD = CRTM_Compute_CloudScatter( Atmosphere(m)          , &  ! Input
                                                     SensorIndex            , &  ! Input
                                                     ChannelIndex           , &  ! Input
@@ -606,7 +607,8 @@ CONTAINS
           ! Compute the aerosol absorption/scattering properties
           ! ----------------------------------------------------
           IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
-            AerosolScatter%n_Legendre_Terms = n_Full_Streams
+            AerosolScatter%n_Legendre_Terms    = n_Full_Streams
+            AerosolScatter_TL%n_Legendre_Terms = n_Full_Streams
             Status_FWD = CRTM_Compute_AerosolScatter( Atmosphere(m)          , &  ! Input
                                                       SensorIndex            , &  ! Input
                                                       ChannelIndex           , &  ! Input
