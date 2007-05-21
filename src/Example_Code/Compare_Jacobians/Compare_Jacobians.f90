@@ -337,8 +337,8 @@ CONTAINS
 
   SUBROUTINE Save_Temperature()
     INTEGER :: l, m
-    DO l = 1, N_CHANNELS
-      DO m = 1, N_PROFILES
+    DO m = 1, N_PROFILES
+      DO l = 1, N_CHANNELS
         Atm_TL_K(l,m)%Temperature(k) = RTSol_TL(l,m)%Brightness_Temperature
       END DO
     END DO
@@ -347,8 +347,8 @@ CONTAINS
   SUBROUTINE Save_Absorber(j)
     INTEGER, INTENT(IN) :: j
     INTEGER :: l, m
-    DO l = 1, N_CHANNELS
-      DO m = 1, N_PROFILES
+    DO m = 1, N_PROFILES
+      DO l = 1, N_CHANNELS
         Atm_TL_K(l,m)%Absorber(k,j) = RTSol_TL(l,m)%Brightness_Temperature
       END DO
     END DO
