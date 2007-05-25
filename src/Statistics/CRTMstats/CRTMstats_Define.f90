@@ -372,6 +372,9 @@ MODULE CRTMstats_Define
     ! -- The number of satellite/sensors
     INTEGER :: n_Sensors = 0
 
+    ! -- The Integrated Water vapor
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Int_Water_Vapor => NULL()  ! M  
+
     ! -- Sensor/satellite IDs
     INTEGER,         DIMENSION( : ), POINTER :: NCEP_Sensor_ID   => NULL()  ! L
     INTEGER,         DIMENSION( : ), POINTER :: WMO_Satellite_ID => NULL()  ! L
@@ -634,6 +637,7 @@ CONTAINS
     IF ( ALL_Test ) THEN
 
       IF ( ASSOCIATED( CRTMstats%NCEP_Sensor_ID     ) .AND. &
+           ASSOCIATED( CRTMstats%Int_Water_Vapor    ) .AND. &
            ASSOCIATED( CRTMstats%WMO_Satellite_ID   ) .AND. &
            ASSOCIATED( CRTMstats%WMO_Sensor_ID      ) .AND. &
            ASSOCIATED( CRTMstats%Sensor_Channel     ) .AND. &
@@ -659,6 +663,7 @@ CONTAINS
     ELSE
 
       IF ( ASSOCIATED( CRTMstats%NCEP_Sensor_ID     ) .OR. &
+           ASSOCIATED( CRTMstats%Int_Water_Vapor    ) .OR. &
            ASSOCIATED( CRTMstats%WMO_Satellite_ID   ) .OR. &
            ASSOCIATED( CRTMstats%WMO_Sensor_ID      ) .OR. &
            ASSOCIATED( CRTMstats%Sensor_Channel     ) .OR. &
@@ -1021,6 +1026,23 @@ CONTAINS
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
         WRITE( Message, '( "Error deallocating CRTMstats Molecule_Set member. ", &
+                          &"STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+      END IF
+    END IF
+    
+    ! -- Integrated Water Vapor
+    IF ( ASSOCIATED( CRTMstats%Int_Water_Vapor ) ) THEN
+
+      DEALLOCATE( CRTMstats%Int_Water_Vapor, STAT = Allocate_Status )
+
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error deallocating CRTMstats Int_Water_Vapor member. ", &
                           &"STAT = ", i5 )' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
@@ -1525,7 +1547,9 @@ CONTAINS
     !#                       -- PERFORM THE ALLOCATION --                       #
     !#--------------------------------------------------------------------------#
 
-    ALLOCATE( CRTMstats%NCEP_Sensor_ID( n_Channels ), &
+    ALLOCATE( CRTMstats%Int_Water_Vapor( n_Profiles ), &
+    
+              CRTMstats%NCEP_Sensor_ID( n_Channels ), &
               CRTMstats%WMO_Satellite_ID ( n_Channels ), &
               CRTMstats%WMO_Sensor_ID( n_Channels ), &
 
@@ -1578,7 +1602,8 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#          -- FILL THE POINTER MEMBERS WITH INVALID VALUES --              #
     !#--------------------------------------------------------------------------#
-
+    CRTMstats%Int_Water_Vapor  = INVALID
+   
     CRTMstats%NCEP_Sensor_ID   = INVALID
     CRTMstats%WMO_Satellite_ID = INVALID
     CRTMstats%WMO_Sensor_ID    = INVALID
@@ -1829,6 +1854,8 @@ CONTAINS
     END IF
 
     ! -- Copy array data
+    CRTMstats_out%Int_Water_Vapor  = CRTMstats_in%Int_Water_Vapor
+    
     CRTMstats_out%NCEP_Sensor_ID   = CRTMstats_in%NCEP_Sensor_ID
     CRTMstats_out%WMO_Satellite_ID = CRTMstats_in%WMO_Satellite_ID
     CRTMstats_out%WMO_Sensor_ID    = CRTMstats_in%WMO_Sensor_ID
@@ -2026,7 +2053,7 @@ CONTAINS
     ! Local variables
     ! ---------------
 
-    INTEGER :: n_Channels, l1, l2
+    INTEGER :: n_Channels, l1, l2, n_Profiles
 
     TYPE( CRTMstats_type ) :: CRTMstats_Tmp
 
@@ -2095,8 +2122,8 @@ CONTAINS
       RETURN
     END IF
 
-
-
+    ! Set the number of profiles
+    n_Profiles = CRTMstats2%n_Profiles
     !#--------------------------------------------------------------------------#
     !#                -- COPY FIRST INPUT CRTMstats STRUCTURE --               #
     !#--------------------------------------------------------------------------#

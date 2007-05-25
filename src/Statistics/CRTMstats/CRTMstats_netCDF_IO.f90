@@ -149,6 +149,7 @@ MODULE CRTMstats_netCDF_IO
   CHARACTER( * ), PRIVATE, PARAMETER :: MOLECULE_SET_DIMNAME = 'n_Molecule_Sets'
 
   ! -- Variable names
+  CHARACTER( * ), PRIVATE, PARAMETER :: INT_WATER_VAPOR_VARNAME    = 'Int_Water_Vapor'
   CHARACTER( * ), PRIVATE, PARAMETER :: NCEP_SENSOR_ID_VARNAME     = 'NCEP_Sensor_ID'
   CHARACTER( * ), PRIVATE, PARAMETER :: WMO_SATELLITE_ID_VARNAME   = 'WMO_Satellite_ID'
   CHARACTER( * ), PRIVATE, PARAMETER :: WMO_SENSOR_ID_VARNAME      = 'WMO_Sensor_ID'
@@ -173,6 +174,8 @@ MODULE CRTMstats_netCDF_IO
   ! -- Variable long name attribute.
   CHARACTER( * ), PRIVATE, PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
+  CHARACTER( * ), PRIVATE, PARAMETER :: INT_WATER_VAPOR_LONGNAME     = &
+    'Integrated Water Vapor of listed Profiles'
   CHARACTER( * ), PRIVATE, PARAMETER :: NCEP_SENSOR_ID_LONGNAME      = &
     'ID used at NOAA/NCEP/EMC to identify a satellite/sensor (-1 == none available)'
   CHARACTER( * ), PRIVATE, PARAMETER :: WMO_SATELLITE_ID_LONGNAME    = &
@@ -219,6 +222,7 @@ MODULE CRTMstats_netCDF_IO
   CHARACTER( * ), PRIVATE, PARAMETER :: FREQUENCY_UNITS = 'Inverse centimetres, cm^-1'
   CHARACTER( * ), PRIVATE, PARAMETER :: TAU_UNITS       = 'None'
   CHARACTER( * ), PRIVATE, PARAMETER :: BT_UNITS        = 'Kelvin, K'
+  CHARACTER( * ), PRIVATE, PARAMETER :: PWV_UNITS       = 'g/cm^2'
 
   ! -- Variable _FillValue attribute.
   CHARACTER( * ),  PRIVATE, PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
@@ -228,6 +232,7 @@ MODULE CRTMstats_netCDF_IO
   INTEGER,         PRIVATE, PARAMETER :: CHANNEL_LIST_FILLVALUE      = -1
   REAL( fp_kind ), PRIVATE, PARAMETER :: FREQUENCY_FILLVALUE         = -1.0_fp_kind
   REAL( fp_kind ), PRIVATE, PARAMETER :: ANGLE_LIST_FILLVALUE        = -1.0_fp_kind
+  REAL( fp_kind ), PRIVATE, PARAMETER :: INT_WATER_VAPOR_FILLVALUE   = -1.0_fp_kind
   INTEGER,         PRIVATE, PARAMETER :: PROFILE_LIST_FILLVALUE      = -1
   INTEGER,         PRIVATE, PARAMETER :: MOLECULE_SET_LIST_FILLVALUE = -1
   REAL( fp_kind ), PRIVATE, PARAMETER :: TAU_FILLVALUE               = -1.0_fp_kind
@@ -240,6 +245,7 @@ MODULE CRTMstats_netCDF_IO
   INTEGER, PRIVATE, PARAMETER :: CHANNEL_LIST_TYPE      = NF90_INT
   INTEGER, PRIVATE, PARAMETER :: FREQUENCY_TYPE         = NF90_DOUBLE
   INTEGER, PRIVATE, PARAMETER :: ANGLE_LIST_TYPE        = NF90_DOUBLE
+  INTEGER, PRIVATE, PARAMETER :: INT_WATER_VAPOR_TYPE   = NF90_DOUBLE
   INTEGER, PRIVATE, PARAMETER :: PROFILE_LIST_TYPE      = NF90_INT
   INTEGER, PRIVATE, PARAMETER :: MOLECULE_SET_LIST_TYPE = NF90_INT
   INTEGER, PRIVATE, PARAMETER :: TAU_TYPE               = NF90_DOUBLE
@@ -2003,7 +2009,56 @@ CONTAINS
       RETURN
     END IF
 
+    ! --------------------------
+    ! LBL TOA transmittance data
+    ! --------------------------
 
+    NF90_Status = NF90_DEF_VAR( NC_fileID, &
+                                INT_WATER_VAPOR_VARNAME, &
+                                INT_WATER_VAPOR_TYPE, &
+                                dimids = (/Profile_DimID /), &
+                                varID = VarID )
+
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error defining '//INT_WATER_VAPOR_varNAME//' variable in '// &
+                            TRIM( NC_Filename )//'- '// &
+                            TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+
+    ! -- Write some attributes
+    Status1 = Put_netCDF_Attribute( NC_FileID, &
+                                    LONGNAME_ATTNAME, &
+                                    INT_WATER_VAPOR_LONGNAME, &
+                                    Variable_Name = INT_WATER_VAPOR_VARNAME )
+
+    Status2 = Put_netCDF_Attribute( NC_FileID, &
+                                    UNITS_ATTNAME, &
+                                    PWV_UNITS, &
+                                    Variable_Name = INT_WATER_VAPOR_VARNAME )
+
+    Status3 = Put_netCDF_Attribute( NC_FileID, &
+                                    FILLVALUE_ATTNAME, &
+                                    INT_WATER_VAPOR_FILLVALUE, &
+                                    Variable_Name = INT_WATER_VAPOR_VARNAME )
+
+    IF ( Status1 /= SUCCESS .OR. &
+         Status2 /= SUCCESS .OR. &
+         Status3 /= SUCCESS      ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//LBL_TAU_VARNAME//&
+                            ' variable attributes to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      RETURN
+    END IF
     ! --------------------------
     ! LBL TOA transmittance data
     ! --------------------------
@@ -3547,7 +3602,22 @@ CONTAINS
       RETURN
     END IF
 
+    ! ----------------------------
+    ! The integrated water vapor
+    ! ----------------------------
+    Error_Status = Put_netCDF_Variable( NC_fileID, &
+                                        INT_WATER_VAPOR_VARNAME, &
+                                        CRTMstats%Int_Water_Vapor )
 
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//INT_WATER_VAPOR_VARNAME//&
+                            ' to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
     ! ----------------
     ! The profile list
     ! ----------------
@@ -4293,6 +4363,24 @@ CONTAINS
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error reading '//PROFILE_LIST_VARNAME//&
+                            ' data from '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
+    ! -------------------
+    ! The PWV by profile
+    ! -------------------
+    !PRINT *, CRTMstats%Int_Water_Vapor(10)
+    Error_Status = Get_netCDF_Variable( NC_fileID, &
+                                        INT_WATER_VAPOR_VARNAME, &
+                                        CRTMstats%Int_Water_Vapor )
+
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error reading '//INT_WATER_VAPOR_VARNAME//&
                             ' data from '//TRIM( NC_Filename ), &
                             Error_Status, &
                             Message_Log = Message_Log )
