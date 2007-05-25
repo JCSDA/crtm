@@ -197,6 +197,7 @@ PROGRAM Generate_CRTM_Stats
   USE CRTMstats_netCDF_IO
   USE SensorInfo_Define
   USE CRTM_TauCoeff
+  USE CRTM_SpcCoeff
   USE CRTM_AtmScatter_Define
   USE TauProfile_Define
   USE TauProfile_netCDF_IO
@@ -237,9 +238,9 @@ PROGRAM Generate_CRTM_Stats
   CHARACTER( * ), PARAMETER :: REG_PROFILE_ID_TAG = 'UMBC'
   
   ! -- Angle threshold --
-  REAL ( fp_kind ), PARAMETER :: AngleTh = 2.95
+  REAL ( fp ), PARAMETER :: AngleTh = 2.95
   
-  INTEGER,         PARAMETER :: TAU_ALL_INDEX = 10
+  INTEGER, PARAMETER :: TAU_ALL_INDEX = 10
   
   INTEGER :: AllocateStatus
 
@@ -250,8 +251,8 @@ PROGRAM Generate_CRTM_Stats
   ! -- Default emissivities and IR reflectivity "type"
   ! -- These values are used for land parameterization
   ! -- The surface reflectivity is declared to be 1-(surface emissivity)
-  REAL( fp_kind ), PARAMETER :: MICROWAVE_EMISSIVITY = 0.6_fp_kind
-  REAL( fp_kind ), PARAMETER :: INFRARED_EMISSIVITY  = 0.96_fp_kind
+  REAL( fp ), PARAMETER :: MICROWAVE_EMISSIVITY = 0.6_fp
+  REAL( fp ), PARAMETER :: INFRARED_EMISSIVITY  = 0.96_fp
   
   ! ---------
   ! Variables
@@ -277,6 +278,8 @@ PROGRAM Generate_CRTM_Stats
   INTEGER :: SensorIndex
   INTEGER :: ChannelIndex
   
+  
+  
   ! Declare the structure that will hold the TauProfile data
   TYPE( TauProfile_type ) :: TauProfile
   
@@ -299,22 +302,28 @@ PROGRAM Generate_CRTM_Stats
   TYPE( CRTMstats_type ) :: CRTMstats
   
   ! Declare array that will hold the transmittance data
-  REAL( fp_kind ), DIMENSION(:), ALLOCATABLE :: Tau
+  REAL( fp ), DIMENSION(:), ALLOCATABLE :: Tau
+  
+  ! Declare scalar that will hold total integrated water vapor
+  REAL( fp ), DIMENSION( N_PROFILES ) :: Int_Water_Vapor
+  
+  ! Declare variable to hold (dP/Gravity)
+  REAL( fp ) :: dPonG
   
   ! Declare array that will hold TOA CRTM transmittances  
-  REAL( fp_kind ) :: CRTM_Transmittance
+  REAL( fp ) :: CRTM_Transmittance
   
   ! Declare array that will hold TOA LBL transmittances
-  REAL( fp_kind ) :: LBL_Transmittance
+  REAL( fp ) :: LBL_Transmittance
   
   ! Declare array that will hold TOA CRTM Optical Depths
-  REAL( fp_kind ) :: CRTM_Optical_Depth
+  REAL( fp ) :: CRTM_Optical_Depth
   
   ! Declare array that will hold TOA LBL Optical Depths
-  REAL( fp_kind ) :: LBL_Optical_Depth
+  REAL( fp ) :: LBL_Optical_Depth
   
   ! Declare variables holding TauProfile_File information
-  REAL( fp_kind ), DIMENSION(:), ALLOCATABLE :: Angle_List
+  REAL( fp ),      DIMENSION(:), ALLOCATABLE :: Angle_List
   INTEGER( Long ), DIMENSION(:), ALLOCATABLE :: Profile_List
   INTEGER( Long ), DIMENSION(:), ALLOCATABLE :: Channel_List
   
@@ -325,9 +334,6 @@ PROGRAM Generate_CRTM_Stats
   
   ! This variable represents the name of the CRTMStats netcdf file
   CHARACTER( 256 ) :: REGstats_Filename
-  
-  ! Declare the array that will hold CRTMSolution data for a particular angle
-  TYPE( CRTM_RTSolution_type ), DIMENSION(:,:), ALLOCATABLE :: CRTMSolution_Current
   
   ! Declare the array that will hold CRTMSolution data for all angles
   TYPE( CRTM_RTSolution_type ), DIMENSION(:,:,:), ALLOCATABLE :: CRTMSolution 
@@ -472,13 +478,13 @@ PROGRAM Generate_CRTM_Stats
     STOP
   END IF
   
+  ! assign metadata
   Angle_List   = TauProfile%Angle 
   Channel_List = TauProfile%Channel 
   Profile_List = TauProfile%Profile
   
   !  Allocate for CRTMSolution
-  ALLOCATE( CRTMSolution_Current( n_Channels, N_PROFILES ), &
-            CRTMSolution( n_Channels, N_PROFILES, n_Angles - 1 ), &
+  ALLOCATE( CRTMSolution( n_Channels, N_PROFILES, n_Angles - 1 ), &
             STAT = Error_Status         )
 
   IF ( Error_Status /= SUCCESS ) THEN 
@@ -487,17 +493,6 @@ PROGRAM Generate_CRTM_Stats
                        Error_Status )
    STOP
   END IF    
-  
-  ! Allocate the RTSolution structures
-  Error_Status = CRTM_Allocate_RTSolution(  n_Layers,                         &  ! Input
-                                            CRTMSolution_Current              )  ! Output
-
-  IF ( Error_Status /= SUCCESS ) THEN 
-       CALL Display_Message( PROGRAM_NAME, &
-                            'Error Allocating CRTMSolution Structure.', & 
-                             Error_Status )
-    STOP
-  END IF        
   
   ! ------------------------------------------------------------
   ! Allocate the Options structure. This will
@@ -514,19 +509,25 @@ PROGRAM Generate_CRTM_Stats
     STOP
   END IF   
   
-  ! Fill arguments used in CRTM_Forward call        
+  ! Fill arguments used in CRTM_Forward call and calculate Int_Wat_Vapor       
   DO m = 1, N_PROFILES
     
     ! Fill the Options Emissivity fields
     Options(m)%Emissivity_Switch = SET
-    Options(m)%Emissivity = 1.0_fp_kind
+    Options(m)%Emissivity = 1.0_fp
     ! Fill the surface argument for each profile
     Surface(m)%Land_Coverage = ONE
     Surface(m)%Land_Temperature = Atmosphere(m)%temperature(100)
     
+    ! Calculate the total integrated water vapor
+    DO k = 1, Atmosphere(m)%n_Layers
+      ! Calculate dP/g for current layer
+      dPonG = RECIPROCAL_GRAVITY * (Atmosphere(m)%Level_Pressure(k) - Atmosphere(m)%Level_Pressure(k-1))
+      ! Calculate water vapor amount and accumulate 
+      Int_Water_Vapor(m) = Int_Water_Vapor(m) + (dPonG * Atmosphere(m)%Absorber(k,H2O_ID))
+    END DO
+  END DO  
     
-  END DO   
-  
   DO i = 1, n_Angles - 1
         
     ! Allocate the RTSolution structures
@@ -542,21 +543,22 @@ PROGRAM Generate_CRTM_Stats
     
     ! Fill the GeometryInfo argument to the CRTM_Forward module
     GeometryInfo(:)%Sensor_Zenith_Angle = (1/DEGREES_TO_RADIANS) * ACOS(ONE/Angle_List(i))
-      
+    
     ! Set GeometryInfo(n_Profiles) array         
     !  Calculate CRTM brigtness temperatures and TOA radiances
     Error_Status = CRTM_Forward( Atmosphere,                       & ! Input
                                  Surface,                          & ! Input
                                  GeometryInfo,                     & ! Input
                                  ChannelInfo,                      & ! Input
-                                 CRTMSolution_Current,             & ! Output
-                                 Options = Options                 ) ! Optional input                        
-    CRTMSolution(:,:,i) = CRTMSolution_Current(:,:)
+                                 CRTMSolution(:,:,i),              & ! Output
+                                 Options = Options                 ) ! Optional input 
+    
   END DO  
+  
   
   ! Assign the output filename
   REGstats_Filename = TRIM( File_Prefix )//'.REGstats.nc'
-                      
+              
   !#------------------------------------------------------------------------#
   !#              -- ALLOCATE THE OUTPUT CRTMstats STRUCTURE --             #
   !#------------------------------------------------------------------------#
@@ -618,7 +620,6 @@ PROGRAM Generate_CRTM_Stats
 
       ! Calculate sensor zenith angle
       GeometryInfo(m)%Sensor_Zenith_Angle = (1/DEGREES_TO_RADIANS) * ACOS(ONE/Angle_List(i))
-       
       ! Fill GeometryInfo structure
       Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo(m) )
 
@@ -628,7 +629,7 @@ PROGRAM Generate_CRTM_Stats
                              Error_Status                           )
         STOP
       END IF
-
+      
       !  Allocate for LBLSolution
       ALLOCATE( LBLSolution( n_Channels, n_Profiles ),    &
                 STAT = Error_Status           )
@@ -667,6 +668,7 @@ PROGRAM Generate_CRTM_Stats
         STOP
       END IF
 
+
       ! Determine the Surface temperature for the SfcOptics
       CALL CRTM_Compute_SurfaceT( Surface(m), SfcOptics(m) )
 
@@ -679,7 +681,6 @@ PROGRAM Generate_CRTM_Stats
 
       ! Begin the channel loop
       Channel_Loop: DO l=1, n_Channels
-
         CRTM_Optical_Depth=ZERO
         LBL_Optical_Depth=ZERO
         CRTM_Transmittance=ZERO
@@ -732,7 +733,7 @@ PROGRAM Generate_CRTM_Stats
 
         ! Short(en) name for Channel Index
         ChannelIndex = ChannelInfo(SensorIndex)%Channel_Index(l)
-        PRINT *, GeometryInfo(m)%Sensor_Zenith_Angle
+        
         ! Calculate LBL Brightness Temperatures
         Error_Status = CRTM_Compute_RTSolution( Atmosphere(m),                            & ! Input
                                                 Surface(m),                               & ! Input
@@ -749,20 +750,19 @@ PROGRAM Generate_CRTM_Stats
           CRTM_Optical_Depth = CRTMSolution(l,m,i)%Layer_Optical_Depth(k) + CRTM_Optical_Depth
           LBL_Optical_Depth = LBLSolution(l,m)%Layer_Optical_Depth(k) + LBL_Optical_Depth
         END DO TOA_Transmittance_Layer_Loop
-
+                  
         ! Convert TOA Optical Depths to TOA Transmittances
         CRTM_Transmittance = EXP(-((CRTM_Optical_Depth)*(Angle_List(i))))
         LBL_Transmittance = EXP(-((LBL_Optical_Depth)*(Angle_List(i))))
 
         
         ! Save the TOA regression results
-        CRTMstats%REG_BT(l, i, m, 1) = CRTMSolution(l,m,i)%Brightness_Temperature
+        CRTMstats%REG_BT(l, i, m, 1) = CRTMSolution(l,m,i)%Brightness_Temperature 
         CRTMstats%REG_Tau(l, i, m, 1) = CRTM_Transmittance
          
-        
         ! Save the TOA LBL results    
         CRTMstats%LBL_BT(l, i, m, 1) =  LBLSolution(l,m)%Brightness_Temperature   
-        CRTMstats%LBL_Tau(l, i, m, 1) =  LBL_Transmittance   
+        CRTMstats%LBL_Tau(l, i, m, 1) =  LBL_Transmittance 
         
         ! Deallocate Tau
         DEALLOCATE(    Tau,                   &
@@ -778,7 +778,8 @@ PROGRAM Generate_CRTM_Stats
       END DO Channel_Loop
 
 
-
+      
+      
       ! -----------------------------------------------------------------
       !       --Deallocate Structures and arrays for current view angle--
       ! -----------------------------------------------------------------
@@ -814,7 +815,8 @@ PROGRAM Generate_CRTM_Stats
       END IF
 
     END DO Angle_Loop      
-
+    ! Save Integrated water vapor
+    CRTMstats%Int_Water_Vapor(m) = Int_Water_Vapor(m)
     ! Deallocate structures for current profile
     ! The AtmOptics Structures
     Error_Status = CRTM_Destroy_AtmScatter( AtmOptics )
@@ -865,26 +867,6 @@ PROGRAM Generate_CRTM_Stats
                          'Error deallocating Options structures', &
                          Error_Status )
      STOP
-  END IF
-
-  ! Destroy CRTMSolution_Current
-  Error_Status = CRTM_Destroy_RTSolution( CRTMSolution_Current )
-  IF ( Error_Status   /= SUCCESS ) THEN
-         CALL Display_Message( PROGRAM_NAME, &
-                             'Error deallocating CRTMSolution structures', &
-                             Error_Status )
-    STOP
-  END IF
-
-  ! Deallocate CRTMSolution_Current
-  DEALLOCATE( CRTMSolution_Current,       &
-              STAT = Error_Status         )
-
-  IF ( Error_Status /= SUCCESS ) THEN 
-  CALL Display_Message( PROGRAM_NAME, &
-                       'Error DEAllocating CRTMSolution Structure.', & 
-                       Error_Status )
-   STOP
   END IF
 
   ! Destroy CRTMSolution
