@@ -91,7 +91,7 @@ MODULE CRTM_Test_Utility
   CHARACTER(*), PARAMETER :: ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: SFCDATA_FILENAME = 'ECMWF-Surface.bin'
   INTEGER,      PARAMETER :: MAX_NPROFILES  = 52
-  INTEGER,      PARAMETER :: USED_NPROFILES = 52
+  INTEGER,      PARAMETER :: USED_NPROFILES = 10
 
   ! Set up the tests
   INTEGER, PARAMETER :: EMISSIVITY_TEST = 1
@@ -100,12 +100,22 @@ MODULE CRTM_Test_Utility
   INTEGER, PARAMETER :: MAX_NTESTS = EMISSIVITY_TEST+CLOUDS_TEST+AEROSOLS_TEST
 
   ! Define the sensors to test
-  INTEGER, PARAMETER :: MAX_NSENSORS=4
+!  INTEGER, PARAMETER :: MAX_NSENSORS=1
+!  CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
+!    (/ 'amsua_n18' /)
+!  INTEGER, PARAMETER :: MAX_NSENSORS=2
+!  CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
+!    (/ 'amsua_n18' , &
+!       'hirs4_n18' /)
+  INTEGER, PARAMETER :: MAX_NSENSORS=7
   CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
     (/ 'amsua_n17', &
        'hirs3_n17', &
        'ssmis_f16', &
-       'imgr_g11 ' /)
+       'imgr_g11 ', &
+       'amsua_n18', &
+       'mhs_n18  ', &
+       'hirs4_n18' /)
 
   ! Default test angle
   REAL(fp), PARAMETER :: TEST_ANGLE = 30.0_fp
