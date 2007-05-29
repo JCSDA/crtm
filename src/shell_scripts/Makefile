@@ -35,3 +35,13 @@ install:
 	  done; \
 	fi
 
+# ---------------
+# Un-install them
+# ---------------
+uninstall:
+	@if [ -d $(HOME)/bin ]; then \
+	  cd $(HOME)/bin; \
+	  for script_file in ${SHELL_SRC_FILES}; do \
+	    $(REMOVE) $$script_file; \
+	  done; \
+	fi
