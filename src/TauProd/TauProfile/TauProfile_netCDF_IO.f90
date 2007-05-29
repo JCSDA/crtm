@@ -76,7 +76,7 @@ MODULE TauProfile_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauProfile_netCDF_IO.f90,v 1.21 2006/08/03 21:17:28 wd20pd Exp $'
+    '$Id$'
 
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
@@ -595,7 +595,7 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_TauProfile_GAtts'
-    INTEGER     , PARAMETER :: NGETGATTS = 4
+    INTEGER     , PARAMETER :: NGETGATTS = 6
     ! Local variables
     INTEGER :: Get_Status(NGETGATTS), n
 

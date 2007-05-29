@@ -49,12 +49,12 @@ MODULE TauProfile_Define
   ! -------------------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauProfile_Define.f90,v 1.11 2006/06/30 16:47:16 dgroff Exp $'
+  '$Id$'
   ! Sensor id string length
   INTEGER , PARAMETER :: SL = 20
   ! Invalid values
   INTEGER , PARAMETER :: IP_INVALID = -1
-  REAL(fp), PARAMETER :: FP_INVALID = REAL(IP_INVALID,fp)
+  REAL(fp), PARAMETER :: FP_INVALID = -1.0_fp
   ! Invalid sensor ids
   INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
   INTEGER, PARAMETER :: INVALID_WMO_SENSOR_ID    = 2047
