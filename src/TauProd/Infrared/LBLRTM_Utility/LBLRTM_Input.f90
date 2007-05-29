@@ -3290,11 +3290,11 @@ END MODULE LBLRTM_Input
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Input.f90,v 2.7 2006/07/26 21:43:58 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 2.7 $
+! $Revision$
 !
 ! $Name:  $
 !

@@ -402,7 +402,7 @@ MODULE LBLRTM_Fhdr_IO
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Fhdr_IO.f90,v 1.11 2006/07/26 21:43:58 wd20pd Exp $'
+  '$Id$'
 
   ! -- Scalar invalid values
   INTEGER,                PRIVATE, PARAMETER :: IP_INVALID = -1
@@ -1191,11 +1191,11 @@ END MODULE LBLRTM_Fhdr_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Fhdr_IO.f90,v 1.11 2006/07/26 21:43:58 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.11 $
+! $Revision$
 !
 ! $Name:  $
 !

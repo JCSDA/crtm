@@ -103,7 +103,7 @@ MODULE LBLRTM_Utility
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Utility.f90,v 1.6 2006/07/26 21:43:58 wd20pd Exp $'
+  '$Id$'
 
   ! -- Keyword set values
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -752,11 +752,11 @@ END MODULE LBLRTM_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Utility.f90,v 1.6 2006/07/26 21:43:58 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.6 $
+! $Revision$
 !
 ! $Name:  $
 !

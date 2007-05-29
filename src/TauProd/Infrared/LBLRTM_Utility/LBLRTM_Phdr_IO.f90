@@ -137,7 +137,7 @@ MODULE LBLRTM_Phdr_IO
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Phdr_IO.f90,v 1.9 2006/07/26 21:43:58 wd20pd Exp $'
+  '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -828,11 +828,11 @@ END MODULE LBLRTM_Phdr_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Phdr_IO.f90,v 1.9 2006/07/26 21:43:58 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.9 $
+! $Revision$
 !
 ! $Name:  $
 !

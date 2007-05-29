@@ -99,7 +99,7 @@ MODULE LBLRTM_Panel_IO
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: LBLRTM_Panel_IO.f90,v 1.10 2006/07/26 21:43:58 wd20pd Exp $'
+  '$Id$'
 
 
 CONTAINS
@@ -704,11 +704,11 @@ END MODULE LBLRTM_Panel_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: LBLRTM_Panel_IO.f90,v 1.10 2006/07/26 21:43:58 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:43:58 $
 !
-! $Revision: 1.10 $
+! $Revision$
 !
 ! $Name:  $
 !
