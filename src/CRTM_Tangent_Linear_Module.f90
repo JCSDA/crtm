@@ -15,7 +15,7 @@ MODULE CRTM_Tangent_Linear_Module
   ! ------------
   ! Module usage
   ! ------------
-  USE Type_Kinds,               ONLY: fp=>fp_kind
+  USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters,          ONLY: SET, NOT_SET, ONE   , &
                                       MAX_N_PROFILES      , &
@@ -245,7 +245,7 @@ CONTAINS
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Tangent_Linear(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Tangent_Linear'
     ! Local variables
     CHARACTER(256) :: Message
     LOGICAL :: Options_Present

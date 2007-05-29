@@ -15,7 +15,7 @@ MODULE CRTM_Adjoint_Module
   ! ------------
   ! Module usage
   ! ------------
-  USE Type_Kinds,               ONLY: fp=>fp_kind
+  USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters,          ONLY: SET, NOT_SET, ZERO, ONE, &
                                       MAX_N_PROFILES         , &

@@ -15,7 +15,7 @@ MODULE CRTM_K_Matrix_Module
   ! ------------
   ! Module usage
   ! ------------
-  USE Type_Kinds,               ONLY: fp=>fp_kind
+  USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters,          ONLY: SET, NOT_SET, ZERO, ONE, &
                                       MAX_N_PROFILES         , &
@@ -817,12 +817,12 @@ CONTAINS
           ! --------------------------------------          
           ! K-matrix of the predictor calculations
           ! --------------------------------------          
-          CALL CRTM_Compute_Predictors_AD ( Atmosphere(m)     , &  ! FWD Input
-                                            Predictor         , &  ! FWD Input
-                                            Predictor_K       , &  ! K   Input
-                                            GeometryInfo(m)   , &  ! Input
-                                            Atmosphere_K(ln,m), &  ! K   Output
-                                            APV                 )  ! Internal variable input
+          CALL CRTM_Compute_Predictors_AD( Atmosphere(m)     , &  ! FWD Input
+                                           Predictor         , &  ! FWD Input
+                                           Predictor_K       , &  ! K   Input
+                                           GeometryInfo(m)   , &  ! Input
+                                           Atmosphere_K(ln,m), &  ! K   Output
+                                           APV                 )  ! Internal variable input
 
           ! ---------------------------
           ! Postprocess some input data
