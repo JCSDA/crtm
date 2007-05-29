@@ -15,9 +15,9 @@ MODULE CRTM_Planck_Functions
   ! Environment setup
   ! -----------------
   ! Module use statements
-  USE Type_Kinds, ONLY : fp=>fp_kind
-  USE CRTM_Parameters
-  USE CRTM_SpcCoeff
+  USE Type_Kinds     , ONLY: fp
+  USE CRTM_Parameters, ONLY: ONE
+  USE CRTM_SpcCoeff  , ONLY: SC
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -34,6 +34,13 @@ MODULE CRTM_Planck_Functions
   PUBLIC  :: CRTM_Planck_Temperature_AD
 
 
+  ! ----------
+  ! Parameters
+  ! ----------
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+    '$Id$'
+    
+    
 CONTAINS
 
 
@@ -569,7 +576,6 @@ CONTAINS
 !       phase.
 !
 !--------------------------------------------------------------------------------
-
 
   SUBROUTINE CRTM_Planck_Temperature_TL( n, l         , &  ! Input
                                          Radiance     , &  ! Input
