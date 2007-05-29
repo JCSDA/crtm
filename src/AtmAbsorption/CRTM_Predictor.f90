@@ -24,7 +24,7 @@ MODULE CRTM_Predictor
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds              , ONLY: fp=>fp_kind
+  USE Type_Kinds              , ONLY: fp
   USE Message_Handler         , ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters         , ONLY: ZERO                       , &
                                       POINT_25, POINT_5, POINT_75, &
@@ -79,7 +79,7 @@ MODULE CRTM_Predictor
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Predictor.f90,v 2.2 2006/10/31 21:07:32 wd20pd Exp $'
+  '$Id$'
 
 
   ! -------------------------------------------------
@@ -1465,6 +1465,7 @@ CONTAINS
 !
 !       Predictor_AD:      CRTM Predictor structure containing the adjoint
 !                          integrated absorber and predictor profiles.
+!                          **NOTE: This structure is zeroed upon output
 !                          UNITS:      N/A
 !                          TYPE:       TYPE(CRTM_Predictor_type)
 !                          DIMENSION:  Scalar
@@ -1552,6 +1553,9 @@ CONTAINS
                                       Predictor_AD , &  ! Output
                                       Atmosphere_AD  )  ! Input
 
+    ! Zero the adjoint predictor structure
+    CALL CRTM_Zero_Predictor( Predictor_AD )
+    
   END SUBROUTINE CRTM_Compute_Predictors_AD
 
 END MODULE CRTM_Predictor

@@ -16,7 +16,7 @@ MODULE CRTM_AtmAbsorption
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,                ONLY: fp=>fp_kind
+  USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,           ONLY: ZERO, POINT_5        , &
                                        LIMIT_EXP, LIMIT_LOG , &
@@ -795,8 +795,7 @@ CONTAINS
         ! -----------------------------
         ! Adjoints of the optical depth
         ! -----------------------------
-        Predictor_AD%dA(k,j) = Predictor_AD%dA(k,j) + &
-                               (AAV%Chi(k,j) * AtmAbsorption_AD%Optical_Depth(k))
+        Predictor_AD%dA(k,j) = (AAV%Chi(k,j) * AtmAbsorption_AD%Optical_Depth(k))
         Chi_AD = Predictor%dA(k,j) * AtmAbsorption_AD%Optical_Depth(k)
 
 
@@ -946,8 +945,7 @@ CONTAINS
         !         Alpha.( A - C2 )
         !
         ! ----------------------------------------------------------
-        Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &
-                                       A_Level_AD / &
+        Predictor_AD%aveA(k,j) =       A_Level_AD / &
         !          --------------------------------------------------------------
                    ( TC(n)%Alpha(j) * (Predictor%aveA(k,j) - TC(n)%Alpha_C2(j) ))
 

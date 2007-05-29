@@ -17,7 +17,7 @@ MODULE CRTM_Predictor_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds,      ONLY: fp=>fp_kind
+  USE Type_Kinds,      ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters, ONLY: ZERO, SET
   ! Disable implicit typing
@@ -44,7 +44,7 @@ MODULE CRTM_Predictor_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: $'
+  '$Id$'
 
 
   ! -----------------------
