@@ -15,8 +15,11 @@ MODULE IASI_Define
   ! Enviroment setup
   ! ----------------
   ! Module usage
-  USE Type_Kinds,            ONLY: fp=>fp_kind
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Fundamental_Constants, ONLY: PI
+  USE Search_Utility       , ONLY: Value_Locate
+  USE Linear_Interpolation , ONLY: Linear_Interpolate
   ! Disable implicit typing
   IMPLICIT NONE
   
@@ -25,10 +28,16 @@ MODULE IASI_Define
   ! ----------
   ! Everything is default private
   PRIVATE
+  ! Public parameters
+  PUBLIC :: IASI_D_FREQUENCY
+  PUBLIC :: IASI_MAX_NCHANNELS
   ! Public module procedures
   PUBLIC :: IASI_MaxX
   PUBLIC :: IASI_X
   PUBLIC :: IASI_GFT
+  PUBLIC :: IASI_F
+  PUBLIC :: IASI_Resample_Idx
+  PUBLIC :: IASI_Resample
   
   
   ! -----------------
@@ -37,12 +46,13 @@ MODULE IASI_Define
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id: $'
   ! Literal constants
-  REAL(fp), PARAMETER :: ZERO    = 0.0_fp
-  REAL(fp), PARAMETER :: POINT5  = 0.5_fp
-  REAL(fp), PARAMETER :: ONE     = 1.0_fp
-  REAL(fp), PARAMETER :: TWO     = 2.0_fp
-  REAL(fp), PARAMETER :: HUNDRED = 100.0_fp
-  REAL(fp), PARAMETER :: M2CM    = HUNDRED
+  REAL(fp), PARAMETER :: ZERO      = 0.0_fp
+  REAL(fp), PARAMETER :: POINT5    = 0.5_fp
+  REAL(fp), PARAMETER :: ONE       = 1.0_fp
+  REAL(fp), PARAMETER :: ONEPOINT5 = 1.5_fp
+  REAL(fp), PARAMETER :: TWO       = 2.0_fp
+  REAL(fp), PARAMETER :: HUNDRED   = 100.0_fp
+  REAL(fp), PARAMETER :: M2CM      = HUNDRED
   REAL(fp), PARAMETER :: LN2 = 0.693147180559945309417232_fp
   
   ! Gaussian function FWHM (cm^-1)
@@ -67,6 +77,11 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: NOMINAL_MAXX       = 1.9679466e-02_fp
   REAL(fp), PARAMETER :: NOMINAL_MAXX_IN_CM = NOMINAL_MAXX*M2CM
 
+  ! Parameters for the resampled frequency grid
+  REAL(fp), PARAMETER :: MIN_FREQUENCY      = 640.0_fp
+  REAL(fp), PARAMETER :: IASI_D_FREQUENCY   = 0.25_fp
+
+  INTEGER , PARAMETER :: IASI_MAX_NCHANNELS = 8461
 
 CONTAINS
 
@@ -114,5 +129,74 @@ CONTAINS
       gft = ZERO
     END WHERE
   END FUNCTION IASI_GFT
+  
+
+  ! Function to compute the resampled
+  ! frequency grid
+  ! f = 645 + 0.25*(n-1), n=1,8461
+  FUNCTION IASI_F() RESULT(f)
+    ! Function result
+    REAL(fp) :: f(IASI_MAX_NCHANNELS)
+    ! Local variables
+    INTEGER :: i, n
+    DO i = 1, IASI_MAX_NCHANNELS
+      f(i) = MIN_FREQUENCY + (IASI_D_FREQUENCY*REAL(i-1,fp))
+    END DO
+  END FUNCTION IASI_F
+  
+  
+  ! Function to compute the resampling
+  ! interpolation indices
+  FUNCTION IASI_Resample_Idx( f, f_int ) RESULT( idx )
+    REAL(fp), INTENT(IN) :: f(:), f_int(:)
+    INTEGER :: idx(SIZE(f_int))
+    idx = Value_Locate( f, f_int )
+  END FUNCTION IASI_Resample_Idx
+  
+  
+  ! Function to resample a spectrum to the
+  ! IASI required frequencies,
+  ! f = 645 + 0.25*(n-1), n=1,8461
+  FUNCTION IASI_Resample( f_in       , &  ! Input
+                          spc_in     , &  ! Input
+                          f_out      , &  ! Input
+                          spc_out    , &  ! Output
+                          f_idx      , &  ! Optional Input
+                          Message_Log) &  ! Error messaging
+                        RESULT( Error_Status )
+    ! Arguments
+    REAL(fp)    ,           INTENT(IN)  :: f_in(:) , spc_in(:), f_out(:)
+    REAL(fp)    ,           INTENT(OUT) :: spc_out(:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: f_idx(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IASI_Resample'
+    ! Local variables
+    INTEGER :: idx(SIZE(f_out))
+    
+    Error_Status = SUCCESS
+    
+    IF ( PRESENT(f_idx) ) THEN
+      idx = f_idx
+    ELSE
+      idx = Value_Locate( f_in, f_out )
+    END IF
+    
+    Error_Status = Linear_Interpolate( f_in     , &  ! Input
+                                       spc_in   , &  ! Input
+                                       f_out    , &  ! Input
+                                       spc_out  , &  ! Output
+                                       x_idx=idx  )  ! Optional input
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error interpolating input IASI spectrum', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+                            
+  END FUNCTION IASI_Resample
 
 END MODULE IASI_Define
