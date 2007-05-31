@@ -148,10 +148,8 @@ PROGRAM Test_K_Matrix
   END IF
 
 
-  ! Set the adjoint values
-  ! ----------------------
   ! Copy the atmosphere and surface structures
-  ! (inefficient, but 'eh'.)
+  ! ------------------------------------------
   DO l = 1, nChannels
     Error_Status = CRTM_Assign_Atmosphere( Atm, Atm_K(l,:) )
     IF ( Error_Status /= SUCCESS ) THEN 
@@ -168,13 +166,7 @@ PROGRAM Test_K_Matrix
       STOP
     END IF
   END DO
-  ! Zero the K-matric structures
-  CALL CRTM_Zero_Atmosphere( Atm_K )
-  CALL CRTM_Zero_Surface( Sfc_K )
   
-  ! The results are all dTb/dx...
-  RTSolution_K%Brightness_Temperature = ONE
-
 
   ! Allocate the Options input
   ! --------------------------
@@ -260,8 +252,19 @@ PROGRAM Test_K_Matrix
                     Message_Log=MESSAGE_LOG)
 
 
+    ! Initialise the K-matrix arguments
+    ! ---------------------------------
+    ! Zero the K-matrix output structures
+    CALL CRTM_Zero_Atmosphere( Atm_K )
+    CALL CRTM_Zero_Surface( Sfc_K )
+
+    ! Set the K-matrix input so that results are all dTb/dx...
+    RTSolution_K%Brightness_Temperature = ONE
+
+
     ! Call the CRTM K-matrix model
     ! ----------------------------
+    
     CALL Begin_Timing( Timing )
     Error_Status = CRTM_K_Matrix( Atm            , &  
                                   Sfc            , &  
