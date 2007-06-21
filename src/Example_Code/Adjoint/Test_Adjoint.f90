@@ -286,9 +286,9 @@ PROGRAM Test_Adjoint
     CALL Read_AtmSfc_TestFile( Exp_ID, Atm_Baseline, Sfc_Baseline )
     
     ! Compare them
-    Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_AD )
+    Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_AD, Check_All=1 )
     CALL Assert_Equal(Atm_Status,SUCCESS)
-    Sfc_Status = CRTM_Equal_Surface(    Sfc_Baseline, Sfc_AD )
+    Sfc_Status = CRTM_Equal_Surface(    Sfc_Baseline, Sfc_AD, Check_All=1 )
     CALL Assert_Equal(Atm_Status,SUCCESS)
 
   END DO

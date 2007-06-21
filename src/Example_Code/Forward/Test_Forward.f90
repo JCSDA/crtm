@@ -244,10 +244,10 @@ PROGRAM Test_Forward
     CALL Write_RTSolution_TestFile( Exp_ID, ChannelInfo, RTSolution )
     
     ! Read baseline results
-    CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline )
+    CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=2 )
     
     ! Perform the test
-    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution )
+    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution, Check_All=1 )
     CALL Assert_Equal(Error_Status,SUCCESS)
 
   END DO

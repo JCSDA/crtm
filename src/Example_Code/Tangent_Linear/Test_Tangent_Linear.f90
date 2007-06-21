@@ -295,10 +295,10 @@ PROGRAM Test_Tangent_Linear
     CALL Write_RTSolution_TestFile( Exp_ID, ChannelInfo, RTSolution_TL )
     
     ! Read baseline results
-    CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline )
+    CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=2 )
     
     ! Compare them
-    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution_TL )
+    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution_TL, Check_All=1 )
     CALL Assert_Equal(Error_Status,SUCCESS)
 
   END DO

@@ -296,9 +296,9 @@ PROGRAM Test_K_Matrix
     CALL Read_AtmSfc_TestFile( Exp_ID, ChannelInfo, Atm_Baseline, Sfc_Baseline )
     
     ! Compare them
-    Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_K )
+    Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_K, Check_All=1 )
     CALL Assert_Equal(Atm_Status,SUCCESS)
-    Sfc_Status = CRTM_Equal_Surface(    Sfc_Baseline, Sfc_K )
+    Sfc_Status = CRTM_Equal_Surface(    Sfc_Baseline, Sfc_K, Check_All=1 )
     CALL Assert_Equal(Sfc_Status,SUCCESS)
 
   END DO
