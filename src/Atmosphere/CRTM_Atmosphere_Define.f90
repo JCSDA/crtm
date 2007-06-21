@@ -2415,10 +2415,14 @@ CONTAINS
                                 Atmosphere_RHS%Level_Pressure(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Level_Pressure values are different at level ",i0,&
+                        &":",2(1x,es13.6))') &
+                       k, Atmosphere_LHS%Level_Pressure(k), &
+                          Atmosphere_RHS%Level_Pressure(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Level_Pressure values are different', &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log=Message_Log )
+                              Message_Log = Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
@@ -2428,10 +2432,14 @@ CONTAINS
                                 Atmosphere_RHS%Pressure(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Pressure values are different at level ",i0,&
+                        &":",2(1x,es13.6))') &
+                       k, Atmosphere_LHS%Pressure(k), &
+                          Atmosphere_RHS%Pressure(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Pressure values are different', &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log=Message_Log )
+                              Message_Log = Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
@@ -2441,6 +2449,14 @@ CONTAINS
                                 Atmosphere_RHS%Temperature(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Temperature values are different at level ",i0,&
+                        &":",2(1x,es13.6))') &
+                       k, Atmosphere_LHS%Temperature(k), &
+                          Atmosphere_RHS%Temperature(k)
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
         CALL Display_Message( ROUTINE_NAME, &
                               'Temperature values are different', &
                               Error_Status, &
@@ -2455,8 +2471,12 @@ CONTAINS
                                   Atmosphere_RHS%Absorber(k,j), &
                                   ULP = ULP ) ) THEN
           Error_Status = FAILURE
+          WRITE( Message,'("Absorber values are different at level ",i0,&
+                          &" for absorber ",i0,":",2(1x,es13.6))') &
+                         k, j, Atmosphere_LHS%Absorber(k,j), &
+                               Atmosphere_RHS%Absorber(k,j)
           CALL Display_Message( ROUTINE_NAME, &
-                                'Absorber values are different', &
+                                TRIM(Message), &
                                 Error_Status, &
                                 Message_Log=Message_Log )
           IF ( Check_Once ) RETURN
