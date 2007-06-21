@@ -107,6 +107,12 @@ MODULE CRTM_Test_Utility
 !  CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
 !    (/ 'amsua_n18' , &
 !       'hirs4_n18' /)
+!  INTEGER, PARAMETER :: MAX_NSENSORS=4
+!  CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
+!    (/ 'amsua_n17', &
+!       'hirs3_n17', &
+!       'ssmis_f16', &
+!       'imgr_g11 ' /)
   INTEGER, PARAMETER :: MAX_NSENSORS=7
   CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
     (/ 'amsua_n17', &
@@ -156,9 +162,9 @@ CONTAINS
     WRITE(*,200)
     DO l = 1, ChannelInfo%n_Channels
       WRITE(*,300) ChannelInfo%Channel_Index(l), &
-                   ChannelInfo%SensorID(l), &
-                   ChannelInfo%WMO_Satellite_ID(l), &
-                   ChannelInfo%WMO_Sensor_ID(l), &
+                   ChannelInfo%SensorID, &
+                   ChannelInfo%WMO_Satellite_ID, &
+                   ChannelInfo%WMO_Sensor_ID, &
                    ChannelInfo%Sensor_Channel(l)
     END DO
 
@@ -196,7 +202,6 @@ CONTAINS
     ! Local variables
     INTEGER :: Error_Status
     CHARACTER(7)   :: Status
-    CHARACTER(256) :: SensorID
     CHARACTER(256) :: Filename
     INTEGER :: l1, l2, l, m, n
     INTEGER :: nSensors, nChannels, nProfiles
@@ -220,9 +225,8 @@ CONTAINS
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
       nChannels = ChannelInfo(n)%n_Channels
       
-      ! Assumption is one sensor per ChannelInfo element
-      SensorID = ChannelInfo(n)%SensorID(1)
-      Filename = TRIM(SensorID)//TRIM(Experiment)//'.bin'
+      ! Create filename
+      Filename = TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin'
       
       ! Write the RTSolution data for the current sensor
       Error_Status = CRTM_Write_RTSolution_Binary( Filename, &
@@ -256,17 +260,18 @@ CONTAINS
 
   SUBROUTINE Read_RTSolution_TestFile( Experiment , &
                                        ChannelInfo, &
-                                       RTSolution   )
+                                       RTSolution , &
+                                       Quiet        )
     ! Arguments
     CHARACTER(*),                INTENT(IN)     :: Experiment
     TYPE(CRTM_ChannelInfo_type), INTENT(IN)     :: ChannelInfo(:)   ! N
     TYPE(CRTM_RTSolution_type) , INTENT(IN OUT) :: RTSolution(:,:)  ! L x M
+    INTEGER,           OPTIONAL, INTENT(IN)     :: Quiet
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_RTSolution_TestFile'
     ! Local variables
     INTEGER :: Error_Status
     CHARACTER(7)   :: Status
-    CHARACTER(256) :: SensorID
     CHARACTER(256) :: Filename
     INTEGER :: l1, l2, l, m, n
     INTEGER :: nSensors, nChannels, nProfiles
@@ -290,14 +295,13 @@ CONTAINS
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
       nChannels = ChannelInfo(n)%n_Channels
       
-      ! Assumption is one sensor per ChannelInfo element
-      SensorID = ChannelInfo(n)%SensorID(1)
-      Filename = TRIM(SensorID)//TRIM(Experiment)//'.bin.Baseline'
+      ! Create filename
+      Filename = TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin.Baseline'
       
       ! Read the RTSolution data for the current sensor
       Error_Status = CRTM_Read_RTSolution_Binary( Filename, &
                                                   RTSolution(l1:l2,:), &
-                                                  Quiet=1 )
+                                                  Quiet=Quiet )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error reading file '//TRIM(Filename), &
@@ -378,7 +382,6 @@ CONTAINS
     ! Local variables
     INTEGER :: Error_Status
     CHARACTER(7)   :: Status
-    CHARACTER(256) :: SensorID
     CHARACTER(256) :: AtmFile, SfcFile
     INTEGER :: l1, l2, l, m, n
     INTEGER :: nSensors, nChannels
@@ -401,11 +404,8 @@ CONTAINS
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
       nChannels = ChannelInfo(n)%n_Channels
       
-      ! Assumption is one sensor per ChannelInfo element
-      SensorID = ChannelInfo(n)%SensorID(1)
-      
       ! Write the Atmosphere data for the current sensor
-      AtmFile = TRIM(SensorID)//'.atm'//TRIM(Experiment)//'.bin'
+      AtmFile = TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin'
       Error_Status = CRTM_Write_Atmosphere_Binary( AtmFile, &
                                                    Atm(l1:l2,:), &
                                                    Quiet=1 )
@@ -417,7 +417,7 @@ CONTAINS
       END IF
 
       ! Write the Atmosphere data for the current sensor
-      SfcFile = TRIM(SensorID)//'.sfc'//TRIM(Experiment)//'.bin'
+      SfcFile = TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin'
       Error_Status = CRTM_Write_Surface_Binary( SfcFile, &
                                                 Sfc(l1:l2,:), &
                                                 Quiet=1 )
@@ -502,7 +502,6 @@ CONTAINS
     ! Local variables
     INTEGER :: Error_Status
     CHARACTER(7)   :: Status
-    CHARACTER(256) :: SensorID
     CHARACTER(256) :: AtmFile, SfcFile
     INTEGER :: l1, l2, l, m, n
     INTEGER :: nSensors, nChannels, nProfiles
@@ -525,11 +524,8 @@ CONTAINS
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
       nChannels = ChannelInfo(n)%n_Channels
       
-      ! Assumption is one sensor per ChannelInfo element
-      SensorID = ChannelInfo(n)%SensorID(1)
-      
       ! Read the Atmosphere data for the current sensor
-      AtmFile = TRIM(SensorID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
+      AtmFile = TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
       Error_Status = CRTM_Read_Atmosphere_Binary( AtmFile, &
                                                   Atm(l1:l2,:), &
                                                   Quiet=1 )
@@ -541,7 +537,7 @@ CONTAINS
       END IF
 
       ! Read the Atmosphere data for the current sensor
-      SfcFile = TRIM(SensorID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
+      SfcFile = TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
       Error_Status = CRTM_Read_Surface_Binary( SfcFile, &
                                                Sfc(l1:l2,:), &
                                                Quiet=1 )
