@@ -288,12 +288,13 @@ CONTAINS
                                    (reflectivity(1,1)*RTV%e_Level_Rad_DOWN(n_Layers))
 
     ! Solar contribution to the upward radiance at the surface
+    RTV%Down_Solar_Radiance = ZERO
     IF( Is_Solar_Channel /= 0 ) THEN
       cosine_u0 = COS(Source_Zenith_Radian)
       IF( cosine_u0 > ZERO) THEN
-      RTV%Down_Solar_Radiance = cosine_u0*EXP(-RTV%Total_OD/cosine_u0)*Solar_Irradiance/PI
-      RTV%e_Level_Rad_UP(n_Layers) = RTV%e_Level_Rad_UP(n_Layers) + &
-        (RTV%Down_Solar_Radiance*direct_reflectivity(1))
+        RTV%Down_Solar_Radiance = cosine_u0*EXP(-RTV%Total_OD/cosine_u0)*Solar_Irradiance/PI
+        RTV%e_Level_Rad_UP(n_Layers) = RTV%e_Level_Rad_UP(n_Layers) + &
+          (RTV%Down_Solar_Radiance*direct_reflectivity(1))
       END IF
     END IF
 
@@ -2390,6 +2391,8 @@ CONTAINS
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
     Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
     Is_Solar_Channel           = SC(SensorIndex)%Is_Solar_Channel(ChannelIndex)
+
+
 
     ! -------------------------------------------
     ! Determine the surface emission behavior

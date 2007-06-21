@@ -1269,8 +1269,11 @@ CONTAINS
                               RTSolution_RHS%Down_Solar_Radiance, &
                               ULP = ULP ) ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Down_Solar_Radiance values are different:",2(1x,es13.6))') &
+                     RTSolution_LHS%Down_Solar_Radiance, &
+                     RTSolution_RHS%Down_Solar_Radiance
       CALL Display_Message( ROUTINE_NAME, &
-                            'Down_Solar_Radiance values are different', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log = Message_Log )
       IF ( Check_Once ) RETURN

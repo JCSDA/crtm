@@ -436,12 +436,15 @@ CONTAINS
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this argument to suppress INFORMATION messages
+!       Quiet:        Set this argument to suppress non-ERROR messages
 !                     being printed to standard output (or the message
 !                     log file if the Message_Log optional argument is
-!                     used.) By default, INFORMATION messages are printed.
-!                     If QUIET = 0, INFORMATION messages are OUTPUT.
-!                        QUIET = 1, INFORMATION messages are SUPPRESSED.
+!                     used.) By default, INFORMATION and WARNING messages
+!                     are printed.
+!                     If QUIET = 0, All messages are output.
+!                        QUIET = 1, INFORMATION messages are suppressed.
+!                        QUIET = 2, WARNING and INFORMATION messages
+!                                   are suppressed.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -514,7 +517,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_RTSolution_Binary(L x M)'
     ! Function variables
     CHARACTER(256) :: Message
-    LOGICAL :: Noisy
+    LOGICAL :: Output_Information, Output_Warning
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
     INTEGER :: FileID
@@ -535,9 +538,16 @@ CONTAINS
     END IF
 
     ! Check Quiet optional argument
-    Noisy = .TRUE.
+    Output_Information = .TRUE.
+    Output_Warning     = .TRUE.
     IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
+      SELECT CASE (Quiet)
+        CASE (1); Output_Information = .FALSE.
+        CASE (2); Output_Information = .FALSE.
+                  Output_Warning     = .FALSE.
+        CASE DEFAULT
+          ! Do nothing
+      END SELECT
     END IF
 
 
@@ -566,10 +576,10 @@ CONTAINS
                         &"structure array dimension, ",i0,". Only the first ",i0, &
                         &" channel RTSolution structures will be read." )' ) &
                       n_File_Channels, n_Input_Channels, n_Input_Channels
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+      IF ( Output_Warning ) CALL Display_Message( ROUTINE_NAME, &
+                                                  TRIM(Message), &
+                                                  WARNING, &
+                                                  Message_Log=Message_Log )
     END IF
     n_Input_Channels = MIN(n_Input_Channels, n_File_Channels)
     
@@ -580,10 +590,10 @@ CONTAINS
                         &"structure array dimension, ",i0,". Only the first ",i0, &
                         &" profile RTSolution structures will be read." )' ) &
                       n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+      IF ( Output_Warning ) CALL Display_Message( ROUTINE_NAME, &
+                                                  TRIM(Message), &
+                                                  WARNING, &
+                                                  Message_Log=Message_Log )
     END IF
     n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
@@ -631,7 +641,7 @@ CONTAINS
 
     ! Output an info message
     ! ----------------------
-    IF ( Noisy ) THEN
+    IF ( Output_Information ) THEN
       WRITE( Message, '("Number of channels and profiles read from ",a,": ",i0,1x,i0 )' ) &
                       TRIM(Filename), n_Input_Channels, n_Input_Profiles
       CALL Display_Message( ROUTINE_NAME, &
