@@ -134,6 +134,14 @@ CONTAINS
 !                       DIMENSION:  Rank-1 (nSensors)
 !                       ATTRIBUTES: INTENT(IN)
 !
+! OUTPUT ARGUMENTS:
+!       RTSolution:     Structure containing the soluition to the RT equation
+!                       for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(CRTM_RTSolution_type)
+!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Options:        Options structure containing the optional arguments
 !                       for the CRTM.
@@ -150,14 +158,6 @@ CONTAINS
 !                       TYPE:       CHARACTER(*)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution:     Structure containing the soluition to the RT equation
-!                       for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_RTSolution_type)
-!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
-!                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:         Character string containing the Revision Control
@@ -433,8 +433,8 @@ CONTAINS
       ! ------------------------------------------
       CALL CRTM_Compute_Predictors( Atmosphere(m)  , &  ! Input
                                     GeometryInfo(m), &  ! Input
-                                    Predictor   , &  ! Output
-                                    APV           )  ! Internal variable output
+                                    Predictor      , &  ! Output
+                                    APV              )  ! Internal variable output
 
       ! Initialise channel counter for sensor(n)/channel(l) count
       ln = 0
@@ -444,8 +444,8 @@ CONTAINS
       ! -----------
       Sensor_Loop: DO n = 1, nSensors
 
-        ! Descriptive name
-        SensorIndex = n
+        ! Shorter name
+        SensorIndex = ChannelInfo(n)%Sensor_Index
 
         ! ------------
         ! Channel loop
@@ -498,7 +498,7 @@ CONTAINS
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE(Message,'("Error computing CloudScatter for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -523,7 +523,7 @@ CONTAINS
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE(Message,'("Error computing AerosolScatter for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -582,7 +582,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing RTSolution for ", a, &
                               &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID(l) ), &
+                            TRIM( ChannelInfo(n)%SensorID ), &
                             ChannelInfo(n)%Sensor_Channel(l)
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &

@@ -55,17 +55,17 @@ CONTAINS
 !       Function to initialise the CRTM.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Init( ChannelInfo,                           &  ! Output
-!                                 SensorID          = SensorID,          &  ! Optional input
-!                                 CloudCoeff_File   = CloudCoeff_File,   &  ! Optional input
-!                                 AerosolCoeff_File = AerosolCoeff_File, &  ! Optional input
-!                                 EmisCoeff_File    = EmisCoeff_File,    &  ! Optional input
-!                                 File_Path         = File_Path,         &  ! Optional input
-!                                 Quiet             = Quiet,             &  ! Optional input
-!                                 Process_ID        = Process_ID,        &  ! Optional input
-!                                 Output_Process_ID = Output_Process_ID, &  ! Optional input
-!                                 RCS_Id            = RCS_Id,            &  ! Revision control
-!                                 Message_Log       = Message_Log        )  ! Error messaging
+!       Error_Status = CRTM_Init( ChannelInfo                        , &  ! Output
+!                                 SensorID         =SensorID         , &  ! Optional input
+!                                 CloudCoeff_File  =CloudCoeff_File  , &  ! Optional input
+!                                 AerosolCoeff_File=AerosolCoeff_File, &  ! Optional input
+!                                 EmisCoeff_File   =EmisCoeff_File   , &  ! Optional input
+!                                 File_Path        =File_Path        , &  ! Optional input
+!                                 Quiet            =Quiet            , &  ! Optional input
+!                                 Process_ID       =Process_ID       , &  ! Optional input
+!                                 Output_Process_ID=Output_Process_ID, &  ! Optional input
+!                                 RCS_Id           =RCS_Id           , &  ! Revision control
+!                                 Message_Log      =Message_Log        )  ! Error messaging
 !
 ! OUTPUT ARGUMENTS:
 !       ChannelInfo:        ChannelInfo structure array populated based on
@@ -217,17 +217,17 @@ CONTAINS
                     RESULT( Error_Status )
 
     ! Arguments
-    TYPE(CRTM_ChannelInfo_type),           INTENT(IN OUT) :: ChannelInfo(:)
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: SensorID(:)
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: CloudCoeff_File
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: EmisCoeff_File
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: File_Path
-    INTEGER                    , OPTIONAL, INTENT(IN)     :: Quiet
-    INTEGER                    , OPTIONAL, INTENT(IN)     :: Process_ID
-    INTEGER                    , OPTIONAL, INTENT(IN)     :: Output_Process_ID
-    CHARACTER(*)               , OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: SensorID(:)
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: CloudCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: EmisCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: File_Path
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Quiet
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Output_Process_ID
+    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -238,7 +238,7 @@ CONTAINS
     CHARACTER(SL) :: Default_EmisCoeff_File
     INTEGER :: l, n, nSensors
 
-    ! ------
+
     ! Set up
     ! ------
     Error_Status = SUCCESS
@@ -294,7 +294,6 @@ CONTAINS
     END IF
 
 
-    ! ------------------------------
     ! Load the spectral coefficients
     ! ------------------------------
     Error_Status = CRTM_Load_SpcCoeff( SensorID         =SensorID         , &
@@ -312,7 +311,6 @@ CONTAINS
     END IF
 
 
-    ! ------------------------------------
     ! Load the gas absorption coefficients
     ! ------------------------------------
     Error_Status = CRTM_Load_TauCoeff( SensorID         =SensorID         , &
@@ -330,7 +328,6 @@ CONTAINS
     END IF
 
 
-    ! ---------------------------
     ! Load the cloud coefficients
     ! ---------------------------
     Error_Status = CRTM_Load_CloudCoeff( TRIM( Default_CloudCoeff_File )    , &
@@ -348,7 +345,6 @@ CONTAINS
     END IF
 
 
-    ! -----------------------------
     ! Load the aerosol coefficients
     ! -----------------------------
     Error_Status = CRTM_Load_AerosolCoeff( TRIM( Default_AerosolCoeff_File )  , &
@@ -366,7 +362,6 @@ CONTAINS
     END IF
 
 
-    ! ---------------------------
     ! Load the IRSSE coefficients
     ! ---------------------------
     Error_Status = CRTM_Load_EmisCoeff( TRIM( Default_EmisCoeff_File ), &
@@ -382,13 +377,13 @@ CONTAINS
                             Message_Log=Message_Log )
       RETURN
     END IF
-
-
-    ! ------------------------------
+    
+    
     ! Load the ChannelInfo structure
     ! ------------------------------
     ! **** THIS CODE ASSUMES USING ALL CHANNELS ****
     DO n = 1, nSensors
+
       ! Allocate the ChannelInfo structure
       Error_Status = CRTM_Allocate_ChannelInfo( SC(n)%n_Channels, &
                                                 ChannelInfo(n), &
@@ -400,13 +395,21 @@ CONTAINS
                               Message_Log=Message_Log )
         RETURN
       END IF
+
+      ! Copy sensor id info (eventually, SC components should be scalar)
+      ChannelInfo(n)%SensorID         = SC(n)%Sensor_Descriptor(1)
+      ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID(1)
+      ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID(1)
+
+      ! Copy over channel numbers
+      ChannelInfo(n)%Sensor_Channel = SC(n)%Sensor_Channel
+
+      ! Set the Sensor_Index component
+      ChannelInfo(n)%Sensor_Index = n
+      
       ! Fill the Channel_Index component
+      ! **** THIS IS WHERE CHANNEL SELECTION COULD OCCUR ****
       ChannelInfo(n)%Channel_Index = (/(l, l=1,SC(n)%n_Channels)/)
-      ! Fill the rest of the ChannelInfo structure
-      ChannelInfo(n)%SensorID         = SC(n)%Sensor_Descriptor
-      ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID
-      ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID
-      ChannelInfo(n)%Sensor_Channel   = SC(n)%Sensor_Channel
     END DO
     
   END FUNCTION CRTM_Init
@@ -487,10 +490,10 @@ CONTAINS
                          Message_Log ) &  ! Error messaging
                        RESULT ( Error_Status )
     ! Arguments
-    TYPE(CRTM_ChannelInfo_type),           INTENT(IN OUT) :: ChannelInfo(:)
-    INTEGER                    , OPTIONAL, INTENT(IN)     :: Process_ID
-    CHARACTER(*)               , OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*)               , OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
+    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -500,13 +503,16 @@ CONTAINS
     INTEGER :: n, nSensors
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! The number of sensors
     nSensors = SIZE(ChannelInfo)
-    
+
+
     ! Destroy all the structures
+    ! --------------------------
     DO n = 1, nSensors
       Destroy_Status = CRTM_Destroy_ChannelInfo( ChannelInfo(n)         , &
                                                  Message_Log=Message_Log  )

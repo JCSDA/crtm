@@ -536,8 +536,8 @@ CONTAINS
       ! -----------
       Sensor_Loop: DO n = 1, nSensors
 
-        ! Descriptive name
-        SensorIndex = n
+        ! Shorter name
+        SensorIndex = ChannelInfo(n)%Sensor_Index
 
         ! ------------
         ! Channel loop
@@ -594,7 +594,7 @@ CONTAINS
             IF (Error_Status /= SUCCESS) THEN
               WRITE(Message,'("Error computing CloudScatter for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -619,7 +619,7 @@ CONTAINS
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE(Message,'("Error computing AerosolScatter for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -678,7 +678,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing RTSolution for ", a, &
                               &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID(l) ), &
+                            TRIM( ChannelInfo(n)%SensorID ), &
                             ChannelInfo(n)%Sensor_Channel(l)
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
@@ -725,7 +725,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing RTSolution_AD for ", a, &
                               &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID(l) ), &
+                            TRIM( ChannelInfo(n)%SensorID ), &
                             ChannelInfo(n)%Sensor_Channel(l)
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
@@ -765,7 +765,7 @@ CONTAINS
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE(Message,'("Error computing AerosolScatter_AD for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -792,7 +792,7 @@ CONTAINS
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE(Message,'("Error computing CloudScatter_AD for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &

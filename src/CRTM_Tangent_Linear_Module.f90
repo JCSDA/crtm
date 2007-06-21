@@ -156,6 +156,21 @@ CONTAINS
 !                       DIMENSION:  Rank-1 (nSensors)
 !                       ATTRIBUTES: INTENT(IN)
 !
+! OUTPUT ARGUMENTS:
+!       RTSolution:     Structure containing the solution to the RT equation
+!                       for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(CRTM_RTSolution_type)
+!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       RTSolution_TL:  Structure containing the solution to the tangent-
+!                       linear RT equation for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(CRTM_RTSolution_type)
+!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Options:        Options structure containing the optional forward model
 !                       arguments for the CRTM.
@@ -172,22 +187,6 @@ CONTAINS
 !                       TYPE:       CHARACTER(*)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution:     Structure containing the solution to the RT equation
-!                       for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_RTSolution_type)
-!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       RTSolution_TL:  Structure containing the solution to the tangent-
-!                       linear RT equation for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_RTSolution_type)
-!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:         Character string containing the Revision Control
@@ -521,8 +520,8 @@ CONTAINS
       ! -----------
       Sensor_Loop: DO n = 1, nSensors
 
-        ! Descriptive name
-        SensorIndex = n
+        ! Shorter name
+        SensorIndex = ChannelInfo(n)%Sensor_Index
 
         ! ------------
         ! Channel loop
@@ -592,7 +591,7 @@ CONTAINS
               Error_Status = FAILURE
               WRITE(Message,'("Error computing CloudScatter for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -627,7 +626,7 @@ CONTAINS
               Error_Status = FAILURE
               WRITE(Message,'("Error computing AerosolScatter for ",a,&
                              &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID(l) ), &
+                              TRIM( ChannelInfo(n)%SensorID ), &
                               ChannelInfo(n)%Sensor_Channel(l)
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
@@ -696,7 +695,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing RTSolution for ", a, &
                               &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID(l) ), &
+                            TRIM( ChannelInfo(n)%SensorID ), &
                             ChannelInfo(n)%Sensor_Channel(l)
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
@@ -724,7 +723,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing RTSolution_TL for ", a, &
                               &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID(l) ), &
+                            TRIM( ChannelInfo(n)%SensorID ), &
                             ChannelInfo(n)%Sensor_Channel(l)
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
