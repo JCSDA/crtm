@@ -18,8 +18,7 @@ MODULE CRTM_ChannelInfo_Define
   ! Module use
   USE Type_Kinds
   USE Message_Handler
-  USE CRTM_Parameters, ONLY: INVALID_NCEP_SENSOR_ID, &
-                             INVALID_WMO_SATELLITE_ID, &
+  USE CRTM_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                              INVALID_WMO_SENSOR_ID   , &
                              SET, STRLEN
   ! Disable implicit typing
@@ -53,23 +52,27 @@ MODULE CRTM_ChannelInfo_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_ChannelInfo_Define.f90,v 1.8 2006/05/02 14:58:34 dgroff Exp $'
+  '$Id$'
   ! ChannelInfo scalar invalid value
   INTEGER, PARAMETER :: INVALID = -1
 
 
-  ! -------------------------------
+  ! --------------------------------
   ! ChannelInfo data type definition
-  ! -------------------------------
+  ! --------------------------------
   TYPE :: CRTM_ChannelInfo_type
     INTEGER :: n_Allocates = 0
+    ! Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
     INTEGER :: StrLen = STRLEN
-    CHARACTER(STRLEN), DIMENSION(:), POINTER :: SensorID         => NULL()  ! L
-    INTEGER,           DIMENSION(:), POINTER :: WMO_Satellite_ID => NULL()  ! L
-    INTEGER,           DIMENSION(:), POINTER :: WMO_Sensor_ID    => NULL()  ! L
-    INTEGER,           DIMENSION(:), POINTER :: Sensor_Channel   => NULL()  ! L
-    INTEGER,           DIMENSION(:), POINTER :: Channel_Index    => NULL()  ! L
+    ! Scalar data
+    CHARACTER(STRLEN) :: SensorID         = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    INTEGER           :: Sensor_Index     = 0
+    ! Array data
+    INTEGER, POINTER :: Sensor_Channel(:) => NULL()  ! L
+    INTEGER, POINTER :: Channel_Index(:)  => NULL()  ! L
   END TYPE CRTM_ChannelInfo_type
 
 
@@ -116,8 +119,11 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_ChannelInfo( ChannelInfo )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo
-    ChannelInfo%n_Channels = 0
     ChannelInfo%StrLen = STRLEN
+    ChannelInfo%SensorID         = ' '
+    ChannelInfo%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    ChannelInfo%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    ChannelInfo%Sensor_Index     = 0
   END SUBROUTINE CRTM_Clear_ChannelInfo
 
 
@@ -177,10 +183,6 @@ CONTAINS
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Associated_ChannelInfo( ChannelInfo, & ! Input
@@ -188,12 +190,14 @@ CONTAINS
                                       RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
-    INTEGER,             OPTIONAL, INTENT(IN) :: ANY_Test
+    INTEGER,           OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
     LOGICAL :: ALL_Test
 
+    ! Set up
+    ! ------
     ! Default is to test ALL the pointer members
     ! for a true association status....
     ALL_Test = .TRUE.
@@ -202,22 +206,18 @@ CONTAINS
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
 
+
     ! Test the structure pointer association
+    ! --------------------------------------
     Association_Status = .FALSE.
     IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( ChannelInfo%SensorID         ) .AND. &
-           ASSOCIATED( ChannelInfo%WMO_Satellite_ID ) .AND. &
-           ASSOCIATED( ChannelInfo%WMO_Sensor_ID    ) .AND. &
-           ASSOCIATED( ChannelInfo%Sensor_Channel   ) .AND. &
-           ASSOCIATED( ChannelInfo%Channel_Index    )       ) THEN
+      IF ( ASSOCIATED( ChannelInfo%Sensor_Channel ) .AND. &
+           ASSOCIATED( ChannelInfo%Channel_Index  )       ) THEN
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF ( ASSOCIATED( ChannelInfo%SensorID         ) .OR. &
-           ASSOCIATED( ChannelInfo%WMO_Satellite_ID ) .OR. &
-           ASSOCIATED( ChannelInfo%WMO_Sensor_ID    ) .OR. &
-           ASSOCIATED( ChannelInfo%Sensor_Channel   ) .OR. &
-           ASSOCIATED( ChannelInfo%Channel_Index    )      ) THEN
+      IF ( ASSOCIATED( ChannelInfo%Sensor_Channel ) .OR. &
+           ASSOCIATED( ChannelInfo%Channel_Index  )      ) THEN
         Association_Status = .TRUE.
       END IF
     END IF
@@ -239,6 +239,13 @@ CONTAINS
 !                                                RCS_Id     =RCS_Id     , &  ! Revision control
 !                                                Message_Log=Message_Log  )  ! Error messaging
 ! 
+! OUTPUT ARGUMENTS:
+!       ChannelInfo:  Re-initialized ChannelInfo structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_ChannelInfo_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
 !                     Messages will be logged. If not specified, or if an
@@ -248,13 +255,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       ChannelInfo:  Re-initialized ChannelInfo structure.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_ChannelInfo_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
@@ -283,10 +283,6 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Destroy_ChannelInfo( ChannelInfo, &  ! Output
@@ -309,28 +305,29 @@ CONTAINS
     INTEGER :: Allocate_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+    ! Re-initialise the dimensions
+    ChannelInfo%n_Channels = 0
+    
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
-
-    ! Initialise the scalar members
     IF ( Clear ) CALL CRTM_Clear_ChannelInfo( ChannelInfo )
 
     ! If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. CRTM_Associated_ChannelInfo( ChannelInfo ) ) RETURN
 
-    ! Deallocate the pointer members
-    DEALLOCATE( ChannelInfo%SensorID        , &
-                ChannelInfo%WMO_Satellite_ID, &
-                ChannelInfo%WMO_Sensor_ID   , &
-                ChannelInfo%Sensor_Channel  , &
-                ChannelInfo%Channel_Index   , &
+
+    ! Deallocate the array components
+    ! -------------------------------
+    DEALLOCATE( ChannelInfo%Sensor_Channel , &
+                ChannelInfo%Channel_Index  , &
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -342,7 +339,9 @@ CONTAINS
                             Message_Log=Message_Log )
     END IF
 
+
     ! Decrement and test allocation counter
+    ! -------------------------------------
     ChannelInfo%n_Allocates = ChannelInfo%n_Allocates - 1
     IF ( ChannelInfo%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
@@ -379,6 +378,13 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
+! OUTPUT ARGUMENTS:
+!       ChannelInfo:  ChannelInfo structure with allocated pointer members
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_ChannelInfo_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
 !                     Messages will be logged. If not specified, or if an
@@ -388,14 +394,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       ChannelInfo:  ChannelInfo structure with allocated pointer members
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_ChannelInfo_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
@@ -425,10 +423,6 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Allocate_ChannelInfo( n_Channels , &  ! Input
@@ -450,10 +444,11 @@ CONTAINS
     INTEGER :: Allocate_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Dimensions
+    ! Check dimensions
     IF ( n_Channels < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -464,10 +459,9 @@ CONTAINS
     END IF
 
     ! Check if ANY pointers are already associated
-    ! If they are, deallocate them but leave scalars.
+    ! If so, then destroy structure
     IF ( CRTM_Associated_ChannelInfo( ChannelInfo, ANY_Test=SET ) ) THEN
       Error_Status = CRTM_Destroy_ChannelInfo( ChannelInfo, &
-                                               No_Clear   =SET, &
                                                Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
@@ -478,12 +472,11 @@ CONTAINS
       END IF
     END IF
 
-    ! Allocate the structure
-    ALLOCATE( ChannelInfo%SensorID(n_Channels)        , &
-              ChannelInfo%WMO_Satellite_ID(n_Channels), &
-              ChannelInfo%WMO_Sensor_ID(n_Channels)   , &
-              ChannelInfo%Sensor_Channel(n_Channels)  , &
-              ChannelInfo%Channel_Index(n_Channels)   , &
+
+    ! Allocate the arrays
+    ! -------------------
+    ALLOCATE( ChannelInfo%Sensor_Channel(n_Channels), &
+              ChannelInfo%Channel_Index(n_Channels) , &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -496,16 +489,17 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Assign dimensions and initialise variables
+    ! ------------------------------------------
     ChannelInfo%n_Channels = n_Channels
 
-    ChannelInfo%SensorID         = ' '
-    ChannelInfo%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    ChannelInfo%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    ChannelInfo%Sensor_Channel   = INVALID
-    ChannelInfo%Channel_Index    = INVALID
+    ChannelInfo%Sensor_Channel = INVALID
+    ChannelInfo%Channel_Index  = INVALID
+
 
     ! Increment and test the allocation counter
+    ! -----------------------------------------
     ChannelInfo%n_Allocates = ChannelInfo%n_Allocates + 1
     IF ( ChannelInfo%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
@@ -540,6 +534,13 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
+! OUTPUT ARGUMENTS:
+!       ChannelInfo_out: Copy of the input structure, ChannelInfo_in.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_ChannelInfo_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
 !                        Messages will be logged. If not specified, or if an
@@ -549,14 +550,6 @@ CONTAINS
 !                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       ChannelInfo_out: Copy of the input structure, ChannelInfo_in.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_ChannelInfo_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:          Character string containing the Revision Control
@@ -580,10 +573,6 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Assign_ChannelInfo( ChannelInfo_in , &  ! Input
@@ -602,6 +591,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_ChannelInfo'
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -622,7 +612,9 @@ CONTAINS
       END IF
     END IF
 
+
     ! Allocate the structure
+    ! ----------------------
     Error_Status = CRTM_Allocate_ChannelInfo( ChannelInfo_in%n_Channels, &
                                               ChannelInfo_out          , &
                                               Message_Log=Message_Log    )
@@ -634,10 +626,14 @@ CONTAINS
       RETURN
     END IF
 
-    ! Assign array data
+    ! Assign data
+    ! -----------
+    ! Scalars
     ChannelInfo_out%SensorID         = ChannelInfo_in%SensorID
     ChannelInfo_out%WMO_Sensor_ID    = ChannelInfo_in%WMO_Sensor_ID
     ChannelInfo_out%WMO_Satellite_ID = ChannelInfo_in%WMO_Satellite_ID
+    ChannelInfo_out%Sensor_Index     = ChannelInfo_in%Sensor_Index
+    ! Arrays
     ChannelInfo_out%Sensor_Channel   = ChannelInfo_in%Sensor_Channel
     ChannelInfo_out%Channel_Index    = ChannelInfo_in%Channel_Index
 
@@ -671,10 +667,6 @@ CONTAINS
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
 !                    DIMENSION:  Scalar
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Nov-2006
-!                       paul.vandelst@ssec.wisc.edu
 !
 !--------------------------------------------------------------------------------
 
