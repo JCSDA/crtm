@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# $Id$
 
 #-------------------------------------------------------------------------------
 #                        -- USAGE DESCRIPTION FUNCTION --
@@ -7,11 +8,13 @@
 
 usage()
 {
-  echo " Usage: run_SpcCoeff_NC2BIN -l|b[fhs] [-v 4|5|6]"
+  echo " Usage: run_SpcCoeff_NC2BIN -l|b[fhs] [-r 4|5|6]"
   echo
   echo "   Convert any netCDF format SpcCoeff files in the current"
   echo "   directory to Binary format. File with the suffix *.SpcCoeff.nc"
   echo "   are converted into *.SpcCoeff.bin files."
+  echo
+  echo "   $Revision$"
   echo
   echo "     -l       Produce little-endian binary output files"
   echo
@@ -219,43 +222,3 @@ SCRIPT_NAME="`basename $0`"
   done
 
 exit
-
-
-#-------------------------------------------------------------------------------
-#                          -- MODIFICATION HISTORY --
-#-------------------------------------------------------------------------------
-#
-# $Id: run_SpcCoeff_NC2BIN,v 2.4 2006/02/02 19:31:28 paulv Exp $
-#
-# $Date: 2006/02/02 19:31:28 $
-#
-# $Revision: 2.4 $
-#
-# $Name:  $
-#
-# $State: Exp $
-#
-# $Log: run_SpcCoeff_NC2BIN,v $
-# Revision 2.4  2006/02/02 19:31:28  paulv
-# - Corrected bug in default specification of release number.
-#
-# Revision 2.3  2006/01/31 18:25:09  paulv
-# - Corrected inconsistency in EXE_FILE definition.
-#
-# Revision 2.2  2006/01/31 16:14:12  paulv
-# - Added capability to run different versions of the SpcCoeff_NC2BIN code
-#   to create different Releases of the SpcCoeff data files.
-# - Now using Lahey runtime options to switch between little- and big-endian
-#   output.
-#
-# Revision 2.1  2005/07/06 17:07:51  paulv
-# - Added switch, -s, to allow user to select the file type to convert. The
-#   default is to convert SENSOR type files.
-#
-# Revision 2.0  2004/03/09 17:26:48  paulv
-# - New version that uses command line options for arguments.
-#
-#
-#
-#
-

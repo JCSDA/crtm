@@ -10,7 +10,7 @@
 include $(CRTM_SOURCE_ROOT)/make.macros
 
 # This makefile
-MAKEFILE = Makefile
+MAKE_FILE = Makefile
 
 # Executable files
 EXE_FILE = SpcCoeff_NC2BIN
@@ -35,41 +35,13 @@ SRC_FILES = Type_Kinds.f90 \
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
-# Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+# Library and include macros
+NC_LIB = $(HOME)/local/netcdf
+INCLUDES = -I$(NC_LIB)/include
+LIBRARIES = -L$(NC_LIB)/lib -lnetcdf
 
-
-# ------------------
-# Define dependecies
-# ------------------
-# Make based on OS type
-all:
-	@echo "OS type detected: "`uname -s`
-	@case `uname -s` in \
-	  "SunOS")  make -f $(MAKEFILE) build $(SUNOS_FLAGS) ;; \
-	  "AIX")    make -f $(MAKEFILE) build $(AIX_FLAGS) ;; \
-	  "IRIX64") make -f $(MAKEFILE) build $(IRIX64_FLAGS) ;; \
-	  "Linux")  make -f $(MAKEFILE) build $(LINUX_FLAGS) ;; \
-	  *) echo "This system is not supported" ;; \
-	esac
-
-# Build the program
-build: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
-
-# Clean up
-clean:
-	$(REMOVE) $(OBJ_FILES) *.mod *.MOD *.stb
-
-realclean: remove_links clean
-
-# Install it
-install:
-	@if [ -d $(HOME)/bin ]; then \
-	    $(MOVE) $(EXE_FILE) $(HOME)/bin; \
-	fi
-
+# Define common make targets (all, build, clean, install)
+include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source file link creation and removal
 create_links:
@@ -78,11 +50,11 @@ create_links:
 remove_links:
 	@unlinkfiles $(SRC_FILES)
 
+realclean: remove_links clean
+
+
 # Source dependency lists
 include make.dependencies
 
-
-# --------------------
 # Define default rules
-# --------------------
 include $(CRTM_SOURCE_ROOT)/make.rules
