@@ -122,6 +122,9 @@ MODULE CRTM_Test_Utility
        'amsua_n18', &
        'mhs_n18  ', &
        'hirs4_n18' /)
+!  INTEGER, PARAMETER :: MAX_NSENSORS=1
+!  CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
+!    (/ 'airs281SUBSET_aqua' /)
 
   ! Default test angle
   REAL(fp), PARAMETER :: TEST_ANGLE = 30.0_fp
