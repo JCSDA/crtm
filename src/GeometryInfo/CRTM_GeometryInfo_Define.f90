@@ -255,7 +255,6 @@ MODULE CRTM_GeometryInfo_Define
 
   TYPE :: CRTM_GeometryInfo_type
 
-    ! ----------
     ! User Input
     ! ----------
     ! Earth radius and satellite height
@@ -275,8 +274,6 @@ MODULE CRTM_GeometryInfo_Define
     ! Flux angle information
     REAL(fp_kind) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
 
-
-    ! -----------------------
     ! Derived from User Input
     ! -----------------------
     ! Sensor angle information
@@ -320,6 +317,14 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT( IN OUT )
 !
+! OUTPUT ARGUMENTS:
+!       GeometryInfo:  The CRTM_GeometryInfo structure with the derived
+!                      angle components filled..
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_GeometryInfo_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT( IN OUT )
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:   Character string specifying a filename in which any
 !                      messages will be logged. If not specified, or if an
@@ -329,15 +334,6 @@ CONTAINS
 !                      TYPE:       CHARACTER( * )
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       GeometryInfo:  The CRTM_GeometryInfo structure with the derived
-!                      angle components filled..
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_GeometryInfo_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN OUT )
-!
 !
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
@@ -353,33 +349,25 @@ CONTAINS
 !       This function changes the values of the derived components of the
 !       GeometryInfo structure argument.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 27-Jun-2005
-!                       paul.vandelst@ssec.wisc.edu
-!
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_GeometryInfo( gInfo,        &  ! In/Output
-                                      Message_Log ) &  ! Optional input
+  FUNCTION CRTM_Compute_GeometryInfo( gInfo      , &  ! In/Output
+                                      Message_Log) &  ! Optional input
                                     RESULT ( Error_Status )
     ! Arguments
-    TYPE( CRTM_GeometryInfo_type ), INTENT( IN OUT ) :: gInfo
-    CHARACTER( * ), OPTIONAL,       INTENT( IN )     :: Message_Log
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN OUT) :: gInfo
+    CHARACTER(*),       OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_GeometryInfo'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_GeometryInfo'
 
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
 
-
-    ! -----------------
-    ! The sensor angles
-    ! -----------------
+    ! Check the sensor angles
     IF ( ABS( gInfo%Sensor_Zenith_Angle ) > MAX_SENSOR_ZENITH_ANGLE ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -388,7 +376,6 @@ CONTAINS
                             Message_Log = Message_Log )
       RETURN
     END IF
-
     IF ( gInfo%Sensor_Azimuth_Angle < ZERO                     .OR. &
          gInfo%Sensor_Azimuth_Angle > MAX_SENSOR_AZIMUTH_ANGLE      ) THEN
       Error_Status = WARNING
@@ -399,10 +386,7 @@ CONTAINS
       gInfo%Sensor_Azimuth_Angle = ZERO
     END IF
 
-
-    ! -----------------
-    ! The Source angles
-    ! -----------------
+    ! Check the Source angles
     IF ( gInfo%Source_Azimuth_Angle < ZERO                     .OR. &
          gInfo%Source_Azimuth_Angle > MAX_SOURCE_AZIMUTH_ANGLE      ) THEN
       Error_Status = WARNING
@@ -413,10 +397,7 @@ CONTAINS
       gInfo%Source_Azimuth_Angle = ZERO
     END IF
 
-
-    ! ---------------
-    ! The Flux angles
-    ! ---------------
+    ! Check the Flux angles
     IF ( ABS( gInfo%Flux_Zenith_Angle ) > MAX_FLUX_ZENITH_ANGLE ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -427,25 +408,19 @@ CONTAINS
     END IF
 
 
-    ! -------------
+    ! Perform the angle conversions
+    ! -----------------------------
     ! Sensor angles
-    ! -------------
     gInfo%Sensor_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%Sensor_Zenith_Angle
     gInfo%Sensor_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%Sensor_Azimuth_Angle
     gInfo%Secant_Sensor_Zenith  = ONE / COS( gInfo%Sensor_Zenith_Radian )
 
-
-    ! -------------
     ! Source angles
-    ! -------------
     gInfo%Source_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%Source_Zenith_Angle
     gInfo%Source_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%Source_Azimuth_Angle
     gInfo%Secant_Source_Zenith  = ONE / COS( gInfo%Source_Zenith_Radian )
 
-
-    ! -----------
     ! Flux angles
-    ! -----------
     gInfo%Flux_Zenith_Radian = DEGREES_TO_RADIANS * gInfo%Flux_Zenith_Angle
     gInfo%Secant_Flux_Zenith = ONE / COS( gInfo%Flux_Zenith_Radian )
 
