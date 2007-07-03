@@ -40,7 +40,7 @@ SCRIPT_NAME="`basename $0`"
 # ---------------------------------------
 
 if [ -z "${ARCHIVE_ROOT_DIR}" ]; then
-  ARCHIVE_ROOT_DIR="hanfs1:/g01.1/weather/wx20pd"
+  ARCHIVE_ROOT_DIR="/global/save/wx20pd"
 fi
 
 
@@ -50,7 +50,7 @@ fi
 # ---------------------------------------
 
 if [ -z "${HOME_ROOT_DIR}" ]; then
-  HOME_ROOT_DIR="/nbns/global/wx20pd"
+  HOME_ROOT_DIR="/global/noscrub/wx20pd"
 fi
 
 
