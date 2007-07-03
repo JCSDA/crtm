@@ -126,7 +126,7 @@ PROGRAM Atmosphere_Create_DataFile
                                      U_Wind, V_Wind
   REAL, DIMENSION(N_Lons, N_Lats, n_Layers) :: Soil_Temperature, Liq_Vol_SM, &
                                                Vol_SM
-  
+  ! Lat/Lon information 
   REAL, DIMENSION(N_Lons) :: Longitude
   REAL, DIMENSION(N_Lats) :: Latitude
   

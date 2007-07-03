@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for CRTM CloudScatter Tangent-Linear Test program
+# Makefile for the Atmosphere_DataFile_Create program
 #
 #==============================================================================
 
