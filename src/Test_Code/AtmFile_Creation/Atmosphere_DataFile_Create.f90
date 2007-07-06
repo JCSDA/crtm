@@ -426,7 +426,7 @@ PROGRAM Atmosphere_Create_DataFile
           ! Bulk density sandy loam approximately 1.4 g/cm^3
           Surface(m)%Soil_Moisture_Content = Liq_Vol_SM(i,j,1)*1.40_fp
           Surface(m)%Canopy_Water_Content = Canopy_Water_Content(i,j)/10.0_fp
-          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100
+          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100.0_fp
           Surface(m)%Soil_Temperature = Soil_Temperature(i,j,1)
           EXIT Longitude_Loop
         END IF
@@ -440,13 +440,13 @@ PROGRAM Atmosphere_Create_DataFile
             Surface(m)%Wind_Direction = (1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j))
           END IF
           IF(U_Wind(i,j)<ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)<ZERO) THEN
-            Surface(m)%Wind_Direction = 360 - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
+            Surface(m)%Wind_Direction = 360.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
           END IF
           Surface(m)%Water_Temperature = Surface_Temperature(i,j)
           EXIT Longitude_Loop
@@ -462,7 +462,7 @@ PROGRAM Atmosphere_Create_DataFile
           ! Bulk density of loam approximately = 1.2 g/cm^3
           Surface(m)%Soil_Moisture_Content = Liq_Vol_SM(i,j,1)*1.20_fp
           Surface(m)%Canopy_Water_Content = Canopy_Water_Content(i,j)/10.0_fp
-          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100
+          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100.0_fp
           Surface(m)%Soil_Temperature = Soil_Temperature(i,j,1)          
           EXIT Longitude_Loop
         END IF
@@ -476,13 +476,13 @@ PROGRAM Atmosphere_Create_DataFile
             Surface(m)%Wind_Direction = (1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j))
           END IF
           IF(U_Wind(i,j)<ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)<ZERO) THEN
-            Surface(m)%Wind_Direction = 360 - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
+            Surface(m)%Wind_Direction = 360.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
           END IF
           Surface(m)%Water_Temperature = Surface_Temperature(i,j)
           EXIT Longitude_Loop
@@ -498,7 +498,7 @@ PROGRAM Atmosphere_Create_DataFile
           ! Bulk density of loam approximately 1.20_fp
           Surface(m)%Soil_Moisture_Content = Liq_Vol_SM(i,j,1)*1.20_fp
           Surface(m)%Canopy_Water_Content = Canopy_Water_Content(i,j)/10.0_fp
-          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100
+          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100.0_fp
           Surface(m)%Soil_Temperature = Soil_Temperature(i,j,1)
           EXIT Longitude_Loop
         END IF
@@ -512,13 +512,13 @@ PROGRAM Atmosphere_Create_DataFile
             Surface(m)%Wind_Direction = (1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j))
           END IF
           IF(U_Wind(i,j)<ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)<ZERO) THEN
-            Surface(m)%Wind_Direction = 360 - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
+            Surface(m)%Wind_Direction = 360.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
           END IF
           Surface(m)%Water_Temperature = Surface_Temperature(i,j)
           EXIT Longitude_Loop
@@ -535,7 +535,7 @@ PROGRAM Atmosphere_Create_DataFile
           ! Bulk Density of loam approximately 1.2
           Surface(m)%Soil_Moisture_Content = Liq_Vol_SM(i,j,1)*1.20_fp
           Surface(m)%Canopy_Water_Content = Canopy_Water_Content(i,j)/10.0_fp
-          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100
+          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100.0_fp
           Surface(m)%Soil_Temperature = Soil_Temperature(i,j,1)
           EXIT Longitude_Loop
         END IF
@@ -549,13 +549,13 @@ PROGRAM Atmosphere_Create_DataFile
             Surface(m)%Wind_Direction = (1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j))
           END IF
           IF(U_Wind(i,j)<ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(ABS(U_Wind(i,j))/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)>ZERO) THEN
-            Surface(m)%Wind_Direction = 180 + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
+            Surface(m)%Wind_Direction = 180.0_fp + ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/V_Wind(i,j)))
           END IF
           IF(U_Wind(i,j)>ZERO .AND. V_Wind(i,j)<ZERO) THEN
-            Surface(m)%Wind_Direction = 360 - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
+            Surface(m)%Wind_Direction = 360.0_fp - ((1/DEGREES_TO_RADIANS) * ATAN(U_Wind(i,j)/ABS(V_Wind(i,j))))
           END IF
           Surface(m)%Water_Temperature = Surface_Temperature(i,j)
           EXIT Longitude_Loop
@@ -569,17 +569,17 @@ PROGRAM Atmosphere_Create_DataFile
           ELSE 
             Surface(m)%Snow_Type = SHALLOW_SNOW
           END IF
-          Surface(m)%Land_Coverage = ONE - (Snow_Cover(i,j)/100)
+          Surface(m)%Land_Coverage = ONE - (Snow_Cover(i,j)/100.0_fp)
           Surface(m)%Wind_Speed = SQRT(U_Wind(i,j)**2 + V_Wind(i,j)**2)
-          Surface(m)%Snow_Coverage = (Snow_Cover(i,j)/100)
-          Surface(m)%Snow_Depth = Snow_Depth(i,j)
+          Surface(m)%Snow_Coverage = Snow_Cover(i,j)/100.0_fp
+          Surface(m)%Snow_Depth = Snow_Depth(i,j)*1000.0_fp
           Surface(m)%Snow_Temperature = Surface_Temperature(i,j)
           Surface(m)%Land_Temperature = Surface_Temperature(i,j)
           Surface(m)%Land_Type = BROADLEAF_PINE_FOREST
           ! Bulk density of loam approximately 1.2
           Surface(m)%Soil_Moisture_Content = Liq_Vol_SM(i,j,1)*1.20_fp
           Surface(m)%Canopy_Water_Content = Canopy_Water_Content(i,j)/10.0_fp
-          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100
+          Surface(m)%Vegetation_Fraction = Vegetation_Cover(i,j)/100.0_fp
           Surface(m)%Soil_Temperature = Soil_Temperature(i,j,1)
           EXIT Longitude_Loop
         END IF
@@ -590,7 +590,7 @@ PROGRAM Atmosphere_Create_DataFile
           Surface(m)%Ice_Coverage = ONE
           Surface(m)%Wind_Speed = SQRT(U_Wind(i,j)**2 + V_Wind(i,j)**2)
           Surface(m)%Ice_Temperature = Surface_Temperature(i,j)
-          Surface(m)%Ice_Thickness = Ice_Thickness(i,j)
+          Surface(m)%Ice_Thickness = Ice_Thickness(i,j)*1000.0_fp
           EXIT Longitude_Loop
         END IF         
       END DO Latitude_Loop
