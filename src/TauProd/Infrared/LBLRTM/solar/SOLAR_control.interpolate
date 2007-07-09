@@ -1,0 +1,5 @@
+Solar control file for program "extract_solar.f"
+extract
+ascii2
+solar_extracted.asc
+490.0 3600.0 1000.0

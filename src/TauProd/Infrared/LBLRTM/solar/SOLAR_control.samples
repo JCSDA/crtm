@@ -1,0 +1,27 @@
+Solar control file for program "extract_solar.f"
+extract
+binary
+test_file.bin
+1000.  49999. 1.0
+
+
+
+****** NOTES *******
+
+
+For interpolation use:
+Solar control file for program "extract_solar.f"
+interpl
+ascii2
+test_file.asc
+1001.0000     9999.000000  0.0010 1.0 0.0
+
+
+
+
+For simple extraction use:
+Solar control file for program "extract_solar.f"
+extract
+ascii2
+test_file.asc
+1001.0000     2000.000000 1.0 0.0
