@@ -36,44 +36,38 @@
 #
 #------------------------------------------------------------------------------
 
-#-----------------------------------------------------------------------------
-#                              -- Define macros --
-#-----------------------------------------------------------------------------
-
+# Define macros
+# -------------
 include ../make.macros
 
-MAKEFILE = Makefile
-EXE_FILE = lnfl_v2.1
+MAKE_FILE = Makefile
+LNFL_VERSION = v2.1
+EXE_FILE = lnfl_$(LNFL_VERSION)
 LNFL_OBJ_FILES = lnfl.o
 UTIL_DIR = ../$(SHARED_DIR)
 
 
-
-#-----------------------------------------------------------------------------
-#                              -- Define targets --
-#-----------------------------------------------------------------------------
-
-# -- Make is single precision and based on OS type.
-# -- Platform specific definitions are contained 
-# -- in make.macros file
+# Define targets
+# --------------
+# Make is single precision and based on OS type.
+# Platform specific definitions are contained 
+# in make.macros file
 all:
 	@echo "OS type detected: "`uname -s`
 	@case `uname -s` in \
-	  "SunOS")   make -f $(MAKEFILE) lnfl $(SUNOS_SGL_FLAGS) ;; \
-	  "AIX")     make -f $(MAKEFILE) lnfl $(AIX_SGL_FLAGS) ;; \
-	  "IRIX64" ) make -f $(MAKEFILE) lnfl $(IRIX64_SGL_FLAGS) ;; \
-	  "Linux" )  make -f $(MAKEFILE) lnfl $(Linux_SGL_FLAGS) ;; \
+	  "SunOS")   make -f $(MAKE_FILE) lnfl $(SUNOS_SGL_FLAGS) ;; \
+	  "AIX")     make -f $(MAKE_FILE) lnfl $(AIX_SGL_FLAGS) ;; \
+	  "IRIX64" ) make -f $(MAKE_FILE) lnfl $(IRIX64_SGL_FLAGS) ;; \
+	  "Linux" )  make -f $(MAKE_FILE) lnfl $(Linux_SGL_FLAGS) ;; \
 	  *) echo "This system is not supported" ;; \
 	esac
 
-
-# -- Link stage with object file dependency
+# Link stage with object file dependency
 lnfl: util_obj lnfl_obj
 	$(FL) $(UTIL_DIR)/$(UTIL_OBJ_FILE) $(LNFL_OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
 
-
-# -- Make of utility module. Flags for make are the
-# -- platform specific definitions
+# Make of utility module. Flags for make are the
+# platform specific definitions
 util_obj:
 	cd $(UTIL_DIR); make all "FC=$(FC)" \
 	                         "FL=$(FL)" \
@@ -81,56 +75,15 @@ util_obj:
 	                         "FL_FLAGS=$(FL_FLAGS)" \
 	                         "UTIL_OBJ_FILE=$(UTIL_OBJ_FILE)"
 	                           
-# -- Make of LNFL source. Uses default compilation
-# -- rules defined in make.rules file
+# Make of LNFL source. Uses default compilation
+# rules defined in make.rules file
 lnfl_obj: $(LNFL_OBJ_FILES)
 
-
-# -- Cleanup
+# Cleanup
 clean:
 	rm -f *.o; cd $(UTIL_DIR); make clean
 
 
-
-#-----------------------------------------------------------------------------
-#                          -- Define default rules --
-#-----------------------------------------------------------------------------
-
+# Define default rules
+# --------------------
 include ../make.rules
-
-
-#-------------------------------------------------------------------------------
-#                          -- MODIFICATION HISTORY --
-#-------------------------------------------------------------------------------
-#
-# $Id: Makefile,v 2.6 2005/09/13 15:31:38 paulv Exp $
-#
-# $Date: 2005/09/13 15:31:38 $
-#
-# $Revision: 2.6 $
-#
-# $Name:  $
-#
-# $State: Exp $
-#
-# $Log: Makefile,v $
-# Revision 2.6  2005/09/13 15:31:38  paulv
-# - Updated for version 2.1 of lnfl code for Release 9.4 of LBLRTM.
-#
-# Revision 2.5  2003/12/02 16:54:09  paulv
-# Updated for LNFL v1.15 distribution
-#
-# Revision 2.4  2003/07/15 19:08:58  paulv
-# - Changed compilation flag macros to use single precision compilation flags.
-#
-# Revision 2.3  2003/06/20 13:54:12  paulv
-# Updated for LNFL v1.8 distribution
-#
-# Revision 2.2  2002/03/15 18:59:25  paulv
-# - Changed output executable name to latest version.
-#
-# Revision 2.1  2002/03/15 17:51:18  paulv
-# - New makefile version
-#
-#
-#
