@@ -1,0 +1,143 @@
+#!/bin/sh
+#===========================================================================
+#
+#  (C) Cooperative Institute for Meteorological Satellite Studies, 1999
+#
+#  NAME:
+# 	lblclean
+#
+#  PURPOSE:
+#       Script file to clean up the remnant working directories that may still
+#         be lingering around after an LBLRTM run.
+#
+#  CATEGORY:
+#       LBLRTM
+#
+#  LANGUAGE:
+#       Bourne shell script
+#
+#  CALLING SEQUENCE:
+#       lblclean [help]
+#
+#  INPUTS:
+#       None
+#
+#  OPTIONAL INPUTS:
+#       help: Outputs script usage help.
+# 
+#  OUTPUTS:
+#       None
+#
+#  SIDE EFFECTS:
+#       Script deletes work directories in the directory $(LBL_RUN_ROOT) that belong to
+#         user.
+#
+#  RESTRICTIONS:
+#       None known
+#
+#  EXAMPLE:
+#
+#  MODIFICATION HISTORY:
+# 	Written by:	Paul van Delst, CIMSS/SSEC, 11-Jan-1999
+# 			paul.vandelst@ssec.wisc.edu
+#
+#  $Log: lblclean,v $
+#  Revision 1.2  1999/01/22 18:06:00  paulv
+#  - Changed default shell from Korn to Bourne shell for running under Linux.
+#
+#  Revision 1.1  1999/01/11 22:09:30  paulv
+#  Initial version
+#
+#
+#
+#===========================================================================
+
+# -------------
+# RCS ID string
+# -------------
+
+  rcsID='$Id: lblclean,v 1.2 1999/01/22 18:06:00 paulv Exp $'
+
+  echo
+  echo ' '${rcsID}
+  echo
+
+
+# -------------------------------------
+# Check if LBL_RUN_ROOT variable is set
+# -------------------------------------
+
+# -- Determine if the LBL_RUN_ROOT environment variable is set
+
+  def_LBL_RUN_ROOT=`env | grep LBL_RUN_ROOT`
+
+
+# -- If LBL_RUN_ROOT is not set, then make the user's home directory
+# -- the work directory....
+
+  if [ -z "${def_LBL_RUN_ROOT}" ]; then
+
+    LBL_RUN_ROOT=${HOME}
+
+  fi
+
+
+# ----------------------------------------
+# Define the directories-to-be-deleted tag
+# ----------------------------------------
+
+  DIR_TAG='.lblrtm_'`whoami`
+
+
+# -------------------------
+# Check if help is required
+# -------------------------
+
+  if [ $# -gt 0 ]; then
+
+    echo
+    echo ' Usage : lblclean [help]'
+    echo
+    echo ' Script file to delete files in the LBL_RUN_ROOT directory that belong'
+    echo ' to the user.'
+    echo
+    echo ' Currently, LBL_RUN_ROOT is defined as:'
+    echo '   '${LBL_RUN_ROOT}
+    echo
+    echo ' and contains your directories:'
+    ls -laF ${LBL_RUN_ROOT} | grep ${DIR_TAG} 2>/dev/null
+    echo
+    echo ' These directories and their contents will be deleted.'
+    echo
+
+    exit 1
+
+  fi
+
+
+# -------------------------------------------------------
+# Check if LBL_RUN_ROOT defined directory actually exists
+# -------------------------------------------------------
+
+  if [ ! -d ${LBL_RUN_ROOT} ]; then
+
+    echo
+    echo ' Directory defined by LBL_RUN_ROOT, '${LBL_RUN_ROOT}' does not exist!'
+
+    exit 2
+
+  fi
+
+
+
+# ---------------------------
+# Remove the user directories
+# ---------------------------
+
+  echo ' Deleting LBLRTM working directories/files....'
+  ls -laF ${LBL_RUN_ROOT}/${DIR_TAG}*
+
+  rm -fr ${LBL_RUN_ROOT}/${DIR_TAG}*
+
+         
+exit
