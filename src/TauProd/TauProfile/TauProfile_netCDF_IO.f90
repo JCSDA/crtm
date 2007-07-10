@@ -24,7 +24,8 @@ MODULE TauProfile_netCDF_IO
                                Associated_TauProfile, &
                                Destroy_TauProfile, &
                                Allocate_TauProfile, &
-                               Information_TauProfile
+                               CheckRelease_TauProfile, &
+                               Info_TauProfile
   USE netcdf
   USE netCDF_Utility   ,  Open_TauProfile_netCDF =>  Open_netCDF, &
                          Close_TauProfile_netCDF => Close_netCDF
@@ -41,7 +42,6 @@ MODULE TauProfile_netCDF_IO
   PUBLIC :: Inquire_TauProfile_netCDF
   PUBLIC :: Write_TauProfile_netCDF
   PUBLIC :: Read_TauProfile_netCDF
-
 
 
   ! ---------------------
@@ -67,7 +67,7 @@ MODULE TauProfile_netCDF_IO
 
   INTERFACE Get_Index
     MODULE PROCEDURE Get_Integer_Index
-    MODULE PROCEDURE Get_Double_Index
+    MODULE PROCEDURE Get_Float_Index
   END INTERFACE Get_Index
 
 
@@ -77,20 +77,23 @@ MODULE TauProfile_netCDF_IO
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
-
+  ! Keyword set value
+  INTEGER,      PARAMETER :: SET = 1
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
-
   ! Maximum angle secant value
   REAL(fp), PARAMETER :: ANGLE_LIMIT = 3.0_fp
 
   ! Global attribute names. Case sensitive
-  CHARACTER(*), PARAMETER :: TITLE_GATTNAME         = 'title' 
-  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME       = 'history' 
-  CHARACTER(*), PARAMETER :: SENSOR_NAME_GATTNAME   = 'sensor_name' 
-  CHARACTER(*), PARAMETER :: PLATFORM_NAME_GATTNAME = 'platform_name' 
-  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME       = 'comment' 
-  CHARACTER(*), PARAMETER :: ID_TAG_GATTNAME        = 'id_tag' 
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME            = 'title' 
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME          = 'history'
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME          = 'comment'
+  CHARACTER(*), PARAMETER :: ID_TAG_GATTNAME           = 'id_tag' 
+  CHARACTER(*), PARAMETER :: RELEASE_GATTNAME          = 'Release'
+  CHARACTER(*), PARAMETER :: VERSION_GATTNAME          = 'Version'
+  CHARACTER(*), PARAMETER :: SENSOR_ID_GATTNAME        = 'Sensor_Id'
+  CHARACTER(*), PARAMETER :: WMO_SATELLITE_ID_GATTNAME = 'WMO_Satellite_Id'
+  CHARACTER(*), PARAMETER :: WMO_SENSOR_ID_GATTNAME    = 'WMO_Sensor_Id'
 
   ! Dimension names
   CHARACTER(*), PARAMETER :: LEVEL_DIMNAME        = 'n_levels'
@@ -99,12 +102,8 @@ MODULE TauProfile_netCDF_IO
   CHARACTER(*), PARAMETER :: ANGLE_DIMNAME        = 'n_Angles'
   CHARACTER(*), PARAMETER :: PROFILE_DIMNAME      = 'n_Profiles'
   CHARACTER(*), PARAMETER :: MOLECULE_SET_DIMNAME = 'n_Molecule_Sets'
-  CHARACTER(*), PARAMETER :: STRLEN_DIMNAME       = 'sensor_id_strlen'
 
   ! Variable names
-  CHARACTER(*), PARAMETER :: SENSOR_ID_VARNAME         = 'Sensor_ID'
-  CHARACTER(*), PARAMETER :: WMO_SATELLITE_ID_VARNAME  = 'WMO_Satellite_ID'
-  CHARACTER(*), PARAMETER :: WMO_SENSOR_ID_VARNAME     = 'WMO_Sensor_ID'
   CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_VARNAME    = 'Level_Pressure'
   CHARACTER(*), PARAMETER :: CHANNEL_LIST_VARNAME      = 'Channel_list'
   CHARACTER(*), PARAMETER :: ANGLE_LIST_VARNAME        = 'Angle_list'
@@ -115,9 +114,6 @@ MODULE TauProfile_netCDF_IO
   ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
-  CHARACTER(*), PARAMETER :: SENSOR_ID_LONGNAME         = 'Sensor Identifier'
-  CHARACTER(*), PARAMETER :: WMO_SATELLITE_ID_LONGNAME  = 'WMO satellite ID'
-  CHARACTER(*), PARAMETER :: WMO_SENSOR_ID_LONGNAME     = 'WMO sensor ID'
   CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_LONGNAME    = 'Level pressure'
   CHARACTER(*), PARAMETER :: CHANNEL_LIST_LONGNAME      = 'Sensor channel'
   CHARACTER(*), PARAMETER :: ANGLE_LIST_LONGNAME        = 'Zenith angle'
@@ -128,31 +124,16 @@ MODULE TauProfile_netCDF_IO
   ! Variable description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
 
-  CHARACTER(*), PARAMETER :: SENSOR_ID_DESC         = &
-    'Character string identifying the sensor and satellite platform'
-  CHARACTER(*), PARAMETER :: WMO_SATELLITE_ID_DESC  = &
-    'WMO code for identifying satellite platforms (1023 == none available)'
-  CHARACTER(*), PARAMETER :: WMO_SENSOR_ID_DESC     = &
-    'WMO code for identifying a satellite sensor (2047 == none available)'
-  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_DESC    = &
-    'Atmospheric level pressures defining the layers for which the transmittances were calculated.'
-  CHARACTER(*), PARAMETER :: CHANNEL_LIST_DESC      = &
-    'List of sensor channel numbers associated with the TauProfile data.'
-  CHARACTER(*), PARAMETER :: ANGLE_LIST_DESC        = &
-    'List of the secant of the zenith angles.'
-  CHARACTER(*), PARAMETER :: PROFILE_LIST_DESC      = &
-    'List of atmospheric Profile set indices used in generating the transmittance data.'
-  CHARACTER(*), PARAMETER :: MOLECULE_SET_LIST_DESC = &
-    'List of molecular species set indices used in generating the transmittance data.'
-  CHARACTER(*), PARAMETER :: TRANSMITTANCE_DESC     = &
-    'Instrument resolution channel transmittance profiles'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_DESC    = 'Atmospheric level pressures.'
+  CHARACTER(*), PARAMETER :: CHANNEL_LIST_DESC      = 'List of sensor channel numbers.'
+  CHARACTER(*), PARAMETER :: ANGLE_LIST_DESC        = 'List of the secant of the zenith angles.'
+  CHARACTER(*), PARAMETER :: PROFILE_LIST_DESC      = 'List of atmospheric profile set indices.'
+  CHARACTER(*), PARAMETER :: MOLECULE_SET_LIST_DESC = 'List of molecular species set indices.'
+  CHARACTER(*), PARAMETER :: TRANSMITTANCE_DESC     = 'Instrument resolution channel transmittances'
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
   
-  CHARACTER(*), PARAMETER :: SENSOR_ID_UNITS         = 'N/A'
-  CHARACTER(*), PARAMETER :: WMO_SATELLITE_ID_UNITS  = 'N/A'
-  CHARACTER(*), PARAMETER :: WMO_SENSOR_ID_UNITS     = 'N/A'
   CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_UNITS    = 'hectoPascals (hPa)'
   CHARACTER(*), PARAMETER :: CHANNEL_LIST_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: ANGLE_LIST_UNITS        = 'None'
@@ -163,9 +144,6 @@ MODULE TauProfile_netCDF_IO
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
   
-  CHARACTER(*), PARAMETER :: SENSOR_ID_FILLVALUE         = ' '
-  INTEGER     , PARAMETER :: WMO_SATELLITE_ID_FILLVALUE  = 1023
-  INTEGER     , PARAMETER :: WMO_SENSOR_ID_FILLVALUE     = 2047
   REAL(fp)    , PARAMETER :: FP_FILLVALUE                = -1.0_fp
   INTEGER     , PARAMETER :: IP_FILLVALUE                = -1
   REAL(fp)    , PARAMETER :: LEVEL_PRESSURE_FILLVALUE    = FP_FILLVALUE
@@ -176,9 +154,6 @@ MODULE TauProfile_netCDF_IO
   REAL(fp)    , PARAMETER :: TRANSMITTANCE_FILLVALUE     = FP_FILLVALUE
 
   ! Variable types
-  INTEGER, PARAMETER :: SENSOR_ID_TYPE         = NF90_CHAR
-  INTEGER, PARAMETER :: WMO_SATELLITE_ID_TYPE  = NF90_INT
-  INTEGER, PARAMETER :: WMO_SENSOR_ID_TYPE     = NF90_INT
   INTEGER, PARAMETER :: LEVEL_PRESSURE_TYPE    = NF90_DOUBLE
   INTEGER, PARAMETER :: CHANNEL_LIST_TYPE      = NF90_INT
   INTEGER, PARAMETER :: ANGLE_LIST_TYPE        = NF90_DOUBLE
@@ -203,21 +178,21 @@ CONTAINS
   ! ==============================================
 
   FUNCTION Get_Integer_Index( List, Value ) RESULT( Idx )
-    INTEGER, DIMENSION(:), INTENT(IN) :: List
-    INTEGER,               INTENT(IN) :: Value
+    INTEGER, INTENT(IN) :: List(:)
+    INTEGER, INTENT(IN) :: Value
     INTEGER :: Idx
-    Idx = MINLOC( ABS( List-Value ), DIM = 1 )
+    Idx = MINLOC( ABS( List-Value ), DIM=1 )
     IF ( ( List(Idx)-Value ) /= 0 ) Idx = -1
   END FUNCTION Get_Integer_Index
 
-  FUNCTION Get_Double_Index( List, Value ) RESULT( Idx )
-    REAL(fp), DIMENSION(:), INTENT(IN) :: List
-    REAL(fp),                 INTENT(IN) :: Value
+  FUNCTION Get_Float_Index( List, Value ) RESULT( Idx )
+    REAL(fp), INTENT(IN) :: List(:)
+    REAL(fp), INTENT(IN) :: Value
     INTEGER :: Idx
     REAL(fp), PARAMETER :: TOLERANCE = EPSILON( 1.0_fp )
-    Idx = MINLOC( ABS( List-Value ), DIM = 1 )
+    Idx = MINLOC( ABS( List-Value ), DIM=1 )
     IF ( ABS( List(Idx)-Value ) > TOLERANCE ) Idx = -1
-  END FUNCTION Get_Double_Index
+  END FUNCTION Get_Float_Index
 
 
 !------------------------------------------------------------------------------
@@ -230,15 +205,18 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_TauProfile_GAtts( NC_Filename                , &  ! Input
-!                                              NC_FileID                  , &  ! Input
-!                                              ID_Tag       =ID_Tag       , &  ! Optional input
-!                                              Title        =Title        , &  ! Optional input
-!                                              History      =History      , &  ! Optional input
-!                                              Sensor_Name  =Sensor_Name  , &  ! Optional input
-!                                              Platform_Name=Platform_Name, &  ! Optional input
-!                                              Comment      =Comment      , &  ! Optional input
-!                                              Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = Write_TauProfile_GAtts( NC_Filename                      , &  ! Input
+!                                              NC_FileID                        , &  ! Input
+!                                              Release         =Release         , &  ! Optional input
+!                                              Version         =Version         , &  ! Optional input
+!                                              Sensor_Id       =Sensor_Id       , &  ! Optional input
+!                                              WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
+!                                              WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional input
+!                                              ID_Tag          =ID_Tag          , &  ! Optional input
+!                                              Title           =Title           , &  ! Optional input
+!                                              History         =History         , &  ! Optional input
+!                                              Comment         =Comment         , &  ! Optional input
+!                                              Message_Log     =Message_Log       )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -257,6 +235,36 @@ CONTAINS
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Release:          The release number of the netCDF TauProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:          The version number of the netCDF TauProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Sensor_Id:        Character string sensor/platform identifier.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       WMO_Satellite_Id: The WMO code used to identify satellite platforms.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       WMO_Sensor_Id:    The WMO code used to identify sensors.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       ID_Tag:           Character string written into the ID_TAG global
 !                         attribute field of the netCDF TauProfile file.
 !                         Should contain a short tag used to identify the
@@ -277,22 +285,6 @@ CONTAINS
 !
 !       History:          Character string written into the HISTORY global
 !                         attribute field of the netCDF TauProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Sensor_Name:      Character string written into the SENSOR_NAME
-!                         global attribute field of the netCDF TauProfile
-!                         file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Platform_Name:    Character string written into the PLATFORM_NAME
-!                         global attribute field of the netCDF TauProfile
-!                         file.
 !                         UNITS:      N/A
 !                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
@@ -325,30 +317,32 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_TauProfile_GAtts( NC_Filename  , &  ! Input
-                                   NC_FileID    , &  ! Input
-                                   ID_Tag       , &  ! Optional input
-                                   Title        , &  ! Optional input
-                                   History      , &  ! Optional input
-                                   Sensor_Name  , &  ! Optional input
-                                   Platform_Name, &  ! Optional input
-                                   Comment      , &  ! Optional input
-                                   Message_Log  ) &  ! Error messaging
+  FUNCTION Write_TauProfile_GAtts( NC_Filename     , &  ! Input
+                                   NC_FileID       , &  ! Input
+                                   Release         , &  ! Optional input
+                                   Version         , &  ! Optional input
+                                   Sensor_Id       , &  ! Optional input
+                                   WMO_Satellite_Id, &  ! Optional input
+                                   WMO_Sensor_Id   , &  ! Optional input
+                                   ID_Tag          , &  ! Optional input
+                                   Title           , &  ! Optional input
+                                   History         , &  ! Optional input
+                                   Comment         , &  ! Optional input
+                                   Message_Log     ) &  ! Error messaging
                                  RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: NC_Filename
     INTEGER     ,           INTENT(IN) :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(IN) :: Release         
+    INTEGER     , OPTIONAL, INTENT(IN) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Sensor_Id       
+    INTEGER     , OPTIONAL, INTENT(IN) :: WMO_Satellite_Id
+    INTEGER     , OPTIONAL, INTENT(IN) :: WMO_Sensor_Id   
     CHARACTER(*), OPTIONAL, INTENT(IN) :: ID_Tag
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN) :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Sensor_Name
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Platform_Name
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
@@ -357,102 +351,141 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_TauProfile_GAtts'
     CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
     CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
-    INTEGER     , PARAMETER :: NPUTGATTS = 8
     ! Local variables
-    INTEGER :: Put_Status(NPUTGATTS), n
+    CHARACTER(256) :: GAttName
     CHARACTER(8)  :: cdate
     CHARACTER(10) :: ctime
     CHARACTER(5)  :: czone
+    INTEGER :: NF90_Status
 
     ! Set up
     Error_Status = SUCCESS
-    Put_Status   = SUCCESS
-    n = 0
 
     ! Software ID
-    n = n + 1
-    Put_Status(n) = Put_GAttString(WRITE_MODULE_HISTORY_GATTNAME, &
-                                   MODULE_RCS_ID, &
-                                   Message_Log=Message_Log )
+    GAttName = WRITE_MODULE_HISTORY_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                MODULE_RCS_ID )
+    IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    
 
     ! Creation date
     CALL DATE_AND_TIME( cdate, ctime, czone )
-    n = n + 1
-    Put_Status(n) = Put_GAttString(CREATION_DATE_AND_TIME_GATTNAME, &
-                                   cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
-                                   ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
-                                   czone//'UTC', &
-                                   Message_Log=Message_Log )
+    GAttName = CREATION_DATE_AND_TIME_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
+                                ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
+                                czone//'UTC' )
+    IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
 
-    ! The Title
-    n = n + 1
-    IF ( PRESENT( Title ) ) THEN
-      Put_Status(n) = Put_GAttString(TITLE_GATTNAME, Title, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The History
-    n = n + 1
-    IF ( PRESENT( History ) ) THEN
-      Put_Status(n) = Put_GAttString(HISTORY_GATTNAME, History, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The Sensor_Name
-    n = n + 1
-    IF ( PRESENT( Sensor_Name ) ) THEN
-      Put_Status(n) = Put_GAttString(SENSOR_NAME_GATTNAME, Sensor_Name, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The Platform_Name
-    n = n + 1
-    IF ( PRESENT( Platform_Name ) ) THEN
-      Put_Status(n) = Put_GAttString(PLATFORM_NAME_GATTNAME, Platform_Name, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The Comment
-    n = n + 1
-    IF ( PRESENT( Comment ) ) THEN
-      Put_Status(n) = Put_GAttString(COMMENT_GATTNAME, Comment, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The ID_Tag
-    n = n + 1
-    IF ( PRESENT( ID_Tag ) ) THEN
-      Put_Status(n) = Put_GAttString(ID_TAG_GATTNAME, ID_Tag, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! Check for any errors
-    IF ( ANY( Put_Status /= SUCCESS ) ) Error_Status = WARNING
-
-  CONTAINS
-
-    FUNCTION Put_GAttString(GAttName, GAttString, Message_Log) RESULT(Error_Status)
-      CHARACTER(*),           INTENT(IN) :: GAttName
-      CHARACTER(*),           INTENT(IN) :: GAttString
-      CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
-      INTEGER :: Error_Status
-      INTEGER :: NF90_Status
-      Error_Status = SUCCESS
+    ! The Release
+    IF ( PRESENT(Release) ) THEN
+      GAttName = RELEASE_GATTNAME
       NF90_Status = NF90_PUT_ATT( NC_FileID, &
                                   NF90_GLOBAL, &
                                   TRIM(GAttName), &
-                                  TRIM(GAttString) )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//TRIM(GAttName)//' attribute to '//&
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-    END FUNCTION Put_GAttString
+                                  Release )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
 
+    ! The Version
+    IF ( PRESENT(Version) ) THEN
+      GAttName = VERSION_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Version )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The Sensor_Id
+    IF ( PRESENT(Sensor_Id) ) THEN
+      GAttName = SENSOR_ID_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Sensor_Id )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The WMO_Satellite_Id
+    IF ( PRESENT(WMO_Satellite_Id) ) THEN
+      GAttName = WMO_SATELLITE_ID_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  WMO_Satellite_Id )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The WMO_Sensor_Id
+    IF ( PRESENT(WMO_Sensor_Id) ) THEN
+      GAttName = WMO_SENSOR_ID_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  WMO_Sensor_Id )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The ID_Tag
+    IF ( PRESENT(ID_Tag) ) THEN
+      GAttName = ID_TAG_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  ID_Tag )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The Title
+    IF ( PRESENT(Title) ) THEN
+      GAttName = TITLE_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Title )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The History
+    IF ( PRESENT(History) ) THEN
+      GAttName = HISTORY_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  History )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    ! The Comment
+    IF ( PRESENT(Comment) ) THEN
+      GAttName = COMMENT_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Comment )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+    END IF
+
+    !=====
+    RETURN
+    !=====
+    
+    ! Clean up after error
+    1000 CONTINUE
+    NF90_Status = NF90_CLOSE( NC_FileID )
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          'Error writing '//TRIM(GAttName)//' attribute to '//&
+                          TRIM(NC_Filename)//' - '// &
+                          TRIM(NF90_STRERROR( NF90_Status ) ), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
+    
   END FUNCTION Write_TauProfile_GAtts
 
 
@@ -466,15 +499,18 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_TauProfile_GAtts( NC_Filename                , &  ! Input
-!                                             NC_FileID                  , &  ! Input
-!                                             ID_Tag       =ID_Tag       , &  ! Optional output
-!                                             Title        =Title        , &  ! Optional output
-!                                             History      =History      , &  ! Optional output
-!                                             Sensor_Name  =Sensor_Name  , &  ! Optional output
-!                                             Platform_Name=Platform_Name, &  ! Optional output
-!                                             Comment      =Comment      , &  ! Optional output
-!                                             Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = Read_TauProfile_GAtts( NC_Filename                      , &  ! Input
+!                                             NC_FileID                        , &  ! Input
+!                                             Release         =Release         , &  ! Optional output
+!                                             Version         =Version         , &  ! Optional output
+!                                             Sensor_Id       =Sensor_Id       , &  ! Optional output
+!                                             WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional output
+!                                             WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional output
+!                                             ID_Tag          =ID_Tag          , &  ! Optional output
+!                                             Title           =Title           , &  ! Optional output
+!                                             History         =History         , &  ! Optional output
+!                                             Comment         =Comment         , &  ! Optional output
+!                                             Message_Log     =Message_Log       )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -504,6 +540,36 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
+!       Release:          The release number of the netCDF TauProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:          The version number of the netCDF TauProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Sensor_Id:        Character string sensor/platform identifier.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       WMO_Satellite_Id: The WMO code used to identify satellite platforms.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       WMO_Sensor_Id:    The WMO code used to identify sensors.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !       ID_Tag:           Character string written into the ID_TAG global
 !                         attribute field of the netCDF TauProfile file.
 !                         Should contain a short tag used to identify the
@@ -529,22 +595,6 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
-!       Sensor_Name:      Character string written into the SENSOR_NAME
-!                         global attribute field of the netCDF TauProfile
-!                         file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       Platform_Name:    Character string written into the PLATFORM_NAME
-!                         global attribute field of the netCDF TauProfile
-!                         file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 !       Comment:          Character string written into the COMMENT global
 !                         attribute field of the netCDF TauProfile file.
 !                         UNITS:      N/A
@@ -553,127 +603,171 @@ CONTAINS
 !                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the global attribute read was successful.
-!                        == WARNING an error occurred reading the requested
-!                           global attributes.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:     The return value is an integer defining the error status.
+!                         The error codes are defined in the Message_Handler module.
+!                         If == SUCCESS the global attribute read was successful.
+!                            == FAILURE an error occurred.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
 !
-! SIDE EFFECTS:
-!       If a FAILURE error occurs, the netCDF file is closed.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_TauProfile_GAtts( NC_Filename  , &  ! Input
-                                  NC_FileID    , &  ! Input
-                                  ID_Tag       , &  ! Optional output
-                                  Title        , &  ! Optional output
-                                  History      , &  ! Optional output
-                                  Sensor_Name  , &  ! Optional output
-                                  Platform_Name, &  ! Optional output
-                                  Comment      , &  ! Optional output
-                                  Message_Log  ) &  ! Error messaging
+  FUNCTION Read_TauProfile_GAtts( NC_Filename     , &  ! Input
+                                  NC_FileID       , &  ! Input
+                                  Release         , &  ! Optional output
+                                  Version         , &  ! Optional output
+                                  Sensor_Id       , &  ! Optional output
+                                  WMO_Satellite_Id, &  ! Optional output
+                                  WMO_Sensor_Id   , &  ! Optional output
+                                  ID_Tag          , &  ! Optional output
+                                  Title           , &  ! Optional output
+                                  History         , &  ! Optional output
+                                  Comment         , &  ! Optional output
+                                  Message_Log     ) &  ! Error messaging
                                 RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    INTEGER,                  INTENT(IN)  :: NC_FileID
+    INTEGER     ,           INTENT(IN)  :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
+    INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
+    INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id   
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: ID_Tag
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Name
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Platform_Name
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_TauProfile_GAtts'
-    INTEGER     , PARAMETER :: NGETGATTS = 6
     ! Local variables
-    INTEGER :: Get_Status(NGETGATTS), n
+    CHARACTER(256)  :: GAttName
+    CHARACTER(5000) :: GAttString
+    INTEGER :: NF90_Status
 
     ! Set up
     Error_Status = SUCCESS
-    Get_Status   = SUCCESS
-    n = 0
 
-    ! The Title
-    n = n + 1
-    IF ( PRESENT( Title ) ) THEN
-      Get_Status(n) = Get_GAttString(TITLE_GATTNAME, Title, &
-                                     Message_Log=Message_Log )
+    ! The Release
+    IF ( PRESENT(Release) ) THEN
+      GAttName = RELEASE_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Release )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
     END IF
 
-    ! The History
-    n = n + 1
-    IF ( PRESENT( History ) ) THEN
-      Get_Status(n) = Get_GAttString(HISTORY_GATTNAME, History, &
-                                     Message_Log=Message_Log )
+    ! The Version
+    IF ( PRESENT(Version) ) THEN
+      GAttName = VERSION_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Version )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
     END IF
 
-    ! The Sensor_Name
-    n = n + 1
-    IF ( PRESENT( Sensor_Name ) ) THEN
-      Get_Status(n) = Get_GAttString(SENSOR_NAME_GATTNAME, Sensor_Name, &
-                                     Message_Log=Message_Log )
+    ! The Sensor_Id
+    IF ( PRESENT(Sensor_Id) ) THEN
+      GAttString = ' '; Sensor_Id = ' '
+      GAttName = SENSOR_ID_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+      CALL Remove_NULL_Characters( GAttString )
+      Sensor_Id = GAttString(1:MIN( LEN(Sensor_Id), LEN_TRIM(GAttString) ))
     END IF
 
-    ! The Platform_Name
-    n = n + 1
-    IF ( PRESENT( Platform_Name ) ) THEN
-      Get_Status(n) = Get_GAttString(PLATFORM_NAME_GATTNAME, Platform_Name, &
-                                     Message_Log=Message_Log )
+    ! The WMO_Satellite_Id
+    IF ( PRESENT(WMO_Satellite_Id) ) THEN
+      GAttName = WMO_SATELLITE_ID_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  WMO_Satellite_Id )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
     END IF
 
-    ! The Comment
-    n = n + 1
-    IF ( PRESENT( Comment ) ) THEN
-      Get_Status(n) = Get_GAttString(COMMENT_GATTNAME, Comment, &
-                                     Message_Log=Message_Log )
+    ! The WMO_Sensor_Id
+    IF ( PRESENT(WMO_Sensor_Id) ) THEN
+      GAttName = WMO_SENSOR_ID_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  WMO_Sensor_Id )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
     END IF
 
     ! The ID_Tag
-    n = n + 1
-    IF ( PRESENT( ID_TAG ) ) THEN
-      Get_Status(n) = Get_GAttString(ID_TAG_GATTNAME, ID_Tag, &
-                                     Message_Log=Message_Log )
+    IF ( PRESENT(ID_Tag) ) THEN
+      GAttString = ' '; ID_Tag = ' '
+      GAttName = ID_TAG_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+      CALL Remove_NULL_Characters( GAttString )
+      ID_Tag = GAttString(1:MIN( LEN(ID_Tag), LEN_TRIM(GAttString) ))
     END IF
 
-    ! Check for any errors
-    IF ( ANY( Get_Status /= SUCCESS ) ) Error_Status = WARNING
+    ! The Title
+    IF ( PRESENT(Title) ) THEN
+      GAttString = ' '; Title = ' '
+      GAttName = TITLE_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+      CALL Remove_NULL_Characters( GAttString )
+      Title = GAttString(1:MIN( LEN(Title), LEN_TRIM(GAttString) ))
+    END IF
 
-  CONTAINS
+    ! The History
+    IF ( PRESENT(History) ) THEN
+      GAttString = ' '; History = ' '
+      GAttName = HISTORY_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+      CALL Remove_NULL_Characters( GAttString )
+      History = GAttString(1:MIN( LEN(History), LEN_TRIM(GAttString) ))
+    END IF
 
-    FUNCTION Get_GAttString(GAttName, GAttString, Message_Log) RESULT(Error_Status)
-      CHARACTER(*),           INTENT(IN)  :: GAttName
-      CHARACTER(*),           INTENT(OUT) :: GAttString
-      CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-      INTEGER :: Error_Status
-      CHARACTER(5000) :: LongString
-      GAttString = ' '
-      LongString = ' '
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           TRIM(GAttName), &
-                                           LongString, &
-                                           Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//TRIM(GAttName)//&
-                              ' attribute from '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-      CALL Remove_NULL_Characters( LongString )
-      GAttString = LongString(1:MIN( LEN(GAttString), LEN_TRIM(LongString) ))
-    END FUNCTION Get_GAttString
+    ! The Comment
+    IF ( PRESENT(Comment) ) THEN
+      GAttString = ' '; Comment = ' '
+      GAttName = COMMENT_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) GOTO 1000
+      CALL Remove_NULL_Characters( GAttString )
+      Comment = GAttString(1:MIN( LEN(Comment), LEN_TRIM(GAttString) ))
+    END IF
+
+    !=====
+    RETURN
+    !=====
+    
+    ! Clean up after error
+    1000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          'Error reading '//TRIM(GAttName)//&
+                          ' attribute from '//TRIM(NC_Filename), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
 
   END FUNCTION Read_TauProfile_GAtts
 
@@ -687,7 +781,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Create_TauProfile_netCDF
 !
@@ -701,14 +795,14 @@ CONTAINS
 !                                                Angle_List                       , &  ! Input
 !                                                Profile_List                     , &  ! Input
 !                                                Molecule_Set_List                , &  ! Input
+!                                                Release         =Release         , &  ! Optional input
+!                                                Version         =Version         , &  ! Optional input
 !                                                Sensor_ID       =Sensor_ID       , &  ! Optional Input
 !                                                WMO_Satellite_ID=WMO_Satellite_ID, &  ! Optional Input
 !                                                WMO_Sensor_ID   =WMO_Sensor_ID   , &  ! Optional Input
 !                                                ID_Tag          =ID_Tag          , &  ! Optional input
 !                                                Title           =Title           , &  ! Optional input
 !                                                History         =History         , &  ! Optional input
-!                                                Sensor_Name     =Sensor_Name     , &  ! Optional input
-!                                                Platform_Name   =Platform_Name   , &  ! Optional input
 !                                                Comment         =Comment         , &  ! Optional input
 !                                                RCS_Id          =RCS_Id          , &  ! Revision control
 !                                                Message_Log     =Message_Log       )  ! Error messaging
@@ -762,6 +856,18 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Release:            The release number of the netCDF AntCorr file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:            The version number of the netCDF AntCorr file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Sensor_ID:          A character string describing the sensor and
 !                           platform used to construct sensor specific
 !                           filenames. Examples of sensor ids are
@@ -820,22 +926,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Sensor_Name:        Character string written into the SENSOR_NAME
-!                           global attribute field of the netCDF TauProfile
-!                           file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Platform_Name:      Character string written into the PLATFORM_NAME
-!                           global attribute field of the netCDF TauProfile
-!                           file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 !       Comment:            Character string written into the COMMENT global
 !                           attribute field of the netCDF TauProfile file.
 !                           UNITS:      N/A
@@ -873,10 +963,6 @@ CONTAINS
 !                          TYPE:       INTEGER                                        
 !                          DIMENSION:  Scalar                                         
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
   FUNCTION Create_TauProfile_netCDF( NC_Filename      , &  ! Input
@@ -885,33 +971,33 @@ CONTAINS
                                      Angle_List       , &  ! Input
                                      Profile_List     , &  ! Input
                                      Molecule_Set_List, &  ! Input
+                                     Release          , &  ! Optional input
+                                     Version          , &  ! Optional input
                                      Sensor_ID        , &  ! Optional Input
                                      WMO_Satellite_ID , &  ! Optional Input
                                      WMO_Sensor_ID    , &  ! Optional Input
                                      ID_Tag           , &  ! Optional input
                                      Title            , &  ! Optional input
                                      History          , &  ! Optional input
-                                     Sensor_Name      , &  ! Optional input
-                                     Platform_Name    , &  ! Optional input
                                      Comment          , &  ! Optional input
                                      RCS_Id           , &  ! Revision control
                                      Message_Log      ) &  ! Error messaging
                                    RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*)          , INTENT(IN)  :: NC_Filename
-    REAL(fp)              , INTENT(IN)  :: Level_Pressure(:)
+    REAL(fp)              , INTENT(IN)  :: Level_Pressure(0:)
     INTEGER               , INTENT(IN)  :: Channel_List(:)
     REAL(fp)              , INTENT(IN)  :: Angle_List(:)
     INTEGER               , INTENT(IN)  :: Profile_List(:)
     INTEGER               , INTENT(IN)  :: Molecule_Set_List(:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Release         
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_ID
     INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Satellite_ID
     INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Sensor_ID
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Name
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Platform_Name
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -920,9 +1006,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Create_TauProfile_netCDF'
     ! Local variables
+    CHARACTER(256) :: Message
     INTEGER :: NC_FileID
     INTEGER :: NF90_Status
-    INTEGER :: Status1, Status2, Status3
+    INTEGER :: Put_Status(4)
     INTEGER :: Close_Status
     INTEGER :: StrLen_DimID
     INTEGER :: n_Layers,        Layer_DimID
@@ -935,545 +1022,452 @@ CONTAINS
     TYPE(TauProfile_type) :: TPdummy
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
-    ! Check input
-    !
-    ! The level pressure input
+    ! Check level pressure
     n_Levels = SIZE( Level_Pressure )
     n_Layers = n_Levels - 1
     IF ( n_Layers < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'LEVEL_PRESSURE array must have at least 2-elements.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'LEVEL_PRESSURE array must have at least 2-elements.'
+      GOTO 2000
     END IF
     IF ( ANY( Level_Pressure < ZERO ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid LEVEL_PRESSURE value found.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Invalid LEVEL_PRESSURE value found.'
+      GOTO 2000
     END IF
 
-    ! The Channel input
+    ! Check channel input
     n_Channels = SIZE( Channel_List )
     IF ( n_Channels < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'CHANNEL_LIST array must be non-zero size.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'CHANNEL_LIST array must be non-zero size.'
+      GOTO 2000
     END IF
     IF ( ANY( Channel_List < 1 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid CHANNEL_LIST value found.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Invalid CHANNEL_LIST value found.'
+      GOTO 2000
     END IF
 
-    ! The Angle input
+    !  Check Angle input
     n_Angles = SIZE( Angle_List )
     IF ( n_Angles < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'ANGLE_LIST array must be non-zero size.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'ANGLE_LIST array must be non-zero size.'
+      GOTO 2000
     END IF
     IF ( ANY( ABS(Angle_List) > ANGLE_LIMIT ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid ANGLE_LIST value found.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Invalid ANGLE_LIST value found.'
+      GOTO 2000
     END IF
 
-    ! The Profile input
+    ! Check Profile input
     n_Profiles = SIZE( Profile_List )
     IF ( n_Profiles < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'PROFILE_LIST array must be non-zero size.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'PROFILE_LIST array must be non-zero size.'
+      GOTO 2000
     END IF
     IF ( ANY( Profile_List < 1 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid PROFILE_LIST value found.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Invalid PROFILE_LIST value found.'
+      GOTO 2000
     END IF
 
-    ! The molecule set input
+    ! Check molecule set input
     n_Molecule_Sets = SIZE( Molecule_Set_List )
     IF ( n_Molecule_Sets < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'MOLECULE_SET_LIST array must be non-zero size.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'MOLECULE_SET_LIST array must be non-zero size.'
+      GOTO 2000
     END IF
     IF ( ANY( Molecule_Set_List < 1 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid MOLECULE_SET_LIST value found.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Invalid MOLECULE_SET_LIST value found.'
+      GOTO 2000
     END IF
 
 
     ! Create the data file
+    ! --------------------
     NF90_Status = NF90_CREATE( NC_Filename, &
                                NF90_CLOBBER, &
                                NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error creating '//TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error creating '//TRIM(NC_Filename)//' - '//&
+                TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 2000
     END IF
 
 
     ! Define the dimensions
-    !
-    ! The Sensor_Id string length
-    Error_Status = Def_Dim(STRLEN_DIMNAME, LEN(TPDummy%Sensor_ID), StrLen_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
+    ! ---------------------
     ! The number of levels
-    Error_Status = Def_Dim(LEVEL_DIMNAME, n_Levels, Level_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                LEVEL_DIMNAME, n_Levels, Level_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//LEVEL_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
     ! The number of layers
-    Error_Status = Def_Dim(LAYER_DIMNAME, n_Layers, Layer_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                LAYER_DIMNAME, n_Layers, Layer_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//LAYER_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! The number of Channels
-    Error_Status = Def_Dim(CHANNEL_DIMNAME, n_Channels, Channel_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The number of channels
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                CHANNEL_DIMNAME, n_Channels, Channel_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! The number of Angles
-    Error_Status = Def_Dim(ANGLE_DIMNAME, n_Angles, Angle_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The number of angles
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                ANGLE_DIMNAME, n_Angles, Angle_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//ANGLE_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! The number of Profiles
-    Error_Status = Def_Dim(PROFILE_DIMNAME, n_Profiles, Profile_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The number of profiles
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                PROFILE_DIMNAME, n_Profiles, Profile_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//PROFILE_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
     ! The number of molecule sets
-    Error_Status = Def_Dim(MOLECULE_SET_DIMNAME, NF90_UNLIMITED, Molecule_Set_DimID )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                MOLECULE_SET_DIMNAME, NF90_UNLIMITED, Molecule_Set_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//MOLECULE_SET_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
 
     ! Write the global attributes
-    Error_Status = Write_TauProfile_GAtts( NC_Filename                , &
-                                           NC_FileID                  , &
-                                           ID_Tag       =ID_Tag       , &
-                                           Title        =Title        , &
-                                           History      =History      , &
-                                           Sensor_Name  =Sensor_Name  , &
-                                           Platform_Name=Platform_Name, &
-                                           Comment      =Comment      , &
-                                           Message_Log  =Message_Log    )
+    ! ---------------------------
+    Error_Status = Write_TauProfile_GAtts( NC_Filename                      , &
+                                           NC_FileID                        , &
+                                           Release         =Release         , &
+                                           Version         =Version         , &
+                                           Sensor_Id       =Sensor_Id       , &
+                                           WMO_Satellite_Id=WMO_Satellite_Id, &
+                                           WMO_Sensor_Id   =WMO_Sensor_Id   , &
+                                           ID_Tag          =ID_Tag          , &
+                                           Title           =Title           , &
+                                           History         =History         , &
+                                           Comment         =Comment         , &
+                                           Message_Log     =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing global attributes to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+      Message = 'Error writing global attributes to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
 
 
     ! Define the variables
-    !
-    ! Define the sensor ID
-    Error_Status = Def_Var(SENSOR_ID_VARNAME  , &
-                           SENSOR_ID_TYPE     , &
-                           SENSOR_ID_LONGNAME , &
-                           SENSOR_ID_DESC     , &
-                           SENSOR_ID_UNITS    , &
-                           DimIDs=(/StrLen_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! --------------------
+    ! The level pressure
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                LEVEL_PRESSURE_VARNAME, &
+                                LEVEL_PRESSURE_TYPE, &
+                                dimIDs=(/Level_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//LEVEL_PRESSURE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! Define the WMO satellite ID
-    Error_Status = Def_Var(WMO_SATELLITE_ID_VARNAME  , &
-                           WMO_SATELLITE_ID_TYPE     , &
-                           WMO_SATELLITE_ID_LONGNAME , &
-                           WMO_SATELLITE_ID_DESC     , &
-                           WMO_SATELLITE_ID_UNITS      )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  LEVEL_PRESSURE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  LEVEL_PRESSURE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  LEVEL_PRESSURE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  LEVEL_PRESSURE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//LEVEL_PRESSURE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
 
-    ! Define the WMO sensor ID
-    Error_Status = Def_Var(WMO_SENSOR_ID_VARNAME  , &
-                           WMO_SENSOR_ID_TYPE     , &
-                           WMO_SENSOR_ID_LONGNAME , &
-                           WMO_SENSOR_ID_DESC     , &
-                           WMO_SENSOR_ID_UNITS      )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The channel list
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                CHANNEL_LIST_VARNAME, &
+                                CHANNEL_LIST_TYPE, &
+                                dimIDs=(/Channel_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//CHANNEL_LIST_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! Define the level pressure
-    Error_Status = Def_Var(LEVEL_PRESSURE_VARNAME  , &
-                           LEVEL_PRESSURE_TYPE     , &
-                           LEVEL_PRESSURE_LONGNAME , &
-                           LEVEL_PRESSURE_DESC     , &
-                           LEVEL_PRESSURE_UNITS    , &
-                           DimIDs=(/Level_DimID/)    )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  CHANNEL_LIST_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  CHANNEL_LIST_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  CHANNEL_LIST_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  CHANNEL_LIST_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//CHANNEL_LIST_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
 
-    ! Define the channel list
-    Error_Status = Def_Var(CHANNEL_LIST_VARNAME  , &
-                           CHANNEL_LIST_TYPE     , &
-                           CHANNEL_LIST_LONGNAME , &
-                           CHANNEL_LIST_DESC     , &
-                           CHANNEL_LIST_UNITS    , &
-                           DimIDs=(/Channel_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The angle list
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                ANGLE_LIST_VARNAME, &
+                                ANGLE_LIST_TYPE, &
+                                dimIDs=(/Angle_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//ANGLE_LIST_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! Define the angle list
-    Error_Status = Def_Var(ANGLE_LIST_VARNAME  , &
-                           ANGLE_LIST_TYPE     , &
-                           ANGLE_LIST_LONGNAME , &
-                           ANGLE_LIST_DESC     , &
-                           ANGLE_LIST_UNITS    , &
-                           DimIDs=(/Angle_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  ANGLE_LIST_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  ANGLE_LIST_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  ANGLE_LIST_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  ANGLE_LIST_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//ANGLE_LIST_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
 
-    ! Define the profile list
-    Error_Status = Def_Var(PROFILE_LIST_VARNAME  , &
-                           PROFILE_LIST_TYPE     , &
-                           PROFILE_LIST_LONGNAME , &
-                           PROFILE_LIST_DESC     , &
-                           PROFILE_LIST_UNITS    , &
-                           DimIDs=(/Profile_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The profile set list
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                PROFILE_LIST_VARNAME, &
+                                PROFILE_LIST_TYPE, &
+                                dimIDs=(/Profile_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//PROFILE_LIST_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
 
-    ! Define the molecule set list
-    Error_Status = Def_Var(MOLECULE_SET_LIST_VARNAME  , &
-                           MOLECULE_SET_LIST_TYPE     , &
-                           MOLECULE_SET_LIST_LONGNAME , &
-                           MOLECULE_SET_LIST_DESC     , &
-                           MOLECULE_SET_LIST_UNITS    , &
-                           DimIDs=(/Molecule_Set_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  PROFILE_LIST_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  PROFILE_LIST_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  PROFILE_LIST_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  PROFILE_LIST_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//PROFILE_LIST_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
 
-    ! Define the transmittance
-    Error_Status = Def_Var(TRANSMITTANCE_VARNAME  , &
-                           TRANSMITTANCE_TYPE     , &
-                           TRANSMITTANCE_LONGNAME , &
-                           TRANSMITTANCE_DESC     , &
-                           TRANSMITTANCE_UNITS    , &
-                           DimIDs=(/ Layer_DimID       , &
-                                     Channel_DimID     , &
-                                     Angle_DimID       , &
-                                     Profile_DimID     , &
-                                     Molecule_Set_DimID /) )
-    IF ( Error_Status /= SUCCESS ) RETURN
+    ! The molecule set list
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                MOLECULE_SET_LIST_VARNAME, &
+                                MOLECULE_SET_LIST_TYPE, &
+                                dimIDs=(/Molecule_Set_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//MOLECULE_SET_LIST_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  MOLECULE_SET_LIST_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  MOLECULE_SET_LIST_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  MOLECULE_SET_LIST_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  MOLECULE_SET_LIST_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//MOLECULE_SET_LIST_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
+
+    ! The transmittance
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                TRANSMITTANCE_VARNAME, &
+                                TRANSMITTANCE_TYPE, &
+                                dimIDs=(/ Layer_DimID       , &
+                                          Channel_DimID     , &
+                                          Angle_DimID       , &
+                                          Profile_DimID     , &
+                                          Molecule_Set_DimID /), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//TRANSMITTANCE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  TRANSMITTANCE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  TRANSMITTANCE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  TRANSMITTANCE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  TRANSMITTANCE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//TRANSMITTANCE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
 
 
     ! Take netCDF file out of define mode
+    ! -----------------------------------
     NF90_Status = NF90_ENDDEF( NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error taking file '//TRIM( NC_Filename )// &
-                            ' out of define mode - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error taking '//TRIM(NC_Filename)//' out of define mode'
+      GOTO 1000
     END IF
 
 
-    ! Write the supplied variable data
-    !
-    ! Sensor ID
-    IF ( PRESENT( Sensor_ID ) ) THEN
-      Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                          SENSOR_ID_VARNAME, &
-                                          Sensor_ID )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//SENSOR_ID_VARNAME//&
-                              ' to '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-    END IF
-
-    ! WMO Satellite ID
-    IF ( PRESENT( WMO_Satellite_ID ) ) THEN
-      Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                          WMO_SATELLITE_ID_VARNAME, &
-                                          WMO_Satellite_ID )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//WMO_SATELLITE_ID_VARNAME//&
-                              ' to '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-    END IF
-
-    ! WMO Sensor ID
-    IF ( PRESENT( WMO_Sensor_ID ) ) THEN
-      Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                          WMO_SENSOR_ID_VARNAME, &
-                                          WMO_Sensor_ID )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//WMO_SENSOR_ID_VARNAME//&
-                              ' to '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-    END IF
-
+    ! Write the "dimension" data
+    ! --------------------------
     ! Level pressure
     Error_Status = Put_netCDF_Variable( NC_FileID, &
                                         LEVEL_PRESSURE_VARNAME, &
                                         Level_Pressure )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_PRESSURE_VARNAME//&
-                            ' to '//TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error writing '//LEVEL_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
-
     ! Channel list
     Error_Status = Put_netCDF_Variable( NC_FileID, &
                                         CHANNEL_LIST_VARNAME, &
                                         Channel_List )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//CHANNEL_LIST_VARNAME//&
-                            ' to '//TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error writing '//CHANNEL_LIST_VARNAME//' to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
-
     ! Angle list
     Error_Status = Put_netCDF_Variable( NC_FileID, &
                                         ANGLE_LIST_VARNAME, &
                                         Angle_List )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//ANGLE_LIST_VARNAME//&
-                            ' to '//TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error writing '//ANGLE_LIST_VARNAME//' to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
-
     ! Profile list
     Error_Status = Put_netCDF_Variable( NC_FileID, &
                                         PROFILE_LIST_VARNAME, &
                                         Profile_List )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//PROFILE_LIST_VARNAME//&
-                            ' to '//TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error writing '//PROFILE_LIST_VARNAME//' to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
-
     ! Molecule set list
     Error_Status = Put_netCDF_Variable( NC_FileID, &
                                         MOLECULE_SET_LIST_VARNAME, &
                                         Molecule_Set_List )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//MOLECULE_SET_LIST_VARNAME//&
-                            ' to '//TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error writing '//MOLECULE_SET_LIST_VARNAME//' to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
 
 
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       Error_Status = WARNING
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
-
-  CONTAINS
-
-
-    FUNCTION Def_Dim(DimName, DimSize, DimID) RESULT(Error_Status)
-      CHARACTER(*), INTENT(IN)  :: DimName
-      INTEGER,      INTENT(IN)  :: DimSize
-      INTEGER,      INTENT(OUT) :: DimID
-      INTEGER :: Error_Status
-      INTEGER :: NF90_Status
-      Error_Status = SUCCESS
-      NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                  TRIM(DimName), &
-                                  DimSize, &
-                                  DimID )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error defining the '//TRIM(DimName)//' dimension in '// &
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-      END IF
-    END FUNCTION Def_Dim
-
-
-    FUNCTION Def_Var( VarName    , &
-                      VarType    , &
-                      LongName   , &
-                      Description, &
-                      Units      , &
-                      DimIds     ) &
-                    RESULT(Error_Status)
-      ! Arguments
-      CHARACTER(*),           INTENT(IN) :: VarName
-      INTEGER     ,           INTENT(IN) :: VarType
-      CHARACTER(*),           INTENT(IN) :: LongName
-      CHARACTER(*),           INTENT(IN) :: Description
-      CHARACTER(*),           INTENT(IN) :: Units
-      INTEGER     , OPTIONAL, INTENT(IN) :: DimIDs(:)
-      ! Function result
-      INTEGER :: Error_Status
-      ! Local parameters
-      INTEGER, PARAMETER :: NATTS=4
-      ! Loocal variables
-      INTEGER :: NF90_Status
-      INTEGER :: Put_Status(NATTS)
-
-      ! Set up
-      Error_Status = SUCCESS 
-            
-      ! Define the variable
-      NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                  VarName  , &
-                                  VarType  , &
-                                  dimIDs=DimIDs, &
-                                  varID =VarID )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error defining '//VarName//' variable in '// &
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-  
-      ! Write some attributes
-      Put_Status(1) = Put_netCDF_Attribute( NC_FileID, &
-                                            LONGNAME_ATTNAME, &
-                                            LongName, &
-                                            Variable_Name=VarName )
-      Put_Status(2) = Put_netCDF_Attribute( NC_FileID, &
-                                            DESCRIPTION_ATTNAME, &
-                                            Description, &
-                                            Variable_Name=VarName )
-      Put_Status(3) = Put_netCDF_Attribute( NC_FileID, &
-                                            UNITS_ATTNAME, &
-                                            Units, &
-                                            Variable_Name=VarName )
-      ! The following yukness is because
-      ! I don't want to overload.
-      SELECT CASE(VarName)
-        CASE (LEVEL_PRESSURE_VARNAME,&
-              ANGLE_LIST_VARNAME, &
-              TRANSMITTANCE_VARNAME)
-          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-                                                FILLVALUE_ATTNAME, &
-                                                FP_FILLVALUE, &
-                                                Variable_Name=VarName )
-        CASE (CHANNEL_LIST_VARNAME, &
-              PROFILE_LIST_VARNAME, &
-              MOLECULE_SET_LIST_VARNAME)
-          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-                                                FILLVALUE_ATTNAME, &
-                                                IP_FILLVALUE, &
-                                                Variable_Name=VarName )
-        CASE (SENSOR_ID_VARNAME)
-          Put_Status(4) = SUCCESS
-!          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-!                                                FILLVALUE_ATTNAME, &
-!                                                SENSOR_ID_FILLVALUE, &
-!                                                Variable_Name=VarName )
-        CASE (WMO_SATELLITE_ID_VARNAME)
-          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-                                                FILLVALUE_ATTNAME, &
-                                                WMO_SATELLITE_ID_FILLVALUE, &
-                                                Variable_Name=VarName )
-        CASE (WMO_SENSOR_ID_VARNAME)
-          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-                                                FILLVALUE_ATTNAME, &
-                                                WMO_SENSOR_ID_FILLVALUE, &
-                                                Variable_Name=VarName )
-      END SELECT
-      
-      ! Check attribute write errors
-      IF ( ANY(Put_Status /= SUCCESS) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//VarName//&
-                              ' variable attributes to '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-    END FUNCTION Def_Var
+    !=====
+    RETURN
+    !=====
+    
+    ! Clean up after error
+    1000 CONTINUE
+    NF90_Status = NF90_CLOSE( NC_FileID )
+    2000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
 
   END FUNCTION Create_TauProfile_netCDF
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Modify_TauProfile_GAtts
 !
@@ -1482,15 +1476,18 @@ CONTAINS
 !       TauProfile data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Modify_TauProfile_GAtts( NC_Filename                  , &  ! Input
-!                                               ID_Tag        = ID_Tag       , &  ! Optional Input
-!                                               Title         = Title        , &  ! Optional Input
-!                                               History       = History      , &  ! Optional Input
-!                                               Sensor_Name   = Sensor_Name  , &  ! Optional Input
-!                                               Platform_Name = Platform_Name, &  ! Optional Input
-!                                               Comment       = Comment      , &  ! Optional Input
-!                                               RCS_Id        = RCS_Id       , &  ! Revision control
-!                                               Message_Log   = Message_Log    )  ! Error messaging
+!       Error_Status = Modify_TauProfile_GAtts( NC_Filename                      , &  ! Input
+!                                               Release         =Release         , &  ! Optional input
+!                                               Version         =Version         , &  ! Optional input
+!                                               Sensor_ID       =Sensor_ID       , &  ! Optional Input
+!                                               WMO_Satellite_ID=WMO_Satellite_ID, &  ! Optional Input
+!                                               WMO_Sensor_ID   =WMO_Sensor_ID   , &  ! Optional Input
+!                                               ID_Tag          =ID_Tag          , &  ! Optional Input
+!                                               Title           =Title           , &  ! Optional Input
+!                                               History         =History         , &  ! Optional Input
+!                                               Comment         =Comment         , &  ! Optional Input
+!                                               RCS_Id          =RCS_Id          , &  ! Revision control
+!                                               Message_Log     =Message_Log       )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -1502,6 +1499,51 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Release:          The release number of the netCDF AntCorr file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:          The version number of the netCDF AntCorr file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Sensor_ID:        A character string describing the sensor and
+!                         platform used to construct sensor specific
+!                         filenames. Examples of sensor ids are
+!                           hirs3_n17
+!                           ssmis_f16
+!                           imgr_g11
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       WMO_Satellite_ID: The WMO code for identifying satellite
+!                         platforms. Taken from the WMO common
+!                         code tables at:
+!                           http://www.wmo.ch/web/ddbs/Code-tables.html
+!                         The Satellite ID is from Common Code
+!                         table C-5, or code table 0 01 007 in BUFR
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       WMO_Sensor_ID:    The WMO code for identifying a satelite
+!                         sensor. Taken from the WMO common
+!                         code tables at:
+!                           http://www.wmo.ch/web/ddbs/Code-tables.html
+!                         The Sensor ID is from Common Code
+!                         table C-8, or code table 0 02 019 in BUFR
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       ID_Tag:           Character string to write into the ID_TAG global
 !                         attribute field of the netCDF TauProfile file.
 !                         UNITS:      N/A
@@ -1517,20 +1559,6 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       History:          Character string to write into the HISTORY global
-!                         attribute field of the netCDF TauProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Sensor_Name:      Character string to write into the SENSOR_NAME global
-!                         attribute field of the netCDF TauProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Platform_Name:    Character string to write into the PLATFORM_NAME global
 !                         attribute field of the netCDF TauProfile file.
 !                         UNITS:      N/A
 !                         TYPE:       CHARACTER(*)
@@ -1572,29 +1600,31 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Jul-2003
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Modify_TauProfile_GAtts( NC_Filename  , &  ! Input
-                                    ID_Tag       , &  ! Optional Input
-                                    Title        , &  ! Optional Input
-                                    History      , &  ! Optional Input
-                                    Sensor_Name  , &  ! Optional Input
-                                    Platform_Name, &  ! Optional Input
-                                    Comment      , &  ! Optional Input
-                                    RCS_Id       , &  ! Revision control
-                                    Message_Log  ) &  ! Error messaging
+  FUNCTION Modify_TauProfile_GAtts( NC_Filename     , &  ! Input
+                                    Release         , &  ! Optional input
+                                    Version         , &  ! Optional input
+                                    Sensor_ID       , &  ! Optional Input
+                                    WMO_Satellite_ID, &  ! Optional Input
+                                    WMO_Sensor_ID   , &  ! Optional Input
+                                    ID_Tag          , &  ! Optional Input
+                                    Title           , &  ! Optional Input
+                                    History         , &  ! Optional Input
+                                    Comment         , &  ! Optional Input
+                                    RCS_Id          , &  ! Revision control
+                                    Message_Log     ) &  ! Error messaging
                                   RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Release         
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_ID
+    INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Satellite_ID
+    INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Sensor_ID
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Name
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Platform_Name
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1603,73 +1633,83 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Modify_TauProfile_GAtts'
     ! Function variables
+    CHARACTER(256) :: Message
     INTEGER :: NC_FileID
     INTEGER :: NF90_Status
     INTEGER :: Close_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening netCDF TauProfile data file '//&
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error opening netCDF TauProfile data file '//TRIM(NC_Filename)
+      GOTO 2000
     END IF
 
 
     ! Put the file in define mode
+    ! ---------------------------
     NF90_Status = NF90_REDEF( NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error putting '//TRIM( NC_Filename )//' in DEFINE mode - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error putting '//TRIM(NC_Filename)//' in DEFINE mode - '// &
+                 TRIM( NF90_STRERROR( NF90_Status ) )
+      GOTO 1000
     END IF
 
 
     ! Write the global attributes
-    Error_Status = Write_TauProfile_GAtts( TRIM( NC_Filename )        , &
-                                           NC_FileID                  , &
-                                           ID_Tag       =ID_Tag       , &
-                                           Title        =Title        , &
-                                           History      =History      , &
-                                           Sensor_Name  =Sensor_Name  , &
-                                           Platform_Name=Platform_Name, &
-                                           Comment      =Comment      , &
-                                           Message_Log  =Message_Log    )
+    ! ---------------------------
+    Error_Status = Write_TauProfile_GAtts( NC_Filename                      , &
+                                           NC_FileID                        , &
+                                           Release         =Release         , &
+                                           Version         =Version         , &
+                                           Sensor_Id       =Sensor_Id       , &
+                                           WMO_Satellite_Id=WMO_Satellite_Id, &
+                                           WMO_Sensor_Id   =WMO_Sensor_Id   , &
+                                           ID_Tag          =ID_Tag          , &
+                                           Title           =Title           , &
+                                           History         =History         , &
+                                           Comment         =Comment         , &
+                                           Message_Log     =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing global attribute to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+      Message = 'Error writing global attribute to '//TRIM(NC_Filename)
+      GOTO 1000
     END IF
 
 
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
+
+    !=====
+    RETURN
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
+    1000 CONTINUE
+    NF90_Status = NF90_CLOSE( NC_FileID )
+    2000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
 
   END FUNCTION Modify_TauProfile_GAtts
 
@@ -1690,6 +1730,8 @@ CONTAINS
 !                                                 n_Angles         =n_Angles         , &  ! Optional output
 !                                                 n_Profiles       =n_Profiles       , &  ! Optional output
 !                                                 n_Molecule_Sets  =n_Molecule_Sets  , &  ! Optional output
+!                                                 Release          =Release          , &  ! Optional output
+!                                                 Version          =Version          , &  ! Optional output
 !                                                 Sensor_ID        =Sensor_ID        , &  ! Optional output
 !                                                 WMO_Satellite_ID =WMO_Satellite_ID , &  ! Optional output
 !                                                 WMO_Sensor_ID    =WMO_Sensor_ID    , &  ! Optional output
@@ -1701,8 +1743,6 @@ CONTAINS
 !                                                 ID_Tag           =ID_Tag           , &  ! Optional output
 !                                                 Title            =Title            , &  ! Optional output
 !                                                 History          =History          , &  ! Optional output
-!                                                 Sensor_Name      =Sensor_Name      , &  ! Optional output
-!                                                 Platform_Name    =Platform_Name    , &  ! Optional output
 !                                                 Comment          =Comment          , &  ! Optional output
 !                                                 RCS_Id           =RCS_Id           , &  ! Revision control
 !                                                 Message_Log      =Message_Log        )  ! Error messaging
@@ -1756,6 +1796,18 @@ CONTAINS
 !
 !       n_Molecule_Sets:    The number of molecule sets dimension of the
 !                           transmittance data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Release:            The release number of the netCDF AntCorr file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Version:            The version number of the netCDF AntCorr file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -1849,20 +1901,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Sensor_Name:        Character string written into the SENSOR_NAME global
-!                           attribute field of the netCDF TauProfile file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Platform_Name:      Character string written into the PLATFORM_NAME global
-!                           attribute field of the netCDF TauProfile file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 !       Comment:            Character string written into the COMMENT global
 !                           attribute field of the netCDF TauProfile file.
 !                           UNITS:      N/A
@@ -1878,25 +1916,22 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF file inquiry was successful.
-!                        == FAILURE an error occurred reading any of the requested
-!                                   dimension or variable data.
-!                        == WARNING - an error occurred reading any of the requested
-!                                     global file attributes, or
-!                                   - an error occurred closing the netCDF file.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error status.
+!                           The error codes are defined in the Message_Handler module.
+!                           If == SUCCESS the netCDF file inquiry was successful.
+!                              == FAILURE an error occurred reading any of the requested
+!                                         dimension or variable data.
+!                              == WARNING - an error occurred reading any of the requested
+!                                           global file attributes, or
+!                                         - an error occurred closing the netCDF file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 ! RESTRICTIONS:
 !       To successfully return any of the CHANNEL, ANGLE, PROFILE, or
-!       MOLECULE_SET list arrays, the dummy arguments must have the same size
-!       as the dataset in the netCDF file. Thus, two calls to this routine are
-!       required. First, the various dimensions should be read and used
-!       either to allocate the required data array of the correct size, or
-!       to subset an existing array in the call.
+!       MOLECULE_SET list arrays, the dummy arguments must have at least
+!       the same size as the dataset in the netCDF file.
 !
 !------------------------------------------------------------------------------
 
@@ -1906,6 +1941,8 @@ CONTAINS
                                       n_Angles         , &  ! Optional output
                                       n_Profiles       , &  ! Optional output
                                       n_Molecule_Sets  , &  ! Optional output
+                                      Release          , &  ! Optional output
+                                      Version          , &  ! Optional output
                                       Sensor_ID        , &  ! Optional output
                                       WMO_Satellite_ID , &  ! Optional output
                                       WMO_Sensor_ID    , &  ! Optional output
@@ -1917,8 +1954,6 @@ CONTAINS
                                       ID_Tag           , &  ! Optional output
                                       Title            , &  ! Optional output
                                       History          , &  ! Optional output
-                                      Sensor_Name      , &  ! Optional output
-                                      Platform_Name    , &  ! Optional output
                                       Comment          , &  ! Optional output
                                       RCS_Id           , &  ! Revision control
                                       Message_Log      ) &  ! Error messaging
@@ -1930,6 +1965,8 @@ CONTAINS
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Angles
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Profiles
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Molecule_Sets
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_ID   
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_ID 
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_ID
@@ -1941,8 +1978,6 @@ CONTAINS
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: ID_Tag
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Name
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Platform_Name
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1958,21 +1993,25 @@ CONTAINS
     INTEGER :: n_Levels
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Get the dimensions
-    !
+    ! ------------------
     ! The number of layers
     Error_Status = Get_netCDF_Dimension( NC_FileID, &
                                          LAYER_DIMNAME, &
@@ -1980,7 +2019,7 @@ CONTAINS
                                          Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining '//LAYER_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
+                ' dimension from '//TRIM(NC_Filename)
       GOTO 1000
     END IF
     ! The number of Channels
@@ -1990,7 +2029,7 @@ CONTAINS
                                          Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining '//CHANNEL_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
+                ' dimension from '//TRIM(NC_Filename)
       GOTO 1000
     END IF
     ! The number of Angles
@@ -2000,7 +2039,7 @@ CONTAINS
                                          Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining '//ANGLE_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
+                ' dimension from '//TRIM(NC_Filename)
       GOTO 1000
     END IF
     ! The number of Profiles
@@ -2010,7 +2049,7 @@ CONTAINS
                                          Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining '//PROFILE_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
+                ' dimension from '//TRIM(NC_Filename)
       GOTO 1000
     END IF
     ! The number of molecule sets
@@ -2020,7 +2059,7 @@ CONTAINS
                                          Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining '//MOLECULE_SET_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
+                ' dimension from '//TRIM(NC_Filename)
       GOTO 1000
     END IF
 
@@ -2031,190 +2070,178 @@ CONTAINS
     IF ( PRESENT( n_Profiles      ) ) n_Profiles      = m
     IF ( PRESENT( n_Molecule_Sets ) ) n_Molecule_Sets = j
 
-    ! Get the sensor Ids
-    !
-    ! The Sensor ID
-    IF ( PRESENT( Sensor_ID ) ) THEN
-      Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                          SENSOR_ID_VARNAME, &
-                                          Sensor_ID )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading '//SENSOR_ID_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
-        GOTO 1000
-      END IF
-    END IF
-    ! The WMO satellite ID
-    IF ( PRESENT( WMO_Satellite_ID ) ) THEN
-      Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                          WMO_SATELLITE_ID_VARNAME, &
-                                          WMO_Satellite_ID )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading '//WMO_SATELLITE_ID_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
-        GOTO 1000
-      END IF
-    END IF
-    ! The WMO Sensor ID
-    IF ( PRESENT( WMO_Sensor_ID ) ) THEN
-      Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                          WMO_SENSOR_ID_VARNAME, &
-                                          WMO_Sensor_ID )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading '//WMO_SENSOR_ID_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
-        GOTO 1000
-      END IF
-    END IF
 
     ! Get the dimension list data
-    !
+    ! ---------------------------
     ! The level pressure
     IF ( PRESENT( Level_Pressure ) ) THEN
+    
       ! Set the number of levels
       n_Levels = k + 1
+      
       ! Check the dummy argument size
       IF ( SIZE( Level_Pressure ) < n_Levels ) THEN
         Message = 'LEVEL_PRESSURE array too small to hold data.'
         GOTO 1000
       END IF
+      
       ! Initialise the entire array (in case it's bigger
       ! than the number of elements in the file)
       Level_Pressure = LEVEL_PRESSURE_FILLVALUE
+      
       ! Get the data
       Error_Status = Get_netCDF_Variable( NC_FileID, &
                                           LEVEL_PRESSURE_VARNAME, &
                                           Level_Pressure(1:n_Levels) )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error reading '//LEVEL_PRESSURE_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
+                  ' data from '//TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
+    
     ! The Channel list
     IF ( PRESENT( Channel_List ) ) THEN
+    
       ! Check the dummy argument size
       IF ( SIZE( Channel_List ) < l ) THEN
         Message = 'CHANNEL_LIST array too small to hold data.'
         GOTO 1000
       END IF
+
       ! Initialise the entire array (in case it's bigger
       ! than the number of elements in the file)
       Channel_List = CHANNEL_LIST_FILLVALUE
+
       ! Get the data
       Error_Status = Get_netCDF_Variable( NC_FileID, &
                                           CHANNEL_LIST_VARNAME, &
                                           Channel_List(1:l) )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error reading '//CHANNEL_LIST_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
+                  ' data from '//TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
+
     ! The Angle list
     IF ( PRESENT( Angle_List ) ) THEN
+
       ! Check the dummy argument size
       IF ( SIZE( Angle_List ) < i ) THEN
         Message = 'ANGLE_LIST array too small to hold data.'
         GOTO 1000
       END IF
+
       ! Initialise the entire array (in case it's bigger
       ! than the number of elements in the file)
       Angle_List = ANGLE_LIST_FILLVALUE
+
       ! Get the data
       Error_Status = Get_netCDF_Variable( NC_FileID, &
                                           ANGLE_LIST_VARNAME, &
                                           Angle_List(1:i) )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error reading '//ANGLE_LIST_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
+                  ' data from '//TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
+
     ! The Profile list
-    ! The Angle list
     IF ( PRESENT( Profile_List ) ) THEN
+
       ! Check the dummy argument size
       IF ( SIZE( Profile_List ) < m ) THEN
         Message = 'PROFILE_LIST array too small to hold data.'
         GOTO 1000
       END IF
+
       ! Initialise the entire array (in case it's bigger
       ! than the number of elements in the file)
       Profile_List = PROFILE_LIST_FILLVALUE
+
       ! Get the data
       Error_Status = Get_netCDF_Variable( NC_FileID, &
                                           PROFILE_LIST_VARNAME, &
                                           Profile_List(1:m) )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error reading '//PROFILE_LIST_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
+                  ' data from '//TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
+
     ! The Molecule_Set list
     IF ( PRESENT( Molecule_Set_List ) ) THEN
+
       ! Check the dummy argument size
       IF ( SIZE( Molecule_Set_List ) < j ) THEN
         Message = 'MOLECULE_SET_LIST array too small to hold data.'
         GOTO 1000
       END IF
+
       ! Initialise the entire array (in case it's bigger
       ! than the number of elements in the file)
       Molecule_Set_List = MOLECULE_SET_LIST_FILLVALUE
+
       ! Get the data
       Error_Status = Get_netCDF_Variable( NC_FileID, &
                                           MOLECULE_SET_LIST_VARNAME, &
                                           Molecule_Set_List(1:j) )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error reading '//MOLECULE_SET_LIST_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
+                  ' data from '//TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
 
+
     ! Get the global attributes
-    Error_Status = Read_TauProfile_GAtts( TRIM( NC_Filename )        , &
-                                          NC_FileID                  , &
-                                          ID_Tag       =ID_Tag       , &
-                                          Title        =Title        , &
-                                          History      =History      , &
-                                          Sensor_Name  =Sensor_Name  , &
-                                          Platform_Name=Platform_Name, &
-                                          Comment      =Comment      , &
-                                          Message_Log  =Message_Log    )
+    ! -------------------------
+    Error_Status = Read_TauProfile_GAtts( TRIM(NC_Filename)                 , &
+                                          NC_FileID                         , &
+                                          Release          =Release         , &
+                                          Version          =Version         , &
+                                          Sensor_Id        =Sensor_Id       , &
+                                          WMO_Satellite_Id =WMO_Satellite_Id, &
+                                          WMO_Sensor_Id    =WMO_Sensor_Id   , &
+                                          ID_Tag           =ID_Tag          , &
+                                          Title            =Title           , &
+                                          History          =History         , &
+                                          Comment          =Comment         , &
+                                          Message_Log      =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading global attribute from '//TRIM( NC_Filename )
+      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       Error_Status = WARNING
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             Error_Status, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
@@ -2435,6 +2462,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -2445,17 +2473,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -2465,7 +2495,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Channel_List(l), Angle_List(i), &
               Profile_List(m), Molecule_Set_List(j), &
               STAT = Allocate_Status )
@@ -2475,7 +2507,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
+    ! --------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename                        , &
                                               Channel_List     =Channel_List     , &
                                               Angle_List       =Angle_List       , &
@@ -2484,17 +2518,21 @@ CONTAINS
                                               Message_Log      =Message_Log        )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Channel_Index      = Get_Index( Channel_List, Channel )
     Angle_Index        = Get_Index( Angle_List, Angle )
     Profile_Index      = Get_Index( Profile_List, Profile )
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list values
+    ! ---------------------------
     IF ( Channel_Index < 1 ) THEN
       WRITE( Message, '( "Invalid CHANNEL_LIST array index value, ", i0, &
                         &" for channel #", i0 )' ) &
@@ -2518,32 +2556,38 @@ CONTAINS
       Molecule_Set_Index = j + 1  ! New molecule set
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Write the molecule list data
+    ! ----------------------------
     IF ( Molecule_Set_Index > j ) THEN
       Error_Status = Put_netCDF_Variable( NC_FileID, &
                                           MOLECULE_SET_LIST_VARNAME, &
                                           Molecule_Set, &
-                                          START = (/ Molecule_Set_Index /) )
+                                          START=(/Molecule_Set_Index/) )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error writing molecule set value ", i0, &
                           &" to ", a, "." )' ) &
                         Molecule_Set, &
-                        TRIM( NC_Filename )
+                        TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
 
+
     ! Write the transmittance data
+    ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
@@ -2557,11 +2601,13 @@ CONTAINS
                         &", Angle secant ", f5.2, ", Profile ", i0, &
                         &", and molecule set ", i0, " to ", a, "." )' ) &
                       Channel, Angle, Profile, Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list arrays
+    ! --------------------------
     DEALLOCATE(Channel_List, Angle_List, Profile_List, Molecule_Set_List, &
                STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
@@ -2571,17 +2617,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -2591,35 +2641,31 @@ CONTAINS
                      &" and molecule set ",i0 )' ) &
                      k,Channel,Angle,Profile,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
-
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-
     2000 CONTINUE
     DEALLOCATE(Channel_List, Angle_List, Profile_List, Molecule_Set_List, &
                STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
@@ -2663,6 +2709,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -2673,17 +2720,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -2695,7 +2744,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Angle_List( i ), &
               Profile_List( m ), &
               Molecule_Set_List( j ), &
@@ -2706,7 +2757,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
+    ! --------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
                                               Angle_List       =Angle_List       , &
                                               Profile_List     =Profile_List     , &
@@ -2714,15 +2767,20 @@ CONTAINS
                                               Message_Log      =Message_Log        )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Angle_Index        = Get_Index( Angle_List, Angle )
     Profile_Index      = Get_Index( Profile_List, Profile )
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
+    ! Check the index list values
+    ! ---------------------------
     IF ( Angle_Index < 1 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Invalid ANGLE_LIST array index value, ", i0, &
@@ -2730,7 +2788,6 @@ CONTAINS
                       Angle_Index, Angle
       GOTO 2000
     END IF
-    ! Check the index list values
     IF ( Profile_Index < 1 ) THEN
       WRITE( Message, '( "Invalid PROFILE_LIST array index value, ", i0, &
                         &" for molecule set #", i0 )' ) &
@@ -2741,32 +2798,38 @@ CONTAINS
       Molecule_Set_Index = j + 1  ! New molecule set
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Write the molecule list data
+    ! ----------------------------
     IF ( Molecule_Set_Index > j ) THEN
       Error_Status = Put_netCDF_Variable( NC_FileID, &
                                           MOLECULE_SET_LIST_VARNAME, &
                                           Molecule_Set, &
-                                          START = (/ Molecule_Set_Index /) )
+                                          START=(/Molecule_Set_Index/) )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error writing molecule set value ", i0, &
                           &" to ", a, "." )' ) &
                         Molecule_Set, &
-                        TRIM( NC_Filename )
+                        TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
 
+
     ! Write the transmittance data
+    ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
@@ -2778,11 +2841,13 @@ CONTAINS
       WRITE( Message, '( "Error writing Tau array for angle secant ", f5.2, &
                         &", profile ", i0, ", and molecule set ", i0, " to ", a, "." )' ) &
                       Angle, Profile, Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list arrays
+    ! --------------------------
     DEALLOCATE(Angle_List, Profile_List, Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( ROUTINE_NAME, &
@@ -2791,17 +2856,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -2810,34 +2879,31 @@ CONTAINS
                      &", profile ",i0," and molecule set ",i0 )' ) &
                      k,l,Angle,Profile,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
-
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-
     2000 CONTINUE
-    DEALLOCATE(Angle_List, Profile_List, Molecule_Set_List, STAT=Allocate_Status)
+    DEALLOCATE(Angle_List, Profile_List, Molecule_Set_List, &
+               STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
@@ -2877,6 +2943,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -2887,17 +2954,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -2910,7 +2979,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Profile_List( m ), &
               Molecule_Set_List( j ), &
               STAT = Allocate_Status )
@@ -2920,22 +2991,28 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
-    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Profile_List = Profile_List, &
-                                              Molecule_Set_List = Molecule_Set_List, &
-                                              Message_Log = Message_Log )
+    ! --------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename                        , &
+                                              Profile_List     =Profile_List     , &
+                                              Molecule_Set_List=Molecule_Set_List, &
+                                              Message_Log      =Message_Log        )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Profile_Index      = Get_Index( Profile_List, Profile )
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list values
+    ! ---------------------------
     IF ( Profile_Index < 1 ) THEN
       WRITE( Message, '( "Invalid PROFILE_LIST array index value, ", i0, &
                         &" for molecule set #", i0 )' ) &
@@ -2946,32 +3023,38 @@ CONTAINS
       Molecule_Set_Index = j + 1  ! New molecule set
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Write the molecule list data
+    ! ----------------------------
     IF ( Molecule_Set_Index > j ) THEN
       Error_Status = Put_netCDF_Variable( NC_FileID, &
                                           MOLECULE_SET_LIST_VARNAME, &
                                           Molecule_Set, &
-                                          START = (/ Molecule_Set_Index /) )
+                                          START=(/Molecule_Set_Index/) )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error writing molecule set value ", i0, &
                           &" to ", a, "." )' ) &
                         Molecule_Set, &
-                        TRIM( NC_Filename )
+                        TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
 
+
     ! Write the transmittance data
+    ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
@@ -2982,11 +3065,13 @@ CONTAINS
       WRITE( Message, '( "Error reading Tau array for profile ", i0, &
                         &", and molecule set ", i0, " from ", a, "." )' ) &
                       Profile, Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list arrays
+    ! --------------------------
     DEALLOCATE(Profile_List, Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( ROUTINE_NAME, &
@@ -2995,17 +3080,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -3014,34 +3103,31 @@ CONTAINS
                      &"for profile ",i0," and molecule set ",i0 )' ) &
                      k,l,i,Profile,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
-
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-
     2000 CONTINUE
-    DEALLOCATE(Profile_List, Molecule_Set_List, STAT=Allocate_Status)
+    DEALLOCATE(Profile_List, Molecule_Set_List, &
+               STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
@@ -3077,6 +3163,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -3087,17 +3174,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -3111,7 +3200,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Molecule_Set_List( j ), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
@@ -3120,50 +3211,62 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
+    ! --------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Molecule_Set_List = Molecule_Set_List, &
-                                              Message_Log = Message_Log )
+                                              Molecule_Set_List=Molecule_Set_List, &
+                                              Message_Log      =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list value
+    ! --------------------------
     IF ( Molecule_Set_Index < 1 ) THEN
       Molecule_Set_Index = j + 1  ! New molecule set
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Write the molecule list data
+    ! ----------------------------
     IF ( Molecule_Set_Index > j ) THEN
       Error_Status = Put_netCDF_Variable( NC_FileID, &
                                           MOLECULE_SET_LIST_VARNAME, &
                                           Molecule_Set, &
-                                          START = (/ Molecule_Set_Index /) )
+                                          START=(/Molecule_Set_Index/) )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error writing molecule set value ", i0, &
                           &" to ", a, "." )' ) &
                         Molecule_Set, &
-                        TRIM( NC_Filename )
+                        TRIM(NC_Filename)
         GOTO 1000
       END IF
     END IF
 
+
     ! Write the transmittance data
+    ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
@@ -3173,11 +3276,13 @@ CONTAINS
       WRITE( Message, '( "Error writing Tau array for molecule set ", i0, &
                         &" to ", a, "." )' ) &
                       Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list array
+    ! -------------------------
     DEALLOCATE(Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( ROUTINE_NAME, &
@@ -3186,17 +3291,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -3205,41 +3314,37 @@ CONTAINS
                      &"N_PROFILES=",i0,2x,&
                      &"for molecule set ",i0 )' ) k,l,i,m,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
-
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-
     2000 CONTINUE
     DEALLOCATE(Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Write_TauArray_rank4
 
 
-  FUNCTION Write_TauArray_rank5( NC_Filename,  &  ! Input
+  FUNCTION Write_TauArray_rank5( NC_Filename , &  ! Input
                                  Tau         , &  ! Input
                                  Quiet       , &  ! Optional input
                                  RCS_Id      , &  ! Revision control
@@ -3263,6 +3368,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -3273,17 +3379,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
@@ -3298,37 +3406,45 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Write the transmittance data
+    ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message, '( "Error writing Tau array to ", a, "." )' ) &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -3337,27 +3453,25 @@ CONTAINS
                      &"N_PROFILES=",i0,2x,&
                      &"N_MOLECULE_SETS=",i0 )' ) k,l,i,m,j
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-
     2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
@@ -3388,6 +3502,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -3404,16 +3519,18 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining TauProfile dimensions from '//TRIM( NC_Filename )
+      Message = 'Error obtaining TauProfile dimensions from '//TRIM(NC_Filename)
       GOTO 2000
     END IF
 
@@ -3427,67 +3544,69 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READWRITE' )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF TauProfile data file '//TRIM( NC_Filename )
+      Message = 'Error opening netCDF TauProfile data file '//TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Write the transmittance data
+    ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         TauProfile%Tau )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message, '( "Error writing Tau array to ", a, "." )' ) &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
-      CALL Information_TauProfile( TauProfile, Message )
+      CALL Info_TauProfile( TauProfile, Message )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-
     2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Write_TauProfile_type
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -3676,24 +3795,24 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_TauArray_rank1( NC_Filename,  &  ! Input
-                                Channel,      &  ! Input
-                                Angle,        &  ! Input
-                                Profile,      &  ! Input
+  FUNCTION Read_TauArray_rank1( NC_Filename , &  ! Input
+                                Channel     , &  ! Input
+                                Angle       , &  ! Input
+                                Profile     , &  ! Input
                                 Molecule_Set, &  ! Input
-                                Tau,          &  ! Output
-                                Quiet,        &  ! Optional input
-                                RCS_Id,       &  ! Revision control
+                                Tau         , &  ! Output
+                                Quiet       , &  ! Optional input
+                                RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
                               RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    INTEGER,                INTENT(IN)  :: Channel
-    REAL(fp),               INTENT(IN)  :: Angle
-    INTEGER,                INTENT(IN)  :: Profile
-    INTEGER,                INTENT(IN)  :: Molecule_Set
-    REAL(fp), DIMENSION(:), INTENT(OUT) :: Tau
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Quiet
+    INTEGER     ,           INTENT(IN)  :: Channel
+    REAL(fp)    ,           INTENT(IN)  :: Angle
+    INTEGER     ,           INTENT(IN)  :: Profile
+    INTEGER     ,           INTENT(IN)  :: Molecule_Set
+    REAL(fp)    ,           INTENT(OUT) :: Tau(:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -3706,10 +3825,10 @@ CONTAINS
     INTEGER :: NC_FileID
     INTEGER :: Allocate_Status
     INTEGER :: Close_Status
-    INTEGER,  DIMENSION(:), ALLOCATABLE :: Channel_List
-    REAL(fp), DIMENSION(:), ALLOCATABLE :: Angle_List
-    INTEGER,  DIMENSION(:), ALLOCATABLE :: Profile_List
-    INTEGER,  DIMENSION(:), ALLOCATABLE :: Molecule_Set_List
+    INTEGER,  ALLOCATABLE :: Channel_List(:)
+    REAL(fp), ALLOCATABLE :: Angle_List(:)
+    INTEGER,  ALLOCATABLE :: Profile_List(:)
+    INTEGER,  ALLOCATABLE :: Molecule_Set_List(:)
     INTEGER :: Channel_Index
     INTEGER :: Angle_Index
     INTEGER :: Profile_Index
@@ -3717,6 +3836,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -3727,17 +3847,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -3748,6 +3870,7 @@ CONTAINS
     END IF
 
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Channel_List( l ), &
               Angle_List( i ), &
               Profile_List( m ), &
@@ -3759,26 +3882,32 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
-    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Channel_List      = Channel_List, &
-                                              Angle_List        = Angle_List, &
-                                              Profile_List      = Profile_List, &
-                                              Molecule_Set_List = Molecule_Set_List, &
-                                              Message_Log = Message_Log )
+    ! --------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename                        , &
+                                              Channel_List     =Channel_List     , &
+                                              Angle_List       =Angle_List       , &
+                                              Profile_List     =Profile_List     , &
+                                              Molecule_Set_List=Molecule_Set_List, &
+                                              Message_Log      =Message_Log        )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Channel_Index      = Get_Index( Channel_List, Channel )
     Angle_Index        = Get_Index( Angle_List, Angle )
     Profile_Index      = Get_Index( Profile_List, Profile )
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list value
+    ! --------------------------
     IF ( Channel_Index < 1 ) THEN
       WRITE( Message, '( "Invalid CHANNEL_LIST array index value, ", i0, &
                         &" for channel #", i0 )' ) &
@@ -3805,23 +3934,27 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Read the transmittance data
+    ! ---------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
-                                        START=(/1,Channel_Index, &
-                                                  Angle_Index, &
-                                                  Profile_Index, &
+                                        START=(/1,Channel_Index     , &
+                                                  Angle_Index       , &
+                                                  Profile_Index     , &
                                                   Molecule_Set_Index/), &
                                         COUNT=(/k,1,1,1,1/) )
 
@@ -3830,11 +3963,13 @@ CONTAINS
                         &", Angle secant ", f5.2, ", Profile ", i0, &
                         &", and molecule set ", i0, " from ", a, "." )' ) &
                       Channel, Angle, Profile, Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list array
+    ! -------------------------
     DEALLOCATE(Channel_List, Angle_List, Profile_List, Molecule_Set_List, &
                STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
@@ -3844,17 +3979,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -3864,59 +4003,54 @@ CONTAINS
                      &" and molecule set ",i0 )' ) &
                      k,Channel,Angle,Profile,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     DEALLOCATE(Channel_List, Angle_List, Profile_List, Molecule_Set_List, &
                STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Read_TauArray_rank1
 
 
-  FUNCTION Read_TauArray_rank2( NC_Filename,  &  ! Input
-                                Angle,        &  ! Input
-                                Profile,      &  ! Input
+  FUNCTION Read_TauArray_rank2( NC_Filename , &  ! Input
+                                Angle       , &  ! Input
+                                Profile     , &  ! Input
                                 Molecule_Set, &  ! Input
-                                Tau,          &  ! Output
-                                Quiet,        &  ! Optional input
-                                RCS_Id,       &  ! Revision control
+                                Tau         , &  ! Output
+                                Quiet       , &  ! Optional input
+                                RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
                               RESULT ( Error_Status )
     ! Arguments
-    CHARACTER(*),             INTENT(IN)  :: NC_Filename
-    REAL(fp),                 INTENT(IN)  :: Angle
-    INTEGER,                  INTENT(IN)  :: Profile
-    INTEGER,                  INTENT(IN)  :: Molecule_Set
-    REAL(fp), DIMENSION(:,:), INTENT(OUT) :: Tau
-    INTEGER,        OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*),   OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    REAL(fp)    ,           INTENT(IN)  :: Angle
+    INTEGER     ,           INTENT(IN)  :: Profile
+    INTEGER     ,           INTENT(IN)  :: Molecule_Set
+    REAL(fp)    ,           INTENT(OUT) :: Tau(:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -3927,15 +4061,16 @@ CONTAINS
     INTEGER :: NC_FileID
     INTEGER :: Allocate_Status
     INTEGER :: Close_Status
-    REAL(fp), DIMENSION(:), ALLOCATABLE :: Angle_List
-    INTEGER,  DIMENSION(:), ALLOCATABLE :: Profile_List
-    INTEGER,  DIMENSION(:), ALLOCATABLE :: Molecule_Set_List
+    REAL(fp), ALLOCATABLE :: Angle_List(:)
+    INTEGER,  ALLOCATABLE :: Profile_List(:)
+    INTEGER,  ALLOCATABLE :: Molecule_Set_List(:)
     INTEGER :: Angle_Index
     INTEGER :: Profile_Index
     INTEGER :: Molecule_Set_Index
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -3946,17 +4081,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -3968,7 +4105,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Angle_List( i ), &
               Profile_List( m ), &
               Molecule_Set_List( j ), &
@@ -3979,24 +4118,30 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
-    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Angle_List        = Angle_List, &
-                                              Profile_List      = Profile_List, &
-                                              Molecule_Set_List = Molecule_Set_List, &
-                                              Message_Log = Message_Log )
+    ! --------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename                        , &
+                                              Angle_List       =Angle_List       , &
+                                              Profile_List     =Profile_List     , &
+                                              Molecule_Set_List=Molecule_Set_List, &
+                                              Message_Log      = Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Angle_Index        = Get_Index( Angle_List, Angle )
     Profile_Index      = Get_Index( Profile_List, Profile )
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list value
+    ! --------------------------
     IF ( Angle_Index < 1 ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "Invalid ANGLE_LIST array index value, ", i0, &
@@ -4017,17 +4162,21 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Read the transmittance data
+    ! ---------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
@@ -4035,16 +4184,17 @@ CONTAINS
                                                     Profile_Index, &
                                                     Molecule_Set_Index/), &
                                         COUNT=(/k,l,1,1,1/) )
-
     IF ( Error_Status/= SUCCESS ) THEN
       WRITE( Message, '( "Error reading Tau array for angle secant ", f5.2, &
                         &", profile ", i0, ", and molecule set ", i0, " from ", a, "." )' ) &
                       Angle, Profile, Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list array
+    ! -------------------------
     DEALLOCATE(Angle_List, Profile_List, Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( ROUTINE_NAME, &
@@ -4053,17 +4203,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -4072,55 +4226,51 @@ CONTAINS
                      &", profile ",i0," and molecule set ",i0 )' ) &
                      k,l,Angle,Profile,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     DEALLOCATE(Angle_List, Profile_List, Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Read_TauArray_rank2
 
 
-  FUNCTION Read_TauArray_rank3( NC_Filename,  &  ! Input
-                                Profile,      &  ! Input
+  FUNCTION Read_TauArray_rank3( NC_Filename , &  ! Input
+                                Profile     , &  ! Input
                                 Molecule_Set, &  ! Input
-                                Tau,          &  ! Output
-                                Quiet,        &  ! Optional input
-                                RCS_Id,       &  ! Revision control
+                                Tau         , &  ! Output
+                                Quiet       , &  ! Optional input
+                                RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
                               RESULT ( Error_Status )
     ! Arguments
-    CHARACTER(*),               INTENT(IN)  :: NC_Filename
-    INTEGER,                    INTENT(IN)  :: Profile
-    INTEGER,                    INTENT(IN)  :: Molecule_Set
-    REAL(fp), DIMENSION(:,:,:), INTENT(OUT) :: Tau
-    INTEGER,          OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     ,           INTENT(IN)  :: Profile
+    INTEGER     ,           INTENT(IN)  :: Molecule_Set
+    REAL(fp)    ,           INTENT(OUT) :: Tau(:,:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -4131,13 +4281,14 @@ CONTAINS
     INTEGER :: NC_FileID
     INTEGER :: Allocate_Status
     INTEGER :: Close_Status
-    INTEGER, DIMENSION(:), ALLOCATABLE :: Profile_List
-    INTEGER, DIMENSION(:), ALLOCATABLE :: Molecule_Set_List
+    INTEGER, ALLOCATABLE :: Profile_List(:)
+    INTEGER, ALLOCATABLE :: Molecule_Set_List(:)
     INTEGER :: Profile_Index
     INTEGER :: Molecule_Set_Index
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -4148,17 +4299,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -4171,7 +4324,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Profile_List( m ), &
               Molecule_Set_List( j ), &
               STAT = Allocate_Status )
@@ -4181,22 +4336,28 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
-    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Profile_List      = Profile_List, &
-                                              Molecule_Set_List = Molecule_Set_List, &
-                                              Message_Log = Message_Log )
+    ! --------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename                        , &
+                                              Profile_List     =Profile_List     , &
+                                              Molecule_Set_List=Molecule_Set_List, &
+                                              Message_Log      =Message_Log        )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Profile_Index      = Get_Index( Profile_List, Profile )
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list value
+    ! --------------------------
     IF ( Profile_Index < 1 ) THEN
       WRITE( Message, '( "Invalid PROFILE_LIST array index value, ", i0, &
                         &" for profile ", i0 )' ) &
@@ -4210,33 +4371,38 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Read the transmittance data
+    ! ---------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
                                         START=(/1,1,1,Profile_Index, &
                                                       Molecule_Set_Index/), &
                                         COUNT=(/k,l,i,1,1/) )
-
     IF ( Error_Status/= SUCCESS ) THEN
       WRITE( Message, '( "Error reading Tau array for profile ", i0, &
                         &", and molecule set ", i0, " from ", a, "." )' ) &
                       Profile, Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list array
+    ! -------------------------
     DEALLOCATE(Profile_List, Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( ROUTINE_NAME, &
@@ -4245,17 +4411,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -4264,53 +4434,49 @@ CONTAINS
                      &"for profile ",i0," and molecule set ",i0 )' ) &
                      k,l,i,Profile,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     DEALLOCATE(Profile_List, Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Read_TauArray_rank3
 
 
-  FUNCTION Read_TauArray_rank4( NC_Filename,  &  ! Input
+  FUNCTION Read_TauArray_rank4( NC_Filename , &  ! Input
                                 Molecule_Set, &  ! Input
-                                Tau,          &  ! Output
-                                Quiet,        &  ! Optional input
-                                RCS_Id,       &  ! Revision control
+                                Tau         , &  ! Output
+                                Quiet       , &  ! Optional input
+                                RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
                               RESULT ( Error_Status )
     ! Arguments
-    CHARACTER(*),                 INTENT(IN)  :: NC_Filename
-    INTEGER,                      INTENT(IN)  :: Molecule_Set
-    REAL(fp), DIMENSION(:,:,:,:), INTENT(OUT) :: Tau
-    INTEGER,            OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*),       OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*),       OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     ,           INTENT(IN)  :: Molecule_Set
+    REAL(fp)    ,           INTENT(OUT) :: Tau(:,:,:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -4321,11 +4487,12 @@ CONTAINS
     INTEGER :: NC_FileID
     INTEGER :: Allocate_Status
     INTEGER :: Close_Status
-    INTEGER, DIMENSION(:), ALLOCATABLE :: Molecule_Set_List
+    INTEGER, ALLOCATABLE :: Molecule_Set_List(:)
     INTEGER :: Molecule_Set_Index
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -4336,17 +4503,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
@@ -4360,7 +4529,9 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Allocate the index list arrays
+    ! ------------------------------
     ALLOCATE( Molecule_Set_List( j ), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
@@ -4369,20 +4540,26 @@ CONTAINS
       GOTO 3000
     END IF
 
+
     ! Fill the index list arrays
+    ! --------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Molecule_Set_List = Molecule_Set_List, &
-                                              Message_Log = Message_Log )
+                                              Molecule_Set_List=Molecule_Set_List, &
+                                              Message_Log      =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining index list data from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
-    ! Now determine the index values for the input Tau data
+
+    ! Determine the index values for the input Tau data
+    ! -------------------------------------------------
     Molecule_Set_Index = Get_Index( Molecule_Set_List, Molecule_Set )
 
+
     ! Check the index list value
+    ! --------------------------
     IF ( Molecule_Set_Index < 1 ) THEN
       WRITE( Message, '( "Invalid MOLECULE_SET_LIST array index value, ", i0, &
                         &" for molecule set #", i0 )' ) &
@@ -4390,17 +4567,21 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Read the transmittance data
+    ! ---------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau, &
@@ -4411,11 +4592,13 @@ CONTAINS
       WRITE( Message, '( "Error reading Tau array for molecule set ", i0, &
                         &" from ", a, "." )' ) &
                       Molecule_Set, &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Deallocate the list array
+    ! -------------------------
     DEALLOCATE(Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( ROUTINE_NAME, &
@@ -4424,17 +4607,21 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -4443,50 +4630,47 @@ CONTAINS
                      &"N_PROFILES=",i0,2x,&
                      &"for molecule set ",i0 )' ) k,l,i,m,Molecule_Set
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     DEALLOCATE(Molecule_Set_List, STAT=Allocate_Status)
     IF ( Allocate_Status /= 0 ) &
       Message = TRIM(Message)//&
                 '; Error deallocating list data arrays during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Read_TauArray_rank4
 
 
-  FUNCTION Read_TauArray_rank5( NC_Filename,  &  ! Input
-                                Tau,          &  ! Output
-                                Quiet,        &  ! Optional input
-                                RCS_Id,       &  ! Revision control
-                                Message_Log ) &  ! Error messaging
+  FUNCTION Read_TauArray_rank5( NC_Filename, &  ! Input
+                                Tau        , &  ! Output
+                                Quiet      , &  ! Optional input
+                                RCS_Id     , &  ! Revision control
+                                Message_Log) &  ! Error messaging
                               RESULT ( Error_Status )
-    CHARACTER(*),                   INTENT(IN)  :: NC_Filename
-    REAL(fp), DIMENSION(:,:,:,:,:), INTENT(OUT) :: Tau
-    INTEGER,              OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*),         OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*),         OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Arguments               
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    REAL(fp)    ,           INTENT(OUT) :: Tau(:,:,:,:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -4499,6 +4683,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------ 
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -4509,17 +4694,19 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
@@ -4536,36 +4723,43 @@ CONTAINS
 
 
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------            
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                            NC_FileID, &
                                            Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Read the transmittances
+    ! -----------------------  
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         Tau )
     IF ( Error_Status/= SUCCESS ) THEN
       WRITE( Message, '( "Error reading Tau array from ", a, "." )' ) &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Close the file
+    ! --------------           
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------   
     IF ( Noisy ) THEN
       WRITE(Message,'("Tau: ", &
                      &"N_LAYERS=",i0,2x,&
@@ -4574,44 +4768,40 @@ CONTAINS
                      &"N_PROFILES=",i0,2x,&
                      &"N_MOLECULE_SETS=",i0 )' ) k,l,i,m,j
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
   END FUNCTION Read_TauArray_rank5
 
 
-  FUNCTION Read_TauProfile_type( NC_Filename,  &   ! Input
-                                 TauProfile,   &   ! Output
-                                 Quiet,        &   ! Optional input
-                                 RCS_Id,       &   ! Revision contorl
-                                 Message_Log ) &   ! Error messaging
+  FUNCTION Read_TauProfile_type( NC_Filename, &   ! Input
+                                 TauProfile , &   ! Output
+                                 Quiet      , &   ! Optional input
+                                 RCS_Id     , &   ! Revision contorl
+                                 Message_Log) &   ! Error messaging
                                RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: NC_Filename
-    TYPE(TauProfile_type),  INTENT(IN OUT) :: TauProfile
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
+    TYPE(TauProfile_type) , INTENT(IN OUT) :: TauProfile
+    INTEGER     , OPTIONAL, INTENT(IN)     :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
@@ -4627,6 +4817,7 @@ CONTAINS
     INTEGER :: k, l, i, m, j
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -4637,21 +4828,25 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+
     ! Read the dimension values
+    ! -------------------------
     Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              n_Layers        = k, &
-                                              n_Channels      = l, &
-                                              n_Angles        = i, &
-                                              n_Profiles      = m, &
-                                              n_Molecule_Sets = j, &
-                                              Message_Log = Message_Log )
+                                              n_Layers       =k, &
+                                              n_Channels     =l, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              n_Molecule_Sets=j, &
+                                              Message_Log    =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile dimensions from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 3000
     END IF
 
+
     ! Allocate the structure
+    ! ----------------------
     Error_Status = Allocate_TauProfile( k, &  ! n_Layers
                                         l, &  ! n_Channels
                                         i, &  ! n_Angles
@@ -4664,83 +4859,111 @@ CONTAINS
       GOTO 3000
     END IF
 
+
+    ! Read the global attributes
+    ! --------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename                                 , &
+                                              Release         =TauProfile%Release         , &
+                                              Version         =TauProfile%Version         , &
+                                              Sensor_ID       =TauProfile%Sensor_ID       , &  
+                                              WMO_Satellite_ID=TauProfile%WMO_Satellite_ID, &
+                                              WMO_Sensor_ID   =TauProfile%WMO_Sensor_ID   , &   
+                                              Message_Log     =Message_Log                  )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error obtaining TauProfile global attributes from '//&
+                TRIM(NC_Filename)
+      GOTO 2000
+    END IF
+    
+    ! Check the release
+    Error_Status = CheckRelease_TauProfile( TauProfile, &
+                                            Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'TauProfile Release check failed for '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
+    
+    
     ! Fill the dimension descriptor arrays
-    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
-                                              Level_Pressure    = TauProfile%Level_Pressure, &
-                                              Channel_List      = TauProfile%Channel, &
-                                              Angle_List        = TauProfile%Angle, &
-                                              Profile_List      = TauProfile%Profile, &
-                                              Molecule_Set_List = TauProfile%Molecule_Set, &
-                                              Sensor_ID         = TauProfile%Sensor_ID, &  
-                                              WMO_Satellite_ID  = TauProfile%WMO_Satellite_ID, &
-                                              WMO_Sensor_ID     = TauProfile%WMO_Sensor_ID, &   
-                                              Message_Log = Message_Log )
+    ! ------------------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename                                , &
+                                              Level_Pressure   =TauProfile%Level_Pressure, &
+                                              Channel_List     =TauProfile%Channel       , &
+                                              Angle_List       =TauProfile%Angle         , &
+                                              Profile_List     =TauProfile%Profile       , &
+                                              Molecule_Set_List=TauProfile%Molecule_Set  , &
+                                              Message_Log      =Message_Log                )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining TauProfile list arrays from '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Open the file
-    Error_Status = Open_TauProfile_netCDF( TRIM( NC_Filename ), &
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
                                          NC_FileID, &
                                          Mode = 'READ' )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening netCDF TauProfile data file '//&
-                TRIM( NC_Filename )
+                TRIM(NC_Filename)
       GOTO 2000
     END IF
 
+
     ! Read all the transmittance data
+    ! -------------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
                                         TRANSMITTANCE_VARNAME, &
                                         TauProfile%Tau )
     IF ( Error_Status/= SUCCESS ) THEN
       WRITE( Message, '( "Error reading Tau array from ", a, "." )' ) &
-                      TRIM( NC_Filename )
+                      TRIM(NC_Filename)
       GOTO 1000
     END IF
 
+
     ! Close the file
+    ! --------------
     Close_Status = Close_TauProfile_netCDF( NC_FileID )
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF TauProfile data file '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
-      CALL Information_TauProfile( TauProfile, Message )
+      CALL Info_TauProfile( TauProfile, Message )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
                             INFORMATION, &
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
-
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Close_Status = Close_TauProfile_netCDF(NC_FileID)
     IF ( Close_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-
     2000 CONTINUE
     Destroy_Status = Destroy_TauProfile(TauProfile, Message_Log=Message_Log)
     IF ( Destroy_Status /= SUCCESS ) &
       Message = TRIM(Message)//'; Error destroying TauProfile during error cleanup.'
-
     3000 CONTINUE
     Error_Status = FAILURE
     CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
+                          TRIM(Message), &
                           Error_Status, &
                           Message_Log=Message_Log )
 
