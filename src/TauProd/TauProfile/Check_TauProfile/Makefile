@@ -4,7 +4,9 @@
 #
 #==============================================================================
 
+# -------------
 # Define macros
+# -------------
 include $(CRTM_SOURCE_ROOT)/make.macros
 
 # This makefile
@@ -30,10 +32,14 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+NETCDF_DIR = $(HOME)/local/netcdf
+INCLUDES = -I$(NETCDF_DIR)/include
+LIBRARIES = -L$(NETCDF_DIR)/lib -lnetcdf
 
-# Define common make targets (all, build, clean, install)
+
+# ------------------
+# Define dependecies
+# ------------------
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
@@ -43,12 +49,14 @@ create_links:
 remove_links:
 	@unlinkfiles $(SRC_FILES)
 
-# Squeaky clean target
 realclean: clean remove_links
 
 # Source dependency lists
 include make.dependencies
 
+
+# --------------------
 # Define default rules
+# --------------------
 include $(CRTM_SOURCE_ROOT)/make.rules
 
