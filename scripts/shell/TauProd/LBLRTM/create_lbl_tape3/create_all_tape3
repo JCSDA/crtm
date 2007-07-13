@@ -8,10 +8,9 @@ fi
 TAPE1_FILE=$1
 
 TAPE5_CASES="7mol mol1 mol2 mol3 mol4 mol5 mol6 mol7 nomol dry wvo"
-TAPE5_SUFFIX="norej_0-20000cm-1"
 
 for ITEM in ${TAPE5_CASES}; do
-  TAPE5_FILE="tape5.${ITEM}_${TAPE5_SUFFIX}"
+  TAPE5_FILE="tape5.${ITEM}"
   create_lbl_tape3 -i ${TAPE5_FILE} -s ${TAPE1_FILE}
   sleep 10
 done
