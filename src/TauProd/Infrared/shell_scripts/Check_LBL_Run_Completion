@@ -179,14 +179,12 @@ usage()
 #                        -- CHECK THE TauSpc RUN STATUS --
 #-------------------------------------------------------------------------------
 
-  # ------------------
   # Loop over profiles
   # ------------------
-
   PROFILE=${PROFILE1}
   while [ ${PROFILE} -le ${PROFILE2} ]; do
 
-    # -- Construct the profile tag
+    # Construct the profile tag
     if [ ${PROFILE} -lt 10 ]; then
       PROFILE_TAG="profile0${PROFILE}"
     else
@@ -195,57 +193,64 @@ usage()
 
     echo " Profile ${PROFILE} incomplete runs:"
 
+    # Initialise incomplete counter
+    N_INCOMPLETE=0
 
-    # ----------------
+
     # Loop over angles
     # ----------------
-
     ANGLE=${ANGLE1}
     while [ ${ANGLE} -le ${ANGLE2} ]; do
 
-      # -- Construct the angle tag
+      # Construct the angle tag
       ANGLE_TAG="angle${ANGLE}"
 
 
-      # -----------------------
       # Loop over molecule sets
       # -----------------------
-
       for MOLECULE in ${TAPE3_LIST}; do
 
-        # -- Construct the molecule tag
+        # Construct the molecule tag
         MOLECULE_TAG=`Define_Molecule_Tag ${MOLECULE}`
         if [ $? -ne 0 ]; then
           echo "Error constructing molecule tag name for molecule index ${MOLECULE}"
           exit 2
         fi
 
-        # -- Construct a root directory name
+        # Construct a root directory name
         ROOT_DIR="${PROFILE_TAG}/${ANGLE_TAG}/${MOLECULE_TAG}"
 
-        # -- Count the band directories
+        # Count the band directories
         N_BAND_DIRS=`ls -d ${ROOT_DIR}/band* 2>/dev/null | wc -l`
         N_BAND_DIRS=`expr ${N_BAND_DIRS} + 1 - 1`
 
-        # -- Count the signal files
+        # Count the signal files
         N_UP_FILES=`ls ${ROOT_DIR}/band*/upwelling_tau.*.signal 2>/dev/null | wc -l`
         N_UP_FILES=`expr ${N_UP_FILES} + 1 - 1`
 
         N_DOWN_FILES=`ls ${ROOT_DIR}/band*/downwelling_tau.*.signal 2>/dev/null | wc -l`
         N_DOWN_FILES=`expr ${N_DOWN_FILES} + 1 - 1`
 
-        # -- Output the count
-        echo "${PROFILE_TAG}, ${ANGLE_TAG}, ${MOLECULE_TAG}-  n_Bands: ${N_BAND_DIRS},  Up: ${N_UP_FILES}  Down: ${N_DOWN_FILES}"
+        # Output the count
+        if [ ${N_UP_FILES} -ne ${N_BAND_DIRS} -o ${N_DOWN_FILES} -ne ${N_BAND_DIRS} ]; then
+          echo "${PROFILE_TAG}, ${ANGLE_TAG}, ${MOLECULE_TAG}-  n_Bands: ${N_BAND_DIRS},  Up: ${N_UP_FILES}  Down: ${N_DOWN_FILES}  <--- Incomplete"
+          N_INCOMPLETE=`expr ${N_INCOMPLETE} + 1`
+        fi
 
       done
 
-      # -- Increment the angle number
+      # Increment the angle number
       ANGLE=`expr ${ANGLE} + 1`
 
     done
 
-    # -- Increment the profile number
+    # Increment the profile number
     PROFILE=`expr ${PROFILE} + 1`
 
+    # Output message
+    if [ ${N_INCOMPLETE} -eq 0 ]; then
+      echo "   All runs completed!"
+    fi
+    
   done
 

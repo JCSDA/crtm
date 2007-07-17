@@ -64,7 +64,10 @@ all:
 
 # Link stage with object file dependency
 lnfl: util_obj lnfl_obj
-	$(FL) $(UTIL_DIR)/$(UTIL_OBJ_FILE) $(LNFL_OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
+	$(FL) $(UTIL_DIR)/$(UTIL_OBJ_FILE) $(LNFL_OBJ_FILES) $(FL_FLAGS) $(EXE_FILE); \
+	if [ -d $(HOME)/bin ]; then \
+	  $(MOVE) $(EXE_FILE) $(HOME)/bin; \
+	fi
 
 # Make of utility module. Flags for make are the
 # platform specific definitions

@@ -69,6 +69,7 @@ SHARED_DIR = shared
 # -- Define link, copy and delete commands
 LINK = ln -sf
 COPY = cp -v 
+MOVE = mv -f
 REMOVE = rm -f
 
 # -- Define tarballer commands

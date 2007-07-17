@@ -163,13 +163,11 @@ PROGRAM Assemble_TauProfile_Data
   INTEGER         :: pn_pos
   CHARACTER( 80 ) :: pn_fmt
 
-  INTEGER           :: NCEP_Sensor_ID  
+  CHARACTER(20)     :: Sensor_ID
   INTEGER           :: WMO_Satellite_ID
   INTEGER           :: WMO_Sensor_ID   
   CHARACTER( 256 )  :: ID_Tag
   CHARACTER( 5000 ) :: History
-  CHARACTER( 256 )  :: Sensor_Name
-  CHARACTER( 256 )  :: Platform_Name
   CHARACTER( 5000 ) :: Comment
   CHARACTER( 256 ) :: Control_Filename
   CHARACTER( 256 ) :: TauProfile_Filename
@@ -438,15 +436,12 @@ PROGRAM Assemble_TauProfile_Data
             ! -------------------------------------------------
 
             Error_Status = Inquire_TauProfile_netCDF( TRIM( TauProfile_Filename ), &
-                                                      NCEP_Sensor_ID   = NCEP_Sensor_ID, &
+                                                      Sensor_ID        = Sensor_ID, &
                                                       WMO_Satellite_ID = WMO_Satellite_ID, &
                                                       WMO_Sensor_ID    = WMO_Sensor_ID, &
                                                       ID_Tag        = ID_Tag, &
                                                       History       = History, &
-                                                      Sensor_name   = Sensor_name, &
-                                                      Platform_name = Platform_name, &
                                                       Comment       = Comment )
-
             IF ( Error_Status /= SUCCESS ) THEN
               CALL Display_Message( PROGRAM_NAME, &
                                     'Error inquiring netCDF TauProfile file '//&
@@ -480,19 +475,17 @@ PROGRAM Assemble_TauProfile_Data
                                                      ZENITH_ANGLE_SECANT, &
                                                      (/ ( im, im = m1, m2 ) /), &
                                                      Molecule_Set_Numbers( 1:n_j ), &
-                                                     NCEP_Sensor_ID   = NCEP_Sensor_ID, &
+                                                     Release = TauProfile%Release, &
+                                                     Version = TauProfile%Version, &
+                                                     Sensor_ID        = TRIM(Sensor_ID), &
                                                      WMO_Satellite_ID = WMO_Satellite_ID, &
                                                      WMO_Sensor_ID    = WMO_Sensor_ID, &
-                                                     ID_Tag = TRIM( ID_Tag ), &
-                                                     Title = TRIM( Sensor_Name )//' '//&
-                                                             TRIM( DIRECTION_NAME( Direction ) )//&
-                                                             ' transmittances for '//&
-                                                             TRIM( Platform_Name ), &
-                                                     History = PROGRAM_RCS_ID//'; '//TRIM( History ), &
-                                                     Sensor_Name   = TRIM( Sensor_Name ), &
-                                                     Platform_Name = TRIM( Platform_Name ), &
-                                                     Comment       = TRIM( Comment ) )
-
+                                                     ID_Tag  = TRIM(ID_Tag), &
+                                                     Title   = TRIM(DIRECTION_NAME( Direction ))//&
+                                                               ' transmittances for '//&
+                                                               TRIM(Sensor_Id), &
+                                                     History = PROGRAM_RCS_ID//'; '//TRIM(History), &
+                                                     Comment = TRIM(Comment) )
             IF ( Error_Status /= SUCCESS ) THEN
               CALL Display_Message( PROGRAM_NAME, &
                                     'Error creating netCDF TauProfile file '//&

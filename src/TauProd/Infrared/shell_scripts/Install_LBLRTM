@@ -90,6 +90,9 @@ fi
 
 # Copy over HITRAN TAPE3 data
 # ---------------------------
+# Define the source and destination directories
+FROM_DIR=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_HITRAN_DIR}
+TO_DIR=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_HITRAN_DIR}
 echo
 echo " Copying HITRAN data from ${FROM_DIR} to ${TO_DIR}..."
 
@@ -101,10 +104,6 @@ if [ ! -d ${LBLRTM_HITRAN_DIR} ]; then
     exit 2
   fi
 fi
-
-# Define the source and destination directories
-FROM_DIR=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_HITRAN_DIR}
-TO_DIR=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_HITRAN_DIR}
 
 # Copy the cross-section data
 cp -r ${FROM_DIR}/xs ${TO_DIR}
@@ -130,12 +129,11 @@ fi
 
 # Copy over executable files
 # --------------------------
-echo
-echo " Copying executables from ${FROM_DIR} to ${TO_DIR}..."
-
 # Define the source and destination directories
 FROM_DIR=${ARCHIVE_ROOT_DIR}/${LBLRTM_ROOT_DIR}/${LBLRTM_BIN_DIR}
 TO_DIR=${HOME_ROOT_DIR}/${LBLRTM_ROOT_DIR}
+echo
+echo " Copying executables from ${FROM_DIR} to ${TO_DIR}..."
 
 # Copy everything
 cp -r ${FROM_DIR} ${TO_DIR}

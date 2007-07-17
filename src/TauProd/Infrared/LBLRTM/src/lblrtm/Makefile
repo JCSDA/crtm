@@ -87,9 +87,12 @@ dbl:
 	  *) echo "This system is not supported" ;; \
 	esac
 
-# Link stage with object file dependency
+# Link and install the executable
 lblrtm: util_obj lblrtm_obj
-	$(FL) $(UTIL_DIR)/$(UTIL_OBJ_FILE) $(LBLRTM_OBJ_FILES) $(FL_FLAGS) lblrtm_$(LBLRTM_VERSION)_$(TAG)
+	$(FL) $(UTIL_DIR)/$(UTIL_OBJ_FILE) $(LBLRTM_OBJ_FILES) $(FL_FLAGS) lblrtm_$(LBLRTM_VERSION)_$(TAG); \
+	if [ -d $(HOME)/bin ]; then \
+	  $(MOVE) lblrtm_$(LBLRTM_VERSION)_$(TAG) $(HOME)/bin; \
+	fi
 
 # Make of utility module. Flags for make are the
 # platform specific definitions

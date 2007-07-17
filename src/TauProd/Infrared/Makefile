@@ -1,7 +1,6 @@
 #==============================================================================
 #
-# Makefile for compiling/packaging all the required Transmittance
-# Production software
+# Makefile for builidng and installing all the required TauProd softweare
 #
 #==============================================================================
 
@@ -35,59 +34,123 @@ ALL_SOURCE_DIRS = $(CREATE_LBLRTM_INPUT_FILES_DIR) \
 SHELL_SCRIPTS_DIR = ./shell_scripts
 
 
-# --------------
-# Define targets
-# --------------
+# -----------
+# Main target
+# -----------
 # Compilation targets
-all: create_lblrtm_input_files \
-     lblrtm_to_netcdf \
-     create_process_defaults_file \
-     create_processcontrol_file \
-     check_processcontrol_file \
-     convolve_tauspc_with_srf \
-     check_tauprofile_data \
-     assemble_tauprofile_data \
-     compute_effective_tauprofile
+all: link build install
+
+# Link targets
+link: link_message \
+      link_create_lblrtm_input_files \
+      link_lblrtm_to_netcdf \
+      link_create_process_defaults_file \
+      link_create_processcontrol_file \
+      link_check_processcontrol_file \
+      link_convolve_tauspc_with_srf \
+      link_check_tauprofile_data \
+      link_assemble_tauprofile_data \
+      link_compute_effective_tauprofile
+
+link_message:
+	@echo ; \
+	echo "Linking in source files (this may take a while)...."; \
+	echo "---------------------------------------------------"
 
 
-create_lblrtm_input_files:
+link_create_lblrtm_input_files:
+	cd $(CREATE_LBLRTM_INPUT_FILES_DIR); make create_links
+
+
+link_lblrtm_to_netcdf:
+	cd $(LBLRTM_TO_NETCDF_DIR); make create_links
+
+
+link_create_process_defaults_file:
+	cd $(CREATE_PROCESS_DEFAULTS_FILE_DIR); make create_links
+
+
+link_create_processcontrol_file:
+	cd $(CREATE_PROCESSCONTROL_FILE_DIR); make create_links
+
+
+link_check_processcontrol_file:
+	cd $(CHECK_PROCESSCONTROL_FILE_DIR); make create_links
+
+
+link_convolve_tauspc_with_srf:
+	cd $(CONVOLVE_TAUSPC_WITH_SRF_DIR); make create_links
+
+
+link_check_tauprofile_data:
+	cd $(CHECK_TAUPROFILE_DATA_DIR); make create_links
+
+
+link_assemble_tauprofile_data:
+	cd $(ASSEMBLE_TAUPROFILE_DATA_DIR); make create_links
+
+
+link_compute_effective_tauprofile:
+	cd $(COMPUTE_EFFECTIVE_TAUPROFILE_DIR); make create_links
+
+
+# Build targets
+build: build_message \
+       build_create_lblrtm_input_files \
+       build_lblrtm_to_netcdf \
+       build_create_process_defaults_file \
+       build_create_processcontrol_file \
+       build_check_processcontrol_file \
+       build_convolve_tauspc_with_srf \
+       build_check_tauprofile_data \
+       build_assemble_tauprofile_data \
+       build_compute_effective_tauprofile
+
+
+build_message:
+	@echo ; \
+	echo "Building TauProd software (this may take a while)...."; \
+	echo "-----------------------------------------------------"
+
+build_create_lblrtm_input_files:
 	cd $(CREATE_LBLRTM_INPUT_FILES_DIR); make
 
 
-lblrtm_to_netcdf:
+build_lblrtm_to_netcdf:
 	cd $(LBLRTM_TO_NETCDF_DIR); make
 
 
-create_process_defaults_file:
+build_create_process_defaults_file:
 	cd $(CREATE_PROCESS_DEFAULTS_FILE_DIR); make
 
 
-create_processcontrol_file:
+build_create_processcontrol_file:
 	cd $(CREATE_PROCESSCONTROL_FILE_DIR); make
 
 
-check_processcontrol_file:
+build_check_processcontrol_file:
 	cd $(CHECK_PROCESSCONTROL_FILE_DIR); make
 
 
-convolve_tauspc_with_srf:
+build_convolve_tauspc_with_srf:
 	cd $(CONVOLVE_TAUSPC_WITH_SRF_DIR); make
 
 
-check_tauprofile_data:
+build_check_tauprofile_data:
 	cd $(CHECK_TAUPROFILE_DATA_DIR); make
 
 
-assemble_tauprofile_data:
+build_assemble_tauprofile_data:
 	cd $(ASSEMBLE_TAUPROFILE_DATA_DIR); make
 
 
-compute_effective_tauprofile:
+build_compute_effective_tauprofile:
 	cd $(COMPUTE_EFFECTIVE_TAUPROFILE_DIR); make
 
 
 # Installation targets
-install: install_create_lblrtm_input_files \
+install: install_message \
+         install_create_lblrtm_input_files \
          install_lblrtm_to_netcdf \
          install_create_process_defaults_file \
          install_create_processcontrol_file \
@@ -97,6 +160,12 @@ install: install_create_lblrtm_input_files \
          install_assemble_tauprofile_data \
          install_compute_effective_tauprofile \
          install_shell_scripts
+
+
+install_message:
+	@echo ; \
+	echo "Installing TauProd software...."; \
+	echo "-------------------------------"
 
 
 install_create_lblrtm_input_files:

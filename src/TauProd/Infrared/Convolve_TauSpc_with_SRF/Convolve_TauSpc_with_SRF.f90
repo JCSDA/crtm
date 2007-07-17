@@ -253,12 +253,9 @@ PROGRAM Convolve_TauSpc_with_SRF
   INTEGER         :: pn_pos
   CHARACTER( 80 ) :: pn_fmt
 
-  INTEGER           :: NCEP_Sensor_ID  
   INTEGER           :: WMO_Satellite_ID
   INTEGER           :: WMO_Sensor_ID   
   CHARACTER( 5000 ) :: History
-  CHARACTER(  256 ) :: Sensor_Name
-  CHARACTER(  256 ) :: Platform_Name
   CHARACTER( 5000 ) :: Comment
 
   CHARACTER( 128 )                              :: Tau_FilePrefix
@@ -719,11 +716,8 @@ PROGRAM Convolve_TauSpc_with_SRF
                                        n_Points         = n_SRF_Frequencies,   &
                                        Begin_Frequency  = Begin_SRF_Frequency, &
                                        End_Frequency    = End_SRF_Frequency,   &
-                                       NCEP_Sensor_ID   = NCEP_Sensor_ID,      &
                                        WMO_Satellite_ID = WMO_Satellite_ID,    &
                                        WMO_Sensor_ID    = WMO_Sensor_ID,       &
-                                       Sensor_Name      = Sensor_Name,         &
-                                       Platform_Name    = Platform_Name,       &
                                        Comment          = Comment              )
 
     IF ( Error_Status /= SUCCESS ) THEN
@@ -816,18 +810,16 @@ PROGRAM Convolve_TauSpc_with_SRF
                                                (/ ZENITH_ANGLE_SECANT( Angle_Number ) /), &
                                                (/ Profile_Number /), &
                                                (/ Molecule_Set_Number /), &
-                                               NCEP_Sensor_ID   = NCEP_Sensor_ID, &
+                                               Release = TauProfile(n)%Release, &
+                                               Version = TauProfile(n)%Version, &
+                                               Sensor_ID        = TRIM(ProcessControl%File_Prefix(n)), &
                                                WMO_Satellite_ID = WMO_Satellite_ID, &
                                                WMO_Sensor_ID    = WMO_Sensor_ID, &
-                                               ID_Tag = TRIM( PROFILE_SET_ID_TAG( Profile_Set ) ), &
-                                               Title = TRIM( Sensor_Name )//' '//&
-                                                       TRIM( DIRECTION_NAME( Direction ) )//&
-                                                       ' transmittances for '//&
-                                                       TRIM( Platform_Name ), &
-                                               Sensor_Name   = TRIM( Sensor_Name ), &
-                                               Platform_Name = TRIM( Platform_Name ), &
-                                               Comment       = TRIM( Comment ) )
-
+                                               ID_Tag  = TRIM(PROFILE_SET_ID_TAG( Profile_Set )), &
+                                               Title   = TRIM(DIRECTION_NAME( Direction ))//&
+                                                         ' transmittances for '//&
+                                                         TRIM(ProcessControl%File_Prefix(n)), &
+                                               Comment = TRIM(Comment) )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
                               'Error creating netCDF TauProfile file '//&
