@@ -1,0 +1,217 @@
+#!/bin/sh
+
+
+# Note to users this script can be used to install
+# the lblrtm on the NCEP IBM machines Mist & Dew
+# if $HOME/bin has been set in $PATH
+
+LBLRTM_SOURCE_ROOT="TauProd/Infrared/LBLRTM/src" 
+CRTM_SCRIPTS_ROOT="${HOME}/CRTM/scripts"
+LBLRTM_SCRIPTS_ROOT="shell/TauProd/LBLRTM"
+NOSCRUB_ROOT="/global/noscrub"
+
+# Declare the LBLRTM src dir
+if [ -z "${LBLRTM_SOURCE}" ]; then
+  LBLRTM_SOURCE="${CRTM_SOURCE_ROOT}/${LBLRTM_SOURCE_ROOT}/lblrtm"
+fi
+
+# Declare the LNFL src dir
+if [ -z "${LNFL_SOURCE}" ]; then
+  LNFL_SOURCE="$CRTM_SOURCE_ROOT/${LBLRTM_SOURCE_ROOT}/lnfl"
+fi
+
+# HITRAN database root
+if [ -z "${HITRAN_ROOT}" ]; then
+  HITRAN_ROOT="$CRTM_FIXFILE_ROOT/TauProd/HITRAN/db"
+fi
+
+# Declare LBL shell script dir
+if [ -z "${LBL_SHELL}" ]; then
+  LBL_SHELL="${CRTM_SCRIPTS_ROOT}/${LBLRTM_SCRIPTS_ROOT}/create_lbl_tape3"
+fi
+
+# Declare directory for tape 3 files
+# lblrtm will be run from this location
+if [ -z "${TAPE3_ROOT}" ]; then
+  TAPE3_ROOT="${NOSCRUB_ROOT}/${USER}"
+fi
+
+# Declare current directory
+CURRENT_DIR=${PWD}
+
+tape3_install()
+{
+  # Assign input argument to variable
+  HITRAN_NAME=$1
+  EXCEPTION=$2
+  TAPE5_F160=$3
+  TAPE5_F80=$4
+  TAPE3_ROOT=$5
+  
+  # Assign other variables
+  HITRAN_NAME_DB="${HITRAN_NAME}.db"
+  HITRAN_NAME_GZ="${HITRAN_NAME}.db.gz"
+    
+  # Check to see if dir name exist
+  if [ ! -d ${HITRAN_NAME} ]; then
+    echo "${HITRAN_NAME} directory does not exist"
+    exit 2
+  fi
+  
+  # Check to see if links to Tape 5 exist
+  # Otherwise create links. If HITRAN_NAME
+  # is EXCEPTION then create links for 
+  # F160 Tape 5 files.
+  if [ -n "${HITRAN_NAME}/tape5.*" ]; then
+    echo "Tape5 links have already been created"
+  elif [ "${HITRAN_NAME}" = "${EXCEPTION}" ]; then
+    echo "${HITRAN_NAME}:Tape5_F160 links are being created"
+    ln -s ${TAPE5_F160}/* ${HITRAN_NAME}
+  else
+    echo "Tape5_F80 links are being created"
+    ln -s ${TAPE5_F80}/* ${HITRAN_NAME}
+  fi
+  
+  # Go to HITRAN_NAME directory  
+  cd ${HITRAN_NAME}
+  # Go to HITRAN_NAME directory  
+  if [ $? -ne 0 ]; then
+    echo "Error changing to ${HITRAN_NAME} dir"
+    exit 2
+  fi
+  if [ $? -ne 0 ]; then
+    echo "Error changing to ${HITRAN_NAME} dir"
+    exit 2
+  fi
+  
+  # Unzip database file if necessary
+  if [ -f "${HITRAN_NAME_GZ}" ]; then
+    echo "Unzipping database file ${HITRAN_NAME}.gz"
+    gunzip ${HITRAN_NAME_GZ}
+    if [ $? -ne 0 ]; then
+      echo "Error unzipping ${HITRAN_NAME_GZ}"
+      exit 2
+    fi
+  fi
+  
+  # Double check that database file actually exist
+  if [ -f "${HITRAN_NAME_DB}" ]; then
+    echo "Tape 3 files will be created for ${HITRAN_NAME} database"  
+  else
+    echo "ERROR: Database file ${HITRAN_NAME_DB} is missing"
+    exit 1
+  fi
+
+  # Create the TAPE3 file
+  create_all_tape3 ${HITRAN_NAME_DB}
+  sleep 10
+
+  # copy TAPE3 files to root hitran directory
+  cp -r tape3* ${TAPE3_ROOT}/${HITRAN_NAME}
+    
+}
+  
+# create dbl precision lblrtm
+# executable then clean directory
+cd ${LBLRTM_SOURCE}
+if [ $? -ne 0 ]; then
+  echo "Error changing to ${LBLRTM_SOURCE}"
+  exit 2
+fi
+  
+make dbl
+
+sleep 10
+
+make clean
+
+## create sgl precision lblrtm
+## executable then clean directory
+
+make sgl
+
+sleep 10
+
+make clean
+
+# create lnfl executable
+# only sgl precision is allowed
+
+cd ${LNFL_SOURCE}
+
+if [ $? -ne 0 ]; then
+  echo "Error changing to ${LNFL_SOURCE}"
+  exit 2
+fi
+
+make
+
+sleep 5
+
+make clean
+
+# make subdirectories in Tape3_Root
+# that will contain the tape3 data
+
+cd ${TAPE3_ROOT}
+
+if [ -d "hitran2000" ]; then
+  echo "hitran2000 already exist mkdir is not necessary"
+else
+  mkdir hitran2000
+fi
+
+if [ -d "hitran2000" ]; then
+  echo "hitran2000 already exist mkdir is not necessary"
+else
+  mkdir hitran2000
+fi
+
+if [ -d "hitran2000_aer" ]; then
+  echo "hitran2000_aer already exist mkdir is not necessary"
+else
+  mkdir hitran2000_aer
+fi
+
+if [ -d "hitran2004" ]; then
+  echo "hitran2004 already exist mkdir is not necessary"
+else
+  mkdir hitran2004
+fi
+
+# Declare list of hitran database files
+HITRAN_LIST="hitran1996_jpl_ext_0_cor hitran2000_aer hitran2000 hitran2004"  
+
+# copy shell scripts for running lnfl
+# to $HOME/bin
+cp ${LBL_SHELL}/create* ${HOME}/bin
+if [ $? -ne 0 ]; then
+  echo "error copying scripts to $HOME/bin"
+  exit 2
+fi
+
+# Change directory to root for hitran databases  
+cd ${HITRAN_ROOT}
+if [ $? -ne 0 ]; then
+  echo "error changing directory to hitran root"
+  exit 2
+fi
+
+# Declare variables needed in calling sequence
+# to install function
+EXCEPTION="hitran2004"
+TAPE5_RECENT="tape5/TAPE5_F160"
+TAPE5_PREVIOUS="tape5/TAPE5_F80"
+
+for HITRAN in ${HITRAN_LIST}; do
+  # Call tape3_install to install tape 3 files
+  # for all database directories in HITRAN_LIST
+  tape3_install ${HITRAN} ${EXCEPTION} ${TAPE5_RECENT} ${TAPE5_PREVIOUS} ${TAPE3_ROOT}
+  # Change directory to HITRAN_ROOT
+  cd ${HITRAN_ROOT}
+  
+done
+
+cd ${CURRENT_DIR}
+
+exit
