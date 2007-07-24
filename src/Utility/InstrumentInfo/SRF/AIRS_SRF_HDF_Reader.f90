@@ -1178,11 +1178,11 @@ END MODULE AIRS_SRF_HDF_Reader
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_SRF_HDF_Reader.f90,v 1.3 2006/08/15 20:51:04 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.3 $
+! $Revision$
 !
 ! $Name:  $
 !

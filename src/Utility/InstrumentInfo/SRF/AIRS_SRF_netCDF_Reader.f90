@@ -112,7 +112,7 @@ MODULE AIRS_SRF_netCDF_Reader
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: AIRS_SRF_netCDF_Reader.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $'
+  '$Id$'
 
   ! -- Invalid flag
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -1097,11 +1097,11 @@ END MODULE AIRS_SRF_netCDF_Reader
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_SRF_netCDF_Reader.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 2.4 $
+! $Revision$
 !
 ! $Name:  $
 !

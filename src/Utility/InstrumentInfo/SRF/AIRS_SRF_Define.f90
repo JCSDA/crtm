@@ -88,7 +88,7 @@ MODULE AIRS_SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AIRS_SRF_Define.f90,v 1.6 2006/08/15 20:51:04 wd20pd Exp $'
+    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1229,11 +1229,11 @@ END MODULE AIRS_SRF_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_SRF_Define.f90,v 1.6 2006/08/15 20:51:04 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.6 $
+! $Revision$
 !
 ! $State: Exp $
 !

@@ -237,7 +237,7 @@ MODULE SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SRF_Define.f90,v 2.10 2006/08/15 20:32:27 wd20pd Exp $'
+    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1952,11 +1952,11 @@ END MODULE SRF_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_Define.f90,v 2.10 2006/08/15 20:32:27 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:32:27 $
 !
-! $Revision: 2.10 $
+! $Revision$
 !
 ! $Name:  $
 !

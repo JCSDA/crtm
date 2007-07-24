@@ -123,7 +123,7 @@ MODULE SRF_ASCII_IO
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SRF_ASCII_IO.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $'
+    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -1804,11 +1804,11 @@ END MODULE SRF_ASCII_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_ASCII_IO.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.7 $
+! $Revision$
 !
 ! $Name:  $
 !

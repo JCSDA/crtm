@@ -118,7 +118,7 @@ MODULE SRF_Utility
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SRF_Utility.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $'
+  '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1177,11 +1177,11 @@ END MODULE SRF_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_Utility.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 1.7 $
+! $Revision$
 !
 ! $Name:  $
 !

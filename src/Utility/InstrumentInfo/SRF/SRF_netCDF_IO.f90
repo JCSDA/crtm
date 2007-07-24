@@ -127,7 +127,7 @@ MODULE SRF_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SRF_netCDF_IO.f90,v 3.9 2006/08/15 20:51:04 wd20pd Exp $'
+  '$Id$'
 
   ! -- Invalid flag
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -3844,11 +3844,11 @@ END MODULE SRF_netCDF_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_netCDF_IO.f90,v 3.9 2006/08/15 20:51:04 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !
-! $Revision: 3.9 $
+! $Revision$
 !
 ! $Name:  $
 !
