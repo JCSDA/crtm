@@ -950,9 +950,10 @@ SCRIPT_NAME="`basename $0`"
           echo "# @ output = ${SCRIPT_FILE}.out" >> ${JOB_COMMAND_FILE}
           echo "# @ error = ${SCRIPT_FILE}.out" >> ${JOB_COMMAND_FILE}
           echo "# @ class = ${QUEUE}" >> ${JOB_COMMAND_FILE}
+          echo "# @ group = ${QUEUE}" >> ${JOB_COMMAND_FILE}
           echo "# @ wall_clock_limit = 00:15:00" >> ${JOB_COMMAND_FILE}
           echo "# @ resources = ConsumableCpus(1) ConsumableMemory(100)" >> ${JOB_COMMAND_FILE}
-          echo "# @ account_no = GDAS-T2O" >> ${JOB_COMMAND_FILE}
+          echo "# @ account_no = ${LL_ACCOUNT}" >> ${JOB_COMMAND_FILE}
           echo "# @ queue" >> ${JOB_COMMAND_FILE}
 
           # ------------------

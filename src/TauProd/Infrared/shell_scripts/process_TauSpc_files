@@ -443,6 +443,14 @@ SCRIPT_NAME="`basename $0`"
         fi
 
 
+        # -----------------------
+        # Create job command file
+        # -----------------------
+        JOB_TAG="Profile${PROFILE_NUMBER}_Angle${ANGLE_NUMBER}_${MOLECULE_SET_TAG}"
+        JOB_COMMAND_FILE="Process_TauSpc_${JOB_TAG}.jcf"
+        echo "#!/bin/sh" > ${JOB_COMMAND_FILE}
+        
+        
         # --------------------------------
         # Loop over the allowed directions
         # --------------------------------
@@ -638,16 +646,31 @@ SCRIPT_NAME="`basename $0`"
           chmod 700 ${SCRIPT_FILE}
 
 
-          # ------------------------------
-          # Submit the current script file
-          # ------------------------------
-
-          echo "${FILE_TAG} for profile ${PROFILE_NUMBER}"
-          if [ "${QUEUE_SUBMIT}" = "yes" ]; then
-            sub -q ${QUEUE} -a GDAS-T2O -t 00:30:00 ${SCRIPT_FILE}
-          fi
+          # ------------------------------------------------------------
+          # Add the current script as a job step in the job command file
+          # ------------------------------------------------------------
+          echo "#" >> ${JOB_COMMAND_FILE}
+          echo "# Job step for: ${SCRIPT_FILE}" >> ${JOB_COMMAND_FILE}
+          echo "# @ job_name = ${JOB_TAG}" >> ${JOB_COMMAND_FILE}
+          echo "# @ executable = ${SCRIPT_FILE}" >> ${JOB_COMMAND_FILE}
+          echo "# @ step_name = ${SCRIPT_FILE}" >> ${JOB_COMMAND_FILE}
+          echo "# @ output = ${SCRIPT_FILE}.out" >> ${JOB_COMMAND_FILE}
+          echo "# @ error = ${SCRIPT_FILE}.out" >> ${JOB_COMMAND_FILE}
+          echo "# @ class = ${QUEUE}" >> ${JOB_COMMAND_FILE}
+          echo "# @ group = ${QUEUE}" >> ${JOB_COMMAND_FILE}
+          echo "# @ wall_clock_limit = 00:30:00" >> ${JOB_COMMAND_FILE}
+          echo "# @ resources = ConsumableCpus(1) ConsumableMemory(100)" >> ${JOB_COMMAND_FILE}
+          echo "# @ account_no = ${LL_ACCOUNT}" >> ${JOB_COMMAND_FILE}
+          echo "# @ queue" >> ${JOB_COMMAND_FILE}
 
         done   # DIRECTION_NUMBER loop
+
+
+        # ---------------------------
+        # Submit the job command file
+        # ---------------------------
+        echo "Submitting job control file ${JOB_COMMAND_FILE}..."
+        llsubmit ${JOB_COMMAND_FILE}
 
 
         # ------------------------------

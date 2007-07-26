@@ -45,6 +45,8 @@ usage()
 }
 
 
+SCRIPT_NAME="`basename $0`"
+
 
 #-------------------------------------------------------------------------------
 #                        -- SET THE PROCESSING DEFAULTS --
@@ -270,6 +272,13 @@ usage()
   fi
 
 
+  # -----------------------
+  # Create job command file
+  # -----------------------
+  JOB_COMMAND_FILE="${SCRIPT_NAME}.jcf"
+  echo "#!/bin/sh" > ${JOB_COMMAND_FILE}
+
+  
 #-------------------------------------------------------------------------------
 #                     -- BEGIN THE LOOP OVER DIRECTION --
 #-------------------------------------------------------------------------------
@@ -377,18 +386,33 @@ usage()
     chmod 700 ${SCRIPT_FILE}
 
 
-    # ------------------------------
-    # Submit the current script file
-    # ------------------------------
-
-    echo "${FILE_TAG}"
-    if [ "${QUEUE_SUBMIT}" = "yes" ]; then
-      sub -q ${QUEUE} -a GDAS-T2O -t 02:00:00 ${SCRIPT_FILE}
-    fi
+    # ------------------------------------------------------------
+    # Add the current script as a job step in the job command file
+    # ------------------------------------------------------------
+    echo "#" >> ${JOB_COMMAND_FILE}
+    echo "# Job step for: ${SCRIPT_FILE}" >> ${JOB_COMMAND_FILE}
+    echo "# @ job_name = ${DIRECTION_NAME}" >> ${JOB_COMMAND_FILE}
+    echo "# @ executable = ${SCRIPT_FILE}" >> ${JOB_COMMAND_FILE}
+    echo "# @ step_name = ${SCRIPT_FILE}" >> ${JOB_COMMAND_FILE}
+    echo "# @ output = ${SCRIPT_FILE}.out" >> ${JOB_COMMAND_FILE}
+    echo "# @ error = ${SCRIPT_FILE}.out" >> ${JOB_COMMAND_FILE}
+    echo "# @ class = ${QUEUE}" >> ${JOB_COMMAND_FILE}
+    echo "# @ group = ${QUEUE}" >> ${JOB_COMMAND_FILE}
+    echo "# @ wall_clock_limit = 02:00:00" >> ${JOB_COMMAND_FILE}
+    echo "# @ resources = ConsumableCpus(1) ConsumableMemory(100)" >> ${JOB_COMMAND_FILE}
+    echo "# @ account_no = ${LL_ACCOUNT}" >> ${JOB_COMMAND_FILE}
+    echo "# @ queue" >> ${JOB_COMMAND_FILE}
 
   done   # DIRECTION_NUMBER loop
 
 
+  # ---------------------------
+  # Submit the job command file
+  # ---------------------------
+  echo "Submitting job control file ${JOB_COMMAND_FILE}..."
+  llsubmit ${JOB_COMMAND_FILE}
+  
+  
   # ---------------------
   # Exit the shell script
   # ---------------------
