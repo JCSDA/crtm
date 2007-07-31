@@ -33,7 +33,8 @@ PROGRAM SSU_SRF_ASCII2NC
                                    Allocate_SRF, &
                                    Destroy_SRF, &
                                    Integrate_SRF
-  USE SRF_netCDF_IO        !, ONLY:
+  USE SRF_netCDF_IO        , ONLY: Create_SRF_netCDF, &
+                                   Write_SRF_netCDF
   ! Disable all implicit typing
   IMPLICIT NONE
 
