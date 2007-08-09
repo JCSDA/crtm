@@ -157,9 +157,8 @@ FUNCTION Copy_File, In_Sensor_Id    , $  ; Input
   NCDF_CONTROL, ncid, /REDEF
 
   ; Add to the history GAtt
-  NCDF_ATTGET, ncid, 'history', Hisotry, /GLOBAL
-  Hisotry = '$Id$; ' + $
-            STRING(History)
+  NCDF_ATTGET, ncid, 'history', History, /GLOBAL
+  History = '$Id$; '+STRING(History)
   NCDF_ATTPUT, ncid, 'history', History, /GLOBAL
 
   ; Add to the comment GAtt
