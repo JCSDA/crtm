@@ -1,4 +1,0 @@
-MODULE FFT
-  USE pfft
-  USE pfft2
-END MODULE FFT
