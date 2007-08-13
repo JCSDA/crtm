@@ -178,6 +178,12 @@ PROGRAM LBL2NC
     END IF
     
     
+    ! Exit loop if EOF reached, or number of output points is zero
+    ! ------------------------------------------------------------
+    IF ( LBLRTM_EOF == LBLRTM_FILE_PTR_EOF .OR. &
+         LBLRTM_Layer%n_Points == 0 ) EXIT Layer_loop
+
+
     ! Create the netCDF file
     ! ----------------------
     IF ( n_Layers == 1 ) THEN
@@ -217,6 +223,7 @@ PROGRAM LBL2NC
 
 
     ! Destroy the LBLRTM_Layer structure for the next read
+    ! ----------------------------------------------------
     Error_Status = Destroy_LBLRTM_Layer( LBLRTM_Layer )
     IF ( Error_Status /= SUCCESS ) THEN 
       WRITE( Message, '( "Error destroying LBLRTM_Layer structure for layer #", i0, &
@@ -226,9 +233,6 @@ PROGRAM LBL2NC
                             FAILURE )
       STOP
     END IF
-
-    ! Exit loop if EOF reached
-    IF ( LBLRTM_EOF == LBLRTM_FILE_PTR_EOF ) EXIT Layer_loop
 
   END DO Layer_Loop
 
