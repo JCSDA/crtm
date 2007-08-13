@@ -1555,10 +1555,13 @@ CONTAINS
     ! Check the number of frequencies
     IF ( SIZE(Transmittance) /= n_Frequencies ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Input TRANSMITTANCE array size different from netCDF definition.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+      WRITE( Message,'("Input TRANSMITTANCE array size (",i0,&
+                      &") different from netCDF definition (",i0,")")' ) &
+                     SIZE(Transmittance), n_Frequencies
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       NF90_Status = NF90_CLOSE( NC_FileID )
       RETURN
     END IF
