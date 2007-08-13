@@ -1,0 +1,71 @@
+#!/bin/sh
+
+#
+#  NAME:
+# 	Link_SensorInfo
+#
+#  PURPOSE:
+#       Shell script file to link in the Master SensorInfo file, SensorInfo, from
+#       the SensorInfo subdirectory in a working copy of the CRTM source code
+#       repository.
+#
+#  CALLING SEQUENCE:
+#       Link_SensorInfo
+#
+#  ENVIRONMENT VARIABLES:
+#       The following environment variables must be defined to use this script.
+#
+#       CRTM_SOURCE_ROOT:  The directory location of a working copy of the
+#                          CRTM source code repository.
+#                           
+#
+
+# -----------------------------
+# Error message output function
+# -----------------------------
+error_message()
+{
+  SCRIPT_NAME="`basename $0`"
+  MESSAGE=$1
+  echo; echo "${SCRIPT_NAME}(ERROR): ${MESSAGE}"
+}
+
+
+########################################################################
+#                           MAIN SCRIPT BEGINS                         #
+########################################################################
+
+# ------
+# Set up
+# ------
+# Check that the mandatory envar is defined
+if [ -z "${CRTM_SOURCE_ROOT}" ]; then
+  error_message "CRTM_SOURCE_ROOT envar is not defined."
+  exit 1
+fi
+
+# Check that the file to be linked exists
+SENSORINFO_DIR=${CRTM_SOURCE_ROOT}/Utility/InstrumentInfo/SensorInfo
+SENSORINFO_FILE=SensorInfo
+if [ ! -f ${SENSORINFO_DIR}/${SENSORINFO_FILE} ]; then
+  error_message "Master SensorInfo file, ${SENSORINFO_FILE}, not found in ${SENSORINFO_DIR}"
+  exit 1
+fi
+
+
+# ----------------
+# Link in the file
+# ----------------
+if [ ! -f ${SENSORINFO_FILE} ]; then
+  ln -s ${SENSORINFO_DIR}/${SENSORINFO_FILE} .
+  if [ $? -ne 0 ]; then
+    error_message "Error occuring linking ${SENSORINFO_FILE} to ${PWD}"
+    exit 1
+  fi
+else
+  error_message "${SENSORINFO_FILE} file already exists in this directory!"
+  exit 1
+fi
+
+exit 0
+
