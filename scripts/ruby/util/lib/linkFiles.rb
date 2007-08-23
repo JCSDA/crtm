@@ -6,7 +6,7 @@
 #
 # == Usage
 #
-# linkFiles.rb [OPTIONS] ROOTDIR FILE1 [FILE2|...|FILEN]
+# linkFiles.rb [OPTIONS] root_dir FILE1 [FILE2|...|FILEN]
 #
 # --help (-h):
 #    you're looking at it
@@ -22,7 +22,7 @@
 # --verbose (-v)
 #    Use this option to specify more output as the script does its thing.
 #
-# ROOTDIR
+# root_dir
 #    Directory at which to begin the search for the requested files to symlink.
 #
 # FILE1 [FILE2 | ... | FILEN]
@@ -37,18 +37,18 @@ require 'find'
 require 'fileutils'
 
 # Define the script name for messages
-scriptName=File.basename($0)
+script_name = File.basename($0)
 
 # Specify accepted options
-options=GetoptLong.new([ "--help",    "-h", GetoptLong::NO_ARGUMENT],
-                       [ "--force",   "-f", GetoptLong::NO_ARGUMENT],
-                       [ "--exclude", "-e", GetoptLong::REQUIRED_ARGUMENT],
-                       [ "--verbose", "-v", GetoptLong::NO_ARGUMENT])
+options = GetoptLong.new([ "--help",    "-h", GetoptLong::NO_ARGUMENT],
+                         [ "--force",   "-f", GetoptLong::NO_ARGUMENT],
+                         [ "--exclude", "-e", GetoptLong::REQUIRED_ARGUMENT],
+                         [ "--verbose", "-v", GetoptLong::NO_ARGUMENT])
 
 # Parse the command line options
-force=false
-verbose=false
-excludeDir=""
+force = false
+verbose = false
+exclude_dir = []
 begin
   options.each do |opt, arg|
     case opt
@@ -56,69 +56,69 @@ begin
         RDoc::usage
         exit 0
       when "--force"
-        force=true
+        force = true
       when "--exclude"
-        excludeDir=arg
+        exclude_dir << arg
       when "--verbose"
-        verbose=true
+        verbose = true
     end
   end
-rescue StandardError=>error_message
+rescue StandardError => error_message
   puts("ERROR: #{error_message}")
-  puts("Try \"#{scriptName} --help\"\n ")
+  puts("Try \"#{script_name} --help\"\n ")
   exit 1
 end
 
 # Check the arguments
 if ARGV.length < 2
-  puts("\nERROR: Must specify ROOTDIR and at least one FILE.")
-  puts("Try \"#{scriptName} --help\"\n ")
+  puts("\nERROR: Must specify root_dir and at least one FILE.")
+  puts("Try \"#{script_name} --help\"\n ")
   exit 1
 end
 
 # Get the arguments
-rootDir=ARGV.shift
-fileList=ARGV.uniq
+root_dir = ARGV.shift
+file_list = ARGV.uniq
 
-# If required, remove already existing files from fileList
-saveList=fileList.dup  # For verbose output
+# If required, remove already existing files from file_list
+save_list = file_list.dup  # For verbose output
 
-fileList.delete_if {|f| File.exist?(f)} unless force
+file_list.delete_if {|f| File.exist?(f)} unless force
 
 if verbose
-  removedFiles=saveList-fileList
-  unless removedFiles.empty?
-    puts("\n#{scriptName}: Existing files removed from the filelist:")
-    removedFiles.each {|f| puts f}
+  removed_files = save_list-file_list
+  unless removed_files.empty?
+    puts("\n#{script_name}: Existing files removed from the file_list:")
+    removed_files.each {|f| puts f}
   end
 end
 
-# Always remove existing non-symlink files from fileList
-saveList=fileList.dup  # For verbose output
+# Always remove existing non-symlink files from file_list
+save_list = file_list.dup  # For verbose output
 
-fileList.delete_if {|f| File.exist?(f) && !File.symlink?(f)}
+file_list.delete_if {|f| File.exist?(f) && !File.symlink?(f)}
 
 if verbose
-  removedFiles=saveList-fileList
-  unless removedFiles.empty?
-    puts("\n#{scriptName}: Existing non-symlink files removed from the filelist:")
-    removedFiles.each {|f| puts f}
+  removed_files = save_list-file_list
+  unless removed_files.empty?
+    puts("\n#{script_name}: Existing non-symlink files removed from the file_list:")
+    removed_files.each {|f| puts f}
   end
 end
 
 # Search the heirarchy
-Find::find(rootDir) do |path|
-  p=File.basename(path)           # Just get the filename
-  Find.prune if p == excludeDir   # Remove excluded directories from list
-  if fileList.include?(p)         # If the current file is in the list...
-    FileUtils.ln_sf(path,"./")    #   Link it
-    fileList.delete(p)            #   Remove it from the list
+Find::find(root_dir) do |path|
+  p=File.basename(path)                          # Just get the filename
+  exclude_dir.each {|e| Find.prune if p == e }   # Remove excluded directories from list
+  if file_list.include?(p)                       # If the current file is in the list...
+    FileUtils.ln_sf(path,"./")                   #   Link it
+    file_list.delete(p)                          #   Remove it from the list
   end
 end
 
 # Check for file that were not found
-if not fileList.empty?
-  puts("\n#{scriptName}: Files not found in the #{rootDir} heirarchy:")
-  fileList.each {|f| puts(f)}
+if not file_list.empty?
+  puts("\n#{script_name}: Files not found in the #{root_dir} heirarchy:")
+  file_list.each {|f| puts(f)}
 end
 
