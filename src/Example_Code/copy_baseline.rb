@@ -2,15 +2,15 @@
 
 # == Synopsis
 #
-# copy_baseline.rb:: Copy current CRTM test code output for a specified model and
-#                    sensor to the baseline file for respository checkin.
+# copy_baseline.rb:: Copy current CRTM test code output for a specified model 
+#                    to the baseline file for respository checkin.
 #
 # == Usage
 #
-# copy_baseline.rb [OPTION] sensor_id1 [ sensor_id2 sensor_id3 ...]
+# copy_baseline.rb [OPTION]
 #
-# If no options are specified, then no CRTM model results (forward, tangent-linear,
-# adjoint, and K-matrix) are copied.
+# If no options are specified, then no CRTM model results (forward,
+# tangent-linear, adjoint, and K-matrix) are copied.
 # 
 # --help  (-h)
 #    you're looking at it.
@@ -33,10 +33,6 @@
 # --everything  (-e)
 #    Copy every set of CRTM model results.
 #
-# sensor_id1 [ sensor_id2 sensor_id3 ...]
-#    The string ids for the sensor results to copy. Examples are
-#    amsua_n17, hirs3_n17, ssmis_f16, imgr_g11, etc..
-#
 
 require 'getoptlong'
 require 'rdoc/usage'
@@ -47,6 +43,7 @@ models={:fwd => {:dir => "Forward"       , :test => false},
         :ad  => {:dir => "Adjoint"       , :test => false},
         :k   => {:dir => "K_Matrix"      , :test => false} }
 noop = false
+path = "Results"
         
 # Specify accepted options
 options=GetoptLong.new(
@@ -85,19 +82,12 @@ rescue StandardError=>error_message
   exit 1
 end
 
-# Get the sensor_id
-if ARGV.empty?
-  puts("Missing sensor_id argument (try --help)")
-  exit 1
-end
-sensor_id = ARGV
-
 # Test each model
 models.each_key do |k|
   next if not models[k][:test]
-  sensor_id.each do |id|
-    new = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump"
-    old = "#{new}.Baseline"
+  Dir.glob("#{models[k][:dir]}/#{path}/*.e*.c*.a*.ac*.bin").each do |f|
+    new = f
+    old = f+".Baseline"
     cmd = "cp #{new} #{old}"
     if noop
       puts cmd

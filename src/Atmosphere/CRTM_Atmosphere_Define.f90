@@ -2210,103 +2210,115 @@ CONTAINS
 !       Function to test if two Atmosphere structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Atmosphere( Atmosphere_LHS         , &  ! Input
-!                                             Atmosphere_RHS         , &  ! Input
-!                                             ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                             Check_All  =Check_All  , &  ! Optional input
-!                                             RCS_Id     =RCS_Id     , &  ! Optional output
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Equal_Atmosphere( Atmosphere_LHS                       , &  ! Input
+!                                             Atmosphere_RHS                       , &  ! Input
+!                                             ULP_Scale         =ULP_Scale         , &  ! Optional input
+!                                             Percent_Difference=Percent_Difference, &  ! Optional input
+!                                             Check_All         =Check_All         , &  ! Optional input
+!                                             RCS_Id            =RCS_Id            , &  ! Optional output
+!                                             Message_Log       =Message_Log         )  ! Error messaging
 !
 !
 ! INPUT ARGUMENTS:
-!       Atmosphere_LHS:    Atmosphere structure to be compared; equivalent to the
-!                          left-hand side of a lexical comparison, e.g.
-!                            IF ( Atmosphere_LHS == Atmosphere_RHS ).
-!                          In the context of the CRTM, rank-1 corresponds to an
-!                          vector of profiles, and rank-2 corresponds to an array
-!                          of channels x profiles. The latter is used in the
-!                          K-matrix model.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_Atmosphere_type
-!                          DIMENSION:  Scalar, Rank-1, or Rank-2 array
-!                          ATTRIBUTES: INTENT(IN)
+!       Atmosphere_LHS:     Atmosphere structure to be compared; equivalent to the
+!                           left-hand side of a lexical comparison, e.g.
+!                             IF ( Atmosphere_LHS == Atmosphere_RHS ).
+!                           In the context of the CRTM, rank-1 corresponds to an
+!                           vector of profiles, and rank-2 corresponds to an array
+!                           of channels x profiles. The latter is used in the
+!                           K-matrix model.
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_Atmosphere_type
+!                           DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                           ATTRIBUTES: INTENT(IN)
 !
-!       Atmosphere_RHS:    Atmosphere structure to be compared to; equivalent to
-!                          right-hand side of a lexical comparison, e.g.
-!                            IF ( Atmosphere_LHS == Atmosphere_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_Atmosphere_type
-!                          DIMENSION:  Same as Atmosphere_LHS
-!                          ATTRIBUTES: INTENT(IN)
+!       Atmosphere_RHS:     Atmosphere structure to be compared to; equivalent to
+!                           right-hand side of a lexical comparison, e.g.
+!                             IF ( Atmosphere_LHS == Atmosphere_RHS ).
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_Atmosphere_type
+!                           DIMENSION:  Same as Atmosphere_LHS
+!                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:         Unit of data precision used to scale the floating
-!                          point comparison. ULP stands for "Unit in the Last Place,"
-!                          the smallest possible increment or decrement that can be
-!                          made using a machine's floating point arithmetic.
-!                          Value must be positive - if a negative value is supplied,
-!                          the absolute value is used. If not specified, the default
-!                          value is 1.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       ULP_Scale:          Unit of data precision used to scale the floating
+!                           point comparison. ULP stands for "Unit in the Last Place,"
+!                           the smallest possible increment or decrement that can be
+!                           made using a machine's floating point arithmetic.
+!                           Value must be positive - if a negative value is supplied,
+!                           the absolute value is used. If not specified, the default
+!                           value is 1.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Check_All:         Set this argument to check ALL the floating point
-!                          channel data of the Atmosphere structures. The default
-!                          action is return with a FAILURE status as soon as
-!                          any difference is found. This optional argument can
-!                          be used to get a listing of ALL the differences
-!                          between data in Atmosphere structures.
-!                          If == 0, Return with FAILURE status as soon as
-!                                   ANY difference is found  *DEFAULT*
-!                             == 1, Set FAILURE status if ANY difference is
-!                                   found, but continue to check ALL data.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Percent_Differnece: Percentage difference value to use in comparing
+!                           the numbers rather than testing within some numerical
+!                           limit. The ULP_Scale argument is ignored if this argument is
+!                           specified.
+!                           UNITS:      N/A
+!                           TYPE:       REAL(fp)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
-!       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Check_All:          Set this argument to check ALL the floating point
+!                           channel data of the Atmosphere structures. The default
+!                           action is return with a FAILURE status as soon as
+!                           any difference is found. This optional argument can
+!                           be used to get a listing of ALL the differences
+!                           between data in Atmosphere structures.
+!                           If == 0, Return with FAILURE status as soon as
+!                                    ANY difference is found  *DEFAULT*
+!                              == 1, Set FAILURE status if ANY difference is
+!                                    found, but continue to check ALL data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structures were equal
-!                             == FAILURE - an error occurred, or
-!                                        - the structures were different.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error status.
+!                           The error codes are defined in the Message_Handler module.
+!                           If == SUCCESS the structures were equal
+!                              == FAILURE - an error occurred, or
+!                                         - the structures were different.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Equal_Scalar( Atmosphere_LHS, &  ! Input
-                         Atmosphere_RHS, &  ! Input
-                         ULP_Scale     , &  ! Optional input
-                         Check_All     , &  ! Optional input
-                         RCS_Id        , &  ! Revision control
-                         Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Scalar( Atmosphere_LHS    , &  ! Input
+                         Atmosphere_RHS    , &  ! Input
+                         ULP_Scale         , &  ! Optional input
+                         Percent_Difference, &  ! Optional input
+                         Check_All         , &  ! Optional input
+                         RCS_Id            , &  ! Revision control
+                         Message_Log       ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere_LHS
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere_RHS
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
@@ -2316,7 +2328,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Atmosphere(scalar)'
     ! Local variables
     CHARACTER(256) :: Message
-    INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: j, k
     INTEGER :: Cloud_Status, Aerosol_Status
@@ -2325,13 +2336,6 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Default precision is a single unit in last place
-    ULP = 1
-    ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
-      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-    END IF
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -2380,66 +2384,71 @@ CONTAINS
     ! ------------------
     IF ( Atmosphere_LHS%Climatology /= Atmosphere_RHS%Climatology ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Climatology values are different:",2(1x,i0))') &
+                     Atmosphere_LHS%Climatology, Atmosphere_RHS%Climatology
       CALL Display_Message( ROUTINE_NAME, &
-                            'Climatology values are different', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
-    
     DO j = 1, Atmosphere_LHS%n_Absorbers
       IF ( Atmosphere_LHS%Absorber_ID(j) /= Atmosphere_RHS%Absorber_ID(j) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Absorber_Id(",i0,") values are different:",2(1x,i0))') &
+                       j, Atmosphere_LHS%Absorber_ID(j), Atmosphere_RHS%Absorber_ID(j)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Absorber_ID values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    
     DO j = 1, Atmosphere_LHS%n_Absorbers
       IF ( Atmosphere_LHS%Absorber_Units(j) /= Atmosphere_RHS%Absorber_Units(j) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Absorber_Units(",i0,") values are different:",2(1x,i0))') &
+                       j, Atmosphere_LHS%Absorber_Units(j), Atmosphere_RHS%Absorber_Units(j)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Absorber_Units values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-
-   
     DO k = 0, Atmosphere_LHS%n_Layers
       IF ( .NOT. Compare_Float( Atmosphere_LHS%Level_Pressure(k), &
                                 Atmosphere_RHS%Level_Pressure(k), &
-                                ULP = ULP ) ) THEN
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Level_Pressure values are different at level ",i0,&
-                        &":",2(1x,es13.6))') &
+                        &":",3(1x,es13.6))') &
                        k, Atmosphere_LHS%Level_Pressure(k), &
-                          Atmosphere_RHS%Level_Pressure(k)
+                          Atmosphere_RHS%Level_Pressure(k), &
+                          Atmosphere_LHS%Level_Pressure(k)-Atmosphere_RHS%Level_Pressure(k)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    
     DO k = 1, Atmosphere_LHS%n_Layers
       IF ( .NOT. Compare_Float( Atmosphere_LHS%Pressure(k), &
                                 Atmosphere_RHS%Pressure(k), &
-                                ULP = ULP ) ) THEN
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Pressure values are different at level ",i0,&
-                        &":",2(1x,es13.6))') &
+                        &":",3(1x,es13.6))') &
                        k, Atmosphere_LHS%Pressure(k), &
-                          Atmosphere_RHS%Pressure(k)
+                          Atmosphere_RHS%Pressure(k), &
+                          Atmosphere_LHS%Pressure(k)-Atmosphere_RHS%Pressure(k)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
@@ -2447,34 +2456,33 @@ CONTAINS
     DO k = 1, Atmosphere_LHS%n_Layers
       IF ( .NOT. Compare_Float( Atmosphere_LHS%Temperature(k), &
                                 Atmosphere_RHS%Temperature(k), &
-                                ULP = ULP ) ) THEN
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Temperature values are different at level ",i0,&
-                        &":",2(1x,es13.6))') &
+                        &":",3(1x,es13.6))') &
                        k, Atmosphere_LHS%Temperature(k), &
-                          Atmosphere_RHS%Temperature(k)
+                          Atmosphere_RHS%Temperature(k), &
+                          Atmosphere_LHS%Temperature(k)-Atmosphere_RHS%Temperature(k)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Temperature values are different', &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    
     DO j = 1, Atmosphere_LHS%n_Absorbers
       DO k = 1, Atmosphere_LHS%n_Layers
         IF ( .NOT. Compare_Float( Atmosphere_LHS%Absorber(k,j), &
                                   Atmosphere_RHS%Absorber(k,j), &
-                                  ULP = ULP ) ) THEN
+                                  ULP    =ULP_Scale, &
+                                  Percent=Percent_Difference ) ) THEN
           Error_Status = FAILURE
           WRITE( Message,'("Absorber values are different at level ",i0,&
-                          &" for absorber ",i0,":",2(1x,es13.6))') &
+                          &" for absorber ",i0,":",3(1x,es13.6))') &
                          k, j, Atmosphere_LHS%Absorber(k,j), &
-                               Atmosphere_RHS%Absorber(k,j)
+                               Atmosphere_RHS%Absorber(k,j), &
+                               Atmosphere_LHS%Absorber(k,j)-Atmosphere_RHS%Absorber(k,j)
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -2518,17 +2526,19 @@ CONTAINS
   END FUNCTION Equal_Scalar
 
 
-  FUNCTION Equal_Rank1( Atmosphere_LHS, &  ! Input
-                        Atmosphere_RHS, &  ! Output
-                        ULP_Scale     , &  ! Optional input
-                        Check_All     , &  ! Optional input
-                        RCS_Id        , &  ! Revision control
-                        Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Rank1( Atmosphere_LHS    , &  ! Input
+                        Atmosphere_RHS    , &  ! Output
+                        ULP_Scale         , &  ! Optional input
+                        Percent_Difference, &  ! Optional input
+                        Check_All         , &  ! Optional input
+                        RCS_Id            , &  ! Revision control
+                        Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere_LHS(:)
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere_RHS(:)
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
@@ -2572,9 +2582,10 @@ CONTAINS
     DO m = 1, nProfiles
       Scalar_Status = Equal_Scalar( Atmosphere_LHS(m), &
                                     Atmosphere_RHS(m), &
-                                    ULP_Scale  =ULP_Scale, &
-                                    Check_All  =Check_All, &
-                                    Message_Log=Message_Log )
+                                    ULP_Scale         =ULP_Scale, &
+                                    Percent_Difference=Percent_Difference, &
+                                    Check_All         =Check_All, &
+                                    Message_Log       =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
@@ -2589,17 +2600,19 @@ CONTAINS
   END FUNCTION Equal_Rank1
 
 
-  FUNCTION Equal_Rank2( Atmosphere_LHS, &  ! Input
-                        Atmosphere_RHS, &  ! Output
-                        ULP_Scale     , &  ! Optional input
-                        Check_All     , &  ! Optional input
-                        RCS_Id        , &  ! Revision control
-                        Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Rank2( Atmosphere_LHS    , &  ! Input
+                        Atmosphere_RHS    , &  ! Output
+                        ULP_Scale         , &  ! Optional input
+                        Percent_Difference, &  ! Optional input
+                        Check_All         , &  ! Optional input
+                        RCS_Id            , &  ! Revision control
+                        Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere_LHS(:,:)
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere_RHS(:,:)
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
@@ -2647,9 +2660,10 @@ CONTAINS
       DO l = 1, nChannels
         Scalar_Status = Equal_Scalar( Atmosphere_LHS(l,m), &
                                       Atmosphere_RHS(l,m), &
-                                      ULP_Scale  =ULP_Scale, &
-                                      Check_All  =Check_All, &
-                                      Message_Log=Message_Log )
+                                      ULP_Scale         =ULP_Scale, &
+                                      Percent_Difference=Percent_Difference, &
+                                      Check_All         =Check_All, &
+                                      Message_Log       =Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &

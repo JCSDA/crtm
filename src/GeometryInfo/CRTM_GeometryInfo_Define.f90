@@ -14,31 +14,37 @@
 !         -----------  of the GeometryInfo structure
 !
 !
-!         Earth_Radius:          Radius of the Earth at the current location.
-!                                UNITS:      kilometres (km)
-!                                TYPE:       REAL(fp_kind)
-!                                DIMENSION:  Scalar
-!
-!         Satellite_Height:      Height of the satellite above the Earth's 
-!                                surface at the current location.
-!                                UNITS:      kilometres (km)
-!                                TYPE:       REAL(fp_kind)
-!                                DIMENSION:  Scalar
-!
 !         Longitude:             Earth longitude.
 !                                UNITS:      degrees East (0->360)
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Latitude:              Earth latitude.
 !                                UNITS:      degrees North (-90->+90)
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Surface_Altitude:      Altitude of the Earth's surface at the specified
 !                                lon/lat location.
 !                                UNITS:      metres (m)
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar
+!
+!         Sensor_Scan_Angle:     The sensor scan angle, S, from nadir.
+!                                      |         
+!                                    -0A0-  <--Satellite     
+!                                      |\        
+!                                      |S\       
+!                                      |  \      
+!                                      |   \     
+!                                      |    \    
+!                                      |     \   
+!                                      |      \  
+!                                    ------------
+!                                      ^       ^ 
+!                                     Nadir   FOV
+!                                UNITS:      Degrees
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Sensor_Zenith_Angle:   The sensor zenith angle, Z. If a flat Earth
@@ -57,7 +63,7 @@
 !                                      ^
 !                                      FOV
 !                                UNITS:      Degrees.
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Sensor_Azimuth_Angle:  The sensor azimuth angle, A, is the angle
@@ -77,7 +83,7 @@
 !                                           ^
 !                                          FOV
 !                                UNITS:      Degrees form North (0->360)
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Source_Zenith_Angle:   The source zenith angle, ZS. The source is
@@ -94,7 +100,7 @@
 !                                      ^
 !                                      FOV
 !                                UNITS:      Degrees (-180 -> +180)
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Source_Azimuth_Angle:  The source azimuth angle, AS, is the angle
@@ -114,7 +120,7 @@
 !                                           ^
 !                                          FOV
 !                                UNITS:      Degrees from North (0->360).
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Flux_Zenith_Angle:     The zenith angle, F, used to approximate downwelling
@@ -124,84 +130,87 @@
 !                                Maximum allowed value of F is determined from
 !                                  sec(F) = 9/4
 !                                UNITS:      Degrees
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !
 !         DERIVED COMPONENTS: These components will be derived from values from the
 !         ------------------  user input components via CRTM_Compute_GeometryInfo.
 !
-!         Sensor_Scan_Angle:     The sensor scan angle, S, from nadir.
-!                                      |         
-!                                    -0A0-  <--Satellite     
-!                                      |\        
-!                                      |S\       
-!                                      |  \      
-!                                      |   \     
-!                                      |    \    
-!                                      |     \   
-!                                      |      \  
-!                                    ------------
-!                                      ^       ^ 
-!                                     Nadir   FOV
-!                                UNITS:      Degrees
-!                                TYPE:       REAL(fp_kind)
+!         Distance_Ratio:        The ratio of the radius of the earth at the
+!                                FOV location, Re(FOV), to the sum of the radius
+!                                of the earth at nadir, Re(nadir), and the satellite
+!                                altitude, h:
+!                                                       Re(FOV)
+!                                  Distance_Ratio = ---------------
+!                                                    Re(nadir) + h
+!
+!                                Note that this quantity is actually computed
+!                                using the user input sensor scan and zenith
+!                                angles:
+!                                                     SIN(scan angle)
+!                                  Distance_Ratio = -------------------
+!                                                    SIN(zenith angle)
+!
+!                                for |SIN(zenith angle)| > 1.0.
+!                                UNITS:      N/A
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Sensor_Scan_Radian:    The sensor scan angle, S, in radians. This
 !                                value is derived from the Sensor_Scan_Angle
 !                                component.
 !                                UNITS:      Radians
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Sensor_Zenith_Radian:  The sensor zenith angle, Z, in radians. This
 !                                value is derived from the Sensor_Zenith_Angle
 !                                component.
 !                                UNITS:      Radians
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Sensor_Azimuth_Radian: The sensor azimuth angle, A, in radians. This
 !                                value is derived from the Sensor_Azimuth_Angle
 !                                component.
 !                                UNITS:      Radians
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Secant_Sensor_Zenith:  The secant of the sensor zenith
 !                                angle, sec(Z). The value is derived
 !                                from the Sensor_Zenith_Angle component.
 !                                UNITS:      N/A
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Source_Zenith_Radian:  The Source zenith angle, ZS, in radians. This
 !                                value is derived from the Source_Zenith_Angle
 !                                component.
 !                                UNITS:      Radians
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Source_Azimuth_Radian: The Source azimuth angle, AS, in radians. This
 !                                value is derived from the Source_Azimuth_Angle
 !                                component.
 !                                UNITS:      Radians
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Secant_Source_Zenith:  The secant of the source zenith
 !                                angle, sec(ZS). The value is derived
 !                                from the Source_Zenith_Angle component.
 !                                UNITS:      N/A
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Flux_Zenith_Radian:    The flux zenith angle, F, in radians. This
 !                                value is derived from the Flux_Zenith_Angle
 !                                component.
 !                                UNITS:      Radians
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !         Secant_Flux_Zenith:    The secant of the flux zenith angle, sec(F).
@@ -210,7 +219,7 @@
 !                                downwelling flux transmissivity (diffusivity
 !                                approximation).
 !                                UNITS:      N/A
-!                                TYPE:       REAL(fp_kind)
+!                                TYPE:       REAL(fp)
 !                                DIMENSION:  Scalar
 !
 !
@@ -226,9 +235,19 @@ MODULE CRTM_GeometryInfo_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds
-  USE Message_Handler
-  USE CRTM_Parameters
+  USE Type_Kinds     , ONLY: fp
+  USE Message_Handler, ONLY: SUCCESS, WARNING, FAILURE, Display_Message
+  USE CRTM_Parameters, ONLY: ZERO, ONE               , &
+                             EARTH_RADIUS            , &
+                             SATELLITE_HEIGHT        , &
+                             DEGREES_TO_RADIANS      , &
+                             MAX_SENSOR_ZENITH_ANGLE , &
+                             MAX_SENSOR_AZIMUTH_ANGLE, &
+                             MAX_SOURCE_AZIMUTH_ANGLE, &
+                             MAX_FLUX_ZENITH_ANGLE   , &
+                             DIFFUSIVITY_ANGLE       , &
+                             DIFFUSIVITY_RADIAN      , &
+                             SECANT_DIFFUSIVITY
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -244,51 +263,49 @@ MODULE CRTM_GeometryInfo_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_GeometryInfo_Define.f90,v 1.12 2006/05/02 14:58:34 dgroff Exp $'
+  '$Id$'
 
 
   ! ---------------------------------
   ! GeometryInfo data type definition
   ! ---------------------------------
-
   TYPE :: CRTM_GeometryInfo_type
 
     ! User Input
     ! ----------
-    ! Earth radius and satellite height
-    REAL(fp_kind) :: Earth_Radius     = EARTH_RADIUS
-    REAL(fp_kind) :: Satellite_Height = SATELLITE_HEIGHT
-    REAL(fp_kind) :: Distance_Ratio   = EARTH_RADIUS / (EARTH_RADIUS + SATELLITE_HEIGHT)
     ! Earth location
-    REAL(fp_kind) :: Longitude        = ZERO
-    REAL(fp_kind) :: Latitude         = ZERO
-    REAL(fp_kind) :: Surface_Altitude = ZERO
+    REAL(fp) :: Longitude        = ZERO
+    REAL(fp) :: Latitude         = ZERO
+    REAL(fp) :: Surface_Altitude = ZERO
+    ! Field of view index (1-nFOV)
+    INTEGER  :: iFOV = 0
     ! Sensor angle information
-    REAL(fp_kind) :: Sensor_Zenith_Angle  = ZERO
-    REAL(fp_kind) :: Sensor_Azimuth_Angle = ZERO 
+    REAL(fp) :: Sensor_Scan_Angle    = ZERO
+    REAL(fp) :: Sensor_Zenith_Angle  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
     ! Source angle information
-    REAL(fp_kind) :: Source_Zenith_Angle  = ZERO
-    REAL(fp_kind) :: Source_Azimuth_Angle = ZERO
+    REAL(fp) :: Source_Zenith_Angle  = ZERO
+    REAL(fp) :: Source_Azimuth_Angle = ZERO
     ! Flux angle information
-    REAL(fp_kind) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
+    REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
 
     ! Derived from User Input
     ! -----------------------
+    ! Default distance ratio
+    REAL(fp) :: Distance_Ratio = EARTH_RADIUS/(EARTH_RADIUS + SATELLITE_HEIGHT)
     ! Sensor angle information
-    REAL(fp_kind) :: Sensor_Scan_Angle     = ZERO
-    REAL(fp_kind) :: Sensor_Scan_Radian    = ZERO
-    REAL(fp_kind) :: Sensor_Zenith_Radian  = ZERO
-    REAL(fp_kind) :: Sensor_Azimuth_Radian = ZERO
-    REAL(fp_kind) :: Secant_Sensor_Zenith  = ZERO
+    REAL(fp) :: Sensor_Scan_Radian    = ZERO
+    REAL(fp) :: Sensor_Zenith_Radian  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Radian = ZERO
+    REAL(fp) :: Secant_Sensor_Zenith  = ZERO
     ! Source angle information
-    REAL(fp_kind) :: Source_Zenith_Radian  = ZERO
-    REAL(fp_kind) :: Source_Azimuth_Radian = ZERO
-    REAL(fp_kind) :: Secant_Source_Zenith  = ZERO
+    REAL(fp) :: Source_Zenith_Radian  = ZERO
+    REAL(fp) :: Source_Azimuth_Radian = ZERO
+    REAL(fp) :: Secant_Source_Zenith  = ZERO
     ! Flux angle information
-    REAL(fp_kind) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
-    REAL(fp_kind) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
+    REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
+    REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
 
   END TYPE CRTM_GeometryInfo_type
 
@@ -307,7 +324,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo,             &  ! In/Output
-!                                                 Message_Log = Message_Log )  ! Error messaging
+!                                                 Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       GeometryInfo:  The CRTM_GeometryInfo structure containing the user
@@ -353,7 +370,7 @@ CONTAINS
 
   FUNCTION CRTM_Compute_GeometryInfo( gInfo      , &  ! In/Output
                                       Message_Log) &  ! Optional input
-                                    RESULT ( Error_Status )
+                                    RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_GeometryInfo_type), INTENT(IN OUT) :: gInfo
     CHARACTER(*),       OPTIONAL, INTENT(IN)     :: Message_Log
@@ -362,18 +379,17 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_GeometryInfo'
 
-
     ! Set up
     ! ------
     Error_Status = SUCCESS
 
-    ! Check the sensor angles
-    IF ( ABS( gInfo%Sensor_Zenith_Angle ) > MAX_SENSOR_ZENITH_ANGLE ) THEN
+    ! Check sensor angles
+    IF ( ABS(gInfo%Sensor_Zenith_Angle) > MAX_SENSOR_ZENITH_ANGLE ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid sensor zenith angle', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
     IF ( gInfo%Sensor_Azimuth_Angle < ZERO                     .OR. &
@@ -382,47 +398,53 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid sensor azimuth angle. Setting to 0.0', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       gInfo%Sensor_Azimuth_Angle = ZERO
     END IF
 
-    ! Check the Source angles
+    ! Check source angles
     IF ( gInfo%Source_Azimuth_Angle < ZERO                     .OR. &
          gInfo%Source_Azimuth_Angle > MAX_SOURCE_AZIMUTH_ANGLE      ) THEN
       Error_Status = WARNING
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid source azimuth angle. Setting to 0.0', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       gInfo%Source_Azimuth_Angle = ZERO
     END IF
 
-    ! Check the Flux angles
-    IF ( ABS( gInfo%Flux_Zenith_Angle ) > MAX_FLUX_ZENITH_ANGLE ) THEN
+    ! Check flux angles
+    IF ( ABS(gInfo%Flux_Zenith_Angle) > MAX_FLUX_ZENITH_ANGLE ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid flux zenith angle', &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
 
-    ! Perform the angle conversions
-    ! -----------------------------
+    ! Compute the derived components
+    ! ------------------------------    
     ! Sensor angles
+    gInfo%Sensor_Scan_Radian    = DEGREES_TO_RADIANS * gInfo%Sensor_Scan_Angle
     gInfo%Sensor_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%Sensor_Zenith_Angle
     gInfo%Sensor_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%Sensor_Azimuth_Angle
-    gInfo%Secant_Sensor_Zenith  = ONE / COS( gInfo%Sensor_Zenith_Radian )
+    gInfo%Secant_Sensor_Zenith  = ONE / COS(gInfo%Sensor_Zenith_Radian)
+    
+    ! Distance ratio. Only modify if zenith angle large enough.
+    IF ( ABS(gInfo%Sensor_Zenith_Angle) > ONE ) THEN
+      gInfo%Distance_Ratio = ABS(SIN(gInfo%Sensor_Scan_Radian)/SIN(gInfo%Sensor_Zenith_Radian))
+    END IF
 
     ! Source angles
     gInfo%Source_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%Source_Zenith_Angle
     gInfo%Source_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%Source_Azimuth_Angle
-    gInfo%Secant_Source_Zenith  = ONE / COS( gInfo%Source_Zenith_Radian )
+    gInfo%Secant_Source_Zenith  = ONE / COS(gInfo%Source_Zenith_Radian)
 
     ! Flux angles
     gInfo%Flux_Zenith_Radian = DEGREES_TO_RADIANS * gInfo%Flux_Zenith_Angle
-    gInfo%Secant_Flux_Zenith = ONE / COS( gInfo%Flux_Zenith_Radian )
+    gInfo%Secant_Flux_Zenith = ONE / COS(gInfo%Flux_Zenith_Radian)
 
   END FUNCTION CRTM_Compute_GeometryInfo
 

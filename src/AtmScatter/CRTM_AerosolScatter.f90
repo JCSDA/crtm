@@ -249,7 +249,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     ! Sensor Type
-    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Sensor_Type = SC(SensorIndex)%Sensor_Type
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
     ! Initialize and return if no aerosols
     AerosolScatter%Optical_Depth         = ZERO
@@ -373,7 +373,7 @@ CONTAINS
     ! Some short names
     l = AerosolScatter%n_Legendre_Terms
 
-    ! Begin full atmosphere layer loop                                                                                                                          
+    ! Begin full atmosphere layer loop
     Layer_Loop: DO k = 1, Atmosphere%n_Layers
       ! Only process layers that scatter
       IF (ASV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
@@ -553,8 +553,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     ! Sensor Type
-    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
-    ! Only make computations for IR/Visible sensors
+    Sensor_Type = SC(SensorIndex)%Sensor_Type
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
     ! Initialize and return if no Aerosols
     AerosolScatter_TL%Optical_Depth         = ZERO
@@ -842,8 +841,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     ! Sensor type
-    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
-    ! Only make computations for IR/Visible sensors
+    Sensor_Type = SC(SensorIndex)%Sensor_Type
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
     ! Return if no Aerosols
     IF (Atmosphere%n_Aerosols == 0) RETURN

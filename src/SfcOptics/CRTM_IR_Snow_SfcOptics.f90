@@ -21,11 +21,11 @@ MODULE CRTM_IR_Snow_SfcOptics
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,                 ONLY: fp=>fp_kind
+  USE Type_Kinds,                 ONLY: fp
   USE Message_Handler,            ONLY: SUCCESS
   USE Spectral_Units_Conversion,  ONLY: Inverse_cm_to_Micron
   USE CRTM_Parameters,            ONLY: ZERO, ONE, MAX_N_ANGLES
-  USE CRTM_SpcCoeff,              ONLY: SC
+  USE CRTM_SpcCoeff,              ONLY: SC, SOLAR_FLAG, IsFlagSet_SpcCoeff
   USE CRTM_Surface_Define,        ONLY: CRTM_Surface_type, N_VALID_SNOW_TYPES
   USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type
@@ -215,7 +215,7 @@ CONTAINS
     ! ----------------------
     ! Solar direct component
     ! ----------------------
-    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
+    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) ) THEN
       SfcOptics%Direct_Reflectivity(:,1) = ONE-Emissivity
     END IF
 

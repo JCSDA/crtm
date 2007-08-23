@@ -6,10 +6,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                       Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov
-!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
-!                       08-June-2004
+!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_RTSolution_Define
@@ -90,12 +88,12 @@ MODULE CRTM_RTSolution_Define
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
-    REAL(fp) :: Surface_Emissivity      = FP_DEFAULT
-    REAL(fp) :: Up_Radiance             = FP_DEFAULT
-    REAL(fp) :: Down_Radiance           = FP_DEFAULT
-    REAL(fp) :: Down_Solar_Radiance     = FP_DEFAULT
-    REAL(fp) :: Surface_Planck_Radiance = FP_DEFAULT
-    REAL(fp), DIMENSION(:), POINTER :: Layer_Optical_Depth => NULL()  ! K
+    REAL(fp)          :: Surface_Emissivity      = FP_DEFAULT
+    REAL(fp)          :: Up_Radiance             = FP_DEFAULT
+    REAL(fp)          :: Down_Radiance           = FP_DEFAULT
+    REAL(fp)          :: Down_Solar_Radiance     = FP_DEFAULT
+    REAL(fp)          :: Surface_Planck_Radiance = FP_DEFAULT
+    REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
     ! Internal variables. Users do not need to worry about these.
     INTEGER :: n_Full_Streams  = IP_DEFAULT
     LOGICAL :: Scattering_Flag = LP_DEFAULT
@@ -107,63 +105,6 @@ MODULE CRTM_RTSolution_Define
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_RTSolution
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_RTSolution structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_RTSolution( RTSolution ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution:  CRTM_RTSolution structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_RTSolution_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output RTSolution argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Jun-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_RTSolution( RTSolution )
-    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
-    RTSolution%n_Layers = 0
-    RTSolution%Surface_Emissivity      = FP_DEFAULT
-    RTSolution%Up_Radiance             = FP_DEFAULT
-    RTSolution%Down_Radiance           = FP_DEFAULT
-    RTSolution%Down_Solar_Radiance     = FP_DEFAULT
-    RTSolution%Surface_Planck_Radiance = FP_DEFAULT
-    RTSolution%n_Full_Streams          = IP_DEFAULT
-    RTSolution%Scattering_Flag         = LP_DEFAULT
-    RTSolution%n_Stokes                = IP_DEFAULT
-    RTSolution%Radiance                = FP_DEFAULT
-    RTSolution%Brightness_Temperature  = FP_DEFAULT
-  END SUBROUTINE CRTM_Clear_RTSolution
-
-
-
 
 
 !##################################################################################
@@ -241,8 +182,6 @@ CONTAINS
     ! Local variables
     LOGICAL :: ALL_Test
 
-
-    ! ------
     ! Set up
     ! ------
     ! Default is to test ALL the pointer members
@@ -254,11 +193,10 @@ CONTAINS
     END IF
 
 
-    ! --------------------------------------
     ! Test the structure pointer association
+    ! --------------------------------------
     ! NOTE: The Any/All test logic is included for future changes
     !       when/if there is more than one pointer member
-    ! --------------------------------------
     Association_Status = .FALSE.
 !    IF ( ALL_Test ) THEN
       IF ( ASSOCIATED( RTSolution%Layer_Optical_Depth ) ) THEN  ! .AND.
@@ -356,8 +294,6 @@ CONTAINS
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
@@ -369,41 +305,27 @@ CONTAINS
     IF ( PRESENT( No_Clear ) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
-
-
-    ! -----------------------------
-    ! Initialise the scalar members
-    ! -----------------------------
     IF ( Clear ) CALL CRTM_Clear_RTSolution( RTSolution )
 
-
-    ! -----------------------------------------------------
     ! If ALL pointer members are NOT associated, do nothing
-    ! -----------------------------------------------------
     IF ( .NOT. CRTM_Associated_RTSolution( RTSolution ) ) RETURN
 
 
-    ! ------------------------------
     ! Deallocate the pointer members
     ! ------------------------------
-
-    ! Deallocate the RTSolution Layer_Optical_Depth member
-    IF ( ASSOCIATED( RTSolution%Layer_Optical_Depth ) ) THEN
-      DEALLOCATE( RTSolution%Layer_Optical_Depth, STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_RTSolution Layer_Optical_Depth ", &
-                          &"member. STAT = ", i0 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM(Message), &
-                              Error_Status,    &
-                              Message_Log=Message_Log )
-      END IF
+    DEALLOCATE( RTSolution%Layer_Optical_Depth, STAT = Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Error deallocating CRTM_RTSolution Layer_Optical_Depth ",&
+                      &"member. STAT = ",i0)' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM(Message), &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
     END IF
 
 
-    ! -------------------------------------
     ! Decrement and test allocation counter
     ! -------------------------------------
     RTSolution%n_Allocates = RTSolution%n_Allocates - 1
@@ -438,15 +360,12 @@ CONTAINS
     INTEGER :: Scalar_Status
     INTEGER :: n
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
-    ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
     DO n = 1, SIZE( RTSolution )
@@ -485,15 +404,12 @@ CONTAINS
     INTEGER :: Scalar_Status
     INTEGER :: i, j
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
-    ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
     DO j = 1, SIZE(RTSolution, DIM=2)
@@ -625,8 +541,6 @@ CONTAINS
     CHARACTER(256) :: Message
     INTEGER :: Allocate_Status
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
@@ -658,7 +572,6 @@ CONTAINS
     END IF
 
 
-    ! ----------------------
     ! Allocate the structure
     ! ----------------------
     ALLOCATE( RTSolution%Layer_Optical_Depth(n_Layers), &
@@ -675,14 +588,12 @@ CONTAINS
     END IF
 
 
-    ! ------------------------------------------
     ! Assign dimensions and initialise variables
     ! ------------------------------------------
     RTSolution%n_Layers = n_Layers
     RTSolution%Layer_Optical_Depth = ZERO
 
 
-    ! -----------------------------------------
     ! Increment and test the allocation counter
     ! -----------------------------------------
     RTSolution%n_Allocates = RTSolution%n_Allocates + 1
@@ -717,14 +628,12 @@ CONTAINS
     INTEGER :: Scalar_Status
     INTEGER :: n
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
-    ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
     DO n = 1, SIZE(RTSolution)
@@ -763,15 +672,12 @@ CONTAINS
     INTEGER :: Scalar_Status
     INTEGER :: i, j
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
-    ! ----------------------------
     ! Loop over RTSolution entries
     ! ----------------------------
     DO j = 1, SIZE(RTSolution, DIM=2)
@@ -876,34 +782,22 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_RTSolution(Scalar)'
 
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-
-    ! ----------------------------------------------
     ! ALL *input* pointers must be associated.
-    !
-    ! If this test succeeds, then some or all of the
-    ! input pointers are NOT associated, so destroy
-    ! the output structure and return.
-    ! ----------------------------------------------
     IF ( .NOT. CRTM_Associated_RTSolution( RTSolution_In ) ) THEN
-      Error_Status = CRTM_Destroy_RTSolution( RTSolution_Out, &
-                                              Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output CRTM_RTSolution pointer members.', &
-                              Error_Status,    &
-                              Message_Log=Message_Log )
-      END IF
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Some RTSolution_in components not associated.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
 
-    ! ----------------------
     ! Allocate the structure
     ! ----------------------
     Error_Status = CRTM_Allocate_RTSolution( RTSolution_in%n_Layers, &
@@ -918,7 +812,6 @@ CONTAINS
     END IF
 
 
-    ! ------------------
     ! Assign scalar data
     ! ------------------
     RTSolution_out%Surface_Emissivity      = RTSolution_in%Surface_Emissivity
@@ -933,7 +826,6 @@ CONTAINS
     RTSolution_out%Brightness_Temperature  = RTSolution_in%Brightness_Temperature
 
 
-    ! -----------------
     ! Assign array data
     ! -----------------
     RTSolution_out%Layer_Optical_Depth = RTSolution_in%Layer_Optical_Depth
@@ -1072,99 +964,111 @@ CONTAINS
 !       Function to test if two RTSolution structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_RTSolution( RTSolution_LHS         , &  ! Input
-!                                             RTSolution_RHS         , &  ! Input
-!                                             ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                             Check_All  =Check_All  , &  ! Optional input
-!                                             RCS_Id     =RCS_Id     , &  ! Optional output
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Equal_RTSolution( RTSolution_LHS                       , &  ! Input
+!                                             RTSolution_RHS                       , &  ! Input
+!                                             ULP_Scale         =ULP_Scale         , &  ! Optional input
+!                                             Percent_Difference=Percent_Difference, &  ! Optional input
+!                                             Check_All         =Check_All         , &  ! Optional input
+!                                             RCS_Id            =RCS_Id            , &  ! Optional output
+!                                             Message_Log       =Message_Log         )  ! Error messaging
 !
 !
 ! INPUT ARGUMENTS:
-!       RTSolution_LHS:    RTSolution structure to be compared; equivalent to the
-!                          left-hand side of a lexical comparison, e.g.
-!                            IF ( RTSolution_LHS == RTSolution_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_RTSolution_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!       RTSolution_LHS:     RTSolution structure to be compared; equivalent to the
+!                           left-hand side of a lexical comparison, e.g.
+!                             IF ( RTSolution_LHS == RTSolution_RHS ).
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_RTSolution_type
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
 !
-!       RTSolution_RHS:    RTSolution structure to be compared to; equivalent to
-!                          right-hand side of a lexical comparison, e.g.
-!                            IF ( RTSolution_LHS == RTSolution_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_RTSolution_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!       RTSolution_RHS:     RTSolution structure to be compared to; equivalent to
+!                           right-hand side of a lexical comparison, e.g.
+!                             IF ( RTSolution_LHS == RTSolution_RHS ).
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_RTSolution_type
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:         Unit of data precision used to scale the floating
-!                          point comparison. ULP stands for "Unit in the Last Place,"
-!                          the smallest possible increment or decrement that can be
-!                          made using a machine's floating point arithmetic.
-!                          Value must be positive - if a negative value is supplied,
-!                          the absolute value is used. If not specified, the default
-!                          value is 1.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       ULP_Scale:          Unit of data precision used to scale the floating
+!                           point comparison. ULP stands for "Unit in the Last Place,"
+!                           the smallest possible increment or decrement that can be
+!                           made using a machine's floating point arithmetic.
+!                           Value must be positive - if a negative value is supplied,
+!                           the absolute value is used. If not specified, the default
+!                           value is 1.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Check_All:         Set this argument to check ALL the floating point
-!                          channel data of the RTSolution structures. The default
-!                          action is return with a FAILURE status as soon as
-!                          any difference is found. This optional argument can
-!                          be used to get a listing of ALL the differences
-!                          between data in RTSolution structures.
-!                          If == 0, Return with FAILURE status as soon as
-!                                   ANY difference is found  *DEFAULT*
-!                             == 1, Set FAILURE status if ANY difference is
-!                                   found, but continue to check ALL data.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Percent_Differnece: Percentage difference value to use in comparing
+!                           the numbers rather than testing within some numerical
+!                           limit. The ULP_Scale argument is ignored if this argument is
+!                           specified.
+!                           UNITS:      N/A
+!                           TYPE:       REAL(fp)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
-!       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Check_All:          Set this argument to check ALL the floating point
+!                           channel data of the RTSolution structures. The default
+!                           action is return with a FAILURE status as soon as
+!                           any difference is found. This optional argument can
+!                           be used to get a listing of ALL the differences
+!                           between data in RTSolution structures.
+!                           If == 0, Return with FAILURE status as soon as
+!                                    ANY difference is found  *DEFAULT*
+!                              == 1, Set FAILURE status if ANY difference is
+!                                    found, but continue to check ALL data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structures were equal
-!                             == FAILURE - an error occurred, or
-!                                        - the structures were different.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error status.
+!                           The error codes are defined in the Message_Handler module.
+!                           If == SUCCESS the structures were equal
+!                              == FAILURE - an error occurred, or
+!                                         - the structures were different.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Equal_Scalar( RTSolution_LHS, &  ! Input
-                         RTSolution_RHS, &  ! Input
-                         ULP_Scale     , &  ! Optional input
-                         Check_All     , &  ! Optional input
-                         RCS_Id        , &  ! Revision control
-                         Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Scalar( RTSolution_LHS    , &  ! Input
+                         RTSolution_RHS    , &  ! Input
+                         ULP_Scale         , &  ! Optional input
+                         Percent_Difference, &  ! Optional input
+                         Check_All         , &  ! Optional input
+                         RCS_Id            , &  ! Revision control
+                         Message_Log       ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution_LHS
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution_RHS
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1174,7 +1078,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_RTSolution(scalar)'
     ! Local variables
     CHARACTER(256) :: Message
-    INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: i, j, k, m, n
 
@@ -1182,13 +1085,6 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Default precision is a single unit in last place
-    ULP = 1
-    ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
-      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-    END IF
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1232,113 +1128,149 @@ CONTAINS
 
     ! Compare the values
     ! ------------------
+    ! The forward intermediate results
     IF ( .NOT. Compare_Float( RTSolution_LHS%Surface_Emissivity, &
                               RTSolution_RHS%Surface_Emissivity, &
-                              ULP = ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Surface_Emissivity values are different', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Up_Radiance, &
-                              RTSolution_RHS%Up_Radiance, &
-                              ULP = ULP ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Up_Radiance values are different', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Radiance, &
-                              RTSolution_RHS%Down_Radiance, &
-                              ULP = ULP ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Down_Radiance values are different', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Solar_Radiance, &
-                              RTSolution_RHS%Down_Solar_Radiance, &
-                              ULP = ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Down_Solar_Radiance values are different:",2(1x,es13.6))') &
-                     RTSolution_LHS%Down_Solar_Radiance, &
-                     RTSolution_RHS%Down_Solar_Radiance
+      WRITE( Message,'("Surface_Emissivity values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Surface_Emissivity, &
+                     RTSolution_RHS%Surface_Emissivity, &
+                     RTSolution_LHS%Surface_Emissivity-RTSolution_RHS%Surface_Emissivity
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
-    
+    IF ( .NOT. Compare_Float( RTSolution_LHS%Up_Radiance, &
+                              RTSolution_RHS%Up_Radiance, &
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Up_Radiance values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Up_Radiance, &
+                     RTSolution_RHS%Up_Radiance, &
+                     RTSolution_LHS%Up_Radiance-RTSolution_RHS%Up_Radiance
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Radiance, &
+                              RTSolution_RHS%Down_Radiance, &
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Down_Radiance values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Down_Radiance, &
+                     RTSolution_RHS%Down_Radiance, &
+                     RTSolution_LHS%Down_Radiance-RTSolution_RHS%Down_Radiance
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Solar_Radiance, &
+                              RTSolution_RHS%Down_Solar_Radiance, &
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Down_Solar_Radiance values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Down_Solar_Radiance, &
+                     RTSolution_RHS%Down_Solar_Radiance, &
+                     RTSolution_LHS%Down_Solar_Radiance-RTSolution_RHS%Down_Solar_Radiance
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
     IF ( .NOT. Compare_Float( RTSolution_LHS%Surface_Planck_Radiance, &
                               RTSolution_RHS%Surface_Planck_Radiance, &
-                              ULP = ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Surface_Planck_Radiance values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Surface_Planck_Radiance, &
+                     RTSolution_RHS%Surface_Planck_Radiance, &
+                     RTSolution_LHS%Surface_Planck_Radiance-RTSolution_RHS%Surface_Planck_Radiance
       CALL Display_Message( ROUTINE_NAME, &
-                            'Surface_Planck_Radiance values are different', &
+                            TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
-    
     DO k = 1, RTSolution_LHS%n_Layers
       IF ( .NOT. Compare_Float( RTSolution_LHS%Layer_Optical_Depth(k), &
                                 RTSolution_RHS%Layer_Optical_Depth(k), &
-                                ULP = ULP ) ) THEN
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Layer_Optical_Depth(",i3,") values are different:",3(1x,es13.6))') &
+                       k, &
+                       RTSolution_LHS%Layer_Optical_Depth(k), &
+                       RTSolution_RHS%Layer_Optical_Depth(k), &
+                       RTSolution_LHS%Layer_Optical_Depth(k)-RTSolution_RHS%Layer_Optical_Depth(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Layer_Optical_Depth values are different', &
+                              TRIM(Message), &
                               Error_Status, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
     
+    ! The channel RT results
     IF ( .NOT. Compare_Float( RTSolution_LHS%Radiance, &
                               RTSolution_RHS%Radiance, &
-                              ULP = ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Radiance values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Radiance, &
+                     RTSolution_RHS%Radiance, &
+                     RTSolution_LHS%Radiance-RTSolution_RHS%Radiance
       CALL Display_Message( ROUTINE_NAME, &
-                            'Radiance values are different', &
+                            TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
-    
     IF ( .NOT. Compare_Float( RTSolution_LHS%Brightness_Temperature, &
                               RTSolution_RHS%Brightness_Temperature, &
-                              ULP = ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Brightness_Temperature values are different:",3(1x,es13.6))') &
+                     RTSolution_LHS%Brightness_Temperature, &
+                     RTSolution_RHS%Brightness_Temperature, &
+                     RTSolution_LHS%Brightness_Temperature-RTSolution_RHS%Brightness_Temperature
       CALL Display_Message( ROUTINE_NAME, &
-                            'Brightness_Temperature values are different', &
+                            TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
   END FUNCTION Equal_Scalar
 
 
-  FUNCTION Equal_Rank1( RTSolution_LHS, &  ! Input
-                        RTSolution_RHS, &  ! Output
-                        ULP_Scale     , &  ! Optional input
-                        Check_All     , &  ! Optional input
-                        RCS_Id        , &  ! Revision control
-                        Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Rank1( RTSolution_LHS    , &  ! Input
+                        RTSolution_RHS    , &  ! Input
+                        ULP_Scale         , &  ! Optional input
+                        Percent_Difference, &  ! Optional input
+                        Check_All         , &  ! Optional input
+                        RCS_Id            , &  ! Revision control
+                        Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution_LHS(:)
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution_RHS(:)
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1382,9 +1314,10 @@ CONTAINS
     DO i = 1, n
       Scalar_Status = Equal_Scalar( RTSolution_LHS(i), &
                                     RTSolution_RHS(i), &
-                                    ULP_Scale  =ULP_Scale, &
-                                    Check_All  =Check_All, &
-                                    Message_Log=Message_Log )
+                                    ULP_Scale         =ULP_Scale, &
+                                    Percent_Difference=Percent_Difference, &
+                                    Check_All         =Check_All, &
+                                    Message_Log       =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
@@ -1398,17 +1331,19 @@ CONTAINS
     END DO
   END FUNCTION Equal_Rank1
 
-  FUNCTION Equal_Rank2( RTSolution_LHS, &  ! Input
-                        RTSolution_RHS, &  ! Output
-                        ULP_Scale     , &  ! Optional input
-                        Check_All     , &  ! Optional input
-                        RCS_Id        , &  ! Revision control
-                        Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Rank2( RTSolution_LHS    , &  ! Input
+                        RTSolution_RHS    , &  ! Input
+                        ULP_Scale         , &  ! Optional input
+                        Percent_Difference, &  ! Optional input
+                        Check_All         , &  ! Optional input
+                        RCS_Id            , &  ! Revision control
+                        Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution_LHS(:,:)
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution_RHS(:,:)
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1455,9 +1390,10 @@ CONTAINS
       DO i = 1, l
         Scalar_Status = Equal_Scalar( RTSolution_LHS(i,j), &
                                       RTSolution_RHS(i,j), &
-                                      ULP_Scale  =ULP_Scale, &
-                                      Check_All  =Check_All, &
-                                      Message_Log=Message_Log )
+                                      ULP_Scale         =ULP_Scale, &
+                                      Percent_Difference=Percent_Difference, &
+                                      Check_All         =Check_All, &
+                                      Message_Log       =Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &
@@ -1471,5 +1407,55 @@ CONTAINS
       END DO
     END DO
   END FUNCTION Equal_Rank2
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_RTSolution
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM_RTSolution structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_RTSolution( RTSolution ) ! Output
+!
+! OUTPUT ARGUMENTS:
+!       RTSolution:  CRTM_RTSolution structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_RTSolution_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output RTSolution argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_RTSolution( RTSolution )
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
+    RTSolution%n_Layers = 0
+    RTSolution%Surface_Emissivity      = FP_DEFAULT
+    RTSolution%Up_Radiance             = FP_DEFAULT
+    RTSolution%Down_Radiance           = FP_DEFAULT
+    RTSolution%Down_Solar_Radiance     = FP_DEFAULT
+    RTSolution%Surface_Planck_Radiance = FP_DEFAULT
+    RTSolution%n_Full_Streams          = IP_DEFAULT
+    RTSolution%Scattering_Flag         = LP_DEFAULT
+    RTSolution%n_Stokes                = IP_DEFAULT
+    RTSolution%Radiance                = FP_DEFAULT
+    RTSolution%Brightness_Temperature  = FP_DEFAULT
+  END SUBROUTINE CRTM_Clear_RTSolution
 
 END MODULE CRTM_RTSolution_Define

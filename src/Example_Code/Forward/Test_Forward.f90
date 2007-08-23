@@ -21,8 +21,9 @@ PROGRAM Test_Forward
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
   USE CRTM_Test_Utility, &
         ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_NPROFILES, &
-              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, MAX_NTESTS, &
-              MAX_NSENSORS, TEST_SENSORID, TEST_ANGLE, &
+              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, ANTCORR_TEST, MAX_NTESTS, &
+              MAX_NSENSORS, TEST_SENSORID, TEST_ZENITH_ANGLE, TEST_SCAN_ANGLE, &
+              D_PERCENT, &
               Perform_Test, &
               Print_ChannelInfo, &
               Write_RTSolution_TestFile, Read_RTSolution_TestFile
@@ -44,7 +45,7 @@ PROGRAM Test_Forward
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id$'
-  CHARACTER(*), PARAMETER :: MESSAGE_LOG = '../Test.report'
+  CHARACTER(*), PARAMETER :: MESSAGE_LOG = 'Test.report'
 
 
   ! ---------
@@ -147,7 +148,9 @@ PROGRAM Test_Forward
 
   ! Assign some values
   ! ------------------
-  GeometryInfo%Sensor_Zenith_Angle = TEST_ANGLE
+  GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
+  GeometryInfo%Sensor_Scan_Angle   = TEST_SCAN_ANGLE
+  GeometryInfo%iFOV = 1
   DO m = 1, USED_NPROFILES
     Options(m)%Emissivity = 0.8_fp
   END DO
@@ -207,6 +210,17 @@ PROGRAM Test_Forward
       Exp_Description = TRIM(Exp_Description)//' Aerosols OFF'
     END IF
 
+    ! Turn antenna correction on and off
+    IF ( Perform_Test(i,ANTCORR_TEST) ) THEN
+      Options%Antenna_Correction = 1
+      Exp_ID = TRIM(Exp_ID)//'.acON'
+      Exp_Description = TRIM(Exp_Description)//' Antenna Correction ON'
+    ELSE
+      Options%Antenna_Correction = 0
+      Exp_ID = TRIM(Exp_ID)//'.acOFF'
+      Exp_Description = TRIM(Exp_Description)//' Antenna Correction OFF'
+    END IF
+
     WRITE(*,'(/5x,"Experiment: ",a)') TRIM(ADJUSTL(Exp_Description))
 
 
@@ -247,7 +261,9 @@ PROGRAM Test_Forward
     CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=2 )
     
     ! Perform the test
-    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution, Check_All=1 )
+    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution, &
+                                          Percent_Difference=D_PERCENT, &
+                                          Check_All=1 )
     CALL Assert_Equal(Error_Status,SUCCESS)
 
   END DO

@@ -7,6 +7,8 @@ SRC_FILES = Type_Kinds.f90 \
             Sort_Utility.f90 \
             Fundamental_Constants.f90 \
             Spectral_Units_Conversion.f90 \
+            AntCorr_Define.f90 \
+            AntCorr_Binary_IO.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_Binary_IO.f90 \
             TauCoeff_Define.f90 \
@@ -72,6 +74,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_RTSolution_Binary_IO.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \
+            CRTM_AntCorr.f90 \
             CRTM_Options_Define.f90 \
             CRTM_Parameters.f90 \
             CRTM_LifeCycle.f90 \

@@ -1277,109 +1277,120 @@ CONTAINS
 !       Function to test if two Surface structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Surface( Surface_LHS         , &  ! Input
-!                                             Surface_RHS         , &  ! Input
-!                                             ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                             Check_All  =Check_All  , &  ! Optional input
-!                                             RCS_Id     =RCS_Id     , &  ! Optional output
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Equal_Surface( Surface_LHS                          , &  ! Input
+!                                          Surface_RHS                          , &  ! Input
+!                                          ULP_Scale         =ULP_Scale         , &  ! Optional input
+!                                          Percent_Difference=Percent_Difference, &  ! Optional input
+!                                          Check_All         =Check_All         , &  ! Optional input
+!                                          RCS_Id            =RCS_Id            , &  ! Optional output
+!                                          Message_Log       =Message_Log         )  ! Error messaging
 !
 !
 ! INPUT ARGUMENTS:
-!       Surface_LHS:    Surface structure to be compared; equivalent to the
-!                          left-hand side of a lexical comparison, e.g.
-!                            IF ( Surface_LHS == Surface_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_Surface_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!       Surface_LHS:        Surface structure to be compared; equivalent to the
+!                           left-hand side of a lexical comparison, e.g.
+!                             IF ( Surface_LHS == Surface_RHS ).
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_Surface_type
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
 !
-!       Surface_RHS:    Surface structure to be compared to; equivalent to
-!                          right-hand side of a lexical comparison, e.g.
-!                            IF ( Surface_LHS == Surface_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_Surface_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!       Surface_RHS:        Surface structure to be compared to; equivalent to
+!                           right-hand side of a lexical comparison, e.g.
+!                             IF ( Surface_LHS == Surface_RHS ).
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_Surface_type
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:         Unit of data precision used to scale the floating
-!                          point comparison. ULP stands for "Unit in the Last Place,"
-!                          the smallest possible increment or decrement that can be
-!                          made using a machine's floating point arithmetic.
-!                          Value must be positive - if a negative value is supplied,
-!                          the absolute value is used. If not specified, the default
-!                          value is 1.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       ULP_Scale:          Unit of data precision used to scale the floating
+!                           point comparison. ULP stands for "Unit in the Last Place,"
+!                           the smallest possible increment or decrement that can be
+!                           made using a machine's floating point arithmetic.
+!                           Value must be positive - if a negative value is supplied,
+!                           the absolute value is used. If not specified, the default
+!                           value is 1.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Check_All:         Set this argument to check ALL the floating point
-!                          channel data of the Surface structures. The default
-!                          action is return with a FAILURE status as soon as
-!                          any difference is found. This optional argument can
-!                          be used to get a listing of ALL the differences
-!                          between data in Surface structures.
-!                          If == 0, Return with FAILURE status as soon as
-!                                   ANY difference is found  *DEFAULT*
-!                             == 1, Set FAILURE status if ANY difference is
-!                                   found, but continue to check ALL data.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Percent_Differnece: Percentage difference value to use in comparing
+!                           the numbers rather than testing within some numerical
+!                           limit. The ULP_Scale argument is ignored if this argument is
+!                           specified.
+!                           UNITS:      N/A
+!                           TYPE:       REAL(fp)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
-!       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Check_All:          Set this argument to check ALL the floating point
+!                           channel data of the Surface structures. The default
+!                           action is return with a FAILURE status as soon as
+!                           any difference is found. This optional argument can
+!                           be used to get a listing of ALL the differences
+!                           between data in Surface structures.
+!                           If == 0, Return with FAILURE status as soon as
+!                                    ANY difference is found  *DEFAULT*
+!                              == 1, Set FAILURE status if ANY difference is
+!                                    found, but continue to check ALL data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structures were equal
-!                             == FAILURE - an error occurred, or
-!                                        - the structures were different.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error status.
+!                           The error codes are defined in the Message_Handler module.
+!                           If == SUCCESS the structures were equal
+!                              == FAILURE - an error occurred, or
+!                                         - the structures were different.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Equal_Scalar( Surface_LHS, &  ! Input
-                         Surface_RHS, &  ! Input
-                         ULP_Scale     , &  ! Optional input
-                         Check_All     , &  ! Optional input
-                         RCS_Id        , &  ! Revision control
-                         Message_Log   ) &  ! Error messaging
+  FUNCTION Equal_Scalar( Surface_LHS       , &  ! Input
+                         Surface_RHS       , &  ! Input
+                         ULP_Scale         , &  ! Optional input
+                         Percent_Difference, &  ! Optional input
+                         Check_All         , &  ! Optional input
+                         RCS_Id            , &  ! Revision control
+                         Message_Log       ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_LHS
     TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_RHS
-    INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
-    INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
+    INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
+    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(scalar)'
     ! Local variables
     CHARACTER(256) :: Message
-    INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: SensorData_Status
     
@@ -1387,13 +1398,6 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Default precision is a single unit in last place
-    ULP = 1
-    ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
-      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-    END IF
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1420,277 +1424,369 @@ CONTAINS
     ! The coverage components
     IF ( .NOT. Compare_Float( Surface_LHS%Land_Coverage, &
                               Surface_RHS%Land_Coverage, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Land_Coverage values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Land coverage values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Land_Coverage, &
+                     Surface_RHS%Land_Coverage, &
+                     Surface_LHS%Land_Coverage-Surface_RHS%Land_Coverage
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Water_Coverage, &
                               Surface_RHS%Water_Coverage, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Water_Coverage values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Water coverage values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Water_Coverage, &
+                     Surface_RHS%Water_Coverage, &
+                     Surface_LHS%Water_Coverage-Surface_RHS%Water_Coverage
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Snow_Coverage, &
                               Surface_RHS%Snow_Coverage, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Snow_Coverage values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Snow coverage values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Snow_Coverage, &
+                     Surface_RHS%Snow_Coverage, &
+                     Surface_LHS%Snow_Coverage-Surface_RHS%Snow_Coverage
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Ice_Coverage, &
                               Surface_RHS%Ice_Coverage, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Ice_Coverage values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Ice coverage values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Ice_Coverage, &
+                     Surface_RHS%Ice_Coverage, &
+                     Surface_LHS%Ice_Coverage-Surface_RHS%Ice_Coverage
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Wind_Speed, &
                               Surface_RHS%Wind_Speed, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Wind_Speed values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Wind_Spped values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Wind_Speed, &
+                     Surface_RHS%Wind_Speed, &
+                     Surface_LHS%Wind_Speed-Surface_RHS%Wind_Speed
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
     ! The land components
     IF ( Surface_LHS%Land_Type /= Surface_RHS%Land_Type ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Land_Type values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Land_Type values are different:",2(1x,a,"(",i0,")"))') &
+                     TRIM(LAND_TYPE_NAME(Surface_LHS%Land_Type)), Surface_LHS%Land_Type, &
+                     TRIM(LAND_TYPE_NAME(Surface_RHS%Land_Type)), Surface_RHS%Land_Type
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Land_Temperature, &
                               Surface_RHS%Land_Temperature, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Land_Temperature values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Land_Temperature values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Land_Temperature, &
+                     Surface_RHS%Land_Temperature, &
+                     Surface_LHS%Land_Temperature-Surface_RHS%Land_Temperature
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Soil_Moisture_Content, &
                               Surface_RHS%Soil_Moisture_Content, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Soil_Moisture_Content values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Soil_Moisture_Content values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Soil_Moisture_Content, &
+                     Surface_RHS%Soil_Moisture_Content, &
+                     Surface_LHS%Soil_Moisture_Content-Surface_RHS%Soil_Moisture_Content
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Canopy_Water_Content, &
                               Surface_RHS%Canopy_Water_Content, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Canopy_Water_Content values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Canopy_Water_Content values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Canopy_Water_Content, &
+                     Surface_RHS%Canopy_Water_Content, &
+                     Surface_LHS%Canopy_Water_Content-Surface_RHS%Canopy_Water_Content
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Vegetation_Fraction, &
                               Surface_RHS%Vegetation_Fraction, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Vegetation_Fraction values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Vegetation_Fraction values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Vegetation_Fraction, &
+                     Surface_RHS%Vegetation_Fraction, &
+                     Surface_LHS%Vegetation_Fraction-Surface_RHS%Vegetation_Fraction
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Soil_Temperature, &
                               Surface_RHS%Soil_Temperature, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Soil_Temperature values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Soil_Temperature values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Soil_Temperature, &
+                     Surface_RHS%Soil_Temperature, &
+                     Surface_LHS%Soil_Temperature-Surface_RHS%Soil_Temperature
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
     ! The water components
     IF ( Surface_LHS%Water_Type /= Surface_RHS%Water_Type ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Water_Type values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Water_Type values are different:",2(1x,a,"(",i0,")"))') &
+                     TRIM(WATER_TYPE_NAME(Surface_LHS%Water_Type)), Surface_LHS%Water_Type, &
+                     TRIM(WATER_TYPE_NAME(Surface_RHS%Water_Type)), Surface_RHS%Water_Type
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Water_Temperature, &
                               Surface_RHS%Water_Temperature, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Water_Temperature values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Water_Temperature values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Water_Temperature, &
+                     Surface_RHS%Water_Temperature, &
+                     Surface_LHS%Water_Temperature-Surface_RHS%Water_Temperature
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Wind_Direction, &
                               Surface_RHS%Wind_Direction, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Wind_Direction values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Wind_Direction values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Wind_Direction, &
+                     Surface_RHS%Wind_Direction, &
+                     Surface_LHS%Wind_Direction-Surface_RHS%Wind_Direction
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Salinity, &
                               Surface_RHS%Salinity, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Salinity values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Salinity values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Salinity, &
+                     Surface_RHS%Salinity, &
+                     Surface_LHS%Salinity-Surface_RHS%Salinity
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
     ! The snow components
     IF ( Surface_LHS%Snow_Type /= Surface_RHS%Snow_Type ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Snow_Type values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Snow_Type values are different:",2(1x,a,"(",i0,")"))') &
+                     TRIM(SNOW_TYPE_NAME(Surface_LHS%Snow_Type)), Surface_LHS%Snow_Type, &
+                     TRIM(SNOW_TYPE_NAME(Surface_RHS%Snow_Type)), Surface_RHS%Snow_Type
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Snow_Temperature, &
                               Surface_RHS%Snow_Temperature, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Snow_Temperature values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Snow_Temperature values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Snow_Temperature, &
+                     Surface_RHS%Snow_Temperature, &
+                     Surface_LHS%Snow_Temperature-Surface_RHS%Snow_Temperature
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Snow_Depth, &
                               Surface_RHS%Snow_Depth, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Snow_Depth values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Snow_Depth values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Snow_Depth, &
+                     Surface_RHS%Snow_Depth, &
+                     Surface_LHS%Snow_Depth-Surface_RHS%Snow_Depth
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Snow_Density, &
                               Surface_RHS%Snow_Density, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Snow_Density values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Snow_Density values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Snow_Density, &
+                     Surface_RHS%Snow_Density, &
+                     Surface_LHS%Snow_Density-Surface_RHS%Snow_Density
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Snow_Grain_Size, &
                               Surface_RHS%Snow_Grain_Size, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Snow_Grain_Size values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Snow_Grain_Size values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Snow_Grain_Size, &
+                     Surface_RHS%Snow_Grain_Size, &
+                     Surface_LHS%Snow_Grain_Size-Surface_RHS%Snow_Grain_Size
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
     ! The ice components
     IF ( Surface_LHS%Ice_Type /= Surface_RHS%Ice_Type ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Ice_Type values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Ice_Type values are different:",2(1x,a,"(",i0,")"))') &
+                     TRIM(ICE_TYPE_NAME(Surface_LHS%Ice_Type)), Surface_LHS%Ice_Type, &
+                     TRIM(ICE_TYPE_NAME(Surface_RHS%Ice_Type)), Surface_RHS%Ice_Type
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Ice_Temperature, &
                               Surface_RHS%Ice_Temperature, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Ice_Temperature values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Ice_Temperature values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Ice_Temperature, &
+                     Surface_RHS%Ice_Temperature, &
+                     Surface_LHS%Ice_Temperature-Surface_RHS%Ice_Temperature
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Ice_Thickness, &
                               Surface_RHS%Ice_Thickness, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Ice_Thickness values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Ice_Thickness values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Ice_Thickness, &
+                     Surface_RHS%Ice_Thickness, &
+                     Surface_LHS%Ice_Thickness-Surface_RHS%Ice_Thickness
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Ice_Density, &
                               Surface_RHS%Ice_Density, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Ice_Density values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Ice_Density values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Ice_Density, &
+                     Surface_RHS%Ice_Density, &
+                     Surface_LHS%Ice_Density-Surface_RHS%Ice_Density
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
     IF ( .NOT. Compare_Float( Surface_LHS%Ice_Roughness, &
                               Surface_RHS%Ice_Roughness, &
-                              ULP=ULP ) ) THEN
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( &
-             ROUTINE_NAME, &
-             'Ice_Roughness values are different.', &
-             Error_Status, &
-             Message_Log=Message_Log )
+      WRITE( Message,'("Ice_Roughness values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Ice_Roughness, &
+                     Surface_RHS%Ice_Roughness, &
+                     Surface_LHS%Ice_Roughness-Surface_RHS%Ice_Roughness
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
@@ -1713,17 +1809,19 @@ CONTAINS
   END FUNCTION Equal_Scalar
 
 
-  FUNCTION Equal_Rank1( Surface_LHS, &  ! Input
-                        Surface_RHS, &  ! Output
-                        ULP_Scale  , &  ! Optional input
-                        Check_All  , &  ! Optional input
-                        RCS_Id     , &  ! Revision control
-                        Message_Log) &  ! Error messaging
+  FUNCTION Equal_Rank1( Surface_LHS       , &  ! Input
+                        Surface_RHS       , &  ! Output
+                        ULP_Scale         , &  ! Optional input
+                        Percent_Difference, &  ! Optional input
+                        Check_All         , &  ! Optional input
+                        RCS_Id            , &  ! Revision control
+                        Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_LHS(:)
     TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_RHS(:)
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1767,9 +1865,10 @@ CONTAINS
     DO m = 1, nProfiles
       Scalar_Status = Equal_Scalar( Surface_LHS(m), &
                                     Surface_RHS(m), &
-                                    ULP_Scale  =ULP_Scale, &
-                                    Check_All  =Check_All, &
-                                    Message_Log=Message_Log )
+                                    ULP_Scale         =ULP_Scale, &
+                                    Percent_Difference=Percent_Difference, &
+                                    Check_All         =Check_All, &
+                                    Message_Log       =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
@@ -1784,17 +1883,19 @@ CONTAINS
   END FUNCTION Equal_Rank1
 
 
-  FUNCTION Equal_Rank2( Surface_LHS, &  ! Input
-                        Surface_RHS, &  ! Output
-                        ULP_Scale  , &  ! Optional input
-                        Check_All  , &  ! Optional input
-                        RCS_Id     , &  ! Revision control
-                        Message_Log) &  ! Error messaging
+  FUNCTION Equal_Rank2( Surface_LHS       , &  ! Input
+                        Surface_RHS       , &  ! Output
+                        ULP_Scale         , &  ! Optional input
+                        Percent_Difference, &  ! Optional input
+                        Check_All         , &  ! Optional input
+                        RCS_Id            , &  ! Revision control
+                        Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_LHS(:,:)
     TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_RHS(:,:)
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
+    REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
@@ -1842,9 +1943,10 @@ CONTAINS
       DO l = 1, nChannels
         Scalar_Status = Equal_Scalar( Surface_LHS(l,m), &
                                       Surface_RHS(l,m), &
-                                      ULP_Scale  =ULP_Scale, &
-                                      Check_All  =Check_All, &
-                                      Message_Log=Message_Log )
+                                      ULP_Scale         =ULP_Scale, &
+                                      Percent_Difference=Percent_Difference, &
+                                      Check_All         =Check_All, &
+                                      Message_Log       =Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &

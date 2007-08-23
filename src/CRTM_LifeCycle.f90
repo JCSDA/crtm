@@ -396,20 +396,17 @@ CONTAINS
         RETURN
       END IF
 
-      ! Copy sensor id info (eventually, SC components should be scalar)
-      ChannelInfo(n)%SensorID         = SC(n)%Sensor_Descriptor(1)
-      ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID(1)
-      ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID(1)
-
-      ! Copy over channel numbers
-      ChannelInfo(n)%Sensor_Channel = SC(n)%Sensor_Channel
-
       ! Set the Sensor_Index component
       ChannelInfo(n)%Sensor_Index = n
       
       ! Fill the Channel_Index component
       ! **** THIS IS WHERE CHANNEL SELECTION COULD OCCUR ****
       ChannelInfo(n)%Channel_Index = (/(l, l=1,SC(n)%n_Channels)/)
+      ! Fill the rest of the ChannelInfo structure
+      ChannelInfo(n)%SensorID         = SC(n)%Sensor_Id
+      ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID
+      ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID
+      ChannelInfo(n)%Sensor_Channel   = SC(n)%Sensor_Channel
     END DO
     
   END FUNCTION CRTM_Init

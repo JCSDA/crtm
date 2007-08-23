@@ -350,11 +350,11 @@ END MODULE File_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: File_Utility.f90,v 1.15 2006/03/17 21:05:12 paulv Exp $
+! $Id$
 !
 ! $Date: 2006/03/17 21:05:12 $
 !
-! $Revision: 1.15 $
+! $Revision$
 !
 ! $Name:  $
 !

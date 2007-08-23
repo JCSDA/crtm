@@ -202,6 +202,15 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: RECIPROCAL_GRAVITY = ONE / 980.665_fp
 
 
+  ! ----------------------------------------------------------
+  ! Cosmic background temperature. Taken from
+  ! Mather,J.C. et. al., 1999, "Calibrator Design for the COBE
+  !    Far-Infrared Absolute Spectrophotometer (FIRAS)"
+  !    Astrophysical Journal, vol 512, pp 511-520
+  ! ----------------------------------------------------------
+  REAL(fp), PUBLIC, PARAMETER :: TSPACE = 2.7253_fp
+
+
 
   !#----------------------------------------------------------------------------#
   !#                       -- GeometryInfo PARAMETERS --                        #

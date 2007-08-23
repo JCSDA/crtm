@@ -17,14 +17,16 @@ MODULE CRTM_RTSolution
   ! ------------------
   ! Module use statements
   USE Type_Kinds,                ONLY: fp
-  USE Message_Handler
+  USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,           ONLY: SET, ZERO, ONE, TWO, PI, &
                                        MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
                                        DEGREES_TO_RADIANS, &
                                        SECANT_DIFFUSIVITY, &
                                        SCATTERING_ALBEDO_THRESHOLD, &
                                        OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SpcCoeff
+  USE CRTM_SpcCoeff,             ONLY: SC, &
+                                       MICROWAVE_SENSOR, &
+                                       SOLAR_FLAG, IsFlagSet_SpcCoeff
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
@@ -248,7 +250,7 @@ CONTAINS
     REAL(fp), DIMENSION(:),      INTENT(IN)     :: direct_reflectivity 
     REAL(fp),                    INTENT(IN)     :: cosmic_background
     REAL(fp),                    INTENT(IN)     :: Solar_irradiance
-    INTEGER,                     INTENT(IN)     :: Is_Solar_Channel
+    LOGICAL,                     INTENT(IN)     :: Is_Solar_Channel
     REAL(fp),                    INTENT(IN)     :: Source_Zenith_Radian
     TYPE(CRTM_RTVariables_type), INTENT(IN OUT) :: RTV
     ! Local variables
@@ -289,7 +291,7 @@ CONTAINS
 
     ! Solar contribution to the upward radiance at the surface
     RTV%Down_Solar_Radiance = ZERO
-    IF( Is_Solar_Channel /= 0 ) THEN
+    IF( Is_Solar_Channel ) THEN
       cosine_u0 = COS(Source_Zenith_Radian)
       IF( cosine_u0 > ZERO) THEN
         RTV%Down_Solar_Radiance = cosine_u0*EXP(-RTV%Total_OD/cosine_u0)*Solar_Irradiance/PI
@@ -347,7 +349,8 @@ CONTAINS
 !    Quanhua Liu    Quanhua.Liu@noaa.gov                                      !
 ! --------------------------------------------------------------------------- !
       IMPLICIT NONE
-      INTEGER, INTENT(IN) :: n_Layers, n_Angles, Is_Solar_Channel
+      INTEGER, INTENT(IN) :: n_Layers, n_Angles
+      LOGICAL, INTENT(IN) :: Is_Solar_Channel
       REAL (fp), INTENT(IN) :: Solar_irradiance, Source_Zenith_Radian
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  T_OD, emissivity,T_OD_TL,emissivity_TL
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity ,reflectivity_TL
@@ -396,7 +399,7 @@ CONTAINS
        +reflectivity_TL(1,1)*RTV%e_Level_Rad_DOWN(n_Layers)+reflectivity(1,1)*down_rad_TL
 
       ! point source (e.g. solar radiation)
-       IF( Is_Solar_Channel > 0 ) THEN
+       IF( Is_Solar_Channel ) THEN
         cosine_u0 = cos(Source_Zenith_Radian)
         IF( cosine_u0 > ZERO) THEN
         up_rad_TL = up_rad_TL + cosine_u0*Solar_Irradiance/PI &
@@ -451,7 +454,8 @@ CONTAINS
 !    Quanhua Liu    Quanhua.Liu@noaa.gov                                      !
 ! --------------------------------------------------------------------------- !
       IMPLICIT NONE
-      INTEGER, INTENT(IN) :: n_Layers, n_Angles, Is_Solar_Channel
+      INTEGER, INTENT(IN) :: n_Layers, n_Angles
+      LOGICAL, INTENT(IN) :: Is_Solar_Channel
       REAL (fp), INTENT(IN) :: Solar_Irradiance, Source_Zenith_Radian
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  T_OD, emissivity
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity 
@@ -502,7 +506,7 @@ CONTAINS
     !#                -- at surface   --                                        #
     !#--------------------------------------------------------------------------#
 
-       IF( Is_Solar_Channel > 0 ) THEN
+       IF( Is_Solar_Channel ) THEN
         cosine_u0 = cos(Source_Zenith_Radian)
         IF( cosine_u0 > ZERO) THEN
         Total_OD_AD = -Solar_Irradiance/PI * direct_reflectivity(1) &
@@ -2372,7 +2376,7 @@ CONTAINS
     REAL(fp) :: User_Emissivity, Direct_Reflectivity
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Solar_Irradiance
-    INTEGER  :: Is_Solar_Channel
+    LOGICAL  :: Is_Solar_Channel
 
     ! ------
     ! Set up
@@ -2390,7 +2394,7 @@ CONTAINS
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
     Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
-    Is_Solar_Channel           = SC(SensorIndex)%Is_Solar_Channel(ChannelIndex)
+    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
 
 
 
@@ -2399,7 +2403,7 @@ CONTAINS
     ! (specular or diffuse)
     ! The surface is specular if microwave sensor
     ! -------------------------------------------
-    IF( SC(SensorIndex)%Sensor_Type(ChannelIndex) == MICROWAVE_SENSOR ) THEN
+    IF( SC(SensorIndex)%Sensor_Type == MICROWAVE_SENSOR ) THEN
       RTV%Diffuse_Surface = .FALSE.
     ELSE
       RTV%Diffuse_Surface = .TRUE.
@@ -2530,11 +2534,11 @@ CONTAINS
                                              RTV%SOV               , & ! Internal variable output
                                              Message_Log=Message_Log ) ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error computing SfcOptics for ",a," channel ",i0 )' ) &
-                        TRIM(SC(SensorIndex)%Sensor_Descriptor(ChannelIndex)), &
+        WRITE( Message,'("Error computing SfcOptics for ",a," channel ",i0)' ) &
+                        TRIM(SC(SensorIndex)%Sensor_Id), &
                         SC(SensorIndex)%Sensor_Channel(ChannelIndex)
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
@@ -2858,7 +2862,7 @@ CONTAINS
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Solar_Irradiance
-    INTEGER  :: Is_Solar_Channel
+    LOGICAL  :: Is_Solar_Channel
     REAL(fp) :: User_Emissivity_TL, Direct_Reflectivity_TL
     REAL(fp)                                     :: Planck_Surface_TL    ! Surface TL radiance
     REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_TL ! *LAYER* TL radiances
@@ -2890,7 +2894,7 @@ CONTAINS
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
     Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
-    Is_Solar_Channel           = SC(SensorIndex)%Is_Solar_Channel(ChannelIndex)
+    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
 
 
     ! ---------------------------------------------------
@@ -2937,8 +2941,8 @@ CONTAINS
                                                 RTV%SOV     , & ! Internal variable input
                                                 Message_Log=Message_Log ) ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error computing SfcOptics_TL for ",a," channel ",i0 )' ) &
-                        TRIM(SC(SensorIndex)%Sensor_Descriptor(ChannelIndex)), &
+        WRITE( Message,'("Error computing SfcOptics_TL for ",a," channel ",i0)' ) &
+                        TRIM(SC(SensorIndex)%Sensor_Id), &
                         SC(SensorIndex)%Sensor_Channel(ChannelIndex)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &
@@ -3270,7 +3274,7 @@ CONTAINS
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Solar_Irradiance
-    INTEGER  :: Is_Solar_Channel
+    LOGICAL  :: Is_Solar_Channel
     REAL(fp)                                     :: Planck_Surface_AD    ! Surface AD radiance
     REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_AD ! *LAYER* AD radiances
     REAL(fp) :: User_Emissivity_AD, Direct_Reflectivity_AD    ! Temporary adjoint variable for SfcOptics calcs.
@@ -3296,7 +3300,7 @@ CONTAINS
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
     Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
-    Is_Solar_Channel           = SC(SensorIndex)%Is_Solar_Channel(ChannelIndex)
+    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
     ! Initialise local adjoint variables
     Planck_Surface_AD    = ZERO
     Planck_Atmosphere_AD = ZERO
@@ -3460,8 +3464,8 @@ CONTAINS
                                                 RTV%SOV     , & ! Internal variable input
                                                 Message_Log=Message_Log ) ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error computing SfcOptics_AD for ",a," channel ",i0 )' ) &
-                        TRIM(SC(SensorIndex)%Sensor_Descriptor(ChannelIndex)), &
+        WRITE( Message,'("Error computing SfcOptics_AD for ",a," channel ",i0)' ) &
+                        TRIM(SC(SensorIndex)%Sensor_Id), &
                         SC(SensorIndex)%Sensor_Channel(ChannelIndex)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM( Message ), &

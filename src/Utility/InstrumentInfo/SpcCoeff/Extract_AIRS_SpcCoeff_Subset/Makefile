@@ -28,6 +28,8 @@ SRC_FILES = Type_Kinds.f90 \
             AIRS_Define.f90 \
             AIRS_Subset_Define.f90 \
             AIRS_Subset.f90 \
+            AntCorr_Define.f90 \
+            AntCorr_netCDF_IO.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_netCDF_IO.f90
 

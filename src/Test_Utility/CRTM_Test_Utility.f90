@@ -50,16 +50,19 @@ MODULE CRTM_Test_Utility
   PUBLIC :: EMISSIVITY_TEST
   PUBLIC :: CLOUDS_TEST
   PUBLIC :: AEROSOLS_TEST
+  PUBLIC :: ANTCORR_TEST
   PUBLIC :: MAX_NTESTS
   PUBLIC :: MAX_NSENSORS
   PUBLIC :: TEST_SENSORID
-  PUBLIC :: TEST_ANGLE
+  PUBLIC :: TEST_ZENITH_ANGLE
+  PUBLIC :: TEST_SCAN_ANGLE
   PUBLIC :: TEST_DELTA
   PUBLIC :: FWD_TYPE
   PUBLIC :: TL_TYPE 
   PUBLIC :: AD_TYPE 
   PUBLIC :: KM_TYPE 
   PUBLIC :: TYPE_NAME
+  PUBLIC :: D_PERCENT
   ! Procedures
   PUBLIC :: Perform_Test
   PUBLIC :: Print_ChannelInfo
@@ -97,7 +100,8 @@ MODULE CRTM_Test_Utility
   INTEGER, PARAMETER :: EMISSIVITY_TEST = 1
   INTEGER, PARAMETER :: CLOUDS_TEST     = 2
   INTEGER, PARAMETER :: AEROSOLS_TEST   = 4
-  INTEGER, PARAMETER :: MAX_NTESTS = EMISSIVITY_TEST+CLOUDS_TEST+AEROSOLS_TEST
+  INTEGER, PARAMETER :: ANTCORR_TEST    = 8
+  INTEGER, PARAMETER :: MAX_NTESTS = EMISSIVITY_TEST+CLOUDS_TEST+AEROSOLS_TEST+ANTCORR_TEST
 
   ! Define the sensors to test
 !  INTEGER, PARAMETER :: MAX_NSENSORS=1
@@ -127,7 +131,8 @@ MODULE CRTM_Test_Utility
 !    (/ 'airs281SUBSET_aqua' /)
 
   ! Default test angle
-  REAL(fp), PARAMETER :: TEST_ANGLE = 30.0_fp
+  REAL(fp), PARAMETER :: TEST_ZENITH_ANGLE = 30.0_fp
+  REAL(fp), PARAMETER :: TEST_SCAN_ANGLE   = 26.37293341421_fp ! Based on default Re and h.
   
   ! Default test pertubation fraction
   REAL(fp), PARAMETER :: TEST_DELTA = 0.05_fp ! 5%
@@ -141,6 +146,11 @@ MODULE CRTM_Test_Utility
   CHARACTER(*), PARAMETER, DIMENSION(NTYPES) :: TYPE_NAME = &
     (/'FWD','TL ','AD ','KM '/)
 
+  ! Default percentage difference for floating point comparisons
+  REAL(fp), PARAMETER :: D_PERCENT = 1.0e-04_fp
+  
+  ! Relative path for the resultant datafiles
+  CHARACTER(*),PARAMETER :: RESULT_PATH = 'Results/'
 
 CONTAINS
 
@@ -229,7 +239,7 @@ CONTAINS
       nChannels = ChannelInfo(n)%n_Channels
       
       ! Create filename
-      Filename = TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin'
+      Filename = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin'
       
       ! Write the RTSolution data for the current sensor
       Error_Status = CRTM_Write_RTSolution_Binary( Filename, &
@@ -299,7 +309,7 @@ CONTAINS
       nChannels = ChannelInfo(n)%n_Channels
       
       ! Create filename
-      Filename = TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin.Baseline'
+      Filename = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin.Baseline'
       
       ! Read the RTSolution data for the current sensor
       Error_Status = CRTM_Read_RTSolution_Binary( Filename, &
@@ -345,7 +355,7 @@ CONTAINS
 
     ! Write atmosphere data
     ! ---------------------
-    AtmFile = 'atm'//TRIM(Experiment)//'.bin'
+    AtmFile = RESULT_PATH//'atm'//TRIM(Experiment)//'.bin'
     Error_Status = CRTM_Write_Atmosphere_Binary( AtmFile, &
                                                  Atm, &
                                                  Quiet=1 )
@@ -358,7 +368,7 @@ CONTAINS
 
     ! Write surface data
     ! ------------------
-    SfcFile = 'sfc'//TRIM(Experiment)//'.bin'
+    SfcFile = RESULT_PATH//'sfc'//TRIM(Experiment)//'.bin'
     Error_Status = CRTM_Write_Surface_Binary( SfcFile, &
                                               Sfc, &
                                               Quiet=1 )
@@ -408,7 +418,7 @@ CONTAINS
       nChannels = ChannelInfo(n)%n_Channels
       
       ! Write the Atmosphere data for the current sensor
-      AtmFile = TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin'
+      AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin'
       Error_Status = CRTM_Write_Atmosphere_Binary( AtmFile, &
                                                    Atm(l1:l2,:), &
                                                    Quiet=1 )
@@ -420,7 +430,7 @@ CONTAINS
       END IF
 
       ! Write the Atmosphere data for the current sensor
-      SfcFile = TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin'
+      SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin'
       Error_Status = CRTM_Write_Surface_Binary( SfcFile, &
                                                 Sfc(l1:l2,:), &
                                                 Quiet=1 )
@@ -464,7 +474,7 @@ CONTAINS
 
     ! Read atmosphere data
     ! ---------------------
-    AtmFile = 'atm'//TRIM(Experiment)//'.bin.Baseline'
+    AtmFile = RESULT_PATH//'atm'//TRIM(Experiment)//'.bin.Baseline'
     Error_Status = CRTM_Read_Atmosphere_Binary( AtmFile, &
                                                 Atm, &
                                                 Quiet=1 )
@@ -478,7 +488,7 @@ CONTAINS
 
     ! Read surface data
     ! -----------------
-    SfcFile = 'sfc'//TRIM(Experiment)//'.bin.Baseline'
+    SfcFile = RESULT_PATH//'sfc'//TRIM(Experiment)//'.bin.Baseline'
     Error_Status = CRTM_Read_Surface_Binary( SfcFile, &
                                              Sfc, &
                                              Quiet=1 )
@@ -528,7 +538,7 @@ CONTAINS
       nChannels = ChannelInfo(n)%n_Channels
       
       ! Read the Atmosphere data for the current sensor
-      AtmFile = TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
+      AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
       Error_Status = CRTM_Read_Atmosphere_Binary( AtmFile, &
                                                   Atm(l1:l2,:), &
                                                   Quiet=1 )
@@ -540,7 +550,7 @@ CONTAINS
       END IF
 
       ! Read the Atmosphere data for the current sensor
-      SfcFile = TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
+      SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
       Error_Status = CRTM_Read_Surface_Binary( SfcFile, &
                                                Sfc(l1:l2,:), &
                                                Quiet=1 )

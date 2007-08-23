@@ -18,7 +18,7 @@ MODULE CRTM_SfcOptics
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,               ONLY: fp=>fp_kind
+  USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,          ONLY: ZERO, POINT_5, ONE, DEGREES_TO_RADIANS, MAX_N_STOKES
   USE CRTM_SpcCoeff,            ONLY: SC, &
@@ -474,7 +474,7 @@ CONTAINS
     nL = SfcOptics%n_Stokes
     nZ = SfcOptics%n_Angles
     ! Sensor type and polarization
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type(ChannelIndex)  
+    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Polarization = SC(SensorIndex)%Polarization(ChannelIndex)
     ! Initialise the local emissivity and reflectivities
     Emissivity   = ZERO 
@@ -1115,7 +1115,7 @@ CONTAINS
     nL = SfcOptics%n_Stokes
     nZ = SfcOptics%n_Angles
     ! Sensor type and polarization
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type( ChannelIndex )  
+    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Polarization = SC(SensorIndex)%Polarization( ChannelIndex )
     ! Initialise the local emissivity and reflectivities
     Emissivity_TL   = ZERO 
@@ -1789,7 +1789,7 @@ CONTAINS
     nL = SfcOptics%n_Stokes
     nZ = SfcOptics%n_Angles
     ! Sensor type and polarization
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type( ChannelIndex )  
+    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Polarization = SC(SensorIndex)%Polarization( ChannelIndex )
     ! Initialise the local emissivity and reflectivity adjoints
     Emissivity_AD = ZERO 

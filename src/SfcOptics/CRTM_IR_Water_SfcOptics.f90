@@ -21,10 +21,10 @@ MODULE CRTM_IR_Water_SfcOptics
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,               ONLY: fp=>fp_kind
+  USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, Display_Message
   USE CRTM_Parameters,          ONLY: ZERO, ONE, MAX_N_ANGLES
-  USE CRTM_SpcCoeff,            ONLY: SC
+  USE CRTM_SpcCoeff,            ONLY: SC, SOLAR_FLAG, IsFlagSet_SpcCoeff
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_SfcOptics_Define,    ONLY: CRTM_SfcOptics_type
@@ -223,7 +223,7 @@ CONTAINS
     ! all angles (1:nZ).
     ! ----------------------------------------------------
     ! Solar direct
-    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
+    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) ) THEN
       SfcOptics%Direct_Reflectivity(1:nZ,1) = ONE-SfcOptics%Emissivity(iZ,1)
     END IF
 
@@ -412,7 +412,7 @@ CONTAINS
     ! all angles (1:nZ).
     ! -----------------------------------------------------
     ! Solar direct
-    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
+    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) ) THEN
       SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = -SfcOptics_TL%Emissivity(iZ,1)
     END IF
 
@@ -590,7 +590,7 @@ CONTAINS
     END DO
 
     ! Solar direct
-    IF ( SC(SensorIndex)%Is_Solar_Channel(ChannelIndex) == 1 ) THEN
+    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) ) THEN
       SfcOptics_AD%Emissivity(iZ,1) = SfcOptics_AD%Emissivity(iZ,1) - &
         SUM(SfcOptics_AD%Direct_Reflectivity(1:nZ,1))
       SfcOptics_AD%Direct_Reflectivity(1:nZ,1) = ZERO

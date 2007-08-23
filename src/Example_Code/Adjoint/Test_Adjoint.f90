@@ -21,8 +21,9 @@ PROGRAM Test_Adjoint
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
   USE CRTM_Test_Utility, &
         ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_NPROFILES, &
-              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, MAX_NTESTS, &
-              MAX_NSENSORS, TEST_SENSORID, TEST_ANGLE, &
+              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, ANTCORR_TEST, MAX_NTESTS, &
+              MAX_NSENSORS, TEST_SENSORID, TEST_ZENITH_ANGLE, TEST_SCAN_ANGLE, &
+              D_PERCENT, &
               Perform_Test, &
               Print_ChannelInfo, &
               Write_AtmSfc_TestFile, Read_AtmSfc_TestFile
@@ -182,7 +183,9 @@ PROGRAM Test_Adjoint
   
   ! Assign some values
   ! ------------------
-  GeometryInfo%Sensor_Zenith_Angle = TEST_ANGLE
+  GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
+  GeometryInfo%Sensor_Scan_Angle   = TEST_SCAN_ANGLE
+  GeometryInfo%iFOV = 1
   DO m = 1, USED_NPROFILES
     Options(m)%Emissivity = 0.8_fp
   END DO
@@ -243,6 +246,17 @@ PROGRAM Test_Adjoint
       Exp_Description = TRIM(Exp_Description)//' Aerosols OFF'
     END IF
 
+    ! Turn antenna correction on and off
+    IF ( Perform_Test(i,ANTCORR_TEST) ) THEN
+      Options%Antenna_Correction = 1
+      Exp_ID = TRIM(Exp_ID)//'.acON'
+      Exp_Description = TRIM(Exp_Description)//' Antenna Correction ON'
+    ELSE
+      Options%Antenna_Correction = 0
+      Exp_ID = TRIM(Exp_ID)//'.acOFF'
+      Exp_Description = TRIM(Exp_Description)//' Antenna Correction OFF'
+    END IF
+
     WRITE(*,'(/5x,"Experiment: ",a)') TRIM(ADJUSTL(Exp_Description))
 
 
@@ -286,10 +300,14 @@ PROGRAM Test_Adjoint
     CALL Read_AtmSfc_TestFile( Exp_ID, Atm_Baseline, Sfc_Baseline )
     
     ! Compare them
-    Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_AD, Check_All=1 )
+    Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_AD, &
+                                        Percent_Difference=D_PERCENT, &
+                                        Check_All=1 )
     CALL Assert_Equal(Atm_Status,SUCCESS)
-    Sfc_Status = CRTM_Equal_Surface(    Sfc_Baseline, Sfc_AD, Check_All=1 )
-    CALL Assert_Equal(Atm_Status,SUCCESS)
+    Sfc_Status = CRTM_Equal_Surface( Sfc_Baseline, Sfc_AD, &
+                                     Percent_Difference=D_PERCENT, &
+                                     Check_All=1 )
+    CALL Assert_Equal(Sfc_Status,SUCCESS)
 
   END DO
 

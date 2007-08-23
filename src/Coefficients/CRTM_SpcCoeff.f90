@@ -24,7 +24,35 @@ MODULE CRTM_SpcCoeff
   ! ----------------
   ! Module use statements
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE SpcCoeff_Define   , SpcCoeff_type=>SpcCoeff_Sensor_type
+  USE SpcCoeff_Define   , ONLY: SpcCoeff_type          , &
+                                Destroy_SpcCoeff       , &
+                                N_SENSOR_TYPES         , &
+                                INVALID_SENSOR         , &
+                                MICROWAVE_SENSOR       , &
+                                INFRARED_SENSOR        , &
+                                VISIBLE_SENSOR         , &
+                                SENSOR_TYPE_NAME       , &
+                                N_POLARIZATION_TYPES   , &
+                                INVALID_POLARIZATION   , &
+                                UNPOLARIZED            , &
+                                INTENSITY              , &
+                                FIRST_STOKES_COMPONENT , &
+                                SECOND_STOKES_COMPONENT, &
+                                THIRD_STOKES_COMPONENT , &
+                                FOURTH_STOKES_COMPONENT, &
+                                VL_POLARIZATION        , &
+                                HL_POLARIZATION        , &
+                                plus45L_POLARIZATION   , &
+                                minus45L_POLARIZATION  , &
+                                VL_MIXED_POLARIZATION  , &
+                                HL_MIXED_POLARIZATION  , &
+                                RC_POLARIZATION        , &
+                                LC_POLARIZATION        , &
+                                POLARIZATION_TYPE_NAME , &
+                                ! SpcCoeff flag set check
+                                IsFlagSet_SpcCoeff     , &
+                                SOLAR_FLAG             , &
+                                ZEEMAN_FLAG
   USE SpcCoeff_Binary_IO, ONLY: Read_SpcCoeff_Binary
   USE CRTM_Parameters   , ONLY: MAX_N_SENSORS           , &
                                 CRTM_Set_Max_nChannels  , &
@@ -68,7 +96,11 @@ MODULE CRTM_SpcCoeff
   PUBLIC :: RC_POLARIZATION        
   PUBLIC :: LC_POLARIZATION        
   PUBLIC :: POLARIZATION_TYPE_NAME
-
+  ! Flag set function and values inherited from SpcCoeff_Define
+  PUBLIC :: IsFlagSet_SpcCoeff
+  PUBLIC :: SOLAR_FLAG        
+  PUBLIC :: ZEEMAN_FLAG
+  
 
   ! -----------------
   ! Module parameters
@@ -81,7 +113,7 @@ MODULE CRTM_SpcCoeff
   ! -------------------------------------
   ! The shared spectral coefficients data
   ! -------------------------------------
-  TYPE(SpcCoeff_type), SAVE, PUBLIC, DIMENSION(:), ALLOCATABLE :: SC
+  TYPE(SpcCoeff_type), SAVE, PUBLIC, ALLOCATABLE :: SC(:)
 
 
 CONTAINS

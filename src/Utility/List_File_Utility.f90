@@ -187,7 +187,7 @@ MODULE List_File_Utility
   ! -----------------
 
   CHARACTER( * ), PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: List_File_Utility.f90,v 2.3 2006/07/26 21:37:50 wd20pd Exp $'
+  '$Id$'
 
   INTEGER, PRIVATE, PARAMETER :: SET = 1
   INTEGER, PRIVATE, PARAMETER :: STRLEN = 5000
@@ -2688,11 +2688,11 @@ END MODULE List_File_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: List_File_Utility.f90,v 2.3 2006/07/26 21:37:50 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:37:50 $
 !
-! $Revision: 2.3 $
+! $Revision$
 !
 ! $Name:  $
 !

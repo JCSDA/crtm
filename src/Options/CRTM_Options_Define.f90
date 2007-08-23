@@ -16,7 +16,7 @@ MODULE CRTM_Options_Define
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,      ONLY: fp=>fp_kind
+  USE Type_Kinds,      ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters, ONLY: ZERO, SET, NOT_SET, STRLEN
   ! Disable implicit typing
@@ -61,7 +61,7 @@ MODULE CRTM_Options_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Options_Define.f90,v 1.5 2006/05/25 19:35:52 wd20pd Exp $'
+  '$Id$'
 
 
   ! ----------------------------
@@ -74,65 +74,17 @@ MODULE CRTM_Options_Define
     ! Index into channel-specific components
     INTEGER :: Channel = 0
     ! Emissivity optional arguments
-    INTEGER                         :: Emissivity_Switch =  NOT_SET
-    REAL(fp), DIMENSION(:), POINTER :: Emissivity        => NULL() ! L
+    INTEGER           :: Emissivity_Switch =  NOT_SET
+    REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
     ! Direct reflectivity optional arguments
-    INTEGER                         :: Direct_Reflectivity_Switch =  NOT_SET
-    REAL(fp), DIMENSION(:), POINTER :: Direct_Reflectivity        => NULL() ! L
+    INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
+    REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
+    ! Antenna correction application
+    INTEGER :: Antenna_Correction = NOT_SET
   END TYPE CRTM_Options_type
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_Options
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM Options structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Options( Options ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       Options:      Options structure for which the scalar members have
-!                     been cleared.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Options_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Options argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Sep-2005
-!                       paul.vandelst@ssec.wisc.edu
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_Options( Options )
-    TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
-    Options%n_Channels = 0
-    Options%Emissivity_Switch = NOT_SET
-    Options%Direct_Reflectivity_Switch = NOT_SET
-  END SUBROUTINE CRTM_Clear_Options
-
-
-
-
 
 !################################################################################
 !################################################################################
@@ -191,10 +143,6 @@ CONTAINS
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Sep-2005
-!                       paul.vandelst@ssec.wisc.edu
-!
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Associated_Options( Options,   & ! Input
@@ -202,7 +150,7 @@ CONTAINS
                                   RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN) :: Options
-    INTEGER,         OPTIONAL, INTENT(IN) :: ANY_Test
+    INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -219,13 +167,13 @@ CONTAINS
     ! Test the structure pointer association
     Association_Status = .FALSE.
     IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( Options%Emissivity          ) .AND. &
-           ASSOCIATED( Options%Direct_Reflectivity )       ) THEN 
+      IF (ASSOCIATED(Options%Emissivity         ) .AND. &
+          ASSOCIATED(Options%Direct_Reflectivity)) THEN 
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF ( ASSOCIATED( Options%Emissivity          ) .OR. &
-           ASSOCIATED( Options%Direct_Reflectivity )      ) THEN
+      IF (ASSOCIATED(Options%Emissivity         ) .OR. &
+          ASSOCIATED(Options%Direct_Reflectivity)) THEN
         Association_Status = .TRUE.
       END IF
     END IF
@@ -247,6 +195,13 @@ CONTAINS
 !                                            RCS_Id     =RCS_Id     , &  ! Revision control
 !                                            Message_Log=Message_Log  )  ! Error messaging
 ! 
+! OUTPUT ARGUMENTS:
+!       Options:      Re-initialized Options structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Options_type
+!                     DIMENSION:  Scalar or Rank-1
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
 !                     Messages will be logged. If not specified, or if an
@@ -256,15 +211,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Options:      Re-initialized Options structure.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Options_type
-!                     DIMENSION:  Scalar
-!                                   OR
-!                                 Rank-1
-!                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
@@ -276,7 +222,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
 !                        == FAILURE - an error occurred, or
 !                                   - the structure internal allocation counter
@@ -292,10 +238,6 @@ CONTAINS
 !       Note the INTENT on the output Options argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Sep-2005
-!                       paul.vandelst@ssec.wisc.edu
 !
 !------------------------------------------------------------------------------
 
@@ -319,23 +261,27 @@ CONTAINS
     INTEGER :: Allocate_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+    ! Reset the dimension indicators
+    Options%n_Channels = 0
+    
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
-
-    ! Initialise the scalar members
     IF ( Clear ) CALL CRTM_Clear_Options( Options )
 
     ! If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. CRTM_Associated_Options( Options ) ) RETURN
 
+
     ! Deallocate the pointer members
+    ! ------------------------------
     DEALLOCATE( Options%Emissivity         , &
                 Options%Direct_Reflectivity, &
                 STAT = Allocate_Status )
@@ -350,6 +296,7 @@ CONTAINS
     END IF
 
     ! Decrement and test allocation counter
+    ! -------------------------------------
     Options%n_Allocates = Options%n_Allocates - 1
     IF ( Options%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
@@ -383,10 +330,12 @@ CONTAINS
     INTEGER :: n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Loop over Options entries
+    ! -------------------------
     DO n = 1, SIZE( Options )
       Scalar_Status = Destroy_Scalar( Options(n)             , &
                                       No_Clear   =No_Clear   , &
@@ -414,10 +363,10 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Options( n_Channels,               &  ! Input
-!                                             Options,                  &  ! Output
-!                                             RCS_Id = RCS_Id,          &  ! Revision control
-!                                             Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Options( n_Channels             , &  ! Input
+!                                             Options                , &  ! Output
+!                                             RCS_Id     =RCS_Id     , &  ! Revision control
+!                                             Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       n_Channels:   Number of sensor channels
@@ -426,6 +375,15 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Options:      CRTM_Options structure with allocated pointer members.
+!                     Upon allocation, all pointer members are initialized to
+!                     a value of zero.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Options_type
+!                     DIMENSION:  Scalar or Rank-1
+!                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
@@ -437,17 +395,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OUTPUT ARGUMENTS:
-!       Options:      CRTM_Options structure with allocated pointer members.
-!                     Upon allocation, all pointer members are initialized to
-!                     a value of zero.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Options_type
-!                     DIMENSION:  Scalar
-!                                   OR
-!                                 Rank-1
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:       Character string containing the Revision Control
 !                     System Id field for the module.
@@ -458,7 +405,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure pointer allocations were
 !                                   successful
 !                        == FAILURE - an error occurred, or
@@ -476,10 +423,6 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Sep-2005
-!                       paul.vandelst@ssec.wisc.edu
-!
 !------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Channels , &  ! Input
@@ -488,7 +431,7 @@ CONTAINS
                             Message_Log) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
-    INTEGER,                   INTENT(IN)     :: n_Channels
+    INTEGER,                 INTENT(IN)     :: n_Channels
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
     CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
@@ -501,6 +444,7 @@ CONTAINS
     INTEGER :: Allocate_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -529,7 +473,9 @@ CONTAINS
       END IF
     END IF
 
-    ! Allocate the structure
+
+    ! Perform the pointer allocation
+    ! ------------------------------
     ALLOCATE( Options%Emissivity(n_Channels)         , &
               Options%Direct_Reflectivity(n_Channels), &
               STAT = Allocate_Status )
@@ -544,13 +490,20 @@ CONTAINS
       RETURN
     END IF
 
-    ! Assign dimensions and initialise variables
+
+    ! Assign dimensions
+    ! -----------------
     Options%n_Channels = n_Channels
 
+
+    ! Initialise the arrays
+    ! ---------------------
     Options%Emissivity          = ZERO
     Options%Direct_Reflectivity = ZERO
 
+
     ! Increment and test the allocation counter
+    ! -----------------------------------------
     Options%n_Allocates = Options%n_Allocates + 1
     IF ( Options%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
@@ -584,10 +537,13 @@ CONTAINS
     INTEGER :: n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+
     ! Loop over Options entries
+    ! -------------------------
     DO n = 1, SIZE(Options)
       Error_Status = Allocate_Scalar( n_Channels, & ! Input
                                       Options(n), & ! Output
@@ -623,10 +579,15 @@ CONTAINS
 !       Options_in:      Options structure which is to be copied.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Options_type
-!                        DIMENSION:  Scalar
-!                                      OR
-!                                    Rank-1
+!                        DIMENSION:  Scalar or Rank-1
 !                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Options_out:     Copy of the input structure, Options_in.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Options_type
+!                        DIMENSION:  Same as Options_in
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -638,14 +599,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OUTPUT ARGUMENTS:
-!       Options_out:     Copy of the input structure, Options_in.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Options_type
-!                        DIMENSION:  Same as Options_in
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:          Character string containing the Revision Control
 !                        System Id field for the module.
@@ -656,7 +609,7 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
+!                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the structure assignment was successful
 !                           == FAILURE an error occurred
 !                        UNITS:      N/A
@@ -667,10 +620,6 @@ CONTAINS
 !       Note the INTENT on the output Options argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Sep-2005
-!                       paul.vandelst@ssec.wisc.edu
 !
 !------------------------------------------------------------------------------
 
@@ -690,27 +639,23 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Options(Scalar)'
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
-    !
-    ! If this test succeeds, then some or all of the
-    ! input pointers are NOT associated, so destroy
-    ! the output structure and return.
     IF ( .NOT. CRTM_Associated_Options( Options_In ) ) THEN
-      Error_Status = CRTM_Destroy_Options( Options_Out, &
-                                           Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating output CRTM_Options pointer members.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Some or all INPUT Options_in pointer members are NOT associated.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
     END IF
 
-    ! Allocate the structure
+
+    ! Allocate data arrays
+    ! --------------------
     Error_Status = CRTM_Allocate_Options( Options_in%n_Channels  , &
                                           Options_out            , &
                                           Message_Log=Message_Log  )
@@ -722,11 +667,16 @@ CONTAINS
       RETURN
     END IF
 
-    ! Assign scalar data
+
+    ! Assign non-dimension scalar members
+    ! -----------------------------------
     Options_out%Emissivity_Switch          = Options_in%Emissivity_Switch
     Options_out%Direct_Reflectivity_Switch = Options_in%Direct_Reflectivity_Switch
-
-    ! Assign array data
+    Options_out%Antenna_Correction         = Options_in%Antenna_Correction
+    
+    
+    ! Copy array data
+    ! ---------------
     Options_out%Emissivity          = Options_in%Emissivity
     Options_out%Direct_Reflectivity = Options_in%Direct_Reflectivity
 
@@ -752,12 +702,13 @@ CONTAINS
     INTEGER :: i, n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
-    n = SIZE( Options_in )
-    IF ( SIZE( Options_out ) /= n ) THEN
+    n = SIZE(Options_in)
+    IF ( SIZE(Options_out) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Options_in and Options_out arrays'//&
@@ -767,7 +718,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Perform the assignment
+    ! ----------------------
     DO i = 1, n
       Error_Status = Assign_Scalar( Options_in(i)          , &
                                     Options_out(i)         , &
@@ -783,5 +736,47 @@ CONTAINS
       END IF
     END DO
   END FUNCTION Assign_Rank1
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_Options
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM Options structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_Options( Options ) ! Output
+!
+! OUTPUT ARGUMENTS:
+!       Options:      Options structure for which the scalar members have
+!                     been cleared.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Options_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output Options argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_Options( Options )
+    TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
+    Options%Emissivity_Switch          = NOT_SET
+    Options%Direct_Reflectivity_Switch = NOT_SET
+    Options%Antenna_Correction         = NOT_SET
+  END SUBROUTINE CRTM_Clear_Options
 
 END MODULE CRTM_Options_Define

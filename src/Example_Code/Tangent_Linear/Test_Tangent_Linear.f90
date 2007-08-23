@@ -21,8 +21,9 @@ PROGRAM Test_Tangent_Linear
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
   USE CRTM_Test_Utility, &
         ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_NPROFILES, &
-              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, MAX_NTESTS, &
-              MAX_NSENSORS, TEST_SENSORID, TEST_ANGLE, TEST_DELTA, &
+              EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, ANTCORR_TEST, MAX_NTESTS, &
+              MAX_NSENSORS, TEST_SENSORID, TEST_ZENITH_ANGLE, TEST_SCAN_ANGLE, &
+              TEST_DELTA, D_PERCENT, &
               Perform_Test, &
               Print_ChannelInfo, &
               Write_RTSolution_TestFile, Read_RTSolution_TestFile
@@ -177,7 +178,9 @@ PROGRAM Test_Tangent_Linear
 
   ! Assign some values
   ! ------------------
-  GeometryInfo%Sensor_Zenith_Angle = TEST_ANGLE
+  GeometryInfo%Sensor_Zenith_Angle = TEST_ZENITH_ANGLE
+  GeometryInfo%Sensor_Scan_Angle   = TEST_SCAN_ANGLE
+  GeometryInfo%iFOV = 1
   DO m = 1, USED_NPROFILES
     ! The TL perturbations
     Atmosphere_TL(m)%Pressure    = Atmosphere(m)%Pressure    * TEST_DELTA
@@ -255,6 +258,17 @@ PROGRAM Test_Tangent_Linear
       Exp_Description = TRIM(Exp_Description)//' Aerosols OFF'
     END IF
 
+    ! Turn antenna correction on and off
+    IF ( Perform_Test(i,ANTCORR_TEST) ) THEN
+      Options%Antenna_Correction = 1
+      Exp_ID = TRIM(Exp_ID)//'.acON'
+      Exp_Description = TRIM(Exp_Description)//' Antenna Correction ON'
+    ELSE
+      Options%Antenna_Correction = 0
+      Exp_ID = TRIM(Exp_ID)//'.acOFF'
+      Exp_Description = TRIM(Exp_Description)//' Antenna Correction OFF'
+    END IF
+
     WRITE(*,'(/5x,"Experiment: ",a)') TRIM(ADJUSTL(Exp_Description))
 
 
@@ -298,7 +312,9 @@ PROGRAM Test_Tangent_Linear
     CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=2 )
     
     ! Compare them
-    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution_TL, Check_All=1 )
+    Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution_TL, &
+                                          Percent_Difference=D_PERCENT, &
+                                          Check_All=1 )
     CALL Assert_Equal(Error_Status,SUCCESS)
 
   END DO

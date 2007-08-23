@@ -25,6 +25,7 @@ MODULE CRTM_Tangent_Linear_Module
                                       MAX_N_LEGENDRE_TERMS, &
                                       MAX_N_STOKES        , &
                                       MAX_N_ANGLES
+  USE CRTM_SpcCoeff,            ONLY: SC
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type   , &
@@ -65,6 +66,8 @@ MODULE CRTM_Tangent_Linear_Module
                                       CRTM_Compute_nStreams     , &
                                       CRTM_Compute_RTSolution   , &
                                       CRTM_Compute_RTSolution_TL
+  USE CRTM_AntCorr,             ONLY: CRTM_Compute_AntCorr, &
+                                      CRTM_Compute_AntCorr_TL
 
 
   ! -----------------------
@@ -250,6 +253,8 @@ CONTAINS
     LOGICAL :: Options_Present
     LOGICAL :: User_Emissivity
     LOGICAL :: User_Direct_Reflectivity
+    LOGICAL :: User_AntCorr
+    LOGICAL :: Compute_AntCorr
     INTEGER :: Status_FWD, Status_TL
     INTEGER :: n, nSensors,  SensorIndex
     INTEGER :: l, nChannels, ChannelIndex
@@ -373,6 +378,7 @@ CONTAINS
       ! ---------------------------------------------
       ! Default action is NOT to use user specified Options
       User_Emissivity = .FALSE.
+      User_AntCorr    = .FALSE.
       !.... other User_XXX flags as added.
 
       ! Check the Options argument
@@ -398,6 +404,9 @@ CONTAINS
           User_Direct_Reflectivity = .FALSE.
           IF ( Options(m)%Direct_Reflectivity_Switch == SET ) User_Direct_Reflectivity = .TRUE.
         END IF
+
+        ! Check if antenna correction should be attempted
+        IF ( Options(m)%Antenna_Correction == SET ) User_AntCorr = .TRUE.
       END IF
 
 
@@ -522,6 +531,14 @@ CONTAINS
 
         ! Shorter name
         SensorIndex = ChannelInfo(n)%Sensor_Index
+
+        ! Check if antenna correction to be applied for current sensor
+        IF ( User_AntCorr .AND. SC(SensorIndex)%AC_Present .AND. GeometryInfo(m)%iFOV /= 0 ) THEN
+          Compute_AntCorr = .TRUE.
+        ELSE
+          Compute_AntCorr = .FALSE.
+        END IF
+
 
         ! ------------
         ! Channel loop
@@ -730,6 +747,21 @@ CONTAINS
                                   Error_Status, &
                                   Message_Log=Message_Log )
             RETURN
+          END IF
+
+
+          ! --------------------------------------
+          ! Compute Antenna correction if required
+          ! --------------------------------------
+          IF ( Compute_AntCorr ) THEN
+            CALL CRTM_Compute_AntCorr( GeometryInfo(m) , &  ! Input
+                                       SensorIndex     , &  ! Input
+                                       ChannelIndex    , &  ! Input
+                                       RTSolution(ln,m)  )  ! Output
+            CALL CRTM_Compute_AntCorr_TL( GeometryInfo(m)    , &  ! Input
+                                          SensorIndex        , &  ! Input
+                                          ChannelIndex       , &  ! Input
+                                          RTSolution_TL(ln,m)  )  ! Output
           END IF
           
         END DO Channel_Loop

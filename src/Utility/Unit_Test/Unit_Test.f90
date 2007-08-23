@@ -72,6 +72,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL Assert_Equal(v1, v2                 , &  ! Input
 !                         ULP        =ULP        , &  ! Optional input
+!                         Percent    =Percent    , &  ! Optional input
 !                         Message_Log=Message_Log  )  ! Optional input
 !
 !------------------------------------------------------------------------------
@@ -106,17 +107,19 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE ip_equal
   
-  SUBROUTINE fp_equal_scalar(r1,r2,ULP,Message_Log)
+  SUBROUTINE fp_equal_scalar(r1,r2,ULP,Percent,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN) :: r1,r2
     INTEGER,      OPTIONAL, INTENT(IN) :: ULP
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assert_Equal'
     ! Variables
     CHARACTER(256) :: Message
-    LOGICAL :: Verbose
-    INTEGER :: rel
+    LOGICAL  :: Verbose
+    INTEGER  :: rel
+    REAL(fp) :: pc
 
     ! Minimum error by default...
     rel = 1
@@ -127,7 +130,7 @@ CONTAINS
     Verbose = Noisy
 
     ! Check equality
-    IF ( Compare_Float(r1,r2,ULP=rel) ) THEN
+    IF ( Compare_Float(r1,r2,ULP=rel,Percent=Percent) ) THEN
       WRITE( Message, '(4x,"Assert equal passed. Expected ", '//RFMT//', " and got ", '//RFMT//' )') r1,r2
       CALL test_passed()
     ELSE
@@ -143,17 +146,18 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE fp_equal_scalar
 
-  SUBROUTINE fp_equal_rank1(r1,r2,ULP,Message_Log)
+  SUBROUTINE fp_equal_rank1(r1,r2,ULP,Percent,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN) :: r1(:),r2(:)
     INTEGER,      OPTIONAL, INTENT(IN) :: ULP
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Variables
     INTEGER :: i
     
     ! Loop over elements
     DO i = 1, MIN(SIZE(r1),SIZE(r2))
-      CALL fp_equal_scalar(r1(i),r2(i),ULP=ULP,Message_Log=Message_Log)
+      CALL fp_equal_scalar(r1(i),r2(i),ULP=ULP,Percent=Percent,Message_Log=Message_Log)
     END DO
   END SUBROUTINE fp_equal_rank1
 
@@ -169,6 +173,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL Assert_NotEqual(v1, v2                 , &  ! Input
 !                            ULP        =ULP        , &  ! Optional input
+!                            Percent    =Percent    , &  ! Optional input
 !                            Message_Log=Message_Log  )  ! Optional input
 !
 !------------------------------------------------------------------------------
@@ -203,10 +208,11 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE ip_notequal
   
-  SUBROUTINE fp_notequal_scalar(r1,r2,ULP,Message_Log)
+  SUBROUTINE fp_notequal_scalar(r1,r2,ULP,Percent,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN) :: r1,r2
     INTEGER,      OPTIONAL, INTENT(IN) :: ULP
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assert_Equal'
@@ -224,7 +230,7 @@ CONTAINS
     Verbose = Noisy
 
     ! Check inequality    
-    IF ( .NOT. Compare_Float(r1,r2,ULP=rel) ) THEN
+    IF ( .NOT. Compare_Float(r1,r2,ULP=rel,Percent=Percent) ) THEN
       WRITE( Message, '(4x,"Assert not equal passed. Expected ", '//RFMT//', " and got ", '//RFMT//' )') r1,r2
       CALL test_passed()
     ELSE
@@ -240,17 +246,18 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE fp_notequal_scalar
 
-  SUBROUTINE fp_notequal_rank1(r1,r2,ULP,Message_Log)
+  SUBROUTINE fp_notequal_rank1(r1,r2,ULP,Percent,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN) :: r1(:),r2(:)
     INTEGER,      OPTIONAL, INTENT(IN) :: ULP
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Variables
     INTEGER :: i
     
     ! Loop over elements
     DO i = 1, MIN(SIZE(r1),SIZE(r2))
-      CALL fp_notequal_scalar(r1(i),r2(i),ULP=ULP,Message_Log=Message_Log)
+      CALL fp_notequal_scalar(r1(i),r2(i),ULP=ULP,Percent=Percent,Message_Log=Message_Log)
     END DO
   END SUBROUTINE fp_notequal_rank1
 

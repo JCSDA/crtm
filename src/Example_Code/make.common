@@ -34,7 +34,9 @@ SFC_DATA_FILES = ECMWF-Surface.bin
 COEFF_DATA_FILES = EmisCoeff.bin AerosolCoeff.bin CloudCoeff.bin
 
 # The sensors Ids for the sensors to test
-SENSOR_IDS = amsua_n17 hirs3_n17 ssmis_f16 imgr_g11 amsua_n18 mhs_n18 hirs4_n18 airs281SUBSET_aqua
+NO_AC_SENSOR_IDS = hirs3_n17 ssmis_f16 imgr_g11 hirs4_n18 airs281SUBSET_aqua
+AC_SENSOR_IDS = amsua_n17 amsua_n18 mhs_n18
+SENSOR_IDS = $(NO_AC_SENSOR_IDS) $(AC_SENSOR_IDS) 
 
 # CRTM Library and include macros
 INCLUDES = -I$(CRTM_SOURCE_ROOT)/Build/include
@@ -87,21 +89,26 @@ build: $(OBJ_FILES)
 
 
 # Run target
-DATA_ENDIAN_TAG = Big_Endian
 RUN_OPTS = "-Wl,-T"
 run:
 	$(REMOVE) $(EXE_FILE).signal
 	$(EXE_FILE) $(RUN_OPTS)
 
 # Create/remove the source and data links
+ENDIAN = Big_Endian
+AC_DIR = AAPP_AC
 create_links:
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(UTILITY_SRC_FILES); \
-	$(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_SOURCE_ROOT} ${ATM_DATA_FILES}; \
-	$(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_SOURCE_ROOT} ${SFC_DATA_FILES}; \
-	$(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_FIXFILE_ROOT} ${COEFF_DATA_FILES}; \
-	for id in ${SENSOR_IDS}; do \
-	  $(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_FIXFILE_ROOT} $$id.SpcCoeff.bin; \
-	  $(LINK_SCRIPT) -d ${DATA_ENDIAN_TAG} ${CRTM_FIXFILE_ROOT} $$id.TauCoeff.bin; \
+	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_SOURCE_ROOT} ${ATM_DATA_FILES}; \
+	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_SOURCE_ROOT} ${SFC_DATA_FILES}; \
+	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT} ${COEFF_DATA_FILES}; \
+	for id in ${AC_SENSOR_IDS}; do \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/${AC_DIR} $$id.SpcCoeff.bin; \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff $$id.TauCoeff.bin; \
+	done; \
+	for id in ${NO_AC_SENSOR_IDS}; do \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/No_AC $$id.SpcCoeff.bin; \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff $$id.TauCoeff.bin; \
 	done
 
 remove_links:

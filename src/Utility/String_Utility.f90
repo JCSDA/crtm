@@ -412,11 +412,11 @@ END MODULE String_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: String_Utility.f90,v 1.6 2004/08/11 23:21:23 paulv Exp $
+! $Id$
 !
 ! $Date: 2004/08/11 23:21:23 $
 !
-! $Revision: 1.6 $
+! $Revision$
 !
 ! $State: Exp $
 !

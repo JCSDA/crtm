@@ -17,7 +17,7 @@ MODULE Compare_Float_Numbers
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Type_Kinds
+  USE Type_Kinds, ONLY: Single, Double
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -63,9 +63,15 @@ MODULE Compare_Float_Numbers
   ! Module parameters
   ! -----------------
   ! Module RCS Id string
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Compare_Float_Numbers.f90,v 2.3 2004/10/06 19:00:23 paulv Exp $'
-
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+    '$Id$'
+  ! Numeric literals
+  REAL(Single), PARAMETER :: SP_ZERO = 0.0_Single
+  REAL(Double), PARAMETER :: DP_ZERO = 0.0_Double
+  REAL(Single), PARAMETER :: SP_ONE = 1.0_Single
+  REAL(Double), PARAMETER :: DP_ONE = 1.0_Double
+  REAL(Single), PARAMETER :: SP_HUNDRED = 100.0_Single
+  REAL(Double), PARAMETER :: DP_HUNDRED = 100.0_Double
 
 CONTAINS
 
@@ -248,8 +254,9 @@ CONTAINS
 !       precision tolerance.
 !
 ! CALLING SEQUENCE:
-!       Result = Compare_Float( x, y,     &  ! Input
-!                               ULP = ULP )  ! Optional input
+!       Result = Compare_Float( x, y,            &  ! Input
+!                               ULP    =ULP    , &  ! Optional input
+!                               Percent=Percent  )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       x, y:        Two congruent floating point data objects to compare.
@@ -273,11 +280,23 @@ CONTAINS
 !                    floating-point number. Value must be positive - if a negative
 !                    value is supplied, the absolute value is used.
 !                    If not specified, the default value is 1.
+!                    This argument is ignored if the Percent optioanl argument is specifed.
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
 !                    DIMENSION:  Scalar
 !                    ATTRIBUTES: OPTIONAL, INTENT(IN)
-!                  
+!
+!       Percent:     Specify a percentage difference value to use in comparing
+!                    the numbers rather than testing within some numerical
+!                    limit. The ULP argument is ignored if this argument is
+!                    specified.
+!                    UNITS:      N/A
+!                    TYPE:       REAL(Single)  for REAL(Single) or COMPLEX(Single) x,y
+!                                  OR
+!                                REAL(Double)  for REAL(Double) or COMPLEX(Double) x,y
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: OPTIONAL, INTENT(IN)
+!
 ! FUNCTION RESULT:
 !       Result:      The return value is a logical value indicating whether
 !                    the inputs are equal (to within the required precision)
@@ -289,6 +308,8 @@ CONTAINS
 !                    DIMENSION:  Scalar
 !
 ! PROCEDURE:
+!       ULP Test
+!       --------
 !       The test performed is
 !
 !         ABS( x - y ) < ( ULP * SPACING( MAX(ABS(x),ABS(y)) ) )
@@ -309,64 +330,138 @@ CONTAINS
 !       James Van Buskirk and James Giles suggested this method for floating
 !       point comparisons in the comp.lang.fortran newsgroup.
 !
+!
+!       Percent Test
+!       ------------
+!       The test performed is
+!
+!         100.0 * ABS((x-y)/x) < Percent
+!
+!       If the result is .TRUE., the numbers are considered equal.
+!
+!
 !       For complex numbers, the same test is applied to both the real and
 !       imaginary parts and each result is ANDed.
 !
 !----------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Compare_Real_Single( x, y, ulp ) RESULT( Compare )
-    REAL(Single),      INTENT(IN)  :: x
-    REAL(Single),      INTENT(IN)  :: y
-    INTEGER, OPTIONAL, INTENT(IN)  :: ulp
+  ELEMENTAL FUNCTION Compare_Real_Single( x, y, ULP, Percent ) RESULT( Compare )
+    ! Arguments
+    REAL(Single),           INTENT(IN) :: x
+    REAL(Single),           INTENT(IN) :: y
+    INTEGER     , OPTIONAL, INTENT(IN) :: ULP
+    REAL(Single), OPTIONAL, INTENT(IN) :: Percent
+    ! Function result
     LOGICAL :: Compare
+    ! Local variables
+    LOGICAL      :: ULP_Test
     REAL(Single) :: Rel
-    Rel = 1.0_Single
-    IF ( PRESENT( ulp ) ) THEN
-      Rel = REAL( ABS(ulp), Single )
+    
+    ! Set up
+    ! ------
+    ULP_Test = .TRUE.
+    IF ( PRESENT(ULP) ) THEN
+      Rel = REAL(ABS(ULP), Single)
+    ELSE
+      Rel = SP_ONE
     END IF
-    Compare = ABS(x-y) < ( Rel * SPACING( MAX(ABS(x),ABS(y)) ) )
+    IF ( PRESENT(Percent) ) THEN
+      ULP_Test = .FALSE.
+      ! Test for zero x (elementals can't be recursive)
+      IF ( ABS(x) < ( SPACING( MAX(ABS(x),SP_ZERO) ) ) ) ULP_Test = .TRUE.
+    END IF
+    
+    ! Compare the numbers
+    ! -------------------
+    IF ( ULP_Test ) THEN
+      Compare = ABS(x-y) < ( Rel * SPACING( MAX(ABS(x),ABS(y)) ) )
+    ELSE
+      Compare = SP_HUNDRED*ABS((x-y)/x) < Percent
+    END IF
   END FUNCTION Compare_Real_Single
 
 
-  ELEMENTAL FUNCTION Compare_Real_Double( x, y, ulp ) RESULT( Compare )
-    REAL(Double),      INTENT(IN)  :: x
-    REAL(Double),      INTENT(IN)  :: y
-    INTEGER, OPTIONAL, INTENT(IN)  :: ulp
+  ELEMENTAL FUNCTION Compare_Real_Double( x, y, ULP, Percent ) RESULT( Compare )
+    ! Arguments
+    REAL(Double),           INTENT(IN) :: x
+    REAL(Double),           INTENT(IN) :: y
+    INTEGER     , OPTIONAL, INTENT(IN) :: ULP
+    REAL(Double), OPTIONAL, INTENT(IN) :: Percent
+    ! Function result
     LOGICAL :: Compare
+    ! Local variables
+    LOGICAL      :: ULP_Test
     REAL(Double) :: Rel
-    Rel = 1.0_Double
-    IF ( PRESENT( ulp ) ) THEN
-      Rel = REAL( ABS(ulp), Double )
+    
+    ! Set up
+    ! ------
+    ULP_Test = .TRUE.
+    IF ( PRESENT(ULP) ) THEN
+      Rel = REAL(ABS(ULP), Double)
+    ELSE
+      Rel = DP_ONE
     END IF
-    Compare = ABS( x-y ) < ( Rel * SPACING( MAX(ABS(x),ABS(y)) ) )
+    IF ( PRESENT(Percent) ) THEN
+      ULP_Test = .FALSE.
+      ! Test for zero x (elementals can't be recursive)
+      IF ( ABS(x) < ( SPACING( MAX(ABS(x),DP_ZERO) ) ) ) ULP_Test = .TRUE.
+    END IF
+    
+    ! Compare the numbers
+    ! -------------------
+    IF ( ULP_Test ) THEN
+      Compare = ABS(x-y) < ( Rel * SPACING( MAX(ABS(x),ABS(y)) ) )
+    ELSE
+      Compare = DP_HUNDRED*ABS((x-y)/x) < Percent
+    END IF
   END FUNCTION Compare_Real_Double
 
 
-  ELEMENTAL FUNCTION Compare_Complex_Single( x, y, ulp ) RESULT( Compare )
-    COMPLEX(Single),   INTENT(IN)  :: x
-    COMPLEX(Single),   INTENT(IN)  :: y
-    INTEGER, OPTIONAL, INTENT(IN)  :: ulp
+  ELEMENTAL FUNCTION Compare_Complex_Single( x, y, ULP, Percent ) RESULT( Compare )
+    ! Arguments
+    COMPLEX(Single),           INTENT(IN) :: x
+    COMPLEX(Single),           INTENT(IN) :: y
+    INTEGER        , OPTIONAL, INTENT(IN) :: ULP
+    REAL(Single)   , OPTIONAL, INTENT(IN) :: Percent
+    ! Function result
     LOGICAL :: Compare
+    ! Local variables
     REAL(Single) :: xr, xi
     REAL(Single) :: yr, yi
+    
+    ! Separate real and complex parts
+    ! -------------------------------
     xr=REAL(x,Single); xi=AIMAG(x)
     yr=REAL(y,Single); yi=AIMAG(y)
-    Compare = Compare_Real_Single(xr,yr,ulp=ulp) .AND. &
-              Compare_Real_Single(xi,yi,ulp=ulp)
+    
+    ! Compare each part separately
+    ! ----------------------------
+    Compare = Compare_Real_Single(xr,yr,ULP=ULP,Percent=Percent) .AND. &
+              Compare_Real_Single(xi,yi,ULP=ULP,Percent=Percent)
   END FUNCTION Compare_Complex_Single
 
 
-  ELEMENTAL FUNCTION Compare_Complex_Double( x, y, ulp ) RESULT( Compare )
-    COMPLEX(Double),   INTENT(IN)  :: x
-    COMPLEX(Double),   INTENT(IN)  :: y
-    INTEGER, OPTIONAL, INTENT(IN)  :: ulp
+  ELEMENTAL FUNCTION Compare_Complex_Double( x, y, ULP, Percent ) RESULT( Compare )
+    ! Arguments
+    COMPLEX(Double),           INTENT(IN) :: x
+    COMPLEX(Double),           INTENT(IN) :: y
+    INTEGER        , OPTIONAL, INTENT(IN) :: ULP
+    REAL(Double)   , OPTIONAL, INTENT(IN) :: Percent
+    ! Function result
     LOGICAL :: Compare
+    ! Local variables
     REAL(Double) :: xr, xi
     REAL(Double) :: yr, yi
+    
+    ! Separate real and complex parts
+    ! -------------------------------
     xr=REAL(x,Double); xi=AIMAG(x)
     yr=REAL(y,Double); yi=AIMAG(y)
-    Compare = Compare_Real_Double(xr,yr,ulp=ulp) .AND. &
-              Compare_Real_Double(xi,yi,ulp=ulp)
+    
+    ! Compare each part separately
+    ! ----------------------------
+    Compare = Compare_Real_Double(xr,yr,ULP=ULP,Percent=Percent) .AND. &
+              Compare_Real_Double(xi,yi,ULP=ULP,Percent=Percent)
   END FUNCTION Compare_Complex_Double
 
 END MODULE Compare_Float_Numbers

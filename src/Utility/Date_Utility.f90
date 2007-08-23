@@ -91,7 +91,7 @@ MODULE Date_Utility
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Date_Utility.f90,v 3.3 2006/07/26 21:37:50 wd20pd Exp $'
+  '$Id$'
 
   ! -- Number of Months in a Year
   INTEGER, PRIVATE, PARAMETER :: N_MONTHS = 12
@@ -717,11 +717,11 @@ END MODULE Date_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Date_Utility.f90,v 3.3 2006/07/26 21:37:50 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/07/26 21:37:50 $
 !
-! $Revision: 3.3 $
+! $Revision$
 !
 ! $State: Exp $
 !

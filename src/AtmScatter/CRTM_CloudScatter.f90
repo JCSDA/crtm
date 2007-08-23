@@ -255,7 +255,7 @@ CONTAINS
     IF (CloudC%n_Phase_Elements > 0) CloudScatter%Phase_Coefficient = ZERO
     IF (Atmosphere%n_Clouds == 0) RETURN
     ! Spectral variables
-    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
     Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Determine offset for Legendre coefficients in
@@ -581,7 +581,7 @@ CONTAINS
     IF (Atmosphere%n_Clouds == 0) RETURN
     Total_bs_TL = ZERO
     ! Spectral variables
-    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
     Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -891,7 +891,7 @@ CONTAINS
     ! Initialize local adjoint variables
     Total_bs_AD = ZERO
     ! Spectral variables
-    Sensor_Type = SC(SensorIndex)%Sensor_Type(ChannelIndex)
+    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
     Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions

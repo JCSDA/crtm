@@ -556,11 +556,11 @@ END MODULE Endian_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Endian_Utility.f90,v 2.3 2004/12/01 19:35:15 paulv Exp $
+! $Id$
 !
 ! $Date: 2004/12/01 19:35:15 $
 !
-! $Revision: 2.3 $
+! $Revision$
 !
 ! $State: Exp $
 !

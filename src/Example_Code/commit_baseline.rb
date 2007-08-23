@@ -7,7 +7,7 @@
 #
 # == Usage
 #
-# commit_baseline.rb [OPTION] log_message sensor_id1 [ sensor_id2 sensor_id3 ...]
+# commit_baseline.rb [OPTION] log_message
 #
 # If no options are specified, then no CRTM model results (forward, tangent-linear,
 # adjoint, and K-matrix) are committed.
@@ -36,10 +36,6 @@
 # log_message
 #    The log message to use when committing the updates to the repository.
 #
-# sensor_id1 [ sensor_id2 sensor_id3 ...]
-#    The string ids for the sensor results to copy. Examples are
-#    amsua_n17, hirs3_n17, ssmis_f16, imgr_g11, etc..
-#
 #
 # Written by:: Paul van Delst, CIMSS/SSEC 31-Oct-2006 (paul.vandelst@ssec.wisc.edu)
 #
@@ -54,6 +50,7 @@ models={:fwd => {:dir => "Forward"       , :test => false},
         :ad  => {:dir => "Adjoint"       , :test => false},
         :k   => {:dir => "K_Matrix"      , :test => false} }
 noop = false
+path = "Results"
 
 # Specify accepted options
 options=GetoptLong.new(
@@ -93,20 +90,18 @@ rescue StandardError=>error_message
 end
 
 # Get the arguments and check
-if ARGV.length < 2
+if ARGV.length < 1
   puts("Missing arguments (try --help)")
   exit 1
 end
-log_message=ARGV.shift
-sensor_id=ARGV.uniq
+log_message=ARGV
 
 # Build a list of files to commit
 file_list = []
 models.each_key do |k|
   next if not models[k][:test]
-  sensor_id.each do |id|
-    file = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump.Baseline"
-    file_list << file if (`svn status #{file}`.length > 0)
+  Dir.glob("#{models[k][:dir]}/#{path}/*.e*.c*.a*.ac*.bin.Baseline").each do |f|
+    file_list << f if (`svn status #{file}`.length > 0)
   end
 end
 if file_list.empty?

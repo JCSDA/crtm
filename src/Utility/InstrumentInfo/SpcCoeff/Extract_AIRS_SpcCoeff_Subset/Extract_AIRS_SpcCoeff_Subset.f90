@@ -29,7 +29,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                                 Display_Message, Program_Message
   USE List_File_Utility , ONLY: Integer_List_File_type, &
                                 Read_List_File, Get_List_Size, Get_List_Entry
-  USE SpcCoeff_Define   , ONLY: SpcCoeff_Sensor_type, &
+  USE SpcCoeff_Define   , ONLY: SpcCoeff_type, &
                                 Allocate_SpcCoeff, &
                                 Destroy_SpcCoeff
   USE SpcCoeff_netCDF_IO, ONLY: Inquire_SpcCoeff_netCDF, &
@@ -68,14 +68,12 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER(256) :: Message
-  CHARACTER(256) :: List_Filename
-  CHARACTER(256) :: In_Filename
-  CHARACTER(256) :: Out_Filename
+  CHARACTER(256)  :: Message
+  CHARACTER(256)  :: List_Filename
+  CHARACTER(256)  :: In_Filename
+  CHARACTER(256)  :: Out_Filename
   CHARACTER(5000) :: History
   CHARACTER(5000) :: Comment
-  CHARACTER(256)  :: Sensor_Name
-  CHARACTER(256)  :: Platform_Name
   CHARACTER(20)   :: Sensor_ID
   INTEGER :: Error_Status
   INTEGER :: IO_Status
@@ -89,7 +87,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   CHARACTER(256)       :: Subset_Comment
   INTEGER, ALLOCATABLE :: Subset_List(:)
   TYPE(Integer_List_File_type) :: User_Subset_List
-  TYPE(SpcCoeff_Sensor_type)   :: In_SpcCoeff,  Out_SpcCoeff
+  TYPE(SpcCoeff_type)          :: In_SpcCoeff,  Out_SpcCoeff
   TYPE(AIRS_Subset_type)       :: Subset
 
   ! Program header
@@ -289,6 +287,9 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                           Error_Status )
     STOP
   END IF
+  
+  ! Assign the sensor Id
+  Out_SpcCoeff%Sensor_Id = Sensor_Id
 
 
   ! Initialise the start index for output
@@ -342,12 +343,12 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
 
         ! Inquire the SpcCoeff data file
         Error_Status = Inquire_SpcCoeff_netCDF( TRIM(In_Filename), &
-                                                Release       = Out_SpcCoeff%Release, &
-                                                Version       = Out_SpcCoeff%Version, &
-                                                History       = History, &
-                                                Sensor_Name   = Sensor_Name, &
-                                                Platform_Name = Platform_Name, &
-                                                Comment       = Comment )
+                                                Release         =Out_SpcCoeff%Release, &
+                                                Version         =Out_SpcCoeff%Version, &
+                                                WMO_Satellite_Id=Out_SpcCoeff%WMO_Satellite_Id, &
+                                                WMO_Sensor_Id   =Out_SpcCoeff%WMO_Sensor_Id   , &
+                                                History         =History, &
+                                                Comment         =Comment )
         IF ( Error_Status /= SUCCESS ) THEN
           CALL Display_Message( PROGRAM_NAME, &
                                 'Error inquiring the input netCDF SpcCoeff file '//&
@@ -383,6 +384,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                               TRIM(Message), &
                               WARNING )
         Comment = TRIM(Message)//'; '//TRIM(Comment)
+        Out_SpcCoeff%Version = MAX(Version,Out_SpcCoeff%Version)
       END IF
 
 
@@ -402,22 +404,17 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       ! Copy the required channel's data
       ! --------------------------------
       l2 = l1 + Subset%n_Channels - 1
-      Out_SpcCoeff%Sensor_Descriptor(l1:l2)          = TRIM(Sensor_ID)
-      Out_SpcCoeff%Sensor_Type(l1:l2)                = In_SpcCoeff%Sensor_Type(Subset%Channel_Index)
-      Out_SpcCoeff%NCEP_Sensor_ID(l1:l2)             = In_SpcCoeff%NCEP_Sensor_ID(Subset%Channel_Index)
-      Out_SpcCoeff%WMO_Satellite_ID(l1:l2)           = In_SpcCoeff%WMO_Satellite_ID(Subset%Channel_Index)
-      Out_SpcCoeff%WMO_Sensor_ID(l1:l2)              = In_SpcCoeff%WMO_Sensor_ID(Subset%Channel_Index)
+      Out_SpcCoeff%Sensor_Type                       = In_SpcCoeff%Sensor_Type
       Out_SpcCoeff%Sensor_Channel(l1:l2)             = In_SpcCoeff%Sensor_Channel(Subset%Channel_Index)
+      Out_SpcCoeff%Polarization(l1:l2)               = In_SpcCoeff%Polarization(Subset%Channel_Index)
+      Out_SpcCoeff%Channel_Flag(l1:l2)               = In_SpcCoeff%Channel_Flag(Subset%Channel_Index)
       Out_SpcCoeff%Frequency(l1:l2)                  = In_SpcCoeff%Frequency(Subset%Channel_Index)
       Out_SpcCoeff%Wavenumber(l1:l2)                 = In_SpcCoeff%Wavenumber(Subset%Channel_Index)
       Out_SpcCoeff%Planck_C1(l1:l2)                  = In_SpcCoeff%Planck_C1(Subset%Channel_Index)
       Out_SpcCoeff%Planck_C2(l1:l2)                  = In_SpcCoeff%Planck_C2(Subset%Channel_Index)
       Out_SpcCoeff%Band_C1(l1:l2)                    = In_SpcCoeff%Band_C1(Subset%Channel_Index)
       Out_SpcCoeff%Band_C2(l1:l2)                    = In_SpcCoeff%Band_C2(Subset%Channel_Index)
-      Out_SpcCoeff%Is_Microwave_Channel(l1:l2)       = In_SpcCoeff%Is_Microwave_Channel(Subset%Channel_Index)
-      Out_SpcCoeff%Polarization(l1:l2)               = In_SpcCoeff%Polarization(Subset%Channel_Index)
       Out_SpcCoeff%Cosmic_Background_Radiance(l1:l2) = In_SpcCoeff%Cosmic_Background_Radiance(Subset%Channel_Index)
-      Out_SpcCoeff%Is_Solar_Channel(l1:l2)           = In_SpcCoeff%Is_Solar_Channel(Subset%Channel_Index)
       Out_SpcCoeff%Solar_Irradiance(l1:l2)           = In_SpcCoeff%Solar_Irradiance(Subset%Channel_Index)
       l1 = l2 + 1
 
@@ -456,9 +453,6 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   ! Set the output filename
   Out_Filename = TRIM(Sensor_ID)//'.SpcCoeff.nc'
 
-  ! Set the number of sensors
-  Out_SpcCoeff%n_Sensors = 1
-
   ! Write the data
   WRITE( *,'(/10x,"Creating the output file...")' )
   Error_Status = Write_SpcCoeff_netCDF( TRIM(Out_Filename), &
@@ -467,8 +461,6 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                                                         TRIM(Sensor_ID), &
                                         History       = PROGRAM_RCS_ID//'; '//&
                                                         TRIM(History), &
-                                        Sensor_Name   = TRIM(Sensor_Name), &
-                                        Platform_Name = TRIM(Platform_Name), &
                                         Comment       = 'Data extracted from the individual '//&
                                                         'AIRS module SpcCoeff datafiles.; '//&
                                                         TRIM(Comment) )

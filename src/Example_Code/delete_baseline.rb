@@ -2,12 +2,11 @@
 
 # == Synopsis
 #
-# delete_baseline.rb:: Delete current CRTM dump output for a specified model and
-#                      sensor.
+# delete_baseline.rb:: Delete current CRTM test output for a specified model
 #
 # == Usage
 #
-# delete_baseline.rb [OPTION] sensorId1 [ sensorId2 sensorId3 ...]
+# delete_baseline.rb [OPTION]
 #
 # If no options are specified, then no CRTM model results (forward, tangent-linear,
 # adjoint, and K-matrix) are deleted.
@@ -33,9 +32,8 @@
 # --everything  (-e)
 #    Delete every set of CRTM model results.
 #
-# sensorId1 [ sensorId2 sensorId3 ...]
-#    The string ids for the sensor results to delete. Examples are
-#    amsua_n17, hirs3_n17, ssmis_f16, imgr_g11, etc..
+# --svn (-s)
+#    Delete the files from the repository also (must still commit)
 #
 
 require 'getoptlong'
@@ -47,6 +45,8 @@ models={:fwd => {:dir => "Forward"       , :test => false},
         :ad  => {:dir => "Adjoint"       , :test => false},
         :k   => {:dir => "K_Matrix"      , :test => false} }
 noop = false
+svn  = false
+path = "Results"
         
 # Specify accepted options
 options=GetoptLong.new(
@@ -56,7 +56,8 @@ options=GetoptLong.new(
   [ "--tangent-linear", "-t", GetoptLong::NO_ARGUMENT ],
   [ "--adjoint",        "-a", GetoptLong::NO_ARGUMENT ],
   [ "--k-matrix",       "-k", GetoptLong::NO_ARGUMENT ],
-  [ "--everything",     "-e", GetoptLong::NO_ARGUMENT ] )
+  [ "--everything",     "-e", GetoptLong::NO_ARGUMENT ],
+  [ "--svn",            "-s", GetoptLong::NO_ARGUMENT ] )
 
 # Parse the command line options
 begin
@@ -67,6 +68,8 @@ begin
         exit 0
       when "--dry-run"
         noop = true
+      when "--svn"
+        svn = true
       when "--forward"
         models[:fwd][:test] = true
       when "--tangent-linear"
@@ -85,23 +88,19 @@ rescue StandardError=>error_message
   exit 1
 end
 
-# Get the sensor_id
-if ARGV.empty?
-  puts("Missing sensor_id argument (try --help)")
-  exit 1
-end
-sensor_id=ARGV
+# If svn flag set, Baseline flags to be deleted.
+ext = svn ? ".Baseline" : ""
 
 # Test each model
 models.each_key do |k|
   next if not models[k][:test]
-  sensor_id.each do |id|
-    file = "#{models[k][:dir]}/#{id}.CRTM_Test_#{models[k][:dir]}.dump"
-    cmd = "rm -f #{file}"
+  Dir.glob("#{models[k][:dir]}/#{path}/*.e*.c*.a*.ac*.bin#{ext}").each do |f|
+    cmd = "rm -f #{f}"
+    cmd << "; svn delete #{f}" if svn
     if noop
       puts cmd
     else
-      system(cmd) if File.file?(file)
+      system(cmd) if File.file?(f)
     end
   end
 end

@@ -24,7 +24,10 @@ MODULE CRTM_RTSolution_Binary_IO
                                     Display_Message
   USE Binary_File_Utility   , ONLY: Open_Binary_File
   USE CRTM_Parameters       , ONLY: ZERO, ONE, SET, YES
-  USE CRTM_RTSolution_Define
+  USE CRTM_RTSolution_Define, ONLY: CRTM_RTSolution_type, &
+                                    CRTM_Associated_RTSolution, &
+                                    CRTM_Allocate_RTSolution, &
+                                    CRTM_Destroy_RTSolution
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -49,191 +52,6 @@ MODULE CRTM_RTSolution_Binary_IO
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-  ! ------------------------------------------------
-  ! Function to read a single RTSolution data record
-  ! ------------------------------------------------
-  FUNCTION Read_RTSolution_Record( FileID     , &  ! Input
-                                   RTSolution , &  ! Output
-                                   Message_Log) &  ! Error messaging
-                                 RESULT ( Error_Status )
-    ! Arguments
-    INTEGER,                    INTENT(IN)     :: FileID
-    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
-    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_RTSolution_Binary(Record)'
-    ! Function variables
-    CHARACTER(256) :: Message
-    CHARACTER(256) :: Filename
-    INTEGER :: IO_Status
-    INTEGER :: Destroy_Status
-    INTEGER :: n_Layers
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-
-    ! Read the data dimensions
-    ! ------------------------
-    READ( FileID, IOSTAT=IO_Status ) n_Layers
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading RTSolution data dimensions. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Allocate the RTSolution structure
-    ! ---------------------------------
-    Error_Status = CRTM_Allocate_RTSolution( n_Layers, &
-                                             RTSolution, &
-                                             Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error allocating RTSolution data structure.'
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Read the forward radiative transfer intermediate results
-    ! --------------------------------------------------------
-    READ( FileID, IOSTAT=IO_Status ) RTSolution%Surface_Emissivity     , &
-                                     RTSolution%Up_Radiance            , &
-                                     RTSolution%Down_Radiance          , &
-                                     RTSolution%Down_Solar_Radiance    , &
-                                     RTSolution%Surface_Planck_Radiance, &
-                                     RTSolution%Layer_Optical_Depth
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading RTSolution intermediate results. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Read the radiative transfer results
-    ! ---------------------------------
-    READ( FileID, IOSTAT=IO_Status ) RTSolution%Radiance              , &
-                                     RTSolution%Brightness_Temperature
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading RTSolution data. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_RTSolution( RTSolution, &
-                                              Message_Log=Message_Log )
-    CLOSE( FileID, IOSTAT=IO_Status )
-
-  END FUNCTION Read_RTSolution_Record
-
-
-  ! -------------------------------------------------
-  ! Function to write a single RTSolution data record
-  ! -------------------------------------------------
-  FUNCTION Write_RTSolution_Record( FileID     , &  ! Input
-                                    RTSolution , &  ! Input
-                                    Message_Log) &  ! Error messaging
-                                  RESULT ( Error_Status )
-    ! Arguments
-    INTEGER,                    INTENT(IN)  :: FileID
-    TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution
-    CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_RTSolution_Binary(Record)'
-    ! Function variables
-    CHARACTER(256) :: Message
-    CHARACTER(256) :: Filename
-    INTEGER :: IO_Status
- 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Check structure pointer association status
-    IF ( .NOT. CRTM_Associated_RTSolution( RTSolution ) ) THEN
-      Message = 'Some or all INPUT RTSolution pointer members are NOT associated.'
-      GOTO 1000
-    END IF
-
-
-    ! Write the data dimensions
-    ! -------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%n_Layers
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing RTSolution data dimensions. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-    
-    
-    ! Write the forward radiative transfer intermediate results
-    ! ---------------------------------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%Surface_Emissivity     , &
-                                      RTSolution%Up_Radiance            , &
-                                      RTSolution%Down_Radiance          , &
-                                      RTSolution%Down_Solar_Radiance    , &
-                                      RTSolution%Surface_Planck_Radiance, &
-                                      RTSolution%Layer_Optical_Depth
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing RTSolution intermediate results. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Write the radiative transfer results
-    ! ------------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%Radiance              , &
-                                      RTSolution%Brightness_Temperature
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing RTSolution data. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    CLOSE( FileID, STATUS=WRITE_ERROR_STATUS, IOSTAT=IO_Status )
-
-  END FUNCTION Write_RTSolution_Record
 
 
 !################################################################################
@@ -672,28 +490,6 @@ CONTAINS
   END FUNCTION CRTM_Read_RTSolution_Binary
 
 
-  ! -------------------------------------------
-  ! Utility routine to read the file dimensions
-  ! -------------------------------------------
-  SUBROUTINE Read_Dimensions( Filename, FileID, &
-                              n_Channels, n_Profiles, &
-                              IO_Status, Message )
-    ! Arguments
-    CHARACTER(*), INTENT(IN)  :: Filename
-    INTEGER,      INTENT(IN)  :: FileID
-    INTEGER,      INTENT(OUT) :: n_Channels
-    INTEGER,      INTENT(OUT) :: n_Profiles
-    INTEGER,      INTENT(OUT) :: IO_Status
-    CHARACTER(*), INTENT(OUT) :: Message
-    ! Read the dimensions from file    
-    READ( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '("Error reading RTSolution data dimensions from ", a, &
-                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-    END IF
-  END SUBROUTINE Read_Dimensions
-
-
 !------------------------------------------------------------------------------
 !
 ! NAME:
@@ -888,10 +684,219 @@ CONTAINS
   END FUNCTION CRTM_Write_RTSolution_Binary
 
 
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+  ! ------------------------------------------------
+  ! Function to read a single RTSolution data record
+  ! ------------------------------------------------
+  FUNCTION Read_RTSolution_Record( FileID     , &  ! Input
+                                   RTSolution , &  ! Output
+                                   Message_Log) &  ! Error messaging
+                                 RESULT ( Error_Status )
+    ! Arguments
+    INTEGER,                    INTENT(IN)     :: FileID
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_RTSolution_Binary(Record)'
+    ! Function variables
+    CHARACTER(256) :: Message
+    CHARACTER(256) :: Filename
+    INTEGER :: IO_Status
+    INTEGER :: Destroy_Status
+    INTEGER :: n_Layers
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+
+
+    ! Read the data dimensions
+    ! ------------------------
+    READ( FileID, IOSTAT=IO_Status ) n_Layers
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '( "Error reading RTSolution data dimensions. IOSTAT = ", i0 )' ) &
+                      IO_Status
+      GOTO 1000  ! Clean up
+    END IF
+
+
+    ! Allocate the RTSolution structure
+    ! ---------------------------------
+    Error_Status = CRTM_Allocate_RTSolution( n_Layers, &
+                                             RTSolution, &
+                                             Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error allocating RTSolution data structure.'
+      GOTO 1000  ! Clean up
+    END IF
+
+
+    ! Read the forward radiative transfer intermediate results
+    ! --------------------------------------------------------
+    READ( FileID, IOSTAT=IO_Status ) RTSolution%Surface_Emissivity     , &
+                                     RTSolution%Up_Radiance            , &
+                                     RTSolution%Down_Radiance          , &
+                                     RTSolution%Down_Solar_Radiance    , &
+                                     RTSolution%Surface_Planck_Radiance, &
+                                     RTSolution%Layer_Optical_Depth
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '( "Error reading RTSolution intermediate results. IOSTAT = ", i0 )' ) &
+                      IO_Status
+      GOTO 1000  ! Clean up
+    END IF
+
+
+    ! Read the radiative transfer results
+    ! ---------------------------------
+    READ( FileID, IOSTAT=IO_Status ) RTSolution%Radiance              , &
+                                     RTSolution%Brightness_Temperature
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '( "Error reading RTSolution data. IOSTAT = ", i0 )' ) &
+                      IO_Status
+      GOTO 1000  ! Clean up
+    END IF
+
+
+    !=====
+    RETURN
+    !=====
+
+    ! Clean up after an error
+    ! -----------------------
+    1000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
+    Destroy_Status = CRTM_Destroy_RTSolution( RTSolution, &
+                                              Message_Log=Message_Log )
+    CLOSE( FileID, IOSTAT=IO_Status )
+
+  END FUNCTION Read_RTSolution_Record
+
+
+  ! -------------------------------------------------
+  ! Function to write a single RTSolution data record
+  ! -------------------------------------------------
+  FUNCTION Write_RTSolution_Record( FileID     , &  ! Input
+                                    RTSolution , &  ! Input
+                                    Message_Log) &  ! Error messaging
+                                  RESULT ( Error_Status )
+    ! Arguments
+    INTEGER,                    INTENT(IN)  :: FileID
+    TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution
+    CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_RTSolution_Binary(Record)'
+    ! Function variables
+    CHARACTER(256) :: Message
+    CHARACTER(256) :: Filename
+    INTEGER :: IO_Status
+ 
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+
+    ! Check structure pointer association status
+    IF ( .NOT. CRTM_Associated_RTSolution( RTSolution ) ) THEN
+      Message = 'Some or all INPUT RTSolution pointer members are NOT associated.'
+      GOTO 1000
+    END IF
+
+
+    ! Write the data dimensions
+    ! -------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%n_Layers
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '( "Error writing RTSolution data dimensions. IOSTAT = ", i0 )' ) &
+                      IO_Status
+      GOTO 1000  ! Clean up
+    END IF
+    
+    
+    ! Write the forward radiative transfer intermediate results
+    ! ---------------------------------------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%Surface_Emissivity     , &
+                                      RTSolution%Up_Radiance            , &
+                                      RTSolution%Down_Radiance          , &
+                                      RTSolution%Down_Solar_Radiance    , &
+                                      RTSolution%Surface_Planck_Radiance, &
+                                      RTSolution%Layer_Optical_Depth
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '( "Error writing RTSolution intermediate results. IOSTAT = ", i0 )' ) &
+                      IO_Status
+      GOTO 1000  ! Clean up
+    END IF
+
+
+    ! Write the radiative transfer results
+    ! ------------------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%Radiance              , &
+                                      RTSolution%Brightness_Temperature
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '( "Error writing RTSolution data. IOSTAT = ", i0 )' ) &
+                      IO_Status
+      GOTO 1000  ! Clean up
+    END IF
+
+
+    !=====
+    RETURN
+    !=====
+
+    ! Clean up after an error
+    ! -----------------------
+    1000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
+    CLOSE( FileID, STATUS=WRITE_ERROR_STATUS, IOSTAT=IO_Status )
+
+  END FUNCTION Write_RTSolution_Record
+
+
+  ! -------------------------------------------
+  ! Utility routine to read the file dimensions
+  ! -------------------------------------------
+  SUBROUTINE Read_Dimensions( Filename, FileID, &
+                              n_Channels, n_Profiles, &
+                              IO_Status, Message )
+    ! Arguments
+    CHARACTER(*), INTENT(IN)  :: Filename
+    INTEGER,      INTENT(IN)  :: FileID
+    INTEGER,      INTENT(OUT) :: n_Channels
+    INTEGER,      INTENT(OUT) :: n_Profiles
+    INTEGER,      INTENT(OUT) :: IO_Status
+    CHARACTER(*), INTENT(OUT) :: Message
+    ! Read the dimensions from file    
+    READ( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading RTSolution data dimensions from ",a,&
+                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+    END IF
+  END SUBROUTINE Read_Dimensions
+
+
   ! --------------------------------------------
   ! Utility routine to write the file dimensions
   ! --------------------------------------------
-  SUBROUTINE Write_Dimensions( Filename, FileID, n_Channels, n_Profiles, &
+  SUBROUTINE Write_Dimensions( Filename, FileID, &
+                               n_Channels, n_Profiles, &
                                IO_Status, Message )
     ! Arguments
     CHARACTER(*), INTENT(IN)  :: Filename
@@ -903,11 +908,10 @@ CONTAINS
     ! Write the dimensions to file    
     WRITE( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '("Error writing RTSolution data dimensions to ", a, &
-                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+      WRITE( Message,'("Error writing RTSolution data dimensions to ",a, &
+                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
       CLOSE( FileID, STATUS=WRITE_ERROR_STATUS )
     END IF
-  
   END SUBROUTINE Write_Dimensions
 
 END MODULE CRTM_RTSolution_Binary_IO

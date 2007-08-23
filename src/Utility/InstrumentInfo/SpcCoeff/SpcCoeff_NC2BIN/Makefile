@@ -27,6 +27,9 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
+            AntCorr_Define.f90 \
+            AntCorr_Binary_IO.f90 \
+            AntCorr_netCDF_IO.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_Binary_IO.f90 \
             SpcCoeff_netCDF_IO.f90

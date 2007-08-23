@@ -154,7 +154,7 @@ MODULE Planck_Functions
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Planck_Functions.f90,v 3.2 2006/09/21 17:57:31 wd20pd Exp $'
+    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -3179,11 +3179,11 @@ END MODULE Planck_Functions
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Planck_Functions.f90,v 3.2 2006/09/21 17:57:31 wd20pd Exp $
+! $Id$
 !
 ! $Date: 2006/09/21 17:57:31 $
 !
-! $Revision: 3.2 $
+! $Revision$
 !
 ! $Name:  $
 !
