@@ -46,9 +46,12 @@
 !
 ! Notes:
 ! ------
+! o The NCEP sensor Id is no longer used in CRTM and related codes, so
+!   it is being phased out. Eventually it will disappear from the
+!   SensorInfo data structure as well as this file.
+!
 ! o The WMO Sensor and Satellite ID numbers are taken from Common Code
-!   Table C-8 and C-5 respectively in the documentation at
-!     http://www.wmo.ch/web/ddbs/Code-tables.html
+!   Table C-8 and C-5 respectively.
 !
 ! o The AIRS noise estimate values in this file are simply the NEdT
 !   values from the channel properties file.
@@ -1199,6 +1202,30 @@
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
+  SSM/I        DMSP-08      ssmi_f08             1   708   905   241     7
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+  SSM/I        DMSP-10      ssmi_f10             1   710   905   243     7
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+  SSM/I        DMSP-11      ssmi_f11             1   711   905   244     7
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
   SSM/I        DMSP-13      ssmi_f13             1   713   905   246     7
     1    1      1.000000E+02
     2    1      1.000000E+02
