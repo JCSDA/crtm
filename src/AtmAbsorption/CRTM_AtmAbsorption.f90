@@ -795,7 +795,8 @@ CONTAINS
         ! -----------------------------
         ! Adjoints of the optical depth
         ! -----------------------------
-        Predictor_AD%dA(k,j) = (AAV%Chi(k,j) * AtmAbsorption_AD%Optical_Depth(k))
+        Predictor_AD%dA(k,j) = Predictor_AD%dA(k,j) + &
+                               (AAV%Chi(k,j) * AtmAbsorption_AD%Optical_Depth(k))
         Chi_AD = Predictor%dA(k,j) * AtmAbsorption_AD%Optical_Depth(k)
 
 
@@ -945,7 +946,8 @@ CONTAINS
         !         Alpha.( A - C2 )
         !
         ! ----------------------------------------------------------
-        Predictor_AD%aveA(k,j) =       A_Level_AD / &
+        Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &
+                                       A_Level_AD / &
         !          --------------------------------------------------------------
                    ( TC(n)%Alpha(j) * (Predictor%aveA(k,j) - TC(n)%Alpha_C2(j) ))
 
