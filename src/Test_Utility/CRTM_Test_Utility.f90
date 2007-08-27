@@ -117,9 +117,10 @@ MODULE CRTM_Test_Utility
 !       'hirs3_n17', &
 !       'ssmis_f16', &
 !       'imgr_g11 ' /)
-  INTEGER, PARAMETER :: MAX_NSENSORS=7
+  INTEGER, PARAMETER :: MAX_NSENSORS=8
   CHARACTER(*), PARAMETER, DIMENSION(MAX_NSENSORS) :: TEST_SENSORID=&
     (/ 'amsua_n17', &
+       'amsub_n17', &
        'hirs3_n17', &
        'ssmis_f16', &
        'imgr_g11 ', &
