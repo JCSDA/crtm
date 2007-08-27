@@ -45,7 +45,7 @@ PROGRAM Test_Forward
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id$'
-  CHARACTER(*), PARAMETER :: MESSAGE_LOG = 'Test.report'
+  CHARACTER(*), PARAMETER :: MESSAGE_LOG = '../Test.report'
 
 
   ! ---------
