@@ -16,7 +16,7 @@ LIBRARY_DIR = lib
 INCLUDE_DIR = include
 
 # The linkfile script
-LINKSCRIPT = linkFiles.rb
+LINKSCRIPT = linkfiles.rb
 #LINKSCRIPT = linkfiles
 
 # Source files to link
