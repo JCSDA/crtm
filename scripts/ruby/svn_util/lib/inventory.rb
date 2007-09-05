@@ -6,7 +6,6 @@ module Svn_Util
 
   class Inventory
     require 'fileutils'
-    require 'tempfile'
 
     EXCLUDE_NAMES = ["CVS"]
     RSYNC_EXCLUDE_NAMES = [".svn","CVS","*.o","*.mod"]
@@ -105,13 +104,15 @@ module Svn_Util
     # --------------------------
     def rsync_dirs(from, to)
       # Create a temporary exclude file 
-      exclude = Tempfile.new("exclude")
-      RSYNC_EXCLUDE_NAMES.each {|e| exclude << e}
+      exclude_file = Dir.getwd+"/exclude"
+      File.open(exclude_file,'w') do |f|
+        RSYNC_EXCLUDE_NAMES.each {|e| f.puts(e)}
+      end
+      # rsync the directories
       FileUtils.cd(from) do
-        cmd = "rsync -avz --delete --force --exclude-from=#{exclude.path} --exclude=#{@filename} . #{to}"
+        cmd = "rsync -avz --delete --force --exclude-from=#{exclude_file} --exclude=#{@filename} . #{to}"
         system(cmd)
       end
-      exclude.close
     end
     
   end
