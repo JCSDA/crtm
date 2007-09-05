@@ -2,8 +2,8 @@
 
 # == Synopsis
 #
-# svn_util.rb:: Script to update a working copy heirarchy from an unversioned
-#               heirarchy.
+# svn_util.rb:: Script to update a working copy hierarchy from an unversioned
+#               hierarchy.
 #
 # == Usage
 #
