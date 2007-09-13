@@ -113,7 +113,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 40
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 43
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_n05             ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -125,7 +125,8 @@ MODULE MW_SensorData_Define
     'ssmis_f16           ','amsua_aqua          ','hsb_aqua            ','amsre_aqua          ',&
     'amsua_n18           ','mhs_n18             ','windsat_coriolis    ','atms_c1             ',&
     'amsua_n19           ','mhs_n19             ','amsua_metop-a       ','mhs_metop-a         ',&
-    'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         '/)
+    'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         ',&
+    'ssmi_f08            ','ssmi_f10            ','ssmi_f11            '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &  ! NOAA-05 to -14 MSU (no NOAA-13)
@@ -142,7 +143,8 @@ MODULE MW_SensorData_Define
      210, 210, &                                     ! NOAA-N' AMSU-A and MHS (GUESS. NOT LISTED IN C-5)
        4,   4, &                                     ! MetOp-A AMSU-A and MHS
        3,   3, &                                     ! MetOp-B AMSU-A and MHS
-       5,   5 /)                                     ! MetOp-C AMSU-A and MHS
+       5,   5, &                                     ! MetOp-C AMSU-A and MHS
+     241, 243, 244 /)                                ! DMSP-08,-10,-11 SSM/I
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! NOAA-05 to -14 MSU (no NOAA-13)
@@ -159,7 +161,8 @@ MODULE MW_SensorData_Define
      570, 203, &                                     ! NOAA-N' AMSU-A and MHS
      570, 203, &                                     ! MetOp-A AMSU-A and MHS
      570, 203, &                                     ! MetOp-B AMSU-A and MHS
-     570, 203 /)                                     ! MetOp-C AMSU-A and MHS
+     570, 203, &                                     ! MetOp-C AMSU-A and MHS
+     905, 905, 905 /)                                ! DMSP-08,-10,-11 SSM/I
 
 
   !#----------------------------------------------------------------------------#
@@ -198,7 +201,8 @@ MODULE MW_SensorData_Define
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-N' AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-A AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
-       N_AMSUA_CHANNELS, N_MHS_CHANNELS /)                               ! MetOp-C AMSU-A and MHS
+       N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
+       N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS /)            ! DMSP-08,-10,-11 SSM/I
 
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/ (i,i=1,N_MSU_CHANNELS    ) /)
@@ -2049,7 +2053,7 @@ CONTAINS
         MW_SensorData%IF_Band           = AMSUB_N17_IF_BAND
 
 
-      CASE ('ssmi_f13','ssmi_f14','ssmi_f15')
+      CASE ('ssmi_f13','ssmi_f14','ssmi_f15','ssmi_f08','ssmi_f10','ssmi_f11')
         MW_SensorData%Sensor_Channel    = SSMI_SENSOR_CHANNEL
         MW_SensorData%Central_Frequency = SSMI_F0
         MW_SensorData%Polarization      = SSMI_POLARIZATION

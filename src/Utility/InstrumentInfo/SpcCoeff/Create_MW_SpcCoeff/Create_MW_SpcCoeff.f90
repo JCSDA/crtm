@@ -234,7 +234,7 @@ PROGRAM Create_MW_SpcCoeff
     END IF
 
     ! Modify GAtss for concatenation
-    MW_SensorData_History = '; MW_SensorData: '//TRIM(MW_SensorData_History)
+    MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
 
 
     ! Load antenna correction data if required
