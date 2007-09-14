@@ -51,7 +51,7 @@ PROGRAM SSU_SRF_ASCII2NC
   INTEGER,      PARAMETER :: N_SSU_CHANNELS = 3
   INTEGER,      PARAMETER :: N_SSU_SENSORS = 7
   CHARACTER(*), PARAMETER :: SENSOR_ID(N_SSU_SENSORS) = &
-    (/ 'ssu_n05             ', 'ssu_n06             ', &
+    (/ 'ssu_tirosn          ', 'ssu_n06             ', &
        'ssu_n07             ', 'ssu_n08             ', &
        'ssu_n09             ', 'ssu_n11             ', &
        'ssu_n14             ' /)
@@ -135,12 +135,12 @@ PROGRAM SSU_SRF_ASCII2NC
     
     ! Cycle loop if not an SSU sensor
     ! -------------------------------
-    IF ( .NOT. ANY(SENSOR_ID == SensorInfo%File_Prefix) ) CYCLE Sensor_Loop
+    IF ( .NOT. ANY(SENSOR_ID == SensorInfo%Sensor_Id) ) CYCLE Sensor_Loop
 
 
     ! Create filenames
     ! ----------------
-    ASCII_Filename = TRIM(SensorInfo%File_Prefix)//'.srf'
+    ASCII_Filename = TRIM(SensorInfo%Sensor_Id)//'.srf'
     NC_Filename    = TRIM(ASCII_Filename)//'.nc'
     
     
@@ -193,7 +193,7 @@ PROGRAM SSU_SRF_ASCII2NC
                                    SRF(i) )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message,'("Error allocating channel ",i0," SRF for ",a)' ) &
-                       i, TRIM(SensorInfo%File_Prefix)
+                       i, TRIM(SensorInfo%Sensor_Id)
         CALL Display_Message( PROGRAM_NAME, &
                               TRIM(Message), &
                               FAILURE )
@@ -221,11 +221,10 @@ PROGRAM SSU_SRF_ASCII2NC
     WRITE( *,'(5x,"Read ",i0," SRF data poionts")' ) n_Pts
 
     ! Copy over other SRF structure bits
-    SRF%Sensor_Name      = SensorInfo%Sensor_Name     
-    SRF%Platform_Name    = SensorInfo%Satellite_Name   
-    SRF%NCEP_Sensor_Id   = SensorInfo%NCEP_Sensor_Id  
+    SRF%Sensor_Name      = SensorInfo%Sensor_Name
+    SRF%Platform_Name    = SensorInfo%Satellite_Name
     SRF%WMO_Satellite_Id = SensorInfo%WMO_Satellite_Id
-    SRF%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id   
+    SRF%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id
     SRF%Begin_Frequency  = SRF(1)%Frequency(1)
     SRF%End_Frequency    = SRF(1)%Frequency(n_Pts)
     DO i = 2, N_SSU_CHANNELS
@@ -252,13 +251,12 @@ PROGRAM SSU_SRF_ASCII2NC
     ! Write the SRFs to the netCDF file
     ! ---------------------------------
     ! Create global attribute strings
-    Title   = 'SRFs for '//TRIM(SensorInfo%File_Prefix)
+    Title   = 'SRFs for '//TRIM(SensorInfo%Sensor_Id)
     WRITE( Comment,'("ASCII SRF data provided by Q.Liu. Cell pressures(hPa):",3(1x,es13.6))' ) &
                    Cell_Pressure
     ! Create the output netCDF file
     Error_Status = Create_SRF_netCDF( TRIM(NC_Filename), &
                                       SensorInfo%Sensor_Channel, &
-                                      NCEP_Sensor_ID  =SensorInfo%NCEP_Sensor_ID, &
                                       WMO_Satellite_ID=SensorInfo%WMO_Satellite_ID, &
                                       WMO_Sensor_ID   =SensorInfo%WMO_Sensor_ID, &
                                       Title           =TRIM(Title), &
@@ -292,9 +290,9 @@ PROGRAM SSU_SRF_ASCII2NC
     Error_Status = Destroy_SRF( SRF )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message,'("Error allocating channel ",i0," SRF for ",a)' ) &
-                     i, TRIM(SensorInfo%File_Prefix)
+                     i, TRIM(SensorInfo%Sensor_Id)
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying SRFs for '//TRIM(SensorInfo%File_Prefix), &
+                            'Error destroying SRFs for '//TRIM(SensorInfo%Sensor_Id), &
                             FAILURE )
       STOP
     END IF
