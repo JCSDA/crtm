@@ -116,7 +116,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_VALID_SENSORS = 43
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
-  (/'msu_n05             ','msu_n06             ','msu_n07             ','msu_n08             ',&
+  (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
     'msu_n09             ','msu_n10             ','msu_n11             ','msu_n12             ',&
     'msu_n14             ','amsua_n15           ','amsua_n16           ','amsua_n17           ',&
     'amsub_n15           ','amsub_n16           ','amsub_n17           ','ssmi_f13            ',&
@@ -129,7 +129,7 @@ MODULE MW_SensorData_Define
     'ssmi_f08            ','ssmi_f10            ','ssmi_f11            '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
-  (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &  ! NOAA-05 to -14 MSU (no NOAA-13)
+  (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
      206, 207, 208, &                                ! NOAA-15 to -17 AMSU-A
      206, 207, 208, &                                ! NOAA-15 to -17 AMSU-B
      246, 247, 248, &                                ! DMSP-13 to -15 SSM/I
@@ -147,7 +147,7 @@ MODULE MW_SensorData_Define
      241, 243, 244 /)                                ! DMSP-08,-10,-11 SSM/I
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
-  (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! NOAA-05 to -14 MSU (no NOAA-13)
+  (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
      570, 570, 570, &                                ! NOAA-15 to -17 AMSU-A
      574, 574, 574, &                                ! NOAA-15 to -17 AMSU-B
      905, 905, 905, &                                ! DMSP-13 to -15 SSM/I
@@ -185,7 +185,7 @@ MODULE MW_SensorData_Define
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
-    (/ N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! NOAA-05 to -08 MSU
+    (/ N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! TIROS-N to NOAA-08 MSU
        N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! NOAA-09 to -12 MSU
        N_MSU_CHANNELS, &                                                 ! NOAA-14 MSU (no NOAA-13)
        N_AMSUA_CHANNELS, N_AMSUA_CHANNELS, N_AMSUA_CHANNELS, &           ! NOAA-15 to -17 AMSU-A
@@ -270,8 +270,8 @@ MODULE MW_SensorData_Define
   !                           Sensor frequency data
   !#----------------------------------------------------------------------------#
 
-  ! NOAA-5->14 MSU
-  ! --------------
+  ! TIROS-N->NOAA-14 MSU
+  ! --------------------
   ! Central frequency
   REAL(fp), PARAMETER :: MSU_F0(N_MSU_CHANNELS) = &
     (/ 50.35_fp, 53.79_fp, 55.02_fp, 58.01_fp /)
@@ -1999,7 +1999,7 @@ CONTAINS
     ! --------------------------------------------------
     Load_Data: SELECT CASE ( TRIM(MW_SensorData%Sensor_ID) )
 
-      CASE ('msu_n05','msu_n06','msu_n07','msu_n08','msu_n09',&
+      CASE ('msu_tirosn','msu_n06','msu_n07','msu_n08','msu_n09',&
             'msu_n10','msu_n11','msu_n12','msu_n14'           )
         MW_SensorData%Sensor_Channel    = MSU_SENSOR_CHANNEL
         MW_SensorData%Central_Frequency = MSU_F0
