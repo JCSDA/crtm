@@ -75,7 +75,7 @@
 !   side will be replaced with a single "generic" entry.
 !
 !-----------------------------------------------------------------------------------
-  HIRS/2       TIROS-N      hirs2_n05            0     5   605   708    19
+  HIRS/2       TIROS-N      hirs2_tirosn         0     5   605   708    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -95,16 +95,16 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MSU          TIROS-N      msu_n05              1   205   623   708     4
+  MSU          TIROS-N      msu_tirosn           1   205   623   708     4
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          TIROS-N      ssu_n05              0   305   627   708     3
+  SSU          TIROS-N      ssu_tirosn           0   305   627   708     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      TIROS-N      avhrr2_n05           0   605   590   708     2
+  AVHRR/2      TIROS-N      avhrr2_tirosn        0   605   590   708     2
     3    1      1.000000E+02
     4    1      1.000000E+02
   HIRS/2       NOAA-06      hirs2_n06            0     6   605   706    19
