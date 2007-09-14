@@ -18,6 +18,10 @@ SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
+            Search_Utility.f90 \
+            Linear_Interpolation.f90 \
+            Polynomial_Interpolation.f90 \
+            Spline_Interpolation.f90 \
             Interpolate_Utility.f90 \
             Integrate_Utility.f90 \
             netCDF_Utility.f90 \
