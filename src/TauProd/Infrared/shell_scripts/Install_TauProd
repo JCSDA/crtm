@@ -224,7 +224,7 @@ for PROFILE_SET in ${PROFILE_SET_TAGS}; do
   
   # Link in SensorInfo for this profile set
   # ---------------------------------------
-  ln -s ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIR}/SensorInfo .
+  ln -sf ${HOME_ROOT_DIR}/${TAUPROD_ROOT_DIR}/SensorInfo .
   if [ $? -ne 0 ]; then
     echo "${SCRIPT_NAME}: Error linking SensorInfo into ${PROFILE_SET} directory. Continuing..."
   fi
