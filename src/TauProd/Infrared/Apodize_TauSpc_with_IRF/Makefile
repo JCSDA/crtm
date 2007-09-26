@@ -30,7 +30,9 @@ SRC_FILES = Type_Kinds.f90 \
             FFT_Spectral_Utility.f90 \
             IASI_Define.f90 \
             TauProfile_Define.f90 \
-            TauProfile_netCDF_IO.f90
+            TauProfile_netCDF_IO.f90 \
+            Tau_Production_Parameters.f90 \
+            Tau_Production_Utility.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

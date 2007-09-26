@@ -51,10 +51,10 @@ PROGRAM LBL2NC
   '$Id$'
   
   INTEGER,      PARAMETER :: N_DIRECTIONS = 2
-  INTEGER,      PARAMETER :: DOWNWELLING = 0
   INTEGER,      PARAMETER :: UPWELLING   = 1
-  CHARACTER(*), PARAMETER :: DIRECTION_NAME(0:N_DIRECTIONS-1) = &
-    (/ 'downwelling', 'upwelling  ' /)
+  INTEGER,      PARAMETER :: DOWNWELLING = 2
+  CHARACTER(*), PARAMETER :: DIRECTION_NAME(N_DIRECTIONS) = &
+    (/ 'upwelling  ','downwelling' /)
   REAL(fp)    , PARAMETER :: ONE = 1.0_fp
 
   ! ---------
@@ -117,12 +117,12 @@ PROGRAM LBL2NC
   Id_Tag = ADJUSTL(Id_Tag)
 
   WRITE(*,'(/5x,"Calculation direction")')
-  DO i = 0, N_DIRECTIONS-1
+  DO i = 1, N_DIRECTIONS
     WRITE(*,'(7x,i1,") ", a)') i, TRIM(DIRECTION_NAME(i))
   END DO
   WRITE(*,FMT='( 5x,"Enter choice: ")',ADVANCE='NO')
   READ(*,*) iDirection
-  iDirection = MIN(MAX(iDirection,DOWNWELLING),UPWELLING)
+  iDirection = MIN(MAX(iDirection,UPWELLING),DOWNWELLING)
   CALL Display_Message( PROGRAM_NAME, &
                         TRIM(DIRECTION_NAME(iDirection))//' direction selected.', &
                         INFORMATION )

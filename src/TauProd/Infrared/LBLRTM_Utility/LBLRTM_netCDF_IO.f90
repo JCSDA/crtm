@@ -62,7 +62,7 @@ MODULE LBLRTM_netCDF_IO
   ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
   CHARACTER(*), PARAMETER :: DIRECTION_LONGNAME          = &
-    'Direction flag for transmittance calculation. Downwelling=0, Upwelling=1'
+    'Direction flag for transmittance calculation. Upwelling=1, Downwelling=2'
   CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_LONGNAME    = &
     'Begin frequency of the transmittance data'
   CHARACTER(*), PARAMETER :: END_FREQUENCY_LONGNAME      = &
