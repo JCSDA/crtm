@@ -17,6 +17,7 @@ EXE_FILE = LBL2NC
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
+            Compare_Float_Numbers.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
@@ -27,7 +28,9 @@ SRC_FILES = Type_Kinds.f90 \
             LBLRTM_Phdr_IO.f90 \
             LBLRTM_Panel_IO.f90 \
             LBLRTM_Layer_IO.f90 \
-            LBLRTM_netCDF_IO.f90
+            LBLRTM_netCDF_IO.f90 \
+            Tau_Production_Parameters.f90 \
+            Tau_Production_Utility.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

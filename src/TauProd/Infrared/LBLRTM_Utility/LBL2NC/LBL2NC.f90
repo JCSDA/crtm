@@ -21,24 +21,25 @@ PROGRAM LBL2NC
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Type_Kinds       , ONLY: fp
-  USE File_Utility     , ONLY: File_Exists
-  USE Message_Handler  , ONLY: SUCCESS, FAILURE, INFORMATION, &
-                               Display_Message, Program_Message
-  USE LBLRTM_Parameters, ONLY: LBLRTM_N_PANEL_TYPES, &
-                               LBLRTM_N_PANELS, &
-                               LBLRTM_PANEL_TYPE, &
-                               LBLRTM_PANEL_TYPE_NAME, &
-                               LBLRTM_SINGLE_PANEL_TYPE, &
-                               LBLRTM_FILE_PTR_EOF
-  USE LBLRTM_Utility   , ONLY: Open_LBLRTM, Compute_n_Points
-  USE LBLRTM_Fhdr_IO   , ONLY: LBLRTM_Fhdr_type, &
-                               Read_LBLRTM_Fhdr
-  USE LBLRTM_Layer_IO  , ONLY: LBLRTM_Layer_type, &
-                               Read_LBLRTM_Layer, &
-                               Destroy_LBLRTM_Layer
-  USE LBLRTM_netCDF_IO , ONLY: Create_LBLRTM_netCDF, &
-                               Write_LBLRTM_netCDF
+  USE Type_Kinds            , ONLY: fp
+  USE File_Utility          , ONLY: File_Exists
+  USE Message_Handler       , ONLY: SUCCESS, FAILURE, INFORMATION, &
+                                    Display_Message, Program_Message
+  USE LBLRTM_Parameters     , ONLY: LBLRTM_N_PANEL_TYPES, &
+                                    LBLRTM_N_PANELS, &
+                                    LBLRTM_PANEL_TYPE, &
+                                    LBLRTM_PANEL_TYPE_NAME, &
+                                    LBLRTM_SINGLE_PANEL_TYPE, &
+                                    LBLRTM_FILE_PTR_EOF
+  USE LBLRTM_Utility        , ONLY: Open_LBLRTM, Compute_n_Points
+  USE LBLRTM_Fhdr_IO        , ONLY: LBLRTM_Fhdr_type, &
+                                    Read_LBLRTM_Fhdr
+  USE LBLRTM_Layer_IO       , ONLY: LBLRTM_Layer_type, &
+                                    Read_LBLRTM_Layer, &
+                                    Destroy_LBLRTM_Layer
+  USE LBLRTM_netCDF_IO      , ONLY: Create_LBLRTM_netCDF, &
+                                    Write_LBLRTM_netCDF
+  USE Tau_Production_Utility, ONLY: Create_Signal_File
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -237,5 +238,10 @@ PROGRAM LBL2NC
   END DO Layer_Loop
 
   CLOSE( LBLRTM_FileID )
+
+
+  ! Create a signal file indicating successful completion
+  ! -----------------------------------------------------
+  Error_Status = Create_Signal_File( TRIM(NC_Filename) )
 
 END PROGRAM LBL2NC
