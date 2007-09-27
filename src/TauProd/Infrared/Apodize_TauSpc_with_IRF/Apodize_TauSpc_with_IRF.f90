@@ -66,8 +66,7 @@ PROGRAM Apodize_TauSpc_with_IRF
                                        UPWELLING_DIRECTION  , &
                                        DOWNWELLING_DIRECTION, &
                                        DIRECTION_NAME
-
-  USE Tau_Production_Utility
+  USE Tau_Production_Utility   , ONLY: Create_Signal_File
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -143,6 +142,46 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! --------------
   ! Get user input
   ! --------------
+  ! The netCDF LBL file
+  ! -------------------
+  WRITE(*, FMT='(/5x,"Enter the netCDF LBL filename: ")', ADVANCE='NO')
+  READ(*,'(a)') LBL_Filename
+  LBL_Filename = ADJUSTL(LBL_Filename)
+
+  ! Inquire the file
+  Error_Status = Inquire_LBLRTM_netCDF( LBL_Filename                     , &
+                                        n_Frequencies     =n_spc         , &
+                                        n_Layers          =n_lbl_layers  , &
+                                        Direction         =dirn          , &
+                                        Begin_Frequency   =bf            , &
+                                        End_Frequency     =ef            , &
+                                        Frequency_Interval=df            , &
+                                        History           =LBLRTM_History, &
+                                        Comment           =LBLRTM_Comment, &
+                                        Id_Tag            =LBLRTM_Id_Tag   )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error inquiring '//TRIM(LBL_Filename), &
+                          Error_Status )
+    STOP
+  END IF
+  IF ( n_lbl_layers /= N_LAYERS ) THEN
+    WRITE(Message,'(a,"LBL file n_layers, ",i0,", different from parameter definition, ",i0)') &
+                  TRIM(LBL_Filename), n_lbl_layers, N_LAYERS
+    CALL Display_Message( PROGRAM_NAME, &
+                          TRIM(Message), &
+                          Error_Status )
+    STOP
+  END IF
+  WRITE(*,'(/5x,"nF = ",i0,&
+           &/5x,"nL = ",i0,&
+           &/5x,"dirn = ",i0,&
+           &/5x,"bf   = ",es13.6," cm^-1",&
+           &/5x,"ef   = ",es13.6," cm^-1",&
+           &/5x,"df   = ",es13.6," cm^-1")') &
+           n_spc, n_lbl_layers, dirn, bf, ef, df
+
+  
   ! The profile set being processed
   ! -------------------------------
   WRITE(*, FMT='(/5x,"Select the DEPENDENT PROFILE SET")')
@@ -270,51 +309,6 @@ PROGRAM Apodize_TauSpc_with_IRF
   WRITE(cBand,'("band",i0)') iBand
  
  
-  ! --------------------------
-  ! Construct the LBL filename
-  !  <direction tag>_tau.<profile tag>_<angle tag>_<molset tag>.<sensor tag>.<band tag>.LBL.nc
-  ! --------------------------
-  LBL_Filename = TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
-                 TRIM(cProfile)//'_'//TRIM(cAngle)//'_'//TRIM(cMolecule)//'.'//&
-                 SENSOR_ID//'.'//TRIM(cBand)//'.LBL.nc'
-
-  
-  ! ----------------------------------
-  ! Inquire the LBLRTM netCDF datafile
-  ! ----------------------------------
-  Error_Status = Inquire_LBLRTM_netCDF( LBL_Filename                     , &
-                                        n_Frequencies     =n_spc         , &
-                                        n_Layers          =n_lbl_layers  , &
-                                        Direction         =dirn          , &
-                                        Begin_Frequency   =bf            , &
-                                        End_Frequency     =ef            , &
-                                        Frequency_Interval=df            , &
-                                        History           =LBLRTM_History, &
-                                        Comment           =LBLRTM_Comment, &
-                                        Id_Tag            =LBLRTM_Id_Tag   )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error inquiring '//TRIM(LBL_Filename), &
-                          Error_Status )
-    STOP
-  END IF
-  IF ( n_lbl_layers /= N_LAYERS ) THEN
-    WRITE(Message,'(a,"LBL file n_layers, ",i0,", different from parameter definition, ",i0)') &
-                  TRIM(LBL_Filename), n_lbl_layers, N_LAYERS
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          Error_Status )
-    STOP
-  END IF
-  WRITE(*,'(/5x,"nF = ",i0,&
-           &/5x,"nL = ",i0,&
-           &/5x,"dirn = ",i0,&
-           &/5x,"bf   = ",es13.6," cm^-1",&
-           &/5x,"ef   = ",es13.6," cm^-1",&
-           &/5x,"df   = ",es13.6," cm^-1")') &
-           n_spc, n_lbl_layers, dirn, bf, ef, df
-
-
   ! -------------------------------------------
   ! Compute all the spectral length information
   ! -------------------------------------------
@@ -549,14 +543,17 @@ PROGRAM Apodize_TauSpc_with_IRF
   
     ! Assign values for different TauProfiles
     IF ( i == 1 ) THEN
-      TauProfile_Filename = TRIM(realTau%Sensor_ID)//'.'//TRIM(cBand)//'.REAL.TauProfile.nc'
+      TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
+                            TRIM(realTau%Sensor_ID)//'.REAL.TauProfile.nc'
       Comment = 'REAL part of result'
       TauProfile => realTau
     ELSE
-      TauProfile_Filename = TRIM(realTau%Sensor_ID)//'.'//TRIM(cBand)//'.IMAG.TauProfile.nc'
+      TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
+                            TRIM(imagTau%Sensor_ID)//'.IMAG.TauProfile.nc'
       Comment = 'IMAGINARY part of result'
       TauProfile => imagTau
     END IF
+    IF ( LEN_TRIM(LBLRTM_Comment) > 0 ) Comment = TRIM(Comment)//'; '//TRIM(LBLRTM_Comment)
     
     ! Create the output file
     Error_Status = Create_TauProfile_netCDF( TauProfile_Filename        , &  ! Input
@@ -569,9 +566,9 @@ PROGRAM Apodize_TauSpc_with_IRF
                                              ID_Tag      = TRIM(LBLRTM_ID_Tag)  , &  ! Optional input
                                              Title       = 'IASI '//TRIM(cBand)//&
                                                            ' transmittance profiles', &  ! Optional input
-                                             History     = TRIM(LBLRTM_History)//'; '//  &
-                                                           PROGRAM_RCS_ID       , &  ! Optional input
-                                             Comment     = TRIM(Comment)          )  ! Optional input
+                                             History     = PROGRAM_RCS_ID//'; '//&
+                                                           TRIM(LBLRTM_History), &  ! Optional input
+                                             Comment     = TRIM(Comment)         )  ! Optional input
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Creation of output file '//TRIM(TauProfile_Filename)//' failed', &
@@ -592,6 +589,10 @@ PROGRAM Apodize_TauSpc_with_IRF
     ! Nullify the pointer
     NULLIFY(TauProfile)
     
+    ! Create a signal file indicating successful completion
+    ! -----------------------------------------------------
+    Error_Status = Create_Signal_File( TRIM(TauProfile_Filename) )
+
   END DO
   
 
