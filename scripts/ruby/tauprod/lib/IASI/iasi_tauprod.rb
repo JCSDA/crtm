@@ -9,7 +9,7 @@ LL_ACCOUNT   = { :ccs=>"GDAS-T2O", :haze=>"JCSDA001-RES"}
 LL_TIMELIMIT = "03:00:00"
 LL_RESOURCES = "ConsumableCpus(1) ConsumableMemory(500)"
 
-SUBMIT_INCREMENT = 60*60*4  # seconds
+SUBMIT_INCREMENT = 60*60*3  # seconds
 
 TAPE5_DIR = "./TAPE5_files"
 PROFILE_SET_ID = "UMBC"
@@ -167,6 +167,7 @@ begin
           # @ account_no = #{LL_ACCOUNT[:ccs]}
           # @ startdate = #{time.strftime("%m/%d/%Y %H:%M")}
           # @ queue
+          cd #{root_dir}/#{pdir}
           EOF
 
 
@@ -253,9 +254,6 @@ begin
             DOWN_INSTRUMENT_REAL_FILE="${DOWN_LBL_FILE}.${SENSOR_ID}.REAL.TauProfile.nc"
             DOWN_INSTRUMENT_IMAG_FILE="${DOWN_LBL_FILE}.${SENSOR_ID}.IMAG.TauProfile.nc"
                     
-            # Change to required directory
-            cd #{root_dir}/#{pdir}
-            
             # Add begin time stamp to error log file
             echo >> ${RESULTS_DIR}/${LOG_FILE}
             echo "--------------------------" >> ${RESULTS_DIR}/${LOG_FILE}
@@ -274,8 +272,10 @@ begin
             # Remove the generated TAPE5 file
             mv ${TAPE5_FILE} ${RESULTS_DIR} 2>>${RESULTS_DIR}/${LOG_FILE}
 
-            # Rename or remove the data files
+            # Enter the results directory
             cd ${RESULTS_DIR}
+
+            # Rename or remove the data files
             if [ -f ${UP_TAPE_FILE} ]; then
               mv ${UP_TAPE_FILE} ${UP_LBL_FILE} 2>>${LOG_FILE}
             else
@@ -378,7 +378,7 @@ begin
             echo "Processing run finished at: \`date\`" >> ${LOG_FILE}
 
             # Remove the script
-            cd #{root_dir}/#{pdir}
+            cd ..
             rm -f ${SCRIPT_NAME} 2>>${RESULTS_DIR}/${LOG_FILE}
            
             EOF
@@ -388,7 +388,7 @@ begin
           File.chmod(0755, script_file)
 
           # Add the current script to the Job Control File
-          jcf.puts("#{script_file}")
+          jcf.puts(File.basename(script_file))
 
           # Increment job counter
           n_jobs += 1
@@ -398,7 +398,7 @@ begin
         # Submit the job command file
         jcf.close
         cmd = "#{LL_SUBMIT} #{jcf_file}"
-#        system(cmd)
+        system(cmd)
 
       end # profile loop
 
