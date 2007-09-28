@@ -5,12 +5,13 @@
 # ------------
 LL_SUBMIT    = "llsubmit"
 LL_QUEUE     = "dev"
-LL_ACCOUNT   = { :ccs=>"GDAS-T2O", :haze=>"JCSDA"}
-LL_TIMELIMIT = "02:00:00"
+LL_ACCOUNT   = { :ccs=>"GDAS-T2O", :haze=>"JCSDA001-RES"}
+LL_TIMELIMIT = "03:00:00"
 LL_RESOURCES = "ConsumableCpus(1) ConsumableMemory(500)"
 
-#TAPE5_DIR = "./TAPE5"
-TAPE5_DIR = "/usr1/wd20pd/src/CRTM/trunk/TauProd/Infrared/Create_LBLRTM_Input_Files/TAPE5_files/UMBC_fixed"
+SUBMIT_INCREMENT = 60*60*4  # seconds
+
+TAPE5_DIR = "./TAPE5_files"
 PROFILE_SET_ID = "UMBC"
 PROFILE_SET = 1
 TAPE3_ID = "hitran2000_aer"
@@ -25,40 +26,42 @@ SENSOR_ID = "iasi_metopa"
 # Literal constants
 ZERO=0.0; ONE=1.0
 
-# Band information
-BAND_INFO = { 1 => {:f1 =>  645.0, :f2 => 1209.75, :npts => 2260},
-              2 => {:f1 => 1210.0, :f2 => 1999.75, :npts => 3160},
-              3 => {:f1 => 2000.0, :f2 => 2760.00, :npts => 3041}}
+# Band information. The SCNMRG frequencies are those values that,
+# for a point spacing of 0.001cm^-1, produce a number of points
+# that has only prime factors of 2, 3, and 5.
+BAND_INFO = { 1 => {:f1_scnmrg =>  605.0, :f2_scnmrg => 1253.00},
+              2 => {:f1_scnmrg => 1170.0, :f2_scnmrg => 2107.50},
+              3 => {:f1_scnmrg => 1960.0, :f2_scnmrg => 2803.75}}
 bands = BAND_INFO.keys.sort
-    
+
 # Molecule information
 MOL_INFO=Hash.new
 (1..7).to_a.collect {|m| MOL_INFO[m] = {:name  => "mol#{m}",
-                                        :t3tag => ".mol#{m}",
+                                        :t3tag => "mol#{m}",
                                         :cont  => [ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO]}}
 MOL_INFO[8]  = {:name  => "all_nocontinua",
-                :t3tag => "",
+                :t3tag => "7mol",
                 :cont  => [ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO]}
 MOL_INFO[9]  = {:name  => "continua_only",
-                :t3tag => ".nomol",
+                :t3tag => "nomol",
                 :cont  => [ONE,ONE,ONE,ONE,ONE,ONE,ONE]}
 MOL_INFO[10] = {:name  => "all_withcontinua",
-                :t3tag => "",
+                :t3tag => "7mol",
                 :cont  => [ONE,ONE,ONE,ONE,ONE,ONE,ONE]}
 MOL_INFO[11] = {:name  => "wvo",
-                :t3tag => ".wvo",
+                :t3tag => "wvo",
                 :cont  => [ONE,ONE,ZERO,ONE,ZERO,ZERO,ZERO]}
 MOL_INFO[12] = {:name  => "wet",
-                :t3tag => ".mol1",
+                :t3tag => "mol1",
                 :cont  => [ONE,ONE,ZERO,ZERO,ZERO,ZERO,ZERO]}
 MOL_INFO[13] = {:name  => "dry",
-                :t3tag => ".dry",
+                :t3tag => "dry",
                 :cont  => [ZERO,ZERO,ONE,ZERO,ONE,ONE,ONE]}
 MOL_INFO[14] = {:name  => "ozo",
-                :t3tag => ".mol3",
+                :t3tag => "mol3",
                 :cont  => [ZERO,ZERO,ZERO,ONE,ZERO,ZERO,ZERO]}
 MOL_INFO[15] = {:name  =>"wco",
-                :t3tag =>".nomol",
+                :t3tag =>"nomol",
                 :cont  =>[ONE,ONE,ZERO,ZERO,ZERO,ZERO,ZERO]}
 molids = [1, 10, 11, 12, 13, 14, 15]
                 
@@ -96,6 +99,11 @@ root_dir = Dir.pwd
 
 # Begin the error handling block
 begin
+
+  # Get the initial submit time
+  # ---------------------------
+  dtime = 60*5
+  time  = Time.now + dtime
   
   # Begin the band loop
   # -------------------
@@ -104,13 +112,13 @@ begin
     bname = "band%.1d" % b
     bdir = bname
     cmd = "mkdir #{bdir}"
-#    system(cmd) unless File.directory?(bdir)
+    system(cmd) unless File.directory?(bdir)
     
     # Assign the frequency parameters for this band
-    f1_lbl = binfo[:f1] - 1.0   # Begin frequency for LBL calcs
-    f2_lbl = binfo[:f2] + 1.0   # End frequency for LBL calcs
-    f1_scnmrg = binfo[:f1]      # Begin frequency for SCNMRG
-    f2_scnmrg = binfo[:f2]      # End frequency for SCNMRG
+    f1_scnmrg = binfo[:f1_scnmrg]      # Begin frequency for SCNMRG
+    f2_scnmrg = binfo[:f2_scnmrg]      # End frequency for SCNMRG
+    f1_lbl = f1_scnmrg - 1.0           # Begin frequency for LBL calcs
+    f2_lbl = f2_scnmrg + 1.0           # End frequency for LBL calcs
     
 
     # Begin the molecule loop
@@ -120,33 +128,14 @@ begin
       mname = minfo[:name]
       mdir = File.join(bdir,mname)
       cmd = "mkdir #{mdir}"
-#      system(cmd) unless File.directory?(mdir)
+      system(cmd) unless File.directory?(mdir)
       
       # Specify the continua
       continua = "%3.1f "*minfo[:cont].size % minfo[:cont]
     
       # Construct the tape3 filename
-      t3file = "tape3#{minfo[:t3tag]}.#{TAPE3_ID}"
+      t3file = "tape3.#{minfo[:t3tag]}.#{TAPE3_ID}"
       
-      # Create a Job Control File for this band/molid combination
-      n_jobs = 0
-      jcf_file = "#{bname}_#{mname}.jcf"
-      jcf = File.open(jcf_file,"w")
-      jcf.puts(strip_output(<<-EOF))
-        #!/bin/sh
-        #
-        # Job step for: #{bname}_#{mname}
-        # @ job_name = #{bname}_#{mname}
-        # @ output = #{bname}_#{mname}.out
-        # @ error = #{bname}_#{mname}.err
-        # @ class = #{LL_QUEUE}
-        # @ group = #{LL_QUEUE}
-        # @ wall_clock_limit = #{LL_TIMELIMIT}
-        # @ resources = #{LL_RESOURCES}
-        # @ account_no = #{LL_ACCOUNT[:ccs]}
-        # @ queue
-        EOF
-
       
       # Begin the profile loop
       # ----------------------
@@ -154,12 +143,33 @@ begin
         pname = "profile%.2d"%p
         pdir = File.join(mdir,pname)
         cmd = "mkdir #{pdir}"
-#        system(cmd) unless File.directory?(pdir)
+        system(cmd) unless File.directory?(pdir)
       
         # Construct the generic TAPE5 filename 
         gt5file="#{TAPE5_DIR}/TAPE5.#{PROFILE_SET_ID}_#{pname}"
         
         
+        # Create a Job Control File for this band/molid combination
+        n_jobs = 0
+        jcf_file = "#{pdir}/#{bname}_#{mname}_#{pname}.jcf"
+        jcf = File.open(jcf_file,"w")
+        jcf.puts(strip_output(<<-EOF))
+          #!/bin/sh
+          #
+          # Job step for: #{bname}_#{mname}_#{pname}
+          # @ job_name = #{bname}_#{mname}_#{pname}
+          # @ output = #{bname}_#{mname}_#{pname}.out
+          # @ error = #{bname}_#{mname}_#{pname}.err
+          # @ class = #{LL_QUEUE}
+          # @ group = #{LL_QUEUE}
+          # @ wall_clock_limit = #{LL_TIMELIMIT}
+          # @ resources = #{LL_RESOURCES}
+          # @ account_no = #{LL_ACCOUNT[:ccs]}
+          # @ startdate = #{time.strftime("%m/%d/%Y %H:%M")}
+          # @ queue
+          EOF
+
+
         # Begin the angle loop
         # --------------------
         angles.each do |a|
@@ -167,7 +177,7 @@ begin
           aname = "angle%.1d"%a
           adir = File.join(pdir,aname)
           cmd = "mkdir #{adir}"
-#          system(cmd) unless File.directory?(adir)
+          system(cmd) unless File.directory?(adir)
           
           # Define an id tag for filenames, and an attribute for netCDF files
           id_tag = adir.gsub(/\//,"_")
@@ -199,12 +209,12 @@ begin
           end
           # Write the new tape5 file
           t5file = "tape5.#{id_tag}.rdk"
-          File.open(t5file,"w") {|f| f.puts(t5)}
+          File.open("#{pdir}/#{t5file}","w") {|f| f.puts(t5)}
 
           
           # Write the schell script file
           # ----------------------------
-          script_file = "#{id_tag}.sh"
+          script_file = "#{pdir}/#{id_tag}.sh"
           open(script_file,"w") {|sf| sf.puts(strip_output(<<-EOF))
             #!/bin/sh
             # LBLRTM transmittance production run script
@@ -216,7 +226,7 @@ begin
             # File and directory names
             SCRIPT_NAME=$(basename $0)
             
-            RESULTS_DIR="#{adir}"
+            RESULTS_DIR="#{aname}"
             LOG_FILE="Error.Log"
             
             TAPE3_FILE="#{t3file}"
@@ -244,7 +254,7 @@ begin
             DOWN_INSTRUMENT_IMAG_FILE="${DOWN_LBL_FILE}.${SENSOR_ID}.IMAG.TauProfile.nc"
                     
             # Change to required directory
-            cd #{root_dir}
+            cd #{root_dir}/#{pdir}
             
             # Add begin time stamp to error log file
             echo >> ${RESULTS_DIR}/${LOG_FILE}
@@ -288,9 +298,10 @@ begin
             # Convert the LBLRTM files to netCDF
             #
             # Upwelling
-            hpmcount LBL2NC << NoMoreInput
+            LBL2NC << NoMoreInput
             ${UP_LBL_FILE}
-            ${ID_ATTRIBUTE} Transmittance production run for ${PROFILE_SET_ID} profile set. Upwelling (Layer->TOA) transmittance. ${LBLRTM_HITRAN_VERSION}
+            ${ID_ATTRIBUTE} Transmittance production run for ${PROFILE_SET_ID} profile set.
+            Upwelling (Layer->TOA) transmittance. ${LBLRTM_HITRAN_VERSION}
             ${PROFILE_SET_ID}
             #{UPDIRN}
             #{NPANELS}
@@ -303,9 +314,10 @@ begin
               exit 1
             fi
             # Downwelling
-            hpmcount LBLRTM_to_netCDF << NoMoreInput
+            LBL2NC << NoMoreInput
             ${DOWN_LBL_FILE}
-            ${ID_ATTRIBUTE} Transmittance production run for ${PROFILE_SET_ID} profile set. Downwelling (Layer->SFC) transmittance. ${LBLRTM_HITRAN_VERSION}
+            ${ID_ATTRIBUTE} Transmittance production run for ${PROFILE_SET_ID} profile set.
+            Downwelling (Layer->SFC) transmittance. ${LBLRTM_HITRAN_VERSION}
             ${PROFILE_SET_ID}
             #{DNDIRN}
             #{NPANELS}
@@ -322,7 +334,7 @@ begin
             # Apply the instrument apodisation
             #
             # Upwelling
-            hpmcount Apodize_TauSpc_with_IRF << NoMoreInput
+            Apodize_TauSpc_with_IRF << NoMoreInput
             ${UP_NC_FILE}
             #{PROFILE_SET}
             #{m}
@@ -340,10 +352,10 @@ begin
                 echo "${SCRIPT_NAME}:${FILE} creation failed" >> ${LOG_FILE}
                 exit 1
               fi
-            fi
+            done
             # Downwelling
-            hpmcount Apodize_TauSpc_with_IRF << NoMoreInput
-            ${DOWN_LBL_FILE}
+            Apodize_TauSpc_with_IRF << NoMoreInput
+            ${DOWN_NC_FILE}
             #{PROFILE_SET}
             #{m}
             #{p}
@@ -354,19 +366,19 @@ begin
             sleep 10
             for TYPE in ${COMPLEX_TYPE}; do
               FILE="${DOWN_LBL_FILE}.${SENSOR_ID}.${TYPE}.TauProfile.nc"
-              if [ ! -f ${FILE}.signal ]; then
+              if [ -f ${FILE}.signal ]; then
                 rm -f ${DOWN_NC_FILE} 2>>${LOG_FILE}
               else
                 echo "${SCRIPT_NAME}:${FILE} creation failed" >> ${LOG_FILE}
                 exit 1
               fi
-            fi
+            done
             
             # Add end time stamp to error log file
             echo "Processing run finished at: \`date\`" >> ${LOG_FILE}
 
             # Remove the script
-            cd #{root_dir}
+            cd #{root_dir}/#{pdir}
             rm -f ${SCRIPT_NAME} 2>>${RESULTS_DIR}/${LOG_FILE}
            
             EOF
@@ -382,13 +394,18 @@ begin
           n_jobs += 1
           
         end # angle loop
-      end # profile loop
       
-      # Submit the job command file
-      jcf.close
-      puts("  Number of jobs in #{jcf_file}: #{n_jobs}")
-      cmd = "#{LL_SUBMIT} #{jcf_file}"
-#      system(cmd)
+        # Submit the job command file
+        jcf.close
+        cmd = "#{LL_SUBMIT} #{jcf_file}"
+#        system(cmd)
+
+      end # profile loop
+
+      # Increment the submit time
+      time = time + SUBMIT_INCREMENT
+
+      puts("  Completed submission of #{bname},#{mname} jobs.")
 
     end # molecule loop
   end # band loop                
