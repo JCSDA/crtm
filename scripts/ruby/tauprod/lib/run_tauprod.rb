@@ -2,11 +2,11 @@
 #
 # == Synopsis
 #
-# iasi_tauprod.rb::  Generate and submit the IASI TauProd processing scripts.
+# run_tauprod.rb::  Generate and submit the IASI TauProd processing scripts.
 #
 # == Usage
 #
-# iasi_tauprod.rb [OPTIONS]
+# run_tauprod.rb [OPTIONS]
 #
 #
 # --help  (-h):
@@ -84,24 +84,11 @@
 # Written by:: Paul van Delst, CIMSS/SSEC 27-Sep-2007 (paul.vandelst@noaa.gov)
 #
 
-require 'getoptlong'
-require 'rdoc/usage'
+require 'tauprod'
 
 
 # Define methods
 # --------------
-# Method to parse input range definitions
-# e.g. 1-3,6,10-12  produces [1,2,3,6,10,11,12]
-def parse_range(input)
-  input.split(",").collect do |element|
-    if element =~ /(\d+)-(\d+)/
-      ($1.to_i..$2.to_i).to_a
-    else
-      element.to_i
-    end
-  end.flatten.uniq.sort
-end
-
 # Method to replace only the first
 # occurance of the leading spaces
 # in each line of input text.
@@ -112,163 +99,11 @@ def strip_output(text)
 end
 
 
-# Define the constants
-# --------------------
-LL_SUBMIT    = "llsubmit"
-LL_ACCOUNT   = { :ccs=>"GDAS-T2O", :haze=>"JCSDA001-RES"}
-LL_TIMELIMIT = "03:00:00"
-LL_RESOURCES = "ConsumableCpus(1) ConsumableMemory(500)"
-
-SUBMIT_INCREMENT = 60*60*3  # seconds
-
-LBLRTM_HITRAN_VERSION = "LBLRTM v9.4; HITRAN 2000 + AER updates"
-DFAVG   = 0.001  # Averaging kernel width in cm^-1
-NPANELS = 1      # No. of LBL panels
-UPDIRN  = 1      # Direction flag for upwelling
-DNDIRN  = 2      # Direction flag for upwelling
-SENSOR_ID = "iasi_metopa"
-
-# Literal constants
-ZERO=0.0; ONE=1.0
-
-
+# Configuration setup
 # -------------------
-# Define the defaults
-# -------------------
-# Default processing queue
-queue = "dev"
-
-# Start delay
-start_delay = 60*5  # seconds
-
-# Default location of the LBLRTM input files
-t5_dir = "./TAPE5_files"
-
-# Default spectroscopic database
-t3_id = "hitran2000_aer"
-
-# Default CO2 mixing ratio
-co2_mr = 380.0
-
-# Profile set info
-PROFILE_SET_INFO = { "UMBC"  => {:id => 1, :n_profiles => 48},
-                     "ECMWF" => {:id => 2, :n_profiles => 52},
-                     "CIMSS" => {:id => 3, :n_profiles => 32}}
-profile_set = "UMBC"
-profiles = (1..PROFILE_SET_INFO[profile_set][:n_profiles]).to_a
-                   
-# Band information. The SCNMRG frequencies are those values that,
-# for a point spacing of 0.001cm^-1, produce a number of points
-# that has only prime factors of 2, 3, and 5.
-BAND_INFO = { 1 => {:f1_scnmrg =>  605.0, :f2_scnmrg => 1253.00},
-              2 => {:f1_scnmrg => 1170.0, :f2_scnmrg => 2107.50},
-              3 => {:f1_scnmrg => 1960.0, :f2_scnmrg => 2803.75}}
-bands = BAND_INFO.keys.sort
-
-# Molecule information
-MOL_INFO=Hash.new
-(1..7).to_a.collect {|m| MOL_INFO[m] = {:name  => "mol#{m}",
-                                        :t3tag => "mol#{m}",
-                                        :cont  => [ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO]}}
-MOL_INFO[8]  = {:name  => "all_nocontinua",
-                :t3tag => "7mol",
-                :cont  => [ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO]}
-MOL_INFO[9]  = {:name  => "continua_only",
-                :t3tag => "nomol",
-                :cont  => [ONE,ONE,ONE,ONE,ONE,ONE,ONE]}
-MOL_INFO[10] = {:name  => "all_withcontinua",
-                :t3tag => "7mol",
-                :cont  => [ONE,ONE,ONE,ONE,ONE,ONE,ONE]}
-MOL_INFO[11] = {:name  => "wvo",
-                :t3tag => "wvo",
-                :cont  => [ONE,ONE,ZERO,ONE,ZERO,ZERO,ZERO]}
-MOL_INFO[12] = {:name  => "wet",
-                :t3tag => "mol1",
-                :cont  => [ONE,ONE,ZERO,ZERO,ZERO,ZERO,ZERO]}
-MOL_INFO[13] = {:name  => "dry",
-                :t3tag => "dry",
-                :cont  => [ZERO,ZERO,ONE,ZERO,ONE,ONE,ONE]}
-MOL_INFO[14] = {:name  => "ozo",
-                :t3tag => "mol3",
-                :cont  => [ZERO,ZERO,ZERO,ONE,ZERO,ZERO,ZERO]}
-MOL_INFO[15] = {:name  =>"wco",
-                :t3tag =>"nomol",
-                :cont  =>[ONE,ONE,ZERO,ZERO,ZERO,ZERO,ZERO]}
-molids = [1, 10, 11, 12, 13, 14, 15]
-                
-# Angle information
-ANGLE_INFO = { 1 => {:secant => 1.00, :angle => 0.0   , :zenith => 180.000},
-               2 => {:secant => 1.25, :angle => 36.870, :zenith => 143.130},
-               3 => {:secant => 1.50, :angle => 48.190, :zenith => 131.810},
-               4 => {:secant => 1.75, :angle => 55.150, :zenith => 124.850},
-               5 => {:secant => 2.00, :angle => 60.000, :zenith => 120.000},
-               6 => {:secant => 2.25, :angle => 63.612, :zenith => 116.388},
-               7 => {:secant => 3.00, :angle => 70.529, :zenith => 109.471} }
-angles = ANGLE_INFO.keys.sort
-
-# No debug output by default
-debug = false
-
-# Submit jobs by default
-noop = false
-
-
-# Parse the command line options
-# ------------------------------
-# Specify accepted options
-options=GetoptLong.new(
-  [ "--help"       , "-h", GetoptLong::NO_ARGUMENT       ],
-  [ "--debug"      , "-g", GetoptLong::NO_ARGUMENT       ],
-  [ "--noop"       , "-n", GetoptLong::NO_ARGUMENT       ],
-  [ "--angles"     , "-a", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--bands"      , "-b", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--co2_mr"     , "-c", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--start_delay", "-i", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--molid"      , "-m", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--profiles"   , "-p", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--queue"      , "-q", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--profile_set", "-s", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--t5_dir"     , "-d", GetoptLong::REQUIRED_ARGUMENT ],
-  [ "--t3_id"      , "-t", GetoptLong::REQUIRED_ARGUMENT ] )
-
-# Process the arguments
-begin
-  options.each do |opt, arg|
-    case opt
-      when "--help"
-        RDoc::usage
-        exit 0
-      when "--debug"
-        debug = true
-      when "--noop"
-        noop = true
-      when "--angles"
-        angles = parse_range(arg)
-      when "--bands"
-        bands = parse_range(arg)
-      when "--molid"
-        molids = parse_range(arg)
-      when "--profiles"
-        profiles = parse_range(arg)
-      when "--co2_mr"
-        co2_mr = arg.to_f
-      when "--start_delay"
-        start_delay = (arg.to_i)*60  # Convert to seconds
-      when "--queue"
-        queue = arg
-      when "--profile_set"
-        profile_set = arg if PROFILE_SET_INFO.has_key?(arg)
-      when "--t5_dir"
-        t5_dir = arg
-      when "--t3_id"
-        t3_id = arg
-    end
-  end
-rescue StandardError => error_message
-  puts("\nERROR: #{error_message}\n")
-  RDoc::usage
-  exit 1
-end
+cfg = TauProd::Config.new()
+cfg.process_arguments
+cfg.display
 
 
 # Begin the error handling block
@@ -279,13 +114,13 @@ begin
   root_dir = Dir.pwd
 
   # Get the initial submit time
-  time  = Time.now + start_delay
+  time  = Time.now + cfg.start_delay
 
   
   # Begin the band loop
   # -------------------
-  bands.each do |b|
-    binfo = BAND_INFO[b]
+  cfg.bands.each do |b|
+    binfo = TauProd::Config::BAND_INFO[b]
     bname = "band%.1d" % b
     bdir = bname
     cmd = "mkdir #{bdir}"
@@ -300,8 +135,8 @@ begin
 
     # Begin the molecule loop
     # -----------------------
-    molids.each do |m|
-      minfo = MOL_INFO[m]
+    cfg.molids.each do |m|
+      minfo = TauProd::Config::MOL_INFO[m]
       mname = minfo[:name]
       mdir = File.join(bdir,mname)
       cmd = "mkdir #{mdir}"
@@ -311,19 +146,19 @@ begin
       continua = "%3.1f "*minfo[:cont].size % minfo[:cont]
     
       # Construct the tape3 filename
-      t3file = "tape3.#{minfo[:t3tag]}.#{t3_id}"
+      t3file = "tape3.#{minfo[:t3tag]}.#{cfg.t3_id}"
       
       
       # Begin the profile loop
       # ----------------------
-      profiles.each do |p|
+      cfg.profiles.each do |p|
         pname = "profile%.2d"%p
         pdir = File.join(mdir,pname)
         cmd = "mkdir #{pdir}"
         system(cmd) unless File.directory?(pdir)
       
         # Construct the generic TAPE5 filename 
-        gt5file="#{t5_dir}/TAPE5.#{profile_set}_#{pname}"
+        gt5file="#{cfg.t5_dir}/TAPE5.#{cfg.profile_set}_#{pname}"
         
         
         # Create a Job Control File for this band/molid combination
@@ -335,13 +170,13 @@ begin
           #
           # Job step for: #{bname}_#{mname}_#{pname}
           # @ job_name = #{bname}_#{mname}_#{pname}
-          # @ output = #{bname}_#{mname}_#{pname}.out
-          # @ error = #{bname}_#{mname}_#{pname}.err
-          # @ class = #{queue}
-          # @ group = #{queue}
-          # @ wall_clock_limit = #{LL_TIMELIMIT}
-          # @ resources = #{LL_RESOURCES}
-          # @ account_no = #{LL_ACCOUNT[:ccs]}
+          # @ output = #{root_dir}/#{pdir}/#{bname}_#{mname}_#{pname}.out
+          # @ error = #{root_dir}/#{pdir}/#{bname}_#{mname}_#{pname}.err
+          # @ class = #{cfg.queue}
+          # @ group = #{cfg.queue}
+          # @ wall_clock_limit = #{TauProd::Config::LL_TIMELIMIT}
+          # @ resources = #{TauProd::Config::LL_RESOURCES}
+          # @ account_no = #{TauProd::Config::LL_ACCOUNT[:ccs]}
           # @ startdate = #{time.strftime("%m/%d/%Y %H:%M")}
           # @ queue
           cd #{root_dir}/#{pdir}
@@ -350,8 +185,8 @@ begin
 
         # Begin the angle loop
         # --------------------
-        angles.each do |a|
-          ainfo = ANGLE_INFO[a]
+        cfg.angles.each do |a|
+          ainfo = TauProd::Config::ANGLE_INFO[a]
           aname = "angle%.1d"%a
           adir = File.join(pdir,aname)
           cmd = "mkdir #{adir}"
@@ -374,14 +209,14 @@ begin
           re=[/CN=0/,"CN=6"]
           t5.find_all {|s| s=~re.first}.first.gsub!(re.first,re.last)
           # Every thing else, replace all occurrances
-          replace=[[/UUUU.UUU/ ,"%8.3f"%f1_lbl],               # LBL begin frequency
-                   [/VVVV.VVV/ ,"%8.3f"%f2_lbl],               # LBL end frequency
-                   [/CCC.CCC/  ,"%7.3f"%co2_mr],               # CO2 mixing ratio
-                   [/AAA.AAA/  ,"%7.3f"%ainfo[:zenith]],       # Zenith angle
-                   [/C.CCCC/   ,"%6.4f"%(DFAVG/2.0)],          # Averaging kernel halfwidth
-                   [/D.DDDD/   ,"%6.4f"%DFAVG],                # Output spectral spacing
-                   [/SSSS.SSSS/,"%9.4f"%f1_scnmrg],            # Averaging begin frequency
-                   [/TTTT.TTTT/,"%9.4f"%f2_scnmrg]]            # Averaging end frequency
+          replace=[[/UUUU.UUU/ ,"%8.3f"%f1_lbl],                       # LBL begin frequency
+                   [/VVVV.VVV/ ,"%8.3f"%f2_lbl],                       # LBL end frequency
+                   [/CCC.CCC/  ,"%7.3f"%cfg.co2_mr],                   # CO2 mixing ratio
+                   [/AAA.AAA/  ,"%7.3f"%ainfo[:zenith]],               # Zenith angle
+                   [/C.CCCC/   ,"%6.4f"%(TauProd::Config::DFAVG/2.0)], # Averaging kernel halfwidth
+                   [/D.DDDD/   ,"%6.4f"%TauProd::Config::DFAVG],       # Output spectral spacing
+                   [/SSSS.SSSS/,"%9.4f"%f1_scnmrg],                    # Averaging begin frequency
+                   [/TTTT.TTTT/,"%9.4f"%f2_scnmrg]]                    # Averaging end frequency
           replace.each do |re|
             t5.find_all {|s| s=~re.first}.each {|n| n.gsub!(re.first,re.last)}
           end
@@ -412,9 +247,9 @@ begin
             
             ID_TAG="#{id_tag}"
             ID_ATTRIBUTE="#{id_att}"
-            PROFILE_SET="#{profile_set}"
-            LBLRTM_HITRAN_VERSION="#{LBLRTM_HITRAN_VERSION}"
-            SENSOR_ID="#{SENSOR_ID}"
+            PROFILE_SET="#{cfg.profile_set}"
+            LBLRTM_HITRAN_VERSION="#{TauProd::Config::LBLRTM_HITRAN_VERSION}"
+            SENSOR_ID="#{TauProd::Config::SENSOR_ID}"
             
             UP_TAPE_FILE="TAPE20"
             DOWN_TAPE_FILE="TAPE21"
@@ -480,8 +315,8 @@ begin
             ${ID_ATTRIBUTE} Transmittance production run for ${PROFILE_SET} profile set.
             Upwelling (Layer->TOA) transmittance. ${LBLRTM_HITRAN_VERSION}
             ${PROFILE_SET}
-            #{UPDIRN}
-            #{NPANELS}
+            #{TauProd::Config::UPDIRN}
+            #{TauProd::Config::NPANELS}
             NoMoreInput
             sleep 10
             if [ -f ${UP_NC_FILE}.signal ]; then
@@ -496,8 +331,8 @@ begin
             ${ID_ATTRIBUTE} Transmittance production run for ${PROFILE_SET} profile set.
             Downwelling (Layer->SFC) transmittance. ${LBLRTM_HITRAN_VERSION}
             ${PROFILE_SET}
-            #{DNDIRN}
-            #{NPANELS}
+            #{TauProd::Config::DNDIRN}
+            #{TauProd::Config::NPANELS}
             NoMoreInput
             sleep 10
             if [ -f ${DOWN_NC_FILE}.signal ]; then
@@ -513,11 +348,11 @@ begin
             # Upwelling
             Apodize_TauSpc_with_IRF << NoMoreInput
             ${UP_NC_FILE}
-            #{PROFILE_SET_INFO[profile_set][:id]}
+            #{TauProd::Config::PROFILE_SET_INFO[cfg.profile_set][:id]}
             #{m}
             #{p}
             #{a}
-            #{UPDIRN}
+            #{TauProd::Config::UPDIRN}
             #{b}
             NoMoreInput
             sleep 10
@@ -533,11 +368,11 @@ begin
             # Downwelling
             Apodize_TauSpc_with_IRF << NoMoreInput
             ${DOWN_NC_FILE}
-            #{PROFILE_SET_INFO[profile_set][:id]}
+            #{TauProd::Config::PROFILE_SET_INFO[cfg.profile_set][:id]}
             #{m}
             #{p}
             #{a}
-            #{DNDIRN}
+            #{TauProd::Config::DNDIRN}
             #{b}
             NoMoreInput
             sleep 10
@@ -574,13 +409,13 @@ begin
       
         # Submit the job command file
         jcf.close
-        cmd = "#{LL_SUBMIT} #{jcf_file}"
-        system(cmd) unless noop
+        cmd = "#{TauProd::Config::LL_SUBMIT} #{jcf_file}"
+        system(cmd) unless cfg.noop
 
       end # profile loop
 
       # Increment the submit time
-      time = time + SUBMIT_INCREMENT
+      time = time + TauProd::Config::SUBMIT_INCREMENT
 
       puts("  Completed submission of #{bname},#{mname} jobs.")
 
