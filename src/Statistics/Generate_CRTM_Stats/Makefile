@@ -39,6 +39,7 @@ SRC_FILES =         CRTM_AerosolCoeff.f90 \
                     Message_Handler.f90 \
                     Endian_Utility.f90 \
                     Binary_File_Utility.f90 \
+                    CRTM_GeometryInfo_Define.f90 \
                     Compare_Float_Numbers.f90 \
                     EmisCoeff_Define.f90 \
                     EmisCoeff_Binary_IO.f90 \
@@ -46,6 +47,11 @@ SRC_FILES =         CRTM_AerosolCoeff.f90 \
                     CloudCoeff_Binary_IO.f90 \
                     CRTM_CloudCoeff.f90 \
                     CRTM_EmisCoeff.f90 \
+                    CRTM_RTSolution_Define.f90 \
+                    CRTM_RTSolution.f90 \
+                    AntCorr_Define.f90 \
+                    AntCorr_Binary_IO.f90 \
+                    CRTM_AntCorr.f90 \
                     AerosolCoeff_Define.f90 \
                     AerosolCoeff_Binary_IO.f90 \
                     CRTM_Aerosol_Define.f90 \
@@ -70,7 +76,6 @@ SRC_FILES =         CRTM_AerosolCoeff.f90 \
                     SpcCoeff_Binary_IO.f90 \
  		    CRTM_Atmosphere_Define.f90 \
                     CRTM_Atmosphere_Binary_IO.f90 \
- 		    CRTM_GeometryInfo_Define.f90 \
 		    CRTM_AtmAbsorption_Define.f90 \
 	            CRTM_Predictor_Define.f90 \
                     CRTM_Predictor.f90 \
@@ -114,8 +119,6 @@ SRC_FILES =         CRTM_AerosolCoeff.f90 \
 		    CRTM_Options_Define.f90 \
 		    CRTM_Planck_Functions.f90 \
 		    CRTM_Utility.f90 \
-                    CRTM_RTSolution_Define.f90 \
-		    CRTM_RTSolution.f90 \
 		    CRTM_Forward_Module.f90 \
 		    TauProfile_Define.f90 \
 		    TauProfile_netCDF_IO.f90 \
