@@ -122,7 +122,6 @@ module TauProd
     def process_arguments
       begin
         OPTIONS.each do |opt, arg|
-        puts opt.inspect, arg.inspect
           case opt
             when "--help"
               RDoc::usage
@@ -173,7 +172,7 @@ module TauProd
       puts "molids      : #{@molids.join(",")}"
       puts "angles      : #{@angles.join(",")}"
       puts "noop        : #{@noop}"
-      puts "debug       : #{@debug}"
+      puts "debug       : #{@debug}\n"
     end
 
   private
