@@ -83,20 +83,19 @@ PROGRAM Effective_TauProfile
   INTEGER :: m, n_m ! n_Profiles
   INTEGER :: j, n_j ! n_Molecule_Sets
   INTEGER :: n, n_Sensors
-  INTEGER , ALLOCATABLE :: Channels(:)
   REAL(fp), ALLOCATABLE :: Angles(:)
   INTEGER , ALLOCATABLE :: Profiles(:)
-  REAL(fp) :: Tau_ALL(N_LAYERS)
-  REAL(fp) :: Tau_WVO(N_LAYERS)
-  REAL(fp) :: Tau_WET(N_LAYERS)
-  REAL(fp) :: Tau_WCO(N_LAYERS)
+  REAL(fp), ALLOCATABLE :: Tau_ALL(:,:)
+  REAL(fp), ALLOCATABLE :: Tau_WVO(:,:)
+  REAL(fp), ALLOCATABLE :: Tau_WET(:,:)
+  REAL(fp), ALLOCATABLE :: Tau_WCO(:,:)
   TYPE(SensorInfo_type)      :: SensorInfo
   TYPE(SensorInfo_List_type) :: SensorInfo_List
 
   ! Output header
   ! -------------
   CALL Program_Message(PROGRAM_NAME, &
-                       'Program to compute the effective molecular transmittances profiles'//&
+                       'Program to compute the effective molecular transmittance profiles '//&
                        'from the various available molecular combinations.', &
                        '$Revision$' )
 
@@ -179,6 +178,7 @@ PROGRAM Effective_TauProfile
     WRITE( *,'(/10x,"Computing effective transmittances for ",a,"...")' ) &
              TRIM(SensorInfo%Sensor_ID)
     
+    
     ! Inquire the file to get dimensions
     ! and global attributes
     ! ----------------------------------
@@ -200,7 +200,7 @@ PROGRAM Effective_TauProfile
     ! Inquire the file to get the dimension lists
     ! -------------------------------------------
     ! Allocate the array
-    ALLOCATE( Channels(n_l), Angles(n_i), Profiles(n_m), STAT=Allocate_Status )
+    ALLOCATE( Angles(n_i), Profiles(n_m), STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       WRITE( Message,'("Error allocating dimension list arrays. STAT = ",i0)' ) &
                       Allocate_Status
@@ -212,7 +212,6 @@ PROGRAM Effective_TauProfile
     
     ! Read the dimension lists
     Error_Status = Inquire_TauProfile_netCDF( TauProfile_Filename  , &
-                                              Channel_List=Channels, &
                                               Angle_List  =Angles  , &
                                               Profile_List=Profiles  )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -224,6 +223,23 @@ PROGRAM Effective_TauProfile
     END IF
 
 
+    ! Allocate the transmittance arrays
+    ! ---------------------------------
+    ALLOCATE( Tau_ALL(N_LAYERS,n_l), &
+              Tau_WVO(N_LAYERS,n_l), &
+              Tau_WET(N_LAYERS,n_l), &
+              Tau_WCO(N_LAYERS,n_l), &
+              STAT=Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      WRITE( Message,'("Error allocating transmittance arrays. STAT = ",i0)' ) &
+                      Allocate_Status
+      CALL Display_Message( PROGRAM_NAME, &
+                            TRIM(Message), &
+                            FAILURE )
+      STOP
+    END IF
+    
+    
     ! Modify the TauProfile HISTORY global attribute
     ! ----------------------------------------------
     Error_Status = Modify_TauProfile_GAtts( TauProfile_Filename, &
@@ -242,159 +258,157 @@ PROGRAM Effective_TauProfile
     ! ---------------------
     Profile_Loop: DO m = 1, n_m
       Angle_Loop:   DO i = 1, n_i
-        Channel_Loop: DO l = 1, n_l
         
-          ! Read the transmittance data
-          ! ---------------------------
-          ! Total transmittance, Tau_ALL
-          Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
-                                                 Channels(l), &
-                                                 Angles(i)  , &
-                                                 Profiles(m), &
-                                                 ALL_IDX    , &
-                                                 Tau_ALL      )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error reading channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_ALL from ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
+        ! Read the transmittance data
+        ! ---------------------------
+        ! Total transmittance, Tau_ALL
+        Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
+                                               Angles(i)  , &
+                                               Profiles(m), &
+                                               ALL_IDX    , &
+                                               Tau_ALL    , &
+                                               Quiet=SET    )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error reading angle ",i0,", and profile ",i0,&
+                          &" Tau_ALL from ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
 
-          ! Water vapor + ozone transmittance, Tau_WVO
-          Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
-                                                 Channels(l), &
-                                                 Angles(i)  , &
-                                                 Profiles(m), &
-                                                 WVO_IDX    , &
-                                                 Tau_WVO      )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error reading channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_WVO from ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
+        ! Water vapor + ozone transmittance, Tau_WVO
+        Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
+                                               Angles(i)  , &
+                                               Profiles(m), &
+                                               WVO_IDX    , &
+                                               Tau_WVO    , &
+                                               Quiet=SET    )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error reading angle ",i0,", and profile ",i0,&
+                          &" Tau_WVO from ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
 
-          ! Water vapor only transmittance, Tau_WET
-          Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
-                                                 Channels(l), &
-                                                 Angles(i)  , &
-                                                 Profiles(m), &
-                                                 WET_IDX    , &
-                                                 Tau_WET      )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error reading channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_WET from ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
+        ! Water vapor only transmittance, Tau_WET
+        Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
+                                               Angles(i)  , &
+                                               Profiles(m), &
+                                               WET_IDX    , &
+                                               Tau_WET    , &
+                                               Quiet=SET    )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error reading angle ",i0,", and profile ",i0,&
+                          &" Tau_WET from ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
 
-          ! Water vapor continua only transmittance, Tau_WCO
-          Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
-                                                 Channels(l), &
-                                                 Angles(i)  , &
-                                                 Profiles(m), &
-                                                 WCO_IDX    , &
-                                                 Tau_WCO      )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error reading channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_WCO from ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
-
-
-
-          ! Compute the effective transmittances
-          ! ------------------------------------
-          ! Effective DRY transmittance
-          CALL Compute_EffTau( Tau_ALL, Tau_WVO )
-
-          ! Effective OZO transmittance
-          CALL Compute_EffTau( Tau_WVO, Tau_WET )
-
-          ! Effective WLO transmittance
-          CALL Compute_EffTau( Tau_WET, Tau_WCO )
+        ! Water vapor continua only transmittance, Tau_WCO
+        Error_Status = Read_TauProfile_netCDF( TauProfile_Filename, &
+                                               Angles(i)  , &
+                                               Profiles(m), &
+                                               WCO_IDX    , &
+                                               Tau_WCO    , &
+                                               Quiet=SET    )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error reading angle ",i0,", and profile ",i0,&
+                          &" Tau_WCO from ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
 
 
 
-          ! Output the effective transmittance to file
-          ! ------------------------------------------
-          ! Effective DRY transmittance
-          Error_Status = Write_TauProfile_netCDF( TauProfile_Filename, &
-                                                  Tau_ALL, &
-                                                  Channels(l), &
-                                                  Angles(i)  , &
-                                                  Profiles(m), &
-                                                  EFFECTIVE_DRY_IDX )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error writing channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_EFFDRY to ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
+        ! Compute the effective transmittances
+        ! ------------------------------------
+        ! Effective DRY transmittance
+        CALL Compute_EffTau( Tau_ALL, Tau_WVO )
 
-          ! Effective OZO transmittance
-          Error_Status = Write_TauProfile_netCDF( TauProfile_Filename, &
-                                                  Tau_WVO, &
-                                                  Channels(l), &
-                                                  Angles(i)  , &
-                                                  Profiles(m), &
-                                                  EFFECTIVE_OZO_IDX )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error writing channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_EFFOZO to ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
+        ! Effective OZO transmittance
+        CALL Compute_EffTau( Tau_WVO, Tau_WET )
 
-          ! Effective WLO transmittance
-          Error_Status = Write_TauProfile_netCDF( TauProfile_Filename, &
-                                                  Tau_WET, &
-                                                  Channels(l), &
-                                                  Angles(i)  , &
-                                                  Profiles(m), &
-                                                  EFFECTIVE_WLO_IDX )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error writing channel ",i0,", angle ",i0,", and profile ",i0,&
-                            &" Tau_EFFWLO to ", a)' ) &
-                            Channels(l), i, Profiles(m), TRIM(TauProfile_Filename)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status )
-            STOP
-          END IF
+        ! Effective WLO transmittance
+        CALL Compute_EffTau( Tau_WET, Tau_WCO )
 
 
 
-        END DO Channel_Loop
+        ! Output the effective transmittance to file
+        ! ------------------------------------------
+        ! Effective DRY transmittance
+        Error_Status = Write_TauProfile_netCDF( TauProfile_Filename, &
+                                                Tau_ALL, &
+                                                Angles(i)  , &
+                                                Profiles(m), &
+                                                EFFECTIVE_DRY_IDX, &
+                                                Quiet=SET )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error writing angle ",i0,", and profile ",i0,&
+                          &" Tau_EFFDRY to ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
+
+        ! Effective OZO transmittance
+        Error_Status = Write_TauProfile_netCDF( TauProfile_Filename, &
+                                                Tau_WVO, &
+                                                Angles(i)  , &
+                                                Profiles(m), &
+                                                EFFECTIVE_OZO_IDX, &
+                                                Quiet=SET )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error writing angle ",i0,", and profile ",i0,&
+                          &" Tau_EFFOZO to ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
+
+        ! Effective WLO transmittance
+        Error_Status = Write_TauProfile_netCDF( TauProfile_Filename, &
+                                                Tau_WET, &
+                                                Angles(i)  , &
+                                                Profiles(m), &
+                                                EFFECTIVE_WLO_IDX, &
+                                                Quiet=SET )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error writing angle ",i0,", and profile ",i0,&
+                          &" Tau_EFFWLO to ", a)' ) &
+                          i, Profiles(m), TRIM(TauProfile_Filename)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                Error_Status )
+          STOP
+        END IF
+
       END DO  Angle_Loop
       WRITE( *,'(15x,"Profile # ",i0," effective transmittances written...")' ) Profiles(m)
     END DO Profile_Loop
 
 
-    ! Deallocate dimension list arrays for current sensor
-    ! ---------------------------------------------------
-    DEALLOCATE( Channels, Angles, Profiles, STAT=Allocate_Status )
+    ! Deallocate arrays for current sensor
+    ! ------------------------------------
+    DEALLOCATE( Angles, Profiles, &
+                Tau_ALL, Tau_WVO, Tau_WET, Tau_WCO, &
+                STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
-      WRITE( Message,'("Error deallocating dimension list arrays for ",a,". STAT = ",i0)' ) &
+      WRITE( Message,'("Error deallocating arrays for ",a,". STAT = ",i0)' ) &
                       TRIM(SensorInfo%Sensor_Id), Allocate_Status
       CALL Display_Message( PROGRAM_NAME, &
                             TRIM(Message), &
@@ -446,8 +460,8 @@ CONTAINS
   ! Only compute effective transmittance if the denominator
   ! is greater than numerical precision.
   SUBROUTINE Compute_EffTau( TauNUM, TauDENOM )
-    REAL(fp), INTENT(IN OUT) :: TauNUM(:)
-    REAL(fp), INTENT(IN)     :: TauDENOM(:)
+    REAL(fp), INTENT(IN OUT) :: TauNUM(:,:)
+    REAL(fp), INTENT(IN)     :: TauDENOM(:,:)
     REAL(fp), PARAMETER :: TOLERANCE = EPSILON(ONE)
     WHERE( ABS(TauDENOM) > TOLERANCE )
       TauNUM = TauNUM/TauDENOM
