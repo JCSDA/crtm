@@ -38,6 +38,13 @@ MODULE SpcCoeff_Define
   ! ------------
   ! Everything private by default
   PRIVATE
+
+  ! Public types
+  ! ------------
+  PUBLIC :: SpcCoeff_type
+  ! Use associated definitions
+  PUBLIC :: AntCorr_type
+
   ! Public procedures
   ! -----------------
   PUBLIC :: Associated_SpcCoeff
@@ -48,7 +55,7 @@ MODULE SpcCoeff_Define
   PUBLIC :: CheckRelease_SpcCoeff
   PUBLIC :: Info_SpcCoeff
   PUBLIC :: IsFlagSet_SpcCoeff, SetFlag_SpcCoeff, ClearFlag_SpcCoeff
-  ! Inherited procedures from AntCorr_Define
+  ! Use associated procedures
   PUBLIC :: Associated_AntCorr
   PUBLIC :: Destroy_AntCorr
   PUBLIC :: Allocate_AntCorr
@@ -56,6 +63,7 @@ MODULE SpcCoeff_Define
   PUBLIC :: Equal_AntCorr
   PUBLIC :: Info_AntCorr
   PUBLIC :: CheckRelease_AntCorr
+
   ! Public parameters
   ! -----------------
   ! Sensor Id defaults
@@ -90,13 +98,13 @@ MODULE SpcCoeff_Define
   PUBLIC :: SOLAR_FLAG
   PUBLIC :: ZEEMAN_FLAG
 
+
   ! -----------------
   ! Module parameters
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! SpcCoeff invalid value
@@ -169,7 +177,7 @@ MODULE SpcCoeff_Define
   ! -----------------------------
   ! SpcCoeff data type definition
   ! -----------------------------
-  TYPE, PUBLIC :: SpcCoeff_type
+  TYPE :: SpcCoeff_type
     INTEGER :: n_Allocates = 0
     ! Release and version information
     INTEGER(Long) :: Release = SPCCOEFF_RELEASE

@@ -205,7 +205,7 @@ CONTAINS
     CHARACTER(*)          , INTENT(IN)     :: Filename
     TYPE(AntCorr_type)    , INTENT(IN OUT) :: AntCorr
     INTEGER     , OPTIONAL, INTENT(IN)     :: No_File_Close
-    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Allocate
+    INTEGER     , OPTIONAL, INTENT(IN)     :: No_Allocate
     INTEGER     , OPTIONAL, INTENT(IN)     :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -388,7 +388,7 @@ CONTAINS
 
 
   FUNCTION Write_AntCorr_Binary( Filename     , &  ! Input            
-                                 AntCorr      , &  ! Output           
+                                 AntCorr      , &  ! Input           
                                  No_File_Close, &  ! Optional input
                                  Quiet        , &  ! Optional input   
                                  RCS_Id       , &  ! Revision Control 
