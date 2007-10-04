@@ -82,7 +82,9 @@ PROGRAM Apodize_TauSpc_with_IRF
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp
   ! Sensor id
-  CHARACTER(*), PARAMETER :: SENSOR_ID = 'iasi_metopa'
+  CHARACTER(*), PARAMETER :: SENSOR_ID        = 'iasi_metop-a'
+  INTEGER,      PARAMETER :: WMO_SENSOR_ID    = 221
+  INTEGER,      PARAMETER :: WMO_SATELLITE_ID = 4
   
 
   ! ---------
@@ -438,7 +440,9 @@ PROGRAM Apodize_TauSpc_with_IRF
   END IF
   
   ! Assign the dimension arrays
-  realTau%Sensor_ID      = 'iasi_metopa'
+  realTau%Sensor_ID        = SENSOR_ID
+  realTau%WMO_Satellite_ID = WMO_SATELLITE_ID
+  realTau%WMO_Sensor_ID    = WMO_SENSOR_ID   
   IF ( dirn == UPWELLING_DIRECTION ) THEN
     realTau%Level_Pressure = LEVEL_PRESSURE(N_LEVELS:1:-1)
   ELSE
@@ -543,12 +547,12 @@ PROGRAM Apodize_TauSpc_with_IRF
   
     ! Assign values for different TauProfiles
     IF ( i == 1 ) THEN
-      TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
+      TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'.'//&
                             TRIM(realTau%Sensor_ID)//'.REAL.TauProfile.nc'
       Comment = 'REAL part of result'
       TauProfile => realTau
     ELSE
-      TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
+      TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'.'//&
                             TRIM(imagTau%Sensor_ID)//'.IMAG.TauProfile.nc'
       Comment = 'IMAGINARY part of result'
       TauProfile => imagTau
@@ -562,7 +566,11 @@ PROGRAM Apodize_TauSpc_with_IRF
                                              TauProfile%Angle           , &  ! Input
                                              TauProfile%Profile         , &  ! Input
                                              TauProfile%Molecule_Set    , &  ! Input
-                                             Sensor_ID   = TauProfile%Sensor_ID , &  ! Optional Input
+                                             Release = TauProfile%Release, &  ! Optional Input
+                                             Version = TauProfile%Version, &  ! Optional Input
+                                             Sensor_ID        = TauProfile%Sensor_ID       , &  ! Optional Input
+                                             WMO_Satellite_ID = TauProfile%WMO_Satellite_ID, &  ! Optional Input
+                                             WMO_Sensor_ID    = TauProfile%WMO_Sensor_ID   , &  ! Optional Input
                                              ID_Tag      = TRIM(LBLRTM_ID_Tag)  , &  ! Optional input
                                              Title       = 'IASI '//TRIM(cBand)//&
                                                            ' transmittance profiles', &  ! Optional input
