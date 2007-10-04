@@ -48,7 +48,8 @@ PROGRAM Assemble_FTS_TauProfile
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Assemble_FTS_TauProfile'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
-
+  CHARACTER(*), PARAMETER :: PATH = 'TauProfile_data/'
+  
 
   ! ---------
   ! Variables
@@ -174,7 +175,7 @@ PROGRAM Assemble_FTS_TauProfile
   ! Define the band limits and sensor id (hardwired for IASI for now)
   n1 = 1; n2 = 3
   Sensor_Name = 'iasi'
-  Satellite_Name = 'metopa'
+  Satellite_Name = 'metop-a'
   Generic_Sensor_Id = TRIM(Sensor_Name)//'_'//TRIM(Satellite_Name)
 
   ! Define the profile limits
@@ -189,8 +190,7 @@ PROGRAM Assemble_FTS_TauProfile
     Sensor_Id = TRIM(Sensor_Name)//TRIM(bTag)//'_'//TRIM(Satellite_Name)
     
     ! Construct the current band output filename
-    OutFile = 'TauProfile_data/'//&
-              TRIM(DIRECTION_NAME(iDir))//'_tau.'//TRIM(Sensor_Id)//'.TauProfile.nc'
+    OutFile = TRIM(DIRECTION_NAME(iDir))//'_tau.'//TRIM(Sensor_Id)//'.TauProfile.nc'
 
     ! Create an output file for every band
     Create_Output = .TRUE.
@@ -236,13 +236,16 @@ PROGRAM Assemble_FTS_TauProfile
                    TRIM(mTag)//'/'//&
                    TRIM(iTag)//'/'//&
                    TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
-                   TRIM(Sensor_Id)//'.REAL.TauProfile.nc'
+                   TRIM(Generic_Sensor_Id)//'.REAL.TauProfile.nc'
           
           
           ! Create the output file
           ! ----------------------
           Create_Output_File: IF ( Create_Output ) THEN
           
+            ! Turn off output creation
+            Create_Output = .FALSE.
+            
             ! Inquire the current input file for
             ! its channel dimension and attributes
             Error_Status = Inquire_TauProfile_netCDF( InFile, &
@@ -280,7 +283,7 @@ PROGRAM Assemble_FTS_TauProfile
             END IF
 
             ! Create the output file (CLOBBER mode)
-            Error_Status = Create_TauProfile_netCDF( OutFile, &
+            Error_Status = Create_TauProfile_netCDF( PATH//TRIM(OutFile), &
                                                      LEVEL_PRESSURE, &
                                                      Channel_List, &
                                                      ZENITH_ANGLE_SECANT, &
@@ -351,7 +354,7 @@ PROGRAM Assemble_FTS_TauProfile
 
           ! Write the data into the output file
           ! -----------------------------------
-          Error_Status = Write_TauProfile_netCDF( OutFile, &
+          Error_Status = Write_TauProfile_netCDF( PATH//TRIM(OutFile), &
                                                   TauProfile%Tau(:,:,1,1,1), &
                                                   Angle       =ZENITH_ANGLE_SECANT(i), &
                                                   Profile     =m, &
@@ -384,7 +387,7 @@ PROGRAM Assemble_FTS_TauProfile
 
     ! Create a signal file
     ! --------------------
-    Error_Status = Create_Signal_File( TRIM(OutFile)//'.signal' )
+    Error_Status = Create_Signal_File( TRIM(OutFile) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error creating signal file for '//TRIM(OutFile), &
