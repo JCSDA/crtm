@@ -69,7 +69,8 @@ begin
   root_dir = Dir.pwd
   
   # Define the filename(s) to search for
-  signal_file = ["upwelling_tau.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal"]
+  signal_file = ["upwelling_tau.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal",
+                 "downwelling_tau.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal"]
   
   # Set the expected number of signal files
   n_expected = cfg.molids.length * cfg.profiles.length * cfg.angles.length
@@ -82,7 +83,8 @@ begin
     binfo = TauProd::Config::BAND_INFO[b]
     bname = "band%.1d" % b
     bdir = bname
-    
+    puts("Checking #{bname} run completion...")
+ 
     # Completion counter initialisation
     n_completed = 0
     
@@ -102,7 +104,7 @@ begin
         next unless File.exists?(pdir)
         
         # initialise angle counter
-        n_angles = 0
+        n_angles = 0; alist=[]
 
         # Begin the angle loop
         # --------------------
@@ -112,20 +114,24 @@ begin
           adir = File.join(pdir,aname)
           next unless File.exists?(adir)
 
+          signal_file_exist = signal_file.collect {|s| File.exists?("#{adir}/#{s}")}
+          alist << a if signal_file_exist.any? {|s| not s}
+
           # Count the angle signal files that exist
-          n_angles += signal_file.select {|s| File.exists?(s)}.length
-          n_completed += n_angles
+          n_angles += ((signal_file.select {|s| File.exists?("#{adir}/#{s}")}) - [false]).length
           
         end # angle loop
         
+        n_completed += n_angles
+
         # Check the angle file count
-        puts("#{pdir}: #{n_angles} of #{n_angles_expected} angles completed") unless n_angles == n_angles_expected 
+        puts("    #{pdir}: #{alist.length} [#{alist.join(",")}] angles incomplete.") unless n_angles == n_angles_expected 
         
       end # profile loop
     end # molecule loop
     
     # Check the total file count
-    puts("#{bdir}: #{n_completed} of #{n_expected} runs completed")
+    puts("  #{bdir}: #{n_completed} of #{n_expected} runs completed")
         
   end # band loop                
    
