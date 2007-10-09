@@ -55,7 +55,7 @@ PROGRAM Create_FTS_SpcCoeff
   ! TEMPORARY STUFF FOR IASI
   integer, parameter :: n_sensors=3
   character(*), parameter :: sensor_id(n_sensors) = &
-  (/'iasiB1_metop-a','iasiB3_metop-a','iasiB2_metop-a'/) 
+  (/'iasiB1_metop-a','iasiB2_metop-a','iasiB3_metop-a'/) 
   integer, parameter :: band_id(n_sensors) = (/1,2,3/)
 
 
