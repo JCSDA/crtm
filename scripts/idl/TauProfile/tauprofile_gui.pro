@@ -73,9 +73,9 @@ PRO TauProfile_Profile_Slider_Event, Event
 
   ; Read the required profile TauProfile data
   Result = Read_TauProfile_netCDF( Info.Filename, $
-                                   TauProfile, PROFILE_LIST=(*Info.Profile_List)[m] )
+                                   TauProfile, PROFILE_LIST=(*Info.Profile_List)[m-1] )
   IF ( Result NE SUCCESS ) THEN MESSAGE, 'Error reading profile #'+ $
-                                         STRTRIM((*Info.Profile_List)[m],2) + $
+                                         STRTRIM((*Info.Profile_List)[m-1],2) + $
                                          ' from '+STRTRIM(File,2)
 
   ; Replace the TauProfile data in the info structure
@@ -154,6 +154,12 @@ PRO TauProfile_PSym_Button_Event, Event
 
 END
 
+FUNCTION Molecule_Name, Molecule_ID
+  @tauprofile_parameters
+  loc = WHERE( MOLECULE_SET_ID EQ Molecule_ID, count )
+  IF ( count EQ 0 ) THEN MESSAGE, 'Invalid molecule set id: '+STRTRIM(Molecule_ID,2)
+  RETURN, MOLECULE_SET_NAME[loc[0]]
+END 
 
 ;=======================================================
 PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
@@ -185,11 +191,7 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
   FOR j = 0L, (*Info.TauProfile).n_Molecule_Sets - 1L DO BEGIN
 
     ; Construct the plot titles
-    jID = (*(*Info.TauProfile).Molecule_Set)[j]
-    loc = WHERE( MOLECULE_SET_ID EQ jID, count )
-    IF ( count EQ 0 ) THEN MESSAGE, 'Invalid molecule set id: '+STRTRIM(jID,2)
-    jName = MOLECULE_SET_NAME[loc[0]]
-    
+    jName = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[j])
     Title = 'Molecule Set: ' + jName + '!C' + $
             'Profile: ' + STRTRIM( (*Info.Profile_List)[m-1], 2 ) + $
             '; Angle: ' + STRING( (*(*Info.TauProfile).Angle)[i-1], FORMAT='(f4.2)' ) + $ 
@@ -210,6 +212,31 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
           TITLE = Title
   ENDFOR
 
+  ; Print out the min/max values and locations
+  tDim = SIZE(*(*Info.TauProfile).Tau, /DIMENSIONS)
+  tMin = MIN(*(*Info.TauProfile).Tau, locMin, MAX=tMax, SUBSCRIPT_MAX=locMax)
+  locMin = ARRAY_INDICES(tDim,locMin,/DIMENSIONS)
+  locMax = ARRAY_INDICES(tDim,locMax,/DIMENSIONS)
+  
+  channel  = (*(*Info.TauProfile).Channel)[locMin[1]]
+  angle    = (*(*Info.TauProfile).Angle)[locMin[2]]
+  molecule = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[locMin[4]])
+  XYOUTS, 0.6, 0.2, $
+          STRING(tMin, channel, angle, molecule, $
+                 FORMAT='("MIN: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
+          ALIGNMENT=0.0, /NORMAL, CHARSIZE=1.5
+          
+  channel  = (*(*Info.TauProfile).Channel)[locMax[1]]
+  angle    = (*(*Info.TauProfile).Angle)[locMax[2]]
+  molecule = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[locMax[4]])
+  XYOUTS, 0.8, 0.2, $
+          STRING(tMax, channel, angle, molecule, $
+                 FORMAT='("MAX: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
+          ALIGNMENT=0.0, /NORMAL, CHARSIZE=1.5
+          
+  XYOUTS, 0.66, 0.23, $
+          'Transmittance extrema for profile '+STRTRIM((*Info.Profile_List)[m-1],2), $
+          ALIGNMENT=0.0, /NORMAL, CHARSIZE=1.5
 END
 
 
