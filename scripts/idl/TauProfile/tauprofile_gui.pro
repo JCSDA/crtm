@@ -71,6 +71,9 @@ PRO TauProfile_Profile_Slider_Event, Event
   ; Get the profile number
   WIDGET_CONTROL, Event.ID, GET_VALUE=m
 
+  ; Alert user
+  WIDGET_CONTROL, /HOURGLASS
+
   ; Read the required profile TauProfile data
   Result = Read_TauProfile_netCDF( Info.Filename, $
                                    TauProfile, PROFILE_LIST=(*Info.Profile_List)[m-1] )
@@ -224,7 +227,8 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
   XYOUTS, 0.6, 0.2, $
           STRING(tMin, channel, angle, molecule, $
                  FORMAT='("MIN: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
-          ALIGNMENT=0.0, /NORMAL, CHARSIZE=1.5
+          ALIGNMENT=0.0, /NORMAL, $
+          FONT=Font, CHARSIZE=Charsize
           
   channel  = (*(*Info.TauProfile).Channel)[locMax[1]]
   angle    = (*(*Info.TauProfile).Angle)[locMax[2]]
@@ -232,11 +236,14 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
   XYOUTS, 0.8, 0.2, $
           STRING(tMax, channel, angle, molecule, $
                  FORMAT='("MAX: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
-          ALIGNMENT=0.0, /NORMAL, CHARSIZE=1.5
+          ALIGNMENT=0.0, /NORMAL, $
+          FONT=Font, CHARSIZE=Charsize
           
-  XYOUTS, 0.66, 0.23, $
-          'Transmittance extrema for profile '+STRTRIM((*Info.Profile_List)[m-1],2), $
-          ALIGNMENT=0.0, /NORMAL, CHARSIZE=1.5
+  XYOUTS, 0.77, 0.23, $
+          (*Info.TauProfile).Sensor_ID+' transmittance extrema for profile '+STRTRIM((*Info.Profile_List)[m-1],2), $
+          ALIGNMENT=0.5, /NORMAL, $
+          FONT=Font, CHARSIZE=Charsize
+
 END
 
 
@@ -389,7 +396,7 @@ PRO TauProfile_GUI, File, Debug = Debug
   Top_Level_Base_ID = WIDGET_BASE( COLUMN = 1, $
                                    MAP    = 0, $
                                    MBAR   = Menu_Bar_ID, $
-                                   TITLE  = 'TauProfile_View' )
+                                   TITLE  = 'TauProfile_GUI' )
   WIDGET_CONTROL, Top_Level_Base_ID, UPDATE = 0
 
 
@@ -475,7 +482,7 @@ PRO TauProfile_GUI, File, Debug = Debug
   ; Create the profile slider
   Profile_Slider_ID = WIDGET_SLIDER( Slider_Base_ID, $
                                      GROUP_LEADER = Top_Level_Base_ID, $
-                                     DRAG = 1, $
+                                     DRAG = 0, $
                                      EVENT_PRO = 'TauProfile_Profile_Slider_Event', $
                                      MINIMUM = 0, $
                                      MAXIMUM = 1, $
