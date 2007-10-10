@@ -856,13 +856,13 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Release:            The release number of the netCDF AntCorr file.
+!       Release:            The release number of the netCDF TauProfile file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Version:            The version number of the netCDF AntCorr file.
+!       Version:            The version number of the netCDF TauProfile file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -1499,13 +1499,13 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Release:          The release number of the netCDF AntCorr file.
+!       Release:          The release number of the netCDF TauProfile file.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Version:          The version number of the netCDF AntCorr file.
+!       Version:          The version number of the netCDF TauProfile file.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
@@ -1801,13 +1801,13 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Release:            The release number of the netCDF AntCorr file.
+!       Release:            The release number of the netCDF TauProfile file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Version:            The version number of the netCDF AntCorr file.
+!       Version:            The version number of the netCDF TauProfile file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
