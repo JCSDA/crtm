@@ -8,17 +8,18 @@
 ;       format files.
 ;
 ; CALLING SEQUENCE:
-;       result = Read_netCDF( ncFile, $                                        ; Input
-;                             data, $                                          ; Output
-;                             VARIABLE_LIST         = variable_list, $         ; Input keyword
-;                             COUNT                 = count, $                 ; Input keyword
-;                             OFFSET                = offset, $                ; Input keyword
-;                             STRIDE                = stride, $                ; Input keyword
-;                             VARIABLE_ATTRIBUTES   = variable_attributes, $   ; Input keyword
-;                             GLOBAL_ATTRIBUTES     = global_attributes, $     ; Input keyword
+;       result = Read_netCDF( ncFile                                       , $ ; Input
+;                             data                                         , $ ; Output
+;                             VARIABLE_LIST         = variable_list        , $ ; Input keyword
+;                             COUNT                 = count                , $ ; Input keyword
+;                             OFFSET                = offset               , $ ; Input keyword
+;                             STRIDE                = stride               , $ ; Input keyword
+;                             DIMENSIONS_ONLY       = dimensions_only      , $ ; Input keyword
+;                             VARIABLE_ATTRIBUTES   = variable_attributes  , $ ; Input keyword
+;                             GLOBAL_ATTRIBUTES     = global_attributes    , $ ; Input keyword
 ;                             NO_VAR_BYTE_TO_STRING = no_var_byte_to_string, $ ; Input keyword
 ;                             NO_ATT_BYTE_TO_STRING = no_att_byte_to_string, $ ; Input keyword
-;                             QUIET                 = quiet )                  ; Input keyword
+;                             QUIET                 = quiet                  ) ; Input keyword
 ;
 ; INPUTS:
 ;       ncFile:                 The name of the NetCDF file to read
@@ -42,6 +43,8 @@
 ;                               values of the required variable. It is a 1-based
 ;                               vector and defaults to one for every dimension
 ;                               so that all data is read.
+;       dimensions_only:        Set this keyword to return *ONLY* the netcdf
+;                               dimension data.
 ;       variable_attributes:    Set this keyword to return variable
 ;                               attribute data. Using this keyword modified the
 ;                               the form of the output structure. See the 
@@ -281,6 +284,7 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
                       COUNT                 = count                , $  ; Input keyword
                       OFFSET                = offset               , $  ; Input keyword
                       STRIDE                = stride               , $  ; Input keyword
+                      DIMENSIONS_ONLY       = dimensions_only      , $  ; Input keyword
                       VARIABLE_ATTRIBUTES   = variable_attributes  , $  ; Input keyword
                       GLOBAL_ATTRIBUTES     = global_attributes    , $  ; Input keyword
                       NO_VAR_BYTE_TO_STRING = no_var_byte_to_string, $  ; Input keyword
@@ -347,6 +351,7 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
     ELSE $
       data = CREATE_STRUCT( data, dimName, dimSize )
   ENDFOR
+  IF ( KEYWORD_SET( dimensions_only ) ) THEN GOTO, Done
 
 
   ; Read global attributes
@@ -506,6 +511,7 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
 
 
   ; Close the netCDF data file
+  Done:
   NCDF_CLOSE, ncId
 
 
