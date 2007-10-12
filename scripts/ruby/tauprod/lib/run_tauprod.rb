@@ -300,6 +300,9 @@ begin
             # Enter the results directory
             cd ${RESULTS_DIR}
 
+            # Remove any old, lingering signal files
+            rm -f *.signal 2>>${LOG_FILE}
+
             # Rename or remove the data files
             if [ -f ${UP_TAPE_FILE} ]; then
               mv ${UP_TAPE_FILE} ${UP_LBL_FILE} 2>>${LOG_FILE}
