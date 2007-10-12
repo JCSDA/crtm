@@ -1,4 +1,4 @@
-# Put iasi_tauprod heirarchy at
+# Put TauProd heirarchy at
 # beginning of search path
 $:.unshift File.join(File.dirname(__FILE__))
 
@@ -22,7 +22,7 @@ module TauProd
     NPANELS = 1      # No. of LBL panels
     UPDIRN  = 1      # Direction flag for upwelling
     DNDIRN  = 2      # Direction flag for upwelling
-    SENSOR_ID = "iasi_metopa"
+    SENSOR_ID = "iasi_metop-a"
     
     # Literal constants
     ZERO=0.0; ONE=1.0
@@ -86,6 +86,7 @@ module TauProd
       [ "--help"       , "-h", GetoptLong::NO_ARGUMENT       ],
       [ "--debug"      , "-g", GetoptLong::NO_ARGUMENT       ],
       [ "--noop"       , "-n", GetoptLong::NO_ARGUMENT       ],
+      [ "--keeplbl"    , "-k", GetoptLong::NO_ARGUMENT       ],
       [ "--angles"     , "-a", GetoptLong::REQUIRED_ARGUMENT ],
       [ "--bands"      , "-b", GetoptLong::REQUIRED_ARGUMENT ],
       [ "--co2_mr"     , "-c", GetoptLong::REQUIRED_ARGUMENT ],
@@ -101,7 +102,7 @@ module TauProd
     # Begin class definitions
     # -----------------------    
     attr_reader :queue, :start_delay, :t5_dir, :t3_id, :co2_mr, :profile_set, :profiles,
-                :bands, :molids, :angles, :noop, 
+                :bands, :molids, :angles, :noop, :keeplbl,
                 :debug
                 
     def initialize(debug = false)
@@ -116,6 +117,7 @@ module TauProd
       @molids      = [1, 10, 11, 12, 13, 14, 15]  # Molecule sets to process
       @angles      = ANGLE_INFO.keys.sort         # Angles to process
       @noop        = false                        # Submit jobs by default
+      @keeplbl     = false                        # Do not keep the LBL datafiles by default
       @debug       = debug                        # Have a guess
     end
 
@@ -130,6 +132,8 @@ module TauProd
               @debug = true
             when "--noop"
               @noop = true
+            when "--keeplbl"
+              @keeplbl = true
             when "--angles"
               @angles = parse_range(arg)
             when "--bands"
@@ -162,7 +166,7 @@ module TauProd
     def display
       puts "\nTauProd config values:"
       puts "queue       : #{@queue}"
-      puts "start_delay : #{@start_delay}"
+      puts "start_delay : #{@start_delay} seconds"
       puts "t5_dir      : #{@t5_dir}"
       puts "t3_id       : #{@t3_id}"
       puts "co2_mr      : #{@co2_mr} ppmv"
@@ -172,6 +176,7 @@ module TauProd
       puts "molids      : #{@molids.join(",")}"
       puts "angles      : #{@angles.join(",")}"
       puts "noop        : #{@noop}"
+      puts "keeplbl     : #{@keeplbl}"
       puts "debug       : #{@debug}\n"
     end
 

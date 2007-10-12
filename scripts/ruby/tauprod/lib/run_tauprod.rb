@@ -12,9 +12,16 @@
 # --help  (-h):
 #    you're looking at it.
 #
+# --debug (-g):
+#    Set this switch to output debug information.
+#
 # --noop  (-n):
 #    Create all the directories and script files, but do not submit any jobs
 #    to the batch processor.
+#
+# --keeplbl  (-k):
+#    Keep all the intermediate line-by-line (LBL) datafiles. The default action
+#    is to delete them with they are no longer needed.
 #
 # --angles a1[-a2][,a3,a4,..]  (-a):
 #    Specify the angles to process. The angles can be specified individually,
@@ -124,6 +131,7 @@ begin
     bname = "band%.1d" % b
     bdir = bname
     cmd = "mkdir #{bdir}"
+    puts(cmd) if cfg.debug
     system(cmd) unless File.directory?(bdir)
     
     # Assign the frequency parameters for this band
@@ -140,6 +148,7 @@ begin
       mname = minfo[:name]
       mdir = File.join(bdir,mname)
       cmd = "mkdir #{mdir}"
+      puts(cmd) if cfg.debug
       system(cmd) unless File.directory?(mdir)
       
       # Specify the continua
@@ -155,6 +164,7 @@ begin
         pname = "profile%.2d"%p
         pdir = File.join(mdir,pname)
         cmd = "mkdir #{pdir}"
+        puts(cmd) if cfg.debug
         system(cmd) unless File.directory?(pdir)
       
         # Construct the generic TAPE5 filename 
@@ -190,6 +200,7 @@ begin
           aname = "angle%.1d"%a
           adir = File.join(pdir,aname)
           cmd = "mkdir #{adir}"
+          puts(cmd) if cfg.debug
           system(cmd) unless File.directory?(adir)
           
           # Define an id tag for filenames, and an attribute for netCDF files
@@ -224,7 +235,7 @@ begin
           t5file = "tape5.#{id_tag}.rdk"
           File.open("#{pdir}/#{t5file}","w") {|f| f.puts(t5)}
 
-          
+         
           # Write the schell script file
           # ----------------------------
           script_file = "#{pdir}/#{id_tag}.sh"
@@ -236,15 +247,17 @@ begin
             # and using the TAPE3 spectroscopic file:
             #   #{t3file}
             
+            #{cfg.debug ? "set -x" : ""}
+            
             # File and directory names
             SCRIPT_NAME=$(basename $0)
-            
+
+            LOG_FILE="Process.Log"
+
+            KEEP_LBL="#{cfg.keeplbl}"            
             RESULTS_DIR="#{aname}"
-            LOG_FILE="Error.Log"
-            
             TAPE3_FILE="#{t3file}"
             TAPE5_FILE="#{t5file}"
-            
             ID_TAG="#{id_tag}"
             ID_ATTRIBUTE="#{id_att}"
             PROFILE_SET="#{cfg.profile_set}"
@@ -254,8 +267,8 @@ begin
             UP_TAPE_FILE="TAPE20"
             DOWN_TAPE_FILE="TAPE21"
             
-            UP_LBL_FILE="upwelling_tau"
-            DOWN_LBL_FILE="downwelling_tau"
+            UP_LBL_FILE="upwelling"
+            DOWN_LBL_FILE="downwelling"
 
             UP_NC_FILE="${UP_LBL_FILE}.nc"
             DOWN_NC_FILE="${DOWN_LBL_FILE}.nc"
@@ -320,7 +333,9 @@ begin
             NoMoreInput
             sleep 10
             if [ -f ${UP_NC_FILE}.signal ]; then
-              rm -f ${UP_LBL_FILE} 2>>${LOG_FILE}
+              if [ "${KEEP_LBL}" = "false" ]; then
+                rm -f ${UP_LBL_FILE} 2>>${LOG_FILE}
+              fi
             else
               echo "${SCRIPT_NAME}:${UP_NC_FILE} creation failed" >> ${LOG_FILE}
               exit 1
@@ -336,7 +351,9 @@ begin
             NoMoreInput
             sleep 10
             if [ -f ${DOWN_NC_FILE}.signal ]; then
-              rm -f ${DOWN_LBL_FILE} 2>>${LOG_FILE}
+              if [ "${KEEP_LBL}" = "false" ]; then
+                rm -f ${DOWN_LBL_FILE} 2>>${LOG_FILE}
+              fi
             else
               echo "${SCRIPT_NAME}:${DOWN_NC_FILE} creation failed" >> ${LOG_FILE}
               exit 1
@@ -359,7 +376,9 @@ begin
             for TYPE in ${COMPLEX_TYPE}; do
               FILE="${UP_LBL_FILE}.${SENSOR_ID}.${TYPE}.TauProfile.nc"
               if [ -f ${FILE}.signal ]; then
-                rm -f ${UP_NC_FILE} 2>>${LOG_FILE}
+                if [ "${KEEP_LBL}" = "false" ]; then
+                  rm -f ${UP_NC_FILE} 2>>${LOG_FILE}
+                fi
               else
                 echo "${SCRIPT_NAME}:${FILE} creation failed" >> ${LOG_FILE}
                 exit 1
@@ -379,7 +398,9 @@ begin
             for TYPE in ${COMPLEX_TYPE}; do
               FILE="${DOWN_LBL_FILE}.${SENSOR_ID}.${TYPE}.TauProfile.nc"
               if [ -f ${FILE}.signal ]; then
-                rm -f ${DOWN_NC_FILE} 2>>${LOG_FILE}
+                if [ "${KEEP_LBL}" = "false" ]; then
+                  rm -f ${DOWN_NC_FILE} 2>>${LOG_FILE}
+                fi
               else
                 echo "${SCRIPT_NAME}:${FILE} creation failed" >> ${LOG_FILE}
                 exit 1
@@ -406,10 +427,11 @@ begin
           n_jobs += 1
           
         end # angle loop
-      
+
         # Submit the job command file
         jcf.close
         cmd = "#{TauProd::Config::LL_SUBMIT} #{jcf_file}"
+        puts(cmd) if cfg.debug
         system(cmd) unless cfg.noop
 
       end # profile loop
@@ -420,7 +442,7 @@ begin
       puts("  Completed submission of #{bname},#{mname} jobs.")
 
     end # molecule loop
-  end # band loop                
+  end # band loop
    
 rescue StandardError => error_message
   puts("\nERROR: #{error_message}\n")
