@@ -36,7 +36,7 @@ PROGRAM Test_EmisCoeff
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Test_EmisCoeff'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Test_EmisCoeff.f90,v 1.1 2006/06/19 18:55:48 wd20pd Exp $'
+  '$Id$'
   CHARACTER( * ), PARAMETER ::  NC_FILENAME = 'Test.EmisCoeff.nc'
   CHARACTER( * ), PARAMETER :: BIN_FILENAME = 'Test.EmisCoeff.bin'
 
@@ -59,7 +59,7 @@ PROGRAM Test_EmisCoeff
   ! Output program header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to test the EmisCoeff definition and IO functions.', &
-                        '$Revision: 1.1 $' )
+                        '$Revision$' )
 
   ! Define some typical dimensions
   n_Angles      = 20

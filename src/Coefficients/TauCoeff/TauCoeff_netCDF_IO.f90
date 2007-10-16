@@ -45,7 +45,7 @@ MODULE TauCoeff_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauCoeff_netCDF_IO.f90,v 5.10 2006/09/21 17:49:41 wd20pd Exp $'
+    '$Id$'
 
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: TITLE_GATTNAME         = 'title' 

@@ -4,9 +4,13 @@
 ! Module containing the shared CRTM spectral coefficients (SpcCoeff)
 ! and their load/destruction routines. 
 !
+! PUBLIC DATA:
+!       SC:  Data structure array containing the spectral coefficient
+!            data for the requested sensors.
+!
 ! SIDE EFFECTS:
 !       Routines in this module modify the contents of the public
-!       data structures.
+!       data structure SC.
 !
 ! RESTRICTIONS:
 !       Routines in this module should only be called during the
@@ -14,7 +18,7 @@
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_SpcCoeff
@@ -22,7 +26,7 @@ MODULE CRTM_SpcCoeff
   ! ----------------
   ! Enviroment setup
   ! ----------------
-  ! Module use statements
+  ! Module use
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE SpcCoeff_Define   , ONLY: SpcCoeff_type          , &
                                 Destroy_SpcCoeff       , &
@@ -63,11 +67,13 @@ MODULE CRTM_SpcCoeff
   IMPLICIT NONE
 
 
-  ! --------------------
-  ! Default visibilities
-  ! --------------------
+  ! ------------
+  ! Visibilities
+  ! ------------
   ! Everything private by default
   PRIVATE
+  ! The shared data
+  PUBLIC :: SC
   ! Public routines in this module
   PUBLIC :: CRTM_Load_SpcCoeff
   PUBLIC :: CRTM_Destroy_SpcCoeff
@@ -113,7 +119,7 @@ MODULE CRTM_SpcCoeff
   ! -------------------------------------
   ! The shared spectral coefficients data
   ! -------------------------------------
-  TYPE(SpcCoeff_type), SAVE, PUBLIC, ALLOCATABLE :: SC(:)
+  TYPE(SpcCoeff_type), SAVE, ALLOCATABLE :: SC(:)
 
 
 CONTAINS
@@ -225,7 +231,7 @@ CONTAINS
                                Process_ID       , &  ! Optional input
                                Output_Process_ID, &  ! Optional input
                                Message_Log      ) &  ! Error messaging
-                             RESULT ( Error_Status )
+                             RESULT( Error_Status )
     ! Arguments
     CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN)  :: SensorID
     CHARACTER(*),               OPTIONAL, INTENT(IN)  :: File_Path
@@ -244,20 +250,19 @@ CONTAINS
     INTEGER :: Allocate_Status
     INTEGER :: n, nSensors, nChannels
     INTEGER :: Max_n_Channels  ! Maximum channels protected variable
-    LOGICAL :: Is_Set
 
     ! Setup 
     Error_Status = SUCCESS
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
-    IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i0 )' ) Process_ID
+    IF ( PRESENT(Process_ID) ) THEN
+      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF
 
     ! Determine the number of sensors and construct their filenames
-    IF ( PRESENT( SensorID ) ) THEN
+    IF ( PRESENT(SensorID) ) THEN
       ! Construct filenames for specified sensors
       nSensors=SIZE(SensorID)
       IF ( nSensors > MAX_N_SENSORS ) THEN
@@ -398,7 +403,7 @@ CONTAINS
 
   FUNCTION CRTM_Destroy_SpcCoeff( Process_ID,   &  ! Optional input
                                   Message_Log ) &  ! Error messaging
-                                RESULT ( Error_Status )
+                                RESULT( Error_Status )
     ! Arguments
     INTEGER,      OPTIONAL, INTENT(IN)  :: Process_ID
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -416,7 +421,7 @@ CONTAINS
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
     IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i0 )' ) Process_ID
+      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF

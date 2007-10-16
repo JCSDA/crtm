@@ -47,7 +47,7 @@ MODULE EmisCoeff_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: EmisCoeff_netCDF_IO.f90,v 2.2 2006/06/19 18:58:39 wd20pd Exp $'
+    '$Id$'
 
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: TITLE_GATTNAME   = 'title' 

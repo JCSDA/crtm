@@ -32,7 +32,7 @@ PROGRAM EmisCoeff_NC2BIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'EmisCoeff_NC2BIN'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: EmisCoeff_NC2BIN.f90,v 1.3 2006/06/19 19:15:52 wd20pd Exp $'
+  '$Id$'
 
 
   ! ---------
@@ -48,7 +48,7 @@ PROGRAM EmisCoeff_NC2BIN
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to convert netCDF format EmisCoeff files to '//&
                         'their CRTM Binary format.', &
-                        '$Revision: 1.3 $' )
+                        '$Revision$' )
 
   ! Get the input and output filenames
   WRITE( *, FMT     = '( /5x, "Enter the INPUT netCDF EmisCoeff file: " )', &

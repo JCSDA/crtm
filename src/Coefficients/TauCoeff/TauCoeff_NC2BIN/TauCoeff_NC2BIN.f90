@@ -29,9 +29,9 @@ PROGRAM TauCoeff_NC2BIN
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'TauCoeff_NC2BIN'
-  CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: TauCoeff_NC2BIN.f90,v 1.9 2006/06/23 23:17:57 wd20pd Exp $'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'TauCoeff_NC2BIN'
+  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  '$Id$'
 
   ! ---------
   ! Variables
@@ -47,7 +47,7 @@ PROGRAM TauCoeff_NC2BIN
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to convert netCDF format TauCoeff files to '//&
                         'their CRTM Binary format.', &
-                        '$Revision: 1.9 $' )
+                        '$Revision$' )
 
   ! Get the input and output filenames
   WRITE( *, FMT     = '( /5x, "Enter the INPUT netCDF TauCoeff file: " )', &

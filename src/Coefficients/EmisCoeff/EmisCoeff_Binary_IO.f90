@@ -46,14 +46,16 @@ MODULE EmisCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: EmisCoeff_Binary_IO.f90,v 2.2 2006/06/19 18:58:39 wd20pd Exp $'
+    '$Id$'
+  ! Keyword set value
+  INTEGER, PARAMETER :: SET = 1
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Inquire_EmisCoeff_Binary
 !
@@ -176,10 +178,12 @@ CONTAINS
     INTEGER(Long) :: File_n_Wind_Speeds
  
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Open the Binary format EmisCoeff file
+    ! -------------------------------------
     Error_Status = Open_Binary_File( Filename, &
                                      FileID,   &
                                      Message_Log = Message_Log )
@@ -192,7 +196,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read and check the EmisCoeff type
+    ! ---------------------------------
     READ( FileID, IOSTAT = IO_Status ) Spectral_or_Sensor
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -217,7 +223,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read the Release/Version information
+    ! ------------------------------------
     READ( FileID, IOSTAT = IO_Status ) File_Release, &
                                        File_Version
     IF ( IO_Status /= 0 ) THEN
@@ -233,7 +241,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read the dimensions
+    ! -------------------
     READ( FileID, IOSTAT = IO_Status ) File_n_Angles, &
                                        File_n_Frequencies, &
                                        File_n_Wind_Speeds
@@ -250,7 +260,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Close the file
+    ! --------------
     CLOSE( FileID, STATUS = 'KEEP', &
                    IOSTAT = IO_Status )
     IF ( IO_Status /= 0 ) THEN
@@ -262,7 +274,9 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Assign the return arguments
+    ! ---------------------------
     IF ( PRESENT( n_Angles      ) ) n_Angles      = File_n_Angles
     IF ( PRESENT( n_Frequencies ) ) n_Frequencies = File_n_Frequencies
     IF ( PRESENT( n_Wind_Speeds ) ) n_Wind_Speeds = File_n_Wind_Speeds
@@ -410,6 +424,7 @@ CONTAINS
     INTEGER(Long), DIMENSION(N_EMISCOEFF_ITEMS) :: Data_Type
  
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -434,7 +449,9 @@ CONTAINS
       Process_ID_Tag = ' '
     END IF
 
+
     ! Open the EmisCoeff file
+    ! ------------------------
     Error_Status = Open_Binary_File( Filename, &
                                      FileID,   &
                                      Message_Log = Message_Log )
@@ -446,7 +463,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Read and check the EmisCoeff structure type
+    ! -------------------------------------------
     READ( FileID, IOSTAT = IO_Status ) Spectral_or_Sensor
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error reading EmisCoeff file data type from ", a, &
@@ -460,7 +479,9 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Read the Release/Version information
+    ! ------------------------------------
     READ( FileID, IOSTAT = IO_Status ) EmisCoeff%Release, &
                                        EmisCoeff%Version
     IF ( IO_Status /= 0 ) THEN
@@ -478,7 +499,9 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Read the dimensions
+    ! -------------------
     READ( FileID, IOSTAT = IO_Status ) n_Angles, &
                                        n_Frequencies, &
                                        n_Wind_Speeds
@@ -526,7 +549,9 @@ CONTAINS
       END IF
     END DO
 
+
     ! Allocate the EmisCoeff structure for reading
+    ! ---------------------------------------------
     Error_Status = Allocate_EmisCoeff( n_Angles, &
                                        n_Frequencies, &
                                        n_Wind_Speeds, &
@@ -537,7 +562,9 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Read the dimension data vectors
+    ! -------------------------------
     READ( FileID, IOSTAT = IO_Status ) EmisCoeff%Angle
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error reading angle data from ", a, &
@@ -562,7 +589,9 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Read the emissivities
+    ! ---------------------
     READ( FileID, IOSTAT = IO_Status ) EmisCoeff%Emissivity
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error reading emissivity data from ", a, &
@@ -572,6 +601,7 @@ CONTAINS
     END IF
 
     ! Close the file
+    ! --------------
     CLOSE( FileID, STATUS = 'KEEP',   &
                    IOSTAT = IO_Status )
     IF ( IO_Status /= 0 ) THEN
@@ -584,6 +614,7 @@ CONTAINS
     END IF
 
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       CALL Info_EmisCoeff( EmisCoeff, Message )
       CALL Display_Message( ROUTINE_NAME, &
@@ -592,13 +623,12 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     Destroy_Status = Destroy_EmisCoeff(EmisCoeff, Message_Log=Message_Log)
     IF ( Destroy_Status /= SUCCESS ) &
@@ -713,6 +743,7 @@ CONTAINS
     INTEGER :: FileID
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -746,6 +777,7 @@ CONTAINS
     END IF
 
     ! Open the EmisCoeff data file
+    ! ----------------------------
     Error_Status = Open_Binary_File( TRIM( Filename ),         &
                                      FileID,                   &
                                      For_Output  = 1,          &
@@ -755,7 +787,9 @@ CONTAINS
       GOTO 2000
     END IF
 
+
     ! Write the type of EmisCoeff structure
+    ! -------------------------------------
     WRITE( FileID, IOSTAT = IO_Status ) SPECTRAL_EMISCOEFF_TYPE
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error writing EmisCoeff structure type to ", a, &
@@ -764,7 +798,9 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Write the Release/Version information
+    ! -------------------------------------
     WRITE( FileID, IOSTAT = IO_Status ) EmisCoeff%Release, &
                                         EmisCoeff%Version 
     IF ( IO_Status /= 0 ) THEN
@@ -775,6 +811,7 @@ CONTAINS
     END IF
 
     ! Write the dimensions
+    ! --------------------
     WRITE( FileID, IOSTAT = IO_Status ) EmisCoeff%n_Angles, &
                                         EmisCoeff%n_Frequencies, &
                                         EmisCoeff%n_Wind_Speeds
@@ -802,7 +839,9 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Write the dimension data vectors
+    ! --------------------------------
     WRITE( FileID, IOSTAT = IO_Status ) EmisCoeff%Angle(1:EmisCoeff%n_Angles)
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '( "Error writing angle data to ", a, &
@@ -827,7 +866,9 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Write the emissivities
+    ! ----------------------
     WRITE( FileID, IOSTAT = IO_Status ) EmisCoeff%Emissivity(1:EmisCoeff%n_Angles, &
                                                              1:EmisCoeff%n_Frequencies, &
                                                              1:EmisCoeff%n_Wind_Speeds)
@@ -839,7 +880,9 @@ CONTAINS
       GOTO 1000
     END IF
 
+
     ! Close the file
+    ! --------------
     CLOSE( FileID, STATUS = 'KEEP',   &
                    IOSTAT = IO_Status )
     IF ( IO_Status /= 0 ) THEN
@@ -851,7 +894,9 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+
     ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
       CALL Info_EmisCoeff( EmisCoeff, Message )
       CALL Display_Message( ROUTINE_NAME, &
@@ -860,13 +905,12 @@ CONTAINS
                             Message_Log = Message_Log )
     END IF
 
+    !=====
     RETURN
+    !=====
 
-
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-    !#                      -= CLEAN UP AFTER AN ERROR -=                       #
-    !#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-
+    ! Clean up after an error
+    ! -----------------------
     1000 CONTINUE
     CLOSE(FileID,STATUS=FILE_STATUS_ON_ERROR)
 

@@ -69,7 +69,7 @@ MODULE TauCoeff_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauCoeff_Define.f90,v 5.14 2006/06/23 23:16:19 wd20pd Exp $'
+  '$Id$'
   ! TauCoeff init values
   REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
   INTEGER,      PARAMETER :: IP_INIT = -1

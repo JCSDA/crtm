@@ -4,9 +4,13 @@
 ! Module containing the shared CRTM absorption coefficients (TauCoeff)
 ! and their load/destruction routines. 
 !
+! PUBLIC DATA:
+!       TC:  Data structure array containing the transmittance model
+!            coefficient data for the requested sensors.
+!
 ! SIDE EFFECTS:
 !       Routines in this module modify the contents of the public
-!       data structures.
+!       data structure TC.
 !
 ! RESTRICTIONS:
 !       Routines in this module should only be called during the
@@ -22,7 +26,7 @@ MODULE CRTM_TauCoeff
   ! -----------------
   ! Environment setup
   ! -----------------
-  ! CRTM Modules
+  ! Module use
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE TauCoeff_Define   , ONLY: TauCoeff_type, Destroy_TauCoeff
   USE TauCoeff_Binary_IO, ONLY: Read_TauCoeff_Binary
@@ -38,7 +42,11 @@ MODULE CRTM_TauCoeff
   ! ------------
   ! Visibilities
   ! ------------
+  ! Everything private by default
   PRIVATE
+  ! The shared data
+  PUBLIC :: TC
+  ! Public routines in this module
   PUBLIC :: CRTM_Load_TauCoeff
   PUBLIC :: CRTM_Destroy_TauCoeff
 
@@ -49,11 +57,12 @@ MODULE CRTM_TauCoeff
   CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
   '$Id$'
 
+
   ! --------------------------------------
   ! The shared data for the gas absorption
   ! (AtmAbsorption) model
   ! --------------------------------------
-  TYPE(TauCoeff_type), SAVE, PUBLIC, DIMENSION(:), ALLOCATABLE :: TC
+  TYPE(TauCoeff_type), SAVE, ALLOCATABLE :: TC(:)
 
 
 CONTAINS
@@ -185,20 +194,19 @@ CONTAINS
     INTEGER :: Allocate_Status
     INTEGER :: n, nSensors, nChannels
     INTEGER :: Max_n_Channels  ! Maximum channels protected variable
-    LOGICAL :: Is_Set
 
     ! Set up
     Error_Status = SUCCESS
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
-    IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i0 )' ) Process_ID
+    IF ( PRESENT(Process_ID) ) THEN
+      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF
 
     ! Determine the number of sensors and construct their filenames
-    IF ( PRESENT( SensorID ) ) THEN
+    IF ( PRESENT(SensorID) ) THEN
       ! Construct filenames for specified sensors
       nSensors = SIZE(SensorID)
       IF ( nSensors > MAX_N_SENSORS ) THEN
@@ -340,7 +348,7 @@ CONTAINS
 
   FUNCTION CRTM_Destroy_TauCoeff( Process_ID,   &  ! Optional input
                                   Message_Log ) &  ! Error messaging
-                                RESULT ( Error_Status )
+                                RESULT( Error_Status )
     ! Arguments
     INTEGER,      OPTIONAL, INTENT(IN)  :: Process_ID
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -358,7 +366,7 @@ CONTAINS
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
     IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '( ";  MPI Process ID: ", i0 )' ) Process_ID
+      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
     ELSE
       Process_ID_Tag = ' '
     END IF

@@ -32,7 +32,7 @@ PROGRAM TauCoeff_Compare
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'TauCoeff_Compare'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: TauCoeff_Compare.f90,v 1.5 2006/06/15 16:47:23 wd20pd Exp $'
+  '$Id$'
 
   ! Allowable formats.
   ! Format codes MUST start at 1 and increment by 1.
@@ -61,7 +61,7 @@ PROGRAM TauCoeff_Compare
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to compare TauCoeff data read from either '//&
                         'netCDF or CRTM Binary format files.', &
-                        '$Revision: 1.5 $' )
+                        '$Revision$' )
 
   ! Get the filenames and formats
   CALL Get_File_Name_and_Format( 'FIRST',  File1_Name, File1_Format )

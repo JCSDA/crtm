@@ -1583,7 +1583,7 @@ CONTAINS
 
     ! Trim the output based on the
     ! dummy argument string length
-    Info = Long_String(1:MIN( LEN(Info), LEN_TRIM( Long_String ) ))
+    Info = Long_String(1:MIN( LEN(Info), LEN_TRIM(Long_String) ))
 
   END SUBROUTINE Info_CloudCoeff
 

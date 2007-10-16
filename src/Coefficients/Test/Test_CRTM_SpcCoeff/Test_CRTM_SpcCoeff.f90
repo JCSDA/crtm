@@ -26,7 +26,7 @@ PROGRAM Test_CRTM_SpcCoeff
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: $'
+    '$Id$'
   INTEGER, PARAMETER :: NSENSORS=4
   CHARACTER(*), PARAMETER, DIMENSION(NSENSORS) :: SENSORID=&
     (/ 'amsua_n17', &

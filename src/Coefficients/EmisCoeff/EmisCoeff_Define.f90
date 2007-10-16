@@ -5,21 +5,6 @@
 ! routines to manipulate it.
 !
 !
-! *!IMPORTANT!*
-! -------------
-! Note that the EmisCoeff_type is PUBLIC and its members are not
-! encapsulated; that is, they can be fully accessed outside the
-! scope of this module. This makes it possible to manipulate
-! the structure and its data directly rather than, for e.g., via
-! get() and set() functions. This was done to eliminate the
-! overhead of the get/set type of structure access in using the
-! structure. *But*, it is recommended that the user destroy,
-! allocate, assign, and concatenate the structure using only
-! the routines in this module where possible to eliminate --
-! or at least minimise -- the possibility of memory leakage
-! since most of the structure members are pointers.
-!
-!
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 13-Jun-2005
 !                       paul.vandelst@ssec.wisc.edu
@@ -51,7 +36,7 @@ MODULE EmisCoeff_Define
   PUBLIC :: SENSOR_EMISCOEFF_TYPE
   ! Datatypes
   PUBLIC :: EmisCoeff_type
-  ! Public procedures to manipulate the EmisCoeff structure
+  ! Procedures
   PUBLIC :: Associated_EmisCoeff
   PUBLIC :: Destroy_EmisCoeff
   PUBLIC :: Allocate_EmisCoeff
@@ -65,11 +50,13 @@ MODULE EmisCoeff_Define
   ! Module parameters
   ! -----------------
   ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: EmisCoeff_Define.f90,v 2.2 2006/06/19 18:58:39 wd20pd Exp $'
+  CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
   ! EmisCoeff init values
-  REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
-  INTEGER,      PARAMETER :: IP_INIT = -1
+  REAL(Double),  PARAMETER :: FP_INIT = 0.0_Double
+  INTEGER,       PARAMETER :: IP_INIT = -1
+  ! Keyword set value
+  INTEGER,       PARAMETER :: SET = 1
   ! Current valid release and version numbers
   INTEGER(Long), PARAMETER :: EMISCOEFF_RELEASE = 2  ! This determines structure and file formats.
   INTEGER(Long), PARAMETER :: EMISCOEFF_VERSION = 1  ! This is just the data version.
@@ -161,9 +148,7 @@ CONTAINS
 
   SUBROUTINE Clear_EmisCoeff( EmisCoeff )
     TYPE(EmisCoeff_type), INTENT(IN OUT) :: EmisCoeff
-    EmisCoeff%n_Angles      = 0
-    EmisCoeff%n_Frequencies = 0
-    EmisCoeff%n_Wind_Speeds = 0
+    ! Noop for now
   END SUBROUTINE Clear_EmisCoeff
 
 
@@ -344,23 +329,29 @@ CONTAINS
     INTEGER :: Allocate_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
+    ! Reinitialise the dimensions
+    EmisCoeff%n_Angles      = 0
+    EmisCoeff%n_Frequencies = 0
+    EmisCoeff%n_Wind_Speeds = 0
+    
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
       IF ( No_Clear == 1 ) Clear = .FALSE.
     END IF
-
-    ! Initialise the scalar members
     IF ( Clear ) CALL Clear_EmisCoeff( EmisCoeff )
 
     ! If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. Associated_EmisCoeff( EmisCoeff ) ) RETURN
 
-    ! Deallocate the pointer members
+
+    ! Deallocate the array components
+    ! -------------------------------
     DEALLOCATE( EmisCoeff%Angle     , &
                 EmisCoeff%Frequency , &
                 EmisCoeff%Wind_Speed, &
@@ -377,6 +368,7 @@ CONTAINS
     END IF
 
     ! Decrement and test allocation counter
+    ! -------------------------------------
     EmisCoeff%n_Allocates = EmisCoeff%n_Allocates - 1
     IF ( EmisCoeff%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
@@ -502,6 +494,7 @@ CONTAINS
     INTEGER :: Allocate_Status
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -519,9 +512,9 @@ CONTAINS
 
     ! Check if ANY pointers are already associated
     ! If they are, deallocate them but leave scalars.
-    IF ( Associated_EmisCoeff( EmisCoeff, ANY_Test=1 ) ) THEN
+    IF ( Associated_EmisCoeff( EmisCoeff, ANY_Test=SET ) ) THEN
       Error_Status = Destroy_EmisCoeff( EmisCoeff, &
-                                        No_Clear=1, &
+                                        No_Clear=SET, &
                                         Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
@@ -532,8 +525,10 @@ CONTAINS
       END IF
     END IF
 
+
     ! Perform the pointer allocation
-    ALLOCATE( EmisCoeff%Angle( n_Angles ), &
+    ! ------------------------------
+     ALLOCATE( EmisCoeff%Angle( n_Angles ), &
               EmisCoeff%Frequency( n_Frequencies ), &
               EmisCoeff%Wind_Speed( n_Wind_Speeds ), &
               EmisCoeff%Emissivity( n_Angles, n_Frequencies, n_Wind_Speeds ), &
@@ -549,18 +544,24 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Assign the dimensions
+    ! ---------------------
     EmisCoeff%n_Angles      = n_Angles     
     EmisCoeff%n_Frequencies = n_Frequencies
     EmisCoeff%n_Wind_Speeds = n_Wind_Speeds
 
+
     ! Initialise the arrays
+    ! ---------------------
     EmisCoeff%Angle      = FP_INIT
     EmisCoeff%Frequency  = FP_INIT
     EmisCoeff%Wind_Speed = FP_INIT
     EmisCoeff%Emissivity = FP_INIT
 
+
     ! Increment and test the allocation counter
+    ! -----------------------------------------
     EmisCoeff%n_Allocates = EmisCoeff%n_Allocates + 1
     IF ( EmisCoeff%n_Allocates /= 1 ) THEN
       Error_Status = FAILURE
@@ -655,6 +656,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_EmisCoeff'
 
     ! Set up
+    ! ------
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
@@ -668,7 +670,8 @@ CONTAINS
       RETURN
     END IF
 
-    ! Allocate data arrays
+    ! Allocate the structure
+    ! ----------------------
     Error_Status = Allocate_EmisCoeff( EmisCoeff_in%n_Angles     , &
                                        EmisCoeff_in%n_Frequencies, &
                                        EmisCoeff_in%n_Wind_Speeds, &
@@ -682,6 +685,9 @@ CONTAINS
       RETURN
     END IF
 
+
+    ! Assign structure data
+    ! ---------------------
     ! Assign non-dimension scalar members
     EmisCoeff_out%Release = EmisCoeff_in%Release
     EmisCoeff_out%Version = EmisCoeff_in%Version
@@ -704,12 +710,12 @@ CONTAINS
 !       Function to test if two EmisCoeff structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Equal_EmisCoeff( EmisCoeff_LHS,            &  ! Input
-!                                       EmisCoeff_RHS,            &  ! Input
-!                                       ULP_Scale   = ULP_Scale,  &  ! Optional input
-!                                       Check_All   = Check_All,  &  ! Optional input
-!                                       RCS_Id      = RCS_Id,     &  ! Revision control
-!                                       Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Equal_EmisCoeff( EmisCoeff_LHS          , &  ! Input
+!                                       EmisCoeff_RHS          , &  ! Input
+!                                       ULP_Scale  =ULP_Scale  , &  ! Optional input
+!                                       Check_All  =Check_All  , &  ! Optional input
+!                                       RCS_Id     =RCS_Id     , &  ! Optional output
+!                                       Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       EmisCoeff_LHS: EmisCoeff structure to be compared; equivalent to the
@@ -795,10 +801,10 @@ CONTAINS
 
   FUNCTION Equal_EmisCoeff( EmisCoeff_LHS, &  ! Input
                             EmisCoeff_RHS, &  ! Input
-                            ULP_Scale,     &  ! Optional input
-                            Check_All,     &  ! Optional input
-                            RCS_Id,        &  ! Revision control
-                            Message_Log )  &  ! Error messaging
+                            ULP_Scale    , &  ! Optional input
+                            Check_All    , &  ! Optional input
+                            RCS_Id       , &  ! Revision control
+                            Message_Log  ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     TYPE(EmisCoeff_type),   INTENT(IN)  :: EmisCoeff_LHS
@@ -815,15 +821,10 @@ CONTAINS
     CHARACTER(256) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: n
-    LOGICAL, DIMENSION(EmisCoeff_LHS%n_Angles)        :: Angle_Compare
-    LOGICAL, DIMENSION(EmisCoeff_LHS%n_Frequencies)   :: Frequency_Compare
-    LOGICAL, DIMENSION(EmisCoeff_LHS%n_Wind_Speeds)   :: Wind_Speed_Compare
-    LOGICAL, DIMENSION(EmisCoeff_LHS%n_Angles     , &
-                       EmisCoeff_LHS%n_Frequencies, &
-                       EmisCoeff_LHS%n_Wind_Speeds  ) :: Emissivity_Compare
+    INTEGER :: i, l, n
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
@@ -861,7 +862,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Check structure Release/Version
+    ! -------------------------------
     IF ( ( EmisCoeff_LHS%Release /= EmisCoeff_RHS%Release ) .OR. &
          ( EmisCoeff_LHS%Version /= EmisCoeff_RHS%Version )      ) THEN
       Error_Status = FAILURE
@@ -873,10 +876,11 @@ CONTAINS
                             TRIM(Message), &
                             Error_Status, &
                             Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
     END IF
 
+
     ! Check dimensions
+    ! ----------------
     IF ( EmisCoeff_LHS%n_Angles      /= EmisCoeff_RHS%n_Angles      .OR. &
          EmisCoeff_LHS%n_Frequencies /= EmisCoeff_RHS%n_Frequencies .OR. &
          EmisCoeff_LHS%n_Wind_Speeds /= EmisCoeff_RHS%n_Wind_Speeds      ) THEN
@@ -888,74 +892,86 @@ CONTAINS
       RETURN
     END IF
     
-    ! Check angle values
-    Angle_Compare = Compare_Float( EmisCoeff_LHS%Angle, &
-                                   EmisCoeff_RHS%Angle, &
-                                   ULP = ULP            )
-    n = COUNT( .NOT. Angle_Compare )
-    IF ( n > 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( i5, " out of ", i5, " angle values are different." )' ) &
-                      n, EmisCoeff_LHS%n_Angles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( ADJUSTL( Message ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
+    
+    ! Check the dimension data
+    ! ------------------------
+    ! Angle values
+    DO i = 1, EmisCoeff_LHS%n_Angles
+      IF ( .NOT. Compare_Float( EmisCoeff_LHS%Angle(i), &
+                                EmisCoeff_RHS%Angle(i), &
+                                ULP = ULP                ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Angle values are different at #", i0,&
+                        &":",2(1x,es13.6))') &
+                       i, EmisCoeff_LHS%Angle(i), EmisCoeff_LHS%Angle(i)
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
 
-    ! Check frequency values
-    Frequency_Compare = Compare_Float( EmisCoeff_LHS%Frequency, &
-                                       EmisCoeff_RHS%Frequency, &
-                                       ULP = ULP                )
+    ! Frequency values
+    DO l = 1, EmisCoeff_LHS%n_Frequencies
+      IF ( .NOT. Compare_Float( EmisCoeff_LHS%Frequency(l), &
+                                EmisCoeff_RHS%Frequency(l), &
+                                ULP = ULP                ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Frequency values are different at #", i0,&
+                        &":",2(1x,es13.6))') &
+                       l, EmisCoeff_LHS%Frequency(l), EmisCoeff_LHS%Frequency(l)
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
 
-    n = COUNT( .NOT. Frequency_Compare )
-    IF ( n > 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( i5, " out of ", i5, " frequency values are different." )' ) &
-                      n, EmisCoeff_LHS%n_Frequencies
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( ADJUSTL( Message ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
+    ! Wind_Speed values
+    DO n = 1, EmisCoeff_LHS%n_Wind_Speeds
+      IF ( .NOT. Compare_Float( EmisCoeff_LHS%Wind_Speed(n), &
+                                EmisCoeff_RHS%Wind_Speed(n), &
+                                ULP = ULP                ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Wind speed values are different at #", i0,&
+                        &":",2(1x,es13.6))') &
+                       n, EmisCoeff_LHS%Wind_Speed(n), EmisCoeff_LHS%Wind_Speed(n)
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
 
-    ! Check wind speed values
-    Wind_Speed_Compare = Compare_Float( EmisCoeff_LHS%Wind_Speed, &
-                                        EmisCoeff_RHS%Wind_Speed, &
-                                        ULP = ULP                 )
-    n = COUNT( .NOT. Wind_Speed_Compare )
-    IF ( n > 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( i5, " out of ", i5, " wind speed values are different." )' ) &
-                      n, EmisCoeff_LHS%n_Wind_Speeds
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( ADJUSTL( Message ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
 
-    ! Check emissivity values
-    Emissivity_Compare = Compare_Float( EmisCoeff_LHS%Emissivity, &
-                                        EmisCoeff_RHS%Emissivity, &
-                                        ULP = ULP                 )
-    n = COUNT( .NOT. Emissivity_Compare )
-    IF ( n > 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( i8, " out of ", i8, " emissivity values are different." )' ) &
-                      n, SIZE( EmisCoeff_LHS%Emissivity )
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( ADJUSTL( Message ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
+    ! Check the emissivity data
+    ! -------------------------
+    DO n = 1, EmisCoeff_LHS%n_Wind_Speeds
+      DO l = 1, EmisCoeff_LHS%n_Frequencies
+        DO i = 1, EmisCoeff_LHS%n_Angles
+          IF ( .NOT. Compare_Float( EmisCoeff_LHS%Emissivity(i,l,n), &
+                                    EmisCoeff_RHS%Emissivity(i,l,n), &
+                                    ULP = ULP                ) ) THEN
+            Error_Status = FAILURE
+            WRITE( Message,'("Emissivity values are different at (",i0,",",i0,",",i0,")",&
+                            &":",3(1x,es13.6))') &
+                           i,l,n, &
+                           EmisCoeff_LHS%Emissivity(i,l,n),EmisCoeff_LHS%Emissivity(i,l,n), &
+                           EmisCoeff_LHS%Emissivity(i,l,n)-EmisCoeff_LHS%Emissivity(i,l,n)
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM(Message), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+            IF ( Check_Once ) RETURN
+          END IF
+        END DO
+      END DO
+    END DO
 
   END FUNCTION Equal_EmisCoeff
-
-
 
 
 
@@ -1027,10 +1043,13 @@ CONTAINS
     CHARACTER(256) :: Message
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+
     ! Check release is not too old
+    ! ----------------------------
     IF ( EmisCoeff%Release < EMISCOEFF_RELEASE ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "An EmisCoeff data update is needed. ", &
@@ -1044,7 +1063,9 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Check release is not too new
+    ! ----------------------------
     IF ( EmisCoeff%Release > EMISCOEFF_RELEASE ) THEN
       Error_Status = FAILURE
       WRITE( Message, '( "An EmisCoeff software update is needed. ", &
@@ -1111,10 +1132,11 @@ CONTAINS
     INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
     INTEGER, PARAMETER :: LINEFEED = 10
     ! Local variables
-    CHARACTER(512) :: Long_String
+    CHARACTER(1000) :: Long_String
 
     ! Set up
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    
     ! Write the required data to the local string
     WRITE( Long_String, '( a,1x,"EmisCoeff RELEASE.VERSION: ", i2, ".", i2.2, 2x, &
                            &"N_ANGLES=",i3,2x,&
