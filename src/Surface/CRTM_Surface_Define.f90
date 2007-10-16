@@ -114,13 +114,28 @@ MODULE CRTM_Surface_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_SensorData structure routines inherited
-  ! from the CRTM_SensorData_Define module
+
+  ! Public types
+  ! ------------
+  PUBLIC :: CRTM_Surface_type
+
+  ! Public procedures
+  ! -----------------
+  PUBLIC :: CRTM_Destroy_Surface
+  PUBLIC :: CRTM_Allocate_Surface
+  PUBLIC :: CRTM_Assign_Surface
+  PUBLIC :: CRTM_Equal_Surface
+  PUBLIC :: CRTM_WeightedSum_Surface
+  PUBLIC :: CRTM_Zero_Surface
+  ! Use associated procedures
   PUBLIC :: CRTM_Associated_SensorData
   PUBLIC :: CRTM_Destroy_SensorData
   PUBLIC :: CRTM_Allocate_SensorData
   PUBLIC :: CRTM_Assign_SensorData
   PUBLIC :: CRTM_Equal_SensorData
+
+  ! Public parameters
+  ! -----------------
   !  Goess surface parameters
   PUBLIC :: INVALID_SURFACE
   PUBLIC :: LAND_SURFACE
@@ -190,15 +205,6 @@ MODULE CRTM_Surface_Define
   PUBLIC :: ICE_FLOE
   PUBLIC :: ICE_RIDGE
   PUBLIC :: ICE_TYPE_NAME
-  ! CRTM_Surface structure definition
-  PUBLIC :: CRTM_Surface_type
-  ! CRTM_Surface routines in this module
-  PUBLIC :: CRTM_Destroy_Surface
-  PUBLIC :: CRTM_Allocate_Surface
-  PUBLIC :: CRTM_Assign_Surface
-  PUBLIC :: CRTM_Equal_Surface
-  PUBLIC :: CRTM_WeightedSum_Surface
-  PUBLIC :: CRTM_Zero_Surface
 
 
   ! ---------------------
