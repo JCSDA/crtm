@@ -69,7 +69,7 @@ remove_links: macro_links
 # -------------------------------
 TAR_FILE = Profile_Utility.tar
 tar: clean create_links
-	$(TARBALL_CREATE) $(TAR_FILE) --exclude CVS $(SOURCE_DIR)
+	$(TARBALL_CREATE) $(TAR_FILE) --exclude .svn $(SOURCE_DIR)
 	@$(COPY) makefile.dist makefile
 	$(TARBALL_APPEND) $(TAR_FILE) makefile
 	@$(REMOVE) makefile
