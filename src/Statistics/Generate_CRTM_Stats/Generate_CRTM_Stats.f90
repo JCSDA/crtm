@@ -369,7 +369,10 @@ PROGRAM Generate_CRTM_Stats
   !#----------------------------------------------------------------------------#
 
   ! Enter the instrument file prefix
-  CALL getarg(1,File_Prefix)
+  WRITE( *, FMT    = '( /5x, "Enter the File Prefix name: ")', &
+            ADVANCE = 'NO' )
+  READ( *, '(a)' ) File_Prefix
+  Instrument_Name = ADJUSTL( File_Prefix )
 
   ! Enter the instrument name
   WRITE( *, FMT    = '( /5x, "Enter the instrument name : ")', &
@@ -392,7 +395,7 @@ PROGRAM Generate_CRTM_Stats
   !#-------------------------------------------------------------------------
   !# The ChannelInfo is populated during the initialization
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
-  Error_Status = CRTM_Init( ChannelInfo,                           &
+  Error_Status = CRTM_Init( ChannelInfo,          &
                             SensorId=(/SensorId/) )
     
 
@@ -406,7 +409,7 @@ PROGRAM Generate_CRTM_Stats
   ! Read Atmosphere binary information and fill Atmosphere data structure array
   WRITE( *, '( /5x, "Reading the Atmosphere structure file..." )' )
   Error_Status = CRTM_Read_Atmosphere_Binary( ATMOSPHERE_FILENAME, &
-                                              Atmosphere )
+                                              Atmosphere           )
 
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
