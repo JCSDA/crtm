@@ -1,115 +1,41 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Solar_netCDF_IO
 !
-! PURPOSE:
-!       Module containing routines to read and write Solar netCDF 
-!       format files.
-!       
-! CATEGORY:
-!       Solar
+! Solar_netCDF_IO
 !
-! LANGUAGE:
-!       Fortran-95
+! Module containing routines to read and write netCDF format
+! Solar files.
 !
-! CALLING SEQUENCE:
-!       USE Solar_netCDF_IO
-!
-! MODULES:
-!       Type_Kinds:            Module containing definitions for kinds
-!                              of variable types.
-!
-!       Message_Handler:       Module to define simple error codes and
-!                              handle error conditions
-!                              USEs: FILE_UTILITY module
-!
-!       Solar_Define:          Module defining the Solar data structure and
-!                              containing routines to manipulate it.
-!                              USEs: TYPE_KINDS module
-!                                    Message_Handler module
-!
-!       netcdf:                Module supplied with the Fortran 90 version 
-!                              of the netCDF libraries (at least v3.5.0).
-!                              See http://www.unidata.ucar.edu/packages/netcdf
-!
-!       netCDF_Utility:        Module containing utility routines for
-!                              netCDF file access.
-!                              USEs: NETCDF_DIMENSION_UTILITY module
-!                                    NETCDF_VARIABLE_UTILITY module
-!                                    NETCDF_ATTRIBUTE_UTILITY module
-!                                    
-!
-! CONTAINS:
-!       Inquire_Solar_netCDF:  Function to inquire a netCDF format 
-!                              Solar file to obtain information
-!                              about the data dimensions and attributes.
-!
-!       Write_Solar_netCDF:    Function to write Solar data to a
-!                              netCDF format Solar file.
-!
-!       Read_Solar_netCDF:     Function to read Solar data from a
-!                              netCDF format Solar file.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 15-Jan-2002
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2002 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE Solar_netCDF_IO
 
-
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-  USE Message_Handler
-
-  USE Solar_Define
-
+  USE Type_Kinds       , ONLY: Long, Double
+  USE Message_Handler  , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                               Display_Message
+  USE Solar_Define     , ONLY: Solar_type        , &
+                               Associated_Solar  , &
+                               Destroy_Solar     , &
+                               Allocate_Solar    , &
+                               CheckRelease_Solar, &
+                               Info_Solar        , &
+                               Frequency_Solar
   USE netcdf
   USE netCDF_Utility,  Open_Solar_netCDF =>  Open_netCDF, &
                       Close_Solar_netCDF => Close_netCDF
-
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
   PRIVATE
   PUBLIC :: Inquire_Solar_netCDF
   PUBLIC :: Write_Solar_netCDF
@@ -121,75 +47,98 @@ MODULE Solar_netCDF_IO
   ! Module parameters
   ! -----------------
 
-  ! -- Module RCS Id string
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Solar_netCDF_IO.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $'
+  ! Module RCS Id string
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
+  ! Keyword set value
+  INTEGER, PARAMETER :: SET = 1
+  ! Message character length
+  INTEGER, PARAMETER :: ML = 512
+  ! Literal constants
+  REAL(Double), PARAMETER :: ZERO = 0.0_Double
 
-  ! -- Keyword set value
-  INTEGER, PRIVATE, PARAMETER :: UNSET = 0
-  INTEGER, PRIVATE, PARAMETER ::   SET = 1
-
-  ! -- Global attribute names. Case sensitive
-  CHARACTER( * ), PRIVATE, PARAMETER :: TITLE_GATTNAME     = 'title' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: HISTORY_GATTNAME   = 'history' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: COMMENT_GATTNAME   = 'comment' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: SOURCE_ATTNAME     = 'source' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: REFERENCES_ATTNAME = 'references' 
+  ! Global attribute names. Case sensitive
+  CHARACTER(*), PARAMETER :: RELEASE_GATTNAME   = 'Release'
+  CHARACTER(*), PARAMETER :: VERSION_GATTNAME   = 'Version'
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME     = 'title' 
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME   = 'history' 
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME   = 'comment' 
+  CHARACTER(*), PARAMETER :: SOURCE_ATTNAME     = 'source' 
+  CHARACTER(*), PARAMETER :: REFERENCES_ATTNAME = 'references' 
   
-  ! -- Dimension names. Case sensitive
-  CHARACTER( * ), PRIVATE, PARAMETER :: FREQUENCY_DIMNAME  = 'n_Frequencies'
+  ! Dimension names. Case sensitive
+  CHARACTER(*), PARAMETER :: FREQUENCY_DIMNAME  = 'n_Frequencies'
 
-  ! -- Variable names. Case sensitive.
-  CHARACTER( * ), PRIVATE, PARAMETER :: BEGIN_FREQUENCY_VARNAME       = 'Begin_Frequency'
-  CHARACTER( * ), PRIVATE, PARAMETER :: END_FREQUENCY_VARNAME         = 'End_Frequency'
-  CHARACTER( * ), PRIVATE, PARAMETER :: FREQUENCY_INTERVAL_VARNAME    = 'Frequency_Interval'
-  CHARACTER( * ), PRIVATE, PARAMETER :: BLACKBODY_TEMPERATURE_VARNAME = 'Blackbody_Temperature'
-  CHARACTER( * ), PRIVATE, PARAMETER :: RADIUS_VARNAME                = 'Radius'
-  CHARACTER( * ), PRIVATE, PARAMETER :: EARTH_SUN_DISTANCE_VARNAME    = 'Earth_Sun_Disance'
-  CHARACTER( * ), PRIVATE, PARAMETER :: IRRADIANCE_VARNAME            = 'Irradiance'
-  CHARACTER( * ), PRIVATE, PARAMETER :: BLACKBODY_IRRADIANCE_VARNAME  = 'Blackbody_Irradiance'
+  ! Variable names. Case sensitive.
+  CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_VARNAME       = 'Begin_Frequency'
+  CHARACTER(*), PARAMETER :: END_FREQUENCY_VARNAME         = 'End_Frequency'
+  CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_VARNAME    = 'Frequency_Interval'
+  CHARACTER(*), PARAMETER :: BLACKBODY_TEMPERATURE_VARNAME = 'Blackbody_Temperature'
+  CHARACTER(*), PARAMETER :: RADIUS_VARNAME                = 'Radius'
+  CHARACTER(*), PARAMETER :: EARTH_SUN_DISTANCE_VARNAME    = 'Earth_Sun_Disance'
+  CHARACTER(*), PARAMETER :: IRRADIANCE_VARNAME            = 'Irradiance'
+  CHARACTER(*), PARAMETER :: BLACKBODY_IRRADIANCE_VARNAME  = 'Blackbody_Irradiance'
 
-  ! -- Variable long name attribute.
-  CHARACTER( * ), PRIVATE, PARAMETER :: LONGNAME_ATTNAME = 'long_name'
+  ! Description attribute.
+  CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
 
-  CHARACTER( * ), PRIVATE, PARAMETER :: BEGIN_FREQUENCY_LONGNAME       = &
-  'Begin frequency of irradiance data'
-  CHARACTER( * ), PRIVATE, PARAMETER :: END_FREQUENCY_LONGNAME         = &
-  'End frequency of irradiance data'
-  CHARACTER( * ), PRIVATE, PARAMETER :: FREQUENCY_INTERVAL_LONGNAME    = &
-  'Frequency interval of irradiance data'
-  CHARACTER( * ), PRIVATE, PARAMETER :: BLACKBODY_TEMPERATURE_LONGNAME = &
-  'Solar radiative temperature used to generate the blackbody source function'
-  CHARACTER( * ), PRIVATE, PARAMETER :: RADIUS_LONGNAME                = &
-  'Radius of visible solar disk, or photosphere'
-  CHARACTER( * ), PRIVATE, PARAMETER :: EARTH_SUN_DISTANCE_LONGNAME    = &
-  'Earth-Sun distance'
-  CHARACTER( * ), PRIVATE, PARAMETER :: IRRADIANCE_LONGNAME            = &
-  'Extraterrestrial TOA solar irradiance'
-  CHARACTER( * ), PRIVATE, PARAMETER :: BLACKBODY_IRRADIANCE_LONGNAME  = &
-  'Extraterrestrial TOA solar blackbody irradiance using blackbody temperature'
+  CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_DESC       = 'Begin frequency of irradiance data'
+  CHARACTER(*), PARAMETER :: END_FREQUENCY_DESC         = 'End frequency of irradiance data'
+  CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_DESC    = 'Frequency interval of irradiance data'
+  CHARACTER(*), PARAMETER :: BLACKBODY_TEMPERATURE_DESC = 'Solar radiative temperature used to '//&
+                                                            'generate the blackbody source function'
+  CHARACTER(*), PARAMETER :: RADIUS_DESC                = 'Radius of visible solar disk, or photosphere'
+  CHARACTER(*), PARAMETER :: EARTH_SUN_DISTANCE_DESC    = 'Earth-Sun distance'
+  CHARACTER(*), PARAMETER :: IRRADIANCE_DESC            = 'Extraterrestrial TOA solar irradiance '//&
+                                                            'using Kurucz spectrum'
+  CHARACTER(*), PARAMETER :: BLACKBODY_IRRADIANCE_DESC  = 'Extraterrestrial TOA solar blackbody '//&
+                                                            'irradiance using blackbody temperature'
 
-  ! -- Variable units attribute.
-  CHARACTER( * ), PRIVATE, PARAMETER :: UNITS_ATTNAME = 'units'
+  ! Variable long name attribute.
+  CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
-  CHARACTER( * ), PRIVATE, PARAMETER :: BEGIN_FREQUENCY_UNITS       = 'Inverse centimetres (cm^-1)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: END_FREQUENCY_UNITS         = 'Inverse centimetres (cm^-1)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: FREQUENCY_INTERVAL_UNITS    = 'Inverse centimetres (cm^-1)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: BLACKBODY_TEMPERATURE_UNITS = 'Kelvin (K)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: RADIUS_UNITS                = 'Metres (m)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: EARTH_SUN_DISTANCE_UNITS    = 'Metres (m)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: IRRADIANCE_UNITS            = 'mW/(m^2.cm^-1)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: BLACKBODY_IRRADIANCE_UNITS  = 'mW/(m^2.cm^-1)'
+  CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_LONGNAME       = 'Begin Frequency'
+  CHARACTER(*), PARAMETER :: END_FREQUENCY_LONGNAME         = 'End Frequency'
+  CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_LONGNAME    = 'Frequency Interval'
+  CHARACTER(*), PARAMETER :: BLACKBODY_TEMPERATURE_LONGNAME = 'Solar Tb Source Temperature'
+  CHARACTER(*), PARAMETER :: RADIUS_LONGNAME                = 'Solar Radius'
+  CHARACTER(*), PARAMETER :: EARTH_SUN_DISTANCE_LONGNAME    = 'Earth-Sun distance'
+  CHARACTER(*), PARAMETER :: IRRADIANCE_LONGNAME            = 'Solar Irradiance'
+  CHARACTER(*), PARAMETER :: BLACKBODY_IRRADIANCE_LONGNAME  = 'Solar Blackbody Irradiance'
 
-  ! -- Variable netCDF datatypes
-  INTEGER,        PRIVATE, PARAMETER :: BEGIN_FREQUENCY_TYPE       = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: END_FREQUENCY_TYPE         = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: FREQUENCY_INTERVAL_TYPE    = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: BLACKBODY_TEMPERATURE_TYPE = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: RADIUS_TYPE                = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: EARTH_SUN_DISTANCE_TYPE    = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: IRRADIANCE_TYPE            = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: BLACKBODY_IRRADIANCE_TYPE  = NF90_DOUBLE
+  ! Variable units attribute.
+  CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
+
+  CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_UNITS       = 'Inverse centimetres (cm^-1)'
+  CHARACTER(*), PARAMETER :: END_FREQUENCY_UNITS         = 'Inverse centimetres (cm^-1)'
+  CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_UNITS    = 'Inverse centimetres (cm^-1)'
+  CHARACTER(*), PARAMETER :: BLACKBODY_TEMPERATURE_UNITS = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: RADIUS_UNITS                = 'Metres (m)'
+  CHARACTER(*), PARAMETER :: EARTH_SUN_DISTANCE_UNITS    = 'Metres (m)'
+  CHARACTER(*), PARAMETER :: IRRADIANCE_UNITS            = 'mW/(m^2.cm^-1)'
+  CHARACTER(*), PARAMETER :: BLACKBODY_IRRADIANCE_UNITS  = 'mW/(m^2.cm^-1)'
+
+  ! Variable _FillValue attribute.
+  CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
+  
+  REAL(Double), PARAMETER :: BEGIN_FREQUENCY_FILLVALUE       = ZERO
+  REAL(Double), PARAMETER :: END_FREQUENCY_FILLVALUE         = ZERO
+  REAL(Double), PARAMETER :: FREQUENCY_INTERVAL_FILLVALUE    = ZERO
+  REAL(Double), PARAMETER :: BLACKBODY_TEMPERATURE_FILLVALUE = ZERO
+  REAL(Double), PARAMETER :: RADIUS_FILLVALUE                = ZERO
+  REAL(Double), PARAMETER :: EARTH_SUN_DISTANCE_FILLVALUE    = ZERO
+  REAL(Double), PARAMETER :: IRRADIANCE_FILLVALUE            = ZERO
+  REAL(Double), PARAMETER :: BLACKBODY_IRRADIANCE_FILLVALUE  = ZERO
+
+  ! Variable netCDF datatypes
+  INTEGER, PARAMETER :: BEGIN_FREQUENCY_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: END_FREQUENCY_TYPE         = NF90_DOUBLE
+  INTEGER, PARAMETER :: FREQUENCY_INTERVAL_TYPE    = NF90_DOUBLE
+  INTEGER, PARAMETER :: BLACKBODY_TEMPERATURE_TYPE = NF90_DOUBLE
+  INTEGER, PARAMETER :: RADIUS_TYPE                = NF90_DOUBLE
+  INTEGER, PARAMETER :: EARTH_SUN_DISTANCE_TYPE    = NF90_DOUBLE
+  INTEGER, PARAMETER :: IRRADIANCE_TYPE            = NF90_DOUBLE
+  INTEGER, PARAMETER :: BLACKBODY_IRRADIANCE_TYPE  = NF90_DOUBLE
 
 
 CONTAINS
@@ -207,99 +156,100 @@ CONTAINS
 !##################################################################################
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
-!       Write_Solar_GAtts
+!       WriteGAtts
 !
 ! PURPOSE:
 !       Function to write the supplied attributes to a netCDF format
 !       Solar data file.
 !
-! CATEGORY:
-!       Solar
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = Write_Solar_GAtts( NC_Filename,              &  ! Input
-!                                         NC_FileID,                &  ! Input
-!                                         Title       = Title,      &  ! Optional input
-!                                         History     = History,    &  ! Optional input
-!                                         Comment     = Comment,    &  ! Optional input
-!                                         Source      = Source,     &  ! Optional input
-!                                         References  = References, &  ! Optional input
-!                                         Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Write_GAtts( NC_Filename            , &  ! Input
+!                                   NC_FileID              , &  ! Input
+!                                   Release    =Release    , &  ! Optional input
+!                                   Version    =Version    , &  ! Optional input
+!                                   Title      =Title      , &  ! Optional input
+!                                   History    =History    , &  ! Optional input
+!                                   Comment    =Comment    , &  ! Optional input
+!                                   Source     =Source     , &  ! Optional input
+!                                   References =References , &  ! Optional input
+!                                   Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
 !                         netCDF Solar format data to write to.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
-!       NC_FileID:        NetCDF file ID number associated with the input
-!                         filename.
-!                         UNITS:      None
+!       NC_FileID:        NetCDF file ID number.
+!                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Release:          The release number of the netCDF SpcCoeff file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:          The version number of the netCDF SpcCoeff file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Title:            Character string written into the TITLE global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:          Character string written into the HISTORY global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Comment:          Character string written into the COMMENT global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Source:           Character string written into the SOURCE
 !                         attribute field of the IRRADIANCE
 !                         variable.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       References:       Character string written into the REFERENCES
 !                         attribute field of the IRRADIANCE
 !                         variable. 
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:      Character string specifying a filename in which
 !                         any messages will be logged. If not specified,
 !                         or if an error occurs opening the log file, the
 !                         default action is to output messages to standard
 !                         output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
@@ -311,317 +261,234 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! CALLS:
-!       Put_netCDF_Attributes:  Function to write attribute data to
-!                               a netCDF data file.
-!                               SOURCE: netCDF library
-!
-!       Display_Message:        Subroutine to output messages
-!                               SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 11-Feb-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_Solar_GAtts( NC_Filename, &  ! Input
-                              NC_FileID,   &  ! Input
-                              Title,       &  ! Optional input
-                              History,     &  ! Optional input
-                              Comment,     &  ! Optional input
-                              Source,      &  ! Optional input
-                              References,  &  ! Optional input
-                              Message_Log )  &  ! Error messaging
-                            RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  FUNCTION WriteGAtts( NC_Filename, &  ! Input
+                       NC_FileID  , &  ! Input
+                       Release    , &  ! Optional input
+                       Version    , &  ! Optional input
+                       Title      , &  ! Optional input
+                       History    , &  ! Optional input
+                       Comment    , &  ! Optional input
+                       Source     , &  ! Optional input
+                       References , &  ! Optional input
+                       Message_Log) &  ! Error messaging
+                     RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN ) :: NC_Filename
-    INTEGER,                  INTENT( IN ) :: NC_FileID
-
-    ! -- Optional input
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: History
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Source
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: References
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN) :: NC_Filename
+    INTEGER     ,           INTENT(IN) :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(IN) :: Release         
+    INTEGER     , OPTIONAL, INTENT(IN) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Source
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: References
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! ----------------
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Write_Solar_GAtts'
-
-    ! -- "Internal" global attributes
-    CHARACTER( * ), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
-    CHARACTER( * ), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteGAtts'
+    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
+    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
     ! Local variables
-    ! ---------------
-
+    CHARACTER(ML) :: Message
+    CHARACTER(256) :: AttName, VarName
+    CHARACTER(8)  :: cdate
+    CHARACTER(10) :: ctime
+    CHARACTER(5)  :: czone
     INTEGER :: NF90_Status
+    INTEGER :: VarID
 
-    CHARACTER(  8 ) :: cdate
-    CHARACTER( 10 ) :: ctime
-    CHARACTER(  5 ) :: czone
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
+    Message = ' '
+    VarName = 'global'
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#              -- WRITE THE "INTERNAL" GLOBAL ATTRIBUTES --                #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------
+    ! Global attributes
+    ! -----------------
     ! Software ID
-    ! -----------
-
-    NF90_Status = NF90_PUT_ATT( NC_FileID,   &
-                                NF90_GLOBAL, &
-                                WRITE_MODULE_HISTORY_GATTNAME,    &
-                                '$Id: Solar_netCDF_IO.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $' )
-
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//WRITE_MODULE_HISTORY_GATTNAME//&
-                            ' attribute to '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! -------------
-    ! Creation date
-    ! -------------
-
-    CALL DATE_AND_TIME( cdate, ctime, czone )
-
+    AttName = WRITE_MODULE_HISTORY_GATTNAME
     NF90_Status = NF90_PUT_ATT( NC_FileID, &
                                 NF90_GLOBAL, &
-                                CREATION_DATE_AND_TIME_GATTNAME, &
+                                TRIM(AttName), &
+                                MODULE_RCS_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+    
+    ! Creation date
+    CALL DATE_AND_TIME( cdate, ctime, czone )
+    AttName = CREATION_DATE_AND_TIME_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                NF90_GLOBAL, &
+                                TRIM(AttName), &
                                 cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
                                 ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
                                 czone//'UTC' )
-
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = WARNING
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+
+    ! The Release
+    IF ( PRESENT(Release) ) THEN
+      AttName = RELEASE_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  Release )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Version
+    IF ( PRESENT(Version) ) THEN
+      AttName = VERSION_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  Version )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Title
+    IF ( PRESENT(Title) ) THEN
+      AttName = TITLE_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  Title )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The History
+    IF ( PRESENT(History) ) THEN
+      AttName = HISTORY_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  History )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Comment
+    IF ( PRESENT(Comment) ) THEN
+      AttName = COMMENT_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  Comment )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    
+    ! Variable attributes
+    ! -------------------
+    ! The Source
+    IF ( PRESENT(Source) ) THEN
+      VarName = IRRADIANCE_VARNAME
+      AttName = SOURCE_ATTNAME
+      NF90_Status = NF90_INQ_VARID( NC_FileID, &
+                                    VarName, &
+                                    VarID )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  TRIM(AttName), &
+                                  Source )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The References
+    IF ( PRESENT(References) ) THEN
+      VarName = IRRADIANCE_VARNAME
+      AttName = REFERENCES_ATTNAME
+      NF90_Status = NF90_INQ_VARID( NC_FileID, &
+                                    VarName, &
+                                    VarID )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  TRIM(AttName), &
+                                  References )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE WriteGAtts_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        Message = '; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error message
+      Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//CREATION_DATE_AND_TIME_GATTNAME//&
-                            ' attribute to '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            'Error writing '//TRIM(VarName)//' '//TRIM(AttName)//&
+                            ' attribute to '//TRIM(NC_Filename)//' - '// &
+                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#            -- DEFINE THE USER ACCESSIBLE GLOBAL ATTRIBUTES --            #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! The TITLE
-    ! ---------
-
-    IF ( PRESENT( Title ) ) THEN
-
-      Error_Status = Put_netCDF_Attribute( NC_FileID, &
-                                           TITLE_GATTNAME, &
-                                           TRIM( Title ) )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//TITLE_GATTNAME//' attribute to '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-    ! -----------
-    ! The HISTORY
-    ! -----------
-
-    IF ( PRESENT( History ) ) THEN
-
-      Error_Status = Put_netCDF_Attribute( NC_FileID, &
-                                           HISTORY_GATTNAME, &
-                                           TRIM( History ) )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//HISTORY_GATTNAME//' attribute to '//&
-                              TRIM( NC_FileNAME ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-    ! -----------
-    ! The COMMENT
-    ! -----------
-
-    IF ( PRESENT( Comment ) ) THEN
-
-      Error_Status = Put_netCDF_Attribute( NC_FileID, &
-                                           COMMENT_GATTNAME, &
-                                           TRIM( Comment ) )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//COMMENT_GATTNAME//' attribute to '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- GET THE SOLAR IRRADIANCE ATTRIBUTES --               #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------
-    ! The SOURCE
-    ! ----------
-
-    IF ( PRESENT( Source ) ) THEN
-
-      Error_Status = Put_netCDF_Attribute( NC_FileID, &
-                                           SOURCE_ATTNAME, &
-                                           TRIM( Source ), &
-                                           Variable_Name = IRRADIANCE_VARNAME )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//IRRADIANCE_VARNAME//' variable '//&
-                              SOURCE_ATTNAME//' attribute to '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-    ! --------------
-    ! The REFERENCES
-    ! --------------
-
-    IF ( PRESENT( References ) ) THEN
-
-      Error_Status = Put_netCDF_Attribute( NC_FileID, &
-                                           REFERENCES_ATTNAME, &
-                                           TRIM( References ), &
-                                           Variable_Name = IRRADIANCE_VARNAME )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//IRRADIANCE_VARNAME//' variable '//&
-                              REFERENCES_ATTNAME//' attribute to '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-  END FUNCTION Write_Solar_GAtts
-
-
-
+                            Message_Log=Message_Log )
+    END SUBROUTINE WriteGAtts_CleanUp
+    
+  END FUNCTION WriteGAtts
 
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
-!       Read_Solar_GAtts
+!       ReadGAtts
 !
 ! PURPOSE:
 !       Function to read the requested attributes from a netCDF format
 !       Solar data file.
 !
-! CATEGORY:
-!       Solar
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = Read_Solar_GAtts( NC_Filename,              &  ! Input
-!                                        NC_FileID,                &  ! Input
-!                                        Title       = Title,      &  ! Optional output
-!                                        History     = History,    &  ! Optional output
-!                                        Comment     = Comment,    &  ! Optional output
-!                                        Source      = Source,     &  ! Optional output
-!                                        References  = References, &  ! Optional output
-!                                        Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = ReadGAtts( NC_Filename            , &  ! Input
+!                                 NC_FileID              , &  ! Input
+!                                 Release    =Release    , &  ! Optional output
+!                                 Version    =Version    , &  ! Optional output
+!                                 Title      =Title      , &  ! Optional output
+!                                 History    =History    , &  ! Optional output
+!                                 Comment    =Comment    , &  ! Optional output
+!                                 Source     =Source     , &  ! Optional output
+!                                 References =References , &  ! Optional output
+!                                 Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
 !                         netCDF Solar format data to read.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       NC_FileID:        NetCDF file ID number associated with the input
 !                         filename.
-!                         UNITS:      None
+!                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -630,51 +497,58 @@ CONTAINS
 !                         or if an error occurs opening the log file, the
 !                         default action is to output messages to standard
 !                         output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
+!       Release:          The release number of the netCDF SpcCoeff file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Version:          The version number of the netCDF SpcCoeff file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !       Title:            Character string written into the TITLE global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:          Character string written into the HISTORY global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Comment:          Character string written into the COMMENT global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Source:           Character string written into the SOURCE
-!                         attribute field of the IRRADIANCE
-!                         variable.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         attribute field of the IRRADIANCE variable.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       References:       Character string written into the REFERENCES
-!                         attribute field of the IRRADIANCE
-!                         variable. 
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         attribute field of the IRRADIANCE variable. 
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !
 ! FUNCTION RESULT:
@@ -687,222 +561,1157 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! CALLS:
-!       Get_netCDF_Attributes:  Function to read attribute data from a netCDF 
-!                               data file.
-!                               SOURCE: NETCDF_UTILITY module
-!
-!       Display_Message:        Subroutine to output messages
-!                               SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       If a FAILURE error occurs, the netCDF file is closed.
-!
-! RESTRICTIONS:
-!       The netCDF file remains in DEFINE mode upon exiting this function.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 11-Feb-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_Solar_GAtts( NC_Filename,  &  ! Input
-                             NC_FileID,    &  ! Input
-                             Title,        &  ! Optional output
-                             History,      &  ! Optional output
-                             Comment,      &  ! Optional output
-                             Source,       &  ! Optional output
-                             References,   &  ! Optional output
-                             Message_Log ) &  ! Error messaging
-                           RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  FUNCTION ReadGAtts( NC_Filename, &  ! Input
+                      NC_FileID  , &  ! Input
+                      Release    , &  ! Optional output
+                      Version    , &  ! Optional output
+                      Title      , &  ! Optional output
+                      History    , &  ! Optional output
+                      Comment    , &  ! Optional output
+                      Source     , &  ! Optional output
+                      References , &  ! Optional output
+                      Message_Log) &  ! Error messaging
+                    RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-    INTEGER,                  INTENT( IN )  :: NC_FileID
-
-    ! -- Optional output
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: History
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Source
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: References
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     ,           INTENT(IN)  :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Source
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: References
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! ----------------
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Read_Solar_GAtts'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadGAtts'
     ! Local variables
+    CHARACTER(256)  :: AttName, VarName
+    CHARACTER(5000) :: AttString
+    INTEGER :: NF90_Status
+    INTEGER :: VarID
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    VarName = 'global'
+
+
+    ! Global attributes
+    ! -----------------
+    ! The Release
+    IF ( PRESENT(Release) ) THEN
+      AttName = RELEASE_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  Release )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Version
+    IF ( PRESENT(Version) ) THEN
+      AttName = VERSION_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  Version )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Title
+    IF ( PRESENT(Title) ) THEN
+      AttString = ' '; Title = ' '
+      AttName = TITLE_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  AttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL Remove_NULL_Characters( AttString )
+      Title = AttString(1:MIN( LEN(Title), LEN_TRIM(AttString) ))
+    END IF
+
+    ! The History
+    IF ( PRESENT(History) ) THEN
+      AttString = ' '; History = ' '
+      AttName = HISTORY_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  AttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL Remove_NULL_Characters( AttString )
+      History = AttString(1:MIN( LEN(History), LEN_TRIM(AttString) ))
+    END IF
+
+    ! The Comment
+    IF ( PRESENT(Comment) ) THEN
+      AttString = ' '; Comment = ' '
+      AttName = COMMENT_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(AttName), &
+                                  AttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL Remove_NULL_Characters( AttString )
+      Comment = AttString(1:MIN( LEN(Comment), LEN_TRIM(AttString) ))
+    END IF
+
+    
+    ! Variable attributes
+    ! -------------------
+    ! The Source
+    IF ( PRESENT(Source) ) THEN
+      AttString = ' '; Source = ' '
+      VarName = IRRADIANCE_VARNAME
+      AttName = SOURCE_ATTNAME
+      NF90_Status = NF90_INQ_VARID( NC_FileID, &
+                                    VarName, &
+                                    VarID )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  VarID, &
+                                  TRIM(AttName), &
+                                  AttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL Remove_NULL_Characters( AttString )
+      Source = AttString( 1:MIN(LEN(Source), LEN_TRIM(AttString)) )
+    END IF
+
+    ! The References
+    IF ( PRESENT(References) ) THEN
+      AttString = ' '; References = ' '
+      VarName = IRRADIANCE_VARNAME
+      AttName = REFERENCES_ATTNAME
+      NF90_Status = NF90_INQ_VARID( NC_FileID, &
+                                    VarName, &
+                                    VarID )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  VarID, &
+                                  TRIM(AttName), &
+                                  AttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL Remove_NULL_Characters( AttString )
+      References = AttString( 1:MIN(LEN(References), LEN_TRIM(AttString)) )
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE ReadGAtts_CleanUp()
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error reading '//TRIM(VarName)//' '//TRIM(AttName)//&
+                            ' attribute from '//TRIM(NC_Filename)//' - '// &
+                            TRIM(NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE ReadGAtts_CleanUp
+    
+  END FUNCTION ReadGAtts
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       DefineVar
+!
+! PURPOSE:
+!       Function to define the Solar variables in an output netCDF file.
+!
+! CALLING SEQUENCE:
+!       Error_Status = DefineVar( NC_Filename            , &  ! Input
+!                                 NC_FileID              , &  ! Input
+!                                 n_Frequencies_DimID    , &  ! Input
+!                                 RCS_Id     =RCS_Id     , &  ! Revision control
+!                                 Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS
+!       NC_Filename:         Character string specifying the name of the
+!                            already created netCDF Solar format file.
+!                            UNITS:      N/A
+!                            TYPE:       CHARACTER(*)
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:           NetCDF file ID number of the file in which
+!                            the variables are to be defned.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
+!
+!       n_Frequencies_DimID: NetCDF dimension ID of the number of frequencies.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS
+!       Message_Log:         Character string specifying a filename in which any
+!                            messages will be logged. If not specified, or if an
+!                            error occurs opening the log file, the default action
+!                            is to output messages to standard output.
+!                            UNITS:      N/A
+!                            TYPE:       CHARACTER(*)
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:              Character string containing the Revision Control
+!                            System Id field for the module.
+!                            UNITS:      N/A
+!                            TYPE:       CHARACTER(*)
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION DefineVar( NC_Filename        , &  ! Input
+                      NC_FileID          , &  ! Input
+                      n_Frequencies_DimID, &  ! Input
+                      RCS_Id             , &  ! Revision control
+                      Message_Log        ) &  ! Error messaging
+                    RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     ,           INTENT(IN)  :: NC_FileID
+    INTEGER     ,           INTENT(IN)  :: n_Frequencies_DimID  
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'DefineVar'
+    ! Local variables
+    CHARACTER(ML) :: Message
+    INTEGER :: NF90_Status
+    INTEGER :: varID
+    INTEGER :: Put_Status(4)
+                               
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS                                      
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+
+
+    ! Scalar variables
+    ! ----------------
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                BEGIN_FREQUENCY_VARNAME, &
+                                BEGIN_FREQUENCY_TYPE, &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//BEGIN_FREQUENCY_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  BEGIN_FREQUENCY_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  BEGIN_FREQUENCY_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  BEGIN_FREQUENCY_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  BEGIN_FREQUENCY_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//BEGIN_FREQUENCY_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                END_FREQUENCY_VARNAME, &
+                                END_FREQUENCY_TYPE, &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//END_FREQUENCY_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  END_FREQUENCY_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  END_FREQUENCY_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  END_FREQUENCY_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  END_FREQUENCY_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//END_FREQUENCY_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                FREQUENCY_INTERVAL_VARNAME, &
+                                FREQUENCY_INTERVAL_TYPE, &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//FREQUENCY_INTERVAL_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  FREQUENCY_INTERVAL_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  FREQUENCY_INTERVAL_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  FREQUENCY_INTERVAL_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  FREQUENCY_INTERVAL_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//FREQUENCY_INTERVAL_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                BLACKBODY_TEMPERATURE_VARNAME, &
+                                BLACKBODY_TEMPERATURE_TYPE, &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//BLACKBODY_TEMPERATURE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  BLACKBODY_TEMPERATURE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  BLACKBODY_TEMPERATURE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  BLACKBODY_TEMPERATURE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  BLACKBODY_TEMPERATURE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//BLACKBODY_TEMPERATURE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                RADIUS_VARNAME, &
+                                RADIUS_TYPE, &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//RADIUS_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  RADIUS_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  RADIUS_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  RADIUS_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  RADIUS_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//RADIUS_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    
+    
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                EARTH_SUN_DISTANCE_VARNAME, &
+                                EARTH_SUN_DISTANCE_TYPE, &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//EARTH_SUN_DISTANCE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  EARTH_SUN_DISTANCE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  EARTH_SUN_DISTANCE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  EARTH_SUN_DISTANCE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  EARTH_SUN_DISTANCE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//EARTH_SUN_DISTANCE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    
+    
+    ! Array variables
     ! ---------------
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                IRRADIANCE_VARNAME, &
+                                IRRADIANCE_TYPE, &
+                                dimIDs=(/n_Frequencies_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//IRRADIANCE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  IRRADIANCE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  IRRADIANCE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  IRRADIANCE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  IRRADIANCE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//IRRADIANCE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+ 
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                BLACKBODY_IRRADIANCE_VARNAME, &
+                                BLACKBODY_IRRADIANCE_TYPE, &
+                                dimIDs=(/n_Frequencies_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//BLACKBODY_IRRADIANCE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  BLACKBODY_IRRADIANCE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  BLACKBODY_IRRADIANCE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  BLACKBODY_IRRADIANCE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  BLACKBODY_IRRADIANCE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//BLACKBODY_IRRADIANCE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE DefineVar_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        Message = '; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE DefineVar_CleanUp
+
+  END FUNCTION DefineVar
 
 
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       WriteVar
+!
+! PURPOSE:
+!       Function to write the Solar variables in an output
+!       netCDF file in which they have been defined.
+!
+! CALLING SEQUENCE:
+!       Error_Status = WriteVar( NC_Filename            , &  ! Input
+!                                NC_FileID              , &  ! Input
+!                                Solar                  , &  ! Input
+!                                RCS_Id     =RCS_Id     , &  ! Revision control
+!                                Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS
+!       NC_Filename:        Character string specifying the name of the
+!                           already created netCDF Solar format file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:          NetCDF file ID number of the file in which
+!                           the variables are to be written.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Solar:              Structure containing the data to write to file.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE(Solar_type)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! SIDE EFFECTS:
+!       If an error occurs, the netCDF file is closed.
+!
+!------------------------------------------------------------------------------
 
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
+  FUNCTION WriteVar( NC_Filename, &  ! Input
+                     NC_FileID  , &  ! Input
+                     Solar      , &  ! Input
+                     RCS_Id     , &  ! Revision control
+                     Message_Log) &  ! Error messaging
+                   RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
+    INTEGER               , INTENT(IN)  :: NC_FileID
+    TYPE(Solar_type)      , INTENT(IN)  :: Solar
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar'
+    ! Local variables
+    CHARACTER(ML) :: Message
+    INTEGER :: NF90_Status
+                               
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS                                      
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
+
+    ! Write the scalar data
+    ! ---------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        BEGIN_FREQUENCY_VARNAME, &
+                                        Solar%Begin_Frequency )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//BEGIN_FREQUENCY_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        END_FREQUENCY_VARNAME, &
+                                        Solar%End_Frequency )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//END_FREQUENCY_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        FREQUENCY_INTERVAL_VARNAME, &
+                                        Solar%Frequency_Interval )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//FREQUENCY_INTERVAL_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        BLACKBODY_TEMPERATURE_VARNAME, &
+                                        Solar%Blackbody_Temperature )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//BLACKBODY_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        RADIUS_VARNAME, &
+                                        Solar%Radius )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//RADIUS_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        EARTH_SUN_DISTANCE_VARNAME, &
+                                        Solar%Earth_Sun_Distance )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//EARTH_SUN_DISTANCE_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+    
+    ! Write the array data
+    ! --------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        IRRADIANCE_VARNAME, &
+                                        Solar%Irradiance )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//IRRADIANCE_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        BLACKBODY_IRRADIANCE_VARNAME, &
+                                        Solar%Blackbody_Irradiance )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//BLACKBODY_IRRADIANCE_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+  CONTAINS
+  
+    SUBROUTINE WriteVar_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        Message = '; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE WriteVar_CleanUp
+
+  END FUNCTION WriteVar
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       ReadVar
+!
+! PURPOSE:
+!       Function to read the Solar variables from any input
+!       netCDF file in which they have been defined.
+!
+! CALLING SEQUENCE:
+!       Error_Status = ReadVar( NC_Filename            , &  ! Input
+!                               NC_FileID              , &  ! Input
+!                               Solar                  , &  ! Output
+!                               RCS_Id     =RCS_Id     , &  ! Revision control
+!                               Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS
+!       NC_Filename:        Character string specifying the name of the
+!                           already created netCDF Solar format file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:          NetCDF file ID number of the file in which
+!                           the variables are to be written.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Solar:          Structure containing the data that was read
+!                           from file.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE(Solar_type)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! SIDE EFFECTS:
+!       If an error occurs, the netCDF file is closed.
+!
+! COMMENTS:
+!       The INTENT on the output Solar argument is IN OUT rather
+!       than just OUT. This is necessary because the argument may be defined
+!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION ReadVar( NC_Filename, &  ! Input
+                    NC_FileID  , &  ! Input
+                    Solar      , &  ! Output
+                    RCS_Id     , &  ! Revision control
+                    Message_Log) &  ! Error messaging
+                  RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)     :: NC_Filename
+    INTEGER               , INTENT(IN)     :: NC_FileID
+    TYPE(Solar_type)      , INTENT(IN OUT) :: Solar
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar'
+    ! Local variables
+    CHARACTER(ML) :: Message
+    INTEGER :: NF90_Status
+                               
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS                                      
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+
+
+    ! Write the scalar data
+    ! ---------------------
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        BEGIN_FREQUENCY_VARNAME, &
+                                        Solar%Begin_Frequency )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//BEGIN_FREQUENCY_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        END_FREQUENCY_VARNAME, &
+                                        Solar%End_Frequency )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//END_FREQUENCY_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        FREQUENCY_INTERVAL_VARNAME, &
+                                        Solar%Frequency_Interval )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//FREQUENCY_INTERVAL_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        BLACKBODY_TEMPERATURE_VARNAME, &
+                                        Solar%Blackbody_Temperature )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//BLACKBODY_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        RADIUS_VARNAME, &
+                                        Solar%Radius )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//RADIUS_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        EARTH_SUN_DISTANCE_VARNAME, &
+                                        Solar%Earth_Sun_Distance )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//EARTH_SUN_DISTANCE_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
+    
+    ! Write the array data
+    ! --------------------
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        IRRADIANCE_VARNAME, &
+                                        Solar%Irradiance )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//IRRADIANCE_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        BLACKBODY_IRRADIANCE_VARNAME, &
+                                        Solar%Blackbody_Irradiance )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//BLACKBODY_IRRADIANCE_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE ReadVar_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        Message = '; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE ReadVar_CleanUp
+
+  END FUNCTION ReadVar
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Create_Solar_netCDF
+!
+! PURPOSE:
+!       Function to create a netCDF Solar data file for writing.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Create_Solar_netCDF( NC_Filename                 , &  ! Input
+!                                           n_Frequencies               , &  ! Input
+!                                           NC_FileID                   , &  ! Output
+!                                           Release         =Release    , &  ! Optional input
+!                                           Version         =Version    , &  ! Optional input
+!                                           Title           =Title      , &  ! Optional input
+!                                           History         =History    , &  ! Optional input
+!                                           Comment         =Comment    , &  ! Optional input
+!                                           Source          =Source     , &  ! Optional input
+!                                           References      =References , &  ! Optional input
+!                                           Message_Log     =Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       NC_Filename:        Character string specifying the name of the
+!                           netCDF Solar format data file to create.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Frequencies:      Number of spectral frequencies.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       NC_FileID:          NetCDF file ID number to be used for subsequent
+!                           writing to the output file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Release:            The release number of the netCDF Solar file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:            The version number of the netCDF Solar file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Title:              Character string written into the TITLE global
+!                           attribute field of the netCDF Solar file.
+!                           Should contain a succinct description of what
+!                           is in the netCDF datafile.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       History:            Character string written into the HISTORY global
+!                           attribute field of the netCDF Solar file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Comment:            Character string written into the COMMENT global
+!                           attribute field of the netCDF Solar file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Source:             Character string written into the SOURCE
+!                           attribute field of the IRRADIANCE variable.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       References:         Character string written into the REFERENCES
+!                           attribute field of the IRRADIANCE variable. 
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:        Character string specifying a filename in which
+!                           any messages will be logged. If not specified,
+!                           or if an error occurs opening the log file, the
+!                           default action is to output messages to standard
+!                           output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:       The return value is an integer defining the error status.  
+!                           The error codes are defined in the Message_Handler module. 
+!                           If == SUCCESS the netCDF file creation was successful.     
+!                              == FAILURE an unrecoverable error occurred.             
+!                              == WARNING - an error occurred writing any of the       
+!                                           supplied global attributes.                
+!                                         - an error occurred closing the netCDF file. 
+!                           UNITS:      N/A                                            
+!                           TYPE:       INTEGER                                        
+!                           DIMENSION:  Scalar                                         
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION Create_Solar_netCDF( NC_Filename     , &  ! Input
+                                n_Frequencies   , &  ! Input
+                                NC_FileID       , &  ! Output
+                                Release         , &  ! Optional input
+                                Version         , &  ! Optional input
+                                Title           , &  ! Optional input
+                                History         , &  ! Optional input
+                                Comment         , &  ! Optional input
+                                Source          , &  ! Optional input
+                                References      , &  ! Optional input
+                                Message_Log     ) &  ! Error messaging
+                              RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
+    INTEGER               , INTENT(IN)  :: n_Frequencies
+    INTEGER               , INTENT(OUT) :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Release         
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Source
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: References
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Create_Solar_netCDF'
+    ! Local variables
+    CHARACTER(ML) :: Message
+    INTEGER :: NF90_Status
+    INTEGER :: n_Frequencies_DimID
+    INTEGER :: VarID
+    
+
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- READ THE GLOBAL ATTRIBUTES --                     #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! The TITLE
-    ! ---------
-
-    IF ( PRESENT( Title ) ) THEN
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           TITLE_GATTNAME, &
-                                           Title )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//TITLE_GATTNAME//' attribute from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Title )
-
+    ! Check input
+    IF ( n_Frequencies < 1 ) THEN
+      Message = 'Invalid dimension input detected.'
+      CALL Create_Cleanup(); RETURN
     END IF
 
 
-    ! -----------
-    ! The HISTORY
-    ! -----------
-
-    IF ( PRESENT( History ) ) THEN
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           HISTORY_GATTNAME, &
-                                           History )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//HISTORY_GATTNAME//' attribute from '//&
-                              TRIM( NC_FileNAME ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( History )
-
+    ! Create the data file
+    ! --------------------
+    NF90_Status = NF90_CREATE( NC_Filename, &
+                               NF90_CLOBBER, &
+                               NC_FileID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error creating '//TRIM(NC_Filename)//' - '//&
+                TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
     END IF
 
 
-    ! -----------
-    ! The COMMENT
-    ! -----------
-
-    IF ( PRESENT( Comment ) ) THEN
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           COMMENT_GATTNAME, &
-                                           Comment )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//COMMENT_GATTNAME//' attribute from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Comment )
-
+    ! Define the dimensions
+    ! ---------------------
+    NF90_Status = NF90_DEF_DIM( NC_FileID, &
+                                FREQUENCY_DIMNAME, &
+                                n_Frequencies, &
+                                n_Frequencies_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//FREQUENCY_DIMNAME//' dimension in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=SET); RETURN
     END IF
 
 
+    ! Define the Solar variables
+    ! --------------------------
+    Error_Status = DefineVar( NC_Filename            , &
+                              NC_FileID              , &
+                              n_Frequencies_DimID    , &
+                              Message_Log=Message_Log  )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error defining variables in '//TRIM(NC_Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
 
-    !#--------------------------------------------------------------------------#
-    !#                  -- GET THE SOLAR IRRADIANCE ATTRIBUTES --               #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------
-    ! The SOURCE
-    ! ----------
-
-    IF ( PRESENT( Source ) ) THEN
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           SOURCE_ATTNAME, &
-                                           Source, &
-                                           Variable_Name = IRRADIANCE_VARNAME )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//IRRADIANCE_VARNAME//' variable '//&
-                              SOURCE_ATTNAME//' attribute from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Source )
-
+                                             
+    ! Write the attributes
+    ! --------------------
+    Error_Status = WriteGAtts( NC_Filename            , &
+                               NC_FileID              , &
+                               Release    =Release    , &
+                               Version    =Version    , &
+                               Title      =Title      , &
+                               History    =History    , &
+                               Comment    =Comment    , &
+                               Source     =Source     , &
+                               References =References , &
+                               Message_Log=Message_Log  )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing global attributes to '//TRIM(NC_Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
 
 
-    ! --------------
-    ! The REFERENCES
-    ! --------------
-
-    IF ( PRESENT( References ) ) THEN
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           REFERENCES_ATTNAME, &
-                                           References, &
-                                           Variable_Name = IRRADIANCE_VARNAME )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//IRRADIANCE_VARNAME//' variable '//&
-                              REFERENCES_ATTNAME//' attribute from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( References )
-
+    ! Take netCDF file out of define mode
+    ! -----------------------------------
+    NF90_Status = NF90_ENDDEF( NC_FileID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
+      CALL Create_Cleanup(Close_File=SET); RETURN
     END IF
 
-  END FUNCTION Read_Solar_GAtts
+  CONTAINS
+  
+    SUBROUTINE Create_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileID )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            Message = '; Error closing input file during error cleanup - '//&
+                      TRIM(NF90_STRERROR( NF90_Status ) )
+        END IF
+      END IF
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE Create_CleanUp
+
+  END FUNCTION Create_Solar_netCDF
 
 
 
@@ -917,7 +1726,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Inquire_Solar_netCDF
 !
@@ -925,94 +1734,97 @@ CONTAINS
 !       Function to inquire a netCDF format Solar source data file to obtain
 !       the dimensions and attributes.
 !
-! CATEGORY:
-!       Solar
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_Solar_netCDF( NC_Filename,                   &  ! Input
-!                                            n_Frequencies = n_Frequencies, &  ! Optional output
-!                                            Title         = Title,         &  ! Optional output
-!                                            History       = History,       &  ! Optional output
-!                                            Comment       = Comment,       &  ! Optional output
-!                                            Source        = Source,        &  ! Optional output
-!                                            References    = References,    &  ! Optional output
-!                                            RCS_Id        = RCS_Id,        &  ! Version control
-!                                            Message_Log   = Message_Log    )  ! Error messaging
+!       Error_Status = Inquire_Solar_netCDF( NC_Filename                , &  ! Input
+!                                            n_Frequencies=n_Frequencies, &  ! Optional output
+!                                            Release      =Release      , &  ! Optional output
+!                                            Version      =Version      , &  ! Optional output
+!                                            Title        =Title        , &  ! Optional output
+!                                            History      =History      , &  ! Optional output
+!                                            Comment      =Comment      , &  ! Optional output
+!                                            Source       =Source       , &  ! Optional output
+!                                            References   =References   , &  ! Optional output
+!                                            RCS_Id       =RCS_Id       , &  ! Version control
+!                                            Message_Log  =Message_Log    )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the netCDF
 !                         format Solar data file to inquire.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:      Character string specifying a filename in which any
 !                         messages will be logged. If not specified, or if an
 !                         error occurs opening the log file, the default action
 !                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       n_Frequencies:    The number of spectral points.
-!                         UNITS:      None
+!                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Release:          The release number of the netCDF Solar file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Version:          The version number of the netCDF Solar file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Title:            Character string written into the TITLE global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:          Character string written into the HISTORY global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Comment:          Character string written into the COMMENT global
 !                         attribute field of the netCDF Solar file.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Source:           Character string written into the SOURCE
-!                         attribute field of the IRRADIANCE
-!                         variable.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         attribute field of the IRRADIANCE variable.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       References:       Character string written into the REFERENCES
-!                         attribute field of the IRRADIANCE
-!                         variable. 
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         attribute field of the IRRADIANCE variable. 
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       RCS_Id:           Character string containing the Revision Control
 !                         System Id field for the module.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER( * )
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
@@ -1027,304 +1839,228 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! CALLS:
-!       Open_Solar_netCDF:       Function to open a netCDF format Solar
-!                                data file.
-!
-!       Read_Solar_GAtts:        Function to read the global attributes from
-!                                a netCDF format Solar data file.
-!
-!       Close_Solar_netCDF:      Function to close a netCDF format Solar
-!                                data file with error checking.
-!
-!       NF90_CLOSE:              Function to close a netCDF file.
-!                                SOURCE: netCDF library
-!
-!       Get_netCDF_Dimension:    Function to return a dimension value from
-!                                a netCDF file given the dimension name.
-!                                SOURCE: NETCDF_UTILITY module
-!                                
-!       Get_netCDF_Variable:     Function to return a variable from a
-!                                netCDF file given the variable name.
-!                                SOURCE: NETCDF_UTILITY module
-!
-!       Display_Message:         Subroutine to output messages
-!                                SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_Solar_netCDF( NC_Filename,   &  ! Input
+  FUNCTION Inquire_Solar_netCDF( NC_Filename  , &  ! Input
                                  n_Frequencies, &  ! Optional output
-                                 Title,         &  ! Optional output
-                                 History,       &  ! Optional output
-                                 Comment,       &  ! Optional output
-                                 Source,        &  ! Optional output
-                                 References,    &  ! Optional output
-                                 RCS_Id,        &  ! Version control
-                                 Message_Log )  &  ! Error messaging
-                               RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- TYPE DECLARATIONS --                         #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+                                 Release      , &  ! Optional output
+                                 Version      , &  ! Optional output
+                                 Title        , &  ! Optional output
+                                 History      , &  ! Optional output
+                                 Comment      , &  ! Optional output
+                                 Source       , &  ! Optional output
+                                 References   , &  ! Optional output
+                                 RCS_Id       , &  ! Version control
+                                 Message_Log  ) &  ! Error messaging
+                               RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-
-    ! -- Optional output
-    INTEGER,        OPTIONAL, INTENT( OUT ) :: n_Frequencies
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: History
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Source
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: References
-
-    ! -- Version control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: RCS_Id
-
-    ! -- Error message log file
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Frequencies
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Release
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Source
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: References
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! -------------------
     ! Function parameters
-    ! -------------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Inquire_Solar_netCDF'
-
-
-    ! ------------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_Solar_netCDF'
     ! Function variables
-    ! ------------------
-
-    INTEGER :: NF90_Status
+    CHARACTER(ML) :: Message
     INTEGER :: NC_FileID
+    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
+    TYPE(Solar_type) :: Dummy  
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- OPEN THE netCDF FILE --                       #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Open_Solar_netCDF( TRIM( NC_FileNAME ), &
+    ! Open the file
+    ! -------------
+    Error_Status = Open_Solar_netCDF( NC_Filename, &
                                       NC_FileID, &
-                                      Mode = 'Read' )
-
+                                      Mode='READ' )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening netCDF Solar data file '//&
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error opening netCDF Solar data file '//&
+                TRIM(NC_Filename)
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
+    ! Get the dimensions
+    ! ------------------
+    Error_Status = Get_netCDF_Dimension( NC_FileID, &
+                                         FREQUENCY_DIMNAME, &
+                                         Dummy%n_Frequencies, &
+                                         Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error obtaining '//FREQUENCY_DIMNAME//&
+                ' dimension from '//TRIM(NC_Filename)
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
 
-    !#--------------------------------------------------------------------------#
-    !#                     -- GET THE SPECTRAL DIMENSION --                     #
-    !#--------------------------------------------------------------------------#
 
-    IF ( PRESENT( n_Frequencies ) ) THEN
-      Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                           FREQUENCY_DIMNAME, &
-                                           n_Frequencies, &
-                                           Message_Log = Message_Log )
+    ! Get the global attributes
+    ! -------------------------
+    Error_Status = ReadGAtts( NC_Filename            , &
+                              NC_FileID              , &
+                              Release    =Release    , &
+                              Version    =Version    , &
+                              Title      =Title      , &
+                              History    =History    , &
+                              Comment    =Comment    , &
+                              Source     =Source     , &
+                              References =References , &
+                              Message_Log=Message_Log    )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
 
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error obtaining '//FREQUENCY_DIMNAME//' dimension from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
+
+    ! Close the file
+    ! --------------
+    Close_Status = Close_Solar_netCDF( NC_FileID )
+    IF ( Close_Status /= SUCCESS ) THEN
+      Message = 'Error closing netCDF Solar data file '//TRIM(NC_Filename)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+
+    ! Set the return values
+    ! ---------------------
+    ! Dimensions
+    IF ( PRESENT(n_Frequencies) ) n_Frequencies = Dummy%n_Frequencies
+
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          Close_Status = Close_Solar_netCDF(NC_FileID)
+          IF ( Close_Status /= SUCCESS ) &
+            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+        END IF
       END IF
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- GET THE ATTRIBUTES --                         #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Read_Solar_GAtts( TRIM( NC_Filename ), &
-                                     NC_FileID, &
-                                     Title      = Title, &
-                                     History    = History, &
-                                     Comment    = Comment, &
-                                     Source     = Source, &
-                                     References = References, &
-                                     Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
+      ! Set error status and print error message
+      Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading global attribute from '// &
-                            TRIM( NC_Filename ), &
+                            TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CLOSE THE netCDF FILE --                         #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Close_Solar_netCDF( NC_FileID )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF Solar data file '// &
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
+                            Message_Log=Message_Log )
+    END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_Solar_netCDF
 
 
 
 
-
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Write_Solar_netCDF
 !
 ! PURPOSE:
 !       Function to write Solar data to a netCDF format Solar file.
 !
-! CATEGORY:
-!       Solar
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!         Error_Status = Write_Solar_netCDF( NC_Filename,               &  ! Input
-!                                            Solar,                     &  ! Input
-!                                            Title       = Title,       &  ! Optional input
-!                                            History     = History,     &  ! Optional input
-!                                            Comment     = Comment,     &  ! Optional input
-!                                            Source      = Source,      &  ! Optional input
-!                                            References  = References,  &  ! Optional input
-!                                            RCS_Id      = RCS_Id,      &  ! Version control
-!                                            Message_Log = Message_Log  )  ! Error messaging
+!         Error_Status = Write_Solar_netCDF( NC_Filename            , &  ! Input
+!                                            Solar                  , &  ! Input
+!                                            Quiet      =Quiet      , &  ! Optional input
+!                                            Title      =Title      , &  ! Optional input
+!                                            History    =History    , &  ! Optional input
+!                                            Comment    =Comment    , &  ! Optional input
+!                                            Source     =Source     , &  ! Optional input
+!                                            References =References , &  ! Optional input
+!                                            RCS_Id     =RCS_Id     , &  ! Version control
+!                                            Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:     Character string specifying the name of the
 !                        netCDF format Solar data file to create.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
+!                        ATTRIBUTES: INTENT(IN)
 !
 !       Solar:           Structure containing the solar data to write to file.
 !                        UNITS:      N/A
 !                        TYPE:       Solar_type
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:           Set this keyword to suppress information messages being
+!                        printed to standard output (or the message log file if
+!                        the MESSAGE_LOG optional argument is used.) By default,
+!                        information messages are printed.
+!                        If QUIET = 0, information messages are OUTPUT.
+!                           QUIET = 1, information messages are SUPPRESSED.
+!                        UNITS:      N/A
+!                        TYPE:       Integer
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Title:           Character string written into the TITLE global
 !                        attribute field of the netCDF Solar file.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       History:         Character string written into the HISTORY global
 !                        attribute field of the netCDF Solar file.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Comment:         Character string written into the COMMENT global
 !                        attribute field of the netCDF Solar file.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Source:          Character string written into the SOURCE
-!                        attribute field of the IRRADIANCE
-!                        variable.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        attribute field of the IRRADIANCE variable.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       References:      Character string written into the REFERENCES
-!                        attribute field of the IRRADIANCE
-!                        variable. 
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        attribute field of the IRRADIANCE variable. 
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:     Character string specifying a filename in which any
 !                        messages will be logged. If not specified, or if an
 !                        error occurs opening the log file, the default action
 !                        is to output messages to standard output.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       RCS_Id:          Character string containing the Revision Control
 !                        System Id field for the module.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -1339,826 +2075,165 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! CALLS:
-!       Associated_Solar:        Function to test the association status
-!                                of the pointer members of a Solar
-!                                structure.
-!                                SOURCE: SOLAR_DEFINE module
-!
-!       NF90_CREATE:             Function to create a netCDF file.
-!                                SOURCE: netCDF library
-!
-!       NF90_DEF_DIM:            Function to define a dimension in
-!                                a netCDF dataset.
-!                                SOURCE: netCDF library
-!
-!       NF90_PUT_ATT:            Function to write an attribute to
-!                                a netCDF dataset.
-!                                SOURCE: netCDF library
-!
-!       Write_Solar_GAtts:       Function to write the global attributes
-!                                to the netCDF formnat Solar file.
-!
-!       NF90_DEF_VAR:            Function to define a variable in
-!                                a netCDF dataset.
-!                                SOURCE: netCDF library
-!
-!       NF90_ENDDEF:             Function to put a netCDF dataset into
-!                                data mode.
-!                                SOURCE: netCDF library
-!
-!       Put_netCDF_Variable:     Function to write variable data to a
-!                                netCDF data file.
-!                                SOURCE: NETCDF_VARIABLE_UTILITY module
-!
-!       NF90_CLOSE:              Function to close a netCDF file.
-!                                SOURCE: netCDF library
-!
-!       Display_Message:         Subroutine to output messages
-!                                SOURCE: Message_Handler module
-!
 ! SIDE EFFECTS:
 !       If the output file already exists, it is overwritten
 !
-! RESTRICTIONS:
-!       None..
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Jan-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_Solar_netCDF( NC_Filename,  &  ! Input
-                               Solar,        &  ! Input
-                               Title,        &  ! Optional input
-                               History,      &  ! Optional input
-                               Comment,      &  ! Optional input
-                               Source,       &  ! Optional input
-                               References,   &  ! Optional input
-                               RCS_Id,       &  ! Version control
-                               Message_Log ) &  ! Error messaging
-                             RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  FUNCTION Write_Solar_netCDF( NC_Filename, &  ! Input
+                               Solar      , &  ! Input
+                               Quiet      , &  ! Optional input
+                               Title      , &  ! Optional input
+                               History    , &  ! Optional input
+                               Comment    , &  ! Optional input
+                               Source     , &  ! Optional input
+                               References , &  ! Optional input
+                               RCS_Id     , &  ! Version control
+                               Message_Log) &  ! Error messaging
+                             RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-    TYPE( Solar_type ),       INTENT( IN )  :: Solar
-
-    ! -- Optional input
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: History
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Source
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: References
-
-    ! -- Version control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: RCS_Id
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    TYPE(Solar_type),       INTENT(IN)  :: Solar
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Source
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: References
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! ----------------
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Write_Solar_netCDF'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_Solar_netCDF'
     ! Local variables
-    ! ---------------
-
-    INTEGER :: NF90_Status
-    INTEGER :: NF90_Status1, NF90_Status2
+    CHARACTER(ML) :: Message
+    LOGICAL :: Noisy
+    INTEGER :: NC_FileID
     INTEGER :: Close_Status
 
-    INTEGER :: NC_FileID
-    INTEGER :: Frequency_DimID
-    INTEGER :: VarID
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- SET THE RCS ID ARGUMENT IF SUPPLIED --               #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
+    ! Output informational messages....
+    Noisy = .TRUE.
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT(Quiet) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#             -- CHECK STRUCTURE POINTER ASSOCIATION STATUS --             #
-    !#                                                                          #
-    !#                ALL structure pointers must be associated                 #
-    !#--------------------------------------------------------------------------#
-
+    ! Check structure association
     IF ( .NOT. Associated_Solar( Solar ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT Solar pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Some or all INPUT Solar pointer members are NOT associated.'
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- CREATE THE NETCDF DATA FILE --                     #
-    !#--------------------------------------------------------------------------#
-
-    NF90_Status = NF90_CREATE( TRIM( NC_FileNAME ), &
-                               NF90_CLOBBER, &
-                               NC_FileID     )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error creating '//TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- DEFINE THE DIMENSIONS --                       #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------------
-    ! The number of frequencies
-    ! -------------------------
-
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                FREQUENCY_DIMNAME, &
-                                Solar%n_Frequencies, &
-                                Frequency_DimID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//FREQUENCY_DIMNAME//' dimension in '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- DEFINE THE VARIABLES --                       #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------------
-    ! Begin frequency
-    ! ---------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                BEGIN_FREQUENCY_VARNAME, &
-                                BEGIN_FREQUENCY_TYPE, &
-                                varid = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//BEGIN_FREQUENCY_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 BEGIN_FREQUENCY_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 BEGIN_FREQUENCY_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//BEGIN_FREQUENCY_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-
-
-    ! -------------
-    ! End frequency
-    ! -------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                END_FREQUENCY_VARNAME, &
-                                END_FREQUENCY_TYPE, &
-                                varid = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//END_FREQUENCY_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 END_FREQUENCY_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 END_FREQUENCY_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//END_FREQUENCY_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ------------------
-    ! Frequency interval
-    ! ------------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                FREQUENCY_INTERVAL_VARNAME, &
-                                FREQUENCY_INTERVAL_TYPE, &
-                                varid = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//FREQUENCY_INTERVAL_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 FREQUENCY_INTERVAL_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 FREQUENCY_INTERVAL_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//FREQUENCY_INTERVAL_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
+    ! Create the output data file
     ! ---------------------------
-    ! Solar blackbody temperature
-    ! ---------------------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                BLACKBODY_TEMPERATURE_VARNAME, &
-                                BLACKBODY_TEMPERATURE_TYPE, &
-                                varid = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//BLACKBODY_TEMPERATURE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 BLACKBODY_TEMPERATURE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 BLACKBODY_TEMPERATURE_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//BLACKBODY_TEMPERATURE_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ------------
-    ! Solar Radius
-    ! ------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                RADIUS_VARNAME, &
-                                RADIUS_TYPE, &
-                                varid = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//RADIUS_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 RADIUS_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 RADIUS_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//RADIUS_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ------------------
-    ! Earth-Sun distance
-    ! ------------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                EARTH_SUN_DISTANCE_VARNAME, &
-                                EARTH_SUN_DISTANCE_TYPE, &
-                                varid = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//EARTH_SUN_DISTANCE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 EARTH_SUN_DISTANCE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 EARTH_SUN_DISTANCE_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//EARTH_SUN_DISTANCE_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ----------------
-    ! Solar irradiance
-    ! ----------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                IRRADIANCE_VARNAME, &
-                                IRRADIANCE_TYPE, &
-                                dimids = Frequency_DimID, &
-                                varid  = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//IRRADIANCE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 IRRADIANCE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 IRRADIANCE_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//IRRADIANCE_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------------------
-    ! Blackbody solar irradiance
-    ! --------------------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                BLACKBODY_IRRADIANCE_VARNAME, &
-                                BLACKBODY_IRRADIANCE_TYPE, &
-                                dimids = Frequency_DimID, &
-                                varid  = varID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//BLACKBODY_IRRADIANCE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 LONGNAME_ATTNAME, &
-                                 BLACKBODY_IRRADIANCE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 varID, &
-                                 UNITS_ATTNAME, &
-                                 BLACKBODY_IRRADIANCE_UNITS )
-
-    IF ( NF90_Status1 /= NF90_NOERR .OR. NF90_Status2 /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//BLACKBODY_IRRADIANCE_VARNAME//' variable attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- WRITE THE GLOBAL ATTRIBUTES --                    #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Write_Solar_GAtts( TRIM( NC_FileNAME ), &
-                                      NC_FileID, &
-                                      Title      = Title, &
-                                      History    = History, &
-                                      Comment    = Comment, &
-                                      Source     = Source, &
-                                      References = References, &
-                                      Message_Log = Message_Log )
-
+    Error_Status = Create_Solar_netCDF( NC_Filename              , &  ! Input
+                                        Solar%n_Frequencies      , &  ! Input
+                                        NC_FileID                , &  ! Output
+                                        Release    =Solar%Release, &  ! Optional input
+                                        Version    =Solar%Version, &  ! Optional input
+                                        Title      =Title        , &  ! Optional input
+                                        History    =History      , &  ! Optional input
+                                        Comment    =Comment      , &  ! Optional input
+                                        Source     =Source       , &  ! Optional input
+                                        References =References   , &  ! Optional input
+                                        Message_Log=Message_Log    )  ! Error messaging
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing global attribute to '// &
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+      Message = 'Error creating output file '//TRIM(NC_Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- WRITE THE DATA ITEMS --                        #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------------
-    ! Take netCDF file out of define mode
-    ! -----------------------------------
-
-    NF90_Status = NF90_ENDDEF( NC_FileID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error taking file '//TRIM( NC_Filename )// &
-                            ' out of define mode - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ------------------
-    ! The frequency data
-    ! ------------------
-
-    ! -- Begin frequency
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        BEGIN_FREQUENCY_VARNAME, &
-                                        Solar%Begin_Frequency )
-
+    ! Write the Solar data
+    ! ------------------------
+    Error_Status = WriteVar( NC_Filename, &
+                             NC_FileID  , &
+                             Solar      , &
+                             Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//BEGIN_FREQUENCY_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error writing Solar variables to output file '//TRIM(NC_Filename)
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
+    
 
-    ! -- End frequency
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        END_FREQUENCY_VARNAME, &
-                                        Solar%End_Frequency )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//END_FREQUENCY_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Frequency interval
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        FREQUENCY_INTERVAL_VARNAME, &
-                                        Solar%Frequency_Interval )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//FREQUENCY_INTERVAL_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ----------------------------------------------
-    ! The solar temperature for the blackbody source
-    ! ----------------------------------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        BLACKBODY_TEMPERATURE_VARNAME, &
-                                        Solar%Blackbody_Temperature )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//BLACKBODY_TEMPERATURE_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ------------
-    ! The geometry
-    ! ------------
-
-    ! -- Solar radius
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        RADIUS_VARNAME, &
-                                        Solar%Radius )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//RADIUS_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Earth-Sun distance
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        EARTH_SUN_DISTANCE_VARNAME, &
-                                        Solar%Earth_Sun_Distance )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//EARTH_SUN_DISTANCE_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -------------------------------
-    ! The irradiance source functions
-    ! -------------------------------
-
-    ! -- Solar source spectrum
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        IRRADIANCE_VARNAME, &
-                                        Solar%Irradiance )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//IRRADIANCE_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Blackbody source spectrum
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        BLACKBODY_IRRADIANCE_VARNAME, &
-                                        Solar%Blackbody_Irradiance )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//BLACKBODY_IRRADIANCE_VARNAME//' to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CLOSE THE netCDF FILE --                         #
-    !#--------------------------------------------------------------------------#
-
+    ! Close the file
+    ! --------------
     Close_Status = Close_Solar_netCDF( NC_FileID )
-
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF Solar data file '// &
-                            TRIM( NC_FileNAME ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      CALL Info_Solar( Solar, Message )
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log = Message_Log )
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE Write_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          Close_Status = Close_Solar_netCDF(NC_FileID)
+          IF ( Close_Status /= SUCCESS ) &
+            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE Write_CleanUp
+
   END FUNCTION Write_Solar_netCDF
 
 
-
-
-
 !------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       Read_Solar_netCDF
 !
 ! PURPOSE:
 !       Function to read data from a netCDF format Solar file.
 !
-! CATEGORY:
-!       Solar
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = Read_Solar_netCDF( NC_Filename,              &  ! Input
-!                                         Solar,                    &  ! Output
-!                                         Title       = Title,      &  ! Optional output
-!                                         History     = History,    &  ! Optional output
-!                                         Comment     = Comment,    &  ! Optional output
-!                                         Source      = Source,     &  ! Optional output
-!                                         References  = References, &  ! Optional output
-!                                         RCS_Id      = RCS_Id,     &  ! Version control
-!                                         Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Read_Solar_netCDF( NC_Filename            , &  ! Input
+!                                         Solar                  , &  ! Output
+!                                         Quiet      =Quiet      , &  ! Optional input
+!                                         Title      =Title      , &  ! Optional output
+!                                         History    =History    , &  ! Optional output
+!                                         Comment    =Comment    , &  ! Optional output
+!                                         Source     =Source     , &  ! Optional output
+!                                         References =References , &  ! Optional output
+!                                         RCS_Id     =RCS_Id     , &  ! Version control
+!                                         Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:     Character string specifying the name of the netCDF Solar
 !                        format Solar data file to read.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
 !       Solar:           Structure to contain the Solar data read
@@ -2166,53 +2241,71 @@ CONTAINS
 !                        UNITS:      N/A
 !                        TYPE:       Solar_type
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN OUT )
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
+! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:           Set this keyword to suppress information messages being
+!                        printed to standard output (or the message log file if
+!                        the MESSAGE_LOG optional argument is used.) By default,
+!                        information messages are printed.
+!                        If QUIET = 0, information messages are OUTPUT.
+!                           QUIET = 1, information messages are SUPPRESSED.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:     Character string specifying a filename in which any
+!                        messages will be logged. If not specified, or if an
+!                        error occurs opening the log file, the default action
+!                        is to output messages to standard output.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       Title:           Character string written into the TITLE global
 !                        attribute field of the netCDF Solar file.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:         Character string written into the HISTORY global
 !                        attribute field of the netCDF Solar file.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Comment:         Character string written into the COMMENT global
 !                        attribute field of the netCDF Solar file.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Source:          Character string written into the SOURCE
-!                        attribute field of the IRRADIANCE
-!                        variable.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        attribute field of the IRRADIANCE variable.
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       References:      Character string written into the REFERENCES
-!                        attribute field of the IRRADIANCE
-!                        variable. 
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        attribute field of the IRRADIANCE variable. 
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       RCS_Id:          Character string containing the Revision Control
 !                        System Id field for the module.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER( * )
+!                        UNITS:      N/A
+!                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -2225,427 +2318,192 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! CALLS:
-!       Open_Solar_netCDF:     Function to open a netCDF format Solar
-!                              data file.
-! 
-!       Inquire_Solar_netCDF:  Function to inquire a netCDF format 
-!                              Solar file to obtain information
-!                              about the data dimensions and attributes.
-!
-!       Close_Solar_netCDF:    Function to close a netCDF format Solar
-!                              data file with error checking.
-!
-!       Allocate_Solar:        Function to allocate the pointer members
-!                              of an Solar structure.
-!                              SOURCE: SOLAR_DEFINE module
-!
-!       Get_netCDF_Variable:   Function to read variable data from a
-!                              netCDF data file.
-!                              SOURCE: NETCDF_VARIABLE_UTILITY module
-!
-!       NF90_CLOSE:            Function to close a netCDF file.
-!                              SOURCE: netCDF library
-!
-!       Display_Message:       Subroutine to output messages
-!                              SOURCE: Message_Handler module
-!
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
 ! COMMENTS:
 !       Note the INTENT on the output Solar argument is IN OUT rather
 !       than just OUT. This is necessary because the argument may be defined on
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Jan-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_Solar_netCDF( NC_Filename,  &  ! Input
-                              Solar,        &  ! Output
-                              Title,        &  ! Optional output
-                              History,      &  ! Optional output
-                              Comment,      &  ! Optional output
-                              Source,       &  ! Optional output
-                              References,   &  ! Optional output
-                              RCS_Id,       &  ! Version control
-                              Message_Log ) &  ! Error messaging
-                            RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- TYPE DECLARATIONS --                         #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  FUNCTION Read_Solar_netCDF( NC_Filename, &  ! Input
+                              Solar      , &  ! Output
+                              Quiet      , &  ! Optional input
+                              Title      , &  ! Optional output
+                              History    , &  ! Optional output
+                              Comment    , &  ! Optional output
+                              Source     , &  ! Optional output
+                              References , &  ! Optional output
+                              RCS_Id     , &  ! Version control
+                              Message_Log) &  ! Error messaging
+                            RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )     :: NC_Filename
-
-    ! -- Output
-    TYPE( Solar_type ),       INTENT( IN OUT ) :: Solar
-
-    ! -- Optional output
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: History
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: Source
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: References
-
-    ! -- Version control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: RCS_Id
-
-    ! -- Error message log file
-    CHARACTER( * ), OPTIONAL, INTENT( IN )     :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)     :: NC_Filename
+    TYPE(Solar_type),       INTENT(IN OUT) :: Solar
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Source
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: References
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! -------------------
     ! Function parameters
-    ! -------------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Read_Solar_netCDF'
-
-
-    ! ------------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_Solar_netCDF'
     ! Function variables
-    ! ------------------
-
-    INTEGER :: NF90_Status
-    INTEGER :: Close_Status
+    CHARACTER(ML) :: Message
+    LOGICAL :: Noisy
     INTEGER :: NC_FileID
-    INTEGER :: n_Frequencies
+    INTEGER :: Destroy_Status
+    INTEGER :: Close_Status
+    INTEGER :: n_Frequencies 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- SET THE RCS ID ARGUMENT IF SUPPLIED --               #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
+    ! Output informational messages....
+    Noisy = .TRUE.
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT( Quiet ) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#       -- GET THE DIMENSION VALUE AND ALLOCATE THE Solar STRUCTURE --     #
-    !#--------------------------------------------------------------------------#
-
-    ! ------------------------
-    ! Read the dimension value
-    ! ------------------------
-
-    Error_Status = Inquire_Solar_netCDF( TRIM( NC_Filename ), &
-                                         n_Frequencies = n_Frequencies, &
-                                         Title         = Title, &
-                                         History       = History, &
-                                         Comment       = Comment, &
-                                         Source        = Source, &
-                                         References    = References, &
-                                         Message_Log   = Message_Log )
-
+    
+    ! Allocate the structure for the netCDF read
+    ! ------------------------------------------
+    ! Read the dimension values
+    Error_Status = Inquire_Solar_netCDF( NC_Filename                , &
+                                         n_Frequencies=n_Frequencies, &
+                                         Message_Log  =Message_Log    ) 
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error obtaining Solar dimension/attributes from '//&
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error obtaining Solar dimensions from '//TRIM(NC_Filename)
+      CALL Read_Cleanup(); RETURN
     END IF
 
-
-    ! ----------------------
     ! Allocate the structure
-    ! ----------------------
-
     Error_Status = Allocate_Solar( n_Frequencies, &
-                                   Solar, &
-                                   Message_Log = Message_Log )
-                                        
+                                   Solar        , &
+                                   Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error occurred allocating Solar structure.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error occurred allocating Solar structure.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- OPEN THE netCDF FILE --                       #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Open_Solar_netCDF( TRIM( NC_FileNAME ), &
+    ! Open the netCDF file for reading
+    ! --------------------------------
+    Error_Status = Open_Solar_netCDF( NC_Filename, &
                                       NC_FileID, &
-                                      Mode = 'Read' )
-
+                                      Mode='READ' )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening netCDF Solar data file '//&
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      Message = 'Error opening netCDF Solar data file '//TRIM(NC_Filename)
+      CALL Read_Cleanup( Destroy_Structure=SET ); RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- READ THE Solar DATA --                         #
-    !#--------------------------------------------------------------------------#
-
-
-    ! ------------------
-    ! The frequency data
-    ! ------------------
-
-    ! -- Begin frequency
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        BEGIN_FREQUENCY_VARNAME, &
-                                        Solar%Begin_Frequency )
-
+    ! Read the global attributes
+    ! --------------------------
+    Error_Status = ReadGAtts( NC_Filename              , &
+                              NC_FileID                , &
+                              Release    =Solar%Release, &
+                              Version    =Solar%Version, &
+                              Title      =Title        , & 
+                              History    =History      , & 
+                              Comment    =Comment      , & 
+                              Source     =Source       , &
+                              References =References   , &
+                              Message_Log=Message_Log    )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//BEGIN_FREQUENCY_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
-    ! -- End frequency
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        END_FREQUENCY_VARNAME, &
-                                        Solar%End_Frequency )
-
+    ! Check the release
+    Error_Status = CheckRelease_Solar( Solar, &
+                                       Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//END_FREQUENCY_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Solar Release check failed for '//TRIM(NC_Filename)
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
+    
 
-    ! -- Frequency interval
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        FREQUENCY_INTERVAL_VARNAME, &
-                                        Solar%Frequency_Interval )
-
+    ! Read the Solar data
+    ! -------------------
+    Error_Status = ReadVar( NC_Filename, &
+                            NC_FileID  , &
+                            Solar      , &
+                            Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//FREQUENCY_INTERVAL_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error reading Solar variables from '//TRIM(NC_Filename)
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
 
-    ! ----------------------------------------------
-    ! The solar temperature for the blackbody source
-    ! ----------------------------------------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        BLACKBODY_TEMPERATURE_VARNAME, &
-                                        Solar%Blackbody_Temperature )
-
+    ! Compute the frequency grid
+    ! --------------------------
+    Error_Status = Frequency_Solar( Solar, &
+                                    Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//BLACKBODY_TEMPERATURE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      Message = 'Error computing Solar spectrum frequency grid'
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
-
-
-    ! ------------
-    ! The geometry
-    ! ------------
-
-    ! -- Solar radius
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        RADIUS_VARNAME, &
-                                        Solar%Radius )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//RADIUS_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Earth-Sun distance
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        EARTH_SUN_DISTANCE_VARNAME, &
-                                        Solar%Earth_Sun_Distance )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//EARTH_SUN_DISTANCE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -------------------------------
-    ! The irradiance source functions
-    ! -------------------------------
-
-    ! -- Solar source spectrum
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        IRRADIANCE_VARNAME, &
-                                        Solar%Irradiance )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//IRRADIANCE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Blackbody source spectrum
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        BLACKBODY_IRRADIANCE_VARNAME, &
-                                        Solar%Blackbody_Irradiance )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//BLACKBODY_IRRADIANCE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CLOSE THE netCDF FILE --                         #
-    !#--------------------------------------------------------------------------#
-
+    
+    
+    ! Close the file
+    ! --------------
     Close_Status = Close_Solar_netCDF( NC_FileID )
-
     IF ( Close_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error closing netCDF Solar data file '// &
-                            TRIM( NC_FileNAME ), &
+                            TRIM(NC_Filename), &
                             WARNING, &
                             Message_Log = Message_Log )
     END IF
 
 
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      CALL Info_Solar( Solar, Message )
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log = Message_Log )
+    END IF
 
-    !#--------------------------------------------------------------------------#
-    !#                  -- COMPUTE THE Solar FREQUENCY GRID --                  #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Frequency_Solar( Solar )
-
-    IF ( Error_Status /= SUCCESS ) THEN
+  CONTAINS
+  
+    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      INTEGER, OPTIONAL, INTENT(IN) :: Destroy_Structure
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          Close_Status = Close_Solar_netCDF(NC_FileID)
+          IF ( Close_Status /= SUCCESS ) &
+            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+        END IF
+      END IF
+      ! Destroy the structure if necessary
+      IF ( PRESENT(Destroy_Structure) ) THEN
+        IF ( Destroy_Structure == SET ) THEN
+          Destroy_Status = Destroy_Solar(Solar, Message_Log=Message_Log)
+          IF ( Destroy_Status /= SUCCESS ) &
+            Message = TRIM(Message)//'; Error destroying Solar during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error message
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error computing frequency grid for solar data from '//&
-                            TRIM( NC_Filename ), &
+                            TRIM(Message), &
                             Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+                            Message_Log=Message_Log )
+    END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_Solar_netCDF
 
 END MODULE Solar_netCDF_IO
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Solar_netCDF_IO.f90,v 2.4 2006/09/21 17:59:50 wd20pd Exp $
-!
-! $Date: 2006/09/21 17:59:50 $
-!
-! $Revision: 2.4 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Solar_netCDF_IO.f90,v $
-! Revision 2.4  2006/09/21 17:59:50  wd20pd
-! Replaced all references to Error_Handler with Message_Handler.
-!
-! Revision 2.3  2005/08/11 17:33:14  paulv
-! - Added call to Frequency_Solar() in the Read_Solar_netCDF() function.
-!
-! Revision 2.2  2004/08/31 18:20:27  paulv
-! - Upgraded to Fortran95.
-! - Added structure association test to the Write() function.
-! - Changed INTENT of Solar structure in Read() function from OUT to
-!   IN OUT. Necessary to prevent memory leaks.
-! - If an error occurs closing a netCDF file at the end of the Read() and
-!   Write() functions, a warning *message* is issued, but the error status
-!   is not set to WARNING.
-! - Updated header documentation.
-!
-! Revision 2.1  2004/06/25 17:18:30  paulv
-! - Added write module history and creation time/date global attribute writes
-!   to the GAtt() writer.
-! - Cosmetic changes.
-!
-! Revision 2.0  2003/02/11 22:13:56  paulv
-! - New version. Removed the Create_Solar() function. Only public entities
-!   are now the Inquire, Write, and Read functions.
-!
-! Revision 1.2  2002/08/22 20:24:00  paulv
-! - Using netCDF_Utility module function Get_netCDF_Variable() in place
-!   of old get_ncdf_variable() function.
-!
-! Revision 1.1  2002/08/22 17:24:02  paulv
-! Initial checkin.
-!
-!
-!
-!

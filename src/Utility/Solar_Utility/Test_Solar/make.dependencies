@@ -1,0 +1,11 @@
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Solar_Define.o : Solar_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Solar_netCDF_IO.o : Solar_netCDF_IO.f90 netCDF_Utility.o Solar_Define.o Message_Handler.o Type_Kinds.o 
+Test_Solar.o : Test_Solar.f90 Solar_netCDF_IO.o Solar_Define.o File_Utility.o Message_Handler.o Type_Kinds.o 
+Type_Kinds.o : Type_Kinds.f90 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 

@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Create_Solar program
+# Makefile for Test_Solar program
 #
 #==============================================================================
 
@@ -11,27 +11,19 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Create_Solar
+EXE_FILE = Test_Solar
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
-            Fundamental_Constants.f90 \
             Compare_Float_Numbers.f90 \
-            Search_Utility.f90 \
-            Interpolate_Utility.f90 \
-            Linear_Interpolation.f90 \
-            Polynomial_Interpolation.f90 \
-            Spline_Interpolation.f90 \
-            Integrate_Utility.f90 \
-            Planck_Functions.f90 \
-            Solar_Define.f90 \
-            Solar_netCDF_IO.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
-            netCDF_Variable_Utility.f90
+            netCDF_Variable_Utility.f90 \
+            Solar_Define.f90 \
+            Solar_netCDF_IO.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -59,3 +51,4 @@ include make.dependencies
 
 # Define default rules
 include $(CRTM_SOURCE_ROOT)/make.rules
+
