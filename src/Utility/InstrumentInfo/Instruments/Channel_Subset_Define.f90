@@ -1,7 +1,7 @@
 !
-! AIRS_Subset_Define
+! Channel_Subset_Define
 !
-! Module containing the AIRS channel subset type definition and routins
+! Module containing the Channel Subset type definition and routines
 ! to manipulate it.
 !
 !
@@ -9,7 +9,8 @@
 !       Written by:     Paul van Delst, CIMSS/SSEC 25-Nov-2002
 !                       paul.vandelst@ssec.wisc.edu
 !
-MODULE AIRS_Subset_Define
+
+MODULE Channel_Subset_Define
 
   ! -----------------
   ! Environment setup
@@ -25,21 +26,21 @@ MODULE AIRS_Subset_Define
   ! ------------
   PRIVATE
   ! The structure definition
-  PUBLIC :: AIRS_Subset_type
+  PUBLIC :: Channel_Subset_type
   ! The structure methods
-  PUBLIC :: Associated_AIRS_Subset
-  PUBLIC :: Destroy_AIRS_Subset
-  PUBLIC :: Allocate_AIRS_Subset
-  PUBLIC :: Assign_AIRS_Subset
+  PUBLIC :: Associated_Channel_Subset
+  PUBLIC :: Destroy_Channel_Subset
+  PUBLIC :: Allocate_Channel_Subset
+  PUBLIC :: Assign_Channel_Subset
 
 
   ! -------------------
   ! Procedure overloads
   ! -------------------
-  INTERFACE Destroy_AIRS_Subset
+  INTERFACE Destroy_Channel_Subset
     MODULE PROCEDURE Destroy_scalar
     MODULE PROCEDURE Destroy_rank1
-  END INTERFACE Destroy_AIRS_Subset
+  END INTERFACE Destroy_Channel_Subset
 
 
   ! -----------------
@@ -47,22 +48,22 @@ MODULE AIRS_Subset_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-
   INTEGER, PARAMETER :: SET = 1
   INTEGER, PARAMETER :: INVALID = -1
+  INTEGER, PARAMETER :: ML = 256
 
 
-  ! --------------------------------
-  ! AIRS_Subset data type definition
-  ! --------------------------------
-  TYPE :: AIRS_Subset_type
+  ! -----------------------------------
+  ! Channel subset data type definition
+  ! -----------------------------------
+  TYPE :: Channel_Subset_type
     INTEGER :: n_Allocates = 0
     ! Dimensions
     INTEGER :: n_Channels = 0
     ! Channel subset inforamtion
     INTEGER, POINTER :: Channel_Number(:) => NULL()
     INTEGER, POINTER :: Channel_Index(:)  => NULL()
-  END TYPE AIRS_Subset_type
+  END TYPE Channel_Subset_type
 
 
 CONTAINS
@@ -79,27 +80,27 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Associated_AIRS_Subset
+!       Associated_Channel_Subset
 !
 ! PURPOSE:
 !       Function to test the association status of the pointer members of a
-!       AIRS Subset structure.
+!       Channel Subset structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_AIRS_Subset( Subset,             &  ! Input
-!                                                    ANY_Test = Any_Test )  ! Optional input
+!       Association_Status = Associated_Channel_Subset( Subset,             &  ! Input
+!                                                       ANY_Test = Any_Test )  ! Optional input
 !
 ! INPUT ARGUMENTS:
-!       Subset:              AIRS Subset structure which is to have its pointer
+!       Subset:              Channel Subset structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
-!                            TYPE:       TYPE(AIRS_Subset_type)
+!                            TYPE:       TYPE(Channel_Subset_type)
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:            Set this argument to test if ANY of the
-!                            AIRS_Subset structure pointer members are associated.
+!       ANY_Test:            Set this argument to test if ANY of the Channel_Subset
+!                            structure pointer members are associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
 !                            If ANY_Test = 0, test if ALL the pointer members
@@ -113,12 +114,12 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating the
-!                            association status of the AIRS_Subset pointer members.
-!                            .TRUE.  - if ALL the AIRS_Subset pointer members are
+!                            association status of the Channel_Subset pointer members.
+!                            .TRUE.  - if ALL the Channel_Subset pointer members are
 !                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the AIRS_Subset pointer
+!                                      is set and ANY of the Channel_Subset pointer
 !                                      members are associated.
-!                            .FALSE. - some or all of the AIRS_Subset pointer
+!                            .FALSE. - some or all of the Channel_Subset pointer
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
@@ -126,11 +127,11 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Associated_AIRS_Subset( Subset,    & ! Input
-                                   ANY_Test ) & ! Optional input
-                                 RESULT( Association_Status )
+  FUNCTION Associated_Channel_Subset( Subset  , & ! Input
+                                      ANY_Test) & ! Optional input
+                                    RESULT( Association_Status )
     ! Arguments
-    TYPE(AIRS_Subset_type), INTENT(IN) :: Subset
+    TYPE(Channel_Subset_type), INTENT(IN) :: Subset
     INTEGER,      OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
@@ -142,7 +143,7 @@ CONTAINS
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
     IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
+      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
     
     ! Test the structure associations    
@@ -159,27 +160,27 @@ CONTAINS
       END IF
     END IF
 
-  END FUNCTION Associated_AIRS_Subset
+  END FUNCTION Associated_Channel_Subset
 
 
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!       Destroy_AIRS_Subset
+!       Destroy_Channel_Subset
 ! 
 ! PURPOSE:
 !       Function to re-initialize the scalar and pointer members of
-!       AIRS_Subset data structures.
+!       Channel_Subset data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_AIRS_Subset( Subset,                   &  ! Output
-!                                           RCS_Id      = RCS_Id,     &  ! Optional output
-!                                           Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Destroy_Channel_Subset( Subset,                , &  ! Output
+!                                              RCS_Id     =RCS_Id     , &  ! Optional output
+!                                              Message_Log=Message_Log  )  ! Error messaging
 !
 ! OUTPUT ARGUMENTS:
-!       Subset:        Re-initialized AIRS_Subset structure.
+!       Subset:        Re-initialized Channel_Subset structure.
 !                      UNITS:      N/A
-!                      TYPE:       TYPE(AIRS_Subset_type)
+!                      TYPE:       TYPE(Channel_Subset_type)
 !                      DIMENSION:  Scalar
 !                                    OR
 !                                  Rank-1
@@ -224,20 +225,20 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Destroy_scalar( Subset,       &  ! Output
-                           No_Clear,     &  ! Optional input
-                           RCS_Id,       &  ! Optional output
+  FUNCTION Destroy_scalar( Subset      , &  ! Output
+                           No_Clear    , &  ! Optional input
+                           RCS_Id      , &  ! Optional output
                            Message_Log ) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
-    TYPE(AIRS_Subset_type), INTENT(IN OUT) :: Subset
-    INTEGER     , OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
+    INTEGER     ,    OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AIRS_Subset(scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_Channel_Subset(scalar)'
     ! Local variables
     CHARACTER(256)  :: Message
     LOGICAL :: Clear
@@ -255,12 +256,12 @@ CONTAINS
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == 1 ) Clear = .FALSE.
+      IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
-    IF ( Clear ) CALL Clear_AIRS_Subset(Subset)
+    IF ( Clear ) CALL Clear_Channel_Subset(Subset)
     
     ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_AIRS_Subset(Subset) ) RETURN
+    IF ( .NOT. Associated_Channel_Subset(Subset) ) RETURN
     
     
     ! Deallocate the pointer members
@@ -269,7 +270,7 @@ CONTAINS
                 Subset%Channel_Index , &
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
-      WRITE( Message, '("Error deallocating AIRS_Subset. STAT = ",i0)') &
+      WRITE( Message, '("Error deallocating Channel_Subset. STAT = ",i0)') &
                       Allocate_Status
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -295,22 +296,22 @@ CONTAINS
 
   END FUNCTION Destroy_scalar
 
-  FUNCTION Destroy_rank1( Subset,       &  ! Output
-                          No_Clear,     &  ! Optional input
-                          RCS_Id,       &  ! Optional output
+  FUNCTION Destroy_rank1( Subset      , &  ! Output
+                          No_Clear    , &  ! Optional input
+                          RCS_Id      , &  ! Optional output
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(AIRS_Subset_type), INTENT(IN OUT) :: Subset(:)
-    INTEGER     , OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset(:)
+    INTEGER     ,    OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AIRS_Subset(rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_Channel_Subset(rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: n
     INTEGER :: Scalar_Status
 
@@ -330,7 +331,7 @@ CONTAINS
       ! Process error, but keep going 
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message,'("Error deallocating AIRS_Subset element # ",i0)' ) n
+        WRITE( Message,'("Error deallocating Channel_Subset element # ",i0)' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -344,17 +345,17 @@ CONTAINS
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!       Allocate_AIRS_Subset
+!       Allocate_Channel_Subset
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the AIRS_Subset
+!       Function to allocate the pointer members of the Channel_Subset
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_AIRS_Subset( n_Channels,              &  ! Input
-!                                            Subset,                  &  ! Output
-!                                            RCS_Id     =RCS_Id,      &  ! Optional output
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Allocate_Channel_Subset( n_Channels             , &  ! Input
+!                                               Subset                 , &  ! Output
+!                                               RCS_Id     =RCS_Id     , &  ! Optional output
+!                                               Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       n_Channels:         Number of channels dimension.
@@ -365,10 +366,10 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Subset:             AIRS_Subset structure with allocated
+!       Subset:             Channel_Subset structure with allocated
 !                           pointer members
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(AIRS_Subset_type)
+!                           TYPE:       TYPE(Channel_Subset_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
@@ -412,22 +413,22 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Allocate_AIRS_Subset( n_Channels,   &  ! Input
-                                 Subset,       &  ! Output
-                                 RCS_Id,       &  ! Optional output
-                                 Message_Log ) &  ! Error messaging
-                               RESULT( Error_Status )
+  FUNCTION Allocate_Channel_Subset( n_Channels  , &  ! Input
+                                    Subset      , &  ! Output
+                                    RCS_Id      , &  ! Optional output
+                                    Message_Log ) &  ! Error messaging
+                                  RESULT( Error_Status )
     ! Arguments
-    INTEGER,                  INTENT(IN)     :: n_Channels
-    TYPE(AIRS_Subset_type), INTENT(IN OUT) :: Subset
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,                   INTENT(IN)     :: n_Channels
+    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AIRS_Subset'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_Channel_Subset'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
@@ -439,7 +440,7 @@ CONTAINS
     IF ( n_Channels < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input AIRS_Subset channel dimension must be > 0.', &
+                            'Input Channel_Subset channel dimension must be > 0.', &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -447,10 +448,10 @@ CONTAINS
 
     ! Check if ANY pointers are already associated.
     ! If they are, deallocate them but leave scalars.
-    IF ( Associated_AIRS_Subset( Subset, ANY_Test=SET ) ) THEN
-      Error_Status = Destroy_AIRS_Subset( Subset, &
-                                          No_Clear=SET, &
-                                          Message_Log=Message_Log )
+    IF ( Associated_Channel_Subset( Subset, ANY_Test=SET ) ) THEN
+      Error_Status = Destroy_Channel_Subset( Subset, &
+                                             No_Clear=SET, &
+                                             Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
                               'Error deallocating Subset pointer members.', &
@@ -468,7 +469,7 @@ CONTAINS
               STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message,'("Error allocating AIRS_Subset data arrays. STAT = ",i0)' ) &
+      WRITE( Message,'("Error allocating Channel_Subset data arrays. STAT = ",i0)' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
@@ -502,34 +503,34 @@ CONTAINS
                             Message_Log=Message_Log )
     END IF
 
-  END FUNCTION Allocate_AIRS_Subset
+  END FUNCTION Allocate_Channel_Subset
 
 
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!       Assign_AIRS_Subset
+!       Assign_Channel_Subset
 !
 ! PURPOSE:
-!       Function to copy valid AIRS_Subset structures.
+!       Function to copy valid Channel_Subset structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_AIRS_Subset( Subset_in,              &  ! Input
-!                                          Subset_out,             &  ! Output
-!                                          RCS_Id     =RCS_Id,     &  ! Revision control
-!                                          Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Assign_Channel_Subset( Subset_in,              &  ! Input
+!                                             Subset_out,             &  ! Output
+!                                             RCS_Id     =RCS_Id,     &  ! Revision control
+!                                             Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       Subset_in:         AIRS_Subset structure which is to be copied.
+!       Subset_in:         Channel_Subset structure which is to be copied.
 !                          UNITS:      N/A
-!                          TYPE:       TYPE(AIRS_Subset_type)
+!                          TYPE:       TYPE(Channel_Subset_type)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
 !       Subset_out:        Copy of the input structure, Subset_in.
 !                          UNITS:      N/A
-!                          TYPE:       TYPE(AIRS_Subset_type)
+!                          TYPE:       TYPE(Channel_Subset_type)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
@@ -567,20 +568,20 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Assign_AIRS_Subset( Subset_in,    &  ! Input
-                               Subset_out,   &  ! Output
-                               RCS_Id,       &  ! Revision control
-                               Message_Log ) &  ! Error messaging
-                             RESULT( Error_Status )
+  FUNCTION Assign_Channel_Subset( Subset_in   , &  ! Input
+                                  Subset_out  , &  ! Output
+                                  RCS_Id      , &  ! Revision control
+                                  Message_Log ) &  ! Error messaging
+                                RESULT( Error_Status )
     ! Arguments
-    TYPE(AIRS_Subset_type), INTENT(IN)     :: Subset_in
-    TYPE(AIRS_Subset_type), INTENT(IN OUT) :: Subset_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(Channel_Subset_type), INTENT(IN)     :: Subset_in
+    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset_out
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_AIRS_Subset'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_Channel_Subset'
 
     ! Set up
     ! ------
@@ -588,7 +589,7 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
-    IF ( .NOT. Associated_AIRS_Subset( Subset_In ) ) THEN
+    IF ( .NOT. Associated_Channel_Subset( Subset_In ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'Some or all INPUT Subset pointer members are NOT associated.', &
@@ -600,12 +601,12 @@ CONTAINS
 
     ! Allocate data arrays
     ! --------------------
-    Error_Status = Allocate_AIRS_Subset( Subset_in%n_Channels, &
-                                         Subset_out, &
-                                         Message_Log=Message_Log )
+    Error_Status = Allocate_Channel_Subset( Subset_in%n_Channels, &
+                                            Subset_out, &
+                                            Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME,    &
-                            'Error allocating output AIRS_Subset arrays.', &
+                            'Error allocating output Channel_Subset arrays.', &
                             Error_Status,    &
                             Message_Log=Message_Log )
       RETURN
@@ -617,7 +618,7 @@ CONTAINS
     Subset_out%Channel_Number = Subset_in%Channel_Number
     Subset_out%Channel_Index  = Subset_in%Channel_Index
 
-  END FUNCTION Assign_AIRS_Subset
+  END FUNCTION Assign_Channel_Subset
 
 
 !##################################################################################
@@ -631,19 +632,19 @@ CONTAINS
 !----------------------------------------------------------------------------------
 !
 ! NAME:
-!       Clear_AIRS_Subset
+!       Clear_Channel_Subset
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a AIRS_Subset structure.
+!       Subroutine to clear the scalar members of a Channel_Subset structure.
 !
 ! CALLING SEQUENCE:
-!       CALL Clear_AIRS_Subset( Subset ) ! Output
+!       CALL Clear_Channel_Subset( Subset ) ! Output
 !
 ! OUTPUT ARGUMENTS:
-!       Subset:         AIRS Subset structure for which the scalar members have
+!       Subset:         Channel Subset structure for which the scalar members have
 !                       been cleared.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(AIRS_Subset_type)
+!                       TYPE:       TYPE(Channel_Subset_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -654,9 +655,9 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  SUBROUTINE Clear_AIRS_Subset( Subset )
-    TYPE(AIRS_Subset_type), INTENT(IN OUT) :: Subset
+  SUBROUTINE Clear_Channel_Subset( Subset )
+    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
     ! Nothing done so far
-  END SUBROUTINE Clear_AIRS_Subset
+  END SUBROUTINE Clear_Channel_Subset
 
-END MODULE AIRS_Subset_Define
+END MODULE Channel_Subset_Define

@@ -42,8 +42,6 @@ MODULE SpcCoeff_Define
   ! Public types
   ! ------------
   PUBLIC :: SpcCoeff_type
-  ! Use associated definitions
-  PUBLIC :: AntCorr_type
 
   ! Public procedures
   ! -----------------

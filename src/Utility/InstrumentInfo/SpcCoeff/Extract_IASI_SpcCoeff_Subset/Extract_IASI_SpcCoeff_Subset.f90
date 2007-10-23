@@ -1,16 +1,16 @@
 !
-! Extract_AIRS_SpcCoeff_Subset
+! Extract_IASI_SpcCoeff_Subset
 !
-! Program to extract AIRS channel subsets from the individual
-! AIRS module netCDF format SpcCoeff data files.
+! Program to extract IASI channel subsets from the individual
+! IASI band netCDF format SpcCoeff data files.
 !
 !
 ! FILES ACCESSED:
-!       Input: - netCDF format individual AIRS module SpcCoeff datafiles.
+!       Input: - netCDF format individual IASI band SpcCoeff datafiles.
 !              - For user specified channel subsetting, a list file containing
-!                the required AIRS channels to subset.
+!                the required IASI channels to subset.
 !
-!       Output: netCDF format AIRS channel SUBSET SpcCoeff datafile.
+!       Output: netCDF format IASI channel SUBSET SpcCoeff datafile.
 !
 !
 ! CREATION HISTORY:
@@ -18,7 +18,7 @@
 !                       paul.vandelst@ssec.wisc.edu
 !
 
-PROGRAM Extract_AIRS_SpcCoeff_Subset
+PROGRAM Extract_IASI_SpcCoeff_Subset
 
   ! -----------------
   ! Environment setup
@@ -37,12 +37,13 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                                    Write_SpcCoeff_netCDF
   USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
                                    Destroy_Channel_Subset
-  USE AIRS_Define          , ONLY: N_AIRS_CHANNELS, &
-                                   N_AIRS_MODULES, &
-                                   AIRS_MODULE
-  USE AIRS_Subset,           ONLY: N_AIRS_SUBSET_281, AIRS_SUBSET_281, AIRS_SUBSET_281_COMMENT, &
-                                   N_AIRS_SUBSET_324, AIRS_SUBSET_324, AIRS_SUBSET_324_COMMENT, &
-                                   Index_AIRS_Subset
+  USE IASI_Define          , ONLY: N_IASI_CHANNELS, &
+                                   N_IASI_BANDS, &
+                                   IASI_BAND
+  USE IASI_Subset,           ONLY: N_IASI_SUBSET_300, IASI_SUBSET_300, IASI_SUBSET_300_COMMENT, &
+                                   N_IASI_SUBSET_316, IASI_SUBSET_316, IASI_SUBSET_316_COMMENT, &
+                                   N_IASI_SUBSET_616, IASI_SUBSET_616, IASI_SUBSET_616_COMMENT, &
+                                   Index_IASI_Subset
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -50,15 +51,17 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_SpcCoeff_Subset'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_SpcCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
 
-  INTEGER,      PARAMETER :: N_VALID_SETS = 4
-  CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = (/ '281 channel set', &
-                                                               '324 channel set', &
-                                                               'All channels   ', &
-                                                               'User specified ' /)
+  INTEGER,      PARAMETER :: N_VALID_SETS = 5
+  CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = &
+    (/ 'EUMETSAT 300 channel set                ', &
+       'NESDIS 316 channel set                  ', &
+       'Combined EUMETSAT/NESDIS 616 channel set', &
+       'All channels                            ', &
+       'User specified                          ' /)
 
   ! ---------
   ! Variables
@@ -77,7 +80,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   INTEGER :: Version
   INTEGER :: i, Set
   INTEGER :: l, l1, l2
-  LOGICAL :: First_Module
+  LOGICAL :: First_Band
   INTEGER              :: n_Subset_Channels
   CHARACTER(256)       :: Subset_Comment
   INTEGER, ALLOCATABLE :: Subset_List(:)
@@ -88,8 +91,8 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   ! Program header
   ! --------------
   CALL Program_Message( PROGRAM_NAME, &
-                        'Program to extract the AIRS channel SUBSET spectral '//&
-                        'coefficient data from the individual module netCDF '//&
+                        'Program to extract the IASI channel SUBSET spectral '//&
+                        'coefficient data from the individual band netCDF '//&
                         'SpcCoeff files and write them to a separate netCDF '//&
                         'datafile.', &
                         '$Revision$' )
@@ -99,7 +102,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   Select_Loop: DO
 
     ! Prompt user to select a subset set 
-    WRITE( *,'(/5x,"Select an AIRS channel subset")' )
+    WRITE( *,'(/5x,"Select an IASI channel subset")' )
     DO i = 1, N_VALID_SETS
       WRITE( *,'(10x,i1,") ",a)' ) i, VALID_SET_NAME(i)
     END DO
@@ -131,13 +134,13 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   ! ------------------------------
   SELECT CASE ( Set )
 
-    ! The 281 channel subset
+    ! The 300 channel subset
     ! ----------------------
     CASE (1)
     
       ! Assign values
-      n_Subset_Channels = N_AIRS_SUBSET_281
-      Subset_Comment    = AIRS_SUBSET_281_COMMENT
+      n_Subset_Channels = N_IASI_SUBSET_300
+      Subset_Comment    = IASI_SUBSET_300_COMMENT
 
       ! Allocate list array
       ALLOCATE( Subset_List( n_Subset_Channels ), &
@@ -151,17 +154,17 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       END IF
 
       ! Fill values
-      Subset_List = AIRS_SUBSET_281
-      Sensor_ID   = 'airs281SUBSET_aqua'
+      Subset_List = IASI_SUBSET_300
+      Sensor_ID   = 'iasi300_metop-a'
 
 
-    ! The 324 channel subset
+    ! The 316 channel subset
     ! ----------------------
     CASE (2)
     
       ! Assign values
-      n_Subset_Channels = N_AIRS_SUBSET_324
-      Subset_Comment    = AIRS_SUBSET_324_COMMENT
+      n_Subset_Channels = N_IASI_SUBSET_316
+      Subset_Comment    = IASI_SUBSET_316_COMMENT
 
       ! Allocate list array
       ALLOCATE( Subset_List( n_Subset_Channels ), &
@@ -176,17 +179,42 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       END IF
 
       ! Fill values
-      Subset_List = AIRS_SUBSET_324
-      Sensor_ID   = 'airs324SUBSET_aqua'
+      Subset_List = IASI_SUBSET_316
+      Sensor_ID   = 'iasi316_metop-a'
+
+
+    ! The combined 616 channel subset
+    ! -------------------------------
+    CASE (3)
+    
+      ! Assign values
+      n_Subset_Channels = N_IASI_SUBSET_616
+      Subset_Comment    = IASI_SUBSET_616_COMMENT
+
+      ! Allocate list array
+      ALLOCATE( Subset_List( n_Subset_Channels ), &
+                STAT=Allocate_Status )
+
+      IF ( Allocate_Status /= 0 ) THEN
+        WRITE( Message,'("Error allocating Subset_List array. STAT = ",i0)' ) Allocate_Status
+        CALL Display_Message( PROGRAM_NAME, &
+                              TRIM( Message ), &
+                              FAILURE )
+        STOP
+      END IF
+
+      ! Fill values
+      Subset_List = IASI_SUBSET_616
+      Sensor_ID   = 'iasi616_metop-a'
 
 
     ! All the channels
     ! ----------------
-    CASE(3)
+    CASE(4)
     
       ! Assign values
-      n_Subset_Channels = N_AIRS_CHANNELS
-      Subset_Comment    = 'AIRS full channel set'
+      n_Subset_Channels = N_IASI_CHANNELS
+      Subset_Comment    = 'IASI full channel set'
 
       ! Allocate list array
       ALLOCATE( Subset_List( n_Subset_Channels ), &
@@ -200,16 +228,16 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       END IF
 
       ! Fill values
-      Subset_List = (/(l,l=1,N_AIRS_CHANNELS)/)
-      Sensor_ID   = 'airs_aqua'
+      Subset_List = (/(l,l=1,N_IASI_CHANNELS)/)
+      Sensor_ID   = 'iasi_metop-a'
 
 
     ! A user specified channel subset
     ! -------------------------------
-    CASE (4)
+    CASE (5)
     
       ! Get a channel subset list filename
-      WRITE( *, FMT='(/5x,"Enter an AIRS channel subset list filename : ")', &
+      WRITE( *, FMT='(/5x,"Enter an IASI channel subset list filename : ")', &
                 ADVANCE='NO' )
       READ( *,FMT='(a)' ) List_Filename
       List_Filename = ADJUSTL(List_Filename)
@@ -234,7 +262,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       END IF
 
       ! Check the number of channels
-      IF ( n_Subset_Channels < 1 .OR. n_Subset_Channels > N_AIRS_CHANNELS ) THEN
+      IF ( n_Subset_Channels < 1 .OR. n_Subset_Channels > N_IASI_CHANNELS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
                               'Number of channels listed in '//&
                               TRIM( List_Filename )//' outside of valid range.', &
@@ -266,7 +294,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       END DO
 
       ! Create the sensor id
-      WRITE( Sensor_ID,'("airs",i0,"SUBSET_aqua")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("iasi",i0,"USER_metop-a")' ) n_Subset_Channels
 
   END SELECT
 
@@ -288,33 +316,33 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
 
 
   ! Initialise the start index for output
-  ! and the "initial module" flag
+  ! and the "initial band" flag
   ! -------------------------------------
   l1 = 1
-  First_Module = .TRUE.
+  First_Band = .TRUE.
 
 
-  ! Loop over modules to extract subset channels
+  ! Loop over bands to extract subset channels
   ! --------------------------------------------
-  Module_Loop: DO l = 1, N_AIRS_MODULES
+  Band_Loop: DO l = 1, N_IASI_BANDS
 
 
-    ! Current module channel subset
+    ! Current band channel subset
     ! -----------------------------
     ! Determine the subset channel indices
-    ! for the current module
-    Error_Status = Index_AIRS_Subset( l, Subset_List, Subset )
+    ! for the current band
+    Error_Status = Index_IASI_Subset( l, Subset_List, Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error extracting subset channel indices for module '//&
-                            TRIM(AIRS_MODULE(l)), &
+                            'Error extracting subset channel indices for band '//&
+                            TRIM(IASI_BAND(l)), &
                             Error_Status )
       STOP
     END IF
 
     ! Output the number of channels to extract
-    WRITE( *,'(/10x,"There are ",i0," channels to be extracted from module ",a,":")' ) &
-             Subset%n_Channels, TRIM(AIRS_MODULE(l))
+    WRITE( *,'(/10x,"There are ",i0," channels to be extracted from band ",a,":")' ) &
+             Subset%n_Channels, TRIM(IASI_BAND(l))
 
 
     ! Read the input SpcCoeff file if required
@@ -325,16 +353,16 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       WRITE( *,'(10x,10i5)' ) Subset%Channel_Number
 
       ! Define the filename
-      In_Filename = 'airs'//TRIM(AIRS_MODULE(l))//'_aqua.SpcCoeff.nc'
+      In_Filename = 'iasi'//TRIM(IASI_BAND(l))//'_metop-a.SpcCoeff.nc'
 
 
       ! Get the file release/version info and
-      ! global attributes for the initial module
+      ! global attributes for the initial band
       ! ----------------------------------------
-      IF ( First_Module ) THEN
+      IF ( First_Band ) THEN
 
         ! Update the test flag
-        First_Module = .FALSE.
+        First_Band = .FALSE.
 
         ! Inquire the SpcCoeff data file
         Error_Status = Inquire_SpcCoeff_netCDF( TRIM(In_Filename), &
@@ -357,7 +385,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
 
       END IF
 
-      ! Get the Version info for all modules and compare
+      ! Get the Version info for all bands and compare
       ! ------------------------------------------------
       Error_Status = Inquire_SpcCoeff_netCDF( TRIM(In_Filename), &
                                               Version=Version )
@@ -389,7 +417,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                                            In_SpcCoeff )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
-                              'Error reading netCDF AIRS SpcCoeff file '//&
+                              'Error reading netCDF IASI SpcCoeff file '//&
                               TRIM( In_Filename ), &
                               Error_Status )
         STOP
@@ -415,7 +443,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
 
 
       ! Destropy the input SpcCoeff structure
-      ! for the next module read
+      ! for the next band read
       ! -------------------------------------
       Error_Status = Destroy_SpcCoeff( In_SpcCoeff )
       IF ( Error_Status /= SUCCESS ) THEN
@@ -429,18 +457,18 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
     END IF Non_Zero_n_Channels
 
 
-    ! Destroy the AIRS_Subset structure
+    ! Destroy the IASI_Subset structure
     ! ---------------------------------
     Error_Status = Destroy_Channel_Subset( Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying AIRS Subset structure for input from '//&
+                            'Error destroying IASI Subset structure for input from '//&
                             TRIM( In_Filename ), &
                             Error_Status )
       STOP
     END IF
 
-  END DO Module_Loop
+  END DO Band_Loop
 
 
   ! Write the output SpcCoeff file
@@ -457,11 +485,11 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                                         History       = PROGRAM_RCS_ID//'; '//&
                                                         TRIM(History), &
                                         Comment       = 'Data extracted from the individual '//&
-                                                        'AIRS module SpcCoeff datafiles.; '//&
+                                                        'IASI band SpcCoeff datafiles.; '//&
                                                         TRIM(Comment) )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error writing the AIRS SpcCoeff file '//&
+                          'Error writing the IASI SpcCoeff file '//&
                           TRIM(Out_Filename), &
                           FAILURE )
     STOP
@@ -479,4 +507,4 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
                           Error_Status )
   END IF
 
-END PROGRAM Extract_AIRS_SpcCoeff_Subset
+END PROGRAM Extract_IASI_SpcCoeff_Subset

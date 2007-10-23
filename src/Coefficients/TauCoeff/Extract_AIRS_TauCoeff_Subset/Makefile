@@ -24,8 +24,8 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
+            Channel_Subset_Define.f90 \
             AIRS_Define.f90 \
-            AIRS_Subset_Define.f90 \
             AIRS_Subset.f90 \
             TauCoeff_Define.f90 \
             TauCoeff_netCDF_IO.f90

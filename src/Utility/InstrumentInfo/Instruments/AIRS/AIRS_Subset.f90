@@ -15,16 +15,17 @@ MODULE AIRS_Subset
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Message_Handler   , ONLY: SUCCESS, FAILURE, Display_Message
-  USE AIRS_Define       , ONLY: N_AIRS_MODULES, &
-                                N_AIRS_CHANNELS, &
-                                N_AIRS_CHANNELS_PER_MODULE, &
-                                AIRS_MODULE_BEGIN_CHANNEL, &
-                                AIRS_MODULE_END_CHANNEL
-  USE AIRS_Subset_Define, ONLY: AIRS_Subset_type, &
-                                Destroy_AIRS_Subset, &
-                                Allocate_AIRS_Subset, &
-                                Assign_AIRS_Subset
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Sort_Utility         , ONLY: InsertionSort
+  USE AIRS_Define          , ONLY: N_AIRS_MODULES, &
+                                   N_AIRS_CHANNELS, &
+                                   N_AIRS_CHANNELS_PER_MODULE, &
+                                   AIRS_MODULE_BEGIN_CHANNEL, &
+                                   AIRS_MODULE_END_CHANNEL
+  USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
+                                   Destroy_Channel_Subset, &
+                                   Allocate_Channel_Subset, &
+                                   Assign_Channel_Subset
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -34,21 +35,9 @@ MODULE AIRS_Subset
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Data types inherited from the
-  ! AIRS_Subset_Define module
-  PUBLIC :: AIRS_Subset_type
-  ! Routines inherited from the 
-  ! AIRS_Subset_Define module
-  PUBLIC :: Destroy_AIRS_Subset
-  PUBLIC :: Allocate_AIRS_Subset
-  PUBLIC :: Assign_AIRS_Subset
   ! Parameters
-  PUBLIC :: AIRS_SUBSET_281_COMMENT
-  PUBLIC :: N_AIRS_SUBSET_281
-  PUBLIC :: AIRS_SUBSET_281
-  PUBLIC :: AIRS_SUBSET_324_COMMENT
-  PUBLIC :: N_AIRS_SUBSET_324
-  PUBLIC :: AIRS_SUBSET_324
+  PUBLIC :: AIRS_SUBSET_281_COMMENT, N_AIRS_SUBSET_281, AIRS_SUBSET_281
+  PUBLIC :: AIRS_SUBSET_324_COMMENT, N_AIRS_SUBSET_324, AIRS_SUBSET_324
   ! Procedures
   PUBLIC :: Index_AIRS_Subset
 
@@ -165,7 +154,7 @@ CONTAINS
 !       Subset:          The AIRS Subset structure containing the indexed
 !                        subset channels for the specified AIRS module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(AIRS_Subset_type)
+!                        TYPE:       TYPE(Channel_Subset_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -205,22 +194,23 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Index_AIRS_Subset( Module_Number, &  ! Input
-                              Subset_List,   &  ! Input
-                              Subset,        &  ! Output
-                              RCS_Id,        &  ! Revision control
-                              Message_Log )  &  ! Error mssaging
+                              Subset_List  , &  ! Input
+                              Subset       , &  ! Output
+                              RCS_Id       , &  ! Revision control
+                              Message_Log  ) &  ! Error mssaging
                             RESULT( Error_Status )
     ! Arguments
-    INTEGER               , INTENT(IN)     :: Module_Number
-    INTEGER               , INTENT(IN)     :: Subset_List(:)
-    TYPE(AIRS_Subset_type), INTENT(IN OUT) :: Subset
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER                  , INTENT(IN)     :: Module_Number
+    INTEGER                  , INTENT(IN)     :: Subset_List(:)
+    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
+    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Index_AIRS_Subset'
     ! Local variables
+    INTEGER :: Sorted_List(SIZE(Subset_List))
     INTEGER :: n_Subset_Channels
     INTEGER :: l, l1, l2
     INTEGER :: l_Subset, l_Extract
@@ -263,6 +253,13 @@ CONTAINS
       RETURN
     END IF
 
+
+    ! Sort the subset list
+    ! --------------------
+    Sorted_List = Subset_List
+    CALL InsertionSort( Sorted_List )
+    
+    
     ! Set the module limits
     ! ---------------------
     l1 = AIRS_MODULE_BEGIN_CHANNEL( Module_Number )
@@ -271,15 +268,15 @@ CONTAINS
 
     ! Count the channels to subset
     ! ----------------------------
-    n_Channels = COUNT( Subset_List >= l1 .AND. Subset_List <= l2 )
+    n_Channels = COUNT( Sorted_List >= l1 .AND. Sorted_List <= l2 )
     IF ( n_Channels == 0 ) RETURN
 
 
     ! Allocate the AIRS Subset structure
     ! ----------------------------------
-    Error_Status = Allocate_AIRS_Subset( n_Channels, &
-                                         Subset, &
-                                         Message_Log=Message_Log )
+    Error_Status = Allocate_Channel_Subset( n_Channels, &
+                                            Subset, &
+                                            Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error allocating Subset structure.', &
@@ -292,8 +289,8 @@ CONTAINS
     ! Define the start points for the channel search
     ! ----------------------------------------------
     ! Determine the starting index in the SUBSET channel list array
-    l_Subset = MINLOC( Subset_List - l1, &
-                       MASK=( (Subset_List - l1) >= 0 ), &
+    l_Subset = MINLOC( Sorted_List - l1, &
+                       MASK=( (Sorted_List - l1) >= 0 ), &
                        DIM =1 )
 
     ! Set the starting index in the MODULE channel list array.
@@ -309,7 +306,7 @@ CONTAINS
       Channel = AIRS_MODULE_BEGIN_CHANNEL( Module_Number ) + l - 1
 
       ! Is the current channel in the subset?
-      IF ( Channel == Subset_List( l_Subset ) ) THEN
+      IF ( Channel == Sorted_List( l_Subset ) ) THEN
 
         ! Save the channel index and number
         Subset%Channel_Index(  l_Extract ) = l

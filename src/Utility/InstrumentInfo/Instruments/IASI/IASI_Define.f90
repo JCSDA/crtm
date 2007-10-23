@@ -18,8 +18,6 @@ MODULE IASI_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Fundamental_Constants, ONLY: PI
-  USE Search_Utility       , ONLY: Value_Locate
-  USE Linear_Interpolation , ONLY: Linear_Interpolate
   ! Disable implicit typing
   IMPLICIT NONE
   
@@ -33,10 +31,15 @@ MODULE IASI_Define
   PUBLIC :: IASI_MAX_FREQUENCY
   PUBLIC :: IASI_D_FREQUENCY
   PUBLIC :: IASI_RESAMPLE_MAXX
-  PUBLIC :: IASI_MAX_NCHANNELS
   PUBLIC :: N_IASI_BANDS
+  PUBLIC :: N_IASI_CHANNELS
   PUBLIC :: IASI_BAND_F1
   PUBLIC :: IASI_BAND_F2
+  PUBLIC :: IASI_BAND
+  PUBLIC :: IASI_BAND_BEGIN_CHANNEL
+  PUBLIC :: IASI_BAND_END_CHANNEL
+  PUBLIC :: N_IASI_CHANNELS_PER_BAND
+  PUBLIC :: MAX_N_IASI_BAND_CHANNELS
   ! Public module procedures
   PUBLIC :: IASI_MaxX
   PUBLIC :: IASI_X
@@ -61,6 +64,8 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: M2CM      = HUNDRED
   REAL(fp), PARAMETER :: LN2 = 0.693147180559945309417232_fp
   
+  ! Instrument parameters
+  ! ---------------------------------------
   ! Gaussian function FWHM (cm^-1)
   REAL(fp), PARAMETER :: GFT_FWHM = POINT5
   REAL(fp), PARAMETER :: GFT_HWHM = GFT_FWHM/TWO
@@ -87,15 +92,28 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: IASI_MIN_FREQUENCY = 645.0_fp
   REAL(fp), PARAMETER :: IASI_MAX_FREQUENCY = 2760.0_fp
   REAL(fp), PARAMETER :: IASI_D_FREQUENCY   = 0.25_fp
-  INTEGER , PARAMETER :: IASI_MAX_NCHANNELS = 8461
   REAL(fp), PARAMETER :: IASI_RESAMPLE_MAXX = TWO
 
+
   ! Band parameters
-  INTEGER,  PARAMETER :: N_IASI_BANDS = 3
+  ! ---------------
+  INTEGER,  PARAMETER :: N_IASI_BANDS    = 3
+  INTEGER,  PARAMETER :: N_IASI_CHANNELS = 8461
+
+  ! Band frequencies
   REAL(fp), PARAMETER :: IASI_BAND_F1(N_IASI_BANDS) = (/  645.00_fp, 1210.00_fp, 2000.0_fp /)
   REAL(fp), PARAMETER :: IASI_BAND_F2(N_IASI_BANDS) = (/ 1209.75_fp, 1999.75_fp, 2760.0_fp /)
 
+  ! The IASI band names
+  CHARACTER(*), PARAMETER :: IASI_BAND(N_IASI_BANDS) = (/ 'B1','B2','B3'/)
 
+  ! The channel numbering for each band
+  INTEGER, PARAMETER :: IASI_BAND_BEGIN_CHANNEL( N_IASI_BANDS) = (/    1, 2261, 5421 /)
+  INTEGER, PARAMETER :: IASI_BAND_END_CHANNEL(   N_IASI_BANDS) = (/ 2260, 5420, 8461 /)
+  INTEGER, PARAMETER :: N_IASI_CHANNELS_PER_BAND(N_IASI_BANDS) = (/ 2260, 3160, 3041 /)
+  INTEGER, PARAMETER :: MAX_N_IASI_BAND_CHANNELS = 3160
+  
+  
 CONTAINS
 
 
@@ -375,62 +393,5 @@ CONTAINS
     END DO
     c = (/(i,i=1,IASI_nPts(ib))/) + n
   END FUNCTION IASI_Channels
-  
-
-
-  
-  ! Function to compute the resampling
-  ! interpolation indices
-  FUNCTION IASI_Resample_Idx( f, f_int ) RESULT( idx )
-    REAL(fp), INTENT(IN) :: f(:), f_int(:)
-    INTEGER :: idx(SIZE(f_int))
-    idx = Value_Locate( f, f_int )
-  END FUNCTION IASI_Resample_Idx
-  
-  
-  ! Function to resample a spectrum to the
-  ! IASI required frequencies,
-  ! f = 645 + 0.25*(n-1), n=1,8461
-  FUNCTION IASI_Resample( f_in       , &  ! Input
-                          spc_in     , &  ! Input
-                          f_out      , &  ! Input
-                          spc_out    , &  ! Output
-                          f_idx      , &  ! Optional Input
-                          Message_Log) &  ! Error messaging
-                        RESULT( Error_Status )
-    ! Arguments
-    REAL(fp)    ,           INTENT(IN)  :: f_in(:) , spc_in(:), f_out(:)
-    REAL(fp)    ,           INTENT(OUT) :: spc_out(:)
-    INTEGER     , OPTIONAL, INTENT(IN)  :: f_idx(:)
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IASI_Resample'
-    ! Local variables
-    INTEGER :: idx(SIZE(f_out))
-    
-    Error_Status = SUCCESS
-    
-    IF ( PRESENT(f_idx) ) THEN
-      idx = f_idx
-    ELSE
-      idx = Value_Locate( f_in, f_out )
-    END IF
-    
-    Error_Status = Linear_Interpolate( f_in     , &  ! Input
-                                       spc_in   , &  ! Input
-                                       f_out    , &  ! Input
-                                       spc_out  , &  ! Output
-                                       x_idx=idx  )  ! Optional input
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error interpolating input IASI spectrum', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-                            
-  END FUNCTION IASI_Resample
 
 END MODULE IASI_Define

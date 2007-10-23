@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Extract_AIRS_SpcCoeff_Subset program
+# Makefile for Extract_IASI_SpcCoeff_Subset program
 #
 #==============================================================================
 
@@ -13,7 +13,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKEFILE = Makefile
 
 # Executable files
-EXE_FILE = Extract_AIRS_SpcCoeff_Subset
+EXE_FILE = Extract_IASI_SpcCoeff_Subset
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -28,8 +28,8 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Variable_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
             Channel_Subset_Define.f90 \
-            AIRS_Define.f90 \
-            AIRS_Subset.f90 \
+            IASI_Define.f90 \
+            IASI_Subset.f90 \
             AntCorr_Define.f90 \
             AntCorr_netCDF_IO.f90 \
             SpcCoeff_Define.f90 \

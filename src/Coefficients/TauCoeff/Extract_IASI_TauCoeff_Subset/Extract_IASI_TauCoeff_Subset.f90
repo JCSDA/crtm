@@ -1,16 +1,16 @@
 !
-! Extract_AIRS_TauCoeff_Subset
+! Extract_IASI_TauCoeff_Subset
 !
-! Program to extract the AIRS channel subset from the individual
-! AIRS module netCDF format TauCoeff data files.
+! Program to extract the IASI channel subset from the individual
+! IASI band netCDF format TauCoeff data files.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 28-Jan-2004
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 23-Oct-2007
+!                       paul.vandelst@noaa.gov
 !
 
-PROGRAM Extract_AIRS_TauCoeff_Subset
+PROGRAM Extract_IASI_TauCoeff_Subset
 
   ! ------------------
   ! Environment set up
@@ -29,12 +29,13 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
                                    Write_TauCoeff_netCDF
   USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
                                    Destroy_Channel_Subset
-  USE AIRS_Define,           ONLY: N_AIRS_MODULES, &
-                                   N_AIRS_CHANNELS, &
-                                   AIRS_MODULE
-  USE AIRS_Subset,           ONLY: N_AIRS_SUBSET_281, AIRS_SUBSET_281, AIRS_SUBSET_281_COMMENT, &
-                                   N_AIRS_SUBSET_324, AIRS_SUBSET_324, AIRS_SUBSET_324_COMMENT, &
-                                   Index_AIRS_Subset
+  USE IASI_Define,           ONLY: N_IASI_BANDS, &
+                                   N_IASI_CHANNELS, &
+                                   IASI_BAND
+  USE IASI_Subset,           ONLY: N_IASI_SUBSET_300, IASI_SUBSET_300, IASI_SUBSET_300_COMMENT, &
+                                   N_IASI_SUBSET_316, IASI_SUBSET_316, IASI_SUBSET_316_COMMENT, &
+                                   N_IASI_SUBSET_616, IASI_SUBSET_616, IASI_SUBSET_616_COMMENT, &
+                                   Index_IASI_Subset
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -42,15 +43,17 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_TauCoeff_Subset'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
   
-  INTEGER,      PARAMETER :: N_VALID_SETS = 4
-  CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = (/ '281 channel set', &
-                                                               '324 channel set', &
-                                                               'All channels   ', &
-                                                               'User specified ' /)
+  INTEGER,      PARAMETER :: N_VALID_SETS = 5
+  CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = &
+    (/ 'EUMETSAT 300 channel set                ', &
+       'NESDIS 316 channel set                  ', &
+       'Combined EUMETSAT/NESDIS 616 channel set', &
+       'All channels                            ', &
+       'User specified                          ' /)
 
   ! ---------
   ! Variables
@@ -67,7 +70,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
   CHARACTER(256)  :: Subset_Comment
   CHARACTER(20)   :: Sensor_ID
   INTEGER :: i, Set
-  LOGICAL :: First_Module
+  LOGICAL :: First_Band
   INTEGER :: n_Orders
   INTEGER :: n_Predictors     
   INTEGER :: n_Absorbers      
@@ -85,8 +88,8 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
 
   ! Output program header
   CALL Program_Message(PROGRAM_NAME, &
-                       'Program to extract the AIRS channel SUBSET transmittance '//&
-                       'coefficient data from the individual module netCDF '//&
+                       'Program to extract the IASI channel SUBSET transmittance '//&
+                       'coefficient data from the individual band netCDF '//&
                        'TauCoeff files and write them to a separate netCDF '//&
                        'datafile.', &
                        '$Revision$' )
@@ -96,7 +99,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
   Select_Loop: DO
 
     ! Prompt user to select a subset set 
-    WRITE( *,'(/5x,"Select an AIRS channel subset")' )
+    WRITE( *,'(/5x,"Select an IASI channel subset")' )
     DO i = 1, N_VALID_SETS
       WRITE( *,'(10x,i1,") ",a)' ) i, VALID_SET_NAME(i)
     END DO
@@ -128,13 +131,13 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
   ! ------------------------------
   SELECT CASE ( Set )
 
-    ! The 281 channel subset
+    ! The 300 channel subset
     ! ----------------------
     CASE (1)
     
       ! Assign values
-      n_Subset_Channels = N_AIRS_SUBSET_281
-      Subset_Comment    = AIRS_SUBSET_281_COMMENT
+      n_Subset_Channels = N_IASI_SUBSET_300
+      Subset_Comment    = IASI_SUBSET_300_COMMENT
 
       ! Allocate list array
       ALLOCATE( Subset_List( n_Subset_Channels ), &
@@ -148,17 +151,17 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
       END IF
 
       ! Fill values
-      Subset_List = AIRS_SUBSET_281
-      Sensor_ID   = 'airs281SUBSET_aqua'
+      Subset_List = IASI_SUBSET_300
+      Sensor_ID   = 'iasi300_metop-a'
 
 
-    ! The 324 channel subset
+    ! The 316 channel subset
     ! ----------------------
     CASE (2)
     
       ! Assign values
-      n_Subset_Channels = N_AIRS_SUBSET_324
-      Subset_Comment    = AIRS_SUBSET_324_COMMENT
+      n_Subset_Channels = N_IASI_SUBSET_316
+      Subset_Comment    = IASI_SUBSET_316_COMMENT
 
       ! Allocate list array
       ALLOCATE( Subset_List( n_Subset_Channels ), &
@@ -173,17 +176,42 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
       END IF
 
       ! Fill values
-      Subset_List = AIRS_SUBSET_324
-      Sensor_ID   = 'airs324SUBSET_aqua'
+      Subset_List = IASI_SUBSET_316
+      Sensor_ID   = 'iasi316_metop-a'
+
+
+    ! The combine channel subset
+    ! --------------------------
+    CASE (3)
+    
+      ! Assign values
+      n_Subset_Channels = N_IASI_SUBSET_616
+      Subset_Comment    = IASI_SUBSET_616_COMMENT
+
+      ! Allocate list array
+      ALLOCATE( Subset_List( n_Subset_Channels ), &
+                STAT=Allocate_Status )
+
+      IF ( Allocate_Status /= 0 ) THEN
+        WRITE( Message,'("Error allocating Subset_List array. STAT = ",i0)' ) Allocate_Status
+        CALL Display_Message( PROGRAM_NAME, &
+                              TRIM(Message), &
+                              FAILURE )
+        STOP
+      END IF
+
+      ! Fill values
+      Subset_List = IASI_SUBSET_616
+      Sensor_ID   = 'iasi616_metop-a'
 
 
     ! All the channels
     ! ----------------
-    CASE(3)
+    CASE(4)
     
       ! Assign values
-      n_Subset_Channels = N_AIRS_CHANNELS
-      Subset_Comment    = 'AIRS full channel set'
+      n_Subset_Channels = N_IASI_CHANNELS
+      Subset_Comment    = 'IASI full channel set'
 
       ! Allocate list array
       ALLOCATE( Subset_List( n_Subset_Channels ), &
@@ -197,16 +225,16 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
       END IF
 
       ! Fill values
-      Subset_List = (/(l,l=1,N_AIRS_CHANNELS)/)
-      Sensor_ID   = 'airs_aqua'
+      Subset_List = (/(l,l=1,N_IASI_CHANNELS)/)
+      Sensor_ID   = 'iasi_metop-a'
 
 
     ! A user specified channel subset
     ! -------------------------------
-    CASE (4)
+    CASE (5)
     
       ! Get a channel subset list filename
-      WRITE( *, FMT='(/5x,"Enter an AIRS channel subset list filename : ")', &
+      WRITE( *, FMT='(/5x,"Enter an IASI channel subset list filename : ")', &
                 ADVANCE='NO' )
       READ( *,FMT='(a)' ) List_Filename
       List_Filename = ADJUSTL(List_Filename)
@@ -231,7 +259,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
       END IF
 
       ! Check the number of channels
-      IF ( n_Subset_Channels < 1 .OR. n_Subset_Channels > N_AIRS_CHANNELS ) THEN
+      IF ( n_Subset_Channels < 1 .OR. n_Subset_Channels > N_IASI_CHANNELS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
                               'Number of channels listed in '//&
                               TRIM( List_Filename )//' outside of valid range.', &
@@ -263,39 +291,39 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
       END DO
 
       ! Create the sensor id
-      WRITE( Sensor_ID,'("airs",i0,"SUBSET_aqua")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("iasi",i0,"USER_metop-a")' ) n_Subset_Channels
 
   END SELECT
 
 
   ! Initialise the start index for output
-  ! and the "initial module" flag
+  ! and the "initial band" flag
   ! -------------------------------------
   l1 = 1
-  First_Module = .TRUE.
+  First_Band = .TRUE.
 
 
-  ! Loop over modules to extract subset channels
-  ! --------------------------------------------
-  Module_Loop: DO l = 1, N_AIRS_MODULES
+  ! Loop over bands to extract subset channels
+  ! ------------------------------------------
+  Band_Loop: DO l = 1, N_IASI_BANDS
 
 
-    ! Current module channel subset
-    ! -----------------------------
+    ! Current band channel subset
+    ! ---------------------------
     ! Determine the subset channel indices
-    ! for the current module
-    Error_Status = Index_AIRS_Subset( l, Subset_List, Subset )
+    ! for the current band
+    Error_Status = Index_IASI_Subset( l, Subset_List, Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error extracting subset channel indices for module '//&
-                            TRIM(AIRS_MODULE(l)), &
+                            'Error extracting subset channel indices for band '//&
+                            TRIM(IASI_BAND(l)), &
                             Error_Status )
       STOP
     END IF
 
     ! Output the number of channels to extract
-    WRITE( *,'(/10x,"There are ",i0," channels to be extracted from module ",a,":")' ) &
-             Subset%n_Channels, TRIM(AIRS_MODULE(l))
+    WRITE( *,'(/10x,"There are ",i0," channels to be extracted from band ",a,":")' ) &
+             Subset%n_Channels, TRIM(IASI_BAND(l))
 
 
     ! Read the input TauCoeff file if required
@@ -306,15 +334,15 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
       WRITE( *,'(10x,10i5)' ) Subset%Channel_Number
 
       ! Define the filename
-      In_Filename = 'airs'//TRIM(AIRS_MODULE(l))//'_aqua.TauCoeff.nc'
+      In_Filename = 'iasi'//TRIM(IASI_BAND(l))//'_metop-a.TauCoeff.nc'
 
 
       ! Get the file release/version info and
-      ! global attributes for the initial module
-      ! ----------------------------------------
-      IF ( First_Module ) THEN
+      ! global attributes for the initial band
+      ! --------------------------------------
+      IF ( First_Band ) THEN
 
-        ! **NOTE: No Update of First_Module here. It's used later**
+        ! **NOTE: No Update of First_Band here. It's used later**
 
         ! Inquire the file
         Error_Status = Inquire_TauCoeff_netCDF( TRIM(In_Filename), &
@@ -386,7 +414,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
                                            In_TauCoeff )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
-                              'Error reading netCDF AIRS TauCoeff file '//&
+                              'Error reading netCDF IASI TauCoeff file '//&
                               TRIM(In_Filename), &
                               Error_Status )
         STOP
@@ -395,12 +423,12 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
 
       ! Copy or check the absorber id and alpha data
       ! --------------------------------------------
-      IF ( First_Module ) THEN
+      IF ( First_Band ) THEN
 
-        ! Now update the First_Module flag
-        First_Module = .FALSE.
+        ! Now update the First_Band flag
+        First_Band = .FALSE.
 
-        ! Simply copy these for the first module
+        ! Simply copy these for the first band
         Out_TauCoeff%Absorber_ID = In_TauCoeff%Absorber_ID
         Out_TauCoeff%Alpha       = In_TauCoeff%Alpha
         Out_TauCoeff%Alpha_C1    = In_TauCoeff%Alpha_C1
@@ -413,8 +441,8 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
           ! Check Absorber IDs
           IF ( In_TauCoeff%Absorber_ID(j) /= Out_TauCoeff%Absorber_ID(j) ) THEN
             Error_Status = FAILURE
-            WRITE( Message, '( "Absorber #",i2," ID values are different for module ",a)' ) &
-                            j, TRIM(AIRS_Module(l))
+            WRITE( Message, '( "Absorber #",i2," ID values are different for band ",a)' ) &
+                            j, TRIM(IASI_Band(l))
             CALL Display_Message( PROGRAM_NAME, &
                                   TRIM(Message), &
                                   Error_Status )
@@ -424,8 +452,8 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
           ! Check Alpha value
           IF ( .NOT. Compare_Float( In_TauCoeff%Alpha(j), Out_TauCoeff%Alpha(j) ) ) THEN
             Error_Status = FAILURE
-            WRITE( Message, '( "Absorber #",i2," Alpha values are different for module ",a)' ) &
-                            j, TRIM(AIRS_Module(l))
+            WRITE( Message, '( "Absorber #",i2," Alpha values are different for band ",a)' ) &
+                            j, TRIM(IASI_Band(l))
             CALL Display_Message( PROGRAM_NAME, &
                                   TRIM(Message), &
                                   Error_Status )
@@ -435,8 +463,8 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
           ! Check Alpha_C1 value
           IF ( .NOT. Compare_Float( In_TauCoeff%Alpha_C1(j), Out_TauCoeff%Alpha_C1(j) ) ) THEN
             Error_Status = FAILURE
-            WRITE( Message, '( "Absorber #",i2," Alpha_C1 values are different for module ",a)' ) &
-                            j, TRIM(AIRS_Module(l))
+            WRITE( Message, '( "Absorber #",i2," Alpha_C1 values are different for band ",a)' ) &
+                            j, TRIM(IASI_Band(l))
             CALL Display_Message( PROGRAM_NAME, &
                                   TRIM(Message), &
                                   Error_Status )
@@ -446,8 +474,8 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
           ! Check Alpha_C2 value
           IF ( .NOT. Compare_Float( In_TauCoeff%Alpha_C2(j), Out_TauCoeff%Alpha_C2(j) ) ) THEN
             Error_Status = FAILURE
-            WRITE( Message, '( "Absorber #",i2," ALpha_C2 values are different for module ",a)' ) &
-                            j, TRIM(AIRS_Module(l))
+            WRITE( Message, '( "Absorber #",i2," ALpha_C2 values are different for band ",a)' ) &
+                            j, TRIM(IASI_Band(l))
             CALL Display_Message( PROGRAM_NAME, &
                                   TRIM(Message), &
                                   Error_Status )
@@ -473,7 +501,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
 
 
       ! Destroy the input TauCoeff structure
-      ! for the next module read
+      ! for the next band read
       ! ------------------------------------
       Error_Status = Destroy_TauCoeff( In_TauCoeff )
       IF ( Error_Status /= SUCCESS ) THEN
@@ -487,18 +515,18 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
     END IF Non_Zero_n_Channels
 
 
-    ! Destroy the AIRS subset structure
-    ! ---------------------------------
+    ! Destroy the IASI channel subset structure
+    ! -----------------------------------------
     Error_Status = Destroy_Channel_Subset( Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying AIRS Channel Subset structure for input from '//&
+                            'Error destroying IASI Channel Subset structure for input from '//&
                             TRIM(In_Filename), &
                             Error_Status )
       STOP
     END IF
 
-  END DO Module_Loop
+  END DO Band_Loop
 
   ! Write the output SpcCoeff file
   ! ------------------------------
@@ -519,12 +547,12 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
                                         Sensor_Name   = TRIM(Sensor_Name), &
                                         Platform_Name = TRIM(Platform_Name), &
                                         Comment       = 'Data extracted from the individual '//&
-                                                        'AIRS module TauCoeff datafiles.; '//&
+                                                        'IASI band TauCoeff datafiles.; '//&
                                                         TRIM(Comment), &
                                         ID_Tag        = TRIM(ID_Tag) )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error writing the AIRS TauCoeff file '//&
+                          'Error writing the IASI TauCoeff file '//&
                           TRIM(Out_Filename), &
                           FAILURE )
     STOP
@@ -542,4 +570,4 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
                           Error_Status )
   END IF
 
-END PROGRAM Extract_AIRS_TauCoeff_Subset
+END PROGRAM Extract_IASI_TauCoeff_Subset
