@@ -6,8 +6,7 @@
 !
 !
 ! FILES ACCESSED:
-!       Input:  - Process Control file
-!               - Sensor TauProfile netCDF data files for each profile and
+!       Input:  - Sensor TauProfile netCDF data files for each profile and
 !                 each molecule set.
 !
 !       Output: - TauProfile netCDF data file combining all the profile
@@ -49,6 +48,7 @@ PROGRAM Assemble_FTS_TauProfile
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
   CHARACTER(*), PARAMETER :: PATH = 'TauProfile_data/'
+  INTEGER,      PARAMETER :: SET = 1
   
 
   ! ---------
@@ -190,7 +190,7 @@ PROGRAM Assemble_FTS_TauProfile
     Sensor_Id = TRIM(Sensor_Name)//TRIM(bTag)//'_'//TRIM(Satellite_Name)
     
     ! Construct the current band output filename
-    OutFile = TRIM(DIRECTION_NAME(iDir))//'_tau.'//TRIM(Sensor_Id)//'.TauProfile.nc'
+    OutFile = TRIM(DIRECTION_NAME(iDir))//'.'//TRIM(Sensor_Id)//'.TauProfile.nc'
 
     ! Create an output file for every band
     Create_Output = .TRUE.
@@ -235,7 +235,7 @@ PROGRAM Assemble_FTS_TauProfile
                    TRIM(jTag)//'/'//&
                    TRIM(mTag)//'/'//&
                    TRIM(iTag)//'/'//&
-                   TRIM(DIRECTION_NAME(iDir))//'_tau.'//&
+                   TRIM(DIRECTION_NAME(iDir))//'.'//&
                    TRIM(Generic_Sensor_Id)//'.REAL.TauProfile.nc'
           
           
@@ -315,7 +315,7 @@ PROGRAM Assemble_FTS_TauProfile
 
           ! Read the current input file data
           ! --------------------------------
-          Error_Status = Read_TauProfile_netCDF( InFile, TauProfile )
+          Error_Status = Read_TauProfile_netCDF( InFile, TauProfile, Quiet=SET )
           IF ( Error_Status /= SUCCESS ) THEN
             CALL Display_Message( PROGRAM_NAME, &
                                   'Error reading netCDF TauProfile file '//&
@@ -358,7 +358,8 @@ PROGRAM Assemble_FTS_TauProfile
                                                   TauProfile%Tau(:,:,1,1,1), &
                                                   Angle       =ZENITH_ANGLE_SECANT(i), &
                                                   Profile     =m, &
-                                                  Molecule_Set=j )
+                                                  Molecule_Set=j, &
+                                                  Quiet       =SET )
           IF ( Error_Status /= SUCCESS ) THEN
             CALL Display_Message( PROGRAM_NAME, &
                                   'Error writing data from '//&
