@@ -175,53 +175,57 @@ MODULE Tau_Production_Parameters
   ! The molecular set specification
   ! -------------------------------
   ! The number of "molecular sets" recognised
-  INTEGER, PUBLIC, PARAMETER :: N_MOLECULE_SETS = 19
+  INTEGER, PUBLIC, PARAMETER :: N_MOLECULE_SETS = 21
 
   ! The names of the allowed molecular sets.
   ! These values are used in filenames and
   ! other transmittance production program inputs
   CHARACTER(*), PUBLIC, PARAMETER, DIMENSION(N_MOLECULE_SETS) :: MOLECULE_SET_TAG = &
-    (/ 'mol1            ', &  !   1
-       'mol2            ', &  !   2
-       'mol3            ', &  !   3
-       'mol4            ', &  !   4
-       'mol5            ', &  !   5
-       'mol6            ', &  !   6
-       'mol7            ', &  !   7
-       'all_nocontinuum ', &  !   8
-       'continua_only   ', &  !   9
-       'all_withcontinua', &  !  10
-       'wvo             ', &  !  11
-       'wet             ', &  !  12
-       'dry             ', &  !  13
-       'ozo             ', &  !  14
-       'wco             ', &  !  15
-       'effective_mol1  ', &  ! 101
-       'effective_wet   ', &  ! 112
-       'effective_dry   ', &  ! 113
-       'effective_ozo   ' /)  ! 114
+    (/ 'mol1   ', &  !   1
+       'mol2   ', &  !   2
+       'mol3   ', &  !   3
+       'mol4   ', &  !   4
+       'mol5   ', &  !   5
+       'mol6   ', &  !   6
+       'mol7   ', &  !   7
+       'anc    ', &  !   8 (all, no continua)
+       'con    ', &  !   9 (continua_only)
+       'awc    ', &  !  10 (all, with continua)
+       'wvo    ', &  !  11
+       'wet    ', &  !  12
+       'dry    ', &  !  13
+       'ozo    ', &  !  14
+       'wco    ', &  !  15
+       'doz    ', &  !  16
+       'wvd    ', &  !  17
+       'effmol1', &  ! 101
+       'effwet ', &  ! 112
+       'effdry ', &  ! 113
+       'effozo ' /)  ! 114
 
   ! The ID values associated with the allowed moleculer sets
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_MOLECULE_SETS) :: MOLECULE_SET_TAG_ID = &
-    (/  1, &  !  mol1
-        2, &  !  mol2
-        3, &  !  mol3
-        4, &  !  mol4
-        5, &  !  mol5
-        6, &  !  mol6
-        7, &  !  mol7
-        8, &  !  all_nocontinuum
-        9, &  !  continua_only
-       10, &  !  all_withcontinua
-       11, &  !  wvo
-       12, &  !  wet
-       13, &  !  dry
-       14, &  !  ozo
-       15, &  !  wco
-      101, &  !  effective_mol1
-      112, &  !  effective_wet
-      113, &  !  effective_dry
-      114 /)  !  effective_ozo
+    (/  1, &  !  mol1   
+        2, &  !  mol2   
+        3, &  !  mol3   
+        4, &  !  mol4   
+        5, &  !  mol5   
+        6, &  !  mol6   
+        7, &  !  mol7   
+        8, &  !  anc    
+        9, &  !  con    
+       10, &  !  awc    
+       11, &  !  wvo    
+       12, &  !  wet    
+       13, &  !  dry    
+       14, &  !  ozo    
+       15, &  !  wco    
+       16, &  !  doz     
+       17, &  !  wvd    
+      101, &  !  effmol1
+      112, &  !  effwet 
+      113, &  !  effdry 
+      114 /)  !  effozo 
 
 
   ! -----------------------------------

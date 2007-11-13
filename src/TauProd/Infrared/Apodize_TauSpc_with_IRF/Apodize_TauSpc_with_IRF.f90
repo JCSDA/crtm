@@ -43,7 +43,7 @@ PROGRAM Apodize_TauSpc_with_IRF
                                        IASI_MAX_FREQUENCY, &
                                        IASI_D_FREQUENCY, &
                                        IASI_RESAMPLE_MAXX, &
-                                       IASI_MAX_NCHANNELS, &
+                                       N_IASI_CHANNELS, &
                                        N_IASI_BANDS, &
                                        IASI_BAND_F1, &
                                        IASI_BAND_F2, &
