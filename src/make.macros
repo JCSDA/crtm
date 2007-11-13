@@ -137,7 +137,7 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "ENDIAN=Big_Endian"
 
 # -- Here set the DEFAULT AIX compiler flags
-AIX_FLAGS = $(AIX_FLAGS_DEBUG)
+AIX_FLAGS = $(AIX_FLAGS_PROD)
 
 
 
