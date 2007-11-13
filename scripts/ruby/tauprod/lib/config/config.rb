@@ -12,7 +12,7 @@ module TauProd
     # --------------------
     LL_SUBMIT    = "llsubmit"
     LL_ACCOUNT   = { :ccs=>"GDAS-T2O", :haze=>"JCSDA001-RES"}
-    LL_TIMELIMIT = "03:00:00"
+    LL_TIMELIMIT = "04:00:00"
     LL_RESOURCES = "ConsumableCpus(1) ConsumableMemory(500)"
 
     SUBMIT_INCREMENT = 60*60*3  # seconds
@@ -44,13 +44,13 @@ module TauProd
     (1..7).collect {|m| MOL_INFO[m] = {:name  => "mol#{m}",
                                        :t3tag => "mol#{m}",
                                        :cont  => [ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO]}}
-    MOL_INFO[8]  = {:name  => "all_nocontinua",
+    MOL_INFO[8]  = {:name  => "anc",  # all, no continua
                     :t3tag => "7mol",
                     :cont  => [ZERO,ZERO,ZERO,ZERO,ZERO,ZERO,ZERO]}
-    MOL_INFO[9]  = {:name  => "continua_only",
+    MOL_INFO[9]  = {:name  => "con",  # continua only
                     :t3tag => "nomol",
                     :cont  => [ONE,ONE,ONE,ONE,ONE,ONE,ONE]}
-    MOL_INFO[10] = {:name  => "all_withcontinua",
+    MOL_INFO[10] = {:name  => "awc",  # all, with continua
                     :t3tag => "7mol",
                     :cont  => [ONE,ONE,ONE,ONE,ONE,ONE,ONE]}
     MOL_INFO[11] = {:name  => "wvo",
@@ -68,6 +68,12 @@ module TauProd
     MOL_INFO[15] = {:name  =>"wco",
                     :t3tag =>"nomol",
                     :cont  =>[ONE,ONE,ZERO,ZERO,ZERO,ZERO,ZERO]}
+    MOL_INFO[16] = {:name  =>"doz",
+                    :t3tag =>"doz",
+                    :cont  =>[ZERO,ZERO,ONE,ONE,ONE,ONE,ONE]}
+    MOL_INFO[17] = {:name  =>"wvd",
+                    :t3tag =>"wvd",
+                    :cont  =>[ONE,ONE,ONE,ZERO,ONE,ONE,ONE]}
 
 
     # Angle information
@@ -114,7 +120,7 @@ module TauProd
       @profile_set = "UMBC"                       # Profile set to process
       @profiles    = (1..PROFILE_SET_INFO[@profile_set][:n_profiles]).to_a  # Profiles to process
       @bands       = BAND_INFO.keys.sort          # Bands to process
-      @molids      = [1, 10, 11, 12, 13, 14, 15]  # Molecule sets to process
+      @molids      = [1, 10, 11, 12, 13, 14, 15, 16, 17]  # Molecule sets to process
       @angles      = ANGLE_INFO.keys.sort         # Angles to process
       @noop        = false                        # Submit jobs by default
       @keeplbl     = false                        # Do not keep the LBL datafiles by default

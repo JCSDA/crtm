@@ -53,6 +53,8 @@
 #      13   == dry gases. Everything but h2o and o3 and their continua
 #      14   == ozone only and it's continua
 #      15   == water vapor continua only
+#      16   == dry gases + ozone only and their continua
+#      17   == water vapor + dry gases only and their continua
 #
 # --profiles p1[-p2][,p3,p4,..]  (-p):
 #    Specify the profiles to process. The profiles can be specified individually,

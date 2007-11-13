@@ -42,6 +42,8 @@
 #      13   == dry gases. Everything but h2o and o3 and their continua
 #      14   == ozone only and it's continua
 #      15   == water vapor continua only
+#      16   == dry gases + ozone only and their continua
+#      17   == water vapor + dry gases only and their continua
 #
 # --profiles p1[-p2][,p3,p4,..]  (-p):
 #    Specify the profiles to process. The profiles can be specified individually,
@@ -69,11 +71,11 @@ begin
   root_dir = Dir.pwd
   
   # Define the filename(s) to search for
-  signal_file = ["upwelling_tau.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal",
-                 "downwelling_tau.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal"]
+  signal_file = ["upwelling.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal",
+                 "downwelling.#{TauProd::Config::SENSOR_ID}.REAL.TauProfile.nc.signal"]
   
   # Set the expected number of signal files
-  n_expected = cfg.molids.length * cfg.profiles.length * cfg.angles.length
+  n_expected = cfg.molids.length * cfg.profiles.length * cfg.angles.length * signal_file.length
   n_angles_expected = cfg.angles.length * signal_file.length
 
 
