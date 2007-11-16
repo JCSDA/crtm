@@ -173,11 +173,13 @@ PROGRAM Generate_CRTM_Stats
   
   USE Type_Kinds                
   USE Message_Handler,           ONLY: SUCCESS, WARNING, Display_Message
-  USE CRTM_Parameters,           ONLY: SET, NOT_SET, ONE, &
-                                      MAX_N_PHASE_ELEMENTS, &
-                                      MAX_N_LEGENDRE_TERMS, &
-                                      MAX_N_STOKES, &
-                                      MAX_N_ANGLES
+  USE CRTM_Parameters,           ONLY: SET, NOT_SET, ONE,    &
+                                       MAX_N_PHASE_ELEMENTS, &
+                                       MAX_N_LEGENDRE_TERMS, &
+                                       MAX_N_STOKES,         &
+                                       MAX_N_ANGLES,         &
+                                       ZERO,                 &
+                                       LIMIT_EXP
   USE CRTM_Atmosphere_Define
   USE CRTM_Atmosphere_Binary_IO
   USE CRTM_Surface_Define
@@ -210,7 +212,6 @@ PROGRAM Generate_CRTM_Stats
 
   IMPLICIT NONE
 
-
   ! ----------
   ! Parameters
   ! ----------
@@ -223,13 +224,11 @@ PROGRAM Generate_CRTM_Stats
   
   ! -- Variable used to represent the name of the atmosphere file
   CHARACTER( * ), PARAMETER :: ATMOSPHERE_FILENAME = 'UMBC.Atmosphere.bin'
- 
-
 
   ! -- Number of Stoke and Angle arguments
-  INTEGER, PARAMETER :: SfcOptics_n_Stokes = 1
-  INTEGER, PARAMETER :: SfcOptics_n_Angles = 1
-  INTEGER, PARAMETER :: surface_channels = 0
+  INTEGER, PARAMETER :: SFCOPTICS_N_STOKES = 1
+  INTEGER, PARAMETER :: SFCOPTICS_N_ANGLES = 1
+  INTEGER, PARAMETER :: SURFACE_CHANNELS = 0
 
   ! -- Number of Profiles in data --
   INTEGER, PARAMETER :: N_PROFILES = 48
@@ -238,15 +237,15 @@ PROGRAM Generate_CRTM_Stats
   CHARACTER( * ), PARAMETER :: REG_PROFILE_ID_TAG = 'UMBC'
   
   ! -- Angle threshold --
-  REAL ( fp ), PARAMETER :: AngleTh = 2.95
+  REAL ( fp ), PARAMETER :: ANGLETH = 2.95
   
+  ! -- relevant molecule sets
   INTEGER, PARAMETER :: TAU_ALL_INDEX = 10
-  
-  INTEGER :: AllocateStatus
-
+  INTEGER, PARAMETER :: TAU_WET_INDEX = 12
+  INTEGER, PARAMETER :: TAU_OZO_INDEX = 114
+  INTEGER, PARAMETER :: TAU_DRY_INDEX = 113
   ! -- Number of molecule sets to test
   INTEGER,  PARAMETER :: N_MOLECULE_SETS = 1
-
  
   ! -- Default emissivities and IR reflectivity "type"
   ! -- These values are used for land parameterization
@@ -257,6 +256,7 @@ PROGRAM Generate_CRTM_Stats
   ! ---------
   ! Variables
   ! ---------
+  
   ! ---------------------
   !   -Declare RTV-
   ! ---------------------
@@ -264,25 +264,14 @@ PROGRAM Generate_CRTM_Stats
   
   ! These variables will be used in the initialization of the CRTM. They are used to reference the coeff-file names
   CHARACTER( 256 ) :: TauProfile_File
-  CHARACTER( 256 ) :: SpcCoeff_File
-  CHARACTER( 256 ) :: TauCoeff_File
-  CHARACTER( 256 ) :: CloudCoeff_File
-  CHARACTER( 256 ) :: AerosolCoeff_File
-  CHARACTER( 256 ) :: EmisCoeff_File
-  CHARACTER( 256 ) :: File_Prefix
-  CHARACTER( 256 ) :: SensorId
+  CHARACTER( 256 ) :: Sensor_Id
   CHARACTER( 256 ) :: Satellite_Name
   CHARACTER( 256 ) :: Instrument_Name
   
   ! Declare the variables that will hold the channel and sensor indices
   INTEGER :: SensorIndex
   INTEGER :: ChannelIndex
-  
-  
-  
-  ! Declare the structure that will hold the TauProfile data
-  TYPE( TauProfile_type ) :: TauProfile
-  
+    
   ! Declare the structure that will hold the Atmosphere data
   TYPE( CRTM_Atmosphere_type ), DIMENSION( N_PROFILES ) :: Atmosphere
   
@@ -304,6 +293,12 @@ PROGRAM Generate_CRTM_Stats
   ! Declare array that will hold the transmittance data
   REAL( fp ), DIMENSION(:), ALLOCATABLE :: Tau
   
+  ! Declare arrays that will hold the transmittances for
+  ! the three gas absorption components considered
+  REAL( fp ), DIMENSION(:), ALLOCATABLE :: Tau_DRY
+  REAL( fp ), DIMENSION(:), ALLOCATABLE :: Tau_WET
+  REAL( fp ), DIMENSION(:), ALLOCATABLE :: Tau_OZO
+    
   ! Declare scalar that will hold total integrated water vapor
   REAL( fp ), DIMENSION( N_PROFILES ) :: Int_Water_Vapor
   
@@ -357,37 +352,25 @@ PROGRAM Generate_CRTM_Stats
   
   ! Information to describe the dimensions of the TauProfile data 
   INTEGER :: n_Layers
-  INTEGER,   PARAMETER :: n_Levels = 101
   INTEGER :: n_Channels
   INTEGER :: n_Angles
  
   ! -- Loop counters
-  INTEGER :: i, j, k, l, m, mIndex, lm, n
+  INTEGER :: i, j, k, l, m, n
  
   !#----------------------------------------------------------------------------#
   !#                       -- Get the coefficient filenames --                  #
   !#----------------------------------------------------------------------------#
 
   ! Enter the instrument file prefix
-  WRITE( *, FMT    = '( /5x, "Enter the File Prefix name: ")', &
+  WRITE( *, FMT    = '( /5x, "Enter the Sensor ID: ")', &
             ADVANCE = 'NO' )
-  READ( *, '(a)' ) File_Prefix
-  Instrument_Name = ADJUSTL( File_Prefix )
-
-  ! Enter the instrument name
-  WRITE( *, FMT    = '( /5x, "Enter the instrument name : ")', &
-            ADVANCE = 'NO' )
-  READ( *, '( a )' ) Instrument_Name
-  Instrument_Name = ADJUSTL( Instrument_Name )
-
-  ! Enter the satellite name
-  WRITE( *, FMT    = '( /5x, "Enter the satellite name : ")', &
-            ADVANCE = 'NO' )
-  READ( *, '( a )' ) Satellite_Name
-  Satellite_Name = ADJUSTL( Satellite_Name )
+  READ( *, '(a)' ) Sensor_Id
+  Sensor_Id = ADJUSTL( Sensor_ID )
+  Instrument_Name = Sensor_Id
+  Satellite_Name = Sensor_Id
   
-  ! Declare the Sensor Id and Sensor Index (SensorIndex should be 1)
-  SensorId = File_Prefix
+  ! Declare the Sensor Index (SensorIndex should be 1)
   SensorIndex = 1 
   
   !#-------------------------------------------------------------------------
@@ -396,7 +379,7 @@ PROGRAM Generate_CRTM_Stats
   !# The ChannelInfo is populated during the initialization
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
   Error_Status = CRTM_Init( ChannelInfo,          &
-                            SensorId=(/SensorId/) )
+                            SensorId=(/Sensor_Id/) )
     
 
   IF ( Error_Status /= SUCCESS ) THEN 
@@ -420,7 +403,7 @@ PROGRAM Generate_CRTM_Stats
   END IF
   
   ! Declare TauProfile_File name
-  TauProfile_File = 'upwelling.'//TRIM( File_Prefix )//'.TauProfile.nc'
+  TauProfile_File = 'upwelling.'//TRIM( Sensor_Id )//'.TauProfile.nc'
   
   ! Get TauProfile array dimensions
   Error_Status = Inquire_TauProfile_netCDF( TRIM( TauProfile_File ),                   &
@@ -451,26 +434,11 @@ PROGRAM Generate_CRTM_Stats
   END IF
   
   
-  ! Allocate the LBL transmittance profile data structure
-  Error_Status = Allocate_TauProfile(  n_Layers,               & ! Input
-                                       n_Channels,             & ! Input
-                                       n_Angles,               & ! Input
-                                       n_Profiles,             & ! Input
-                                       n_Molecule_Sets,        & ! Input
-                                       TauProfile              ) ! Output
- 
-  IF ( Error_Status /= SUCCESS ) THEN 
-     CALL Display_Message( PROGRAM_NAME, &
-                           'Error Allocating TauProfile structure.', & 
-                           Error_Status )
-    STOP
-  END IF
-  
   ! Get TauProfile metadata
   Error_Status = Inquire_TauProfile_netCDF( TRIM( TauProfile_File ),                    &
-                                                   Channel_List = TauProfile%Channel,   &  
-                                                   Angle_List   = TauProfile%Angle,     &  
-                                                   Profile_List = TauProfile%Profile,   &  
+                                                   Channel_List = Channel_List,         &  
+                                                   Angle_List   = Angle_List  ,         &  
+                                                   Profile_List = Profile_List,         &  
                                                    ID_Tag  = LBL_Profile_ID_Tag,        &
                                                    History = History,                   &
                                                    Comment = Comment                    )
@@ -480,11 +448,6 @@ PROGRAM Generate_CRTM_Stats
                            Error_Status )
     STOP
   END IF
-  
-  ! assign metadata
-  Angle_List   = TauProfile%Angle 
-  Channel_List = TauProfile%Channel 
-  Profile_List = TauProfile%Profile
   
   !  Allocate for CRTMSolution
   ALLOCATE( CRTMSolution( n_Channels, N_PROFILES, n_Angles - 1 ), &
@@ -533,6 +496,8 @@ PROGRAM Generate_CRTM_Stats
     
   DO i = 1, n_Angles - 1
         
+    WRITE(*,'(5x,"Computing CRTM stats for angle ",i0)') i
+    
     ! Allocate the RTSolution structures
     Error_Status = CRTM_Allocate_RTSolution(  n_Layers,                         &  ! Input
                                               CRTMSolution(:,:,i)               )  ! Output
@@ -545,7 +510,7 @@ PROGRAM Generate_CRTM_Stats
     END IF 
     
     ! Fill the GeometryInfo argument to the CRTM_Forward module
-    GeometryInfo(:)%Sensor_Zenith_Angle = (1/DEGREES_TO_RADIANS) * ACOS(ONE/Angle_List(i))
+    GeometryInfo(:)%Sensor_Zenith_Angle = ACOS(ONE/Angle_List(i))/DEGREES_TO_RADIANS
     
     ! Set GeometryInfo(n_Profiles) array         
     !  Calculate CRTM brigtness temperatures and TOA radiances
@@ -560,13 +525,14 @@ PROGRAM Generate_CRTM_Stats
   
   
   ! Assign the output filename
-  REGstats_Filename = TRIM( File_Prefix )//'.REGstats.nc'
+  REGstats_Filename = TRIM( Sensor_Id )//'.REGstats.nc'
               
   !#------------------------------------------------------------------------#
   !#              -- ALLOCATE THE OUTPUT CRTMstats STRUCTURE --             #
   !#------------------------------------------------------------------------#
 
-  Error_Status = Allocate_CRTMstats(  n_Channels,      &
+  Error_Status = Allocate_CRTMstats(  n_Layers,        &
+                                      n_Channels,      &
                                       n_Angles - 1,    &   ! Do not include the maximum angle
                                       N_PROFILES,      &
                                       N_MOLECULE_SETS, &
@@ -595,10 +561,13 @@ PROGRAM Generate_CRTM_Stats
   CRTMstats%Angle = Angle_List(1:n_Angles - 1)
   CRTMstats%Profile = Profile_List(1:N_PROFILES)
   CRTMstats%Molecule_Set = (/ TAU_ALL_INDEX /)
+  CRTMstats%Frequency = SC(SensorIndex)%Wavenumber
     
   ! Begin the profile loop  
   Profile_Loop: DO m=1, N_PROFILES
 
+    WRITE(*,'(5x,"Computing LBL stats for profile ",i0)') m
+    
     ! Check for clouds and aerosols 
     IF ( (Atmosphere(m)%n_Clouds > 0) .OR. (Atmosphere(m)%n_Aerosols > 0) ) &
         CYCLE Profile_Loop
@@ -622,7 +591,7 @@ PROGRAM Generate_CRTM_Stats
     Angle_Loop: DO i=1, n_Angles - 1
 
       ! Calculate sensor zenith angle
-      GeometryInfo(m)%Sensor_Zenith_Angle = (1/DEGREES_TO_RADIANS) * ACOS(ONE/Angle_List(i))
+      GeometryInfo(m)%Sensor_Zenith_Angle = ACOS(ONE/Angle_List(i)) / DEGREES_TO_RADIANS
       ! Fill GeometryInfo structure
       Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo(m) )
 
@@ -634,7 +603,7 @@ PROGRAM Generate_CRTM_Stats
       END IF
       
       !  Allocate for LBLSolution
-      ALLOCATE( LBLSolution( n_Channels, n_Profiles ),    &
+      ALLOCATE( LBLSolution( n_Channels, N_PROFILES ),    &
                 STAT = Error_Status           )
 
       IF ( Error_Status /= SUCCESS ) THEN 
@@ -656,7 +625,7 @@ PROGRAM Generate_CRTM_Stats
       END IF
 
       ! Cycle loop for sec(theta) > threshold
-      IF ( Angle_List(i) > AngleTH ) &
+      IF ( Angle_List(i) > ANGLETH ) &
         CYCLE Angle_Loop 
 
       ! Allocate the SfcOptics structure
@@ -689,15 +658,16 @@ PROGRAM Generate_CRTM_Stats
         CRTM_Transmittance=ZERO
         LBL_Transmittance=ZERO
 
-        ! Allocate for the Optical Depth and Transmittance(Tau) arrays
-        ALLOCATE( Tau( n_Layers ),    &
-                  STAT=Error_Status   )
-
-
+        ! Allocate for the Transmittance(Tau) arrays
+        ALLOCATE( Tau( n_Layers ),     &
+                  Tau_WET( n_Layers ), & 
+                  Tau_OZO( n_Layers ), &
+                  Tau_DRY( n_Layers ), &
+                  STAT=Error_Status    )
 
         IF ( Error_Status /= SUCCESS ) THEN 
           CALL Display_Message( PROGRAM_NAME, &
-                               'Error DEAllocating Tau.', & 
+                               'Error Allocating Tau.', & 
                                 Error_Status )
           STOP
         END IF
@@ -708,30 +678,88 @@ PROGRAM Generate_CRTM_Stats
         SfcOptics(m)%Direct_Reflectivity(1,1) = SfcOptics(m)%Reflectivity(1,1,1,1)
         SfcOptics(m)%Compute_Switch = NOT_SET
 
-        ! Read TauProfile_File and assign data to TauProfile structure
-        Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),                  &
-                                                    TauProfile%Channel(l),             &
-                                                    TauProfile%Angle(i),               &
-                                                    TauProfile%Profile(m),             &    
-                                                    TAU_ALL_INDEX,                     &
-                                                    Tau                                )
-
+        ! Read TauProfile_File and assign data to rank-1 array holding Tau -> H20
+        Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),            &
+                                                    Channel_List(l),             &
+                                                    Angle_List(i),               &
+                                                    Profile_List(m),             &    
+                                                    TAU_WET_INDEX,               &
+                                                    Tau_WET, Quiet=1             )
         IF ( Error_Status /= SUCCESS ) THEN 
            CALL Display_Message( PROGRAM_NAME, &
-                                'Error reading TauProfile_File.', & 
+                                'Error reading TauProfile_File (H2O).', & 
                                  Error_Status )
           STOP
         END IF
-
-        ! Convert Total transmittances to layer optical depths
-        Layer_Loop: DO k=1, n_Layers
-          IF (k==1) THEN
-            AtmOptics%Optical_Depth(k) =  (((LOG(Tau(k)))/(Angle_List(i)))*(-1))
-          ENDIF
-
-          IF (k>1) THEN
-            AtmOptics%Optical_Depth(k) =  (((LOG(Tau(k)/Tau(k-1)))/(Angle_List(i)))*(-1))
-          ENDIF
+        
+        ! Filter unphysical transmittances
+        Tau_WET = Filter_Transmittance(Tau_WET,n_Layers)
+        
+        ! Read TauProfile_File and assign data to rank-1 array holding Tau -> OZO
+        Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),            &
+                                                    Channel_List(l),             &
+                                                    Angle_List(i),               &
+                                                    Profile_List(m),             &    
+                                                    TAU_OZO_INDEX,               &
+                                                    Tau_OZO, Quiet=1             )
+        IF ( Error_Status /= SUCCESS ) THEN 
+           CALL Display_Message( PROGRAM_NAME, &
+                                'Error reading TauProfile_File (OZO).', & 
+                                 Error_Status )
+          STOP
+        END IF
+        
+        ! Filter unphysical transmittances
+        Tau_OZO = Filter_Transmittance(Tau_OZO,n_Layers)
+        
+        ! Read TauProfile_File and assign data to rank-1 array holding Tau -> DRY
+        Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),            &
+                                                    Channel_List(l),             &
+                                                    Angle_List(i),               &
+                                                    Profile_List(m),             &    
+                                                    TAU_DRY_INDEX,               &
+                                                    Tau_DRY, Quiet=1             )
+        IF ( Error_Status /= SUCCESS ) THEN 
+           CALL Display_Message( PROGRAM_NAME, &
+                                'Error reading TauProfile_File (DRY).', & 
+                                 Error_Status )
+          STOP
+        END IF
+        
+        ! Filter unphysical transmittances
+        Tau_DRY = Filter_Transmittance(Tau_DRY,n_Layers)
+        
+        ! Calculate total transmittances from the
+        ! individual transmittance components
+        Tau = Total_Transmittance(Tau_DRY,Tau_OZO,Tau_WET,n_Layers)
+        
+        ! Calculate Optical Depth for first layer
+        IF (Tau(1)>ZERO) THEN
+          AtmOptics%Optical_Depth(1) = -ONE * LOG(Tau(1)) / Angle_List(i)
+        ELSE
+          AtmOptics%Optical_Depth(1) = CRTMSolution(l,m,i)%Layer_Optical_Depth(1)
+        END IF
+        
+        ! Assign first layer Optical Depth to CRTMstats
+        CRTMstats%LBL_OD(1,l,i,m,1) = AtmOptics%Optical_Depth(1)
+        CRTMstats%REG_OD(1,l,i,m,1) = CRTMSolution(l,m,i)%Layer_Optical_Depth(1)
+        CRTMstats%dOD(1,l,i,m,1) = CRTMstats%LBL_OD(1,l,i,m,1) - CRTMstats%REG_OD(1,l,i,m,1)
+        
+        ! Convert Total transmittance to ODepth for all layers
+        Layer_Loop: DO k=2, n_Layers
+          ! Check to make sure transmittance is
+          ! greater than zero
+          IF (Tau(k)==ZERO) THEN
+            AtmOptics%Optical_Depth(k) = CRTMSolution(l,m,i)%Layer_Optical_Depth(k)
+            CRTMstats%LBL_OD(k,l,i,m,1) = AtmOptics%Optical_Depth(k)
+            CRTMstats%REG_OD(k,l,i,m,1) = CRTMSolution(l,m,i)%Layer_Optical_Depth(k)
+            CRTMstats%dOD(k,l,i,m,1) = CRTMstats%LBL_OD(k,l,i,m,1) - CRTMstats%REG_OD(k,l,i,m,1)
+            CYCLE Layer_Loop
+          ENDIF          
+          AtmOptics%Optical_Depth(k) = -ONE * LOG(Tau(k)/Tau(k-1))/Angle_List(i)
+          CRTMstats%LBL_OD(k,l,i,m,1) = AtmOptics%Optical_Depth(k)
+          CRTMstats%REG_OD(k,l,i,m,1) = CRTMSolution(l,m,i)%Layer_Optical_Depth(k)
+          CRTMstats%dOD(k,l,i,m,1) = CRTMstats%LBL_OD(k,l,i,m,1) - CRTMstats%REG_OD(k,l,i,m,1)
         END DO Layer_Loop
 
         ! Short(en) name for Channel Index
@@ -747,7 +775,7 @@ PROGRAM Generate_CRTM_Stats
                                                 ChannelIndex,                             & ! Input
                                                 LBLSolution(l,m),                         & ! Output 
                                                 RTV                                       ) ! Internal variable output
-        
+                                               
         ! Calculate Total Optical depths using the Layer_Optical_Depths
         TOA_Transmittance_Layer_Loop: DO k=1, n_layers 
           CRTM_Optical_Depth = CRTMSolution(l,m,i)%Layer_Optical_Depth(k) + CRTM_Optical_Depth
@@ -757,8 +785,7 @@ PROGRAM Generate_CRTM_Stats
         ! Convert TOA Optical Depths to TOA Transmittances
         CRTM_Transmittance = EXP(-((CRTM_Optical_Depth)*(Angle_List(i))))
         LBL_Transmittance = EXP(-((LBL_Optical_Depth)*(Angle_List(i))))
-
-        
+       
         ! Save the TOA regression results
         CRTMstats%REG_BT(l, i, m, 1) = CRTMSolution(l,m,i)%Brightness_Temperature 
         CRTMstats%REG_Tau(l, i, m, 1) = CRTM_Transmittance
@@ -769,13 +796,16 @@ PROGRAM Generate_CRTM_Stats
         
         ! Deallocate Tau
         DEALLOCATE(    Tau,                   &
+                       Tau_WET,               &
+                       Tau_OZO,               &
+                       Tau_DRY,               &
                        STAT=Error_Status      )
 
         IF ( Error_Status /= SUCCESS ) THEN 
           CALL Display_Message( PROGRAM_NAME, &
                                 'Error DEAllocating Tau array.', & 
                                 Error_Status )
-         STOP
+          STOP
         END IF
 
       END DO Channel_Loop
@@ -793,8 +823,8 @@ PROGRAM Generate_CRTM_Stats
              CALL Display_Message( PROGRAM_NAME, &
                                  'Error deallocating LBLSolution structures', &
                                  Error_Status )
-              STOP
-             END IF
+        STOP
+      END IF
 
       ! LBLSolution
       DEALLOCATE( LBLSolution,                     &
@@ -828,7 +858,7 @@ PROGRAM Generate_CRTM_Stats
     CALL Display_Message( PROGRAM_NAME, &
                           'Error deallocating AtmOptics structures', &
                           Error_Status )
-     STOP
+      STOP
     END IF
 
   END DO Profile_Loop
@@ -909,7 +939,7 @@ PROGRAM Generate_CRTM_Stats
 
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error deallocating Surface structures', &
+                          'Error deallocating Surface structure', &
                           Error_Status                            )
     STOP
   END IF 
@@ -919,13 +949,14 @@ PROGRAM Generate_CRTM_Stats
 
   IF ( Error_Status   /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
-                            'Error deallocating TauProfile structures', &
+                            'Error deallocating Atmosphere structure', &
                             Error_Status )
    STOP
   END IF
 
   ! Destroying the CRTM 
   Error_Status = CRTM_Destroy( ChannelInfo ) 
+  
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error destroying CRTM', & 
@@ -937,16 +968,56 @@ PROGRAM Generate_CRTM_Stats
               Angle_List,            &
               Profile_List,          &
               STAT=Error_Status      )
-
-
-
+	      
   IF ( Error_Status /= SUCCESS ) THEN 
-  CALL Display_Message( PROGRAM_NAME, &
-                       'Error DEAllocating TOA Calculation arrays.', & 
+    CALL Display_Message( PROGRAM_NAME, &
+                         'Error DEAllocating TOA Calculation arrays.', & 
                        Error_Status )
-   STOP
+    STOP
   END IF
-
+  
+  
+CONTAINS
+  
+  ! Function to filter unphysical transmittances
+  FUNCTION Filter_Transmittance(Tau,n_Layers) RESULT(Corrected_Tau)
+    INTEGER,  INTENT(IN) :: n_Layers 
+    REAL(fp), DIMENSION(n_Layers), INTENT(IN) :: Tau
+    REAL(fp), DIMENSION(n_Layers) :: Corrected_Tau
+    INTEGER :: k
+    ! Check first layer for 
+    ! unphysical transmittances
+    IF(Tau(1)<ZERO) THEN
+      Corrected_Tau(1)=ZERO
+    ELSE IF(Tau(1)>ONE) THEN
+      Corrected_Tau(1)=ONE
+    ELSE
+      Corrected_Tau(1)=Tau(1)
+    END IF
+    ! Check layers 2 to N_Layers
+    ! for unphysical transmittances
+    DO k = 2, n_Layers      
+      IF(Tau(k)<ZERO) THEN
+        Corrected_Tau(k)=ZERO
+      ELSE IF(Tau(k)>Corrected_Tau(k-1)) THEN
+        Corrected_Tau(k)=Corrected_Tau(k-1)
+      ELSE 
+        Corrected_Tau(k)=Tau(k)
+      END IF
+    END DO   
+  END FUNCTION Filter_Transmittance
+  
+  FUNCTION Total_Transmittance(Tau1,Tau2,Tau3,n_Layers) RESULT(Tau)
+    REAL(fp), DIMENSION(n_Layers), INTENT(IN) :: Tau1, Tau2, Tau3
+    INTEGER, INTENT(IN) :: n_Layers
+    REAL(fp), DIMENSION(n_Layers) :: Tau
+    INTEGER :: k
+    ! Calculate total transmittances
+    DO k = 1, n_Layers
+      Tau(k)=Tau1(k)*Tau2(k)*Tau3(k)
+    END DO
+  END FUNCTION Total_Transmittance 
+        
 END PROGRAM Generate_CRTM_Stats
   
 !-------------------------------------------------------------------------------

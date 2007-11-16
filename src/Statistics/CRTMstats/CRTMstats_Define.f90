@@ -69,6 +69,12 @@
 !                              TYPE:       CHARACTER( 16 )
 !                              DIMENSION:  Scalar
 !
+!         n_Layers:            Number of atmospheric layers.
+!                              "K" dimension.
+!                              UNITS:     N/A
+!                              TYPE:      INTEGER 
+!                              DIMENSION: Scalar
+!
 !         n_Channels:          Number of spectral channels.
 !                              "L" dimension.
 !                              UNITS:      N/A
@@ -93,7 +99,12 @@
 !                              UNITS:      N/A
 !                              TYPE:       INTEGER
 !                              DIMENSION:  Scalar
-!
+!         
+!         Int_Water_Vapor:     Integrated Water Vapor
+!                              UNITS:     g/cm^2
+!                              TYPE:      REAL
+!                              DIMENSION: Rank-1 (n_Profiles, M)
+!         
 !         NCEP_Sensor_ID:      An "in-house" value used at NOAA/NCEP/EMC 
 !                              to identify a satellite/sensor combination.
 !                              UNITS:      N/A
@@ -158,6 +169,27 @@
 !                              DIMENSION:  Rank-1 (n_Molecule_Sets, J)
 !                              ATTRIBUTES: POINTER
 !
+!         LBL_OD:              Array containing line-by-line Optical 
+!                              depth calculations 
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (K x L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!
+!         REG_OD:              Array containing regression Optical 
+!                              depth calculations 
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (K x L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!
+!         dOD:                 Array containing (REG-LBL) Optical 
+!                              depth differences
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (K x L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!                                           
 !         LBL_Tau:             Array containing the surface (SFC) to
 !                              top-of-atmosphere (TOA) transmittance
 !                              from the line-by-line (LBL) calculations.
@@ -364,6 +396,7 @@ MODULE CRTMstats_Define
     CHARACTER( 16 ) :: REG_Profile_ID_Tag = ' '
 
     ! -- Dimensions
+    INTEGER :: n_Layers        = 0 ! == K
     INTEGER :: n_Channels      = 0 ! == L
     INTEGER :: n_Angles        = 0 ! == I
     INTEGER :: n_Profiles      = 0 ! == M
@@ -386,9 +419,14 @@ MODULE CRTMstats_Define
     REAL( fp_kind ), DIMENSION( : ), POINTER :: Angle          => NULL()  ! I
     INTEGER,         DIMENSION( : ), POINTER :: Profile        => NULL()  ! M
     INTEGER,         DIMENSION( : ), POINTER :: Molecule_Set   => NULL()  ! J
+    
+    ! -- Optical Depth data
+    REAL( fp_kind ), DIMENSION( :, :, :, :, : ), POINTER :: LBL_OD             => NULL()  ! K x L x I x M x J
+    REAL( fp_kind ), DIMENSION( :, :, :, :, : ), POINTER :: REG_OD             => NULL()  ! K x L x I x M x J
+    REAL( fp_kind ), DIMENSION( :, :, :, :, : ), POINTER :: dOD                => NULL()  ! K x L x I x M x J
 
     ! -- Transmittance data
-    REAL( fp_kind ), DIMENSION( :, :, :, : ), POINTER :: LBL_Tau            => NULL()  ! L x I x M x J
+    REAL( fp_kind ), DIMENSION( :, :, :, : ), POINTER :: LBL_Tau             => NULL()  ! L x I x M x J
     REAL( fp_kind ), DIMENSION( :, :, :, : ), POINTER :: REG_Tau            => NULL()  ! L x I x M x J
     REAL( fp_kind ), DIMENSION( :, : ),       POINTER :: Mean_dTau          => NULL()  ! L x J
     REAL( fp_kind ), DIMENSION( :, : ),       POINTER ::  RMS_dTau          => NULL()  ! L x J
@@ -402,6 +440,7 @@ MODULE CRTMstats_Define
     REAL( fp_kind ), DIMENSION( :, : ),       POINTER ::  RMS_dBT          => NULL()  ! L x J
     REAL( fp_kind ), DIMENSION( :, :, : ),    POINTER :: Mean_dBT_by_Angle => NULL()  ! L x I x J
     REAL( fp_kind ), DIMENSION( :, :, : ),    POINTER ::  RMS_dBT_by_Angle => NULL()  ! L x I x J
+  
   END TYPE CRTMstats_type
 
 
@@ -481,6 +520,7 @@ CONTAINS
     CRTMstats%LBL_Profile_ID_Tag = ' '
     CRTMstats%REG_Profile_ID_Tag = ' '
     
+    CRTMstats%n_Layers        = 0
     CRTMstats%n_Channels      = 0
     CRTMstats%n_Angles        = 0
     CRTMstats%n_Profiles      = 0
@@ -645,6 +685,9 @@ CONTAINS
            ASSOCIATED( CRTMstats%Angle              ) .AND. &
            ASSOCIATED( CRTMstats%Profile            ) .AND. &
            ASSOCIATED( CRTMstats%Molecule_Set       ) .AND. &
+           ASSOCIATED( CRTMstats%LBL_OD             ) .AND. &
+           ASSOCIATED( CRTMstats%REG_OD             ) .AND. &
+           ASSOCIATED( CRTMstats%dOD                ) .AND. &
            ASSOCIATED( CRTMstats%LBL_Tau            ) .AND. &
            ASSOCIATED( CRTMstats%REG_Tau            ) .AND. &
            ASSOCIATED( CRTMstats%Mean_dTau          ) .AND. &
@@ -671,6 +714,9 @@ CONTAINS
            ASSOCIATED( CRTMstats%Angle              ) .OR. &
            ASSOCIATED( CRTMstats%Profile            ) .OR. &
            ASSOCIATED( CRTMstats%Molecule_Set       ) .OR. &
+           ASSOCIATED( CRTMstats%LBL_OD             ) .AND. &
+           ASSOCIATED( CRTMstats%REG_OD             ) .AND. &
+           ASSOCIATED( CRTMstats%dOD                ) .AND. &
            ASSOCIATED( CRTMstats%LBL_Tau            ) .OR. &
            ASSOCIATED( CRTMstats%REG_Tau            ) .OR. &
            ASSOCIATED( CRTMstats%Mean_dTau          ) .OR. &
@@ -1052,6 +1098,61 @@ CONTAINS
       END IF
     END IF
 
+    ! -----------------------------------------
+    ! Deallocate the optical depth data members
+    ! -----------------------------------------
+
+    ! -- LBL Optical Depths
+    IF ( ASSOCIATED( CRTMstats%LBL_OD ) ) THEN
+
+      DEALLOCATE( CRTMstats%LBL_OD, STAT = Allocate_Status )
+
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error deallocating CRTMstats LBL_OD member. ", &
+                          &"STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+      END IF
+    END IF
+
+
+    ! -- Regression Optical Depths
+    IF ( ASSOCIATED( CRTMstats%REG_OD ) ) THEN
+
+      DEALLOCATE( CRTMstats%REG_OD, STAT = Allocate_Status )
+
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error deallocating CRTMstats REG_OD member. ", &
+                          &"STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+      END IF
+    END IF
+    
+    ! -- Regression - LBL Optical Depth difference
+    IF ( ASSOCIATED( CRTMstats%dOD ) ) THEN
+
+      DEALLOCATE( CRTMstats%dOD, STAT = Allocate_Status )
+
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error deallocating CRTMstats dOD member. ", &
+                          &"STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+      END IF
+    END IF
 
     ! -----------------------------------------
     ! Deallocate the transmittance data members
@@ -1316,15 +1417,23 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_CRTMstats( n_Channels,               &  ! Input
+!       Error_Status = Allocate_CRTMstats(  n_Layers,                 &  ! Input
+!                                           n_Channels,               &  ! Input
 !                                           n_Angles,                 &  ! Input
 !                                           n_Profiles,               &  ! Input
 !                                           n_Molecule_Sets,          &  ! Input
-!                                           CRTMstats,               &  ! Output
+!                                           CRTMstats,                &  ! Output
 !                                           RCS_Id      = RCS_Id,     &  ! Revision control
 !                                           Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
+!       n_Layers:         Number of Atmospheric layers dimension.
+!                         Must be > 0.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT( IN )
+!
 !       n_Channels:       Number of spectral channels dimension.
 !                         Must be > 0.
 !                         UNITS:      N/A
@@ -1421,7 +1530,8 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Allocate_CRTMstats( n_Channels,      &  ! Input
+  FUNCTION Allocate_CRTMstats(  n_Layers,        &  ! Input
+                                n_Channels,      &  ! Input
                                 n_Angles,        &  ! Input
                                 n_Profiles,      &  ! Input
                                 n_Molecule_Sets, &  ! Input
@@ -1441,6 +1551,7 @@ CONTAINS
     ! ---------
 
     ! -- Input
+    INTEGER,                  INTENT( IN )     :: n_Layers
     INTEGER,                  INTENT( IN )     :: n_Channels
     INTEGER,                  INTENT( IN )     :: n_Angles
     INTEGER,                  INTENT( IN )     :: n_Profiles
@@ -1507,7 +1618,8 @@ CONTAINS
     ! Dimensions
     ! ----------
 
-    IF ( n_Channels      < 1 .OR. &
+    IF ( n_Layers        < 1 .OR. &
+         n_Channels      < 1 .OR. &
          n_Angles        < 1 .OR. &
          n_Profiles      < 1 .OR. &
          n_Molecule_Sets < 1      ) THEN
@@ -1558,6 +1670,10 @@ CONTAINS
               CRTMstats%Angle( n_Angles ), &
               CRTMstats%Profile( n_Profiles ), &
               CRTMstats%Molecule_Set( n_Molecule_Sets ), &
+              
+              CRTMstats%LBL_OD( n_Layers, n_Channels, n_Angles, n_Profiles, n_Molecule_Sets ), &
+              CRTMstats%REG_OD( n_Layers, n_Channels, n_Angles, n_Profiles, n_Molecule_Sets ), &
+              CRTMstats%dOD( n_Layers, n_Channels, n_Angles, n_Profiles, n_Molecule_Sets ),  &
 
               CRTMstats%LBL_Tau( n_Channels, n_Angles, n_Profiles, n_Molecule_Sets ), & 
               CRTMstats%REG_Tau( n_Channels, n_Angles, n_Profiles, n_Molecule_Sets ), & 
@@ -1592,6 +1708,7 @@ CONTAINS
     !#                        -- ASSIGN THE DIMENSIONS --                       #
     !#--------------------------------------------------------------------------#
 
+    CRTMstats%n_Layers        = n_Layers
     CRTMstats%n_Channels      = n_Channels
     CRTMstats%n_Angles        = n_Angles
     CRTMstats%n_Profiles      = n_Profiles
@@ -1613,6 +1730,10 @@ CONTAINS
     CRTMstats%Angle          = REAL( INVALID, fp_kind )
     CRTMstats%Profile        = INVALID
     CRTMstats%Molecule_Set   = INVALID
+    
+    CRTMstats%LBL_OD             = REAL( INVALID, fp_kind )
+    CRTMstats%REG_OD             = REAL( INVALID, fp_kind )
+    CRTMstats%dOD                = REAL( INVALID, fp_kind )
 
     CRTMstats%LBL_Tau            = REAL( INVALID, fp_kind )
     CRTMstats%REG_Tau            = REAL( INVALID, fp_kind )
@@ -1838,12 +1959,13 @@ CONTAINS
     ! -----------------
 
     ! -- Allocate data arrays
-    Error_Status = Allocate_CRTMstats( CRTMstats_in%n_Channels, &
-                                        CRTMstats_in%n_Angles, &
-                                        CRTMstats_in%n_Profiles, &
-                                        CRTMstats_in%n_Molecule_Sets, &
-                                        CRTMstats_out, &
-                                        Message_Log = Message_Log )
+    Error_Status = Allocate_CRTMstats( CRTMstats_in%n_Layers,        & 
+                                       CRTMstats_in%n_Channels,      &
+                                       CRTMstats_in%n_Angles,        &
+                                       CRTMstats_in%n_Profiles,      &
+                                       CRTMstats_in%n_Molecule_Sets, &
+                                       CRTMstats_out,                &
+                                       Message_Log = Message_Log )
 
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME,    &
@@ -1865,6 +1987,10 @@ CONTAINS
     CRTMstats_out%Angle          = CRTMstats_in%Angle
     CRTMstats_out%Profile        = CRTMstats_in%Profile
     CRTMstats_out%Molecule_Set   = CRTMstats_in%Molecule_Set
+    
+    CRTMstats_out%LBL_OD             = CRTMstats_in%LBL_OD           
+    CRTMstats_out%REG_OD             = CRTMstats_in%REG_OD           
+    CRTMstats_out%dOD                = CRTMstats_in%dOD
 
     CRTMstats_out%LBL_Tau            = CRTMstats_in%LBL_Tau           
     CRTMstats_out%REG_Tau            = CRTMstats_in%REG_Tau           
@@ -2047,6 +2173,7 @@ CONTAINS
     ! ----------------
 
     CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Concatenate_CRTMstats'
+    INTEGER :: n_Layers = 100
 
 
     ! ---------------
@@ -2169,7 +2296,8 @@ CONTAINS
     n_Channels = CRTMstats_Tmp%n_Channels + CRTMstats2%n_Channels
 
     ! -- Perform the allocation
-    Error_Status = Allocate_CRTMstats( n_Channels, &
+    Error_Status = Allocate_CRTMstats(  n_Layers, &
+                                        n_Channels, &
                                         CRTMstats_Tmp%n_Angles, &
                                         CRTMstats_Tmp%n_Profiles, &
                                         CRTMstats_Tmp%n_Molecule_Sets, &
@@ -2927,6 +3055,7 @@ CONTAINS
     WRITE( Long_String, '( a,1x,"CRTMstats: ", &
                            &"LBL Profile set- ", a, &
                            &"; REG Profile set- ", a, a, &
+                           &"N_LAYERS=",i4,2x,&
                            &"N_CHANNELS=",i4,2x,&
                            &"N_ANGLES=",i1,2x,&
                            &"N_PROFILES=",i3,2x,&
@@ -2935,6 +3064,7 @@ CONTAINS
                          TRIM( CRTMstats%LBL_Profile_ID_Tag ), &
                          TRIM( CRTMstats%REG_Profile_ID_Tag ), &
                          ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                         CRTMstats%n_Layers,  &
                          CRTMstats%n_Channels, &
                          CRTMstats%n_Angles, &
                          CRTMstats%n_Profiles, &

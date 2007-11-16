@@ -143,6 +143,7 @@ MODULE CRTMstats_netCDF_IO
   CHARACTER( * ), PRIVATE, PARAMETER :: REG_PROFILE_ID_TAG_GATTNAME = 'REG_Profile_id_tag' 
 
   ! -- Dimension names
+  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_DIMNAME        = 'n_Layers'
   CHARACTER( * ), PRIVATE, PARAMETER :: CHANNEL_DIMNAME      = 'n_Channels'
   CHARACTER( * ), PRIVATE, PARAMETER :: ANGLE_DIMNAME        = 'n_Angles'
   CHARACTER( * ), PRIVATE, PARAMETER :: PROFILE_DIMNAME      = 'n_Profiles'
@@ -158,6 +159,9 @@ MODULE CRTMstats_netCDF_IO
   CHARACTER( * ), PRIVATE, PARAMETER :: ANGLE_LIST_VARNAME         = 'Angle_list'
   CHARACTER( * ), PRIVATE, PARAMETER :: PROFILE_LIST_VARNAME       = 'Profile_list'
   CHARACTER( * ), PRIVATE, PARAMETER :: MOLECULE_SET_LIST_VARNAME  = 'Molecule_Set_list'
+  CHARACTER( * ), PRIVATE, PARAMETER :: LBL_OD_VARNAME             = 'LBL_OD'
+  CHARACTER( * ), PRIVATE, PARAMETER :: REG_OD_VARNAME             = 'REG_OD'
+  CHARACTER( * ), PRIVATE, PARAMETER :: dOD_VARNAME                = 'dOD'
   CHARACTER( * ), PRIVATE, PARAMETER :: LBL_TAU_VARNAME            = 'LBL_Tau'
   CHARACTER( * ), PRIVATE, PARAMETER :: REG_TAU_VARNAME            = 'REG_Tau'
   CHARACTER( * ), PRIVATE, PARAMETER :: MEAN_DTAU_VARNAME          = 'Mean_dTau'
@@ -192,6 +196,12 @@ MODULE CRTMstats_netCDF_IO
     'List of atmospheric profile set indices used in generating the transmittance data.'
   CHARACTER( * ), PRIVATE, PARAMETER :: MOLECULE_SET_LIST_LONGNAME   = &
     'List of molecular species set indices used in generating the transmittance data.'
+  CHARACTER( * ), PRIVATE, PARAMETER :: LBL_OD_LONGNAME              = &
+    'Line-by-line model generated, instrument resolution layer optical depths'
+  CHARACTER( * ), PRIVATE, PARAMETER :: REG_OD_LONGNAME              = &
+    'Regression model generated, instrument resolution layer optical depths'
+  CHARACTER( * ), PRIVATE, PARAMETER :: dOD_LONGNAME                 = &
+    'LBL - REG layer optical depths' 
   CHARACTER( * ), PRIVATE, PARAMETER :: LBL_TAU_LONGNAME             = &
     'Line-by-line model generated, top-of-atmosphere instrument resolution channel transmittances'
   CHARACTER( * ), PRIVATE, PARAMETER :: REG_TAU_LONGNAME             = &
@@ -220,6 +230,7 @@ MODULE CRTMstats_netCDF_IO
   ! -- Variable units attribute.
   CHARACTER( * ), PRIVATE, PARAMETER :: UNITS_ATTNAME   = 'units'
   CHARACTER( * ), PRIVATE, PARAMETER :: FREQUENCY_UNITS = 'Inverse centimetres, cm^-1'
+  CHARACTER( * ), PRIVATE, PARAMETER :: OD_UNITS        = 'None'
   CHARACTER( * ), PRIVATE, PARAMETER :: TAU_UNITS       = 'None'
   CHARACTER( * ), PRIVATE, PARAMETER :: BT_UNITS        = 'Kelvin, K'
   CHARACTER( * ), PRIVATE, PARAMETER :: PWV_UNITS       = 'g/cm^2'
@@ -235,6 +246,7 @@ MODULE CRTMstats_netCDF_IO
   REAL( fp_kind ), PRIVATE, PARAMETER :: INT_WATER_VAPOR_FILLVALUE   = -1.0_fp_kind
   INTEGER,         PRIVATE, PARAMETER :: PROFILE_LIST_FILLVALUE      = -1
   INTEGER,         PRIVATE, PARAMETER :: MOLECULE_SET_LIST_FILLVALUE = -1
+  REAL( fp_kind ), PRIVATE, PARAMETER :: OD_FILLVALUE                = -1.0_fp_kind
   REAL( fp_kind ), PRIVATE, PARAMETER :: TAU_FILLVALUE               = -1.0_fp_kind
   REAL( fp_kind ), PRIVATE, PARAMETER :: BT_FILLVALUE                = -1.0_fp_kind
 
@@ -248,6 +260,7 @@ MODULE CRTMstats_netCDF_IO
   INTEGER, PRIVATE, PARAMETER :: INT_WATER_VAPOR_TYPE   = NF90_DOUBLE
   INTEGER, PRIVATE, PARAMETER :: PROFILE_LIST_TYPE      = NF90_INT
   INTEGER, PRIVATE, PARAMETER :: MOLECULE_SET_LIST_TYPE = NF90_INT
+  INTEGER, PRIVATE, PARAMETER :: OD_TYPE                = NF90_DOUBLE
   INTEGER, PRIVATE, PARAMETER :: TAU_TYPE               = NF90_DOUBLE
   INTEGER, PRIVATE, PARAMETER :: BT_TYPE                = NF90_DOUBLE
 
@@ -1155,6 +1168,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Create_CRTMstats_netCDF( NC_Filename,                             &  ! Input
+!                                                n_Layers,                                & 
 !                                                n_Channels,                              &  ! Input
 !                                                n_Angles,                                &  ! Input
 !                                                n_Profiles,                              &  ! Input
@@ -1348,7 +1362,8 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Create_CRTMstats_netCDF( NC_Filename,        &  ! Input
+  FUNCTION Create_CRTMstats_netCDF( NC_Filename,         &  ! Input
+                                     n_Layers,           &  ! Input
                                      n_Channels,         &  ! Input
                                      n_Angles,           &  ! Input
                                      n_Profiles,         &  ! Input
@@ -1377,6 +1392,7 @@ CONTAINS
 
     ! -- Input
     CHARACTER( * ),           INTENT( IN )  :: NC_Filename
+    INTEGER,                  INTENT( IN )  :: n_Layers
     INTEGER,                  INTENT( IN )  :: n_Channels      
     INTEGER,                  INTENT( IN )  :: n_Angles        
     INTEGER,                  INTENT( IN )  :: n_Profiles      
@@ -1425,6 +1441,7 @@ CONTAINS
     INTEGER :: Status1, Status2, Status3
     INTEGER :: Close_Status
 
+    INTEGER :: Layer_DimID
     INTEGER :: Channel_DimID
     INTEGER :: Angle_DimID
     INTEGER :: Profile_DimID
@@ -1455,6 +1472,16 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#                            -- CHECK INPUT --                             #
     !#--------------------------------------------------------------------------#
+    
+    IF ( n_Layers < 1 ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'N_LAYERS dimensions must > 0.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+      
 
     IF ( n_Channels < 1 ) THEN
       Error_Status = FAILURE
@@ -1517,6 +1544,27 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#                         -- DEFINE THE DIMENSIONS --                      #
     !#--------------------------------------------------------------------------#
+    
+    ! --------------------
+    ! The number of Layers
+    ! --------------------
+    
+    NF90_Status = NF90_DEF_DIM( NC_FileID,     &
+                                LAYER_DIMNAME, &
+                                n_Layers,      &
+                                Layer_DimID  )
+
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error defining the '//LAYER_DIMNAME//' dimension in '// &
+                            TRIM( NC_Filename )//' - '// &
+                            TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      RETURN
+    END IF
 
     ! ----------------------
     ! The number of channels
@@ -2010,7 +2058,7 @@ CONTAINS
     END IF
 
     ! --------------------------
-    ! LBL TOA transmittance data
+    ! INT_WATER_VAPOR data
     ! --------------------------
 
     NF90_Status = NF90_DEF_VAR( NC_fileID, &
@@ -2022,7 +2070,7 @@ CONTAINS
     IF ( NF90_Status /= NF90_NOERR ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//INT_WATER_VAPOR_varNAME//' variable in '// &
+                            'Error defining '//INT_WATER_VAPOR_VARNAME//' variable in '// &
                             TRIM( NC_Filename )//'- '// &
                             TRIM( NF90_STRERROR( NF90_Status ) ), &
                             Error_Status, &
@@ -2052,13 +2100,179 @@ CONTAINS
          Status3 /= SUCCESS      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LBL_TAU_VARNAME//&
+                            'Error writing '//INT_WATER_VAPOR_VARNAME//&
                             ' variable attributes to '//TRIM( NC_Filename ), &
                             Error_Status, &
                             Message_Log = Message_Log )
       NF90_Status = NF90_CLOSE( NC_FileID )
       RETURN
     END IF
+    
+    ! -----------------------
+    ! LBL Optical Depth data
+    ! -----------------------
+    
+    NF90_Status = NF90_DEF_VAR( NC_fileID, &
+                                LBL_OD_VARNAME, &
+                                OD_TYPE, &
+                                dimids = (/ Layer_DimID,           &
+                                            Channel_DimID,         &
+                                            Angle_DimID,           &
+                                            Profile_DimID,         &
+                                            Molecule_Set_DimID /), &
+                                varID = VarID )
+
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error defining '//LBL_OD_varNAME//' variable in '// &
+                            TRIM( NC_Filename )//'- '// &
+                            TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
+    ! -- Write some attributes
+    Status1 = Put_netCDF_Attribute( NC_FileID, &
+                                    LONGNAME_ATTNAME, &
+                                    LBL_OD_LONGNAME, &
+                                    Variable_Name = LBL_OD_VARNAME )
+
+    Status2 = Put_netCDF_Attribute( NC_FileID, &
+                                    UNITS_ATTNAME, &
+                                    OD_UNITS, &
+                                    Variable_Name = LBL_OD_VARNAME )
+
+    Status3 = Put_netCDF_Attribute( NC_FileID, &
+                                    FILLVALUE_ATTNAME, &
+                                    OD_FILLVALUE, &
+                                    Variable_Name = LBL_OD_VARNAME )
+
+    IF ( Status1 /= SUCCESS .OR. &
+         Status2 /= SUCCESS .OR. &
+         Status3 /= SUCCESS      ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//LBL_OD_VARNAME//&
+                            ' variable attributes to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      RETURN
+    END IF
+    
+    ! -----------------------------
+    ! Regression Optical Depth data
+    ! -----------------------------
+    
+    NF90_Status = NF90_DEF_VAR( NC_fileID, &
+                                REG_OD_VARNAME, &
+                                OD_TYPE, &
+                                dimids = (/ Layer_DimID,           &
+                                            Channel_DimID,         &
+                                            Angle_DimID,           &
+                                            Profile_DimID,         &
+                                            Molecule_Set_DimID /), &
+                                varID = VarID )
+
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error defining '//REG_OD_varNAME//' variable in '// &
+                            TRIM( NC_Filename )//'- '// &
+                            TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
+    ! -- Write some attributes
+    Status1 = Put_netCDF_Attribute( NC_FileID, &
+                                    LONGNAME_ATTNAME, &
+                                    REG_OD_LONGNAME, &
+                                    Variable_Name = REG_OD_VARNAME )
+
+    Status2 = Put_netCDF_Attribute( NC_FileID, &
+                                    UNITS_ATTNAME, &
+                                    OD_UNITS, &
+                                    Variable_Name = REG_OD_VARNAME )
+
+    Status3 = Put_netCDF_Attribute( NC_FileID, &
+                                    FILLVALUE_ATTNAME, &
+                                    OD_FILLVALUE, &
+                                    Variable_Name = REG_OD_VARNAME )
+
+    IF ( Status1 /= SUCCESS .OR. &
+         Status2 /= SUCCESS .OR. &
+         Status3 /= SUCCESS      ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//REG_OD_VARNAME//&
+                            ' variable attributes to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      RETURN
+    END IF
+        
+    ! ----------------------------------
+    ! (LBL-REG) Optical depth difference
+    ! ----------------------------------
+    
+    NF90_Status = NF90_DEF_VAR( NC_fileID, &
+                                dOD_VARNAME, &
+                                OD_TYPE, &
+                                dimids = (/ Layer_DimID,           &
+                                            Channel_DimID,         &
+                                            Angle_DimID,           &
+                                            Profile_DimID,         &
+                                            Molecule_Set_DimID /), &
+                                varID = VarID )
+
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error defining '//dOD_varNAME//' variable in '// &
+                            TRIM( NC_Filename )//'- '// &
+                            TRIM( NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
+    ! -- Write some attributes
+    Status1 = Put_netCDF_Attribute( NC_FileID, &
+                                    LONGNAME_ATTNAME, &
+                                    dOD_LONGNAME, &
+                                    Variable_Name = dOD_VARNAME )
+
+    Status2 = Put_netCDF_Attribute( NC_FileID, &
+                                    UNITS_ATTNAME, &
+                                    OD_UNITS, &
+                                    Variable_Name = dOD_VARNAME )
+
+    Status3 = Put_netCDF_Attribute( NC_FileID, &
+                                    FILLVALUE_ATTNAME, &
+                                    OD_FILLVALUE, &
+                                    Variable_Name = dOD_VARNAME )
+
+    IF ( Status1 /= SUCCESS .OR. &
+         Status2 /= SUCCESS .OR. &
+         Status3 /= SUCCESS      ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//dOD_VARNAME//&
+                            ' variable attributes to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      RETURN
+    END IF
+        
     ! --------------------------
     ! LBL TOA transmittance data
     ! --------------------------
@@ -2755,7 +2969,8 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_CRTMstats_netCDF( NC_Filename,                             &  ! Input
+!       Error_Status = Inquire_CRTMstats_netCDF( NC_Filename,                              &  ! Input
+!                                                 n_Layers           = n_Layers,           &  ! Optional output
 !                                                 n_Channels         = n_Channels,         &  ! Optional output
 !                                                 n_Angles           = n_Angles,           &  ! Optional output
 !                                                 n_Profiles         = n_Profiles,         &  ! Optional output
@@ -2792,6 +3007,12 @@ CONTAINS
 !       None.
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
+!       n_Layers:           The number of Atmospheric layers dimension
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!
 !       n_Channels:         The number of Channels dimension of the
 !                           transmittance data.
 !                           UNITS:      N/A
@@ -2933,7 +3154,8 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_CRTMstats_netCDF( NC_Filename,        &  ! Input
+  FUNCTION Inquire_CRTMstats_netCDF( NC_Filename,         &  ! Input
+                                      n_Layers,           &  ! Optional output
                                       n_Channels,         &  ! Optional output
                                       n_Angles,           &  ! Optional output
                                       n_Profiles,         &  ! Optional output
@@ -2963,6 +3185,7 @@ CONTAINS
     CHARACTER( * ),            INTENT( IN )  :: NC_Filename
 
     ! -- Optional output
+    INTEGER,         OPTIONAL, INTENT( OUT ) :: n_Layers
     INTEGER,         OPTIONAL, INTENT( OUT ) :: n_Channels
     INTEGER,         OPTIONAL, INTENT( OUT ) :: n_Angles
     INTEGER,         OPTIONAL, INTENT( OUT ) :: n_Profiles
@@ -3007,7 +3230,7 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: Close_Status
 
-    INTEGER :: l, m, i, j
+    INTEGER :: k, l, m, i, j
 
 
 
@@ -3052,7 +3275,26 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#                          -- GET THE DIMENSIONS --                        #
     !#--------------------------------------------------------------------------#
-
+    
+    ! --------------------
+    ! The number of layers
+    ! --------------------
+    
+    Error_Status = Get_netCDF_Dimension( NC_fileID, &
+                                         LAYER_DIMNAME, &
+                                         k, &
+                                         Message_Log = Message_Log )
+                                               
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error obtaining '//LAYER_DIMNAME//&
+                            ' dimension from '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF                                   
+    
     ! ----------------------
     ! The number of channels
     ! ----------------------
@@ -3137,7 +3379,8 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#                   -- SET THE DIMENSION RETURN VALUES --                  #
     !#--------------------------------------------------------------------------#
-
+    
+    IF ( PRESENT( n_Layers        ) ) n_Layers        = k
     IF ( PRESENT( n_Channels      ) ) n_Channels      = l
     IF ( PRESENT( n_Angles        ) ) n_Angles        = i
     IF ( PRESENT( n_Profiles      ) ) n_Profiles      = m
@@ -3456,7 +3699,8 @@ CONTAINS
     !#                   -- CREATE THE OUTPUT DATA FILE --                      #
     !#--------------------------------------------------------------------------#
 
-    Error_Status = Create_CRTMstats_netCDF( TRIM( NC_Filename ),      &  ! Input
+    Error_Status = Create_CRTMstats_netCDF( TRIM( NC_Filename ),        &  ! Input
+                                             CRTMstats%n_Layers,        &  ! Input
                                              CRTMstats%n_Channels,      &  ! Input
                                              CRTMstats%n_Angles,        &  ! Input
                                              CRTMstats%n_Profiles,      &  ! Input
@@ -3656,6 +3900,60 @@ CONTAINS
     END IF
 
 
+    ! --------------------------
+    ! The LBL Optical Depth data
+    ! --------------------------
+    
+    Error_Status = Put_netCDF_Variable( NC_fileID,       & 
+                                        LBL_OD_VARNAME,  &
+                                        CRTMstats%LBL_OD )
+                                        
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//LBL_OD_VARNAME//&
+                            ' to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+                                        
+    ! ---------------------------------
+    ! The Regression Optical Depth data
+    ! ---------------------------------
+    
+    Error_Status = Put_netCDF_Variable( NC_fileID,       &
+                                        REG_OD_VARNAME,  &
+                                        CRTMstats%REG_OD )
+                                        
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//REG_OD_VARNAME//&
+                            ' to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+                                        
+    ! ------------------------------------
+    ! (LBL - REG) Optical Depth difference
+    ! ------------------------------------
+    
+    Error_Status = Put_netCDF_Variable( NC_fileID,      &
+                                        dOD_VARNAME,    &
+                                        CRTMstats%dOD   )
+                                        
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//dOD_VARNAME//&
+                            ' to '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
     ! ------------------------------
     ! The LBL TOA transmittance data
     ! ------------------------------
@@ -4151,7 +4449,8 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: Allocate_Status
     INTEGER :: Close_Status
-
+    
+    INTEGER :: n_Layers
     INTEGER :: n_Channels
     INTEGER :: n_Angles
     INTEGER :: n_Profiles
@@ -4196,6 +4495,7 @@ CONTAINS
     ! -------------------------
 
     Error_Status = Inquire_CRTMstats_netCDF( TRIM( NC_Filename ), &
+                                              n_Layers        = n_Layers,   &
                                               n_Channels      = n_Channels, &
                                               n_Angles        = n_Angles, &
                                               n_Profiles      = n_Profiles, &
@@ -4216,7 +4516,8 @@ CONTAINS
     ! Allocate the structure
     ! ----------------------
 
-    Error_Status = Allocate_CRTMstats( n_Channels, &
+    Error_Status = Allocate_CRTMstats(  n_Layers,   &
+                                        n_Channels, &
                                         n_Angles, &
                                         n_Profiles, &
                                         n_Molecule_Sets, &
@@ -4373,7 +4674,7 @@ CONTAINS
     ! -------------------
     ! The PWV by profile
     ! -------------------
-    !PRINT *, CRTMstats%Int_Water_Vapor(10)
+    
     Error_Status = Get_netCDF_Variable( NC_fileID, &
                                         INT_WATER_VAPOR_VARNAME, &
                                         CRTMstats%Int_Water_Vapor )
@@ -4426,7 +4727,60 @@ CONTAINS
       RETURN
     END IF
 
+    ! --------------------------
+    ! The LBL Optical Depth data
+    ! --------------------------
+    
+    Error_Status = Get_netCDF_Variable( NC_fileID,       &
+                                        LBL_OD_VARNAME,  &
+                                        CRTMstats%LBL_OD )
 
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error reading '//LBL_OD_VARNAME//&
+                            ' from '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
+    ! ---------------------------------
+    ! The Regression Optical Depth data
+    ! ---------------------------------
+    
+    Error_Status = Get_netCDF_Variable( NC_fileID,       &
+                                        REG_OD_VARNAME,  &
+                                        CRTMstats%REG_OD )
+
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error reading '//REG_OD_VARNAME//&
+                            ' from '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+           
+    ! ------------------------------------
+    ! (LBL - REG) Optical Depth difference
+    ! ------------------------------------    
+    
+    Error_Status = Get_netCDF_Variable( NC_fileID,       &
+                                        dOD_VARNAME,     &
+                                        CRTMstats%dOD    )
+
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error reading '//dOD_VARNAME//&
+                            ' from '//TRIM( NC_Filename ), &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      NF90_Status = NF90_CLOSE( NC_fileID )
+      RETURN
+    END IF
+    
     ! ------------------------------
     ! The LBL TOA transmittance data
     ! ------------------------------
