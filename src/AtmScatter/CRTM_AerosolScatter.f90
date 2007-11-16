@@ -322,17 +322,17 @@ CONTAINS
         !   bs = rho.w.ke
         ! where
         !   bs  = volume scattering coefficient for a layer [dimensionless]
-        !   rho = integrated aerosol concentration for a layer (g/m^2) [M.L^-2]
+        !   rho = integrated aerosol concentration for a layer (kg/m^2) [M.L^-2]
         !   w   = single scatter albedo [dimensionless]
-        !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
+        !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
         bs = Atmosphere%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)
         ASV%Total_bs(ka) = ASV%Total_bs(ka) + bs 
         
         ! Compute the optical depth (absorption + scattering)
         !   tau = rho.ke
         ! where
-        !   rho = Integrated Aerosol Concentration for a layer(g/m^2) [M.L^-2]
-        !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
+        !   rho = Integrated Aerosol Concentration for a layer(kg/m^2) [M.L^-2]
+        !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
         ! Note that since all these computations are done for a given
         ! layer, the optical depth is the same as the volume extinction
         ! coefficient, be. Usually,
