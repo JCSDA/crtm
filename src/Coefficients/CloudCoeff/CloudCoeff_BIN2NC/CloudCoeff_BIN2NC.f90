@@ -36,14 +36,14 @@ PROGRAM CloudCoeff_BIN2NC
   ! When a change is made comments must be prepended to the comment
   ! PARAMETER describing what changes were made. Additionally the
   ! history needs to be updated.
-  CHARACTER(2000), PARAMETER :: Title = &
+  CHARACTER(2000), PARAMETER :: TITLE = &
   'CRTM Cloud Optical Properties in Infrared and Microwave Range'
-  CHARACTER(2000), PARAMETER :: Comment = &
+  CHARACTER(2000), PARAMETER :: COMMENT = &
   'All MW and IR liquid phase and solid phase with the density < 0.9 g/cm3' // &
   ' are generated using a MIE code (Simmer, 1994). IR solid phase with the' //&
   ' density = 0.9 g/cm3 is adopted  from non-spherical particle of P. Yang (Liou and Yang, 1995)' //&
   ' The asymmetry factor for non-spherical particles is used for the phase function.'  
-  CHARACTER(2000), PARAMETER :: History = &
+  CHARACTER(2000), PARAMETER :: HISTORY = &
   '$Id: CloudCoeff_BIN2NC.f90 1323 2007-11-20 15:00:00Z david.groff@noaa.gov$'
 
   ! ---------
@@ -92,9 +92,9 @@ PROGRAM CloudCoeff_BIN2NC
 
   Error_Status = Write_CloudCoeff_netCDF( CLOUDCOEFF_NETFILE, &
                                            CloudCoeff,        &       
-					   Title = Title,     &
-					   History = History, &
-					   Comment = Comment  )
+					   Title = TITLE,     &
+					   History = HISTORY, &
+					   Comment = COMMENT  )
 					   
 
   IF ( Error_Status /= SUCCESS ) THEN
