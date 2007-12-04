@@ -6,6 +6,9 @@
 ! instrument response function (IRF) and then Fourier transform the result
 ! back into the spectral domain.
 !
+! Currently set-up for IASI processing only.
+!
+!
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 27-Feb-2007
 !                       paul.vandelst@ssec.wisc.edu
@@ -35,6 +38,7 @@ PROGRAM Apodize_TauSpc_with_IRF
                                        SPCtoIFG, &
                                        IFGtoSPC, &
                                        ComputeNPoints, &
+                                       ComputeIndex, &
                                        ComputeNextPO2, &
                                        ComputeNSPC, &
                                        ComputeNIFG, &
@@ -80,11 +84,18 @@ PROGRAM Apodize_TauSpc_with_IRF
   REAL(fp), PARAMETER :: DEFAULT_FILTER_WIDTH = 20.0_fp
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
   REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp
   ! Sensor id
   CHARACTER(*), PARAMETER :: SENSOR_ID        = 'iasi_metop-a'
   INTEGER,      PARAMETER :: WMO_SENSOR_ID    = 221
   INTEGER,      PARAMETER :: WMO_SATELLITE_ID = 4
+  ! The spectral bandwidth, 0-f(Nyquist), definitions
+  REAL(fp), PARAMETER :: MASTER_F1 = ZERO
+  REAL(fp), PARAMETER :: MASTER_F2 = 6912.0_fp
+  REAL(fp), PARAMETER :: F_NYQUIST = MASTER_F2
+  ! TauProfile version number
+  INTEGER, PARAMETER :: TAUPROFILE_VERSION = 2
   
 
   ! ---------
@@ -104,11 +115,13 @@ PROGRAM Apodize_TauSpc_with_IRF
   INTEGER  :: IO_Status
   INTEGER  :: Allocate_Status
   INTEGER  :: i, j
+  INTEGER  :: is1, is2
   INTEGER  :: if1, if2
   INTEGER  :: ib1, ib2
   INTEGER  :: it1, it2
   INTEGER  :: ic1, ic2
   INTEGER  :: n_filter
+  INTEGER  :: n_ispc
   INTEGER  :: n_spc , n_ifg
   INTEGER  :: n_tspc, n_tifg
   INTEGER  :: n_cspc
@@ -152,7 +165,7 @@ PROGRAM Apodize_TauSpc_with_IRF
 
   ! Inquire the file
   Error_Status = Inquire_LBLRTM_netCDF( LBL_Filename                     , &
-                                        n_Frequencies     =n_spc         , &
+                                        n_Frequencies     =n_ispc        , &
                                         n_Layers          =n_lbl_layers  , &
                                         Direction         =dirn          , &
                                         Begin_Frequency   =bf            , &
@@ -181,7 +194,7 @@ PROGRAM Apodize_TauSpc_with_IRF
            &/5x,"bf   = ",es13.6," cm^-1",&
            &/5x,"ef   = ",es13.6," cm^-1",&
            &/5x,"df   = ",es13.6," cm^-1")') &
-           n_spc, n_lbl_layers, dirn, bf, ef, df
+           n_ispc, n_lbl_layers, dirn, bf, ef, df
 
   
   ! The profile set being processed
@@ -310,7 +323,19 @@ PROGRAM Apodize_TauSpc_with_IRF
   ENDIF
   WRITE(cBand,'("band",i0)') iBand
  
- 
+
+  ! ----------------------------------------
+  ! Determine where the input spectrum slots
+  ! into the 0-f(Nyquist) spectrum
+  ! ----------------------------------------
+  is1 = ComputeIndex(bf, df)
+  is2 = ComputeIndex(ef, df)
+  WRITE(*,'(/5x,"Index positions of input SPC             : ",i0,",",i0)') is1, is2
+
+  ! Compute the number of spectral points 
+  n_spc = ComputeNPoints(F_NYQUIST,df)
+  
+  
   ! -------------------------------------------
   ! Compute all the spectral length information
   ! -------------------------------------------
@@ -322,8 +347,8 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! Compute interferogram length for the input spectrum 
   n_ifg = ComputeNIFG(n_spc)   ! No. of FFT IFG points
   
-  WRITE(*,'(/5x,"No. of input SPC points         : ",i0,&
-           &/5x,"No. of IFG points for SPC<->IFG : ",i0)') n_spc, n_ifg
+  WRITE(*,'( 5x,"No. of SPC points                        : ",i0,&
+           &/5x,"No. of IFG points for SPC->IFG           : ",i0)') n_spc, n_ifg
 
 
   ! -----------------------
@@ -347,10 +372,10 @@ PROGRAM Apodize_TauSpc_with_IRF
   END IF
 
   
-  ! --------------------------------
-  ! Compute the input frequency grid
-  ! --------------------------------
-  f1 = bf
+  ! ---------------------------------------
+  ! Compute the 0-f(Nyquist) frequency grid
+  ! ---------------------------------------
+  f1 = MASTER_F1
   f2 = f1 + REAL(n_spc-1,fp)*df
   f = (/ (REAL(i,fp),i=0,n_spc-1) /) / REAL(n_spc-1,fp) 
   f = f*(f2-f1) + f1
@@ -370,6 +395,9 @@ PROGRAM Apodize_TauSpc_with_IRF
   n_tifg = it2-it1+1
   n_tspc = ComputeNSPC(n_tifg)
 
+  WRITE(*,'( 5x,"No. of truncated IFG points for IFG->SPC : ",i0,&
+           &/5x,"No. of output SPC points                 : ",i0)') n_tifg, n_tspc
+           
 
   ! --------------------------
   ! Allocate the result arrays
@@ -386,11 +414,12 @@ PROGRAM Apodize_TauSpc_with_IRF
     STOP
   END IF
 
+
   ! ---------------------------
   ! Compute the rolloff filters
   ! ---------------------------
   ! The front end
-  if1 = 1; if2 = n_filter
+  if1 = is1; if2 = is1 + n_filter - 1
   Error_Status = CosFilter( f(if1:if2)              , & ! Input
                             ffilter                 , & ! Output
                             FilterWidth=filter_width  ) ! Optional Input
@@ -402,7 +431,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   END IF
 
   ! The back end
-  ib1 = n_spc-n_filter+1; ib2 = n_spc
+  ib1 = is2-n_filter+1; ib2 = is2
   bfilter = ffilter(n_filter:1:-1)
 
   
@@ -410,7 +439,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! Compute the FTS IRF
   ! -------------------
   irf = IASI_GFT(x)
-
+  
 
   ! --------------------------------------------
   ! Determine the actual channel numbers to keep
@@ -419,7 +448,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   ic2 = INT((IASI_BAND_F2(iBand) - f1)/IASI_D_FREQUENCY + ONEpointFIVE)
   n_cspc = ic2-ic1+1
   
-  WRITE(*,'(5x,"No. of output IASI band ",i1," points: ",i0,/)') iBand, n_cspc
+  WRITE( *,'(5x,"No. of output IASI band ",i1," points         : ",i0,/)') iBand, n_cspc
 
 
   ! --------------------------------
@@ -483,7 +512,7 @@ PROGRAM Apodize_TauSpc_with_IRF
     ! ---------------------------------------------
     Error_Status = Read_LBLRTM_netCDF( LBL_Filename, &
                                        iLayer, &
-                                       Transmittance=spc(1:n_spc) )
+                                       Transmittance=spc(is1:is2) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error reading layer '//TRIM(cLayer)//&
@@ -514,7 +543,7 @@ PROGRAM Apodize_TauSpc_with_IRF
     ! Apply apodisation function to IFG
     ! ---------------------------------
     ifg = ifg * irf
-    
+
 
     ! FFT truncated interferogram to a spectrum
     ! -----------------------------------------
@@ -522,14 +551,11 @@ PROGRAM Apodize_TauSpc_with_IRF
                             cf        , cspc          )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'IFG->FFT FFT failed for layer '//TRIM(cLayer), &
+                            'IFG->SPC FFT failed for layer '//TRIM(cLayer), &
                             Error_Status )
       STOP
     END IF
-    
-    ! Restore begin frequency
-    cf = cf + bf 
-    
+
 
     ! Copy results to TauProfile structures
     ! -------------------------------------
@@ -539,22 +565,30 @@ PROGRAM Apodize_TauSpc_with_IRF
   END DO Layer_loop
 
 
-  ! ------------------------------
-  ! Write spectrally reducted data
+  ! --------------------------------------------------------
+  ! Write some frequency information to the comment variable
+  ! --------------------------------------------------------
+  WRITE( Comment, '("Input spectrum df=",f5.3,"cm-1, deltaf=",f8.3,"-",f8.3,"cm-1. ",&
+                   &"FFT spectrum bandwidth=",f8.3,"-",f8.3,"cm-1.")') &
+                   df, bf, ef, MASTER_F1, MASTER_F2
+                   
+                   
+  ! -----------------------------
+  ! Write spectrally reduced data
   ! to TauProfile format file
-  ! ------------------------------
+  ! -----------------------------
   DO i = 1, 2
   
     ! Assign values for different TauProfiles
     IF ( i == 1 ) THEN
       TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'.'//&
                             TRIM(realTau%Sensor_ID)//'.REAL.TauProfile.nc'
-      Comment = 'REAL part of result'
+      Comment = TRIM(Comment)//'; REAL part of result'
       TauProfile => realTau
     ELSE
       TauProfile_Filename = TRIM(DIRECTION_NAME(iDir))//'.'//&
                             TRIM(imagTau%Sensor_ID)//'.IMAG.TauProfile.nc'
-      Comment = 'IMAGINARY part of result'
+      Comment = TRIM(Comment)//'; IMAGINARY part of result'
       TauProfile => imagTau
     END IF
     IF ( LEN_TRIM(LBLRTM_Comment) > 0 ) Comment = TRIM(Comment)//'; '//TRIM(LBLRTM_Comment)
@@ -567,7 +601,7 @@ PROGRAM Apodize_TauSpc_with_IRF
                                              TauProfile%Profile         , &  ! Input
                                              TauProfile%Molecule_Set    , &  ! Input
                                              Release = TauProfile%Release, &  ! Optional Input
-                                             Version = TauProfile%Version, &  ! Optional Input
+                                             Version = TAUPROFILE_VERSION, &  ! Optional Input
                                              Sensor_ID        = TauProfile%Sensor_ID       , &  ! Optional Input
                                              WMO_Satellite_ID = TauProfile%WMO_Satellite_ID, &  ! Optional Input
                                              WMO_Sensor_ID    = TauProfile%WMO_Sensor_ID   , &  ! Optional Input
