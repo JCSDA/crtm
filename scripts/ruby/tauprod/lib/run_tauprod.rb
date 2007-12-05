@@ -68,6 +68,10 @@
 #    The initial delay, in minutes, for which jobs are put on hold in the
 #    the batch processor. If not specified, the default is 5 minutes.
 #
+# --submit_increment min  (-j):
+#    The time between job submissions, in minutes, for multiple molecule runs.
+#    If not specified, the default is 180 minutes (3 hours).
+#
 # --queue name  (-q):
 #    Specify the batch queue to which the generated script file will be submitted.
 #
@@ -442,7 +446,7 @@ begin
       end # profile loop
 
       # Increment the submit time
-      time = time + TauProd::Config::SUBMIT_INCREMENT
+      time = time + cfg.submit_increment
 
       puts("  Completed submission of #{bname},#{mname} jobs.")
 

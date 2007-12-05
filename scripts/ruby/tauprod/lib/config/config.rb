@@ -15,10 +15,8 @@ module TauProd
     LL_TIMELIMIT = "04:00:00"
     LL_RESOURCES = "ConsumableCpus(1) ConsumableMemory(500)"
 
-    SUBMIT_INCREMENT = 60*60*3  # seconds
-
     LBLRTM_HITRAN_VERSION = "LBLRTM v9.4; HITRAN 2000 + AER updates"
-    DFAVG   = 0.001  # Averaging kernel width in cm^-1
+    DFAVG   = 0.01   # Averaging kernel width in cm^-1
     NPANELS = 1      # No. of LBL panels
     UPDIRN  = 1      # Direction flag for upwelling
     DNDIRN  = 2      # Direction flag for upwelling
@@ -33,7 +31,7 @@ module TauProd
                          "CIMSS" => {:id => 3, :n_profiles => 32}}
                          
     # Band information. The SCNMRG frequencies are those values that,
-    # for a point spacing of 0.001cm^-1, produce a number of points
+    # for a point spacing of 0.01cm^-1, produce a number of points
     # that has only prime factors of 2, 3, and 5.
     BAND_INFO = { 1 => {:f1_scnmrg =>  605.0, :f2_scnmrg => 1253.00},
                   2 => {:f1_scnmrg => 1170.0, :f2_scnmrg => 2107.50},
@@ -89,42 +87,45 @@ module TauProd
     # Accepted command line options
     # -----------------------------
     OPTIONS = GetoptLong.new(
-      [ "--help"       , "-h", GetoptLong::NO_ARGUMENT       ],
-      [ "--debug"      , "-g", GetoptLong::NO_ARGUMENT       ],
-      [ "--noop"       , "-n", GetoptLong::NO_ARGUMENT       ],
-      [ "--keeplbl"    , "-k", GetoptLong::NO_ARGUMENT       ],
-      [ "--angles"     , "-a", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--bands"      , "-b", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--co2_mr"     , "-c", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--start_delay", "-i", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--molid"      , "-m", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--profiles"   , "-p", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--queue"      , "-q", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--profile_set", "-s", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--t5_dir"     , "-d", GetoptLong::REQUIRED_ARGUMENT ],
-      [ "--t3_id"      , "-t", GetoptLong::REQUIRED_ARGUMENT ] )
+      [ "--help"            , "-h", GetoptLong::NO_ARGUMENT       ],
+      [ "--debug"           , "-g", GetoptLong::NO_ARGUMENT       ],
+      [ "--noop"            , "-n", GetoptLong::NO_ARGUMENT       ],
+      [ "--keeplbl"         , "-k", GetoptLong::NO_ARGUMENT       ],
+      [ "--angles"          , "-a", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--bands"           , "-b", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--co2_mr"          , "-c", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--start_delay"     , "-i", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--submit_increment", "-j", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--molid"           , "-m", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--profiles"        , "-p", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--queue"           , "-q", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--profile_set"     , "-s", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--t5_dir"          , "-d", GetoptLong::REQUIRED_ARGUMENT ],
+      [ "--t3_id"           , "-t", GetoptLong::REQUIRED_ARGUMENT ] )
 
 
     # Begin class definitions
     # -----------------------    
-    attr_reader :queue, :start_delay, :t5_dir, :t3_id, :co2_mr, :profile_set, :profiles,
+    attr_reader :queue, :start_delay, :submit_increment,
+                :t5_dir, :t3_id, :co2_mr, :profile_set, :profiles,
                 :bands, :molids, :angles, :noop, :keeplbl,
                 :debug
                 
     def initialize(debug = false)
-      @queue       = "dev"                        # Processing queue
-      @start_delay = 60*5                         # Batch job submission delay in seconds
-      @t5_dir      = "./TAPE5_files"              # Location of the LBLRTM input files
-      @t3_id       = "hitran2000_aer"             # Spectroscopic database
-      @co2_mr      = 380.0                        # CO2 mixing ratio
-      @profile_set = "UMBC"                       # Profile set to process
-      @profiles    = (1..PROFILE_SET_INFO[@profile_set][:n_profiles]).to_a  # Profiles to process
-      @bands       = BAND_INFO.keys.sort          # Bands to process
-      @molids      = [1, 10, 11, 12, 13, 14, 15, 16, 17]  # Molecule sets to process
-      @angles      = ANGLE_INFO.keys.sort         # Angles to process
-      @noop        = false                        # Submit jobs by default
-      @keeplbl     = false                        # Do not keep the LBL datafiles by default
-      @debug       = debug                        # Have a guess
+      @queue            = "dev"                        # Processing queue
+      @start_delay      = 60*5                         # Batch job submission delay in seconds
+      @submit_increment = 60*60*3                      # Batch job submission increment in seconds
+      @t5_dir           = "./TAPE5_files"              # Location of the LBLRTM input files
+      @t3_id            = "hitran2000_aer"             # Spectroscopic database
+      @co2_mr           = 380.0                        # CO2 mixing ratio
+      @profile_set      = "UMBC"                       # Profile set to process
+      @profiles         = (1..PROFILE_SET_INFO[@profile_set][:n_profiles]).to_a  # Profiles to process
+      @bands            = BAND_INFO.keys.sort          # Bands to process
+      @molids           = [1, 10, 11, 12, 13, 14, 15, 16, 17]  # Molecule sets to process
+      @angles           = ANGLE_INFO.keys.sort         # Angles to process
+      @noop             = false                        # Submit jobs by default
+      @keeplbl          = false                        # Do not keep the LBL datafiles by default
+      @debug            = debug                        # Have a guess
     end
 
     def process_arguments
@@ -152,6 +153,8 @@ module TauProd
               @co2_mr = arg.to_f
             when "--start_delay"
               @start_delay = (arg.to_i)*60  # Convert to seconds
+            when "--submit_increment"
+              @submit_increment = (arg.to_i)*60  # Convert to seconds
             when "--queue"
               @queue = arg
             when "--profile_set"
