@@ -27,6 +27,7 @@ MODULE IASI_Define
   ! Everything is default private
   PRIVATE
   ! Public parameters
+  PUBLIC :: N_IASI_FFT
   PUBLIC :: IASI_MIN_FREQUENCY
   PUBLIC :: IASI_MAX_FREQUENCY
   PUBLIC :: IASI_D_FREQUENCY
@@ -54,6 +55,8 @@ MODULE IASI_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id: $'
+  ! Keyword set value
+  INTEGER,  PARAMETER :: SET = 1
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO      = 0.0_fp
   REAL(fp), PARAMETER :: POINT5    = 0.5_fp
@@ -65,7 +68,7 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: LN2 = 0.693147180559945309417232_fp
   
   ! Instrument parameters
-  ! ---------------------------------------
+  ! ---------------------
   ! Gaussian function FWHM (cm^-1)
   REAL(fp), PARAMETER :: GFT_FWHM = POINT5
   REAL(fp), PARAMETER :: GFT_HWHM = GFT_FWHM/TWO
@@ -82,9 +85,9 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: FIELD_ANGLE = 0.01605073_fp
 
   ! Number of double-sided FFT points
-  INTEGER,  PARAMETER :: NFFT = 51200
+  INTEGER,  PARAMETER :: N_IASI_FFT = 51200
 
-  ! Nominal maximum optical path delay for NFFT (m)
+  ! Nominal maximum optical path delay for N_IASI_FFT (m)
   REAL(fp), PARAMETER :: NOMINAL_MAXX_IN_M = 1.9679466e-02_fp
   REAL(fp), PARAMETER :: NOMINAL_MAXX      = NOMINAL_MAXX_IN_M*M2CM
 
@@ -123,10 +126,20 @@ CONTAINS
 !       IASI_MaxX
 !
 ! PURPOSE:
-!       Pure function to compute the IASI maximum optical path delay.
+!       Pure function to return the IASI maximum optical path delay.
+!
+!         maxX = 
 !
 ! CALLING SEQUENCE:
-!       maxX = IASI_MaxX()
+!       maxX = IASI_MaxX(nominal=nominal)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       nominal:  Set this argument to return the nominal value of the IASI
+!                 max. OPD rather than the computed one.
+!                 If == 0, the computed value of maxX is returned,
+!                            maxX = 0.5 * n_FFT *. laser_wavelength * cos(mean_field_angle)
+!                    == 1, the nominal fixed value is returned,
+!                            maxX = 1.9679466cm
 !
 ! FUNCTION RESULT:
 !       maxX:   Maximum optical path delay of the IASI instrument.
@@ -135,9 +148,13 @@ CONTAINS
 !               DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_MaxX() RESULT(maxX)
+  PURE FUNCTION IASI_MaxX(nominal) RESULT(maxX)
+    INTEGER, OPTIONAL, INTENT(IN) :: nominal
     REAL(fp) :: maxX
-    maxX = REAL((NFFT/2),fp)*(LASER_WAVELENGTH/TWO)*COS(FIELD_ANGLE)
+    maxX = REAL((N_IASI_FFT/2),fp)*(LASER_WAVELENGTH/TWO)*COS(FIELD_ANGLE)
+    IF ( PRESENT(nominal) ) THEN
+      IF ( nominal == SET ) maxX = NOMINAL_MAXX
+    END IF
   END FUNCTION IASI_MaxX
 
 
@@ -150,17 +167,24 @@ CONTAINS
 !       Pure function to compute the IASI double-sided optical delay grid.
 !
 ! CALLING SEQUENCE:
-!       x = IASI_X()
+!       x = IASI_X(n)
+!
+! INPUT ARGUMENTS:
+!       n:         The number of points in the double-sided interferogram
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       x:         IASI double-sided optical delay grid.
 !                  UNITS:      Centimetres (cm)
 !                  TYPE:       REAL(fp)
-!                  DIMENSION:  Rank-1 (NFFT=51200)
+!                  DIMENSION:  Rank-1 (N_IASI_FFT=51200)
 !
 ! COMMENTS:
 !       The function result size (51200) is defined as the public named
-!       parameter, NFFT, in this module.
+!       parameter, N_IASI_FFT, in this module.
 !
 !       The output array looks like,
 !
@@ -175,19 +199,22 @@ CONTAINS
 !                           dx
 !
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_X() RESULT(X)
+  PURE FUNCTION IASI_X(n) RESULT(X)
+    ! Arguments
+    INTEGER, INTENT(IN) :: n
     ! Function result
-    REAL(fp) :: X(NFFT)
+    REAL(fp) :: X(n)
     ! Local variables
     REAL(fp) :: maxX
     INTEGER :: i, nHalf
     ! Get the number of positive delays
-    nHalf = NFFT/2
+    nHalf = n/2
     ! Compute maximum optical delay
-    maxX = IASI_MaxX()
+    maxX = NOMINAL_MAXX
     ! Fill the grid array
-    X(nHalf:NFFT) = (/(REAL(i,fp),i=0,nHalf)/)/REAL(nHalf,fp)
-    X(1:nHalf-1) = X(NFFT-1:nHalf+1:-1)
+    X(nHalf:n) = (/(REAL(i,fp),i=0,nHalf)/)/REAL(nHalf,fp)
+    X(1:nHalf-1) = -X(n-1:nHalf+1:-1)
+    X = X*maxX
   END FUNCTION IASI_X
 
 
