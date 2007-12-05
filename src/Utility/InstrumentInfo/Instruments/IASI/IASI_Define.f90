@@ -54,7 +54,7 @@ MODULE IASI_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: $'
+  '$Id$'
   ! Keyword set value
   INTEGER,  PARAMETER :: SET = 1
   ! Literal constants
@@ -180,12 +180,9 @@ CONTAINS
 !       x:         IASI double-sided optical delay grid.
 !                  UNITS:      Centimetres (cm)
 !                  TYPE:       REAL(fp)
-!                  DIMENSION:  Rank-1 (N_IASI_FFT=51200)
+!                  DIMENSION:  Rank-1 (n)
 !
 ! COMMENTS:
-!       The function result size (51200) is defined as the public named
-!       parameter, N_IASI_FFT, in this module.
-!
 !       The output array looks like,
 !
 !          X=dx-maxX     X=0cm           X=maxX
