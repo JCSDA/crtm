@@ -68,6 +68,7 @@ MODULE FFT_Spectral_Utility
   PUBLIC :: ComputeF
   PUBLIC :: ComputeMeanDelta
   PUBLIC :: ComputeNPoints
+  PUBLIC :: ComputeIndex
   PUBLIC :: ComputeNextPO2
   PUBLIC :: Sinc
   PUBLIC :: ApodFunction
@@ -241,14 +242,8 @@ CONTAINS
     REAL(fp), INTENT(IN) :: f(:)
     ! Function result
     REAL(fp) :: maxX
-    ! Local variables
-    INTEGER  :: nF
-    REAL(fp) :: dF
-    ! Compute average frequency spacing
-    nF = SIZE(f)
-    dF = SUM((f(2:nF)-f(1:nF-1))) / REAL(nF-1,fp)
     ! Compute the maximum OPD
-    maxX = ONE/(TWO*dF)
+    maxX = ONE/(TWO*ComputeMeanDelta(f))
   END FUNCTION ComputeMaxX
   
   
@@ -284,14 +279,8 @@ CONTAINS
     REAL(fp), INTENT(IN) :: x(:)
     ! Function result
     REAL(fp) :: nyquistF
-    ! Local variables
-    INTEGER  :: nX
-    REAL(fp) :: dX
-    ! Compute average optical delay
-    nX = SIZE(x)
-    dX = SUM((x(2:nX)-x(1:nX-1))) / REAL(nX-1,fp)
     ! Compute the Nyquist frequency
-    nyquistF = ONE/(TWO*dX)
+    nyquistF = ONE/(TWO*ComputeMeanDelta(x))
   END FUNCTION ComputeNyquistF
   
   
@@ -479,10 +468,69 @@ CONTAINS
     INTEGER :: nPoints
     ! Compute the number of points within a range, deltaA,
     ! spaced at intervals of dA
-    nPoints = INT( ( deltaA / dA ) + ONEPOINT5 )
+    nPoints = INT(( deltaA / dA ) + ONEPOINT5)
   END FUNCTION ComputeNPoints
   
   
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       ComputeIndex
+!
+! PURPOSE:
+!       Pure function to compute the index of a particular point value within
+!       an equally spaced array given the begin index value and index interval.
+!
+! CALLING SEQUENCE:
+!       idx = ComputeIndex(a, da, a1=a1)
+!
+! INPUT ARGUMENTS:
+!       a:         Value for which the index is to be determined.
+!                  UNITS:      Variable
+!                  TYPE:       REAL(fp)
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       da:        Point spacing of the data.
+!                  UNITS:      Same as input.
+!                  TYPE:       REAL(fp)
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       a1:        Value for begin index value.
+!                  If not specified, 0.0 is assumed.
+!                  UNITS:      Variable
+!                  TYPE:       REAL(fp)
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       idx:       The index position of the point "a" in an array of data
+!                  specified by,
+!                    a = a1 + (i-1)*da
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+  PURE FUNCTION ComputeIndex(a, da, a1) RESULT(idx)
+    ! Arguments
+    REAL(fp),           INTENT(IN) :: a
+    REAL(fp),           INTENT(IN) :: da
+    REAL(fp), OPTIONAL, INTENT(IN) :: a1
+    ! Function result
+    INTEGER :: idx
+    ! Local variables
+    REAL(fp) :: delta
+    ! Set default width
+    delta = a
+    IF ( PRESENT(a1) ) delta = a - a1
+    ! Compute the index
+    idx = ComputeNPoints(delta, da)
+  END FUNCTION ComputeIndex
+
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:
