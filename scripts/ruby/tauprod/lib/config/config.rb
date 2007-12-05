@@ -174,19 +174,20 @@ module TauProd
     
     def display
       puts "\nTauProd config values:"
-      puts "queue       : #{@queue}"
-      puts "start_delay : #{@start_delay} seconds"
-      puts "t5_dir      : #{@t5_dir}"
-      puts "t3_id       : #{@t3_id}"
-      puts "co2_mr      : #{@co2_mr} ppmv"
-      puts "profile_set : #{@profile_set}"
-      puts "profiles    : #{@profiles.join(",")}"
-      puts "bands       : #{@bands.join(",")}"
-      puts "molids      : #{@molids.join(",")}"
-      puts "angles      : #{@angles.join(",")}"
-      puts "noop        : #{@noop}"
-      puts "keeplbl     : #{@keeplbl}"
-      puts "debug       : #{@debug}\n"
+      puts "queue            : #{@queue}"
+      puts "start_delay      : #{@start_delay} seconds"
+      puts "submit_increment : #{@submit_increment} seconds"
+      puts "t5_dir           : #{@t5_dir}"
+      puts "t3_id            : #{@t3_id}"
+      puts "co2_mr           : #{@co2_mr} ppmv"
+      puts "profile_set      : #{@profile_set}"
+      puts "profiles         : #{@profiles.join(",")}"
+      puts "bands            : #{@bands.join(",")}"
+      puts "molids           : #{@molids.join(",")}"
+      puts "angles           : #{@angles.join(",")}"
+      puts "noop             : #{@noop}"
+      puts "keeplbl          : #{@keeplbl}"
+      puts "debug            : #{@debug}\n"
     end
 
   private
