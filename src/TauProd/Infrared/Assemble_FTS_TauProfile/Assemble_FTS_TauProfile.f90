@@ -74,7 +74,7 @@ PROGRAM Assemble_FTS_TauProfile
   INTEGER :: n, n1, n2
   INTEGER :: n_m, m, im, m1, m2, iProfile_Set
   INTEGER :: n_j, j, jIdx, Idx(1), Molecule_Set_Numbers(N_MOLECULE_SETS)
-  INTEGER :: i
+  INTEGER :: i, i1, i2
   INTEGER :: iDir
   INTEGER :: n_Channels
   INTEGER, ALLOCATABLE :: Channel_List(:)
@@ -170,10 +170,22 @@ PROGRAM Assemble_FTS_TauProfile
   ENDIF
 
 
+  ! Ask for the instrument bands to process
+  ! ---------------------------------------
+  WRITE(*, FMT='(/5x,"Enter the being and end instrument bands [n1,n2]: ")', ADVANCE='NO')
+  READ(*,FMT='(i5,i5)',IOSTAT=IO_Status) n1, n2
+  IF ( IO_Status /= 0 ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Invalid BAND input.', &
+                          FAILURE )
+    STOP
+  END IF
+  WRITE(cBand,'("band",i0)') iBand
+
+
   ! Define limits
   ! -------------
-  ! Define the band limits and sensor id (hardwired for IASI for now)
-  n1 = 1; n2 = 3
+  ! Define the generic sensor id (hardwired for IASI for now)
   Sensor_Name = 'iasi'
   Satellite_Name = 'metop-a'
   Generic_Sensor_Id = TRIM(Sensor_Name)//'_'//TRIM(Satellite_Name)
@@ -181,6 +193,8 @@ PROGRAM Assemble_FTS_TauProfile
   ! Define the profile limits
   m1 = 1; m2 = N_PROFILES(iProfile_Set)
 
+  ! Define the angle limits
+  i1 = ZENITH_ANGLE_BEGIN; i2 = ZENITH_ANGLE_END
 
   ! Begin band loop
   ! ---------------
@@ -221,13 +235,13 @@ PROGRAM Assemble_FTS_TauProfile
 
       ! Begin profile loop
       ! ------------------
-      Profile_Loop: DO m = 1, N_PROFILES(iProfile_Set)
+      Profile_Loop: DO m = m1, m2
          WRITE( mTag,'("profile",i2.2)' ) m
 
 
         ! Begin angle loop
         ! ----------------
-        Angle_Loop: DO i = ZENITH_ANGLE_BEGIN, ZENITH_ANGLE_END
+        Angle_Loop: DO i = i1, i2
           WRITE( iTag,'("angle",i1)' ) i
 
           ! Construct the input TauProfile filename
@@ -286,7 +300,7 @@ PROGRAM Assemble_FTS_TauProfile
             Error_Status = Create_TauProfile_netCDF( PATH//TRIM(OutFile), &
                                                      LEVEL_PRESSURE, &
                                                      Channel_List, &
-                                                     ZENITH_ANGLE_SECANT, &
+                                                     ZENITH_ANGLE_SECANT(i1:i2), &
                                                      (/(im,im=m1,m2)/), &
                                                      Molecule_Set_Numbers(1:n_j), &
                                                      Release = TauProfile%Release, &
