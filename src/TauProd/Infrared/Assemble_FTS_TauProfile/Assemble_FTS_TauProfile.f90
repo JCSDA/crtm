@@ -180,7 +180,6 @@ PROGRAM Assemble_FTS_TauProfile
                           FAILURE )
     STOP
   END IF
-  WRITE(cBand,'("band",i0)') iBand
 
 
   ! Define limits
