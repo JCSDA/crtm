@@ -76,6 +76,7 @@ MODULE FitStats_netCDF_IO
   CHARACTER(*), PARAMETER :: ORDER_VARNAME          = 'Order'
   CHARACTER(*), PARAMETER :: N_PREDICTORS_VARNAME   = 'n_Predictors'
   CHARACTER(*), PARAMETER :: PREDICTOR_IDX_VARNAME  = 'Predictor_Idx'
+  CHARACTER(*), PARAMETER :: FREQUENCY_VARNAME      = 'Frequency'
   CHARACTER(*), PARAMETER :: FIT_RESIDUAL_VARNAME   = 'Fit_Residual'
   CHARACTER(*), PARAMETER :: TB_BIAS_VARNAME        = 'Tb_BIAS'
   CHARACTER(*), PARAMETER :: TB_SDEV_VARNAME        = 'Tb_SDEV'
@@ -97,6 +98,7 @@ MODULE FitStats_netCDF_IO
   CHARACTER(*), PARAMETER :: ORDER_LONGNAME            = 'Polynomial Order'
   CHARACTER(*), PARAMETER :: N_PREDICTORS_LONGNAME     = 'Number of predictors'
   CHARACTER(*), PARAMETER :: PREDICTOR_IDX_LONGNAME    = 'Predictor Index'
+  CHARACTER(*), PARAMETER :: FREQUENCY_LONGNAME        = 'Frequency'
   CHARACTER(*), PARAMETER :: FIT_RESIDUAL_LONGNAME     = 'Fit Residual'
   CHARACTER(*), PARAMETER :: TB_BIAS_LONGNAME          = 'Brightness temperature residual BIAS'
   CHARACTER(*), PARAMETER :: TB_SDEV_LONGNAME          = 'Brightness temperature residual SDEV'
@@ -125,6 +127,7 @@ MODULE FitStats_netCDF_IO
   CHARACTER(*), PARAMETER :: ORDER_DESCRIPTION            = 'Polynomial Order of absorption coefficient fit'
   CHARACTER(*), PARAMETER :: N_PREDICTORS_DESCRIPTION     = 'Number of predictors used in fit'
   CHARACTER(*), PARAMETER :: PREDICTOR_IDX_DESCRIPTION    = 'Index of selected predictors'
+  CHARACTER(*), PARAMETER :: FREQUENCY_DESCRIPTION        = 'Sensor channel centre frequency'
   CHARACTER(*), PARAMETER :: FIT_RESIDUAL_DESCRIPTION     = 'RMS error between the logarithm of absorption '//&
   'coefficients and regression coefficients times the predictors.'
   CHARACTER(*), PARAMETER :: TB_BIAS_DESCRIPTION          = 'Brightness temperature residual BIAS'
@@ -144,23 +147,24 @@ MODULE FitStats_netCDF_IO
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
   
-  CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_UNITS   = 'N/A'
-  CHARACTER(*), PARAMETER :: ORDER_UNITS            = 'N/A'
-  CHARACTER(*), PARAMETER :: N_PREDICTORS_UNITS     = 'N/A'
-  CHARACTER(*), PARAMETER :: PREDICTOR_IDX_UNITS    = 'N/A'
-  CHARACTER(*), PARAMETER :: FIT_RESIDUAL_UNITS     = 'Unitless'
-  CHARACTER(*), PARAMETER :: TB_BIAS_UNITS          = 'Kelvin (K)'
-  CHARACTER(*), PARAMETER :: TB_SDEV_UNITS          = 'Kelvin (K)'
-  CHARACTER(*), PARAMETER :: TB_RMS_UNITS           = 'Kelvin (K)'
-  CHARACTER(*), PARAMETER :: TB_MAX_UNITS           = 'Kelvin (K)'
-  CHARACTER(*), PARAMETER :: TAU_BIAS_UNITS         = 'Unitless'
-  CHARACTER(*), PARAMETER :: TAU_SDEV_UNITS         = 'Unitless'
-  CHARACTER(*), PARAMETER :: TAU_RMS_UNITS          = 'Unitless'
-  CHARACTER(*), PARAMETER :: TAU_MAX_UNITS          = 'Unitless'
-  CHARACTER(*), PARAMETER :: TAU_MAX_BIAS_UNITS     = 'Unitless'
-  CHARACTER(*), PARAMETER :: TAU_MAX_SDEV_UNITS     = 'Unitless'
-  CHARACTER(*), PARAMETER :: TAU_MAX_RMS_UNITS      = 'Unitless'
-  CHARACTER(*), PARAMETER :: MAX_PRED_TERM_UNITS    = 'Unitless'
+  CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_UNITS = 'N/A'
+  CHARACTER(*), PARAMETER :: ORDER_UNITS          = 'N/A'
+  CHARACTER(*), PARAMETER :: N_PREDICTORS_UNITS   = 'N/A'
+  CHARACTER(*), PARAMETER :: PREDICTOR_IDX_UNITS  = 'N/A'
+  CHARACTER(*), PARAMETER :: FREQUENCY_UNITS      = 'Inverse centimetres (cm^-1)'
+  CHARACTER(*), PARAMETER :: FIT_RESIDUAL_UNITS   = 'Unitless'
+  CHARACTER(*), PARAMETER :: TB_BIAS_UNITS        = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: TB_SDEV_UNITS        = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: TB_RMS_UNITS         = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: TB_MAX_UNITS         = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: TAU_BIAS_UNITS       = 'Unitless'
+  CHARACTER(*), PARAMETER :: TAU_SDEV_UNITS       = 'Unitless'
+  CHARACTER(*), PARAMETER :: TAU_RMS_UNITS        = 'Unitless'
+  CHARACTER(*), PARAMETER :: TAU_MAX_UNITS        = 'Unitless'
+  CHARACTER(*), PARAMETER :: TAU_MAX_BIAS_UNITS   = 'Unitless'
+  CHARACTER(*), PARAMETER :: TAU_MAX_SDEV_UNITS   = 'Unitless'
+  CHARACTER(*), PARAMETER :: TAU_MAX_RMS_UNITS    = 'Unitless'
+  CHARACTER(*), PARAMETER :: MAX_PRED_TERM_UNITS  = 'Unitless'
 
 
   ! Variable _FillValue attribute.
@@ -170,25 +174,27 @@ MODULE FitStats_netCDF_IO
   INTEGER(Long), PARAMETER :: ORDER_FILLVALUE          = 0
   INTEGER(Long), PARAMETER :: N_PREDICTORS_FILLVALUE   = 0
   INTEGER(Long), PARAMETER :: PREDICTOR_IDX_FILLVALUE  = 0
-  REAL(Double) , PARAMETER :: FIT_RESIDUAL_FILLVALUE  = ZERO
-  REAL(Double) , PARAMETER :: TB_BIAS_FILLVALUE       = ZERO
-  REAL(Double) , PARAMETER :: TB_SDEV_FILLVALUE       = ZERO
-  REAL(Double) , PARAMETER :: TB_RMS_FILLVALUE        = ZERO
-  REAL(Double) , PARAMETER :: TB_MAX_FILLVALUE        = ZERO
-  REAL(Double) , PARAMETER :: TAU_BIAS_FILLVALUE      = ZERO
-  REAL(Double) , PARAMETER :: TAU_SDEV_FILLVALUE      = ZERO
-  REAL(Double) , PARAMETER :: TAU_RMS_FILLVALUE       = ZERO
-  REAL(Double) , PARAMETER :: TAU_MAX_FILLVALUE       = ZERO
-  REAL(Double) , PARAMETER :: TAU_MAX_BIAS_FILLVALUE  = ZERO
-  REAL(Double) , PARAMETER :: TAU_MAX_SDEV_FILLVALUE  = ZERO
-  REAL(Double) , PARAMETER :: TAU_MAX_RMS_FILLVALUE   = ZERO
-  REAL(Double) , PARAMETER :: MAX_PRED_TERM_FILLVALUE = ZERO
+  REAL(Double) , PARAMETER :: FREQUENCY_FILLVALUE      = ZERO
+  REAL(Double) , PARAMETER :: FIT_RESIDUAL_FILLVALUE   = ZERO
+  REAL(Double) , PARAMETER :: TB_BIAS_FILLVALUE        = ZERO
+  REAL(Double) , PARAMETER :: TB_SDEV_FILLVALUE        = ZERO
+  REAL(Double) , PARAMETER :: TB_RMS_FILLVALUE         = ZERO
+  REAL(Double) , PARAMETER :: TB_MAX_FILLVALUE         = ZERO
+  REAL(Double) , PARAMETER :: TAU_BIAS_FILLVALUE       = ZERO
+  REAL(Double) , PARAMETER :: TAU_SDEV_FILLVALUE       = ZERO
+  REAL(Double) , PARAMETER :: TAU_RMS_FILLVALUE        = ZERO
+  REAL(Double) , PARAMETER :: TAU_MAX_FILLVALUE        = ZERO
+  REAL(Double) , PARAMETER :: TAU_MAX_BIAS_FILLVALUE   = ZERO
+  REAL(Double) , PARAMETER :: TAU_MAX_SDEV_FILLVALUE   = ZERO
+  REAL(Double) , PARAMETER :: TAU_MAX_RMS_FILLVALUE    = ZERO
+  REAL(Double) , PARAMETER :: MAX_PRED_TERM_FILLVALUE  = ZERO
 
   ! Variable types
   INTEGER, PARAMETER :: SENSOR_CHANNEL_TYPE = NF90_INT
   INTEGER, PARAMETER :: ORDER_TYPE          = NF90_INT
   INTEGER, PARAMETER :: N_PREDICTORS_TYPE   = NF90_INT
   INTEGER, PARAMETER :: PREDICTOR_IDX_TYPE  = NF90_INT
+  INTEGER, PARAMETER :: FREQUENCY_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: FIT_RESIDUAL_TYPE   = NF90_DOUBLE
   INTEGER, PARAMETER :: TB_BIAS_TYPE        = NF90_DOUBLE
   INTEGER, PARAMETER :: TB_SDEV_TYPE        = NF90_DOUBLE
@@ -1850,6 +1856,38 @@ CONTAINS
     END IF
 
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                FREQUENCY_VARNAME, &
+                                FREQUENCY_TYPE, &
+                                dimIDs=(/n_Channels_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//FREQUENCY_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  FREQUENCY_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  FREQUENCY_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  FREQUENCY_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  FREQUENCY_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//FREQUENCY_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
                                 FIT_RESIDUAL_VARNAME, &
                                 FIT_RESIDUAL_TYPE, &
                                 dimIDs=(/n_Channels_DimID/), &
@@ -2406,6 +2444,14 @@ CONTAINS
     END IF
   
     Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        FREQUENCY_VARNAME, &
+                                        FitStats%Frequency )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//FREQUENCY_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+  
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
                                         FIT_RESIDUAL_VARNAME, &
                                         FitStats%Fit_Residual )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -2653,6 +2699,14 @@ CONTAINS
                                         FitStats%Predictor_Idx )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error reading '//PREDICTOR_IDX_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+  
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        FREQUENCY_VARNAME, &
+                                        FitStats%Frequency )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//FREQUENCY_VARNAME//' from '//TRIM(NC_Filename)
       CALL ReadVar_Cleanup(); RETURN
     END IF
   

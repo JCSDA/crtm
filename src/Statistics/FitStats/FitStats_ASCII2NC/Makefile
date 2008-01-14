@@ -21,6 +21,10 @@ SRC_FILES = Type_Kinds.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
+            AntCorr_Define.f90 \
+            AntCorr_netCDF_IO.f90 \
+            SpcCoeff_Define.f90 \
+            SpcCoeff_netCDF_IO.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Attribute_Utility.f90 \

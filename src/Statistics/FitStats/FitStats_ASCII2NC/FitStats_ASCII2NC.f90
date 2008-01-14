@@ -27,6 +27,9 @@ PROGRAM FitStats_ASCII2NC
                                    GetFrom_SensorInfo_List, &
                                    Destroy_SensorInfo_List
   USE SensorInfo_IO        , ONLY: Read_SensorInfo
+  USE SpcCoeff_Define      , ONLY: SpcCoeff_type   , &
+                                   Destroy_SpcCoeff
+  USE SpcCoeff_netCDF_IO   , ONLY: Read_SpcCoeff_netCDF
   USE FitStats_Define      , ONLY: FitStats_type, &
                                    Destroy_FitStats, &
                                    Allocate_FitStats
@@ -61,6 +64,7 @@ PROGRAM FitStats_ASCII2NC
   ! Variables
   ! ---------
   CHARACTER(256) :: SensorInfo_Filename
+  CHARACTER(256) :: SpcCoeff_Filename
   CHARACTER(256) :: ASCII_Filename, NC_Filename
   CHARACTER(256) :: Message
   CHARACTER(1000) :: Comment
@@ -70,6 +74,7 @@ PROGRAM FitStats_ASCII2NC
   INTEGER :: j, l, n, n_Sensors
   TYPE(SensorInfo_type)      :: SensorInfo
   TYPE(SensorInfo_List_type) :: SensorInfo_List
+  TYPE(SpcCoeff_type) :: SpcCoeff
   TYPE(FitStats_type) :: FitStats
 
                                                            
@@ -106,11 +111,7 @@ PROGRAM FitStats_ASCII2NC
     STOP
   END IF
 
-
-
-
-
-  
+ 
   ! Begin the main sensor loop
   ! ---------------------------
   Sensor_Loop: DO n = 1, n_Sensors
@@ -132,11 +133,25 @@ PROGRAM FitStats_ASCII2NC
 
     ! Only operate on sensors for which ALL data is available
     ! -------------------------------------------------------
+    SpcCoeff_Filename = TRIM(SensorInfo%Sensor_ID)//'.SpcCoeff.nc'
+    IF ( .NOT. File_Exists( SpcCoeff_Filename ) ) CYCLE Sensor_Loop
     DO j = 1, N_MOL_SETS
       ASCII_Filename = MOL_SET_NAME(j)//'.'//&
                        TRIM(SensorInfo%Sensor_ID)//'.FitStats'
       IF ( .NOT. File_Exists( ASCII_Filename ) ) CYCLE Sensor_Loop
     END DO
+
+
+    ! Read the SpcCoeff data
+    ! ----------------------
+    Error_Status = Read_SpcCoeff_netCDF( SpcCoeff_Filename, SpcCoeff )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( PROGRAM_NAME, &
+                            'Error reading netCDF SpcCoeff file '//&
+                            TRIM(SpcCoeff_Filename)//'.', &
+                            Error_Status )
+      STOP
+    END IF
 
 
     ! Begin the main molecule/absorber set loop
@@ -164,11 +179,12 @@ PROGRAM FitStats_ASCII2NC
       END IF
 
 
-      ! Fill the sensor info fields
-      ! ---------------------------
+      ! Fill the external data fields
+      ! -----------------------------
       FitStats%Sensor_Id        = TRIM(SensorInfo%Sensor_Id)
       FitStats%WMO_Satellite_Id = SensorInfo%WMO_Satellite_Id
       FitStats%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id
+      FitStats%Frequency        = SpcCoeff%Wavenumber
       
       
       ! Read the ASCII file
@@ -256,6 +272,17 @@ PROGRAM FitStats_ASCII2NC
     END DO Molecule_Loop      
       
       
+    ! Destroy the current SpcCoeff structure
+    ! --------------------------------------
+    Error_Status = Destroy_SpcCoeff( SpcCoeff )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( PROGRAM_NAME, &
+                            'Error destroying SpcCoeff data structure.', &
+                            FAILURE )
+      STOP
+    END IF
+
+    
     ! Destroy the current SensorInfo structure
     ! ----------------------------------------
     Error_Status = Destroy_SensorInfo( SensorInfo )

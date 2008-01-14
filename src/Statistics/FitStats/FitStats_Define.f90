@@ -84,6 +84,7 @@ MODULE FitStats_Define
     INTEGER(Long), POINTER :: Order(:)           => NULL()  ! L
     INTEGER(Long), POINTER :: n_Predictors(:)    => NULL()  ! L
     INTEGER(Long), POINTER :: Predictor_Idx(:,:) => NULL()  ! I x L
+    REAL(Double) , POINTER :: Frequency(:)       => NULL()  ! L
     REAL(Double) , POINTER :: Fit_Residual(:)    => NULL()  ! L
     REAL(Double) , POINTER :: Tb_BIAS(:)         => NULL()  ! L
     REAL(Double) , POINTER :: Tb_SDEV(:)         => NULL()  ! L
@@ -121,7 +122,7 @@ CONTAINS
 !       FitStats structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_FitStats( FitStats          , &  ! Input
+!       Association_Status = Associated_FitStats( FitStats         , &  ! Input
 !                                                 ANY_Test=Any_Test  )  ! Optional input
 !
 ! INPUT ARGUMENTS:
@@ -187,6 +188,7 @@ CONTAINS
            ASSOCIATED(FitStats%Order         ) .AND. &
            ASSOCIATED(FitStats%n_Predictors  ) .AND. &
            ASSOCIATED(FitStats%Predictor_Idx ) .AND. &
+           ASSOCIATED(FitStats%Frequency     ) .AND. &
            ASSOCIATED(FitStats%Fit_Residual  ) .AND. &
            ASSOCIATED(FitStats%Tb_BIAS       ) .AND. &
            ASSOCIATED(FitStats%Tb_SDEV       ) .AND. &
@@ -207,6 +209,7 @@ CONTAINS
            ASSOCIATED(FitStats%Order         ) .OR. &
            ASSOCIATED(FitStats%n_Predictors  ) .OR. &
            ASSOCIATED(FitStats%Predictor_Idx ) .OR. &
+           ASSOCIATED(FitStats%Frequency     ) .OR. &
            ASSOCIATED(FitStats%Fit_Residual  ) .OR. &
            ASSOCIATED(FitStats%Tb_BIAS       ) .OR. &
            ASSOCIATED(FitStats%Tb_SDEV       ) .OR. &
@@ -236,7 +239,7 @@ CONTAINS
 !       data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_FitStats( FitStats                , &  ! Output
+!       Error_Status = Destroy_FitStats( FitStats               , &  ! Output
 !                                        RCS_Id     =RCS_Id     , &  ! Revision control
 !                                        Message_Log=Message_Log  )  ! Error messaging
 !
@@ -331,6 +334,7 @@ CONTAINS
                 FitStats%Order         , &
                 FitStats%n_Predictors  , &
                 FitStats%Predictor_Idx , &
+                FitStats%Frequency     , &
                 FitStats%Fit_Residual  , &
                 FitStats%Tb_BIAS       , &
                 FitStats%Tb_SDEV       , &
@@ -505,6 +509,7 @@ CONTAINS
               FitStats%Order(1:n_Channels)         , &
               FitStats%n_Predictors(1:n_Channels)  , &
               FitStats%Predictor_Idx(MAX_PREDICTORS,1:n_Channels), &
+              FitStats%Frequency(1:n_Channels)     , &
               FitStats%Fit_Residual (1:n_Channels) , &
               FitStats%Tb_BIAS(1:n_Channels)       , &
               FitStats%Tb_SDEV(1:n_Channels)       , &
@@ -543,6 +548,7 @@ CONTAINS
     FitStats%Order          = 0
     FitStats%n_Predictors   = 0
     FitStats%Predictor_Idx  = 0
+    FitStats%Frequency      = ZERO
     FitStats%Fit_Residual   = ZERO
     FitStats%Tb_BIAS        = ZERO
     FitStats%Tb_SDEV        = ZERO
@@ -698,6 +704,7 @@ CONTAINS
     FitStats_out%Order          = FitStats_in%Order        
     FitStats_out%n_Predictors   = FitStats_in%n_Predictors 
     FitStats_out%Predictor_Idx  = FitStats_in%Predictor_Idx
+    FitStats_out%Frequency      = FitStats_in%Frequency
     FitStats_out%Fit_Residual   = FitStats_in%Fit_Residual 
     FitStats_out%Tb_BIAS        = FitStats_in%Tb_BIAS      
     FitStats_out%Tb_SDEV        = FitStats_in%Tb_SDEV      
@@ -971,6 +978,21 @@ CONTAINS
           IF ( Check_Once ) RETURN
         END IF
       END DO
+    END DO
+    DO l = 1, FitStats_LHS%n_Channels
+      IF ( .NOT. Compare_Float( FitStats_LHS%Frequency(l), &
+                                FitStats_RHS%Frequency(l), &
+                                ULP=ULP ) ) THEN
+        WRITE(Message,'("FitStats array component Frequency values ",&
+                        &"are different at indices (",1(1x,i0),")")') &
+                        l
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
     END DO
     DO l = 1, FitStats_LHS%n_Channels
       IF ( .NOT. Compare_Float( FitStats_LHS%Fit_Residual(l), &

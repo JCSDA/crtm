@@ -83,6 +83,7 @@ PROGRAM Test_FitStats
   FitStats%Order         = 1
   FitStats%n_Predictors  = 2
   FitStats%Predictor_Idx = 3
+  FitStats%Frequency     =  0.5_fp
   FitStats%Fit_Residual  =  1.0_fp
   FitStats%Tb_BIAS       =  2.0_fp
   FitStats%Tb_SDEV       =  3.0_fp
