@@ -1,0 +1,87 @@
+#!/bin/sh
+
+usage()
+{
+  echo
+  echo "Usage: linkfiles [-d filter] dir file1 [file2 | file3 | ... | fileN]"
+  echo
+  echo "  -d"
+  echo "       Use this option to filter the directory location of"
+  echo "       requested file(s) to symlink."
+  echo
+  echo "  dir"
+  echo "       Directory at which to begin the search for the"
+  echo "       requested file(s) to symlink."
+  echo
+  echo "  file1 [file2 | file3 | ... | fileN]"
+  echo "       List of the file(s) for which a symlink is required."
+  echo
+}
+
+# Script name for error messages
+SCRIPT_NAME=$(basename $0)
+SUCCESS=0
+FAILURE=1
+
+# Parse the command line options
+while getopts :hd: OPTVAL; do
+  # Exit if option argument looks like another option
+  case ${OPTARG} in
+    -*) break;;
+  esac
+  # Parse the valid options
+  case ${OPTVAL} in
+    d) FILTER_DIR=${OPTARG};;
+    h)  usage
+        exit ${SUCCESS};;
+    :|\?) OPTVAL=${OPTARG}
+          break;;
+  esac
+done
+# Remove the options processed
+shift $(expr ${OPTIND} - 1)
+# Output invalidities based on OPTVAL
+case ${OPTVAL} in
+  # If OPTVAL contains nothing, then all options
+  # have been successfully parsed and all that
+  # remains are the arguments
+  \?) if [ $# -lt 2 ]; then
+        echo "${SCRIPT_NAME}: Missing 'dir' and 'file' arguments"
+        usage
+        exit ${FAILURE}
+      fi;;
+  # Valid options, but missing arguments
+  d) echo "${SCRIPT_NAME}: '-${OPTVAL}' option requires an argument"
+     usage
+     exit ${FAILURE};;
+  # Invalid option
+  ?) echo "${SCRIPT_NAME}: Invalid option '-${OPTARG}'"
+     usage
+     exit ${FAILURE};;
+esac
+
+# Assign command line arguments
+LINKFILE_ROOT=$1
+shift 1
+LINKFILE_LIST=$*
+
+# Search for and link the file
+for FILE in ${LINKFILE_LIST}; do
+  # Skip if file already exists
+  if [ -f ${FILE} ]; then
+    continue
+  fi
+  # Search
+  if [ -z "${FILTER_DIR}" ]; then
+    LINKFILE=$(find ${LINKFILE_ROOT}/ -name ${FILE} -type f)
+  else
+    LINKFILE=$(find ${LINKFILE_ROOT}/ -name ${FILE} -type f | grep ${FILTER_DIR})
+  fi
+  # Link
+  if [ -n "${LINKFILE}" ]; then
+    ln -sf ${LINKFILE} .
+  else
+    echo "File ${FILE} not found in ${LINKFILE_ROOT} heirarchy."
+  fi
+done
+
