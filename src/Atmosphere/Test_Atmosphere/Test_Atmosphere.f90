@@ -19,12 +19,26 @@ PROGRAM Test_Atmosphere
   USE Type_Kinds               , ONLY: fp
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, INFORMATION, &
                                        Display_Message, PRogram_MEssage
-  USE File_Utility
   USE CRTM_Parameters          , ONLY: SET
-  USE CRTM_Atmosphere_Define
-  USE CRTM_Atmosphere_Binary_IO
-  USE CRTM_Cloud_Binary_IO
-  USE CRTM_Aerosol_Binary_IO
+  USE CRTM_Atmosphere_Define   , ONLY: SPECIFIC_AMOUNT_UNITS, &
+                                       CRTM_Atmosphere_type    , &
+                                       CRTM_Destroy_Atmosphere , &
+                                       CRTM_Allocate_Atmosphere, &
+                                       CRTM_Assign_Atmosphere  , &
+                                       CRTM_Equal_Atmosphere   , &
+                                       CRTM_Sum_Atmosphere     , &
+                                       CRTM_Zero_Atmosphere    , &
+                                       CRTM_Cloud_type   , &
+                                       CRTM_Destroy_Cloud, &
+                                       CRTM_Aerosol_type   , &
+                                       CRTM_Destroy_Aerosol
+  USE CRTM_Atmosphere_Binary_IO, ONLY: CRTM_Inquire_Atmosphere_Binary, &
+                                       CRTM_Write_Atmosphere_Binary, &
+                                       CRTM_Read_Atmosphere_Binary
+  USE CRTM_Cloud_Binary_IO     , ONLY: CRTM_Write_Cloud_Binary, &
+                                       CRTM_Read_Cloud_Binary
+  USE CRTM_Aerosol_Binary_IO   , ONLY: CRTM_Write_Aerosol_Binary, &
+                                       CRTM_Read_Aerosol_Binary
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -51,8 +65,8 @@ PROGRAM Test_Atmosphere
   INTEGER, PARAMETER :: N_CLOUDS    = 6
   INTEGER, PARAMETER :: N_AEROSOLS  = 7
   ! Weights
-  REAL(fp), PARAMETER :: W1 = 10.0_fp
-  REAL(fp), PARAMETER :: W2 =  0.5_fp
+  REAL(fp), PARAMETER :: SCALE_FACTOR = 10.0_fp
+  REAL(fp), PARAMETER :: OFFSET       =  0.5_fp
 
 
   ! ---------
@@ -71,7 +85,7 @@ PROGRAM Test_Atmosphere
                                                            
   ! Output header
   ! -------------
-  CALL PRogram_Message( PROGRAM_NAME, &
+  CALL Program_Message( PROGRAM_NAME, &
                         'Program to test all the CRTM Atmosphere structure '//&
                         'manipulation and I/O functions.', &
                         '$Revision$' )
@@ -119,27 +133,27 @@ PROGRAM Test_Atmosphere
   END DO
 
 
-  ! Test the weighted sum routine
+  ! Test the summation routines
   ! -----------------------------
-  WRITE( *, '( /5x, "Testing WeightedSum functions ..." )' )
+  WRITE( *, '( /5x, "Testing Sum functions ..." )' )
 
   ! Copy the structure array
   Error_Status = CRTM_Assign_Atmosphere( Atmosphere, Atmosphere_Copy )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error copying Atmophere structure array for WeightedSum test', &
+                          'Error copying Atmosphere structure array for WeightedSum test', &
                           FAILURE )
     STOP
   END IF
 
-  ! Compute the weighted sum
-  Error_Status = CRTM_WeightedSum_Atmosphere( Atmosphere, &
-                                              Atmosphere_Copy, &
-                                              W1, &
-                                              w2 = W2 )
+  ! Compute the sum
+  Error_Status = CRTM_Sum_Atmosphere( Atmosphere, &
+                                      Atmosphere_Copy, &
+                                      Scale_Factor=SCALE_FACTOR, &
+                                      Offset      =OFFSET )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error computing Atmosphere weighted sum', &
+                          'Error computing Atmosphere sum', &
                           FAILURE )
     STOP
   END IF

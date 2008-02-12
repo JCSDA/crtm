@@ -26,20 +26,6 @@ if [ $? -ne 0 ]; then
 fi
 
 
-# Link in the main make include files
-# -----------------------------------
-MAKE_INCLUDES="make.macros make.rules"
-for FILE in ${MAKE_INCLUDES}; do
-  if [ ! -f ${FILE} ]; then
-    ln -s ${CRTM_SOURCE_ROOT}/${FILE} .
-    if [ $? -ne 0 ]; then
-      echo "${SCRIPT_NAME}: Error linking in ${FILE}!"
-      exit ${FAILURE}
-    fi
-  fi
-done
-
-
 # Invoke the master Makefile step by step
 # ---------------------------------------
 MAKE_STAGES="realclean link build run"

@@ -49,6 +49,8 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Surface_Binary_IO.f90 \
             CRTM_ChannelInfo_Define.f90 \
             CRTM_GeometryInfo_Define.f90 \
+            CRTM_Atmosphere.f90 \
+            CRTM_Model_Profiles.f90 \
             CRTM_Predictor_Define.f90 \
             CRTM_Predictor.f90 \
             CRTM_AtmAbsorption_Define.f90 \
@@ -83,7 +85,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Adjoint_Module.f90 \
             CRTM_K_Matrix_Module.f90 \
             CRTM_Module.f90
-
+            
             #CRTM_ChannelInfo.f90 \
 
 OBJ_FILES =${SRC_FILES:.f90=.o}

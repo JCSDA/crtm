@@ -20,6 +20,11 @@ MODULE CRTM_Module
   USE CRTM_Adjoint_Module
   USE CRTM_K_Matrix_Module
 
+  ! Utility routines
+  USE CRTM_Atmosphere_Binary_IO
+  USE CRTM_Surface_Binary_IO
+  USE CRTM_RTSolution_Binary_IO
+  
   PUBLIC
 
 END MODULE CRTM_Module

@@ -88,11 +88,11 @@ MODULE CRTM_RTSolution_Define
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
-    REAL(fp)          :: Surface_Emissivity      = FP_DEFAULT
-    REAL(fp)          :: Up_Radiance             = FP_DEFAULT
-    REAL(fp)          :: Down_Radiance           = FP_DEFAULT
-    REAL(fp)          :: Down_Solar_Radiance     = FP_DEFAULT
-    REAL(fp)          :: Surface_Planck_Radiance = FP_DEFAULT
+    REAL(fp) :: Surface_Emissivity      = FP_DEFAULT
+    REAL(fp) :: Up_Radiance             = FP_DEFAULT
+    REAL(fp) :: Down_Radiance           = FP_DEFAULT
+    REAL(fp) :: Down_Solar_Radiance     = FP_DEFAULT
+    REAL(fp) :: Surface_Planck_Radiance = FP_DEFAULT
     REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
     ! Internal variables. Users do not need to worry about these.
     INTEGER :: n_Full_Streams  = IP_DEFAULT

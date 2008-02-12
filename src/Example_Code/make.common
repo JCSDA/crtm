@@ -15,6 +15,9 @@ MAKE_FILE = Makefile
 
 # Source and obj files
 UTILITY_SRC_FILES = CRTM_Test_Utility.f90 \
+                    SensorInfo_Define.f90 \
+                    SensorInfo_LinkedList.f90 \
+                    SensorInfo_IO.f90 \
                     Timing_Utility.f90 \
                     Unit_Test.f90 \
                     SignalFile_Utility.f90
@@ -27,6 +30,7 @@ LINK_SCRIPT = linkfiles
 UNLINK_SCRIPT = unlinkfiles
 
 # The test input data files
+#ATM_DATA_FILES = Truncated.ECMWF.Atmosphere.bin
 ATM_DATA_FILES = ECMWF-Atmosphere.Cloud.Aerosol.bin
 SFC_DATA_FILES = ECMWF-Surface.bin
 
@@ -34,9 +38,11 @@ SFC_DATA_FILES = ECMWF-Surface.bin
 COEFF_DATA_FILES = EmisCoeff.bin AerosolCoeff.bin CloudCoeff.bin
 
 # The sensors Ids for the sensors to test
-NO_AC_SENSOR_IDS = hirs3_n17 ssmis_f16 imgr_g11 hirs4_n18 airs281SUBSET_aqua
-AC_SENSOR_IDS = amsua_n17 amsua_n18 mhs_n18
-SENSOR_IDS = $(NO_AC_SENSOR_IDS) $(AC_SENSOR_IDS) 
+IR_SENSOR_IDS = hirs3_n17 imgr_g11 hirs4_n18 iasi_metop-a airs_aqua
+MW_SENSOR_IDS_NO_AC = ssmis_f16
+MW_SENSOR_IDS_AC = amsua_n17 amsua_n18 mhs_n18
+MW_SENSOR_IDS = $(MW_SENSOR_IDS_NO_AC) $(MW_SENSOR_IDS_AC)
+SENSOR_IDS = $(IR_SENSOR_IDS) $(MW_SENSOR_IDS) 
 
 # CRTM Library and include macros
 INCLUDES = -I$(CRTM_SOURCE_ROOT)/Build/include
@@ -92,23 +98,27 @@ build: $(OBJ_FILES)
 RUN_OPTS = "-Wl,-T"
 run:
 	$(REMOVE) $(EXE_FILE).signal
-	$(EXE_FILE) $(RUN_OPTS)
+	$(EXE_FILE) $(RUN_OPTS) < ../Test.Default_Input
 
 # Create/remove the source and data links
 ENDIAN = Big_Endian
-AC_DIR = AAPP_AC
 create_links:
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(UTILITY_SRC_FILES); \
 	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_SOURCE_ROOT} ${ATM_DATA_FILES}; \
 	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_SOURCE_ROOT} ${SFC_DATA_FILES}; \
 	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT} ${COEFF_DATA_FILES}; \
-	for id in ${AC_SENSOR_IDS}; do \
-	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/${AC_DIR} $$id.SpcCoeff.bin; \
-	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff $$id.TauCoeff.bin; \
+	for id in ${IR_SENSOR_IDS}; do \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/Infrared $$id.SpcCoeff.bin; \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff/Infrared/ORD $$id.TauCoeff.bin; \
 	done; \
-	for id in ${NO_AC_SENSOR_IDS}; do \
-	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/No_AC $$id.SpcCoeff.bin; \
-	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff $$id.TauCoeff.bin; \
+	for id in ${MW_SENSOR_IDS}; do \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff/Microwave/Liebe $$id.TauCoeff.bin; \
+	done; \
+	for id in ${MW_SENSOR_IDS_NO_AC}; do \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/Microwave/No_AC $$id.SpcCoeff.bin; \
+	done; \
+	for id in ${MW_SENSOR_IDS_AC}; do \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/Microwave/AAPP_AC $$id.SpcCoeff.bin; \
 	done
 
 remove_links:
@@ -127,7 +137,7 @@ clean:
 	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD *.stb
 
 realclean: remove_links clean
-	$(REMOVE) *.signal *.bin
+	$(REMOVE) *.signal *.bin Test.Report
 
 
 # --------------------

@@ -1,5 +1,8 @@
 CRTM_Test_Utility.o : CRTM_Test_Utility.f90 
+SensorInfo_Define.o : SensorInfo_Define.f90 
+SensorInfo_IO.o : SensorInfo_IO.f90 SensorInfo_LinkedList.o SensorInfo_Define.o 
+SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 SensorInfo_Define.o 
 SignalFile_Utility.o : SignalFile_Utility.f90 
-Test_Tangent_Linear.o : Test_Tangent_Linear.f90 SignalFile_Utility.o Unit_Test.o Timing_Utility.o CRTM_Test_Utility.o 
+Test_Tangent_Linear.o : Test_Tangent_Linear.f90 SignalFile_Utility.o Unit_Test.o Timing_Utility.o SensorInfo_IO.o SensorInfo_LinkedList.o SensorInfo_Define.o CRTM_Test_Utility.o 
 Timing_Utility.o : Timing_Utility.f90 
 Unit_Test.o : Unit_Test.f90 

@@ -47,7 +47,7 @@ MODULE CRTM_Cloud_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE CRTM_Parameters      , ONLY: ZERO, SET
+  USE CRTM_Parameters      , ONLY: ZERO, ONE, SET
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -75,8 +75,9 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: CRTM_Allocate_Cloud
   PUBLIC :: CRTM_Assign_Cloud
   PUBLIC :: CRTM_Equal_Cloud
-  PUBLIC :: CRTM_WeightedSum_Cloud
+  PUBLIC :: CRTM_Sum_Cloud
   PUBLIC :: CRTM_Zero_Cloud
+  PUBLIC :: CRTM_RCS_ID_Cloud
 
 
   ! ---------------------
@@ -107,16 +108,16 @@ MODULE CRTM_Cloud_Define
     MODULE PROCEDURE Equal_Rank1
   END INTERFACE CRTM_Equal_Cloud
 
-  INTERFACE CRTM_WeightedSum_Cloud
-    MODULE PROCEDURE WeightedSum_Scalar
-    MODULE PROCEDURE WeightedSum_Rank1
-  END INTERFACE CRTM_WeightedSum_Cloud
+  INTERFACE CRTM_Sum_Cloud
+    MODULE PROCEDURE Sum_Scalar
+    MODULE PROCEDURE Sum_Rank1
+  END INTERFACE CRTM_Sum_Cloud
 
   INTERFACE CRTM_Zero_Cloud
     MODULE PROCEDURE Zero_Scalar
     MODULE PROCEDURE Zero_Rank1
   END INTERFACE CRTM_Zero_Cloud
-
+  
 
   ! -----------------
   ! Module parameters
@@ -142,7 +143,8 @@ MODULE CRTM_Cloud_Define
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! --------------------------
@@ -151,13 +153,16 @@ MODULE CRTM_Cloud_Define
   TYPE :: CRTM_Cloud_type
     INTEGER :: n_Allocates = 0
     ! Dimension values
-    INTEGER :: n_Layers = 0  ! K dimension.
+    INTEGER :: Max_Layers = 0  ! K dimension.
+    INTEGER :: n_Layers   = 0  ! Kuse dimension.
+    ! Number of added layers
+    INTEGER :: n_Added_Layers = 0
     ! Cloud type
     INTEGER :: Type = NO_CLOUD
     ! Cloud state variables
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Radius   => NULL() ! K. Units are microns
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Variance => NULL() ! K. Units are microns^2
-    REAL(fp), DIMENSION(:), POINTER :: Water_Content => NULL()      ! K. Units are kg/m^2
+    REAL(fp), POINTER :: Effective_Radius(:)   => NULL() ! K. Units are microns
+    REAL(fp), POINTER :: Effective_Variance(:) => NULL() ! K. Units are microns^2
+    REAL(fp), POINTER :: Water_Content(:) => NULL()      ! K. Units are kg/m^2
   END TYPE CRTM_Cloud_type
 
 
@@ -278,7 +283,7 @@ CONTAINS
     ! for a true association status....
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
+    IF ( PRESENT(ANY_Test) ) THEN
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
 
@@ -287,15 +292,15 @@ CONTAINS
     ! ---------------------------------------------
     Association_Status = .FALSE.
     IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( Cloud%Effective_Radius   ) .AND. &
-           ASSOCIATED( Cloud%Effective_Variance ) .AND. &
-           ASSOCIATED( Cloud%Water_Content      )       ) THEN
+      IF ( ASSOCIATED(Cloud%Effective_Radius  ) .AND. &
+           ASSOCIATED(Cloud%Effective_Variance) .AND. &
+           ASSOCIATED(Cloud%Water_Content     )       ) THEN
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF ( ASSOCIATED( Cloud%Effective_Radius   ) .OR. &
-           ASSOCIATED( Cloud%Effective_Variance ) .OR. &
-           ASSOCIATED( Cloud%Water_Content      )      ) THEN
+      IF ( ASSOCIATED( Cloud%Effective_Radius  ) .OR. &
+           ASSOCIATED( Cloud%Effective_Variance) .OR. &
+           ASSOCIATED( Cloud%Water_Content     )      ) THEN
         Association_Status = .TRUE.
       END IF
     END IF
@@ -306,10 +311,10 @@ CONTAINS
                              ANY_Test ) & ! Optional input
                            RESULT( Association_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type), DIMENSION(:), INTENT(IN) :: Cloud
-    INTEGER,               OPTIONAL,     INTENT(IN) :: ANY_Test
+    TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud(:)
+    INTEGER,     OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
-    LOGICAL, DIMENSION(SIZE(Cloud)) :: Association_Status
+    LOGICAL :: Association_Status(SIZE(Cloud))
     ! Local variables
     INTEGER :: n
 
@@ -330,7 +335,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Destroy_Cloud( Cloud                  , &  ! Output
-!                                          RCS_Id     =RCS_Id     , &  ! Revision control
 !                                          Message_Log=Message_Log  )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -351,14 +355,6 @@ CONTAINS
 !                                   OR
 !                                 Rank1 array
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -383,35 +379,34 @@ CONTAINS
 
   FUNCTION Destroy_Scalar( Cloud      , &  ! Output
                            No_Clear   , &  ! Optional input
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type) ,  INTENT(IN OUT) :: Cloud
+    TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: Cloud
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Cloud(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise the dimensions
-    Cloud%n_Layers = 0
+    Cloud%Max_Layers = 0
+    Cloud%n_Layers   = 0
+    Cloud%n_Added_Layers = 0
     
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
+    IF ( PRESENT(No_Clear) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
     IF ( Clear ) CALL CRTM_Clear_Cloud( Cloud )
@@ -456,32 +451,29 @@ CONTAINS
 
   FUNCTION Destroy_Rank1( Cloud      , &  ! Output
                           No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: Cloud(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Reinitialise array
     ! ------------------
-    DO n = 1, SIZE( Cloud )
+    DO n = 1, SIZE(Cloud)
       Scalar_Status = Destroy_Scalar( Cloud(n), &
                                       No_Clear = No_Clear, &
                                       Message_Log=Message_Log )
@@ -510,7 +502,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Allocate_Cloud( n_Layers               , &  ! Input
 !                                           Cloud                  , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
 !                                           Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -539,14 +530,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -570,27 +553,24 @@ CONTAINS
 
   FUNCTION Allocate_Scalar( n_Layers   , &  ! Input
                             Cloud      , &  ! Output
-                            RCS_Id     , &  ! Revision control
                             Message_Log) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: n_Layers
     TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     IF ( n_Layers < 1 ) THEN
@@ -604,9 +584,9 @@ CONTAINS
 
     ! Check if ANY pointers are already associated
     ! If they are, deallocate them but leave scalars.
-    IF ( CRTM_Associated_Cloud( Cloud, ANY_Test = SET ) ) THEN
+    IF ( CRTM_Associated_Cloud( Cloud, ANY_Test=SET ) ) THEN
       Error_Status = CRTM_Destroy_Cloud( Cloud, &
-                                         No_Clear = SET, &
+                                         No_Clear=SET, &
                                          Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
@@ -638,7 +618,10 @@ CONTAINS
 
     ! Assign the dimensions and initalise arrays
     ! ------------------------------------------
-    Cloud%n_Layers = n_Layers
+    Cloud%Max_Layers = n_Layers
+    Cloud%n_Layers   = n_Layers
+    Cloud%n_Added_Layers = 0
+    
     Cloud%Effective_Radius   = ZERO
     Cloud%Effective_Variance = ZERO
     Cloud%Water_Content      = ZERO
@@ -662,31 +645,28 @@ CONTAINS
 
   FUNCTION Allocate_Rank1( n_Layers   , &  ! Input
                            Cloud      , &  ! Output
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: n_Layers(:)
     TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Cloud(Rank-11)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
-    n = SIZE( Cloud )
-    IF ( SIZE( n_Layers ) /= n ) THEN
+    n = SIZE(Cloud)
+    IF ( SIZE(n_Layers) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers and CRTM_Cloud arrays have different dimensions', &
@@ -726,7 +706,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Assign_Cloud( Cloud_in               , &  ! Input  
 !                                         Cloud_out              , &  ! Output 
-!                                         RCS_Id     =RCS_Id     , &  ! Revision control
 !                                         Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -753,14 +732,6 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
@@ -777,25 +748,26 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_Scalar( Cloud_in   , &  ! Input
-                          Cloud_out  , &  ! Output
-                          RCS_Id     , &  ! Revision control
-                          Message_Log) &  ! Error messaging
+  FUNCTION Assign_Scalar( Cloud_in      , &  ! Input
+                          Cloud_out     , &  ! Output
+                          n_Added_Layers, &  ! Optional input
+                          Message_Log   ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type),  INTENT(IN)     :: Cloud_in
     TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    INTEGER,      OPTIONAL, INTENT(IN)     :: n_Added_Layers
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Cloud(Scalar)'
+    ! Local variables
+    INTEGER :: na, no, nt
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
     ! If this test succeeds, then some or all of the
@@ -813,61 +785,83 @@ CONTAINS
       RETURN
     END IF
 
+    ! Set the number of extra layers to add
+    na = 0
+    IF ( PRESENT(n_Added_Layers) ) na = MAX(n_Added_Layers,na)
+
 
     ! Allocate the structure
     ! ----------------------
-    Error_Status = CRTM_Allocate_Cloud( Cloud_in%n_Layers, &
-                                        Cloud_out, &
-                                        Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output CRTM_Cloud arrays.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    IF ( CRTM_Associated_Cloud( Cloud_out ) .AND. &
+         Cloud_Out%Max_Layers >= Cloud_in%n_Layers+na ) THEN
+         
+      ! If structure already allocated to sufficient size,
+      ! then zero and set layer dimension
+      CALL CRTM_Zero_Cloud( Cloud_Out )
+      Cloud_Out%n_Layers = Cloud_in%n_Layers+na
+      
+    ELSE
+    
+      ! Explicitly allocate structure
+      Error_Status = CRTM_Allocate_Cloud( Cloud_in%n_Layers+na, &
+                                          Cloud_out, &
+                                          Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error allocating output CRTM_Cloud arrays.', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
     END IF
 
 
     ! Assign data
     ! -----------
+    Cloud_out%n_Added_Layers = Cloud_in%n_Added_Layers+na
     Cloud_out%Type = Cloud_in%Type
-    Cloud_out%Effective_Radius   = Cloud_in%Effective_Radius  
-    Cloud_out%Effective_Variance = Cloud_in%Effective_Variance
-    Cloud_out%Water_Content      = Cloud_in%Water_Content
+    
+    no = Cloud_In%n_Layers
+    nt = Cloud_Out%n_Layers
+    Cloud_out%Effective_Radius(na+1:nt)   = Cloud_in%Effective_Radius(1:no)  
+    Cloud_out%Effective_Variance(na+1:nt) = Cloud_in%Effective_Variance(1:no)
+    Cloud_out%Water_Content(na+1:nt)      = Cloud_in%Water_Content(1:no)
 
   END FUNCTION Assign_Scalar
 
 
-  FUNCTION Assign_Rank1( Cloud_in   , &  ! Input
-                         Cloud_out  , &  ! Output
-                         RCS_Id     , &  ! Revision control
-                         Message_Log ) &  ! Error messaging
+  FUNCTION Assign_Rank1( Cloud_in      , &  ! Input
+                         Cloud_out     , &  ! Output
+                         n_Added_Layers, &  ! Optional input
+                         Message_Log   ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type),  INTENT(IN)     :: Cloud_in(:)
     TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: Cloud_out(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    INTEGER,      OPTIONAL, INTENT(IN)     :: n_Added_Layers
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Array arguments must conform
-    n = SIZE( Cloud_in )
-    IF ( SIZE( Cloud_out ) /= n ) THEN
+    ! Output array must be large enough to handle input copy.
+    n = SIZE(Cloud_in)
+    IF ( SIZE(Cloud_out) < n ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Cloud_out array not large enough (",i0,&
+                      &") to hold Cloud_in data (",i0,").")' ) &
+                      SIZE(Cloud_out), n
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input Cloud_in and Cloud_out arrays have different dimensions', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -879,7 +873,8 @@ CONTAINS
     DO i = 1, n
       Scalar_Status = Assign_Scalar( Cloud_in(i), &
                                      Cloud_out(i), &
-                                     Message_Log=Message_Log )
+                                     n_Added_Layers=n_Added_Layers, &
+                                     Message_Log   =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i0, &
@@ -907,7 +902,6 @@ CONTAINS
 !                                        Cloud_RHS              , &  ! Input
 !                                        ULP_Scale  =ULP_Scale  , &  ! Optional input
 !                                        Check_All  =Check_All  , &  ! Optional input
-!                                        RCS_Id     =RCS_Id     , &  ! Optional output
 !                                        Message_Log=Message_Log  )  ! Error messaging
 !
 !
@@ -965,14 +959,6 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
 !                          The error codes are defined in the Message_Handler module.
@@ -989,7 +975,6 @@ CONTAINS
                          Cloud_RHS  , &  ! Input
                          ULP_Scale  , &  ! Optional input
                          Check_All  , &  ! Optional input
-                         RCS_Id     , &  ! Revision control
                          Message_Log) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
@@ -997,14 +982,13 @@ CONTAINS
     TYPE(CRTM_Cloud_type) , INTENT(IN)  :: Cloud_RHS
     INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
     INTEGER,      OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Cloud(scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: i, j, k, m, n
@@ -1012,19 +996,18 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Default precision is a single unit in last place
     ULP = 1
     ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
+    IF ( PRESENT(ULP_Scale) ) THEN
       IF ( ULP_Scale > 0 ) ULP = ULP_Scale
     END IF
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
     ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
+    IF ( PRESENT(Check_All) ) THEN
       IF ( Check_All == SET ) Check_Once = .FALSE.
     END IF
 
@@ -1117,7 +1100,6 @@ CONTAINS
                         Cloud_RHS  , &  ! Output
                         ULP_Scale  , &  ! Optional input
                         Check_All  , &  ! Optional input
-                        RCS_Id     , &  ! Revision control
                         Message_Log) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
@@ -1125,33 +1107,31 @@ CONTAINS
     TYPE(CRTM_Cloud_type) , INTENT(IN)  :: Cloud_RHS(:)
     INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
     INTEGER,      OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: Scalar_Status
-    INTEGER :: n, nClouds
+    INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
     ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
+    IF ( PRESENT(Check_All) ) THEN
       IF ( Check_All == SET ) Check_Once = .FALSE.
     END IF
 
     ! Dimensions
-    nClouds = SIZE( Cloud_LHS )
-    IF ( SIZE( Cloud_RHS ) /= nClouds ) THEN
+    n = SIZE(Cloud_LHS)
+    IF ( SIZE(Cloud_RHS) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Cloud_LHS and Cloud_RHS arrays'//&
@@ -1164,16 +1144,16 @@ CONTAINS
 
     ! Test for equality
     ! -----------------
-    DO n = 1, nClouds
-      Scalar_Status = Equal_Scalar( Cloud_LHS(n), &
-                                    Cloud_RHS(n), &
+    DO i = 1, n
+      Scalar_Status = Equal_Scalar( Cloud_LHS(i), &
+                                    Cloud_RHS(i), &
                                     ULP_Scale  =ULP_Scale, &
                                     Check_All  =Check_All, &
                                     Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_Cloud structure array." )' ) n
+                          &" of rank-1 CRTM_Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1187,22 +1167,21 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_WeightedSum_Cloud
+!       CRTM_Sum_Cloud
 !
 ! PURPOSE:
-!       Function to perform a weighted sum of two valid CRTM_Cloud
-!       structures. The weighted summation performed is:
-!         A = A + w1*B + w2
-!       where A and B are the CRTM_Cloud structures, and w1 and w2
-!       are the weighting factors. Note that w2 is optional.
+!       Function to perform a sum of two valid CRTM_Cloud structures. The
+!       summation performed is:
+!         A = A + Scale_Factor*B + Offset
+!       where A and B are the CRTM_Cloud structures, and Scale_Factor and Offset
+!       are optional weighting factors.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_WeightedSum_Cloud( A                      , &  ! In/Output
-!                                              B                      , &  ! Input
-!                                              w1                     , &  ! Input
-!                                              w2         =w2         , &  ! Optional input
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Sum_Cloud( A                        , &  ! In/Output
+!                                      B                        , &  ! Input
+!                                      Scale_Factor=Scale_Factor, &  ! Optional input
+!                                      Offset      =Offset      , &  ! Optional input
+!                                      Message_Log =Message_Log   )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       A:             Cloud structure that is to be added to.
@@ -1218,20 +1197,22 @@ CONTAINS
 !                      DIMENSION:  Same as A
 !                      ATTRIBUTES: INTENT(IN)
 !
-!       w1:            The first weighting factor used to multiply the
-!                      contents of the input structure, B.
-!                      UNITS:      N/A
-!                      TYPE:       REAL(fp)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
 ! OPTIONAL INPUT ARGUMENTS:
-!       w2:            The second weighting factor used to offset the
-!                      weighted sum of the input structures.
+!       Scale_Factor:  The first weighting factor used to scale the
+!                      contents of the input structure, B.
+!                      If not specified, Scale_Factor = 1.0.
 !                      UNITS:      N/A
 !                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Offset:        The second weighting factor used to offset the
+!                      sum of the input structures.
+!                      If not specified, Offset = 0.0.
+!                      UNITS:      N/A
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:   Character string specifying a filename in which any
 !                      messages will be logged. If not specified, or if an
@@ -1243,26 +1224,18 @@ CONTAINS
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       A:             Structure containing the weight sum result,
-!                        A = A + w1*B + w2
+!       A:             Structure containing the summation result,
+!                        A = A + Scale_Factor*B + Offset
 !                      UNITS:      N/A
 !                      TYPE:       CRTM_Cloud_type
 !                      DIMENSION:  Same as B
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure assignment was successful
+!                      If == SUCCESS the structure summation was successful
 !                         == FAILURE an error occurred
 !                      UNITS:      N/A
 !                      TYPE:       INTEGER
@@ -1273,31 +1246,29 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION WeightedSum_Scalar( A          , &  ! Input/Output
-                               B          , &  ! Input
-                               w1         , &  ! Input
-                               w2         , &  ! optional input
-                               RCS_Id     , &  ! Revision control
-                               Message_Log) &  ! Error messaging
-                             RESULT( Error_Status )
+  FUNCTION Sum_Scalar( A           , &  ! Input/Output
+                       B           , &  ! Input
+                       Scale_Factor, &  ! Input
+                       Offset      , &  ! optional input
+                       Message_Log ) &  ! Error messaging
+                     RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: A
     TYPE(CRTM_Cloud_type),  INTENT(IN)     :: B
-    REAL(fp),               INTENT(IN)     :: w1
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Scale_Factor
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Offset
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Cloud(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Cloud(Scalar)'
     ! Local variables
-    REAL(fp) :: w2_Local
+    INTEGER  :: n
+    REAL(fp) :: m, c
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. CRTM_Associated_Cloud( A ) ) THEN
@@ -1318,7 +1289,8 @@ CONTAINS
     END IF
 
     ! Array arguments must conform
-    IF ( A%n_Layers /= B%n_Layers ) THEN
+    n = A%n_Layers
+    IF ( B%n_Layers /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'A and B structure dimensions are different.', &
@@ -1337,54 +1309,56 @@ CONTAINS
       RETURN
     END IF
 
-    ! Assign the optional weight
-    w2_Local = ZERO
-    IF ( PRESENT( w2 ) ) w2_Local = w2
+    ! Assign the optional weights
+    m = ONE; c = ZERO
+    IF ( PRESENT(Scale_Factor) ) m = Scale_Factor
+    IF ( PRESENT(Offset      ) ) c = Offset
 
 
-    ! Perform the weighted sum
-    ! ------------------------
-    A%Effective_Radius   = A%Effective_Radius   + (w1*B%Effective_Radius)   + w2_Local
-    A%Effective_Variance = A%Effective_Variance + (w1*B%Effective_Variance) + w2_Local
-    A%Water_Content      = A%Water_Content      + (w1*B%Water_Content)      + w2_Local
+    ! Perform the summation
+    ! ---------------------
+    A%Effective_Radius(1:n)   = A%Effective_Radius(1:n)   + (m*B%Effective_Radius(1:n)  ) + c
+    A%Effective_Variance(1:n) = A%Effective_Variance(1:n) + (m*B%Effective_Variance(1:n)) + c
+    A%Water_Content(1:n)      = A%Water_Content(1:n)      + (m*B%Water_Content(1:n)     ) + c
 
-  END FUNCTION WeightedSum_Scalar
+  END FUNCTION Sum_Scalar
 
 
-  FUNCTION WeightedSum_Rank1( A          , &  ! Input/Output
-                              B          , &  ! Input
-                              w1         , &  ! Input
-                              w2         , &  ! optional input
-                              RCS_Id     , &  ! Revision control
-                              Message_Log) &  ! Error messaging
-                            RESULT( Error_Status )
+  FUNCTION Sum_Rank1( A           , &  ! Input/Output
+                      B           , &  ! Input
+                      Scale_Factor, &  ! Input
+                      Offset      , &  ! optional input
+                      Message_Log ) &  ! Error messaging
+                    RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Cloud_type),  INTENT(IN OUT) :: A(:)
-    TYPE(CRTM_Cloud_type),  INTENT(IN)     :: B(:)
-    REAL(fp),               INTENT(IN)     :: w1
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: A(:)
+    TYPE(CRTM_Cloud_type) , INTENT(IN)     :: B(:)
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Scale_Factor
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Offset
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Cloud(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Cloud(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Array arguments must conform
-    n = SIZE( A )
-    IF ( SIZE( B )  /= n  ) THEN
+    ! Array arguments must "loosely" conform, i.e. B must contain
+    ! at least enough elements to handle the summation with A.
+    n = SIZE(A)
+    IF ( SIZE(B) < n ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Input structure arguments have incompactible dimensions. ",&
+                      &"Size of A (",i0,") must be < or = size of B (",i0,").")' ) &
+                      n, SIZE(B)
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input structure arguments have different dimensions', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -1394,14 +1368,14 @@ CONTAINS
     ! Perform the summation
     ! ---------------------
     DO i = 1, n
-      Scalar_Status = WeightedSum_Scalar( A(i), &
-                                          B(i), &
-                                          w1, &
-                                          w2 = w2, &
-                                          Message_Log=Message_Log )
+      Scalar_Status = Sum_Scalar( A(i), &
+                                  B(i), &
+                                  Scale_Factor=Scale_Factor, &
+                                  Offset      =Offset, &
+                                  Message_Log =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error computing weighted sum for element #", i0, &
+        WRITE( Message, '( "Error computing sum for element #", i0, &
                           &" of CRTM_Cloud structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -1410,7 +1384,7 @@ CONTAINS
       END IF
     END DO
 
-  END FUNCTION WeightedSum_Rank1
+  END FUNCTION Sum_Rank1
 
 
 !--------------------------------------------------------------------------------
@@ -1419,7 +1393,7 @@ CONTAINS
 !       CRTM_Zero_Cloud
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out all members of a CRTM_Cloud structure - both
+!       Subroutine to zero-out various members of a CRTM_Cloud structure - both
 !       scalar and pointer.
 !
 ! CALLING SEQUENCE:
@@ -1438,8 +1412,7 @@ CONTAINS
 !         structure must have allocated pointer members upon entry to this
 !         routine.
 !
-!       - The dimension components of the structure are *NOT*
-!         set to zero.
+!       - The dimension components of the structure are *NOT* set to zero.
 !
 !       - The cloud type component is *NOT* reset.
 !
@@ -1451,6 +1424,10 @@ CONTAINS
 
   SUBROUTINE Zero_Scalar( Cloud )  ! Output
     TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud
+    
+    ! Reset the added layer count
+    Cloud%n_Added_Layers = 0
+    
     ! Reset the array components
     Cloud%Effective_Radius   = ZERO
     Cloud%Effective_Variance = ZERO
@@ -1461,9 +1438,36 @@ CONTAINS
   SUBROUTINE Zero_Rank1( Cloud )  ! Output
     TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud(:)
     INTEGER :: n
-    DO n = 1, SIZE( Cloud )
+    DO n = 1, SIZE(Cloud)
       CALL Zero_Scalar( Cloud(n) )
     END DO
   END SUBROUTINE Zero_Rank1
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_RCS_ID_Cloud
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_Cloud( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_Cloud( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_Cloud
 
 END MODULE CRTM_Cloud_Define

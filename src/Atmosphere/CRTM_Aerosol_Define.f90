@@ -51,7 +51,7 @@ MODULE CRTM_Aerosol_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE CRTM_Parameters      , ONLY: ZERO, SET
+  USE CRTM_Parameters      , ONLY: ZERO, ONE, SET
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -81,8 +81,9 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: CRTM_Allocate_Aerosol
   PUBLIC :: CRTM_Assign_Aerosol
   PUBLIC :: CRTM_Equal_Aerosol
-  PUBLIC :: CRTM_WeightedSum_Aerosol
+  PUBLIC :: CRTM_Sum_Aerosol
   PUBLIC :: CRTM_Zero_Aerosol
+  PUBLIC :: CRTM_RCS_ID_Aerosol
 
 
   ! ---------------------
@@ -113,10 +114,10 @@ MODULE CRTM_Aerosol_Define
     MODULE PROCEDURE Equal_Rank1
   END INTERFACE CRTM_Equal_Aerosol
 
-  INTERFACE CRTM_WeightedSum_Aerosol
-    MODULE PROCEDURE WeightedSum_Scalar
-    MODULE PROCEDURE WeightedSum_Rank1
-  END INTERFACE CRTM_WeightedSum_Aerosol
+  INTERFACE CRTM_Sum_Aerosol
+    MODULE PROCEDURE Sum_Scalar
+    MODULE PROCEDURE Sum_Rank1
+  END INTERFACE CRTM_Sum_Aerosol
 
   INTERFACE CRTM_Zero_Aerosol
     MODULE PROCEDURE Zero_Scalar
@@ -151,6 +152,8 @@ MODULE CRTM_Aerosol_Define
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! ----------------------------
@@ -159,12 +162,15 @@ MODULE CRTM_Aerosol_Define
   TYPE :: CRTM_Aerosol_type
     INTEGER :: n_Allocates = 0
     ! Dimensions
-    INTEGER :: n_Layers  = 0  ! K dimension
+    INTEGER :: Max_Layers = 0  ! K dimension.
+    INTEGER :: n_Layers   = 0  ! K dimension
+    ! Number of added layers
+    INTEGER :: n_Added_Layers = 0
     ! Aerosol type
     INTEGER :: Type = NO_AEROSOL
     ! Aerosol state variables
-    REAL(fp), DIMENSION(:), POINTER :: Effective_Radius => NULL()  ! K. Units are microns
-    REAL(fp), DIMENSION(:), POINTER :: Concentration    => NULL()  ! K. Units are kg/m^2  
+    REAL(fp), POINTER :: Effective_Radius(:) => NULL()  ! K. Units are microns
+    REAL(fp), POINTER :: Concentration(:)    => NULL()  ! K. Units are kg/m^2  
   END TYPE CRTM_Aerosol_type
 
 
@@ -286,7 +292,7 @@ CONTAINS
     ! for a true association status....
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
+    IF ( PRESENT(ANY_Test) ) THEN
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
 
@@ -314,7 +320,7 @@ CONTAINS
                            RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol(:)
-    INTEGER,     OPTIONAL, INTENT(IN) :: ANY_Test
+    INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status(SIZE(Aerosol))
     ! Local variables
@@ -338,7 +344,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Destroy_Aerosol( Aerosol                , &  ! Output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
 !                                            Message_Log=Message_Log  )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -357,14 +362,6 @@ CONTAINS
 !                     TYPE:       CRTM_Aerosol_type
 !                     DIMENSION:  Scalar or Rank1
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -389,36 +386,34 @@ CONTAINS
 
   FUNCTION Destroy_Scalar( Aerosol    , &  ! Output
                            No_Clear   , &  ! Optional input
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
     INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Aerosol(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
-
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Reinitialise the dimensions
-    Aerosol%n_Layers = 0
+    Aerosol%Max_Layers = 0
+    Aerosol%n_Layers   = 0
+    Aerosol%n_Added_Layers = 0
     
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
+    IF ( PRESENT(No_Clear) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
     IF ( Clear ) CALL CRTM_Clear_Aerosol( Aerosol )
@@ -462,32 +457,29 @@ CONTAINS
 
   FUNCTION Destroy_Rank1( Aerosol    , &  ! Output
                           No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol(:)
     INTEGER     ,  OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Aerosol(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Reinitialise array
     ! ------------------
-    DO n = 1, SIZE( Aerosol )
+    DO n = 1, SIZE(Aerosol)
       Scalar_Status = Destroy_Scalar( Aerosol(n), &
                                       No_Clear = No_Clear, &
                                       Message_Log=Message_Log )
@@ -517,7 +509,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Allocate_Aerosol( n_Layers               , &  ! Input
 !                                             Aerosol                , &  ! Output
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
 !                                             Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -546,14 +537,6 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -577,26 +560,23 @@ CONTAINS
 
   FUNCTION Allocate_Scalar( n_Layers   , &  ! Input
                             Aerosol    , &  ! Output
-                            RCS_Id     , &  ! Revision control
                             Message_Log) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER                , INTENT(IN)     :: n_Layers
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Dimensions
     IF ( n_Layers < 1 ) THEN
@@ -643,7 +623,10 @@ CONTAINS
 
     ! Assign the dimensions and initalise arrays
     ! ------------------------------------------
-    Aerosol%n_Layers = n_Layers
+    Aerosol%Max_Layers = n_Layers
+    Aerosol%n_Layers   = n_Layers
+    Aerosol%n_Added_Layers = 0
+    
     Aerosol%Effective_Radius = ZERO
     Aerosol%Concentration    = ZERO
 
@@ -666,31 +649,28 @@ CONTAINS
 
   FUNCTION Allocate_Rank1( n_Layers   , &  ! Input
                            Aerosol    , &  ! Output
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     INTEGER                , INTENT(IN)     :: n_Layers(:)
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol(:)
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Aerosol(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
-    n = SIZE( Aerosol )
-    IF ( SIZE( n_Layers ) /= n ) THEN
+    n = SIZE(Aerosol)
+    IF ( SIZE(n_Layers) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input n_Layers and Aerosol arrays have different dimensions', &
@@ -731,7 +711,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Assign_Aerosol( Aerosol_in             , &  ! Input
 !                                           Aerosol_out            , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
 !                                           Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -759,14 +738,6 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
@@ -783,25 +754,26 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_Scalar( Aerosol_in , &  ! Input
-                          Aerosol_out, &  ! Output
-                          RCS_Id     , &  ! Revision control
-                          Message_Log) &  ! Error messaging
+  FUNCTION Assign_Scalar( Aerosol_in    , &  ! Input
+                          Aerosol_out   , &  ! Output
+                          n_Added_Layers, &  ! Optional input
+                          Message_Log   ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN)     :: Aerosol_in
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol_out
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    INTEGER,       OPTIONAL, INTENT(IN)     :: n_Added_Layers
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Aerosol(Scalar)'
+    ! Local variables
+    INTEGER :: na, no, nt
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
     ! If this test succeeds, then some or all of the
@@ -819,60 +791,82 @@ CONTAINS
       RETURN
     END IF
 
+    ! Set the number of extra layers to add
+    na = 0
+    IF ( PRESENT(n_Added_Layers) ) na = MAX(n_Added_Layers,na)
+
 
     ! Allocate the structure
     ! ----------------------
-    Error_Status = CRTM_Allocate_Aerosol( Aerosol_in%n_Layers, &
-                                          Aerosol_out, &
-                                          Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating Aerosol_out components.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    IF ( CRTM_Associated_Aerosol( Aerosol_out ) .AND. &
+         Aerosol_Out%Max_Layers >= Aerosol_in%n_Layers+na ) THEN
+         
+      ! If structure already allocated to sufficient size,
+      ! then zero and set layer dimension
+      CALL CRTM_Zero_Aerosol( Aerosol_Out )
+      Aerosol_Out%n_Layers = Aerosol_in%n_Layers+na
+      
+    ELSE
+    
+      ! Explicitly allocate structure
+      Error_Status = CRTM_Allocate_Aerosol( Aerosol_in%n_Layers+na, &
+                                            Aerosol_out, &
+                                            Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error allocating Aerosol_out components.', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
     END IF
-
+    
 
     ! Assign data
     ! -----------
+    Aerosol_out%n_Added_Layers = Aerosol_in%n_Added_Layers+na
     Aerosol_out%Type = Aerosol_in%Type
-    Aerosol_out%Effective_Radius = Aerosol_in%Effective_Radius
-    Aerosol_out%Concentration    = Aerosol_in%Concentration
+    
+    no = Aerosol_In%n_Layers
+    nt = Aerosol_Out%n_Layers
+    Aerosol_out%Effective_Radius(na+1:nt) = Aerosol_in%Effective_Radius(1:no)
+    Aerosol_out%Concentration(na+1:nt)    = Aerosol_in%Concentration(1:no)
 
   END FUNCTION Assign_Scalar
 
 
-  FUNCTION Assign_Rank1( Aerosol_in , &  ! Input
-                         Aerosol_out, &  ! Output
-                         RCS_Id     , &  ! Revision control
-                         Message_Log ) &  ! Error messaging
+  FUNCTION Assign_Rank1( Aerosol_in    , &  ! Input
+                         Aerosol_out   , &  ! Output
+                         n_Added_Layers, &  ! Optional input
+                         Message_Log   ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN)     :: Aerosol_in(:)
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol_out(:)
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    INTEGER,       OPTIONAL, INTENT(IN)     :: n_Added_Layers
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Aerosol(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Array arguments must conform
-    n = SIZE( Aerosol_in )
-    IF ( SIZE( Aerosol_out ) /= n ) THEN
+    ! Output array must be large enough to handle input copy.
+    n = SIZE(Aerosol_in)
+    IF ( SIZE(Aerosol_out) < n ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Aerosol_out array not large enough (",i0,&
+                      &") to hold Aerosol_in data (",i0,").")' ) &
+                      SIZE(Aerosol_out), n
       CALL Display_Message( ROUTINE_NAME, &
-                            'Aerosol_in and Aerosol_out arrays have different dimensions', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -884,7 +878,8 @@ CONTAINS
     DO i = 1, n
       Scalar_Status = Assign_Scalar( Aerosol_in(i), &
                                      Aerosol_out(i), &
-                                     Message_Log=Message_Log )
+                                     n_Added_Layers=n_Added_Layers, &
+                                     Message_Log   =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i0, &
@@ -912,7 +907,6 @@ CONTAINS
 !                                          Aerosol_RHS            , &  ! Input
 !                                          ULP_Scale  =ULP_Scale  , &  ! Optional input
 !                                          Check_All  =Check_All  , &  ! Optional input
-!                                          RCS_Id     =RCS_Id     , &  ! Optional output
 !                                          Message_Log=Message_Log  )  ! Error messaging
 !
 !
@@ -970,14 +964,6 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
 !                          The error codes are defined in the Message_Handler module.
@@ -994,7 +980,6 @@ CONTAINS
                          Aerosol_RHS, &  ! Input
                          ULP_Scale  , &  ! Optional input
                          Check_All  , &  ! Optional input
-                         RCS_Id     , &  ! Revision control
                          Message_Log) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
@@ -1002,14 +987,13 @@ CONTAINS
     TYPE(CRTM_Aerosol_type), INTENT(IN)  :: Aerosol_RHS
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Aerosol(scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: i, j, k, m, n
@@ -1017,19 +1001,18 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Default precision is a single unit in last place
     ULP = 1
     ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
+    IF ( PRESENT(ULP_Scale) ) THEN
       IF ( ULP_Scale > 0 ) ULP = ULP_Scale
     END IF
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
     ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
+    IF ( PRESENT(Check_All) ) THEN
       IF ( Check_All == SET ) Check_Once = .FALSE.
     END IF
 
@@ -1109,7 +1092,6 @@ CONTAINS
                         Aerosol_RHS, &  ! Output
                         ULP_Scale  , &  ! Optional input
                         Check_All  , &  ! Optional input
-                        RCS_Id     , &  ! Revision control
                         Message_Log) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
@@ -1117,33 +1099,31 @@ CONTAINS
     TYPE(CRTM_Aerosol_type), INTENT(IN)  :: Aerosol_RHS(:)
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Aerosol(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: Scalar_Status
-    INTEGER :: n, nAerosols
+    INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
     ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
+    IF ( PRESENT(Check_All) ) THEN
       IF ( Check_All == SET ) Check_Once = .FALSE.
     END IF
 
     ! Dimensions
-    nAerosols = SIZE( Aerosol_LHS )
-    IF ( SIZE( Aerosol_RHS ) /= nAerosols ) THEN
+    n = SIZE(Aerosol_LHS)
+    IF ( SIZE(Aerosol_RHS) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Aerosol_LHS and Aerosol_RHS arrays'//&
@@ -1156,16 +1136,16 @@ CONTAINS
 
     ! Test for equality
     ! -----------------
-    DO n = 1, nAerosols
-      Scalar_Status = Equal_Scalar( Aerosol_LHS(n), &
-                                    Aerosol_RHS(n), &
+    DO i = 1, n
+      Scalar_Status = Equal_Scalar( Aerosol_LHS(i), &
+                                    Aerosol_RHS(i), &
                                     ULP_Scale  =ULP_Scale, &
                                     Check_All  =Check_All, &
                                     Message_Log=Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_Aerosol structure array." )' ) n
+                          &" of rank-1 CRTM_Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1179,22 +1159,21 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_WeightedSum_Aerosol
+!       CRTM_Sum_Aerosol
 !
 ! PURPOSE:
-!       Function to perform a weighted sum of two valid CRTM_Aerosol
-!       structures. The weighted summation performed is:
-!         A = A + w1*B + w2
-!       where A and B are the CRTM_Aerosol structures, and w1 and w2
-!       are the weighting factors. Note that w2 is optional.
+!       Function to perform a sum of two valid CRTM_Aerosol structures. The
+!       summation performed is:
+!         A = A + Scale_Factor*B + Offset
+!       where A and B are the CRTM_Aerosol structures, and Scale_Factor and Offset
+!       are optional weighting factors.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_WeightedSum_Aerosol( A                      , &  ! In/Output
-!                                                B                      , &  ! Input
-!                                                w1                     , &  ! Input
-!                                                w2         =w2         , &  ! Optional input
-!                                                RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Sum_Aerosol( A                        , &  ! In/Output
+!                                        B                        , &  ! Input
+!                                        Scale_Factor=Scale_Factor, &  ! Optional input
+!                                        Offset      =Offset      , &  ! Optional input
+!                                        Message_Log =Message_Log   )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       A:             Aerosol structure that is to be added to.
@@ -1210,20 +1189,22 @@ CONTAINS
 !                      DIMENSION:  Same as A
 !                      ATTRIBUTES: INTENT(IN)
 !
-!       w1:            The first weighting factor used to multiply the
-!                      contents of the input structure, B.
-!                      UNITS:      N/A
-!                      TYPE:       REAL(fp)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
 ! OPTIONAL INPUT ARGUMENTS:
-!       w2:            The second weighting factor used to offset the
-!                      weighted sum of the input structures.
+!       Scale_Factor:  The first weighting factor used to scale the
+!                      contents of the input structure, B.
+!                      If not specified, Scale_Factor = 1.0.
 !                      UNITS:      N/A
 !                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Offset:        The second weighting factor used to offset the
+!                      sum of the input structures.
+!                      If not specified, Offset = 0.0.
+!                      UNITS:      N/A
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:   Character string specifying a filename in which any
 !                      messages will be logged. If not specified, or if an
@@ -1235,26 +1216,18 @@ CONTAINS
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       A:             Structure containing the weight sum result,
-!                        A = A + w1*B + w2
+!       A:             Structure containing the summation result,
+!                        A = A + Scale_Factor*B + Offset
 !                      UNITS:      N/A
 !                      TYPE:       CRTM_Aerosol_type
 !                      DIMENSION:  Same as B
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure assignment was successful
+!                      If == SUCCESS the structure summation was successful
 !                         == FAILURE an error occurred
 !                      UNITS:      N/A
 !                      TYPE:       INTEGER
@@ -1265,31 +1238,29 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION WeightedSum_Scalar( A          , &  ! Input/Output
-                               B          , &  ! Input
-                               w1         , &  ! Input
-                               w2         , &  ! optional input
-                               RCS_Id     , &  ! Revision control
-                               Message_Log) &  ! Error messaging
-                             RESULT( Error_Status )
+  FUNCTION Sum_Scalar( A           , &  ! Input/Output
+                       B           , &  ! Input
+                       Scale_Factor, &  ! Input
+                       Offset      , &  ! optional input
+                       Message_Log ) &  ! Error messaging
+                     RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: A
     TYPE(CRTM_Aerosol_type), INTENT(IN)     :: B
-    REAL(fp)    ,            INTENT(IN)     :: w1
-    REAL(fp)    , OPTIONAL,  INTENT(IN)     :: w2
-    CHARACTER(*), OPTIONAL,  INTENT(OUT)    :: RCS_Id
+    REAL(fp)    , OPTIONAL,  INTENT(IN)     :: Scale_Factor
+    REAL(fp)    , OPTIONAL,  INTENT(IN)     :: Offset
     CHARACTER(*), OPTIONAL,  INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Aerosol(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Aerosol(Scalar)'
     ! Local variables
-    REAL(fp) :: w2_Local
+    INTEGER  :: n
+    REAL(fp) :: m, c
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! ALL *input* pointers must be associated
     IF ( .NOT. CRTM_Associated_Aerosol( A ) ) THEN
@@ -1310,7 +1281,8 @@ CONTAINS
     END IF
 
     ! Array arguments must conform
-    IF ( A%n_Layers /= B%n_Layers  ) THEN 
+    n = A%n_Layers
+    IF ( B%n_Layers /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'A and B structure dimensions are different.', &
@@ -1329,53 +1301,55 @@ CONTAINS
       RETURN
     END IF
 
-    ! Assign the optional weight
-    w2_Local = ZERO
-    IF ( PRESENT( w2 ) ) w2_Local = w2
+    ! Assign the optional weights
+    m = ONE; c = ZERO
+    IF ( PRESENT(Scale_Factor) ) m = Scale_Factor
+    IF ( PRESENT(Offset      ) ) c = Offset
 
 
-    ! Perform the weighted sum
-    ! ------------------------
-    A%Concentration    = A%Concentration    + (w1*B%Concentration)    + w2_Local
-    A%Effective_Radius = A%Effective_Radius + (w1*B%Effective_Radius) + w2_Local
+    ! Perform the summation
+    ! ---------------------
+    A%Concentration(1:n)    = A%Concentration(1:n)    + (m*B%Concentration(1:n)   ) + c
+    A%Effective_Radius(1:n) = A%Effective_Radius(1:n) + (m*B%Effective_Radius(1:n)) + c
 
-  END FUNCTION WeightedSum_Scalar
+  END FUNCTION Sum_Scalar
 
 
-  FUNCTION WeightedSum_Rank1( A          , &  ! Input/Output
-                              B          , &  ! Input
-                              w1         , &  ! Input
-                              w2         , &  ! optional input
-                              RCS_Id     , &  ! Revision control
-                              Message_Log) &  ! Error messaging
-                            RESULT( Error_Status )
+  FUNCTION Sum_Rank1( A           , &  ! Input/Output
+                      B           , &  ! Input
+                      Scale_Factor, &  ! Input
+                      Offset      , &  ! optional input
+                      Message_Log ) &  ! Error messaging
+                    RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: A(:)
     TYPE(CRTM_Aerosol_type), INTENT(IN)     :: B(:)
-    REAL(fp)    ,            INTENT(IN)     :: w1
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Aerosol(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Aerosol(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Array arguments must conform
-    n = SIZE( A )
-    IF ( SIZE( B )  /= n  ) THEN
+    ! Array arguments must "loosely" conform, i.e. B must contain
+    ! at least enough elements to handle the summation with A.
+    n = SIZE(A)
+    IF ( SIZE(B) < n ) THEN
       Error_Status = FAILURE
+      WRITE( Message,'("Input structure arguments have incompatible dimensions. ",&
+                      &"Size of A (",i0,") must be < or = size of B (",i0,").")' ) &
+                      n, SIZE(B)
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input structure arguments have different dimensions', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -1385,14 +1359,14 @@ CONTAINS
     ! Perform the summation
     ! ---------------------
     DO i = 1, n
-      Scalar_Status = WeightedSum_Scalar( A(i), &
-                                          B(i), &
-                                          w1, &
-                                          w2 = w2, &
-                                          Message_Log=Message_Log )
+      Scalar_Status = Sum_Scalar( A(i), &
+                                  B(i), &
+                                  Scale_Factor=Scale_Factor, &
+                                  Offset      =Offset, &
+                                  Message_Log =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error computing weighted sum for element #", i0, &
+        WRITE( Message, '( "Error computing sum for element #", i0, &
                           &" of CRTM_Aerosol structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -1401,7 +1375,7 @@ CONTAINS
       END IF
     END DO
 
-  END FUNCTION WeightedSum_Rank1
+  END FUNCTION Sum_Rank1
 
 
 !--------------------------------------------------------------------------------
@@ -1442,6 +1416,10 @@ CONTAINS
 
   SUBROUTINE Zero_Scalar( Aerosol )  ! Output
     TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
+    
+    ! Reset the added layer count
+    Aerosol%n_Added_Layers = 0
+    
     ! Reset the array components
     Aerosol%Effective_Radius   = ZERO
     Aerosol%Concentration      = ZERO
@@ -1455,5 +1433,32 @@ CONTAINS
       CALL Zero_Scalar( Aerosol(n) )
     END DO
   END SUBROUTINE Zero_Rank1
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_RCS_ID_Aerosol
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_Aerosol( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_Aerosol( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_Aerosol
 
 END MODULE CRTM_Aerosol_Define

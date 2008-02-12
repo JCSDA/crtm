@@ -26,12 +26,15 @@ MODULE CRTM_Tangent_Linear_Module
                                       MAX_N_STOKES        , &
                                       MAX_N_ANGLES
   USE CRTM_SpcCoeff,            ONLY: SC
-  USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type
+  USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type, &
+                                      CRTM_Destroy_Atmosphere
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type   , &
                                       CRTM_Compute_GeometryInfo
   USE CRTM_ChannelInfo_Define,  ONLY: CRTM_ChannelInfo_type
   USE CRTM_Options_Define,      ONLY: CRTM_Options_type
+  USE CRTM_Atmosphere,          ONLY: CRTM_AddLayers_Atmosphere   , &
+                                      CRTM_AddLayers_Atmosphere_TL
   USE CRTM_Predictor,           ONLY: CRTM_Predictor_type       , &
                                       CRTM_APVariables_type     , &
                                       CRTM_Allocate_Predictor   , &
@@ -262,6 +265,8 @@ CONTAINS
     INTEGER :: ln
     INTEGER :: n_Full_Streams, n_Layers
     INTEGER, DIMENSION(6) :: AllocStatus, AllocStatus_TL
+    ! Local atmosphere structure for extra layering
+    TYPE(CRTM_Atmosphere_type) :: Atm, Atm_TL
     ! Component variables
     TYPE(CRTM_Predictor_type)     :: Predictor,      Predictor_TL
     TYPE(CRTM_AtmAbsorption_type) :: AtmAbsorption,  AtmAbsorption_TL
@@ -313,7 +318,6 @@ CONTAINS
     ! ----------------------------
     ! Check the number of profiles
     ! ----------------------------
-
     ! Number of atmospheric profiles.
     nProfiles = SIZE(Atmosphere)
 
@@ -417,64 +421,98 @@ CONTAINS
                                                 Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Error computing derived GeometryInfo components for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, &
-                              'Error computing derived GeometryInfo components', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
       END IF
 
 
+      ! ----------------------------------------------
+      ! Add extra layers to current atmosphere profile
+      ! if necessary to handle upper atmosphere
+      ! ----------------------------------------------
+      ! Forward model
+      Error_Status = CRTM_AddLayers_Atmosphere( Atmosphere(m)          , &  ! Input
+                                                Atm                    , &  ! Output
+                                                Message_Log=Message_Log  )  ! Error messaging
+      IF ( Error_Status /= SUCCESS ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Error adding FWD extra layers to profile #",i0)' ) m
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
 
-      !#--------------------------------------------------------------------------#
-      !#                     -- ALLOCATE ALL LOCAL STRUCTURES --                  #
-      !#--------------------------------------------------------------------------#
+      ! Tangent-linear model
+      Error_Status = CRTM_AddLayers_Atmosphere_TL( Atmosphere(m)          , &  ! Input
+                                                   Atmosphere_TL(m)       , &  ! Input
+                                                   Atm_TL                 , &  ! Output
+                                                   Message_Log=Message_Log  )  ! Error messaging
+      IF ( Error_Status /= SUCCESS ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Error adding TL extra layers to profile #",i0)' ) m
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
+
+
+      ! -----------------------------
+      ! Allocate all local structures
+      ! -----------------------------
       ! The Predictor and AtmAbsorption structures
-      AllocStatus(1)   =CRTM_Allocate_Predictor( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus(1)   =CRTM_Allocate_Predictor( Atm%n_Layers           , &  ! Input
                                                  MAX_N_PREDICTORS       , &  ! Input
                                                  MAX_N_ABSORBERS        , &  ! Input
                                                  Predictor              , &  ! Output
                                                  Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus_TL(1)=CRTM_Allocate_Predictor( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus_TL(1)=CRTM_Allocate_Predictor( Atm%n_Layers           , &  ! Input
                                                  MAX_N_PREDICTORS       , &  ! Input
                                                  MAX_N_ABSORBERS        , &  ! Input
                                                  Predictor_TL           , &  ! Output
                                                  Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus(2)   =CRTM_Allocate_AtmAbsorption( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus(2)   =CRTM_Allocate_AtmAbsorption( Atm%n_Layers           , &  ! Input
                                                      AtmAbsorption          , &  ! Output
                                                      Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus_TL(2)=CRTM_Allocate_AtmAbsorption( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus_TL(2)=CRTM_Allocate_AtmAbsorption( Atm%n_Layers           , &  ! Input
                                                      AtmAbsorption_TL       , &  ! Output
                                                      Message_Log=Message_Log  )  ! Error messaging
       ! The CloudScatter structures
-      AllocStatus(3)   =CRTM_Allocate_AtmScatter( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus(3)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
                                                   MAX_N_LEGENDRE_TERMS   , &  ! Input
                                                   MAX_N_PHASE_ELEMENTS   , &  ! Input
                                                   CloudScatter           , &  ! Output
                                                   Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus_TL(3)=CRTM_Allocate_AtmScatter( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus_TL(3)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
                                                   MAX_N_LEGENDRE_TERMS   , &  ! Input
                                                   MAX_N_PHASE_ELEMENTS   , &  ! Input
                                                   CloudScatter_TL        , &  ! Output
                                                   Message_Log=Message_Log  )  ! Error messaging
       ! The AerosolScatter structures
-      AllocStatus(4)   =CRTM_Allocate_AtmScatter( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus(4)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
                                                   MAX_N_LEGENDRE_TERMS   , &  ! Input
                                                   MAX_N_PHASE_ELEMENTS   , &  ! Input
                                                   AerosolScatter         , &  ! Output
                                                   Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus_TL(4)=CRTM_Allocate_AtmScatter( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus_TL(4)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
                                                   MAX_N_LEGENDRE_TERMS   , &  ! Input
                                                   MAX_N_PHASE_ELEMENTS   , &  ! Input
                                                   AerosolScatter_TL      , &  ! Output
                                                   Message_Log=Message_Log  )  ! Error messaging
       ! The AtmOptics structure
-      AllocStatus(5)   =CRTM_Allocate_AtmScatter( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus(5)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
                                                   MAX_N_LEGENDRE_TERMS   , &  ! Input
                                                   MAX_N_PHASE_ELEMENTS   , &  ! Input
                                                   AtmOptics              , &  ! Output
                                                   Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus_TL(5)=CRTM_Allocate_AtmScatter( Atmosphere(m)%n_Layers , &  ! Input
+      AllocStatus_TL(5)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
                                                   MAX_N_LEGENDRE_TERMS   , &  ! Input
                                                   MAX_N_PHASE_ELEMENTS   , &  ! Input
                                                   AtmOptics_TL           , &  ! Output
@@ -509,16 +547,16 @@ CONTAINS
       ! ------------------------------------------
       ! Compute predictors for AtmAbsorption calcs
       ! ------------------------------------------
-      CALL CRTM_Compute_Predictors( Atmosphere(m)  , &  ! Input
+      CALL CRTM_Compute_Predictors( Atm            , &  ! Input
                                     GeometryInfo(m), &  ! Input
                                     Predictor      , &  ! Output
                                     APV              )  ! Internal variable output
-      CALL CRTM_Compute_Predictors_TL( Atmosphere(m)   , &  ! Input
-                                       Predictor       , &  ! Input
-                                       Atmosphere_TL(m), &  ! Input
-                                       GeometryInfo(m) , &  ! Input
-                                       Predictor_TL    , &  ! Output
-                                       APV               )  ! Internal variable input
+      CALL CRTM_Compute_Predictors_TL( Atm            , &  ! Input
+                                       Predictor      , &  ! Input
+                                       Atm_TL         , &  ! Input
+                                       GeometryInfo(m), &  ! Input
+                                       Predictor_TL   , &  ! Output
+                                       APV              )  ! Internal variable input
 
 
       ! Initialise channel counter for sensor(n)/channel(l) count
@@ -558,7 +596,7 @@ CONTAINS
           ! cloud parameters only. It will also use the aerosol parameters 
           ! when aerosol scattering is included.
           ! ---------------------------------------------------------------
-          n_Full_Streams = CRTM_Compute_nStreams( Atmosphere(m)   , &  ! Input
+          n_Full_Streams = CRTM_Compute_nStreams( Atm             , &  ! Input
                                                   SensorIndex     , &  ! Input
                                                   ChannelIndex    , &  ! Input
                                                   RTSolution(ln,m)  )  ! Output
@@ -587,18 +625,18 @@ CONTAINS
           ! -----------------------------------------------------------
           ! Compute the cloud particle absorption/scattering properties
           ! -----------------------------------------------------------
-          IF( Atmosphere(m)%n_Clouds > 0 ) THEN
+          IF( Atm%n_Clouds > 0 ) THEN
             CloudScatter%n_Legendre_Terms    = n_Full_Streams
             CloudScatter_TL%n_Legendre_Terms = n_Full_Streams
-            Status_FWD = CRTM_Compute_CloudScatter( Atmosphere(m)          , &  ! Input
+            Status_FWD = CRTM_Compute_CloudScatter( Atm                    , &  ! Input
                                                     SensorIndex            , &  ! Input
                                                     ChannelIndex           , &  ! Input
                                                     CloudScatter           , &  ! Output
                                                     CSV                    , &  ! Internal variable output
                                                     Message_Log=Message_Log  )  ! Error messaging
-            Status_TL = CRTM_Compute_CloudScatter_TL( Atmosphere(m)          , &  ! FWD Input
+            Status_TL = CRTM_Compute_CloudScatter_TL( Atm                    , &  ! FWD Input
                                                       CloudScatter           , &  ! FWD Input
-                                                      Atmosphere_TL(m)       , &  ! TL  Input
+                                                      Atm_TL                 , &  ! TL  Input
                                                       SensorIndex            , &  ! Input
                                                       ChannelIndex           , &  ! Input
                                                       CloudScatter_TL        , &  ! TL  Output
@@ -606,10 +644,11 @@ CONTAINS
                                                       Message_Log=Message_Log  )  ! Error messaging
             IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
               Error_Status = FAILURE
-              WRITE(Message,'("Error computing CloudScatter for ",a,&
-                             &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID ), &
-                              ChannelInfo(n)%Sensor_Channel(l)
+              WRITE( Message,'("Error computing CloudScatter for ",a,&
+                              &", channel ",i0,", profile #",i0)' ) &
+                              TRIM(ChannelInfo(n)%SensorID), &
+                              ChannelInfo(n)%Sensor_Channel(l), &
+                              m
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
                                     Error_Status, &
@@ -622,18 +661,18 @@ CONTAINS
           ! ----------------------------------------------------
           ! Compute the aerosol absorption/scattering properties
           ! ----------------------------------------------------
-          IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
+          IF ( Atm%n_Aerosols > 0 ) THEN
             AerosolScatter%n_Legendre_Terms    = n_Full_Streams
             AerosolScatter_TL%n_Legendre_Terms = n_Full_Streams
-            Status_FWD = CRTM_Compute_AerosolScatter( Atmosphere(m)          , &  ! Input
+            Status_FWD = CRTM_Compute_AerosolScatter( Atm                    , &  ! Input
                                                       SensorIndex            , &  ! Input
                                                       ChannelIndex           , &  ! Input
                                                       AerosolScatter         , &  ! In/Output
                                                       ASV                    , &  ! Internal variable output
                                                       Message_Log=Message_Log  )  ! Error messaging
-            Status_TL  = CRTM_Compute_AerosolScatter_TL( Atmosphere(m)          , &  ! FWD Input
+            Status_TL  = CRTM_Compute_AerosolScatter_TL( Atm                    , &  ! FWD Input
                                                          AerosolScatter         , &  ! FWD Input
-                                                         Atmosphere_TL(m)       , &  ! TL  Input
+                                                         Atm_TL                 , &  ! TL  Input
                                                          SensorIndex            , &  ! Input
                                                          ChannelIndex           , &  ! Input
                                                          AerosolScatter_TL      , &  ! TL  Output  
@@ -641,10 +680,11 @@ CONTAINS
                                                          Message_Log=Message_Log  )  ! Error messaging
             IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
               Error_Status = FAILURE
-              WRITE(Message,'("Error computing AerosolScatter for ",a,&
-                             &", channel ",i0)') &
-                              TRIM( ChannelInfo(n)%SensorID ), &
-                              ChannelInfo(n)%Sensor_Channel(l)
+              WRITE( Message,'("Error computing AerosolScatter for ",a,&
+                              &", channel ",i0,", profile #",i0)' ) &
+                              TRIM(ChannelInfo(n)%SensorID), &
+                              ChannelInfo(n)%Sensor_Channel(l), &
+                              m
               CALL Display_Message( ROUTINE_NAME, &
                                     TRIM(Message), &
                                     Error_Status, &
@@ -699,7 +739,7 @@ CONTAINS
           ! Solve the radiative transfer problem
           ! ------------------------------------
           ! Forward model
-          Error_Status = CRTM_Compute_RTSolution( Atmosphere(m)          , &  ! Input
+          Error_Status = CRTM_Compute_RTSolution( Atm                    , &  ! Input
                                                   Surface(m)             , &  ! Input
                                                   AtmOptics              , &  ! Input
                                                   SfcOptics              , &  ! Input
@@ -710,10 +750,11 @@ CONTAINS
                                                   RTV                    , &  ! Internal variable output
                                                   Message_Log=Message_Log  )  ! Error messaging
           IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message, '( "Error computing RTSolution for ", a, &
-                              &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID ), &
-                            ChannelInfo(n)%Sensor_Channel(l)
+            WRITE( Message,'("Error computing RTSolution for ",a, &
+                            &", channel ", i0,", profile #",i0)' ) &
+                            TRIM(ChannelInfo(n)%SensorID), &
+                            ChannelInfo(n)%Sensor_Channel(l), &
+                            m
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
                                   Error_Status, &
@@ -722,12 +763,12 @@ CONTAINS
           END IF
           
           ! Tangent-linear model
-          Error_Status = CRTM_Compute_RTSolution_TL( Atmosphere(m)          , &  ! FWD Input
+          Error_Status = CRTM_Compute_RTSolution_TL( Atm                    , &  ! FWD Input
                                                      Surface(m)             , &  ! FWD Input
                                                      AtmOptics              , &  ! FWD Input
                                                      SfcOptics              , &  ! FWD Input
                                                      RTSolution(ln,m)       , &  ! FWD Input
-                                                     Atmosphere_TL(m)       , &  ! TL  Input
+                                                     Atm_TL                 , &  ! TL  Input
                                                      Surface_TL(m)          , &  ! TL  Input
                                                      AtmOptics_TL           , &  ! TL  Input
                                                      SfcOptics_TL           , &  ! TL  Input 
@@ -738,10 +779,11 @@ CONTAINS
                                                      RTV                    , &  ! Internal variable input
                                                      Message_Log=Message_Log  )  ! Error messaging
           IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message, '( "Error computing RTSolution_TL for ", a, &
-                              &", channel ", i0 )' ) &
-                            TRIM( ChannelInfo(n)%SensorID ), &
-                            ChannelInfo(n)%Sensor_Channel(l)
+            WRITE( Message,'("Error computing RTSolution_TL for ",a, &
+                            &", channel ", i0,", profile #",i0)' ) &
+                            TRIM(ChannelInfo(n)%SensorID), &
+                            ChannelInfo(n)%Sensor_Channel(l), &
+                            m
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
                                   Error_Status, &
@@ -785,13 +827,35 @@ CONTAINS
       AllocStatus(1)   =CRTM_Destroy_Predictor( Predictor )
       IF ( ANY(AllocStatus /= SUCCESS ) .OR. ANY(AllocStatus_TL /= SUCCESS ) ) THEN
         Error_Status = WARNING
+        WRITE( Message,'("Error deallocating local data structures for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating local structures', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
       END IF
 
     END DO Profile_Loop
+
+
+    ! --------------------------------------------
+    ! Destroy "extra layers" atmosphere structures
+    ! --------------------------------------------
+    Status_FWD = CRTM_Destroy_Atmosphere( Atm )
+    IF ( Status_FWD /= SUCCESS ) THEN
+      Error_Status = WARNING
+      CALL Display_Message( ROUTINE_NAME, &                                      
+                            'Error deallocating extra layers Atmosphere structure', & 
+                            Error_Status, &                                      
+                            Message_Log=Message_Log )                            
+    END IF                                                                       
+    Status_TL = CRTM_Destroy_Atmosphere( Atm_TL )
+    IF ( Status_TL /= SUCCESS ) THEN
+      Error_Status = WARNING
+      CALL Display_Message( ROUTINE_NAME, &                                      
+                            'Error deallocating extra layers Atmosphere_TL structure', & 
+                            Error_Status, &                                      
+                            Message_Log=Message_Log )                            
+    END IF                                                                       
 
   END FUNCTION CRTM_Tangent_Linear
 

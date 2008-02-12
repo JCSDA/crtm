@@ -303,7 +303,19 @@ CONTAINS
                                             SensorInfo%Microwave_Flag, &
                                             SensorInfo%WMO_Sensor_ID, &
                                             SensorInfo%WMO_Satellite_ID, &
-                                            n_Channels 
+                                            n_Channels
+      IF ( IO_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Error reading SensorInfo line buffer in sensor header read. ",&
+                        &"Sensors already read = ",i0,". IOSTAT = ",i0)' ) &
+                        n_Sensors, IO_Status
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        CLOSE( FileID )
+        RETURN
+      END IF 
 
 
       ! Allocate the SensorInfo structure pointer components

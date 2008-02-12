@@ -100,9 +100,10 @@ MODULE CRTM_RTSolution
     PRIVATE
 
     ! Dimension information
-    INTEGER :: n_Layers  = 0  ! Number of atmospheric layers
-    INTEGER :: n_Streams = 0  ! Number of *hemispheric* stream angles used in RT
-    INTEGER :: n_Angles  = 0  ! n_Streams + sensor zenith angle
+    INTEGER :: n_Layers       = 0  ! Total number of atmospheric layers
+    INTEGER :: n_Added_Layers = 0  ! Number of layers appended to TOA
+    INTEGER :: n_Streams      = 0  ! Number of *hemispheric* stream angles used in RT
+    INTEGER :: n_Angles       = 0  ! n_Streams + sensor zenith angle
 
     ! Variable to hold the various portions of the
     ! radiance for emissivity retrieval algorithms
@@ -2371,6 +2372,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message 
     INTEGER :: i, k, nZ
+    INTEGER :: no, na, nt
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Factor  ! SfcOptics quadrature weights normalisation factor
     REAL(fp) :: User_Emissivity, Direct_Reflectivity
@@ -2385,11 +2387,18 @@ CONTAINS
     ! Short named local copies
     u = ONE / GeometryInfo%Secant_Sensor_Zenith
     ! Populate the RTV structure
-    RTV%n_Streams = RTSolution%n_Full_Streams/2
-    RTV%n_Layers  = Atmosphere%n_Layers
+    RTV%n_Added_Layers = Atmosphere%n_Added_Layers
+    RTV%n_Layers       = Atmosphere%n_Layers
+    RTV%n_Streams      = RTSolution%n_Full_Streams/2
     ! Save the optical depth if required
     IF ( ASSOCIATED( RTSolution%Layer_Optical_Depth ) ) THEN
-      RTSolution%Layer_Optical_Depth( 1:RTV%n_Layers ) = AtmOptics%Optical_Depth( 1:RTV%n_Layers )
+      ! Shorter names for indexing
+      no = RTSolution%n_Layers  ! Original no. of layers
+      na = RTV%n_Added_Layers   ! No. of added layers
+      nt = RTV%n_Layers         ! Current total no. of layers
+      ! Assign only the optical depth profile
+      ! defined by the user input layering
+      RTSolution%Layer_Optical_Depth(1:no) = AtmOptics%Optical_Depth(na+1:nt)
     END IF
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
@@ -2859,6 +2868,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message 
     INTEGER :: i, k, nZ
+    INTEGER :: no, na, nt
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Solar_Irradiance
@@ -2888,8 +2898,13 @@ CONTAINS
     SfcOptics_TL%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
     ! Save the TL optical depth if required
     IF ( ASSOCIATED( RTSolution_TL%Layer_Optical_Depth ) ) THEN
-      RTSolution_TL%Layer_Optical_Depth( 1:RTV%n_Layers ) = &
-        AtmOptics_TL%Optical_Depth( 1:RTV%n_Layers )
+      ! Shorter names for indexing
+      no = RTSolution_TL%n_Layers  ! Original no. of layers
+      na = RTV%n_Added_Layers      ! No. of added layers
+      nt = RTV%n_Layers            ! Current total no. of layers
+      ! Assign only the optical depth profile
+      ! defined by the user input layering
+      RTSolution_TL%Layer_Optical_Depth(1:no) = AtmOptics_TL%Optical_Depth(na+1:nt)
     END IF
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
@@ -3271,6 +3286,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message 
     INTEGER :: i, k, nZ
+    INTEGER :: no, na, nt
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Solar_Irradiance
@@ -3493,8 +3509,13 @@ CONTAINS
     ! Save the adjoint optical depth if required
     ! ------------------------------------------
     IF ( ASSOCIATED( RTSolution_AD%Layer_Optical_Depth ) ) THEN
-      RTSolution_AD%Layer_Optical_Depth(1:RTV%n_Layers) = &
-        AtmOptics_AD%Optical_Depth(1:RTV%n_Layers)
+      ! Shorter names for indexing
+      no = RTSolution_AD%n_Layers  ! Original no. of layers
+      na = RTV%n_Added_Layers      ! No. of added layers
+      nt = RTV%n_Layers            ! Current total no. of layers
+      ! Assign only the optical depth profile
+      ! defined by the user input layering
+      RTSolution_AD%Layer_Optical_Depth(1:no) = AtmOptics_AD%Optical_Depth(na+1:nt)
     END IF
 
   END FUNCTION CRTM_Compute_RTSolution_AD

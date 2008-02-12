@@ -101,8 +101,9 @@ AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
                              -qcheck \
                              -qdbg \
                              -qextchk \
-                             -qfloat=nomaf:rndsngl \
-                             -qflttrap=ov:zero:inv \
+                             -qfloat=nomaf:rndsngl:nans \
+                             -qflttrap=ov:zero:inv:en \
+                             -qinitauto \
                              -qfree=f90 \
                              -qhalt=W \
                              -qlanglvl=95pure \
