@@ -46,7 +46,7 @@ PROGRAM Compute_MW_Transmittance
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Compute_MW_Transmittance'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Compute_MW_Transmittance.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
+    '$Id$'
   ! Keyword argument set value
   INTEGER, PARAMETER :: SET = 1
   ! Direction names
@@ -147,7 +147,7 @@ PROGRAM Compute_MW_Transmittance
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to compute transmittance profiles for user-defined '//&
                         'microwave instruments.', &
-                        '$Revision: $' )
+                        '$Revision$' )
 
   ! --------------
   ! Get user input
