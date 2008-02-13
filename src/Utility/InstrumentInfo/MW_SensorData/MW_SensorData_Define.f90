@@ -274,8 +274,7 @@ MODULE MW_SensorData_Define
   ! --------------------
   ! Central frequency
   REAL(fp), PARAMETER :: MSU_F0(N_MSU_CHANNELS) = &
-    (/ 50.35_fp, 53.79_fp, 55.02_fp, 58.01_fp /)
-
+    (/ 50.30_fp, 53.74_fp, 54.96_fp, 57.95_fp /)
   ! MSU I/F band limits in GHz. All channel bandwidths are 220MHz
   ! with a 20MHz stopband at the local oscillator frequency
   REAL(fp), PARAMETER :: MSU_IF_BAND( 2, MAX_N_SIDEBANDS, N_MSU_CHANNELS ) = &
