@@ -1,0 +1,42 @@
+$Id$
+
+To build this little example program that calls the CRTM K-Matrix model:
+
+1) You need to build the CRTM library.
+
+2) You may need to modify the following macros in the Makefile in this directory:
+
+   CRTM_DIR
+     This tells the compiler where the CRTM library is. Currently it is set
+     to $(HOME)/local/CRTM.
+   
+   FC
+     This defines the Fortran95 compiler to use. Currently it is set to gfortran.
+     To download gfortran either visit
+       http://gcc.gnu.org/wiki/GFortran
+     or your friendly local sysadmin.
+   
+   FC_FLAGS
+     These are the compiler flags. Currently they are set to what is used for
+     CRTM development using the gfortran compiler.
+
+3) Type
+     make
+   to build the example prgram and link in the CRTM library.
+   
+4) Type
+     Example_K_Matrix
+   to run the example program. Coefficient data for three sensors are provided. The
+   sensor id for these three sensors are:
+     hirs4_n18
+     amsua_n18
+     mhs_n18
+
+5) Output from the example program for the three test sensors is in the /Results
+   subdirectory. Compare that output to yours.
+   
+
+If you have any problems, contact the JCSDA CRTM list at:
+  ncep.list.emc.jcsda_crtm@noaa.gov
+
+
