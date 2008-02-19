@@ -52,7 +52,7 @@ MODULE CRTM_MW_Water_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_MW_Water_SfcOptics.f90,v 1.7.2.1 2006/09/07 09:54:32 frpv Exp $'
+  '$Id$'
   ! Parameter to set whether the Fastem1 or NESDIS model is used
   LOGICAL, PARAMETER :: FASTEM = .TRUE.
 

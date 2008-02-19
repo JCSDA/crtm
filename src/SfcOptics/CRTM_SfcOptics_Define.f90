@@ -44,7 +44,7 @@ MODULE CRTM_SfcOptics_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_SfcOptics_Define.f90,v 1.16 2006/05/25 19:39:28 wd20pd Exp $'
+  '$Id$'
 
   
   ! -----------------------------------

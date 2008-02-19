@@ -52,7 +52,7 @@ MODULE CRTM_IR_Land_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_IR_Land_SfcOptics.f90,v 1.5.2.1 2006/09/07 09:54:32 frpv Exp $'
+  '$Id$'
 
 
   ! --------------------------------------
