@@ -23,6 +23,8 @@ SRC_FILES = Type_Kinds.f90 \
             NESDIS_AMSRE_SNOWEM_Module.f90 \
             NESDIS_AMSU_SICEEM_Module.f90 \
             NESDIS_AMSU_SnowEM_Module.f90 \
+            NESDIS_MHS_SICEEM_Module.f90 \
+            NESDIS_MHS_SnowEM_Module.f90 \
             NESDIS_LandEM_Module.f90 \
             NESDIS_OCEANEM_Module.f90 \
             NESDIS_SEAICE_PHYEM_MODULE.f90 \
