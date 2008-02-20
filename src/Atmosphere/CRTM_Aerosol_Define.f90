@@ -992,6 +992,7 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Aerosol(scalar)'
+    CHARACTER(*), PARAMETER :: FFMT = 'es22.15'
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: ULP
@@ -1059,26 +1060,33 @@ CONTAINS
                             Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
-    
     DO k = 1, Aerosol_LHS%n_Layers
       IF ( .NOT. Compare_Float( Aerosol_LHS%Effective_Radius(k), &
                                 Aerosol_RHS%Effective_Radius(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Effective_Radius values are different at level ",i0,&
+                        &":",3(1x,'//FFMT//'))') &
+                       k, Aerosol_LHS%Effective_Radius(k), &
+                          Aerosol_RHS%Effective_Radius(k), &
+                          Aerosol_LHS%Effective_Radius(k)-Aerosol_RHS%Effective_Radius(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Effective_Radius values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    
     DO k = 1, Aerosol_LHS%n_Layers
       IF ( .NOT. Compare_Float( Aerosol_LHS%Concentration(k), &
                                 Aerosol_RHS%Concentration(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
-        WRITE( Message,'("Concentration values are different at layer ",i0)' ) k
+        WRITE( Message,'("Concentration values are different at level ",i0,&
+                        &":",3(1x,'//FFMT//'))') &
+                       k, Aerosol_LHS%Concentration(k), &
+                          Aerosol_RHS%Concentration(k), &
+                          Aerosol_LHS%Concentration(k)-Aerosol_RHS%Concentration(k)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &

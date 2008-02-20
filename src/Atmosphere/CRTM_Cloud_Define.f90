@@ -987,6 +987,7 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Cloud(scalar)'
+    CHARACTER(*), PARAMETER :: FFMT = 'es22.15'
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: ULP
@@ -1054,40 +1055,52 @@ CONTAINS
                             Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
-    
     DO k = 1, Cloud_LHS%n_Layers
       IF ( .NOT. Compare_Float( Cloud_LHS%Effective_Radius(k), &
                                 Cloud_RHS%Effective_Radius(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Effective_Radius values are different at level ",i0,&
+                        &":",3(1x,'//FFMT//'))') &
+                       k, Cloud_LHS%Effective_Radius(k), &
+                          Cloud_RHS%Effective_Radius(k), &
+                          Cloud_LHS%Effective_Radius(k)-Cloud_RHS%Effective_Radius(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Effective_Radius values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    
     DO k = 1, Cloud_LHS%n_Layers
       IF ( .NOT. Compare_Float( Cloud_LHS%Effective_Variance(k), &
                                 Cloud_RHS%Effective_Variance(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Effective_Variance values are different at level ",i0,&
+                        &":",3(1x,'//FFMT//'))') &
+                       k, Cloud_LHS%Effective_Variance(k), &
+                          Cloud_RHS%Effective_Variance(k), &
+                          Cloud_LHS%Effective_Variance(k)-Cloud_RHS%Effective_Variance(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Effective_Variance values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    
     DO k = 1, Cloud_LHS%n_Layers
       IF ( .NOT. Compare_Float( Cloud_LHS%Water_Content(k), &
                                 Cloud_RHS%Water_Content(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Water_Content values are different at level ",i0,&
+                        &":",3(1x,'//FFMT//'))') &
+                       k, Cloud_LHS%Water_Content(k), &
+                          Cloud_RHS%Water_Content(k), &
+                          Cloud_LHS%Water_Content(k)-Cloud_RHS%Water_Content(k)
         CALL Display_Message( ROUTINE_NAME, &
-                              'Water_Content values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
