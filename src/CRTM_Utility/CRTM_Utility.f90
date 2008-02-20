@@ -137,7 +137,7 @@ CONTAINS
       REAL( fp_kind ), intent(in),dimension(:,:) :: a
       INTEGER, INTENT( OUT ) :: Error_Status
 
-      INTEGER:: n,n1
+      INTEGER:: n
       REAL( fp_kind ), dimension(size(a,1),size(a,2)) :: b
       REAL(fp_kind ), dimension(size(a,1),size(a,2)) :: matinv 
       REAL( fp_kind ), dimension(size(a,1)) :: temp 
@@ -223,24 +223,5 @@ CONTAINS
  101   CONTINUE
        RETURN
        END subroutine Legendre_Rank1
-!
-!
-!
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: 
-!
-! $Date: 
-!
-! $Revision: 
-!
-! $Name:  
-!
-! $State: 
-!
-! $Log: 
-!
  END MODULE CRTM_UTILITY 
 !
