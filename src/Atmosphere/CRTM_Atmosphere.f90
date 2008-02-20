@@ -132,7 +132,6 @@ CONTAINS
     ! Local variables
     INTEGER :: Allocate_Status
     INTEGER :: i, j, k, n
-    INTEGER :: n_Layers
     REAL(fp), ALLOCATABLE :: pl(:), tl(:), al(:,:) ! Level arrays
     REAL(fp), ALLOCATABLE :: p(:) , t(:) , a(:,:)  ! Layer arrays
     REAL(fp) :: lpoly
@@ -413,9 +412,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AddLayers_Atmosphere_TL'
     ! Local variables
-    INTEGER :: Allocate_Status
-    INTEGER :: i, j, n
-    INTEGER :: n_Layers
+    INTEGER :: n
 
 
     ! Set up
@@ -544,9 +541,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AddLayers_Atmosphere_AD'
     ! Local variables
-    INTEGER :: Allocate_Status
     INTEGER :: i, j, n, no, nt
-    INTEGER :: n_Layers
 
 
     ! Set up

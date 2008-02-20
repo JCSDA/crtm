@@ -996,7 +996,7 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: i, j, k, m, n
+    INTEGER :: k
 
     ! Set up
     ! ------
@@ -1078,8 +1078,9 @@ CONTAINS
                                 Aerosol_RHS%Concentration(k), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Concentration values are different at layer ",i0)' ) k
         CALL Display_Message( ROUTINE_NAME, &
-                              'Concentration values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
