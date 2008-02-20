@@ -91,6 +91,8 @@ MODULE CRTM_CloudScatter
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
   ! Number of stream angle definitions
   INTEGER, PARAMETER :: TWO_STREAMS       =  2
   INTEGER, PARAMETER :: FOUR_STREAMS      =  4
@@ -235,7 +237,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: Sensor_Type
     REAL(fp) :: Frequency_MW, Frequency_IR
@@ -555,7 +557,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
@@ -870,7 +871,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter_AD'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
@@ -1283,12 +1283,11 @@ CONTAINS
     INTEGER  :: k
     INTEGER  :: l
     REAL(fp) :: f_int   , r_int
-    REAL(fp) :: f_int_AD
     REAL(fp), DIMENSION(NPTS) :: f, r
-    REAL(fp), DIMENSION(NPTS) :: wlp, xlp
-    REAL(fp), DIMENSION(NPTS) :: wdlp, xdlp
+    REAL(fp), DIMENSION(NPTS) :: wlp
+    REAL(fp), DIMENSION(NPTS) :: xdlp
 
-    ! No TL output when effective radius
+    ! No AD output when effective radius
     ! is outside LUT bounds
     IF ( Reff < CloudC%Reff_IR(1) .OR. &
          Reff > CloudC%Reff_IR(CloudC%n_IR_Radii) ) THEN
@@ -1300,9 +1299,6 @@ CONTAINS
       pcoeff_AD = ZERO
       RETURN
     END IF
-    
-    ! The local AD inputs
-    f_int_AD = ZERO
     
     ! Find the frequency and effective
     ! radius indices for interpolation
@@ -1655,16 +1651,12 @@ CONTAINS
     INTEGER  :: k1, k2
     INTEGER  :: k, l, m
     REAL(fp) :: f_int   , r_int   , t_int
-    REAL(fp) :: f_int_AD
     REAL(fp), DIMENSION(NPTS) :: f, r, t
     REAL(fp), DIMENSION(NPTS) :: wlp, xlp, ylp
     REAL(fp), DIMENSION(NPTS) :: xdlp, ydlp
 
     ! Effective variance isn't used yet
     Reff_Var_AD = ZERO
-    
-    ! Initialise local adjoint variables
-    f_int_AD = ZERO
     
     ! Find the frequency, effective radius
     ! and temperature indices for interpolation
@@ -1692,7 +1684,7 @@ CONTAINS
     ! Perform interpolation based on cloud type
     SELECT CASE (Cloud_Type)
       CASE (WATER_CLOUD)
-        ! No TL output when temperature
+        ! No AD output when temperature
         ! is outside LUT bounds
         IF ( Temperature < CloudC%Temperature(1) .OR. &
              Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) THEN
@@ -1705,7 +1697,7 @@ CONTAINS
         CALL interp_2D_AD(CloudC%ke_L_MW(i1:i2,1,k1:k2), wlp, ydlp, ke_AD, Temperature_AD)
 
       CASE (RAIN_CLOUD)
-        ! No TL output when both effective radius
+        ! No AD output when both effective radius
         ! and temperature are outside LUT bounds
         IF ( (Reff < CloudC%Reff_MW(1) .OR. &
               Reff > CloudC%Reff_MW(CloudC%n_MW_Radii)) .AND. &
@@ -1754,7 +1746,7 @@ CONTAINS
           CASE (HAIL_CLOUD)   ; k = 3
           CASE DEFAULT        ; k = 1
         END SELECT
-        ! No TL output when effective radius
+        ! No AD output when effective radius
         ! is outside LUT bounds
         IF ( Reff < CloudC%Reff_MW(1) .OR. &
              Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) THEN

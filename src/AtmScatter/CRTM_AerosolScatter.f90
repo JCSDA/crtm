@@ -94,6 +94,8 @@ MODULE CRTM_AerosolScatter
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
   '$Id$'  
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
   ! Number of stream angle definitions
   INTEGER, PARAMETER :: TWO_STREAMS       =  2
   INTEGER, PARAMETER :: FOUR_STREAMS      =  4
@@ -235,7 +237,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter'
     ! Local Variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: k, ka, l, m, n
     INTEGER  :: Sensor_Type
     REAL(fp) :: Wavelength
@@ -535,7 +537,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter_TL'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER  :: k, ka, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
@@ -823,7 +824,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_AerosolScatter_AD'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER   :: k, ka, l, m, n
     INTEGER   :: n_Legendre_Terms, n_Phase_Elements
     INTEGER   :: Sensor_Type
@@ -987,7 +987,6 @@ CONTAINS
                                 pcoeff_AD                                    , & ! AD Input
                                 Atmosphere_AD%Aerosol(n)%Effective_Radius(ka)  ) ! AD Input
                                 
-            
       END DO Aerosol_Layer_loop
     END DO Aerosol_loop           
         
@@ -1113,8 +1112,8 @@ CONTAINS
     INTEGER  :: k, l, m
     REAL(fp) :: f_int, r_int
     REAL(fp), DIMENSION(NPTS) :: f, r
-    REAL(fp), DIMENSION(NPTS) :: wlp, xlp
-    REAL(fp), DIMENSION(NPTS) :: wdlp, xdlp
+    REAL(fp), DIMENSION(NPTS) :: wlp
+    REAL(fp), DIMENSION(NPTS) :: xdlp
         
     ! Assign a type index
     !! k = Aerosol_Type ??
@@ -1163,7 +1162,7 @@ CONTAINS
       DO m = 1, AerosolScatter_TL%n_Phase_Elements
         DO l = 0, AerosolScatter_TL%n_Legendre_Terms
           CALL interp_2D_TL(AeroC%pcoeff(i1:i2,j1:j2,k,l+AerosolScatter_TL%lOffset,m), &
-                                              wlp, xdlp, Reff_TL, pcoeff_TL(l,m))
+                            wlp, xdlp, Reff_TL, pcoeff_TL(l,m))
         END DO
       END DO
     END IF
@@ -1203,7 +1202,6 @@ CONTAINS
     INTEGER  :: j1, j2
     INTEGER  :: k, l, m
     REAL(fp) :: f_int, r_int
-    REAL(fp) :: f_int_AD
     REAL(fp), DIMENSION(NPTS) :: f, r
     REAL(fp), DIMENSION(NPTS) :: wlp, xdlp
 
@@ -1254,7 +1252,7 @@ CONTAINS
       DO m = 1, AerosolScatter_AD%n_Phase_Elements
         DO l = 0, AerosolScatter_AD%n_Legendre_Terms
           CALL interp_2D_AD(AeroC%pcoeff(i1:i2,j1:j2,k,l+AerosolScatter_AD%lOffset,m), &
-                                              wlp, xdlp, pcoeff_AD(l,m), Reff_AD)
+                                         wlp, xdlp, pcoeff_AD(l,m), Reff_AD)
         END DO
       END DO
     END IF
