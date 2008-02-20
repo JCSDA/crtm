@@ -50,21 +50,11 @@ MODULE ZTauCoeff_Binary_IO
   '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
+  ! Message character length
+  INTEGER, PARAMETER :: ML = 512
 
 
 CONTAINS
-
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                      ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-
-
-
 
 
 !################################################################################
@@ -75,22 +65,148 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-  FUNCTION Inquire_ZTauCoeff_Binary( Filename    , &  ! Input
-                                     n_Predictors, &  ! Optional Output
-                                     n_Layers    , &  ! Optional Output
-                                     n_Channels  , &  ! Optional Output
-                                     Release     , &  ! Optional Output
-                                     Version     , &  ! Optional Output
-                                     RCS_Id      , &  ! Revision Control
-                                     Message_Log ) &  ! Error Messaging
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Inquire_ZTauCoeff_Binary
+!
+! PURPOSE:
+!       Function to inquire a Binary ZTauCoeff format file to obtain the
+!       dimensions and attributes.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Inquire_ZTauCoeff_Binary( Filename                          , &  ! Input
+!                                                n_Predictors     =n_Predictors    , &  ! Optional output
+!                                                n_Layers         =n_Layers        , &  ! Optional output
+!                                                n_Channels       =n_Channels      , &  ! Optional output
+!                                                n_Sets           =n_Sets          , &  ! Optional output
+!                                                Release          =Release         , &  ! Optional output
+!                                                Version          =Version         , &  ! Optional output
+!                                                Sensor_Id        =Sensor_Id       , &  ! Optional output
+!                                                WMO_Satellite_Id =WMO_Satellite_Id, &  ! Optional output
+!                                                WMO_Sensor_Id    =WMO_Sensor_Id   , &  ! Optional output
+!                                                RCS_Id           =RCS_Id          , &  ! Revision control
+!                                                Message_Log      =Message_Log       )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       Filename:           Character string specifying the name of the
+!                           ZTauCoeff Binary format data file to inquire.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       n_Predictors:       Number of predictors.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Layers:           Number of atmospheric layers.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Channels:         Number of sensor channels.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Sets:             Number of sets of ZTauCoeff data.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Release:            The release number of the Binary ZTauCoeff file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Version:            The version number of the Binary ZTauCoeff file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Sensor_Id:          Character string sensor/platform identifier.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       WMO_Satellite_Id:   The WMO code used to identify satellite platforms.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       WMO_Sensor_Id:      The WMO code used to identify sensors.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the Binary file inquiry was successful.
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION Inquire_ZTauCoeff_Binary( Filename        , &  ! Input
+                                     n_Predictors    , &  ! Optional Output
+                                     n_Layers        , &  ! Optional Output
+                                     n_Channels      , &  ! Optional Output
+                                     n_Sets          , &  ! Optional Output
+                                     Release         , &  ! Optional Output
+                                     Version         , &  ! Optional Output
+                                     Sensor_Id       , &  ! Optional output
+                                     WMO_Satellite_Id, &  ! Optional output
+                                     WMO_Sensor_Id   , &  ! Optional output
+                                     RCS_Id          , &  ! Revision Control
+                                     Message_Log     ) &  ! Error Messaging
                                    RESULT( Error_Status )
     ! Arguments
     CHARACTER(*)          , INTENT(IN)  :: Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Predictors
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Layers    
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels  
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Sets  
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
+    INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
+    INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id   
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -98,13 +214,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_ZTauCoeff_Binary'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: Rel, Ver
-    INTEGER :: n_File_Predictors
-    INTEGER :: n_File_Layers    
-    INTEGER :: n_File_Channels  
+    TYPE(ZTauCoeff_type) :: Dummy  
 
     ! Set up
     ! ------
@@ -113,12 +226,8 @@ CONTAINS
 
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'File '//TRIM(Filename)//' not found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      Message = 'File '//TRIM(Filename)//' not found.'
+      CALL Inquire_Cleanup(); RETURN
     END IF
     
     
@@ -128,79 +237,179 @@ CONTAINS
                                      FileID, &
                                      Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening ZTauCoeff file '//TRIM(Filename), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      Message = 'Error opening ZTauCoeff file '//TRIM(Filename)
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Read the Release and Version information
     ! ----------------------------------------
-    READ(FileID, IOSTAT=IO_Status) Rel, Ver
+    READ( FileID, IOSTAT=IO_Status ) Dummy%Release, Dummy%Version
     IF ( IO_Status /= 0 ) THEN
-      WRITE(Message,'("Error reading ZTauCoeff Release/Version values from ", a, &
-                     &". IOSTAT = ", i0 )' ) &
-                     TRIM(Filename), IO_Status
-      CLOSE(FileID)
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      WRITE( Message,'("Error reading ZTauCoeff Release/Version values from ",a,&
+                      &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
     END IF
 
 
     ! Read the data dimensions
     ! ------------------------
-    READ(FileID, IOSTAT=IO_Status) n_File_Predictors, &
-                                   n_File_Layers    , &
-                                   n_File_Channels  
+    READ( FileID, IOSTAT=IO_Status ) Dummy%n_Predictors, &
+                                     Dummy%n_Layers    , &
+                                     Dummy%n_Channels  , &   
+                                     Dummy%n_Sets  
     IF ( IO_Status /= 0 ) THEN
-      WRITE(Message,'("Error reading ZTauCoeff dimension values from ", a, &
-                     &". IOSTAT = ", i0 )' ) &
-                     TRIM(Filename), IO_Status
-      CLOSE(FileID)
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      WRITE( Message,'("Error reading ZTauCoeff dimension values from ",a,&
+                      &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
+
+
+    ! Read the sensor ids
+    ! -------------------
+    READ( FileID, IOSTAT=IO_Status ) Dummy%Sensor_Id       , &
+                                     Dummy%WMO_Satellite_Id, &
+                                     Dummy%WMO_Sensor_Id    
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message, '("Error reading ZTauCoeff sensor information from ",a,&
+                       &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
+    
+    
+    ! Close the file
+    ! --------------
+    CLOSE( FileID, IOSTAT=IO_Status )
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error closing ", a, ". IOSTAT = ", i0 )' ) &
+                    TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Assign the return arguments
     ! ---------------------------
     ! Dimensions
-    IF ( PRESENT(n_Predictors) ) n_Predictors = n_File_Predictors
-    IF ( PRESENT(n_Layers    ) ) n_Layers     = n_File_Layers    
-    IF ( PRESENT(n_Channels  ) ) n_Channels   = n_File_Channels  
+    IF ( PRESENT(n_Predictors) ) n_Predictors = Dummy%n_Predictors
+    IF ( PRESENT(n_Layers    ) ) n_Layers     = Dummy%n_Layers    
+    IF ( PRESENT(n_Channels  ) ) n_Channels   = Dummy%n_Channels  
+    IF ( PRESENT(n_Sets  ) )     n_Sets       = Dummy%n_Sets  
 
     ! Release/Version information
-    IF ( PRESENT(Release) ) Release = Rel
-    IF ( PRESENT(Version) ) Version = Ver
+    IF ( PRESENT(Release) ) Release = Dummy%Release
+    IF ( PRESENT(Version) ) Version = Dummy%Version
 
-
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE(Message,'("Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                    TRIM(Filename), IO_Status
+    ! Sensor ids
+    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = Dummy%Sensor_Id       
+    IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id = Dummy%WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id    = Dummy%WMO_Sensor_Id   
+    
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      CHARACTER(256) :: Close_Message
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          CLOSE( FileID, IOSTAT=IO_Status )
+          IF ( IO_Status /= 0 ) THEN
+            WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
+                                 TRIM(Filename), IO_Status
+            Message = TRIM(Message)//TRIM(Close_Message)
+          END IF
+        END IF
+      END IF
+      ! Set error status and print error message
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
-      RETURN
-    END IF
-    
+    END SUBROUTINE Inquire_CleanUp
+
   END FUNCTION Inquire_ZTauCoeff_Binary
 
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Read_ZTauCoeff_Binary
+!
+! PURPOSE:
+!       Function to read data from a Binary format ZTauCoeff file.
+!
+! CALLING SEQUENCE:
+!     Error_Status = Read_ZTauCoeff_Binary( Filename               , &  ! Input
+!                                           ZTauCoeff              , &  ! Output
+!                                           Quiet      =Quiet      , &  ! Optional input
+!                                           RCS_Id     =RCS_Id     , &  ! Revision control
+!                                           Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       Filename:     Character string specifying the name of the
+!                     Binary format ZTauCoeff data file to read.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       ZTauCoeff:    Structure to contain the Zeeman TauCoeff data
+!                     read from file.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(ZTauCoeff_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this keyword to suppress information messages being
+!                     printed to standard output (or the message log file if
+!                     the MESSAGE_LOG optional argument is used.) By default,
+!                     information messages are printed.
+!                     If QUIET = 0, information messages are OUTPUT.
+!                        QUIET = 1, information messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:       Character string containing the Revision Control
+!                     System Id field for the module.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the Binary data read was successful.
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! COMMENTS:
+!       If specified as the output data type, the INTENT on the output ZTauCoeff
+!       structure argument is IN OUT rather than just OUT. This is necessary
+!       because the argument may be defined on input. To prevent memory leaks,
+!       the IN OUT INTENT is a must.
+!
+!------------------------------------------------------------------------------
 
   FUNCTION Read_ZTauCoeff_Binary( Filename     , &  ! Input
                                   ZTauCoeff    , &  ! Output
@@ -223,16 +432,17 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_ZTauCoeff_Binary'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Destroy_Status
     LOGICAL :: Yes_File_Close
     LOGICAL :: Yes_Allocate
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: n_Predictors
-    INTEGER :: n_Layers    
-    INTEGER :: n_Channels  
+    INTEGER(Long) :: n_Predictors
+    INTEGER(Long) :: n_Layers    
+    INTEGER(Long) :: n_Channels  
+    INTEGER(Long) :: n_Sets  
 
     ! Set up
     ! ------
@@ -245,7 +455,7 @@ CONTAINS
       ! Check that the file exists
       IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
         Message = 'File '//TRIM(Filename)//' not found.'
-        GOTO 2000  ! Clean up
+        CALL Read_Cleanup( Destroy_Structure=SET ); RETURN
       END IF 
       ! Open the file
       Error_Status = Open_Binary_File( TRIM(Filename), &
@@ -253,7 +463,7 @@ CONTAINS
                                        Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error opening '//TRIM(Filename)
-        GOTO 2000  ! Clean up
+        CALL Read_Cleanup( Destroy_Structure=SET ); RETURN
       END IF
     ELSE
       ! Inquire for the logical unit number
@@ -261,7 +471,7 @@ CONTAINS
       ! Ensure it's valid
       IF ( FileID == -1 ) THEN
         Message = 'Error inquiring '//TRIM(Filename)//' for its FileID'
-        GOTO 2000  ! Clean up
+        CALL Read_Cleanup( Destroy_Structure=SET ); RETURN
       END IF
     END IF
 
@@ -291,10 +501,10 @@ CONTAINS
     ! ----------------------------------------
     READ( FileID, IOSTAT=IO_Status ) ZTauCoeff%Release, ZTauCoeff%Version
     IF ( IO_Status /= 0 ) THEN
-      WRITE(Message,'("Error reading ZTauCoeff Release/Version values from ", a, &
-                     &". IOSTAT = ", i0 )' ) &
-                     TRIM(Filename), IO_Status
-      GOTO 1000  ! Clean up
+      WRITE( Message,'("Error reading ZTauCoeff Release/Version values from ", a, &
+                      &". IOSTAT = ", i0 )' ) &
+                      TRIM(Filename), IO_Status
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
     ! Check the release
@@ -302,19 +512,20 @@ CONTAINS
                                            Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'ZTauCoeff Release check failed for '//TRIM(Filename)
-      GOTO 1000  ! Clean up
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
 
     ! Read the data dimensions
     ! ------------------------
-    READ(FileID, IOSTAT=IO_Status) n_Predictors, &
-                                   n_Layers    , &
-                                   n_Channels  
+    READ( FileID, IOSTAT=IO_Status ) n_Predictors, &
+                                     n_Layers    , &
+                                     n_Channels  , & 
+                                     n_Sets  
     IF ( IO_Status /= 0 ) THEN
-      WRITE(Message,'("Error reading ZTauCoeff dimension values from ",a,". IOSTAT = ",i0)' ) &
-                     TRIM(Filename), IO_Status
-      GOTO 1000  ! Clean up
+      WRITE( Message,'("Error reading ZTauCoeff dimension values from ",a,". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
 
@@ -324,41 +535,42 @@ CONTAINS
       Error_Status = Allocate_ZTauCoeff( n_Predictors, &
                                          n_Layers    , &
                                          n_Channels  , &
-                                         ZTauCoeff, &
+                                         n_Sets      , &
+                                         ZTauCoeff   , &
                                          Message_Log=Message_Log)
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'ZTauCoeff allocation failed'
-        GOTO 1000  ! Clean up
+        CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
       END IF
     END IF
 
 
     ! Read the sensor id information
     ! ------------------------------
-    READ(FileID, IOSTAT=IO_Status) ZTauCoeff%Sensor_Id       , &
-                                   ZTauCoeff%WMO_Satellite_Id, &
-                                   ZTauCoeff%WMO_Sensor_Id    
+    READ( FileID, IOSTAT=IO_Status ) ZTauCoeff%Sensor_Id       , &
+                                     ZTauCoeff%WMO_Satellite_Id, &
+                                     ZTauCoeff%WMO_Sensor_Id    
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error reading ZTauCoeff sensor information from ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      GOTO 1000  ! Clean up
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
 
     ! Read the Zeeman data
     ! --------------------
-    READ(FileID, IOSTAT=IO_Status) ZTauCoeff%Sensor_Channel, &
-                                   ZTauCoeff%Level_Altitude, &
-                                   ZTauCoeff%Level_Pressure, &
-                                   ZTauCoeff%Pressure      , &
-                                   ZTauCoeff%ChannelIndex  , &
-                                   ZTauCoeff%PredictorIndex, &
-                                   ZTauCoeff%Secant_Zenith , &
-                                   ZTauCoeff%C             
+    READ( FileID, IOSTAT=IO_Status ) ZTauCoeff%Sensor_Channel, &
+                                     ZTauCoeff%Temperature   , &
+                                     ZTauCoeff%Level_Pressure, &
+                                     ZTauCoeff%Pressure      , &
+                                     ZTauCoeff%ChannelIndex  , &
+                                     ZTauCoeff%PredictorIndex, &
+                                     ZTauCoeff%Secant_Zenith , &
+                                     ZTauCoeff%C             
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error reading ZTauCoeff data from ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      GOTO 1000  ! Clean up
+      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
 
@@ -367,7 +579,7 @@ CONTAINS
     IF ( Yes_File_Close ) THEN
       CLOSE( FileID, IOSTAT=IO_Status )
       IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
+        WRITE( Message, '("Error closing ",a," after read. IOSTAT = ",i0)' ) &
                         TRIM(Filename), IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -386,25 +598,115 @@ CONTAINS
                             INFORMATION, &
                             Message_Log=Message_Log )
     END IF
-
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID, IOSTAT=IO_Status )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = Destroy_ZTauCoeff( ZTauCoeff, Message_Log=Message_Log )
     
+  CONTAINS
+  
+    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      INTEGER, OPTIONAL, INTENT(IN) :: Destroy_Structure
+      CHARACTER(256) :: Close_Message
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          CLOSE( FileID, IOSTAT=IO_Status )
+          IF ( IO_Status /= 0 ) THEN
+            WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
+                                 TRIM(Filename), IO_Status
+            Message = TRIM(Message)//TRIM(Close_Message)
+          END IF
+        END IF
+      END IF
+      ! Destroy the structure if necessary
+      IF ( PRESENT(Destroy_Structure) ) THEN
+        IF ( Destroy_Structure == SET ) THEN
+          Destroy_Status = Destroy_ZTauCoeff(ZTauCoeff, Message_Log=Message_Log)
+          IF ( Destroy_Status /= SUCCESS ) &
+            Message = TRIM(Message)//'; Error destroying ZTauCoeff during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE Read_CleanUp
+
   END FUNCTION Read_ZTauCoeff_Binary
 
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Write_ZTauCoeff_Binary
+!
+! PURPOSE:
+!       Function to write ZTauCoeff data to a Binary format ZTauCoeff file.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Write_ZTauCoeff_Binary( Filename               , &  ! Input
+!                                              ZTauCoeff              , &  ! Input
+!                                              Quiet      =Quiet      , &  ! Optional input
+!                                              RCS_Id     =RCS_Id     , &  ! Revision control
+!                                              Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       Filename:     Character string specifying the name of the Binary
+!                     format ZTauCoeff data file to write data into.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       ZTauCoeff:    Structure containing the Zeeman TauCoeff data
+!                     to write to file.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(ZTauCoeff_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this keyword to suppress information messages being
+!                     printed to standard output (or the message log file if
+!                     the MESSAGE_LOG optional argument is used.) By default,
+!                     information messages are printed.
+!                     If QUIET = 0, information messages are OUTPUT.
+!                        QUIET = 1, information messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       Integer
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:       Character string containing the Revision Control
+!                     System Id field for the module.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the Binary data write was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       If an error occurs, the output file is deleted.
+!
+!------------------------------------------------------------------------------
 
   FUNCTION Write_ZTauCoeff_Binary( Filename     , &  ! Input            
                                    ZTauCoeff    , &  ! Output           
@@ -425,7 +727,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_ZTauCoeff_Binary'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Yes_File_Close
     LOGICAL :: Noisy
     INTEGER :: IO_Status
@@ -445,7 +747,7 @@ CONTAINS
                                        Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error opening '//TRIM(Filename)
-        GOTO 2000  ! Clean up
+        CALL Write_Cleanup(); RETURN
       END IF
     ELSE
       ! Inquire for the logical unit number
@@ -453,30 +755,31 @@ CONTAINS
       ! Ensure it's valid
       IF ( FileID == -1 ) THEN
         Message = 'Error inquiring '//TRIM(Filename)//' for its FileID'
-        GOTO 2000  ! Clean up
+        CALL Write_Cleanup( Close_File=SET ); RETURN
       END IF
     END IF
 
     ! Check structure association status
     IF ( .NOT. Associated_ZTauCoeff( ZTauCoeff ) ) THEN
       Message = 'Some or all INPUT ZTauCoeff pointer members are NOT associated.'
-      GOTO 1000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
     
     ! Check the release
     Error_Status = CheckRelease_ZTauCoeff( ZTauCoeff, &
-                                         Message_Log=Message_Log)
+                                           Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'ZTauCoeff structure Release check failed.'
-      GOTO 1000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
 
     ! Check the structure dimensions
     IF ( ZTauCoeff%n_Predictors < 1 .OR. &
          ZTauCoeff%n_Layers     < 1 .OR. &
-         ZTauCoeff%n_Channels   < 1 ) THEN
+         ZTauCoeff%n_Channels   < 1 .OR. &
+         ZTauCoeff%n_Sets       < 1 ) THEN
       Message = 'Dimensions of ZTauCoeff structure are < or = 0.'
-      GOTO 1000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
 
     ! Default action is to close the file on exit....
@@ -501,7 +804,7 @@ CONTAINS
       WRITE(Message,'("Error writing ZTauCoeff Release/Version values to ", a, &
                      &". IOSTAT = ", i0 )' ) &
                      TRIM(Filename), IO_Status
-      GOTO 2000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
 
 
@@ -509,12 +812,14 @@ CONTAINS
     ! -------------------------
     WRITE(FileID, IOSTAT=IO_Status) ZTauCoeff%n_Predictors, &
                                     ZTauCoeff%n_Layers    , &
-                                    ZTauCoeff%n_Channels  
+                                    ZTauCoeff%n_Channels  , &
+                                    ZTauCoeff%n_Sets
+  
     IF ( IO_Status /= 0 ) THEN
       WRITE(Message,'("Error writing ZTauCoeff dimension values to ", a, &
                      &". IOSTAT = ", i0 )' ) &
                      TRIM(Filename), IO_Status
-      GOTO 2000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
 
 
@@ -526,14 +831,14 @@ CONTAINS
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error writing ZTauCoeff sensor information to ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      GOTO 2000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
 
 
-    ! Write the antenna correction data
+    ! Write the data
     ! ---------------------------------
     WRITE(FileID, IOSTAT=IO_Status) ZTauCoeff%Sensor_Channel, &
-                                    ZTauCoeff%Level_Altitude, &
+                                    ZTauCoeff%Temperature   , &
                                     ZTauCoeff%Level_Pressure, &
                                     ZTauCoeff%Pressure      , &
                                     ZTauCoeff%ChannelIndex  , &
@@ -543,7 +848,7 @@ CONTAINS
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error writing ZTauCoeff data to ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      GOTO 2000  ! Clean up
+      CALL Write_Cleanup( Close_File=SET ); RETURN
     END IF
 
     
@@ -572,21 +877,40 @@ CONTAINS
                             Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID, IOSTAT=IO_Status, STATUS='DELETE' )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+  CONTAINS
+  
+    SUBROUTINE Write_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      CHARACTER(256) :: Close_Message
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          CLOSE( FileID, IOSTAT=IO_Status, STATUS='DELETE' )
+          IF ( IO_Status /= 0 ) THEN
+            WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
+                                 TRIM(Filename), IO_Status
+            Message = TRIM(Message)//TRIM(Close_Message)
+          END IF
+        END IF
+      END IF
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_ZTauCoeff_Binary
+
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PRIVATE MODULE ROUTINES ##                      ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
 
 END MODULE ZTauCoeff_Binary_IO

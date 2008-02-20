@@ -45,6 +45,7 @@ PROGRAM Test_ZTauCoeff
   INTEGER, PARAMETER :: N_PREDICTORS = 10
   INTEGER, PARAMETER :: N_LAYERS     = 100
   INTEGER, PARAMETER :: N_CHANNELS   = 6
+  INTEGER, PARAMETER :: N_SETS       = 3
 
 
   ! ---------
@@ -72,6 +73,7 @@ PROGRAM Test_ZTauCoeff
   Error_Status = Allocate_ZTauCoeff( N_PREDICTORS, &  ! Input
                                      N_LAYERS    , &  ! Input
                                      N_CHANNELS  , &  ! Input
+                                     N_SETS      , &  ! Input
                                      ZTauCoeff     )  ! Output
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
@@ -85,9 +87,9 @@ PROGRAM Test_ZTauCoeff
   ! --------------------------------
   ZTauCoeff%Sensor_Id = 'sensor_platform'
   ZTauCoeff%Sensor_Channel = (/(n, n=1,ZTauCoeff%n_Channels)/)
-  ZTauCoeff%Level_Altitude = 1.0_fp
-  ZTauCoeff%Level_Pressure = 2.0_fp
-  ZTauCoeff%Pressure       = 3.0_fp
+  ZTauCoeff%Level_Pressure = 1.0_fp
+  ZTauCoeff%Pressure       = 2.0_fp
+  ZTauCoeff%Temperature    = 3.0_fp
   ZTauCoeff%ChannelIndex   = 4
   ZTauCoeff%PredictorIndex = 5
   ZTauCoeff%Secant_Zenith  = 6.0_fp
@@ -149,9 +151,9 @@ PROGRAM Test_ZTauCoeff
   ! Write, read and test for equality
   WRITE( *,'(10x,"Writing/reading/checking test netCDF ZTauCoeff datafile ...")' )
   Error_Status = Write_ZTauCoeff_netCDF( NC_FILENAME, ZTauCoeff, &
-                                       Title   = 'This is a title'  , &
-                                       History = PROGRAM_RCS_ID     , &
-                                       Comment = 'This is a comment'  )
+                                         Title   = 'This is a title'  , &
+                                         History = PROGRAM_RCS_ID     , &
+                                         Comment = 'This is a comment'  )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error writing test ZTauCoeff netCDF data file.', &
@@ -159,9 +161,9 @@ PROGRAM Test_ZTauCoeff
     STOP
   END IF
   Error_Status = Read_ZTauCoeff_netCDF( NC_FILENAME, ZTauCoeff_Copy, &
-                                      Title   = Title  , &
-                                      History = History, &
-                                      Comment = Comment  )
+                                        Title   = Title  , &
+                                        History = History, &
+                                        Comment = Comment  )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error reading test ZTauCoeff netCDF data file.', &

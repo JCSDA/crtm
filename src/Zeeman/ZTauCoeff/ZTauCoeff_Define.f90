@@ -5,7 +5,7 @@
 ! manipulate it.
 !
 ! CREATION HISTORY:
-!       Written by:  Paul van Delst, CIMSS/SSEC, 17-Jul-2007 
+!       Written by:  Paul van Delst, 17-Jul-2007 
 !                    paul.vandelst@noaa.gov
 !                    Yong Han, NESDIS/STAR
 !                    yong.han@noaa.gov
@@ -52,10 +52,12 @@ MODULE ZTauCoeff_Define
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
+  ! Message character length
+  INTEGER, PARAMETER :: ML = 512
   ! String length
   INTEGER, PARAMETER :: SL = 20
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: ZTAUCOEFF_RELEASE = 1
+  INTEGER, PARAMETER :: ZTAUCOEFF_RELEASE = 2
   INTEGER, PARAMETER :: ZTAUCOEFF_VERSION = 1
   ! Sensor Id default values
   INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
@@ -73,23 +75,24 @@ MODULE ZTauCoeff_Define
     INTEGER(Long) :: n_Predictors = 0 ! Iuse
     INTEGER(Long) :: n_Layers     = 0 ! K
     INTEGER(Long) :: n_Channels   = 0 ! L
-    ! Scalars
+    INTEGER(Long) :: n_Sets       = 0 ! N
+    ! Sensor ids
     CHARACTER(SL) :: Sensor_Id        = ' '                     
     INTEGER(Long) :: WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
     INTEGER(Long) :: WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
     ! The actual channel numbers
-    INTEGER(Long), POINTER :: Sensor_Channel(:)   => NULL() ! L
-    ! Reference pressure and altitude                                        
-    REAL(Double),  POINTER :: Level_Altitude(:)   => NULL() ! 0:K
-    REAL(Double),  POINTER :: Level_Pressure(:)   => NULL() ! 0:K
-    REAL(Double),  POINTER :: Pressure(:)         => NULL() ! K
+    INTEGER(Long), POINTER :: Sensor_Channel(:) => NULL() ! L
+    ! Reference pressures and temperatures                                         
+    REAL(Double),  POINTER :: Level_Pressure(:) => NULL() ! 0:K
+    REAL(Double),  POINTER :: Pressure(:)       => NULL() ! K
+    REAL(Double),  POINTER :: Temperature(:)    => NULL() ! K
     ! Indexing arrays
-    INTEGER(Long), POINTER :: ChannelIndex(:)     => NULL() ! L
-    INTEGER(Long), POINTER :: PredictorIndex(:,:) => NULL() ! 0:Iuse x L
+    INTEGER(Long), POINTER :: ChannelIndex(:)       => NULL() ! L
+    INTEGER(Long), POINTER :: PredictorIndex(:,:,:) => NULL() ! 0:Iuse x L x N
     ! Zenith angles at wgt.fn. peak levels  
-    REAL(Double),  POINTER :: Secant_Zenith(:)    => NULL() ! L
+    REAL(Double),  POINTER :: Secant_Zenith(:) => NULL() ! L
     ! Coefficient array
-    REAL(Double),  POINTER :: C(:,:,:)            => NULL() ! 0:Iuse x K x L
+    REAL(Double),  POINTER :: C(:,:,:,:) => NULL() ! 0:Iuse x K x L x N
   END TYPE ZTauCoeff_type
 
 
@@ -169,32 +172,32 @@ CONTAINS
     ! for a true association status....
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
+    IF ( PRESENT(ANY_Test) ) THEN
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
     
     ! Test the structure associations    
     Association_Status = .FALSE.
-    IF (ALL_Test) THEN
-      IF (ASSOCIATED(ZTauCoeff%Sensor_Channel) .AND. &
-          ASSOCIATED(ZTauCoeff%Level_Altitude) .AND. &
-          ASSOCIATED(ZTauCoeff%Level_Pressure) .AND. &
-          ASSOCIATED(ZTauCoeff%Pressure      ) .AND. &
-          ASSOCIATED(ZTauCoeff%ChannelIndex  ) .AND. &
-          ASSOCIATED(ZTauCoeff%PredictorIndex) .AND. &
-          ASSOCIATED(ZTauCoeff%Secant_Zenith ) .AND. &
-          ASSOCIATED(ZTauCoeff%C             )) THEN
+    IF ( ALL_Test ) THEN
+      IF ( ASSOCIATED(ZTauCoeff%Sensor_Channel) .AND. &
+           ASSOCIATED(ZTauCoeff%Level_Pressure) .AND. &
+           ASSOCIATED(ZTauCoeff%Pressure      ) .AND. &
+           ASSOCIATED(ZTauCoeff%Temperature   ) .AND. &
+           ASSOCIATED(ZTauCoeff%ChannelIndex  ) .AND. &
+           ASSOCIATED(ZTauCoeff%PredictorIndex) .AND. &
+           ASSOCIATED(ZTauCoeff%Secant_Zenith ) .AND. &
+           ASSOCIATED(ZTauCoeff%C             ) ) THEN
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF (ASSOCIATED(ZTauCoeff%Sensor_Channel) .OR. &
-          ASSOCIATED(ZTauCoeff%Level_Altitude) .OR. &
-          ASSOCIATED(ZTauCoeff%Level_Pressure) .OR. &
-          ASSOCIATED(ZTauCoeff%Pressure      ) .OR. &
-          ASSOCIATED(ZTauCoeff%ChannelIndex  ) .OR. &
-          ASSOCIATED(ZTauCoeff%PredictorIndex) .OR. &
-          ASSOCIATED(ZTauCoeff%Secant_Zenith ) .OR. &
-          ASSOCIATED(ZTauCoeff%C             )) THEN
+      IF ( ASSOCIATED(ZTauCoeff%Sensor_Channel) .OR. &
+           ASSOCIATED(ZTauCoeff%Level_Pressure) .OR. &
+           ASSOCIATED(ZTauCoeff%Pressure      ) .OR. &
+           ASSOCIATED(ZTauCoeff%Temperature   ) .OR. &
+           ASSOCIATED(ZTauCoeff%ChannelIndex  ) .OR. &
+           ASSOCIATED(ZTauCoeff%PredictorIndex) .OR. &
+           ASSOCIATED(ZTauCoeff%Secant_Zenith ) .OR. &
+           ASSOCIATED(ZTauCoeff%C             ) ) THEN
         Association_Status = .TRUE.
       END IF
     END IF
@@ -276,24 +279,25 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_ZTauCoeff'
     ! Local variables
-    CHARACTER(256)  :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
     
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Reset the dimension indicators
     ZTauCoeff%n_Predictors = 0
     ZTauCoeff%n_Layers     = 0
     ZTauCoeff%n_Channels   = 0
+    ZTauCoeff%n_Sets       = 0
     
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
+    IF ( PRESENT(No_Clear) ) THEN
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
     IF ( Clear ) CALL Clear_ZTauCoeff(ZTauCoeff)
@@ -305,14 +309,14 @@ CONTAINS
     ! Deallocate the pointer members
     ! ------------------------------
     DEALLOCATE( ZTauCoeff%Sensor_Channel, &
-                ZTauCoeff%Level_Altitude, &
                 ZTauCoeff%Level_Pressure, &
                 ZTauCoeff%Pressure      , &
+                ZTauCoeff%Temperature   , &
                 ZTauCoeff%ChannelIndex  , &
                 ZTauCoeff%PredictorIndex, &
                 ZTauCoeff%Secant_Zenith , &
                 ZTauCoeff%C             , &
-                STAT = Allocate_Status )
+                STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       WRITE( Message, '("Error deallocating ZTauCoeff. STAT = ",i0)') &
                       Allocate_Status
@@ -354,6 +358,7 @@ CONTAINS
 !       Error_Status = Allocate_ZTauCoeff( n_Predictors           , &  ! Input
 !                                          n_Layers               , &  ! Input
 !                                          n_Channels             , &  ! Input
+!                                          n_Sets                 , &  ! Input
 !                                          ZTauCoeff              , &  ! Output
 !                                          RCS_Id     =RCS_Id     , &  ! Revision control
 !                                          Message_Log=Message_Log  )  ! Error messaging
@@ -374,6 +379,13 @@ CONTAINS
 !                               ATTRIBUTES: INTENT(IN)
 !
 !       n_Channels:             Number of sensor channels.
+!                               Must be > 0.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(IN)
+!
+!       n_Sets:                 Number ZTauCoeff datasets for the sensor.
 !                               Must be > 0.
 !                               UNITS:      N/A
 !                               TYPE:       INTEGER
@@ -435,7 +447,8 @@ CONTAINS
 
   FUNCTION Allocate_ZTauCoeff( n_Predictors, &  ! Input            
                                n_Layers    , &  ! Input            
-                               n_Channels  , &  ! Input            
+                               n_Channels  , &  ! Input
+                               n_Sets      , &  ! Input
                                ZTauCoeff   , &  ! Output           
                                RCS_Id      , &  ! Revision control 
                                Message_Log ) &  ! Error messaging  
@@ -444,6 +457,7 @@ CONTAINS
     INTEGER               , INTENT(IN)     :: n_Predictors
     INTEGER               , INTENT(IN)     :: n_Layers    
     INTEGER               , INTENT(IN)     :: n_Channels  
+    INTEGER               , INTENT(IN)     :: n_Sets  
     TYPE(ZTauCoeff_type)  , INTENT(IN OUT) :: ZTauCoeff
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -452,18 +466,19 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_ZTauCoeff'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Check dimensions
     IF (n_Predictors < 1 .OR. &
         n_Layers     < 1 .OR. &
-        n_Channels   < 1) THEN
+        n_Channels   < 1 .OR. &
+        n_Sets       < 1      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input ZTauCoeff dimensions must all be > 0.', &
@@ -488,17 +503,21 @@ CONTAINS
       END IF
     END IF
 
-    
     ! Perform the pointer allocation
     ! ------------------------------
     ALLOCATE( ZTauCoeff%Sensor_Channel(1:n_Channels), &
-              ZTauCoeff%Level_Altitude(0:n_Layers), &
               ZTauCoeff%Level_Pressure(0:n_Layers), &
               ZTauCoeff%Pressure(1:n_Layers), &
+              ZTauCoeff%Temperature(1:n_Layers), &
               ZTauCoeff%ChannelIndex(1:n_Channels), &
-              ZTauCoeff%PredictorIndex(0:n_Predictors,1:n_Channels), &
+              ZTauCoeff%PredictorIndex(0:n_Predictors, &
+                                       1:n_Channels  , &
+                                       1:n_Sets      ), &
               ZTauCoeff%Secant_Zenith(1:n_Channels), &
-              ZTauCoeff%C(0:n_Predictors,1:n_Layers,1:n_Channels), &
+              ZTauCoeff%C(0:n_Predictors, &
+                          1:n_Layers    , &
+                          1:n_Channels  , &
+                          1:n_Sets        ), &
               STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       WRITE(Message,'("Error allocating ZTauCoeff data arrays. STAT = ",i0)') &
@@ -517,12 +536,13 @@ CONTAINS
     ZTauCoeff%n_Predictors = n_Predictors
     ZTauCoeff%n_Layers     = n_Layers    
     ZTauCoeff%n_Channels   = n_Channels  
+    ZTauCoeff%n_Sets       = n_Sets  
 
 
     ! Initialise the arrays
     ! ---------------------
     ZTauCoeff%Sensor_Channel = 0
-    ZTauCoeff%Level_Altitude = ZERO
+    ZTauCoeff%Temperature    = ZERO
     ZTauCoeff%Level_Pressure = ZERO
     ZTauCoeff%Pressure       = ZERO
     ZTauCoeff%ChannelIndex   = 0
@@ -628,7 +648,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. Associated_ZTauCoeff( ZTauCoeff_in ) ) THEN
@@ -646,6 +666,7 @@ CONTAINS
     Error_Status = Allocate_ZTauCoeff( ZTauCoeff_in%n_Predictors, &
                                        ZTauCoeff_in%n_Layers    , &
                                        ZTauCoeff_in%n_Channels  , &
+                                       ZTauCoeff_in%n_Sets      , &
                                        ZTauCoeff_out, &
                                        Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -669,9 +690,9 @@ CONTAINS
     ! Copy array data
     ! ---------------
     ZTauCoeff_out%Sensor_Channel = ZTauCoeff_in%Sensor_Channel
-    ZTauCoeff_out%Level_Altitude = ZTauCoeff_in%Level_Altitude
     ZTauCoeff_out%Level_Pressure = ZTauCoeff_in%Level_Pressure
     ZTauCoeff_out%Pressure       = ZTauCoeff_in%Pressure      
+    ZTauCoeff_out%Temperature    = ZTauCoeff_in%Temperature
     ZTauCoeff_out%ChannelIndex   = ZTauCoeff_in%ChannelIndex  
     ZTauCoeff_out%PredictorIndex = ZTauCoeff_in%PredictorIndex
     ZTauCoeff_out%Secant_Zenith  = ZTauCoeff_in%Secant_Zenith 
@@ -789,15 +810,15 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_ZTauCoeff'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: i, k, l
+    INTEGER :: i, j, k, l
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default precision is a single unit in last place
     ULP = 1
@@ -834,7 +855,8 @@ CONTAINS
     ! Check dimensions
     IF (ZTauCoeff_LHS%n_Predictors /= ZTauCoeff_RHS%n_Predictors .OR. &
         ZTauCoeff_LHS%n_Layers     /= ZTauCoeff_RHS%n_Layers     .OR. &
-        ZTauCoeff_LHS%n_Channels   /= ZTauCoeff_RHS%n_Channels        ) THEN
+        ZTauCoeff_LHS%n_Channels   /= ZTauCoeff_RHS%n_Channels   .OR. &
+        ZTauCoeff_LHS%n_Sets       /= ZTauCoeff_RHS%n_Sets            ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Structure dimensions are different.', &
@@ -876,11 +898,11 @@ CONTAINS
     
     ! Check the array components
     ! --------------------------
-    DO l = 1, ZTauCoeff_LHS%n_Channels
-      IF ( ZTauCoeff_LHS%Sensor_Channel(l) /= ZTauCoeff_RHS%Sensor_Channel(l) ) THEN
+    DO i = 1, ZTauCoeff_LHS%n_Channels
+      IF ( ZTauCoeff_LHS%Sensor_Channel(i) /= ZTauCoeff_RHS%Sensor_Channel(i) ) THEN
         WRITE(Message,'("ZTauCoeff array component Sensor_Channel values ",&
                        &"are different at index (",1(1x,i0),")")') &
-                       l
+                       i
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -889,30 +911,14 @@ CONTAINS
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    DO k = 0, ZTauCoeff_LHS%n_Layers
-      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Level_Altitude(k), &
-                                ZTauCoeff_RHS%Level_Altitude(k), &
-                                ULP=ULP ) ) THEN
-        WRITE(Message,'("ZTauCoeff array component Level_Altitude values ",&
-                       &"are different at index (",1(1x,i0),"): ",&
-                       &2(1x,es13.6))') &
-                       k, ZTauCoeff_LHS%Level_Altitude(k), ZTauCoeff_RHS%Level_Altitude(k)
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    DO k = 0, ZTauCoeff_LHS%n_Layers
-      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Level_Pressure(k), &
-                                ZTauCoeff_RHS%Level_Pressure(k), &
+    DO i = 0, ZTauCoeff_LHS%n_Layers
+      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Level_Pressure(i), &
+                                ZTauCoeff_RHS%Level_Pressure(i), &
                                 ULP=ULP ) ) THEN
         WRITE(Message,'("ZTauCoeff array component Level_Pressure values ",&
                        &"are different at index (",1(1x,i0),"): ",&
                        &2(1x,es13.6))') &
-                       k, ZTauCoeff_LHS%Level_Pressure(k), ZTauCoeff_RHS%Level_Pressure(k)
+                       i, ZTauCoeff_LHS%Level_Pressure(i), ZTauCoeff_RHS%Level_Pressure(i)
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -921,14 +927,14 @@ CONTAINS
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    DO k = 1, ZTauCoeff_LHS%n_Layers
-      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Pressure(k), &
-                                ZTauCoeff_RHS%Pressure(k), &
+    DO i = 1, ZTauCoeff_LHS%n_Layers
+      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Pressure(i), &
+                                ZTauCoeff_RHS%Pressure(i), &
                                 ULP=ULP ) ) THEN
         WRITE(Message,'("ZTauCoeff array component Pressure values ",&
                        &"are different at index (",1(1x,i0),"): ",&
                        &2(1x,es13.6))') &
-                       k, ZTauCoeff_LHS%Pressure(k), ZTauCoeff_RHS%Pressure(k)
+                       i, ZTauCoeff_LHS%Pressure(i), ZTauCoeff_RHS%Pressure(i)
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -937,42 +943,14 @@ CONTAINS
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    DO l = 1, ZTauCoeff_LHS%n_Channels
-      IF ( ZTauCoeff_LHS%ChannelIndex(l) /= ZTauCoeff_RHS%ChannelIndex(l) ) THEN
-        WRITE(Message,'("ZTauCoeff array component ChannelIndex values ",&
-                       &"are different at index (",1(1x,i0),")")') &
-                       l
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    DO l = 1, ZTauCoeff_LHS%n_Channels
-      DO i = 0, ZTauCoeff_LHS%n_Predictors
-        IF ( ZTauCoeff_LHS%PredictorIndex(i,l) /= ZTauCoeff_RHS%PredictorIndex(i,l) ) THEN
-          WRITE(Message,'("ZTauCoeff array component PredictorIndex values ",&
-                         &"are different at index (",2(1x,i0),")")') &
-                         i,l
-          Error_Status = FAILURE
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          IF ( Check_Once ) RETURN
-        END IF
-      END DO
-    END DO
-    DO l = 1, ZTauCoeff_LHS%n_Channels
-      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Secant_Zenith(l), &
-                                ZTauCoeff_RHS%Secant_Zenith(l), &
+    DO i = 1, ZTauCoeff_LHS%n_Layers
+      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Temperature(i), &
+                                ZTauCoeff_RHS%Temperature(i), &
                                 ULP=ULP ) ) THEN
-        WRITE(Message,'("ZTauCoeff array component Secant_Zenith values ",&
+        WRITE(Message,'("ZTauCoeff array component Temperature values ",&
                        &"are different at index (",1(1x,i0),"): ",&
                        &2(1x,es13.6))') &
-                       l, ZTauCoeff_LHS%Secant_Zenith(l), ZTauCoeff_RHS%Secant_Zenith(l)
+                       i, ZTauCoeff_LHS%Temperature(i), ZTauCoeff_RHS%Temperature(i)
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
@@ -981,16 +959,26 @@ CONTAINS
         IF ( Check_Once ) RETURN
       END IF
     END DO
-    DO l = 1, ZTauCoeff_LHS%n_Channels
-      DO k = 1, ZTauCoeff_LHS%n_Layers
+    DO i = 1, ZTauCoeff_LHS%n_Channels
+      IF ( ZTauCoeff_LHS%ChannelIndex(i) /= ZTauCoeff_RHS%ChannelIndex(i) ) THEN
+        WRITE(Message,'("ZTauCoeff array component ChannelIndex values ",&
+                       &"are different at index (",1(1x,i0),")")') &
+                       i
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    DO k = 1, ZTauCoeff_LHS%n_Sets
+      DO j = 1, ZTauCoeff_LHS%n_Channels
         DO i = 0, ZTauCoeff_LHS%n_Predictors
-          IF ( .NOT. Compare_Float( ZTauCoeff_LHS%C(i,k,l), &
-                                    ZTauCoeff_RHS%C(i,k,l), &
-                                    ULP=ULP ) ) THEN
-            WRITE(Message,'("ZTauCoeff array component C values ",&
-                           &"are different at index (",3(1x,i0),"): ",&
-                           &2(1x,es13.6))') &
-                           i,k,l, ZTauCoeff_LHS%C(i,k,l), ZTauCoeff_RHS%C(i,k,l)
+          IF ( ZTauCoeff_LHS%PredictorIndex(i,j,k) /= ZTauCoeff_RHS%PredictorIndex(i,j,k) ) THEN
+            WRITE(Message,'("ZTauCoeff array component PredictorIndex values ",&
+                           &"are different at index (",3(1x,i0),")")') &
+                           i,j,k
             Error_Status = FAILURE
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
@@ -998,6 +986,44 @@ CONTAINS
                                   Message_Log=Message_Log )
             IF ( Check_Once ) RETURN
           END IF
+        END DO
+      END DO
+    END DO
+    DO i = 1, ZTauCoeff_LHS%n_Channels
+      IF ( .NOT. Compare_Float( ZTauCoeff_LHS%Secant_Zenith(i), &
+                                ZTauCoeff_RHS%Secant_Zenith(i), &
+                                ULP=ULP ) ) THEN
+        WRITE(Message,'("ZTauCoeff array component Secant_Zenith values ",&
+                       &"are different at index (",1(1x,i0),"): ",&
+                       &2(1x,es13.6))') &
+                       i, ZTauCoeff_LHS%Secant_Zenith(i), ZTauCoeff_RHS%Secant_Zenith(i)
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    DO l = 1, ZTauCoeff_LHS%n_Sets
+      DO k = 1, ZTauCoeff_LHS%n_Channels
+        DO j = 1, ZTauCoeff_LHS%n_Layers
+          DO i = 0, ZTauCoeff_LHS%n_Predictors
+            IF ( .NOT. Compare_Float( ZTauCoeff_LHS%C(i,j,k,l), &
+                                      ZTauCoeff_RHS%C(i,j,k,l), &
+                                      ULP=ULP ) ) THEN
+              WRITE(Message,'("ZTauCoeff array component C values ",&
+                             &"are different at index (",4(1x,i0),"): ",&
+                             &2(1x,es13.6))') &
+                             i,j,k,l, ZTauCoeff_LHS%C(i,j,k,l), ZTauCoeff_RHS%C(i,j,k,l)
+              Error_Status = FAILURE
+              CALL Display_Message( ROUTINE_NAME, &
+                                    TRIM(Message), &
+                                    Error_Status, &
+                                    Message_Log=Message_Log )
+              IF ( Check_Once ) RETURN
+            END IF
+          END DO
         END DO
       END DO
     END DO
@@ -1070,12 +1096,12 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CheckRelease_ZTauCoeff'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check release is not too old
     ! ----------------------------
@@ -1165,21 +1191,23 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Write the required info to the local string
     ! -------------------------------------------
     FmtString='(a,1x,a,1x,"ZTauCoeff RELEASE.VERSION: ",i2,".",i2.2,2x,&
                &"N_PREDICTORS=",i0,2x,&
                &"N_LAYERS=",i0,2x,&
-               &"N_CHANNELS=",i0)'
+               &"N_CHANNELS=",i0,2x,&
+               &"N_SETS=",i0)'
     WRITE(LongString, FMT=FmtString) &
           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
           TRIM(ZTauCoeff%Sensor_ID), &
           ZTauCoeff%Release, ZTauCoeff%Version, &
           ZTauCoeff%n_Predictors, &
           ZTauCoeff%n_Layers    , &
-          ZTauCoeff%n_Channels  
+          ZTauCoeff%n_Channels  , &
+          ZTauCoeff%n_Sets  
 
     ! Trim the output based on the
     ! dummy argument string length
