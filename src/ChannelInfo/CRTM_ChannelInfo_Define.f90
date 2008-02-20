@@ -679,7 +679,6 @@ CONTAINS
   FUNCTION nChannels_Rank1( ChannelInfo ) RESULT( nChannels )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo(:) ! N
     INTEGER :: nChannels
-    INTEGER :: n
     nChannels = SUM(ChannelInfo%n_Channels)
   END FUNCTION nChannels_Rank1
   
