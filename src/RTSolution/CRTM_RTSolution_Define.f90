@@ -969,6 +969,7 @@ CONTAINS
 !                                             ULP_Scale         =ULP_Scale         , &  ! Optional input
 !                                             Percent_Difference=Percent_Difference, &  ! Optional input
 !                                             Check_All         =Check_All         , &  ! Optional input
+!                                             Check_Intermediate=Check_Intermediate, &  ! Optional input
 !                                             RCS_Id            =RCS_Id            , &  ! Optional output
 !                                             Message_Log       =Message_Log         )  ! Error messaging
 !
@@ -1027,6 +1028,19 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       Check_Intermediate: Set this argument to check the intermediate results held
+!                           in the RTSolution structure. The default action does NOT
+!                           check these components.
+!                           If == 0, Intermediate result components not checked
+!                                    for equality.  *DEFAULT*
+!                              == 1, Intermediate result components ARE checked
+!                                    for equality. Note that this could generate
+!                                    a lot of comparison failures.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Message_Log:        Character string specifying a filename in which any
 !                           messages will be logged. If not specified, or if an
 !                           error occurs opening the log file, the default action
@@ -1061,6 +1075,7 @@ CONTAINS
                          ULP_Scale         , &  ! Optional input
                          Percent_Difference, &  ! Optional input
                          Check_All         , &  ! Optional input
+                         Check_Intermediate, &  ! Optional input
                          RCS_Id            , &  ! Revision control
                          Message_Log       ) &  ! Error messaging
                        RESULT( Error_Status )
@@ -1070,6 +1085,7 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
     REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Check_Intermediate
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -1079,6 +1095,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message
     LOGICAL :: Check_Once
+    LOGICAL :: Include_Intermediate
     INTEGER :: i, j, k, m, n
 
     ! Set up
@@ -1091,6 +1108,13 @@ CONTAINS
     ! ...unless the Check_All argument is set
     IF ( PRESENT( Check_All ) ) THEN
       IF ( Check_All == SET ) Check_Once = .FALSE.
+    END IF
+
+    ! Default action is to NOT include intermediate components in the comparison...
+    Include_Intermediate = .FALSE.
+    ! ...unless the Check_Intermediate argument is set
+    IF ( PRESENT( Check_Intermediate ) ) THEN
+      IF ( Check_Intermediate == SET ) Include_Intermediate = .TRUE.
     END IF
 
     ! Check the structure association status
@@ -1128,100 +1152,101 @@ CONTAINS
 
     ! Compare the values
     ! ------------------
-    ! The forward intermediate results
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Surface_Emissivity, &
-                              RTSolution_RHS%Surface_Emissivity, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Surface_Emissivity values are different:",3(1x,es13.6))') &
-                     RTSolution_LHS%Surface_Emissivity, &
-                     RTSolution_RHS%Surface_Emissivity, &
-                     RTSolution_LHS%Surface_Emissivity-RTSolution_RHS%Surface_Emissivity
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Up_Radiance, &
-                              RTSolution_RHS%Up_Radiance, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Up_Radiance values are different:",3(1x,es13.6))') &
-                     RTSolution_LHS%Up_Radiance, &
-                     RTSolution_RHS%Up_Radiance, &
-                     RTSolution_LHS%Up_Radiance-RTSolution_RHS%Up_Radiance
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Radiance, &
-                              RTSolution_RHS%Down_Radiance, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Down_Radiance values are different:",3(1x,es13.6))') &
-                     RTSolution_LHS%Down_Radiance, &
-                     RTSolution_RHS%Down_Radiance, &
-                     RTSolution_LHS%Down_Radiance-RTSolution_RHS%Down_Radiance
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Solar_Radiance, &
-                              RTSolution_RHS%Down_Solar_Radiance, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Down_Solar_Radiance values are different:",3(1x,es13.6))') &
-                     RTSolution_LHS%Down_Solar_Radiance, &
-                     RTSolution_RHS%Down_Solar_Radiance, &
-                     RTSolution_LHS%Down_Solar_Radiance-RTSolution_RHS%Down_Solar_Radiance
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( RTSolution_LHS%Surface_Planck_Radiance, &
-                              RTSolution_RHS%Surface_Planck_Radiance, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Surface_Planck_Radiance values are different:",3(1x,es13.6))') &
-                     RTSolution_LHS%Surface_Planck_Radiance, &
-                     RTSolution_RHS%Surface_Planck_Radiance, &
-                     RTSolution_LHS%Surface_Planck_Radiance-RTSolution_RHS%Surface_Planck_Radiance
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    DO k = 1, RTSolution_LHS%n_Layers
-      IF ( .NOT. Compare_Float( RTSolution_LHS%Layer_Optical_Depth(k), &
-                                RTSolution_RHS%Layer_Optical_Depth(k), &
+    Intermediate_Check: IF ( Include_Intermediate ) THEN
+      IF ( .NOT. Compare_Float( RTSolution_LHS%Surface_Emissivity, &
+                                RTSolution_RHS%Surface_Emissivity, &
                                 ULP    =ULP_Scale, &
                                 Percent=Percent_Difference ) ) THEN
         Error_Status = FAILURE
-        WRITE( Message,'("Layer_Optical_Depth(",i3,") values are different:",3(1x,es13.6))') &
-                       k, &
-                       RTSolution_LHS%Layer_Optical_Depth(k), &
-                       RTSolution_RHS%Layer_Optical_Depth(k), &
-                       RTSolution_LHS%Layer_Optical_Depth(k)-RTSolution_RHS%Layer_Optical_Depth(k)
+        WRITE( Message,'("Surface_Emissivity values are different:",3(1x,es13.6))') &
+                       RTSolution_LHS%Surface_Emissivity, &
+                       RTSolution_RHS%Surface_Emissivity, &
+                       RTSolution_LHS%Surface_Emissivity-RTSolution_RHS%Surface_Emissivity
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
       END IF
-    END DO
+      IF ( .NOT. Compare_Float( RTSolution_LHS%Up_Radiance, &
+                                RTSolution_RHS%Up_Radiance, &
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Up_Radiance values are different:",3(1x,es13.6))') &
+                       RTSolution_LHS%Up_Radiance, &
+                       RTSolution_RHS%Up_Radiance, &
+                       RTSolution_LHS%Up_Radiance-RTSolution_RHS%Up_Radiance
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+      IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Radiance, &
+                                RTSolution_RHS%Down_Radiance, &
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Down_Radiance values are different:",3(1x,es13.6))') &
+                       RTSolution_LHS%Down_Radiance, &
+                       RTSolution_RHS%Down_Radiance, &
+                       RTSolution_LHS%Down_Radiance-RTSolution_RHS%Down_Radiance
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+      IF ( .NOT. Compare_Float( RTSolution_LHS%Down_Solar_Radiance, &
+                                RTSolution_RHS%Down_Solar_Radiance, &
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Down_Solar_Radiance values are different:",3(1x,es13.6))') &
+                       RTSolution_LHS%Down_Solar_Radiance, &
+                       RTSolution_RHS%Down_Solar_Radiance, &
+                       RTSolution_LHS%Down_Solar_Radiance-RTSolution_RHS%Down_Solar_Radiance
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+      IF ( .NOT. Compare_Float( RTSolution_LHS%Surface_Planck_Radiance, &
+                                RTSolution_RHS%Surface_Planck_Radiance, &
+                                ULP    =ULP_Scale, &
+                                Percent=Percent_Difference ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Surface_Planck_Radiance values are different:",3(1x,es13.6))') &
+                       RTSolution_LHS%Surface_Planck_Radiance, &
+                       RTSolution_RHS%Surface_Planck_Radiance, &
+                       RTSolution_LHS%Surface_Planck_Radiance-RTSolution_RHS%Surface_Planck_Radiance
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+      DO k = 1, RTSolution_LHS%n_Layers
+        IF ( .NOT. Compare_Float( RTSolution_LHS%Layer_Optical_Depth(k), &
+                                  RTSolution_RHS%Layer_Optical_Depth(k), &
+                                  ULP    =ULP_Scale, &
+                                  Percent=Percent_Difference ) ) THEN
+          Error_Status = FAILURE
+          WRITE( Message,'("Layer_Optical_Depth(",i3,") values are different:",3(1x,es13.6))') &
+                         k, &
+                         RTSolution_LHS%Layer_Optical_Depth(k), &
+                         RTSolution_RHS%Layer_Optical_Depth(k), &
+                         RTSolution_LHS%Layer_Optical_Depth(k)-RTSolution_RHS%Layer_Optical_Depth(k)
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(Message), &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          IF ( Check_Once ) RETURN
+        END IF
+      END DO
+    END IF Intermediate_Check 
     
     ! The channel RT results
     IF ( .NOT. Compare_Float( RTSolution_LHS%Radiance, &
@@ -1263,6 +1288,7 @@ CONTAINS
                         ULP_Scale         , &  ! Optional input
                         Percent_Difference, &  ! Optional input
                         Check_All         , &  ! Optional input
+                        Check_Intermediate, &  ! Optional input
                         RCS_Id            , &  ! Revision control
                         Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
@@ -1272,6 +1298,7 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
     REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Check_Intermediate
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -1317,6 +1344,7 @@ CONTAINS
                                     ULP_Scale         =ULP_Scale, &
                                     Percent_Difference=Percent_Difference, &
                                     Check_All         =Check_All, &
+                                    Check_Intermediate=Check_Intermediate, &
                                     Message_Log       =Message_Log )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
@@ -1336,6 +1364,7 @@ CONTAINS
                         ULP_Scale         , &  ! Optional input
                         Percent_Difference, &  ! Optional input
                         Check_All         , &  ! Optional input
+                        Check_Intermediate, &  ! Optional input
                         RCS_Id            , &  ! Revision control
                         Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
@@ -1345,6 +1374,7 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
     REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Check_Intermediate
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -1393,6 +1423,7 @@ CONTAINS
                                       ULP_Scale         =ULP_Scale, &
                                       Percent_Difference=Percent_Difference, &
                                       Check_All         =Check_All, &
+                                      Check_Intermediate=Check_Intermediate, &
                                       Message_Log       =Message_Log )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
