@@ -44,6 +44,8 @@ MODULE CRTM_SensorData_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! -------------------------------
@@ -53,21 +55,19 @@ MODULE CRTM_SensorData_Define
     INTEGER :: n_Allocates = 0
     ! Dimension values
     INTEGER :: n_Channels = 0  ! L
-    INTEGER :: StrLen = STRLEN
     ! The WMO sensor ID of the sensor for which the data is to be used
     INTEGER :: Sensor_ID = INVALID_WMO_SENSOR_ID
     ! The data sensor IDs and channels
-    CHARACTER(STRLEN), DIMENSION(:), POINTER :: SensorData_ID    => NULL()  ! L
-    INTEGER,           DIMENSION(:), POINTER :: WMO_Satellite_ID => NULL() ! L
-    INTEGER,           DIMENSION(:), POINTER :: WMO_Sensor_ID    => NULL() ! L
-    INTEGER,           DIMENSION(:), POINTER :: Sensor_Channel   => NULL() ! L
+    CHARACTER(STRLEN), POINTER :: SensorData_ID(:)    => NULL() ! L
+    INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
+    INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
+    INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
     ! The sensor brightness temperatures
-    REAL(fp),          DIMENSION(:), POINTER :: Tb => NULL() ! L
+    REAL(fp),          POINTER :: Tb(:) => NULL() ! L
   END TYPE CRTM_SensorData_type
 
 
 CONTAINS
-
 
 
 !##################################################################################
@@ -106,7 +106,6 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_SensorData( SensorData )
     TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
-    SensorData%StrLen    = STRLEN
     SensorData%Sensor_ID = INVALID_WMO_SENSOR_ID
   END SUBROUTINE CRTM_Clear_SensorData
 
@@ -287,7 +286,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_SensorData'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
@@ -434,7 +433,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_SensorData'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
@@ -751,7 +750,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_SensorData'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: l
@@ -822,8 +821,9 @@ CONTAINS
     DO l = 1, SensorData_LHS%n_Channels
       IF ( SensorData_LHS%SensorData_ID(l) /= SensorData_RHS%SensorData_ID(l) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("SensorData_ID values are different for channel index ",i0)' ) l
         CALL Display_Message( ROUTINE_NAME, &
-                              'SensorData_ID values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
@@ -833,8 +833,9 @@ CONTAINS
     DO l = 1, SensorData_LHS%n_Channels
       IF ( SensorData_LHS%WMO_Satellite_ID(l) /= SensorData_RHS%WMO_Satellite_ID(l) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("WMO_Satellite_ID values are different for channel index ",i0)' ) l
         CALL Display_Message( ROUTINE_NAME, &
-                              'WMO_Satellite_ID values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
@@ -844,8 +845,9 @@ CONTAINS
     DO l = 1, SensorData_LHS%n_Channels
       IF ( SensorData_LHS%WMO_Sensor_ID(l) /= SensorData_RHS%WMO_Sensor_ID(l) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("WMO_Sensor_ID values are different for channel index ",i0)' ) l
         CALL Display_Message( ROUTINE_NAME, &
-                              'WMO_Sensor_ID values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
@@ -855,8 +857,9 @@ CONTAINS
     DO l = 1, SensorData_LHS%n_Channels
       IF ( SensorData_LHS%Sensor_Channel(l) /= SensorData_RHS%Sensor_Channel(l) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Sensor_Channel values are different for channel index ",i0)' ) l
         CALL Display_Message( ROUTINE_NAME, &
-                              'Sensor_Channel values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN
@@ -868,8 +871,9 @@ CONTAINS
                                 SensorData_RHS%Tb(l), &
                                 ULP = ULP ) ) THEN
         Error_Status = FAILURE
+        WRITE( Message,'("Tb values are different for channel index ",i0)' ) l
         CALL Display_Message( ROUTINE_NAME, &
-                              'Tb values are different', &
+                              TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
         IF ( Check_Once ) RETURN

@@ -401,6 +401,8 @@ MODULE CRTM_Surface_Define
   INTEGER, PARAMETER ::    INVALID = -1
   INTEGER, PARAMETER :: FP_INVALID = -ONE
 
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
   ! ------------------------
   ! Default value parameters
@@ -645,14 +647,12 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Surface(Scalar)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
     LOGICAL :: Clear
-    INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default is to clear scalar members...
     Clear = .TRUE.
@@ -693,14 +693,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Surface(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise array
     ! ------------------
@@ -737,14 +737,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Surface(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: l, m
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise array
     ! ------------------
@@ -874,16 +874,13 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Surface(Scalar)'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    INTEGER :: Allocate_Status
 
 
     ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! If no channel data, do nothing
     IF ( n_Channels == 0 ) RETURN
@@ -930,16 +927,16 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Surface(Rank-01)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
-    INTEGER :: i, n
+    INTEGER :: i
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Perform the allocation
-    DO i = 1, SIZE( Surface )
+    DO i = 1, SIZE(Surface)
       Scalar_Status = Allocate_Scalar( n_Channels, &
                                        Surface(i), &
                                        Message_Log=Message_Log )
@@ -972,13 +969,13 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Surface(Rank-11)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     n = SIZE( n_Channels )
@@ -1093,7 +1090,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Assign scalar members
@@ -1172,14 +1169,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Surface(Rank-1)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     n = SIZE( Surface_in )
@@ -1228,14 +1225,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Surface(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j, l, m
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     l = SIZE(Surface_in,1)
@@ -1396,14 +1393,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: SensorData_Status
     
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1836,7 +1833,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: Scalar_Status
     INTEGER :: m, nProfiles
@@ -1844,7 +1841,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1910,7 +1907,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: Scalar_Status
     INTEGER :: l, nChannels
@@ -1919,7 +1916,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -2067,8 +2064,8 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A
     TYPE(CRTM_Surface_type), INTENT(IN)     :: B
-    REAL(fp),           INTENT(IN)     :: w1
-    REAL(fp), OPTIONAL, INTENT(IN)     :: w2
+    REAL(fp)    ,            INTENT(IN)     :: w1
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: w2
     CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
@@ -2076,7 +2073,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Surface(Scalar)'
     ! Local variables
-    CHARACTER( 256 ) :: Message
     REAL(fp) :: w2_Local
 
 
@@ -2084,7 +2080,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Assign the optional weight
     w2_Local = ZERO
@@ -2138,14 +2134,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightSum_Surface(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: m, nProfiles
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     nProfiles = SIZE(A)
@@ -2199,7 +2195,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightSum_Surface(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: l, nChannels
     INTEGER :: m, nProfiles
@@ -2207,7 +2203,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Arguments must conform
     nChannels = SIZE(A,1)

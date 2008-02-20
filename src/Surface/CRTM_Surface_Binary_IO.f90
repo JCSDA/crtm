@@ -62,6 +62,8 @@ MODULE CRTM_Surface_Binary_IO
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
@@ -91,7 +93,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(Record)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
     INTEGER :: Allocate_Status
@@ -344,10 +346,9 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(Record)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: IO_Status
     INTEGER :: Type_by_Coverage
-    INTEGER :: l 
 
 
     ! Set up
@@ -578,7 +579,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Inquire_Surface_Binary'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: IO_Status
     INTEGER :: FileID
     INTEGER :: n_Channels_in_File
@@ -587,7 +588,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -778,7 +779,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
@@ -790,7 +791,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -934,7 +935,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Surface_Binary(L x M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
@@ -1207,7 +1208,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
@@ -1216,7 +1217,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Get dimensions
     n_Output_Profiles = SIZE(Surface)
@@ -1321,7 +1322,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Surface_Binary(L x M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
@@ -1331,7 +1332,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Get dimensions
     n_Output_Channels = SIZE(Surface,1)
