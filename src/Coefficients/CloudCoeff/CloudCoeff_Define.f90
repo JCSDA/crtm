@@ -150,7 +150,8 @@ CONTAINS
 
   SUBROUTINE Clear_CloudCoeff(CloudCoeff)
     TYPE(CloudCoeff_type), INTENT(IN OUT) :: CloudCoeff
-    ! Noop for now
+    CloudCoeff%Release = CLOUDCOEFF_RELEASE
+    CloudCoeff%Version = CLOUDCOEFF_VERSION
   END SUBROUTINE Clear_CloudCoeff
 
 

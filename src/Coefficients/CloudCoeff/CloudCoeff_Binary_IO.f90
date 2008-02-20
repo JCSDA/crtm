@@ -449,7 +449,6 @@ CONTAINS
     INTEGER(Long) :: n_MW_Radii      , n_IR_Radii
     INTEGER(Long) :: n_Temperatures  , n_Densities
     INTEGER(Long) :: n_Legendre_Terms, n_Phase_Elements 
-    INTEGER(Long) :: i, j, k, l, m
  
     ! Set up
     ! ------
@@ -461,7 +460,7 @@ CONTAINS
     ! ....unless....
     IF ( PRESENT( Quiet ) ) THEN
       ! ....the QUIET keyword is set.
-      IF ( Quiet == 1 ) Noisy = .FALSE.
+      IF ( Quiet == SET ) Noisy = .FALSE.
     ELSE
       ! ....the Process_ID is not selected for output
       IF ( PRESENT( Process_ID ) .AND. PRESENT( Output_Process_ID ) ) THEN
@@ -747,7 +746,6 @@ CONTAINS
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: i, j, k, l 
  
     ! Set up
     ! ------
@@ -758,7 +756,7 @@ CONTAINS
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
     IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == 1 ) Noisy = .FALSE.
+      IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
     ! Check structure
