@@ -45,6 +45,8 @@ MODULE CRTM_Predictor_Define
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! -----------------------
@@ -288,13 +290,13 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Predictor'
     ! Local variables
-    CHARACTER(256)  :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Default is to clear scalar members...
     Clear = .TRUE.
@@ -454,12 +456,12 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Predictor'
     ! Local variables
-    CHARACTER(256)  :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Check dimensions
     IF ( n_Layers     < 1 .OR. &
@@ -616,11 +618,9 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Predictor'
-    ! Local variables
-    INTEGER :: i1,i2
 
     ! Set up
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. CRTM_Associated_Predictor(Predictor_In) ) THEN
