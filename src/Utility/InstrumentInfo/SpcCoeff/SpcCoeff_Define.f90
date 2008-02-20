@@ -322,13 +322,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION Associated_SpcCoeff( SpcCoeff, & ! Input
-                                ANY_Test, & ! Optional input
-                                Skip_AC ) & ! Optional input
+                                ANY_Test) & ! Optional input
                               RESULT( Association_Status )
     ! Arguments
     TYPE(SpcCoeff_type), INTENT(IN) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN) :: ANY_Test
-    INTEGER,   OPTIONAL, INTENT(IN) :: Skip_AC
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -862,8 +860,7 @@ CONTAINS
     ! ALL *input* pointers must be associated
     ! BUT the antenna correction AC component
     ! may not be.
-    IF ( .NOT. Associated_SpcCoeff( SpcCoeff_In, &
-                                    Skip_AC=SET  ) ) THEN
+    IF ( .NOT. Associated_SpcCoeff( SpcCoeff_In ) ) THEN
       Error_Status = Destroy_SpcCoeff( SpcCoeff_Out, &
                                        Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
