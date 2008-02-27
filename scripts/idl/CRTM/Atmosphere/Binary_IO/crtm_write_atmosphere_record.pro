@@ -39,32 +39,20 @@ FUNCTION CRTM_Write_Atmosphere_Record, FileID     , $  ; Input
   ; --------------------
   IF ( Atm.n_Clouds GT 0 ) THEN BEGIN
     WRITEU, FileID, Atm.n_Clouds
-    FOR n = 0, Atm.n_Clouds-1 DO BEGIN
-      IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-        Msg = '  Writing cloud #'+STRTRIM(n+1,2)
-        MESSAGE, Msg, /INFORMATIONAL
-      ENDIF
-      result = CRTM_Write_Cloud_Record( FileID, (*Atm.Cloud)[n], DEBUG=Debug )
-      IF ( result NE SUCCESS ) THEN $
-        MESSAGE, 'Error writing Atmosphere Cloud element '+STRTRIM(n+1,2), $
-                 /NONAME, /NOPRINT
-    ENDFOR
+    result = CRTM_Write_Cloud_Record( FileID, *Atm.Cloud, DEBUG=Debug )
+    IF ( result NE SUCCESS ) THEN $
+      MESSAGE, 'Error writing Atmosphere Cloud elements', $
+               /NONAME, /NOPRINT
   ENDIF
   
   ; Write the Aerosol data
   ; ----------------------
   IF ( Atm.n_Aerosols GT 0 ) THEN BEGIN
     WRITEU, FileID, Atm.n_Aerosols
-    FOR n = 0, Atm.n_Aerosols-1 DO BEGIN
-      IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-        Msg = '  Writing aerosol #'+STRTRIM(n+1,2)
-        MESSAGE, Msg, /INFORMATIONAL
-      ENDIF
-      result = CRTM_Write_Aerosol_Record( FileID, (*Atm.Aerosol)[n], DEBUG=Debug )
-      IF ( result NE SUCCESS ) THEN $
-        MESSAGE, 'Error writing Atmosphere Aerosol element '+STRTRIM(n+1,2), $
-                 /NONAME, /NOPRINT
-    ENDFOR
+    result = CRTM_Write_Aerosol_Record( FileID, *Atm.Aerosol, DEBUG=Debug )
+    IF ( result NE SUCCESS ) THEN $
+      MESSAGE, 'Error writing Atmosphere Aerosol elements', $
+               /NONAME, /NOPRINT
   ENDIF
 
   ; Done

@@ -1,6 +1,7 @@
 ;+
 FUNCTION CRTM_Write_Atmosphere_Binary, Filename   , $  ; Input
                                        Atm        , $  ; Input
+                                       SWAP=Swap  , $  ; Optional input
                                        DEBUG=Debug     ; Optional input
 ;-
   ; Set up error handler
@@ -25,7 +26,7 @@ FUNCTION CRTM_Write_Atmosphere_Binary, Filename   , $  ; Input
   
   ; Open the file
   ; -------------
-  FileID = Open_Binary_File( Filename, /Write )
+  FileID = Open_Binary_File( Filename, /Write, SWAP=Swap )
   IF ( FileID < 0 ) THEN $
     MESSAGE, 'Error opening file '+Filename, $
              /NONAME, /NOPRINT

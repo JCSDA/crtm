@@ -33,7 +33,7 @@ FUNCTION CRTM_Read_Atmosphere_Binary, Filename                         , $  ; In
 
   ; Open the file
   ; -------------
-  FileID = Open_Binary_File( filename )
+  FileID = Open_Binary_File( Filename )
   IF ( FileID < 0 ) THEN $
     MESSAGE, 'Error opening file '+Filename, $
              /NONAME, /NOPRINT
