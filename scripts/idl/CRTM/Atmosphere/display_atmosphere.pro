@@ -72,6 +72,9 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
         YMARGIN = [4,4], $
         CHARSIZE = charSize, $
         PSYM = pSym
+  q = GET_KBRD(1)
+  IF ( STRUPCASE(q) EQ 'Q' ) THEN GOTO, Done
+  
   ; Determine the number of absorber plot loops
   n = a.n_Absorbers
   nx = 2
@@ -130,6 +133,10 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
           CHARSIZE = charSize, $
           PSYM = pSym
 
+    XYOUTS, 0.5, 0.97, 'Cloud Type: '+STRTRIM(Cld.Type,2), $
+            /NORMAL, ALIGNMENT=0.5, $
+            CHARSIZE = charSize*1.5
+            
     q = GET_KBRD(1)
     CASE STRUPCASE(q) OF
       'Q': GOTO, Done
@@ -165,6 +172,10 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
           CHARSIZE = charSize, $
           PSYM = pSym
 
+    XYOUTS, 0.5, 0.97, 'Aerosol Type: '+STRTRIM(Aero.Type,2), $
+            /NORMAL, ALIGNMENT=0.5, $
+            CHARSIZE = charSize*1.5
+            
     q = GET_KBRD(1)
     CASE STRUPCASE(q) OF
       'Q': GOTO, Done
