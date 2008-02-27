@@ -1,49 +1,45 @@
 ;+
 FUNCTION CRTM_Read_Cloud_Record, FileID           , $  ; Input
                                  Cloud            , $  ; Output
-                                 ALLOCATE=Allocate, $  ; Optional input
                                  DEBUG=Debug           ; Optional input
 ;-
   ; Set up error handler
   ; --------------------
   @crtm_binary_io_error
 
-  ; Read the data dimensions
-  ; ------------------------
-  n_Layers = 0L
-  READU, FileID, n_Layers
+  ; Loop over the number of clouds
+  ; ------------------------------
+  FOR m = 0, N_ELEMENTS(Cloud)-1 DO BEGIN
   
-  ; Allocate the cloud structure if required
-  ; ----------------------------------------
-  IF ( KEYWORD_SET(Allocate) ) THEN BEGIN
-    result = CRTM_Allocate_Cloud( n_Layers, $
-                                  Cloud     )
-    IF ( result NE SUCCESS ) THEN $
-      MESSAGE, 'Error allocating Cloud structure', $
-               /NONAME, /NOPRINT
-  ENDIF ELSE BEGIN
-    IF ( n_Layers NE Cloud.n_Layers ) THEN $
+    ; Read the data dimensions and check
+    ; ----------------------------------
+    n_Layers = Cloud[m].n_Layers
+    READU, FileID, n_Layers
+    IF ( n_Layers NE Cloud[m].n_Layers ) THEN $
       MESSAGE, 'Cloud data dimensions, ' + $
                STRTRIM(n_Layers,2)+ $
                ', are inconsistent with structure definition, ' + $
-               STRTRIM(Cloud.n_Layers,2), $
+               STRTRIM(Cloud[m].n_Layers,2), $
                /NONAME, /NOPRINT
-  ENDELSE
   
-  ; Read the cloud data
-  ; -------------------
-  Type = Cloud.Type
-  READU, FileID, Type, $
-                 *Cloud.Effective_Radius, $
-                 *Cloud.Effective_Variance, $
-                 *Cloud.Water_Content
-  Cloud.Type = Type
-                
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    Msg = '  n_Layers='+STRTRIM(n_Layers,2)+$
-          '; Type='+STRTRIM(Type,2)
-    MESSAGE, Msg, /INFORMATIONAL
-  ENDIF
+    ; Read the cloud data
+    ; -------------------
+    Type = Cloud[m].Type
+    READU, FileID, Type, $
+                   *Cloud[m].Effective_Radius, $
+                   *Cloud[m].Effective_Variance, $
+                   *Cloud[m].Water_Content
+    Cloud[m].Type = Type
+                  
+    IF ( KEYWORD_SET(Debug) ) THEN BEGIN
+      Msg = '  Cloud #'+STRTRIM(m+1,2)+$
+            '; n_Layers='+STRTRIM(Cloud[m].n_Layers,2)+$
+            '; Type='+STRTRIM(Cloud[m].Type,2)
+      MESSAGE, Msg, /INFORMATIONAL
+    ENDIF
+  
+  ENDFOR
+  
   
   ; Done
   ; ----

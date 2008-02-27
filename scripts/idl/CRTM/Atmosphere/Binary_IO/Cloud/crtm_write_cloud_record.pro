@@ -7,23 +7,30 @@ FUNCTION CRTM_Write_Cloud_Record, FileID     , $  ; Input
   ; --------------------
   @crtm_binary_io_error
 
-  ; Write the data dimensions
-  ; -------------------------
-  WRITEU, FileID, Cloud.n_Layers
+  ; Loop over the number of clouds
+  ; ------------------------------
+  FOR m = 0, N_ELEMENTS(Cloud)-1 DO BEGIN
   
-  ; Write the cloud data
-  ; -------------------
-  WRITEU, FileID, Cloud.Type, $
-                 *Cloud.Effective_Radius, $
-                 *Cloud.Effective_Variance, $
-                 *Cloud.Water_Content
-                
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    Msg = '  n_Layers='+STRTRIM(Cloud.n_Layers,2)+$
-          '; Type='+STRTRIM(Cloud.Type,2)
-    MESSAGE, Msg, /INFORMATIONAL
-  ENDIF
+    ; Write the data dimensions
+    ; -------------------------
+    WRITEU, FileID, Cloud[m].n_Layers
+  
+    ; Write the cloud data
+    ; -------------------
+    WRITEU, FileID, Cloud[m].Type, $
+                   *Cloud[m].Effective_Radius, $
+                   *Cloud[m].Effective_Variance, $
+                   *Cloud[m].Water_Content
+                  
+    IF ( KEYWORD_SET(Debug) ) THEN BEGIN
+      Msg = '  Cloud #'+STRTRIM(m+1,2)+$
+            '; n_Layers='+STRTRIM(Cloud[m].n_Layers,2)+$
+            '; Type='+STRTRIM(Cloud[m].Type,2)
+      MESSAGE, Msg, /INFORMATIONAL
+    ENDIF
 
+  ENDFOR
+  
   ; Done
   ; ----
   CATCH, /CANCEL
