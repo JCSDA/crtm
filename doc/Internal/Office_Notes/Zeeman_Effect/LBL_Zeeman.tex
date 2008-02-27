@@ -2,11 +2,15 @@
 \input{preamble}
 
 % Title info
-\title{Analyzing Zeeman Impact On Upper Atmosphere Sounding Channels Using a Zeeman Turned Off LBL Model as Reference}
-\author{David Neil Groff}
-\date{01/17/07}
-
+\title{Validating Liebe and Rosenkranz Simulations of SSMIS channels 19-21}
+\author{David Neil Groff\footnote{david.groff@noaa.gov}\\JCSDA/EMC/SAIC\\[0.25in]
+        Paul Van Delst\footnote{Paul.VanDelst@noaa.gov}\\JCSDA/EMC/SAIC\\[0.25in]}
+\date{February, 2008}
+\docnumber{VI}
+\docseries{CRTM}
 \newcommand{\microtesla}{\ensuremath{\mu\textrm{T}}}
+\newcommand{\degree}{\ensuremath{^\circ}}
+
 %-------------------------------------------------------------------------------
 %                            Ze document begins...
 %-------------------------------------------------------------------------------
@@ -15,155 +19,193 @@
 
 \section{Introduction}
 %=================
-Special Sensor Microwave Imager/Sounder (SSMIS) upper atmosphere sounding channels 19-22 are significantly affected
-by Zeeman splitting \cite{ref:Han1}. Taking into account the Zeeman Effect in RT models has been
-shown to significantly improve observation versus model brightness temperature
-residuals for high peaking SSMIS channels 19-21 [Han et al., 2007].
-This report is concerned with brightness temperature (BT) comparisons between two models that
-account for Zeeman splitting and a reference model
-that does not account for Zeeman splitting. Comparisons are performed for SSMIS channels 19-24.
-The motivation of this report is to 
-determine to what extent the aforementioned comparisons
-are qualititatively consistent with a reasoned explanation of how Zeeman splitting 
-should impact measured BT's for SSMIS channels 19-21.
-    
-\subsection{No Zeeman Model}
-BT calculations for Liebe model transmittances that do not account for Zeeman splitting serve
-as a "Zeeman turned off" reference in this report. BT's calculated from Liebe and
-Rosenkranz transmittances that do not account for Zeeman splitting agree to within 0.1K for SSMIS channels 19-24 as shown in Figure 1.  
-These differences are small compared to the absolute impact of Zeeman splitting for SSMIS channels 19-21. Therefore, it is reasonable to use
-either "Zeeman turned off" model as a reference when comparing against the "Zeeman turned on"
-models considered in this paper. 
+In the presence of a magnetic field transitional absorption/emission lines of molecules are
+split into multiple closely spaced lines. This splitting is known as the Zeeman effect and it is related to the broadening of 
+absorption lines relative to an unsplit state. The magnitude of the broadening/splitting is directly related to the magnetic field strength (B).
+The Special Sensor Microwave Imager/Sounder (SSMIS) upper atmosphere sounding
+channels 19-21 are significantly affected by Zeeman splitting, because the passbands for these channels are centered on or near O\subscript{2} rotational
+absorption lines \cite{ref:Han1}. 
 
+\smallskip
+\smallskip
+
+SSMIS channels 19 and 20 each have two passbands that are centered on unsplit O\subscript{2} rotational
+transition lines; whereas SSMIS channel 21 has 4 passbands that are very close to and offset symetrically from unsplit O\subscript{2} rotational absorption
+lines. Therefore, broadening of absorption lines associated with an increasing B decreases the altitudes where the weighting functions peak for channels 19 and 20 and increases
+the altitude where the weighting function peaks for channel 21. 
+The magnitude of the Zeeman splitting impact on SSMIS measurements is also dependent on 
+the angle between the magnetic field and the viewing direction $\theta_{b}$, because the component of radiation received from each of the split lines depends on 
+$\theta_{b}$. As $\theta_{b}$ increases abosrption becomes increasingly asymmetric about the position of unsplit line centers. This 
+acts to decrease the component of absorption attributed to the unsplit line center. For SSMIS channels 19 and 20 the altitudes where the 
+weighting functions peak decreases, because the passbands for thes channels are centered on unsplit O\subscript{2} absorption lines. In the 
+case of SSMIS channel 21 the relationship is less obvious, but the passbands for this channel are sufficiently close to
+unsplit line centers such that the peak weighting function altitude for this channel decreases as $\theta_{b}$ increases.
+The relationship between B, $\theta_{b}$ and the weighting functions for channels 19-21 is depicted in Figure \ref{fig:Weight_Function}.
+
+\smallskip
+\smallskip
+
+The weighting functions for SSMIS channels 19 and 20 peak at altitudes in the mesosphere where the lapse rate is normally negative. 
+Therefore, as $\theta_{b}$ and/or B increases brightness temperatures for channels 19 and 20 should increase assuming the
+sensor zenith angle and atmosphere are fixed. For channel 21 the relationship between B, $\theta_{b}$ and brightness temperature is less obvious 
+because the weighting function for this channel peaks near the boundary of the mesosphere and stratosphere.
+ 
+\newpage
+  
+\begin{figure}[htp]
+  \centering{}
+  \includegraphics[scale=0.8]{./graphics/Weight_Function.eps}
+  \caption{(a) Weighting functions calculated with B=23\microtesla{} (solid lines) and B=63\microtesla{} (dashed lines) at cos$\theta_{b}$=0.9 and (b) with cos$\theta_{b}$=0 (solid lines) 
+  and cos$\theta_{b}$=1 (dashed lines) at B=60\microtesla{} for a standard US atmosphere.
+  (Where $\theta_{b}$ is the angle between the view direction and the geomagnetic field).}
+  \label{fig:Weight_Function}
+\end{figure}
+
+\section{Purpose} 
+
+In this report the Liebe93 RT model \cite{ref:Liebe1} with a Zeeman approximation included and the Liebe93 without a Zeeman approximation included 
+(hereafter referred to as "Liebe93 Zeeman" [LZ] and "Liebe93 no Zeeman" LNZ respectively) \cite{ref:Liebe1} are validated
+against a fast model (hereafter referred to as "true Zeeman" [TZ]) that accounts for the Zeeman effect and has been shown to significantly reduce observation versus model brightness
+temperature (BT) residuals for high peaking SSMIS channels 19-21 \cite{ref:Han1}. 
+The primary motivation for this work is to determine to what extent the differences between the TZ and LNZ/RNZ models are consistent
+with the Zeeman splitting impact described in the introduction.  
+    
+\section{Description of TZ Model}
+%--------------------------
+%\subsection{TZ Model}
+
+The TZ model was trained with the Rosenkranz and Staelin [1988] model \cite{ref:Rosenkranz2}. The training data set was obtained for zenith angles between 51$\degree$ and 54$\degree$,
+11 B's ranging from 20\microtesla to 60\microtesla and 6 view directions with respect to the magnetic field ranging from 0$\degree$ to 90$\degree$
+\cite{ref:Han1}. Inputs for this model are layer temperature, cosine($\theta_{b}$) and B. Brightness temperatures for channels 19-24 are output for zenith angles of approximately
+52.5$\degree$ that are representative of the peak weighting function altitudes and an SSMIS scan angle of 45$\degree$. To confirm that the model was being used appropriately example results provided
+by the developers were reproduced and are displayed in Table \ref{tab:example_res}. 
+
+\smallskip
+\smallskip
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{c c}
+    Example & Reproduced \\
+    \hline 
+    234.43 & 243.4348 \\
+    202.05 & 202.0462 \\
+    259.02 & 259.0163 \\
+    266.30 & 266.2962 \\
+    251.89 & 251.8929 \\
+    236.08 & 236.0784 \\    
+  \end{tabular}
+  \caption{Table showing that example results have been reproduced}
+  \label{tab:example_res}
+\end{table}
+ 
+\smallskip
+\smallskip
+
+In Figure \ref{fig:TZ_results} the impact of Zeeman splitting as a function of B is plotted for 11 different $\theta_{b}$. The calculations
+were performed for a set of six U.S. standard atmospheres. 
+For the plots in Figure \ref{fig:TZ_results} all differences/offsets are relative to BT's calculated
+at a base B of 20\microtesla. At all view geometries with respect to 
+the geomagnetic field the absolute magnitudes of the differences/offsets for channels 19 and 20
+are similar to the absolute magnitude of the difference/offset for channel 21. As expected the 
+magnitude of Zeeman splitting impact on brightness temperatures for SSMIS channels 19-21 increases   
+as B increases for all view geometries plotted. 
+ 
+\begin{figure}[htp]
+  \centering{}
+  \includegraphics[scale=0.8]{./graphics/TZ_results.eps}
+  \caption{Brightness temperatures as a function of the geomagnetic field strength for 11 view geometries with
+   respect to the geomagnetic field.}
+  \label{fig:TZ_results}
+\end{figure}
+
+\newpage
 %-----------------------
-. 
+\section{Rosenkranz Versus Liebe}
+
+Figures \ref{fig:Rosenkranz_V_Liebe} and \ref{fig:Rosenkranz_V_Liebe_RMS} are representative of the mean and RMS differences between LNZ and RNZ brightness
+temperatures for 48 University of Maryland Baltimore College (UMBC) profiles.
+Brightness temperatures calculated from LNZ and RNZ transmittances agree to within 0.02K for SSMIS channels 19-21. The RMS differences are less than
+0.03K for channels 19-21.  
+These differences are small compared to the absolute impact of Zeeman splitting for B=0.4\microtesla{} 
+or greater as shown in Figure \ref{fig:TZ_results}. Therefore, it is reasonable to consider the RNZ and LNZ simulations for SSMIS channels 19-21
+interchangeable when making comparisons to models that account for the Zeeman effect (i.e TZ/LZ). 
 
 \begin{figure}[htp]
   \centering{}
   \includegraphics[scale=0.8]{./graphics/Rosenkranz_V_Liebe.eps}
-  \caption[below]{Comparison of brightness temperatures between Rosenkranz and Liebe models which do not account for Zeeman splitting.}
+  \caption[below]{Mean brightness temperature differences between the Rosenkranz and Liebe models which do not account for Zeeman splitting.}
   \label{fig:Rosenkranz_V_Liebe}
 \end{figure}
 
-\newpage
-\section{Zeeman Splitting Effects}
-
-Channels 19 and 20 have weighting functions that peak in the mesosphere. These channels are centered on O\subscript{2} rotational absorption
-lines. As explained in [Han et al., 2007] Zeeman splitting of O\subscript{2} absorption lines decreases the altitude at which the weighting functions for these channels
-peak. This is because the passbands for channels 19 and 20 are centered on O\subscript{2} rotational transition lines [Han et al., 2007]. Conversely, 
-Zeeman splitting increases the altitude at which the weighting function for channel 21 peaks, because the channel is slightly offset from the O\subscript{2} 
-transition line. Figure 2 demonstrates the relationship between increased Zeeman splitting and the peak 
-weighting function altitudes for channels 19-21. All three channels peak in the mesosphere where lapse rates are normally negative. Therefore, Zeeman splitting should cause an increase in 
-observed brightness temperatures for channels 19 and 20, but a decrease in observed brightness temperatures for channel 21. Figure 2 also demonstrates 
-that the impact of Zeeman splitting is related to the view angle with respect to the geomagnetic field.
-
 \begin{figure}[htp]
   \centering{}
-  \includegraphics[scale=0.8]{./graphics/Figure2.eps}
-  \caption{(A) Weighting functions calculated with B=23\microtesla{} (solid lines) and B=60\microtesla{} (dashed lines) and (B) with theta=0 (solid lines) and theta=90 (dashed lines)
-  at B=60\microtesla{} (Where theta is the angle between the view direction and the geomagnetic field).}
-  %\label{fig:blah_ref2}
+  \includegraphics[scale=0.8]{./graphics/Rosenkranz_V_Liebe_RMS.eps}
+  \caption[below]{RMS brightness temperature differences between the Rosenkranz and Liebe models which do not account for Zeeman splitting.}
+  \label{fig:Rosenkranz_V_Liebe_RMS}
 \end{figure}
 
 \newpage
-\section{Liebe "Zeeman On" Versus Liebe "Zeeman Off"}
-The Liebe model that takes into account Zeeman splitting assumes a fixed magnetic field
-for all simulations (B = 60\microtesla{}). Figure 3 shows comparisons between Liebe "Zeeman turned
-on" BT's and Liebe "Zeeman turned off" BT's. The sign and shape of the differences for channels 19-21 appear to be reasonably consistent 
-with the impact of Zeeman splitting descibed in [Han et. al, 2007] and with a reasoned argument
-for Zeeman splitting effects on BT's for these channels. However, the magnitudes of the differences for channels 19 and 20 are more than a factor of 
-two smaller than the magnitude of the difference for channel 21. 
+\section{LNZ Versus LZ}
+The LZ model assumes a magnetic field of 60\microtesla. Figure \ref{fig:Liebe_Comparison} is representative of mean BT differences between
+LZ and LNZ for six U.S. standard atmospheres. 
  
 \begin{figure}[htp]
   \centering{}
   \includegraphics[scale=0.8]{./graphics/Liebe_Comparison.eps}
-  \caption{(A) Weighting functions calculated with B=23\microtesla{} (solid lines) and B=60\microtesla{} (dashed lines) and (B) with theta=0 (solid lines) and theta=90 (dashed lines)
-  at B=60\microtesla{} (Where theta is the angle between the view direction and the geomagnetic field).}
-  %\label{fig:blah_ref2}
+  \caption{Mean brightness temperature differences between the Liebe93 model with a Zeeman approximation and the Liebe93 model without a Zeeman approximation}
+  \label{fig:Liebe_Comparison}
 \end{figure}
  
-This result is not consistent with calculations using the fast RT model [Han et. al., 2007].
-In Figure 4 the impact of Zeeman splitting as a function of magnetic field strength is plotted for 11 different view geometries with respect to the geomagnetic
-field. For the plots in Figure 4 all differences/offsets are relative to BT's calculated for a base magnetic field strength of 20\microtesla{}. At all view
-geometries with respect to the geomagnetic field the absolute magnitudes of the differences/offsets for channels 19 and 20 are similar to the absolute
-magnitude of the difference/offset for channel 21.   
-
+The sign of the differences for SSMIS channels 19-21 are consistent with Figure \ref{fig:TZ_results} and with the discussion in the 
+introduction section of this report. However, the magnitude of the differences for channels 19 and 20 are more than a factor of two smaller 
+than the magnitude of the difference for channel 21.  
+This result is not consistent with the TZ calculations shown in Figure \ref{fig:TZ_results}.
+  
 \newpage
+\section{TZ Versus LNZ}
 
-\begin{figure}[htp]
-  \centering{}
-  \includegraphics[scale=0.8]{./graphics/Figure4.eps}
-  \caption{Brightness temperatures as a function of the geomagnetic field strength for 11 view geometries with
-   respect to the geomagnetic field.}
-  %\label{fig:blah_ref2}
-\end{figure}
-
-\section{Fast RT Model "Accounting For Zeeman Effect" Versus Liebe "Zeeman Turned Off" Comparisons}
-The fast model that accounts for the Zeeman Effect was trained by a data set prepared
-at zenith angles confined between 51-54 degrees (Scan angle fixed at 45), 11 points on (20<B<70)
-and 6 points on cos(Theta) (0<theta<90). The inputs for the fast model are layer temperature, the cosine
-of the view geometry with respect to the geomagnetic field and magnetic field strength. The model outputs 
-brightness temperatures for channels 19-24 at a zenith angle of approximately 52.5 degrees. 
-
-Example results are included in the tarball package for this model. 
-To confirm that I was appropriately using the model I reproduced 
-the example result brightness temperatures.
-
-Figure \ref{fig:xx} shows mean brightness temperature differences between the fast RT model and the Reference model for 
-magnetic fields of 23\microtesla{} and 60\microtesla{}. The sign of the differences and the absolute magnitude
-of the differences in Figure 5 are not consistent with relative changes/offsets shown in the Figure 4 plots. However,
-the Figure 4 plots are relative to a calculation that accounts for the Zeeman Effect given a magnetic field of 20\microtesla{}
-Furthermore as the magnetic field is increased the fast RT model BT's are more similar to the Liebe "Zeeman turned
-off" BT's for channels 19 and 20. As the magnetic field increases the impact of the Zeeman splitting on BT's should
-increase. 
+Figure \ref{fig:TZ_Versus_LNZ} shows brightness temperature differences between TZ and LNZ at 23\microtesla{} and 60\microtesla{}.
+The sign of the differences and the absolute magnitude
+of the differences in \ref{fig:TZ_Versus_LNZ} are not consistent with relative changes/offsets shown in the \ref{fig:TZ_results} plots. 
+The Figure \ref{fig:TZ_results} offsets are relative to a calculation that accounts for the Zeeman Effect given a magnetic field of 20\microtesla{}.
+As the magnetic field is increased the TZ model BT's are more similar to the LNZ BT's for channels 19 and 20. Furthermore, as B increases
+the BT's for channels 19 and 20 increase.
+These features are not consistent with the arguments/discussion in the introduction section.
    
 \begin{figure}[htp]
   \centering{}
-  \includegraphics[scale=0.8]{./graphics/Figure5.eps}
+  \includegraphics[scale=0.8]{./graphics/TZ_Versus_LNZ.eps}
   \caption{Mean differences between a fast RT model that accounts for the Zeeman Effect and a reference "Zeeman turned off"
    model. The differences were calculated for magnetic fields of 23\microtesla{} and 60\microtesla{}}
-  \label{fig:xx}
+  \label{fig:TZ_Versus_LNZ}
 \end{figure}
 
 
-%Stuff is shown in figure \ref{fig:blah_ref} ...
+\newpage
+\section{Conclusion}
 
+The TZ model is used as a reference for validating LNZ, LZ and RNZ simulations, because it has been shown
+to reduce observation versus model BT residuals. 
+Brightness temperature simulations for SSMIS channels 19-21 using the TZ model are consistent with a reasoned argument for 
+the impact of Zeeman splitting provided in the introduction.
+Brightness temperature differences between the LNZ and TZ simulations decrease as B increases. Furthermore,
+the BT's for channels 19 and 20 increase as B increases. These features
+are not consistent with the discussion in the introduction section of this report.
 
 
 
 \newpage
+
 %=================
-
-
-%\begin{table}[htp]
- % \centering
-  %\begin{tabular}{c | c}
-  %  Col1 & Col2\\
-  %  \hline
-  %  1 & a\\
-  %  2 & b\\
-  %  3 & c
-  %\end{tabular}
-  %\caption{Caption for blah table}
-  %\label{tab:blah_ref}
-%\end{table}
-
-
-
-\begin{figure}[htp]
-  \centering
-  %\includegraphics{2006jd008208_f01_orig.eps}
-  \caption{Caption for blah}
-  \label{fig:blah_ref}
-\end{figure}
-
-
-
 % The references section
 %=======================
 \begin{thebibliography}{99}
-  \bibitem{ref:Han1} reference for Yongs paper
-  \bibitem{ref:tag2} reference2
+  \bibitem{ref:Han1} Han, Y., F. Weng, Q. Liu, P. van Delst,\\ \underline{A fast radiative transfer model for SSMIS upper atmosphere sounding channels}, Journal of Geophysical Research, 2007
+  \bibitem{ref:Liebe1} Liebe, H.J., G.A. Hufford, M. G. Cotton,\\ \underline{Propagation Modeling of Moist Air and Suspended Water/Ice Particles at Frequencies Below 1000 GHz}, National Telecommunications
+  and Information Administration Institute for Telecommunication Sciences, 1993.
+  \bibitem{ref:Rosenkranz1} Rosenkranz 03
+  \bibitem{ref:Rosenkranz2} Rosenkranz 88
 \end{thebibliography}
 
 
@@ -175,4 +217,3 @@ increase.
 
 
 \end{document}
-
