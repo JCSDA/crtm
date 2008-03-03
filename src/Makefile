@@ -16,8 +16,7 @@ LIBRARY_DIR = lib
 INCLUDE_DIR = include
 
 # The linkfile script
-LINKSCRIPT = linkfiles.rb
-#LINKSCRIPT = linkfiles
+LINKSCRIPT = linkfiles
 
 # Source files to link
 include $(BUILD_DIR)/$(SOURCE_DIR)/make.filelist

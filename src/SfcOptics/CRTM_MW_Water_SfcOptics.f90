@@ -193,9 +193,8 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_MW_Water_SfcOptics'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER        :: i
-    REAL(fp)       :: Emissivity(4), Reflectivity(4)
+    REAL(fp)       :: Emissivity(4)
 
 
     ! ------

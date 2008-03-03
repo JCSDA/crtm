@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Test_Interp_2D program
+# Makefile for Test_Interpolation program
 #
 #==============================================================================
 
@@ -15,6 +15,8 @@ EXE_FILE = Test_Interpolation
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Unit_Test.f90 \
             CRTM_Interpolation.f90

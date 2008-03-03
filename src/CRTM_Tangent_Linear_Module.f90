@@ -263,7 +263,7 @@ CONTAINS
     INTEGER :: l, nChannels, ChannelIndex
     INTEGER :: m, nProfiles
     INTEGER :: ln
-    INTEGER :: n_Full_Streams, n_Layers
+    INTEGER :: n_Full_Streams
     INTEGER, DIMENSION(6) :: AllocStatus, AllocStatus_TL
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm, Atm_TL
@@ -646,7 +646,7 @@ CONTAINS
               Error_Status = FAILURE
               WRITE( Message,'("Error computing CloudScatter for ",a,&
                               &", channel ",i0,", profile #",i0)' ) &
-                              TRIM(ChannelInfo(n)%SensorID), &
+                              TRIM(ChannelInfo(n)%Sensor_ID), &
                               ChannelInfo(n)%Sensor_Channel(l), &
                               m
               CALL Display_Message( ROUTINE_NAME, &
@@ -682,7 +682,7 @@ CONTAINS
               Error_Status = FAILURE
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
                               &", channel ",i0,", profile #",i0)' ) &
-                              TRIM(ChannelInfo(n)%SensorID), &
+                              TRIM(ChannelInfo(n)%Sensor_ID), &
                               ChannelInfo(n)%Sensor_Channel(l), &
                               m
               CALL Display_Message( ROUTINE_NAME, &
@@ -752,7 +752,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message,'("Error computing RTSolution for ",a, &
                             &", channel ", i0,", profile #",i0)' ) &
-                            TRIM(ChannelInfo(n)%SensorID), &
+                            TRIM(ChannelInfo(n)%Sensor_ID), &
                             ChannelInfo(n)%Sensor_Channel(l), &
                             m
             CALL Display_Message( ROUTINE_NAME, &
@@ -781,7 +781,7 @@ CONTAINS
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message,'("Error computing RTSolution_TL for ",a, &
                             &", channel ", i0,", profile #",i0)' ) &
-                            TRIM(ChannelInfo(n)%SensorID), &
+                            TRIM(ChannelInfo(n)%Sensor_ID), &
                             ChannelInfo(n)%Sensor_Channel(l), &
                             m
             CALL Display_Message( ROUTINE_NAME, &

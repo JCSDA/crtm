@@ -64,7 +64,6 @@ PROGRAM Test_K_Matrix
   ! Variables
   ! ---------
   CHARACTER(256) :: Message, Answer
-  CHARACTER(256) :: Filename
   CHARACTER(256) :: Exp_ID, Exp_Description
   LOGICAL :: Compare_Results
   INTEGER :: i, l, m, n, n_Channels, n_Sensors
@@ -193,7 +192,7 @@ PROGRAM Test_K_Matrix
   ! -------------------
   WRITE( *, '( /5x, "Initializing the CRTM..." )' )
   Error_Status = CRTM_Init( ChannelInfo, &
-                            SensorId=Sensor_Id )
+                            Sensor_Id=Sensor_Id )
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error initializing CRTM', & 

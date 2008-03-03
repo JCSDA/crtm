@@ -47,6 +47,9 @@ MODULE CRTM_Test_Utility
   PUBLIC :: SFCDATA_FILENAME
   PUBLIC :: MAX_N_PROFILES
   PUBLIC :: USED_N_PROFILES
+  PUBLIC :: TEST_ATM_FILENAME
+  PUBLIC :: TEST_SFC_FILENAME
+  PUBLIC :: TEST_N_PROFILES
   PUBLIC :: EMISSIVITY_TEST
   PUBLIC :: CLOUDS_TEST
   PUBLIC :: AEROSOLS_TEST
@@ -88,11 +91,16 @@ MODULE CRTM_Test_Utility
   ! ------------------------
   ! Public module parameters
   ! ------------------------
-  ! Datafile names and dimensions
+  ! Datafile names and dimensions for output comparison tests
   CHARACTER(*), PARAMETER :: ATMDATA_FILENAME = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: SFCDATA_FILENAME = 'ECMWF-Surface.bin'
-  INTEGER,      PARAMETER :: MAX_N_PROFILES  = 52
-  INTEGER,      PARAMETER :: USED_N_PROFILES = 10
+  INTEGER,      PARAMETER :: MAX_N_PROFILES   = 52
+  INTEGER,      PARAMETER :: USED_N_PROFILES  = 10
+
+  ! Datafile names and dimensions for model comparison (FWD/TL, TL/AD, TL/K) tests
+  CHARACTER(*), PARAMETER :: TEST_ATM_FILENAME = 'Test.Atmosphere.Cloud.bin'
+  CHARACTER(*), PARAMETER :: TEST_SFC_FILENAME = 'Test.Surface.bin'
+  INTEGER,      PARAMETER :: TEST_N_PROFILES   = 6
 
   ! Set up the tests
   INTEGER, PARAMETER :: EMISSIVITY_TEST = 1
@@ -146,7 +154,7 @@ CONTAINS
     WRITE(*,200)
     DO l = 1, ChannelInfo%n_Channels
       WRITE(*,300) ChannelInfo%Channel_Index(l), &
-                   ChannelInfo%SensorID, &
+                   ChannelInfo%Sensor_ID, &
                    ChannelInfo%WMO_Satellite_ID, &
                    ChannelInfo%WMO_Sensor_ID, &
                    ChannelInfo%Sensor_Channel(l)
@@ -154,7 +162,7 @@ CONTAINS
 
     ! Format statements
     100 FORMAT( /5x, 'Number of channels indexed: ', i5 )
-    200 FORMAT( /2x, 'Channel        SensorID            WMO           WMO     Channel', &
+    200 FORMAT( /2x, 'Channel        Sensor_ID           WMO           WMO     Channel', &
                &/2x, ' Index                         Satellite ID   Sensor ID   Number', &
                &/2x, '----------------------------------------------------------------'  )
     300 FORMAT( 2x, 2x, i4, 2x, '>', a, '<', 5x, i3, 11x, i3, 7x, i4 )
@@ -185,17 +193,15 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_RTSolution_TestFile'
     ! Local variables
     INTEGER :: Error_Status
-    CHARACTER(7)   :: Status
     CHARACTER(256) :: Filename
-    INTEGER :: l1, l2, l, m, n
-    INTEGER :: nSensors, nChannels, nProfiles
-    INTEGER :: FileID
+    INTEGER :: l1, l2, n
+    INTEGER :: n_Sensors, n_Channels, n_Profiles
 
     ! Set up
     ! ------
     ! Obtain dimensions
-    nSensors  = SIZE(ChannelInfo)
-    nProfiles = SIZE(RTSolution,DIM=2)
+    n_Sensors  = SIZE(ChannelInfo)
+    n_Profiles = SIZE(RTSolution,DIM=2)
     
     ! Initialise channel begin index
     l1=1
@@ -203,14 +209,14 @@ CONTAINS
 
     ! Loop over sensors
     ! -----------------
-    Sensor_Loop: DO n = 1, nSensors
+    Sensor_Loop: DO n = 1, n_Sensors
     
       ! Initialise channel end index
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
-      nChannels = ChannelInfo(n)%n_Channels
+      n_Channels = ChannelInfo(n)%n_Channels
       
       ! Create filename
-      Filename = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin'
+      Filename = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//TRIM(Experiment)//'.bin'
       
       ! Write the RTSolution data for the current sensor
       Error_Status = CRTM_Write_RTSolution_Binary( Filename, &
@@ -255,17 +261,15 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_RTSolution_TestFile'
     ! Local variables
     INTEGER :: Error_Status
-    CHARACTER(7)   :: Status
     CHARACTER(256) :: Filename
-    INTEGER :: l1, l2, l, m, n
-    INTEGER :: nSensors, nChannels, nProfiles
-    INTEGER :: FileID
+    INTEGER :: l1, l2, n
+    INTEGER :: n_Sensors, n_Channels, n_Profiles
 
     ! Set up
     ! ------
     ! Obtain dimensions
-    nSensors  = SIZE(ChannelInfo)
-    nProfiles = SIZE(RTSolution,DIM=2)
+    n_Sensors  = SIZE(ChannelInfo)
+    n_Profiles = SIZE(RTSolution,DIM=2)
     
     ! Initialise channel begin index
     l1=1
@@ -273,14 +277,14 @@ CONTAINS
 
     ! Loop over sensors
     ! -----------------
-    Sensor_Loop: DO n = 1, nSensors
+    Sensor_Loop: DO n = 1, n_Sensors
     
       ! Initialise channel end index
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
-      nChannels = ChannelInfo(n)%n_Channels
+      n_Channels = ChannelInfo(n)%n_Channels
       
       ! Create filename
-      Filename = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//TRIM(Experiment)//'.bin.Baseline'
+      Filename = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//TRIM(Experiment)//'.bin.Baseline'
       
       ! Read the RTSolution data for the current sensor
       Error_Status = CRTM_Read_RTSolution_Binary( Filename, &
@@ -365,16 +369,14 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_AtmSfc_TestFile(Rank-2)'
     ! Local variables
     INTEGER :: Error_Status
-    CHARACTER(7)   :: Status
     CHARACTER(256) :: AtmFile, SfcFile
-    INTEGER :: l1, l2, l, m, n
-    INTEGER :: nSensors, nChannels
-    INTEGER :: FileID
+    INTEGER :: l1, l2, n
+    INTEGER :: n_Sensors, n_Channels
 
     ! Set up
     ! ------
     ! Obtain dimensions
-    nSensors  = SIZE(ChannelInfo)
+    n_Sensors  = SIZE(ChannelInfo)
     
     ! Initialise channel begin index
     l1=1
@@ -382,14 +384,14 @@ CONTAINS
 
     ! Loop over sensors
     ! -----------------
-    Sensor_Loop: DO n = 1, nSensors
+    Sensor_Loop: DO n = 1, n_Sensors
     
       ! Initialise channel end index
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
-      nChannels = ChannelInfo(n)%n_Channels
+      n_Channels = ChannelInfo(n)%n_Channels
       
       ! Write the Atmosphere data for the current sensor
-      AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin'
+      AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.atm'//TRIM(Experiment)//'.bin'
       Error_Status = CRTM_Write_Atmosphere_Binary( AtmFile, &
                                                    Atm(l1:l2,:), &
                                                    Quiet=1 )
@@ -401,7 +403,7 @@ CONTAINS
       END IF
 
       ! Write the Atmosphere data for the current sensor
-      SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin'
+      SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.sfc'//TRIM(Experiment)//'.bin'
       Error_Status = CRTM_Write_Surface_Binary( SfcFile, &
                                                 Sfc(l1:l2,:), &
                                                 Quiet=1 )
@@ -485,16 +487,14 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AtmSfc_TestFile(Rank-2)'
     ! Local variables
     INTEGER :: Error_Status
-    CHARACTER(7)   :: Status
     CHARACTER(256) :: AtmFile, SfcFile
-    INTEGER :: l1, l2, l, m, n
-    INTEGER :: nSensors, nChannels, nProfiles
-    INTEGER :: FileID
+    INTEGER :: l1, l2, n
+    INTEGER :: n_Sensors, n_Channels
 
     ! Set up
     ! ------
     ! Obtain dimensions
-    nSensors  = SIZE(ChannelInfo)
+    n_Sensors  = SIZE(ChannelInfo)
     
     ! Initialise channel begin index
     l1=1
@@ -502,14 +502,14 @@ CONTAINS
 
     ! Loop over sensors
     ! -----------------
-    Sensor_Loop: DO n = 1, nSensors
+    Sensor_Loop: DO n = 1, n_Sensors
     
       ! Initialise channel end index
       l2 = l1 + ChannelInfo(n)%n_Channels - 1
-      nChannels = ChannelInfo(n)%n_Channels
+      n_Channels = ChannelInfo(n)%n_Channels
       
       ! Read the Atmosphere data for the current sensor
-      AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
+      AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
       Error_Status = CRTM_Read_Atmosphere_Binary( AtmFile, &
                                                   Atm(l1:l2,:), &
                                                   Quiet=1 )
@@ -521,7 +521,7 @@ CONTAINS
       END IF
 
       ! Read the Atmosphere data for the current sensor
-      SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%SensorID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
+      SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
       Error_Status = CRTM_Read_Surface_Binary( SfcFile, &
                                                Sfc(l1:l2,:), &
                                                Quiet=1 )

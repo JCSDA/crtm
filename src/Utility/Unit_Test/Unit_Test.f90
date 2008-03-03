@@ -195,7 +195,6 @@ CONTAINS
     CHARACTER(256) :: Message
     LOGICAL  :: Verbose
     INTEGER  :: rel
-    REAL(fp) :: pc
 
     ! Minimum error by default...
     rel = 1
@@ -419,8 +418,6 @@ CONTAINS
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
     LOGICAL,      OPTIONAL, INTENT(IN)     :: Verbose
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Variables
-    CHARACTER(256) :: Routine_Name
         
     ! Initialise test counters
     UTest%n_Tests        = 0

@@ -992,7 +992,7 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: i, j, k, m, n
+    INTEGER :: k
 
     ! Set up
     ! ------

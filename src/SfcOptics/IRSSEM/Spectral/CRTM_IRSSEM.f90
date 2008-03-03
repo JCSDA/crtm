@@ -293,7 +293,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_IRSSEM'
     ! Local variables
-    CHARACTER( 256 ) :: Message
     INTEGER :: n_Angles, i
     REAL(fp), SAVE :: Old_Wind_Speed = -99.0_fp ! Old wind speed value
     INTEGER,  SAVE :: iv = 1     ! Wind speed index into EmisC%Wind_Speed
@@ -490,7 +489,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_IRSSEM_TL'
     ! Local variables
-    CHARACTER( 256 ) :: Message
     INTEGER :: n_Angles, i
     REAL(fp), SAVE :: Old_Wind_Speed = -99.0_fp ! Old wind speed value
     INTEGER,  SAVE :: iv = 1    ! Wind speed index into EmisC%Wind_Speed

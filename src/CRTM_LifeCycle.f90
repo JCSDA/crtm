@@ -56,7 +56,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Init( ChannelInfo                        , &  ! Output
-!                                 SensorID         =SensorID         , &  ! Optional input
+!                                 Sensor_ID        =Sensor_ID        , &  ! Optional input
 !                                 CloudCoeff_File  =CloudCoeff_File  , &  ! Optional input
 !                                 AerosolCoeff_File=AerosolCoeff_File, &  ! Optional input
 !                                 EmisCoeff_File   =EmisCoeff_File   , &  ! Optional input
@@ -73,11 +73,11 @@ CONTAINS
 !                           user inputs.
 !                           UNITS:      N/A
 !                           TYPE:       TYPE(CRTM_ChannelInfo_type)
-!                           DIMENSION:  Rank-1 (nSensors)
+!                           DIMENSION:  Rank-1 (n_Sensors)
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       SensorID:           List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
+!       Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
 !                           ssmis_f16, etc) with which the CRTM is to be
 !                           initialised. These Sensor ID are used to construct
 !                           the sensor specific SpcCoeff and TauCoeff filenames
@@ -204,7 +204,8 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Init( ChannelInfo      , &  ! Output
-                      SensorID         , &  ! Optional input
+                      Sensor_ID        , &  ! Optional input
+                      SensorID         , &  ! Optional input ***OBSCELESCENT***
                       CloudCoeff_File  , &  ! Optional input
                       AerosolCoeff_File, &  ! Optional input
                       EmisCoeff_File   , &  ! Optional input
@@ -218,6 +219,7 @@ CONTAINS
 
     ! Arguments
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: SensorID(:)
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: CloudCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
@@ -236,7 +238,8 @@ CONTAINS
     CHARACTER(SL) :: Default_CloudCoeff_File
     CHARACTER(SL) :: Default_AerosolCoeff_File
     CHARACTER(SL) :: Default_EmisCoeff_File
-    INTEGER :: l, n, nSensors
+    INTEGER :: l, n, n_Sensors
+    CHARACTER(20) :: Local_Sensor_ID(SIZE(ChannelInfo))
 
 
     ! Set up
@@ -245,20 +248,34 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check dimensionality
-    nSensors = SIZE(ChannelInfo)
-    IF ( PRESENT( SensorID ) ) THEN
-      ! Optional SensorID must have same dimension as ChannelInfo
-      IF ( SIZE(SensorID) /= nSensors ) THEN
-        Error_Status=FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Inconsistent ChannelInfo and SensorID dimensions', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+    n_Sensors = SIZE(ChannelInfo)
+    IF ( PRESENT(Sensor_ID) .OR. PRESENT(SensorID) ) THEN
+      ! Check size of Sensor_Id array
+      IF ( PRESENT(Sensor_ID) ) THEN
+        IF ( SIZE(Sensor_ID) /= n_Sensors ) THEN
+          Error_Status=FAILURE
+          CALL Display_Message( ROUTINE_NAME, &
+                                'Inconsistent ChannelInfo and Sensor_ID dimensions', &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          RETURN
+        END IF
+        Local_Sensor_ID = Sensor_Id
+      ! Check size of SensorId array
+      ELSE IF ( PRESENT(SensorID) ) THEN
+        IF ( SIZE(SensorID) /= n_Sensors ) THEN
+          Error_Status=FAILURE
+          CALL Display_Message( ROUTINE_NAME, &
+                                'Inconsistent ChannelInfo and Sensor_ID dimensions', &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          RETURN
+        END IF
+        Local_Sensor_ID = SensorId
       END IF
     ELSE
-      ! No SensorID specfied. ChannelInfo must only have one element.
-      IF ( nSensors /= 1 ) THEN
+      ! No Sensor_ID specfied. ChannelInfo must only have one element.
+      IF ( n_Sensors /= 1 ) THEN
         Error_Status=FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               'ChannelInfo dimension > 1 without SensorID input', &
@@ -296,7 +313,7 @@ CONTAINS
 
     ! Load the spectral coefficients
     ! ------------------------------
-    Error_Status = CRTM_Load_SpcCoeff( SensorID         =SensorID         , &
+    Error_Status = CRTM_Load_SpcCoeff( Sensor_ID        =Local_Sensor_ID  , &
                                        File_Path        =File_Path        , &
                                        Quiet            =Quiet            , &
                                        Process_ID       =Process_ID       , &
@@ -313,7 +330,7 @@ CONTAINS
 
     ! Load the gas absorption coefficients
     ! ------------------------------------
-    Error_Status = CRTM_Load_TauCoeff( SensorID         =SensorID         , &
+    Error_Status = CRTM_Load_TauCoeff( Sensor_ID        =Local_Sensor_ID  , &
                                        File_Path        =File_Path        , &
                                        Quiet            =Quiet            , &
                                        Process_ID       =Process_ID       , &
@@ -330,7 +347,7 @@ CONTAINS
 
     ! Load the cloud coefficients
     ! ---------------------------
-    Error_Status = CRTM_Load_CloudCoeff( TRIM( Default_CloudCoeff_File )    , &
+    Error_Status = CRTM_Load_CloudCoeff( TRIM(Default_CloudCoeff_File)      , &
                                          Quiet            =Quiet            , &
                                          Process_ID       =Process_ID       , &
                                          Output_Process_ID=Output_Process_ID, &
@@ -347,7 +364,7 @@ CONTAINS
 
     ! Load the aerosol coefficients
     ! -----------------------------
-    Error_Status = CRTM_Load_AerosolCoeff( TRIM( Default_AerosolCoeff_File )  , &
+    Error_Status = CRTM_Load_AerosolCoeff( TRIM(Default_AerosolCoeff_File)    , &
                                            Quiet            =Quiet            , &
                                            Process_ID       =Process_ID       , &
                                            Output_Process_ID=Output_Process_ID, &
@@ -382,7 +399,7 @@ CONTAINS
     ! Load the ChannelInfo structure
     ! ------------------------------
     ! **** THIS CODE ASSUMES USING ALL CHANNELS ****
-    DO n = 1, nSensors
+    DO n = 1, n_Sensors
 
       ! Allocate the ChannelInfo structure
       Error_Status = CRTM_Allocate_ChannelInfo( SC(n)%n_Channels, &
@@ -403,7 +420,7 @@ CONTAINS
       ! **** THIS IS WHERE CHANNEL SELECTION COULD OCCUR ****
       ChannelInfo(n)%Channel_Index = (/(l, l=1,SC(n)%n_Channels)/)
       ! Fill the rest of the ChannelInfo structure
-      ChannelInfo(n)%SensorID         = SC(n)%Sensor_Id
+      ChannelInfo(n)%Sensor_ID        = SC(n)%Sensor_Id
       ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID
       ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID
       ChannelInfo(n)%Sensor_Channel   = SC(n)%Sensor_Channel
@@ -424,7 +441,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Destroy( ChannelInfo            , &  ! Output
 !                                    Process_ID =Process_ID , &  ! Optional input
-!                                    RCS_Id     = RCS_Id    , &  ! Revision control
+!                                    RCS_Id     =RCS_Id     , &  ! Revision control
 !                                    Message_Log=Message_Log  )  ! Error messaging
 !
 ! OUTPUT ARGUMENTS:
@@ -497,7 +514,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy'
     ! Local variables
     INTEGER :: Destroy_Status
-    INTEGER :: n, nSensors
+    INTEGER :: n, n_Sensors
 
     ! Set up
     ! ------
@@ -505,12 +522,12 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! The number of sensors
-    nSensors = SIZE(ChannelInfo)
+    n_Sensors = SIZE(ChannelInfo)
 
 
     ! Destroy all the structures
     ! --------------------------
-    DO n = 1, nSensors
+    DO n = 1, n_Sensors
       Destroy_Status = CRTM_Destroy_ChannelInfo( ChannelInfo(n)         , &
                                                  Message_Log=Message_Log  )
       IF ( Destroy_Status /= SUCCESS ) THEN

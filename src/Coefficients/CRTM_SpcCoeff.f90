@@ -135,7 +135,7 @@ CONTAINS
 !       the public data structure SC.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Load_SpcCoeff( SensorID         =SensorID,          &  ! Optional input
+!       Error_Status = CRTM_Load_SpcCoeff( Sensor_ID        =Sensor_ID,         &  ! Optional input
 !                                          File_Path        =File_Path,         &  ! Optional input
 !                                          Quiet            =Quiet,             &  ! Optional input
 !                                          Process_ID       =Process_ID,        &  ! Optional input
@@ -143,12 +143,12 @@ CONTAINS
 !                                          Message_Log      =Message_Log        )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       SensorID:           List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
+!       Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
 !                           ssmis_f16, etc) with which the CRTM is to be
 !                           initialised. These Sensor ID are used to construct
 !                           the sensor specific SpcCoeff filenames containing
 !                           the necessary coefficient data, i.e.
-!                             <SensorID>.SpcCoeff.bin
+!                             <Sensor_ID>.SpcCoeff.bin
 !                           If this argument is not specified, the default
 !                           SpcCoeff filename is
 !                             SpcCoeff.bin
@@ -225,7 +225,7 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Load_SpcCoeff( SensorID         , &  ! Input
+  FUNCTION CRTM_Load_SpcCoeff( Sensor_ID        , &  ! Input
                                File_Path        , &  ! Optional input
                                Quiet            , &  ! Optional input
                                Process_ID       , &  ! Optional input
@@ -233,7 +233,7 @@ CONTAINS
                                Message_Log      ) &  ! Error messaging
                              RESULT( Error_Status )
     ! Arguments
-    CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN)  :: SensorID
+    CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN)  :: Sensor_ID
     CHARACTER(*),               OPTIONAL, INTENT(IN)  :: File_Path
     INTEGER,                    OPTIONAL, INTENT(IN)  :: Quiet             
     INTEGER,                    OPTIONAL, INTENT(IN)  :: Process_ID        
@@ -248,7 +248,7 @@ CONTAINS
     CHARACTER(256) :: Process_ID_Tag
     CHARACTER(256), DIMENSION(MAX_N_SENSORS) :: SpcCoeff_File
     INTEGER :: Allocate_Status
-    INTEGER :: n, nSensors, nChannels
+    INTEGER :: n, n_Sensors, n_Channels
     INTEGER :: Max_n_Channels  ! Maximum channels protected variable
 
     ! Setup 
@@ -262,37 +262,37 @@ CONTAINS
     END IF
 
     ! Determine the number of sensors and construct their filenames
-    IF ( PRESENT(SensorID) ) THEN
+    IF ( PRESENT(Sensor_ID) ) THEN
       ! Construct filenames for specified sensors
-      nSensors=SIZE(SensorID)
-      IF ( nSensors > MAX_N_SENSORS ) THEN
+      n_Sensors=SIZE(Sensor_ID)
+      IF ( n_Sensors > MAX_N_SENSORS ) THEN
         Error_Status = FAILURE
         WRITE(Message,'("Too many sensors, ",i0," specified. Maximum of ",i0," sensors allowed.")') &
-                      nSensors, MAX_N_SENSORS
+                      n_Sensors, MAX_N_SENSORS
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message)//TRIM(Process_ID_Tag), &
                               Error_Status, &
                               Message_Log=Message_Log)
         RETURN
       END IF
-      DO n=1,nSensors
-        SpcCoeff_File(n) = TRIM(ADJUSTL(SensorID(n)))//'.SpcCoeff.bin'
+      DO n=1,n_Sensors
+        SpcCoeff_File(n) = TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.bin'
       END DO
     ELSE
       ! No sensors specified. Use default filename.
-      nSensors=1
+      n_Sensors=1
       SpcCoeff_File(1)='SpcCoeff.bin'
     END IF
 
     ! Add the file path
     IF ( PRESENT(File_Path) ) THEN
-      DO n=1,nSensors
+      DO n=1,n_Sensors
         SpcCoeff_File(n) = TRIM(ADJUSTL(File_Path))//TRIM(SpcCoeff_File(n))
       END DO
     END IF
     
     ! Allocate the SpcCoeff shared data structure array
-    ALLOCATE(SC(nSensors),STAT=Allocate_Status)
+    ALLOCATE(SC(n_Sensors),STAT=Allocate_Status)
     IF ( Allocate_Status/=0 ) THEN
       Error_Status = FAILURE
       WRITE(Message,'("SpcCoeff structure array allocation failed. STAT=",i0)') Allocate_Status
@@ -304,7 +304,7 @@ CONTAINS
     END IF
 
     ! Read the SpcCoeff data files
-    DO n = 1, nSensors
+    DO n = 1, n_Sensors
       Error_Status = Read_SpcCoeff_Binary( TRIM(SpcCoeff_File(n))             , &  ! Input
                                            SC(n)                              , &  ! Output
                                            Quiet            =Quiet            , &
@@ -323,7 +323,7 @@ CONTAINS
     END DO
 
     ! Determine the total number of channels
-    nChannels = SUM(SC%n_Channels)
+    n_Channels = SUM(SC%n_Channels)
     
     ! Set the protected variable MAX_N_CHANNELS
     !
@@ -332,21 +332,21 @@ CONTAINS
     ! Has the number of channels been set?
     IF ( CRTM_IsSet_Max_nChannels() ) THEN
       ! Yes. Check the value      
-      IF ( Max_n_Channels /= nChannels ) THEN
+      IF ( Max_n_Channels /= n_Channels ) THEN
         Error_Status = WARNING
         WRITE( Message, '( "MAX_N_CHANNELS already set to different value, ",i0,", ", &
                           &"than defined by SpcCoeff file(s), ",i0, &
                           &". Overwriting" )' ) &
-                        Max_n_Channels, nChannels
+                        Max_n_Channels, n_Channels
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message)//TRIM(Process_ID_Tag), &
                               Error_Status, &
                               Message_Log=Message_Log )
-        CALL CRTM_Set_Max_nChannels(nChannels)
+        CALL CRTM_Set_Max_nChannels(n_Channels)
       END IF
     ELSE
       ! No. Set the value
-      CALL CRTM_Set_Max_nChannels(nChannels)
+      CALL CRTM_Set_Max_nChannels(n_Channels)
     END IF
 
   END FUNCTION CRTM_Load_SpcCoeff

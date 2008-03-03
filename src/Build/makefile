@@ -77,6 +77,12 @@ pgi_debug:
 pgi:
 	cd $(SOURCE_DIR); make pgi; cd ..
 
+gfortran_debug:
+	cd $(SOURCE_DIR); make gfortran_debug; cd ..
+
+gfortran:
+	cd $(SOURCE_DIR); make gfortran; cd ..
+
 g95_debug:
 	cd $(SOURCE_DIR); make g95_debug; cd ..
 

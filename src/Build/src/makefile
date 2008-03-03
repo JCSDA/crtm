@@ -79,6 +79,12 @@ pgi_debug:
 pgi:
 	make -f $(MAKE_FILE) library $(LINUX_FLAGS_PGI_PROD)
 
+gfortran_debug:
+	make -f $(MAKE_FILE) library $(LINUX_FLAGS_GFORTRAN_DEBUG)
+
+gfortran:
+	make -f $(MAKE_FILE) library $(LINUX_FLAGS_GFORTRAN_PROD)
+
 g95_debug:
 	make -f $(MAKE_FILE) library $(LINUX_FLAGS_G95_DEBUG)
 

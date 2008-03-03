@@ -1198,7 +1198,7 @@ CONTAINS
       ! internal variables
       REAL(fp), DIMENSION(NANG,NANG) :: term1,term2,term3,term4,term5_TL
       REAL(fp) :: s, c
-      REAL(fp) :: s_TL, c_TL, d_TL, f_TL, Delta_Tau_TL
+      REAL(fp) :: s_TL, c_TL, Delta_Tau_TL
       REAL(fp), DIMENSION(NANG) :: C1_TL, C2_TL
       INTEGER :: i,j,L
 !
@@ -1317,7 +1317,7 @@ CONTAINS
     ! internal variables
     REAL(fp), DIMENSION(NANG,NANG) :: term1,term2,term3,term4,term5_AD
     REAL(fp) :: s, c
-    REAL(fp) :: s_AD, c_AD, d_AD, f_AD, Delta_Tau_AD
+    REAL(fp) :: s_AD, c_AD, Delta_Tau_AD
     REAL(fp), DIMENSION(NANG) :: C1_AD, C2_AD
     INTEGER :: i,j,L
 
@@ -2005,7 +2005,7 @@ CONTAINS
     TYPE(CRTM_RTVariables_type),     INTENT(IN)     :: RTV
     REAL(fp), DIMENSION( :,: ), INTENT(IN)     :: Pff, Pbb
     REAL(fp), DIMENSION( :,: ), INTENT(IN OUT) :: Pff_TL, Pbb_TL
-    REAL(fp) :: n_Factor, n_Factor_TL
+    REAL(fp) :: n_Factor_TL
     
     REAL(fp), DIMENSION( 0: RTV%n_Angles ) :: Sum_Fac_TL
 
@@ -2104,7 +2104,7 @@ CONTAINS
     REAL(fp), DIMENSION( :,: ), INTENT(IN OUT) :: Pff_AD, Pbb_AD
 
     INTEGER :: i,j, nZ                                           
-    REAL(fp) :: n_Factor, n_Factor_AD
+    REAL(fp) :: n_Factor_AD
     REAL(fp), DIMENSION( 0: RTV%n_Angles ) :: Sum_Fac_AD
 
 
@@ -3293,7 +3293,7 @@ CONTAINS
     LOGICAL  :: Is_Solar_Channel
     REAL(fp)                                     :: Planck_Surface_AD    ! Surface AD radiance
     REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_AD ! *LAYER* AD radiances
-    REAL(fp) :: User_Emissivity_AD, Direct_Reflectivity_AD    ! Temporary adjoint variable for SfcOptics calcs.
+    REAL(fp) :: User_Emissivity_AD    ! Temporary adjoint variable for SfcOptics calcs.
     ! The following variables are RT model specific
     REAL(fp), DIMENSION( MAX_N_ANGLES, &
                          MAX_N_ANGLES, &

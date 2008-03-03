@@ -433,28 +433,52 @@ LINUX_FLAGS_G95 = $(LINUX_FLAGS_G95_DEBUG)
 # -- The compiler and linker name
 NAME_GFORTRAN = gfortran
 
-# -- Only one set of compiler flags
-LINUX_COMMON_FLAGS_GFORTRAN =
-LINUX_FLAGS_GFORTRAN = "FC=${NAME_GFORTRAN}" \
-	               "FL=${NAME_GFORTRAN}" \
-	               "FC_FLAGS= -c \
-                                  -fbounds-check \
-                                  -fconvert=big-endian \
-                                  -ffpe-trap=overflow,zero \
-                                  -ffree-form \
-			          -fno-second-underscore \
-                                  -frecord-marker=4 \
-	                          -static \
-                                  -Wall \
-                                  ${INCLUDES} \
-                                  ${LINUX_COMMON_FLAGS_GFORTRAN}" \
-	               "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN} \
-                                  ${LIBRARIES} \
-                                  -o" \
-                       "ENDIAN=Little_Endian"
+# -- Compiler settings for DEBUG builds
+LINUX_COMMON_FLAGS_GFORTRAN_DEBUG =
+LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
+	                     "FL=${NAME_GFORTRAN}" \
+	                     "FC_FLAGS= -c \
+                                        -fbounds-check \
+                                        -fconvert=big-endian \
+                                        -ffpe-trap=overflow,zero \
+                                        -ffree-form \
+                                        -fno-second-underscore \
+                                        -frecord-marker=4 \
+                                        -ggdb \
+	                                -static \
+                                        -Wall \
+                                        ${INCLUDES} \
+                                        ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
+	                     "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
+                                        ${LIBRARIES} \
+                                        -o" \
+                             "ENDIAN=Little_Endian"
 
-LINUX_FLAGS_GFORTRAN_DEBUG = ${LINUX_FLAGS_GFORTRAN)
-LINUX_FLAGS_GFORTRAN_PROD  = ${LINUX_FLAGS_GFORTRAN)
+# -- Compiler settings for DEBUG builds
+LINUX_COMMON_FLAGS_GFORTRAN_PROD =
+LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
+	                    "FL=${NAME_GFORTRAN}" \
+	                    "FC_FLAGS= -c \
+                                       -O3 \
+                                       -fconvert=big-endian \
+                                       -ffast-math \
+                                       -ffree-form \
+                                       -fno-second-underscore \
+                                       -frecord-marker=4 \
+                                       -funroll-loops \
+	                               -static \
+                                       -Wall \
+                                       ${INCLUDES} \
+                                       ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
+	                    "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \
+                                       ${LIBRARIES} \
+                                       -o" \
+                            "ENDIAN=Little_Endian"
+                            
+# -- Here set the DEFAULT gfortran compiler flags
+LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
+#LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_PROD)
+
 
 
 # -----------------------------
@@ -480,8 +504,8 @@ LINUX_FLAGS_ABSOFT = "FC=${NAME_ABSOFT}" \
                                 -o" \
                      "ENDIAN=Little_Endian"
 
-LINUX_FLAGS_ABSOFT_DEBUG = ${LINUX_FLAGS_ABSOFT)
-LINUX_FLAGS_ABSOFT_PROD  = ${LINUX_FLAGS_ABSOFT)
+LINUX_FLAGS_ABSOFT_DEBUG = $(LINUX_FLAGS_ABSOFT)
+LINUX_FLAGS_ABSOFT_PROD  = $(LINUX_FLAGS_ABSOFT)
 
 
 # ---------------------------------------

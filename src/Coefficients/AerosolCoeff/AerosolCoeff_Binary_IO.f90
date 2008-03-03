@@ -6,8 +6,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 24-Jun-2004
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 24-Jun-2004
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE AerosolCoeff_Binary_IO
@@ -429,7 +429,6 @@ CONTAINS
     INTEGER(Long) :: n_RH             
     INTEGER(Long) :: n_Legendre_Terms
     INTEGER(Long) :: n_Phase_Elements 
-    INTEGER(Long) :: i, j, k, l, m
  
     ! Set up
     ! ------
@@ -709,7 +708,6 @@ CONTAINS
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: i, j, k, l 
  
     ! Set up
     ! ------

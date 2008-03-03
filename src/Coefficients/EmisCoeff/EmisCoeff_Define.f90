@@ -101,11 +101,11 @@ MODULE EmisCoeff_Define
     INTEGER(Long) :: n_Frequencies = 0   ! L dimension
     INTEGER(Long) :: n_Wind_Speeds = 0   ! N dimension
     ! The dimension ordinate data
-    REAL(Double), POINTER, DIMENSION(:) :: Angle      => NULL()  ! I
-    REAL(Double), POINTER, DIMENSION(:) :: Frequency  => NULL()  ! L
-    REAL(Double), POINTER, DIMENSION(:) :: Wind_Speed => NULL()  ! N
+    REAL(Double), POINTER :: Angle(:)      => NULL()  ! I
+    REAL(Double), POINTER :: Frequency(:)  => NULL()  ! L
+    REAL(Double), POINTER :: Wind_Speed(:) => NULL()  ! N
     ! The spectral emissivity
-    REAL(Double), POINTER, DIMENSION(:,:,:) :: Emissivity => NULL()  ! I x L x N
+    REAL(Double), POINTER :: Emissivity(:,:,:) => NULL()  ! I x L x N
   END TYPE EmisCoeff_type
 
 
@@ -148,7 +148,8 @@ CONTAINS
 
   SUBROUTINE Clear_EmisCoeff( EmisCoeff )
     TYPE(EmisCoeff_type), INTENT(IN OUT) :: EmisCoeff
-    ! Noop for now
+    EmisCoeff%Release = EMISCOEFF_RELEASE 
+    EmisCoeff%Version = EMISCOEFF_VERSION 
   END SUBROUTINE Clear_EmisCoeff
 
 

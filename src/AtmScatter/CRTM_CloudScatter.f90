@@ -1187,8 +1187,8 @@ CONTAINS
     REAL(fp) :: f_int   , r_int
     REAL(fp) :: f_int_TL, r_int_TL
     REAL(fp), DIMENSION(NPTS) :: f, r
-    REAL(fp), DIMENSION(NPTS) :: wlp, xlp
-    REAL(fp), DIMENSION(NPTS) :: wdlp, xdlp
+    REAL(fp), DIMENSION(NPTS) :: wlp
+    REAL(fp), DIMENSION(NPTS) :: xdlp
     
 
     ! No TL output when effective radius

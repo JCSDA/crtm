@@ -106,7 +106,7 @@ PROGRAM Example_K_Matrix
   ! --------------------------------------------------
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   Error_Status = CRTM_Init( ChannelInfo                  , &  ! This is an OUTPUT
-                            SensorId =(/Sensor_Id/)      , &
+                            Sensor_Id=(/Sensor_Id/)      , &
                             File_Path='Coefficient_Data/'  )
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
@@ -424,7 +424,7 @@ PROGRAM Example_K_Matrix
         Sensor  = Sensor + 1
         Channel = 1
       END IF
-      WRITE( *,'(7x,a9,5x,i2,5x,es13.6,5x,f7.3)') ChannelInfo(Sensor)%SensorId, &
+      WRITE( *,'(7x,a9,5x,i2,5x,es13.6,5x,f7.3)') ChannelInfo(Sensor)%Sensor_ID, &
                                                   ChannelInfo(Sensor)%Sensor_Channel(Channel), &
                                                   RTSolution(l,m)%Radiance, &
                                                   RTSolution(l,m)%Brightness_Temperature
@@ -445,7 +445,7 @@ PROGRAM Example_K_Matrix
         Sensor  = Sensor + 1
         Channel = 1
       END IF
-      WRITE( *,'(7x,a9,5x,i2,5x,f7.3,5x,f7.3)') ChannelInfo(Sensor)%SensorId, &
+      WRITE( *,'(7x,a9,5x,i2,5x,f7.3,5x,f7.3)') ChannelInfo(Sensor)%Sensor_ID, &
                                                 ChannelInfo(Sensor)%Sensor_Channel(Channel), &
                                                 Sfc_K(l,m)%Land_Temperature, &
                                                 Sfc_K(l,m)%Water_Temperature
@@ -467,7 +467,7 @@ PROGRAM Example_K_Matrix
       WRITE( *,'(/7x,"Profile ",i0," ATM K-Matrix output for ",a," channel ",i0,&
                &/7x,"Pressure",6x,"dTb/dT",7x,"dTb/dH2O",8x,"dTb/dO3")') &
                m, &
-               TRIM(ChannelInfo(Sensor)%SensorId), &
+               TRIM(ChannelInfo(Sensor)%Sensor_ID), &
                ChannelInfo(Sensor)%Sensor_Channel(Channel)
       DO k = 1, Atm(m)%n_Layers
         WRITE( *,'(7x,f8.3,2x,es13.6,2x,es13.6,2x,es13.6)' ) &

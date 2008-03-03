@@ -76,7 +76,7 @@ MODULE CRTM_Interpolation
   ! Module parameters
   ! -----------------  
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID=&
-  '$Id: $'
+  '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
 !  INTEGER,  PARAMETER :: ORDER = 3
@@ -299,7 +299,6 @@ CONTAINS
     ! Local variables
     INTEGER  :: i, j
     REAL(fp) :: a(NPTS)   , b(NPTS)
-    REAL(fp) :: b_int_TL
     ! Interpolate a in x dimension for all y
     DO j = 1,NPTS
       ! Interpolate z in w dimension for all x and y
@@ -403,8 +402,6 @@ CONTAINS
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
-    REAL(fp) :: a_AD(NPTS)
-    REAL(fp) :: a_AD_int
     ! Forward calculations
     ! Interpolate z in x dimension for all y
     DO i = 1,NPTS

@@ -470,7 +470,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_AddLayers_Atmosphere_AD( Atm_In                 , &  ! FWD Input
-!                                                    Atm_Out_AD             , &  ! AD  Intput
+!                                                    Atm_Out_AD             , &  ! AD  Input
 !                                                    Atm_In_AD              , &  ! AD  Output
 !                                                    Message_Log=Message_Log  )  ! Error messaging
 !

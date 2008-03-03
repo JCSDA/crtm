@@ -20,7 +20,7 @@ MODULE CRTM_ChannelInfo_Define
   USE Message_Handler
   USE CRTM_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                              INVALID_WMO_SENSOR_ID   , &
-                             SET, STRLEN
+                             SET, SL=>STRLEN
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -64,12 +64,12 @@ MODULE CRTM_ChannelInfo_Define
     INTEGER :: n_Allocates = 0
     ! Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
-    INTEGER :: StrLen = STRLEN
+    INTEGER :: StrLen = SL
     ! Scalar data
-    CHARACTER(STRLEN) :: SensorID         = ' '
-    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    INTEGER           :: Sensor_Index     = 0
+    CHARACTER(SL) :: Sensor_ID        = ' '
+    INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    INTEGER       :: Sensor_Index     = 0
     ! Array data
     INTEGER, POINTER :: Sensor_Channel(:) => NULL()  ! L
     INTEGER, POINTER :: Channel_Index(:)  => NULL()  ! L
@@ -119,8 +119,8 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_ChannelInfo( ChannelInfo )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo
-    ChannelInfo%StrLen = STRLEN
-    ChannelInfo%SensorID         = ' '
+    ChannelInfo%StrLen = SL
+    ChannelInfo%Sensor_ID        = ' '
     ChannelInfo%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     ChannelInfo%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     ChannelInfo%Sensor_Index     = 0
@@ -593,7 +593,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
     !
@@ -629,7 +629,7 @@ CONTAINS
     ! Assign data
     ! -----------
     ! Scalars
-    ChannelInfo_out%SensorID         = ChannelInfo_in%SensorID
+    ChannelInfo_out%Sensor_ID        = ChannelInfo_in%Sensor_ID
     ChannelInfo_out%WMO_Sensor_ID    = ChannelInfo_in%WMO_Sensor_ID
     ChannelInfo_out%WMO_Satellite_ID = ChannelInfo_in%WMO_Satellite_ID
     ChannelInfo_out%Sensor_Index     = ChannelInfo_in%Sensor_Index

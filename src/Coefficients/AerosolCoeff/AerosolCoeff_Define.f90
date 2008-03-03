@@ -6,8 +6,8 @@
 !       
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC; 04-Feb-2005
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 04-Feb-2005
+!                       paul.vandelst@noaa.gov
 !       Modified by:    Quanhua Liu, QSS Group, Inc;  quanhua.liu@noaa.gov
 !                       David Groff, SAIC;            david.groff@noaa.gov
 !
@@ -49,8 +49,8 @@ MODULE AerosolCoeff_Define
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
   ! AerosolCoeff init values
-  INTEGER,      PARAMETER :: STRLEN = 20
-  REAL(Double), PARAMETER :: ZERO   = 0.0_Double
+  INTEGER,      PARAMETER :: SL = 20
+  REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Current valid release and version numbers
@@ -66,8 +66,9 @@ MODULE AerosolCoeff_Define
     ! Release and version information
     INTEGER(Long) :: Release = AEROSOLCOEFF_RELEASE
     INTEGER(Long) :: Version = AEROSOLCOEFF_VERSION
+    ! Character string lengths
+    INTEGER(Long) :: StrLen = SL
     ! Dimensions
-    INTEGER(Long) :: StrLen             = STRLEN
     INTEGER(Long) :: n_Wavelengths      = 0   ! I1 dimension
     INTEGER(Long) :: n_Radii            = 0   ! I2 dimension
     INTEGER(Long) :: n_Types            = 0   ! I3 dimension
@@ -77,62 +78,20 @@ MODULE AerosolCoeff_Define
     INTEGER(Long) :: Max_Phase_Elements = 0   ! I6 dimension
     INTEGER(Long) :: n_Phase_Elements   = 0   
     ! LUT dimension vectors
-    CHARACTER(20), POINTER, DIMENSION(:)         :: Type_Name  => NULL()  ! I3
-    INTEGER,       POINTER, DIMENSION(:)         :: Type       => NULL()  ! I3
-    REAL(Double),  POINTER, DIMENSION(:)         :: Wavelength => NULL()  ! I1
-    REAL(Double),  POINTER, DIMENSION(:)         :: Frequency  => NULL()  ! I1
-    REAL(Double),  POINTER, DIMENSION(:,:)       :: Reff       => NULL()  ! I2 x I3
-    REAL(Double),  POINTER, DIMENSION(:)         :: RH         => NULL()  ! I4
-    REAL(Double),  POINTER, DIMENSION(:,:,:)     :: ke         => NULL()  ! I1 x I2 x I3
-    REAL(Double),  POINTER, DIMENSION(:,:,:)     :: w          => NULL()  ! I1 x I2 x I3 
-    REAL(Double),  POINTER, DIMENSION(:,:,:)     :: g          => NULL()  ! I1 x I1 x I3
-    REAL(Double),  POINTER, DIMENSION(:,:,:,:,:) :: pcoeff     => NULL()  ! I1 x I2 x I3 x I5 x I6
+    CHARACTER(SL), POINTER :: Type_Name(:)      => NULL()  ! I3
+    INTEGER(Long), POINTER :: Type(:)           => NULL()  ! I3
+    REAL(Double),  POINTER :: Wavelength(:)     => NULL()  ! I1
+    REAL(Double),  POINTER :: Frequency(:)      => NULL()  ! I1
+    REAL(Double),  POINTER :: Reff(:,:)         => NULL()  ! I2 x I3
+    REAL(Double),  POINTER :: RH(:)             => NULL()  ! I4
+    REAL(Double),  POINTER :: ke(:,:,:)         => NULL()  ! I1 x I2 x I3
+    REAL(Double),  POINTER :: w(:,:,:)          => NULL()  ! I1 x I2 x I3 
+    REAL(Double),  POINTER :: g(:,:,:)          => NULL()  ! I1 x I1 x I3
+    REAL(Double),  POINTER :: pcoeff(:,:,:,:,:) => NULL()  ! I1 x I2 x I3 x I5 x I6
   END TYPE AerosolCoeff_type
 
 
 CONTAINS
-
-
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Clear_AerosolCoeff
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a AerosolCoeff structure.
-!
-! CALLING SEQUENCE:
-!       CALL Clear_AerosolCoeff( AerosolCoeff ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       AerosolCoeff:  AerosolCoeff structure for which the scalar members have
-!                      been cleared.
-!                      UNITS:      N/A
-!                      TYPE:       AerosolCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output AerosolCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE Clear_AerosolCoeff( AerosolCoeff )
-    TYPE(AerosolCoeff_type), INTENT(IN OUT) :: AerosolCoeff
-    ! Noop for now
-  END SUBROUTINE Clear_AerosolCoeff
 
 
 !################################################################################
@@ -1313,5 +1272,47 @@ CONTAINS
     Info = Long_String(1:MIN( LEN(Info), LEN_TRIM(Long_String) ))
 
   END SUBROUTINE Info_AerosolCoeff
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       Clear_AerosolCoeff
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a AerosolCoeff structure.
+!
+! CALLING SEQUENCE:
+!       CALL Clear_AerosolCoeff( AerosolCoeff ) ! Output
+!
+! OUTPUT ARGUMENTS:
+!       AerosolCoeff:  AerosolCoeff structure for which the scalar members have
+!                      been cleared.
+!                      UNITS:      N/A
+!                      TYPE:       AerosolCoeff_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output AerosolCoeff argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE Clear_AerosolCoeff( AerosolCoeff )
+    TYPE(AerosolCoeff_type), INTENT(IN OUT) :: AerosolCoeff
+    AerosolCoeff%Release = AEROSOLCOEFF_RELEASE
+    AerosolCoeff%Version = AEROSOLCOEFF_VERSION
+    AerosolCoeff%StrLen  = SL
+  END SUBROUTINE Clear_AerosolCoeff
 
 END MODULE AerosolCoeff_Define

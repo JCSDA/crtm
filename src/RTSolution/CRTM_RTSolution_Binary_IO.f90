@@ -710,7 +710,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_RTSolution_Binary(Record)'
     ! Function variables
     CHARACTER(256) :: Message
-    CHARACTER(256) :: Filename
     INTEGER :: IO_Status
     INTEGER :: Destroy_Status
     INTEGER :: n_Layers
@@ -803,7 +802,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_RTSolution_Binary(Record)'
     ! Function variables
     CHARACTER(256) :: Message
-    CHARACTER(256) :: Filename
     INTEGER :: IO_Status
  
     ! Set up

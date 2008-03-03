@@ -1096,7 +1096,7 @@ CONTAINS
     CHARACTER(256) :: Message
     LOGICAL :: Check_Once
     LOGICAL :: Include_Intermediate
-    INTEGER :: i, j, k, m, n
+    INTEGER :: k
 
     ! Set up
     ! ------

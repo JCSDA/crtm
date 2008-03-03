@@ -2764,7 +2764,9 @@ CONTAINS
     ! Perform the summation
     ! ---------------------
     k = A%n_Layers
-    A%Temperature(:k) = A%Temperature(:k) + (m*B%Temperature(:k)) + c
+    A%Level_Pressure(:k) = A%Level_Pressure(:k) + (m*B%Level_Pressure(:k)) + c
+    A%Pressure(:k)       = A%Pressure(:k)       + (m*B%Pressure(:k)      ) + c
+    A%Temperature(:k)    = A%Temperature(:k)    + (m*B%Temperature(:k)   ) + c
     DO j = 1, A%n_Absorbers
       A%Absorber(:k,j) = A%Absorber(:k,j) + (m*B%Absorber(:k,j)) + c
     END DO
