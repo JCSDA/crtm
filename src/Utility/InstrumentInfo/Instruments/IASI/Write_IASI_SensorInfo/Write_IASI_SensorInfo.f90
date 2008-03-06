@@ -20,6 +20,7 @@ PROGRAM Write_IASI_SensorInfo
   USE Message_Handler
   USE String_Utility
   USE List_File_Utility
+  USE Sort_Utility
   USE Channel_Subset_Define
   USE IASI_Define
   USE IASI_Subset
@@ -136,6 +137,7 @@ PROGRAM Write_IASI_SensorInfo
         n_Channels = N_IASI_SUBSET_616
         ALLOCATE( Channel_List( n_Channels ) )
         Channel_List = IASI_SUBSET_616
+        CALL InsertionSort( Channel_List )
         Sensor_Id = 'iasi616_'//StrLowCase(SATELLITE_NAME)
 
       ! A user specified channel subset
