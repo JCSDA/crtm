@@ -34,6 +34,10 @@ all: create_links
 install:
 	@cd $(BUILD_DIR); make install; cd ..
 
+# Run test codes
+test: create_links
+	@cd $(BUILD_DIR); make test; cd ..
+        
 # Clean up
 clean:
 	@cd $(BUILD_DIR); make clean; cd ..
@@ -47,10 +51,8 @@ realclean: distclean remove_links
 # File link creation and removal
 macro_links:
 	@cd $(BUILD_DIR) ; \
-	$(LINKSCRIPT) $(CRTM_SOURCE_ROOT) make.macros ; \
-	cd $(SOURCE_DIR) ; \
-	$(LINKSCRIPT) $(CRTM_SOURCE_ROOT) make.rules ; \
-	cd ../..
+	$(LINKSCRIPT) $(CRTM_SOURCE_ROOT) make.macros make.rules ; \
+	cd ..
 
 create_links: macro_links
 	@cd $(BUILD_DIR)/$(SOURCE_DIR) ; \
@@ -59,9 +61,9 @@ create_links: macro_links
 
 remove_links:
 	@cd $(BUILD_DIR)/$(SOURCE_DIR) ; \
-	$(UNLINKSCRIPT) make.rules $(SRC_FILES) ; \
+	$(UNLINKSCRIPT) $(SRC_FILES) ; \
 	cd .. ; \
-	$(UNLINKSCRIPT) make.macros ; \
+	$(UNLINKSCRIPT) make.macros make.rules ; \
 	cd ..
 
 

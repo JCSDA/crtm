@@ -13,7 +13,6 @@
 # -------------
 # Define macros
 # -------------
-
 include make.macros
 
 # The library name
@@ -22,75 +21,16 @@ LIBRARY_NAME = lib$(LIBRARY_TAG).a
 
 # The library directories
 SOURCE_DIR = src
+TEST_DIR = test
 LIBRARY_DIR = lib
 INCLUDE_DIR = include
 
 
-# -------------------
-# Compilation targets
-# -------------------
 # Default compiler build
+# ----------------------
 all:
 	cd $(SOURCE_DIR); make; cd ..
 
-
-# IBM AIX Compiler
-ibm_debug:
-	cd $(SOURCE_DIR); make ibm_debug; cd ..
-
-ibm:
-	cd $(SOURCE_DIR); make ibm; cd ..
-
-
-# SGI IRIX64 Compiler
-sgi_debug:
-	cd $(SOURCE_DIR); make sgi_debug; cd ..
-
-sgi:
-	cd $(SOURCE_DIR); make sgi; cd ..
-
-
-# SunOS Compiler
-sun_debug:
-	cd $(SOURCE_DIR); make sun_debug; cd ..
-
-sun:
-	cd $(SOURCE_DIR); make sun; cd ..
-
-
-# Linux compilers
-gfortran_debug:
-	cd $(SOURCE_DIR); make gfortran_debug; cd ..
-
-gfortran:
-	cd $(SOURCE_DIR); make gfortran; cd ..
-
-intel_debug:
-	cd $(SOURCE_DIR); make intel_debug; cd ..
-
-intel:
-	cd $(SOURCE_DIR); make intel; cd ..
-
-lahey_debug:
-	cd $(SOURCE_DIR); make lahey_debug; cd ..
-
-lahey:
-	cd $(SOURCE_DIR); make lahey; cd ..
-
-pgi_debug:
-	cd $(SOURCE_DIR); make pgi_debug; cd ..
-
-pgi:
-	cd $(SOURCE_DIR); make pgi; cd ..
-
-g95_debug:
-	cd $(SOURCE_DIR); make g95_debug; cd ..
-
-g95:
-	cd $(SOURCE_DIR); make g95; cd ..
-
-
-# ---------------------------------------------------------------------
 # Install the library and include files in their respective directories
 # ---------------------------------------------------------------------
 install: install_lib install_include
@@ -118,13 +58,37 @@ install_include:
 	cd ..
 
 
+# Test code build
+TEST_CASES = Units_Conversion
+test: all install
+	@cd $(TEST_DIR) ; \
+	for test_case in ${TEST_CASES}; do \
+	  echo ; \
+	  echo "  Building test case: $$test_case" ; \
+	  echo "  -------------------" ; \
+	  cd $$test_case ; \
+	  make ; \
+	  $${test_case}_Test ; \
+	  cd .. ; \
+	done ; \
+	cd ..
+
+
 # --------
 # Clean up
 # --------
-# Just the source directory
-clean:
+# All the build products
+clean: clean_test
 	@cd $(SOURCE_DIR); make clean; cd ..
 
+clean_test:
+	@cd $(TEST_DIR) ; \
+	for test_case in ${TEST_CASES}; do \
+	  cd $$test_case ; \
+	  make clean ; \
+	  cd .. ; \
+	done ; \
+	cd ..
 
 # Everything
 distclean: clean clean_lib clean_include
@@ -134,3 +98,4 @@ clean_lib:
 
 clean_include:
 	$(REMOVE)r $(INCLUDE_DIR)
+

@@ -15,6 +15,7 @@ MODULE Profile_Utility
   USE File_Utility
   USE Message_Handler
   USE Fundamental_Constants
+  USE Compare_Float_Numbers
   ! The Profile_Utility modules
   USE Atmospheric_Properties
   USE Geopotential
