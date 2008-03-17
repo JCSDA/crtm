@@ -16,17 +16,8 @@ MAKE_FILE = makefile
 LIBRARY_TAG = Profile_Utility
 LIBRARY_NAME = lib$(LIBRARY_TAG).a
 
-# Profile_Utility Object files
-OBJ_FILES = Type_Kinds.o \
-            File_Utility.o \
-            Message_Handler.o \
-            Fundamental_Constants.o \
-            Atmospheric_Properties.o \
-            Geopotential.o \
-            Level_Layer_Conversion.o \
-            Profile_Utility_Parameters.o \
-            Units_Conversion.o \
-            Profile_Utility.o
+# The filelist
+include make.filelist
 
 
 # ------------------
@@ -68,6 +59,12 @@ sun:
 
 
 # Linux compilers.
+gfortran_debug:
+	make -f $(MAKE_FILE) library $(LINUX_FLAGS_GFORTRAN_DEBUG)
+
+gfortran:
+	make -f $(MAKE_FILE) library $(LINUX_FLAGS_GFORTRAN_PROD)
+
 intel_debug:
 	make -f $(MAKE_FILE) library $(LINUX_FLAGS_INTEL_DEBUG)
 

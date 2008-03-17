@@ -2,6 +2,12 @@
 #
 # Makefile for Profile Utility library build
 #
+# The default build target will work for most workstation platforms. For linux
+# systems where there are several compiler choices, specific compiler targets
+# are also provided. To modify the default Linux compiler, edit the make.macros
+# file definition of LINUX_FLAGS.
+#
+# Note there are production and debug targets. Default build is production.
 #================================================================================
 
 # -------------
@@ -53,6 +59,12 @@ sun:
 
 
 # Linux compilers
+gfortran_debug:
+	cd $(SOURCE_DIR); make gfortran_debug; cd ..
+
+gfortran:
+	cd $(SOURCE_DIR); make gfortran; cd ..
+
 intel_debug:
 	cd $(SOURCE_DIR); make intel_debug; cd ..
 
