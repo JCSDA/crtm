@@ -59,7 +59,7 @@ install_include:
 
 
 # Test code build
-TEST_CASES = Units_Conversion
+TEST_CASES = Units_Conversion Level_Layer_Conversion
 test: all install
 	@cd $(TEST_DIR) ; \
 	for test_case in ${TEST_CASES}; do \
@@ -67,8 +67,7 @@ test: all install
 	  echo "  Building test case: $$test_case" ; \
 	  echo "  -------------------" ; \
 	  cd $$test_case ; \
-	  make ; \
-	  $${test_case}_Test ; \
+	  make run ; \
 	  cd .. ; \
 	done ; \
 	cd ..
