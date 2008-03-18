@@ -59,7 +59,7 @@ install_include:
 
 
 # Test code build
-TEST_CASES = Units_Conversion Level_Layer_Conversion
+TEST_CASES = Units_Conversion Level_Layer_Conversion Geopotential Atmospheric_Properties
 test: all install
 	@cd $(TEST_DIR) ; \
 	for test_case in ${TEST_CASES}; do \
