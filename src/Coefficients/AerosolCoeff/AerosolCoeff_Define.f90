@@ -55,7 +55,7 @@ MODULE AerosolCoeff_Define
   INTEGER, PARAMETER :: SET = 1
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: AEROSOLCOEFF_RELEASE = 2  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION = 1  ! This is just the data version.
+  INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION = 2  ! This is just the data version.
 
 
   ! ---------------------------------
@@ -86,7 +86,7 @@ MODULE AerosolCoeff_Define
     REAL(Double),  POINTER :: RH(:)             => NULL()  ! I4
     REAL(Double),  POINTER :: ke(:,:,:)         => NULL()  ! I1 x I2 x I3
     REAL(Double),  POINTER :: w(:,:,:)          => NULL()  ! I1 x I2 x I3 
-    REAL(Double),  POINTER :: g(:,:,:)          => NULL()  ! I1 x I1 x I3
+    REAL(Double),  POINTER :: g(:,:,:)          => NULL()  ! I1 x I2 x I3
     REAL(Double),  POINTER :: pcoeff(:,:,:,:,:) => NULL()  ! I1 x I2 x I3 x I5 x I6
   END TYPE AerosolCoeff_type
 
