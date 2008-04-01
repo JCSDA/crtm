@@ -1,115 +1,53 @@
-!----------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Atmospheric_Properties
 !
-! PURPOSE:
-!       Module containing utility routines to calculate various and sundry
-!       atmospheric properties.
+! Atmospheric_Properties
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE Atmospheric_Properties
-!
-! MODULES:
-!       Type_Kinds:                   Module containing definitions for kinds of
-!                                     variable types.
-!
-!       Message_Handler:                Module containing definitions of simple error
-!                                     codes and error handling routines.
-!                                     USEs: FILE_UTILITY module
-!
-!       Profile_Utility_Parameters:   Module containing parameters used in the
-!                                     profile utility modules.
-!                                     USEs: TYPE_KINDS module
-!                                           FUNDAMENTAL_CONSTANTS module       
-!
+! Module containing utility routines to calculate various and sundry
+! atmospheric properties.
 !
 ! CONTAINS:
-!       MW_Air:                       Function to calculate the effective, water
-!                                     vapor weighted molecular weight of air.
+!       MW_Air:                   Function to calculate the effective, water
+!                                 vapor weighted molecular weight of air.
 !
-!       Density:                      Function to calculate gas density using
-!                                     the ideal gas law.
+!       Density:                  Function to calculate gas density using
+!                                 the ideal gas law.
 !
-!       SVP_Water:                    Function to calculate the saturation vapor
-!                                     pressure over water.
+!       SVP_Water:                Function to calculate the saturation vapor
+!                                 pressure over water.
 !
-!       SVP_Ice:                      Function to calculate the saturation vapor
-!                                     pressure over ice.
+!       SVP_Ice:                  Function to calculate the saturation vapor
+!                                 pressure over ice.
 !
-!       Saturation_Mixing_Ratio:      Function to calculate the saturation mixing
-!                                     ratio.
+!       Saturation_Mixing_Ratio:  Function to calculate the saturation mixing
+!                                 ratio.
 !
-!       Virtual_Temperature:          Function to calculate the virtual
-!                                     temperature, or its inverse.
+!       Virtual_Temperature:      Function to calculate the virtual
+!                                 temperature, or its inverse.
 !
-!       Potential_Temperature:        Function to calculate the potential
-!                                     temperature, or its inverse.
+!       Potential_Temperature:    Function to calculate the potential
+!                                 temperature, or its inverse.
 !
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
-!  Copyright (C) 2000, 2001 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!----------------------------------------------------------------------------------
 
 MODULE Atmospheric_Properties
 
-
-  ! ------------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Modules used
-  ! ------------
-
-  USE Type_Kinds, ONLY: fp_kind
+  USE Type_Kinds, ONLY: fp
   USE Message_Handler
-
   USE Profile_Utility_Parameters
-
-
-  ! ---------------------------
   ! Disable all implicit typing
-  ! ---------------------------
-
   IMPLICIT NONE
 
 
-  ! -----------------------------
-  ! Default and member visibility
-  ! -----------------------------
-
+  ! ------------
+  ! Visibilities
+  ! ------------
   PRIVATE
   PUBLIC :: MW_Air
   PUBLIC :: Density
@@ -123,7 +61,6 @@ MODULE Atmospheric_Properties
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-
   INTERFACE MW_Air
     MODULE PROCEDURE MW_Air_scalar
     MODULE PROCEDURE MW_Air_rank1
@@ -164,19 +101,13 @@ MODULE Atmospheric_Properties
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! -- RCS Id for the module
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Atmospheric_Properties.f90,v 1.7 2006/05/02 22:04:35 wd20pd Exp $'
-
-  ! -- Keyword argument set value
-  INTEGER, PRIVATE, PARAMETER :: SET = 1
-
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
+  ! Keyword argument set value
+  INTEGER, PARAMETER :: SET = 1
 
 
 CONTAINS
-
-
 
 
 !--------------------------------------------------------------------------------
@@ -188,62 +119,40 @@ CONTAINS
 !       Function to calculate the effective, water vapor weighted molecular
 !       weight of air.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Molecular_Weight = MW_Air( Pressure,                 &  ! Input
-!                                  Water_Vapor_Pressure,     &  ! Input
-!                                  Message_Log = Message_Log )  ! Error messaging
+!       Molecular_Weight = MW_Air( Pressure,               &  ! Input
+!                                  Water_Vapor_Pressure,   &  ! Input
+!                                  Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:              Total atmospheric pressure
 !                              UNITS:      hectoPascals, hPa
-!                              TYPE:       REAL( fp_kind )
+!                              TYPE:       REAL(fp)
 !                              DIMENSION:  Scalar or Rank-1
-!                              ATTRIBUTES: INTENT( IN )
+!                              ATTRIBUTES: INTENT(IN)
 !
 !       Water_Vapor_Pressure:  Water vapor partial pressure
 !                              UNITS:      hectoPascals, hPa.
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Same as input Pressure
-!                              ATTRIBUTES: INTENT( IN )
+!                              TYPE:       REAL(fp)
+!                              DIMENSION:  Same as Pressure
+!                              ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:           Character string specifying a filename in which any
-!                              messages will be logged. If not specified, or if an
+!                              Messages will be logged. If not specified, or if an
 !                              error occurs opening the log file, the default action
-!                              is to output messages to standard output.
+!                              is to output Messages to standard output.
 !                              UNITS:      N/A
-!                              TYPE:       CHARACTER( * )
+!                              TYPE:       CHARACTER(*)
 !                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                              ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Molecular_Weight:      The effective molecular weight of air.
 !                              If an error occurs, -1.0 is returned.
 !                              UNITS:      grams, g
-!                              TYPE:       REAL( fp_kind )
+!                              TYPE:       REAL(fp)
 !                              DIMENSION:  Same as input Pressure
-!
-! CALLS:
-!       Display_Message:       Subroutine to output messages
-!                              SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! PROCEDURE:
 !       The change in the effective molecular weight of dry air
@@ -263,188 +172,82 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
-  FUNCTION MW_Air_scalar ( Pressure,             &  ! Input
-                           Water_Vapor_Pressure, &  ! Input
-                           Message_Log )         &  ! Error messaging
-                         RESULT ( MW_Air )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Scalar version
+  ! ==============
+  FUNCTION MW_Air_scalar( Pressure,             &  ! Input
+                          Water_Vapor_Pressure, &  ! Input
+                          Message_Log )         &  ! Error messaging
+                        RESULT( MW_Air )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Pressure
-    REAL( fp_kind ),          INTENT( IN ) :: Water_Vapor_Pressure
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Water_Vapor_Pressure
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: MW_Air
-
-
-    ! ----------------
+    REAL(fp) :: MW_Air
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'MW_Air'
-
-    REAL( fp_kind ), PARAMETER :: VOLUME_SCALE_FACTOR = ( CM_TO_M )**3
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MW_Air'
+    REAL(fp),     PARAMETER :: VOLUME_SCALE_FACTOR = ( CM_TO_M )**3
     ! Local variables
-    ! ---------------
-
-    REAL( fp_kind ) :: d_MW_Air
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    REAL(fp) :: d_MW_Air
+    
+    ! Setup
     MW_Air = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
     IF ( Pressure < TOLERANCE .OR. Water_Vapor_Pressure < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input pressures < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-   
-    !#--------------------------------------------------------------------------#
-    !#             -- CALCULATE EFFECTIVE MOLECULAR WEIGHT OF AIR --            #
-    !#--------------------------------------------------------------------------#
- 
-    ! ------------------------------------------------------------
     ! Calculate change to air molecular weight due to water vapour
-    ! ------------------------------------------------------------
+    d_MW_Air = Water_Vapor_Pressure * ( MW_H2O - MW_DRYAIR ) / Pressure
 
-    d_MW_Air = Water_Vapor_Pressure * ( MW_H2O - MW_DRYAIR ) / &
-    !          ---------------------------------------------
-                                 Pressure
-
-
-    ! ------------------------------
     ! Calculate air molecular weight
-    ! ------------------------------
-
     MW_Air = MW_DRYAIR + d_MW_Air
 
   END FUNCTION MW_Air_scalar
 
 
-
-!##############################################################################
-!                              Rank-1 version
-!##############################################################################
-
-  FUNCTION MW_Air_rank1 ( Pressure,             &  ! Input
-                          Water_Vapor_Pressure, &  ! Input
-                          Message_Log )         &  ! Error messaging
-                        RESULT ( MW_Air )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Rank-1 version
+  ! ==============
+  FUNCTION MW_Air_rank1( Pressure,             &  ! Input
+                         Water_Vapor_Pressure, &  ! Input
+                         Message_Log )         &  ! Error messaging
+                       RESULT( MW_Air )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Water_Vapor_Pressure
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL ,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Water_Vapor_Pressure(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: MW_Air
-
-
-    ! ----------------
+    REAL(fp) :: MW_Air(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MW_Air'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MW_Air'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     MW_Air = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Water_Vapor_Pressure ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Water_Vapor_Pressure) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
- 
+    ! Calculate air molecular weight
     DO i = 1, n
-
       MW_Air( i ) = MW_Air_scalar( Pressure( i ), &
                                    Water_Vapor_Pressure( i ), &
-                                   Message_Log = Message_Log )
+                                   Message_Log=Message_Log )
       IF ( MW_Air( i ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION MW_Air_rank1
-
-
-
 
 
 !--------------------------------------------------------------------------------
@@ -455,69 +258,47 @@ CONTAINS
 ! PURPOSE:
 !       Function to calculate gas density using the ideal gas law.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Gas_Density = Density( Pressure,                 &  ! Input
-!                              Temperature,              &  ! Input
-!                              Molecular_Weight,         &  ! Input
-!                              Message_Log = Message_Log )  ! Error messaging
+!       Gas_Density = Density( Pressure,               &  ! Input
+!                              Temperature,            &  ! Input
+!                              Molecular_Weight,       &  ! Input
+!                              Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Pressure of gas
 !                          UNITS:      hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:       Temperature of gas
 !                          UNITS:      Kelvin
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Same as input Pressure
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Molecular_Weight:  Molecular weight of the gas.
 !                          UNITS:      g.mol^-1
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or same as input Pressure
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Scalar or same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
+!                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
+!                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Gas_Density:       The gas density for the specified conditions.
 !                          If an error occurs, -1.0 is returned.
 !                          UNITS:      kg.m^-3
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Pressure
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! PROCEDURE:
 !       The density is calculated using the ideal gas equation
@@ -560,271 +341,128 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
-  FUNCTION Density_scalar ( Pressure,         &  ! Input
-                            Temperature,      &  ! Input
-                            Molecular_Weight, &  ! Input
-                            Message_Log )     &  ! Error messaging
-                          RESULT ( Rho )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Scalar version
+  ! ==============
+  FUNCTION Density_scalar( Pressure,         &  ! Input
+                           Temperature,      &  ! Input
+                           Molecular_Weight, &  ! Input
+                           Message_Log )     &  ! Error messaging
+                         RESULT( Rho )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Pressure
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-    REAL( fp_kind ),          INTENT( IN ) :: Molecular_Weight
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: Molecular_Weight
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Rho
-
-
-    ! ----------------
+    REAL(fp) :: Rho
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'Density'
-
-    REAL( fp_kind ), PARAMETER :: SCALE_FACTOR = 0.1_fp_kind
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Density'
+    REAL(fp),     PARAMETER :: SCALE_FACTOR = 0.1_fp
+    
+    ! Setup
     Rho = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
     IF ( Pressure         < TOLERANCE .OR. &
          Temperature      < TOLERANCE .OR. &
          Molecular_Weight < TOLERANCE ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Pressures/Temperature/MW < or = 0.0 found.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- CALCULATE DENSITY --                           #
-    !#--------------------------------------------------------------------------#
-
-    Rho = SCALE_FACTOR * Pressure * Molecular_Weight / &
-    !                    ---------------------------
-                             ( R0 * Temperature ) 
+    ! Calculate density
+    Rho = SCALE_FACTOR * Pressure * Molecular_Weight / ( R0 * Temperature ) 
 
   END FUNCTION Density_scalar
 
 
-
-!##############################################################################
-!                   Rank-1 version with scalar molecular weight
-!##############################################################################
-
-  FUNCTION Density_rank1a ( Pressure,         &  ! Input
-                            Temperature,      &  ! Input
-                            Molecular_Weight, &  ! Input
-                            Message_Log )     &  ! Error messaging
-                          RESULT ( Rho )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ===========================================
+  ! Rank-1 version with scalar molecular weight
+  ! ===========================================
+  FUNCTION Density_rank1a( Pressure,         &  ! Input
+                           Temperature,      &  ! Input
+                           Molecular_Weight, &  ! Input
+                           Message_Log )     &  ! Error messaging
+                         RESULT( Rho )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ),                 INTENT( IN ) :: Molecular_Weight
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Molecular_Weight
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Rho
-
-
-    ! ----------------
+    REAL(fp) :: Rho(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Density'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Density'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     Rho = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
- 
+    ! Calculate density
     DO i = 1, n
-
       Rho( i ) = Density_scalar( Pressure( i ), &
                                  Temperature( i ), &
                                  Molecular_Weight, &
-                                 Message_Log = Message_Log )
+                                 Message_Log=Message_Log )
       IF ( Rho( i ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION Density_rank1a
 
 
-
-!##############################################################################
-!                   Rank-1 version with Rank-1 molecular weight
-!##############################################################################
-
-  FUNCTION Density_rank1b ( Pressure,         &  ! Input
-                            Temperature,      &  ! Input
-                            Molecular_Weight, &  ! Input
-                            Message_Log )     &  ! Error messaging
-                          RESULT ( Rho )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ===========================================
+  ! Rank-1 version with rank-1 molecular weight
+  ! ===========================================
+  FUNCTION Density_rank1b( Pressure,         &  ! Input
+                           Temperature,      &  ! Input
+                           Molecular_Weight, &  ! Input
+                           Message_Log )     &  ! Error messaging
+                         RESULT( Rho )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Molecular_Weight
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Molecular_Weight(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Rho
-
-
-    ! ----------------
+    REAL(fp) :: Rho(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'DENSITY'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'DENSITY'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     Rho = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature      ) /= n .OR. &
-         SIZE( Molecular_Weight ) /= n      ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature)      /= n .OR. &
+         SIZE(Molecular_Weight) /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
- 
+    ! Calculate density
     DO i = 1, n
-
       Rho( i ) = Density_scalar( Pressure( i ), &
                                  Temperature( i ), &
                                  Molecular_Weight( i ), &
-                                 Message_Log = Message_Log )
+                                 Message_Log=Message_Log )
       IF ( Rho( i ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION Density_rank1b
-
-
 
 
 !--------------------------------------------------------------------------------
@@ -835,52 +473,33 @@ CONTAINS
 ! PURPOSE:
 !       Function to calculate the saturation vapor pressure over water.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       svp = SVP_Water( Temperature,              &  ! Input
-!                        Message_Log = Message_Log )  ! Error messaging
+!       svp = SVP_Water( Temperature,            &  ! Input
+!                        Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Temperature:      Temperatures for which the saturation vapor
 !                         pressure is required.
 !                         UNITS:      Kelvin, K
-!                         TYPE:       REAL( fp_kind )
+!                         TYPE:       REAL(fp)
 !                         DIMENSION:  Scalar or Rank-1
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
+!                         Messages will be logged. If not specified, or if an
 !                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
+!                         is to output Messages to standard output.
 !                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                         ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       svp:               The saturation vapor pressure over water
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Temperature
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
 !
 ! RESTRICTIONS:
 !       Valid temperature range is 188K - 343K (-85C - +70C). A warning is
@@ -907,90 +526,47 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
-  FUNCTION SVPw_scalar ( Temperature,   &  ! Input
-                         Message_Log  ) &  ! Error messaging
-                       RESULT ( svp )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Scalar version
+  ! ==============
+  FUNCTION SVPw_scalar( Temperature,   &  ! Input
+                        Message_Log  ) &  ! Error messaging
+                      RESULT( svp )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),          INTENT(IN) :: Temperature
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: svp
-
-
-    ! ----------------
+    REAL(fp) :: svp
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'SVP_Water'
-
-    ! -- Coefficient data
-    INTEGER, PARAMETER :: N_COEFFICIENTS = 8
-    REAL( fp_kind ), PARAMETER, DIMENSION( 0:N_COEFFICIENTS ) :: COEFFICIENTS = &
-      (/ 6.11583699e+00_fp_kind, 4.44606896e-01_fp_kind, 1.43177157e-02_fp_kind, &
-         2.64224321e-04_fp_kind, 2.99291081e-06_fp_kind, 2.03154182e-08_fp_kind, &
-         7.02620698e-11_fp_kind, 3.79534310e-14_fp_kind,-3.21582393e-16_fp_kind /)
-
-    ! -- Valid Temperature range
-    REAL( fp_kind ), PARAMETER :: MIN_TEMPERATURE = 188.15_fp_kind
-    REAL( fp_kind ), PARAMETER :: MAX_TEMPERATURE = 343.15_fp_kind
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SVP_Water'
+    INTEGER,  PARAMETER :: N_COEFFICIENTS = 8
+    REAL(fp), PARAMETER :: COEFFICIENTS(0:N_COEFFICIENTS) = &
+      (/ 6.11583699e+00_fp, 4.44606896e-01_fp, 1.43177157e-02_fp, &
+         2.64224321e-04_fp, 2.99291081e-06_fp, 2.03154182e-08_fp, &
+         7.02620698e-11_fp, 3.79534310e-14_fp,-3.21582393e-16_fp /)
+    REAL(fp), PARAMETER :: MIN_TEMPERATURE = 188.15_fp
+    REAL(fp), PARAMETER :: MAX_TEMPERATURE = 343.15_fp
     ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: message
-
+    CHARACTER(256) :: Message
     INTEGER :: i
-    REAL( fp_kind ) :: T_Celsius
+    REAL(fp) :: T_Celsius
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
+    ! Setup
     IF ( Temperature < MIN_TEMPERATURE .OR. &
          Temperature > MAX_TEMPERATURE ) THEN
-      WRITE( message, '( "Input Temperature ", f6.2, &
-                        &" outside valid range: ", &
-                        &f6.2, "K < T < ", f6.2, "K" )' ) &
+      WRITE( Message,'("Input Temperature ",f6.2,&
+                      &" outside valid range: ",&
+                      &f6.2,"K < T < ",f6.2,"K" )' ) &
                       Temperature, MIN_TEMPERATURE, MAX_TEMPERATURE
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- CALCULATE SATURATION VAPOR PRESSURE --                #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate saturation vapor pressure
     T_Celsius = Temperature - CELSIUS_TO_KELVIN
     svp       = COEFFICIENTS(N_COEFFICIENTS)
-
     DO i = N_COEFFICIENTS-1, 0, -1
       svp = ( svp * T_Celsius ) + COEFFICIENTS(i)
     END DO
@@ -998,66 +574,29 @@ CONTAINS
   END FUNCTION SVPw_scalar
 
 
-
-!##############################################################################
-!                              Rank-1 version
-!##############################################################################
-
-  FUNCTION SVPw_rank1 ( Temperature,   &  ! Input
-                        Message_Log  ) &  ! Error messaging
-                      RESULT ( svp )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Rank-1 version
+  ! ==============
+  FUNCTION SVPw_rank1( Temperature,   &  ! Input
+                       Message_Log  ) &  ! Error messaging
+                     RESULT( svp )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Temperature ) ) :: svp
-
-
-    ! ----------------
+    REAL(fp) :: svp(SIZE(Temperature))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'SVP_Water'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SVP_Water'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    DO i = 1, SIZE( Temperature )
+    ! Calculate saturation vapor pressure
+    DO i = 1, SIZE(Temperature)
       SVP( i ) = SVPw_scalar( Temperature( i ), &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
     END DO
 
   END FUNCTION SVPw_rank1
-
-
-
-
 
 
 !--------------------------------------------------------------------------------
@@ -1068,55 +607,33 @@ CONTAINS
 ! PURPOSE:
 !       Function to calculate the saturation vapor pressure over ice
 !
-! CATEGORY:
-!       Meteorology
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       svp = SVP_Ice( Temperature,              &  ! Input
-!                      Message_Log = Message_Log )  ! Error messaging
+!       svp = SVP_Ice( Temperature,            &  ! Input
+!                      Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Temperature:      Temperatures for which the saturation vapor
 !                         pressure is required.
 !                         UNITS:      Kelvin, K
-!                         TYPE:       REAL( fp_kind )
+!                         TYPE:       REAL(fp)
 !                         DIMENSION:  Scalar or Rank-1
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
+!                         Messages will be logged. If not specified, or if an
 !                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
+!                         is to output Messages to standard output.
 !                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                         ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       svp:               The saturation vapor pressure over ice
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Temperature
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! COMMON BLOCKS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
 !
 ! RESTRICTIONS:
 !       Valid Temperature range is 183K - 273K (-90C - 0C). An warning is
@@ -1143,90 +660,47 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
-  FUNCTION SVPi_scalar ( Temperature,   &  ! Input
-                         Message_Log  ) &  ! Error messaging
-                       RESULT ( svp )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Scalar version
+  ! ==============
+  FUNCTION SVPi_scalar( Temperature,   &  ! Input
+                        Message_Log  ) &  ! Error messaging
+                      RESULT( svp )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ------
-    ! Result
-    ! ------
- 
-    REAL( fp_kind ) :: svp
-
-
-    ! ----------------
+    REAL(fp),               INTENT(IN) :: Temperature
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    ! Function result
+    REAL(fp) :: svp
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'SVP_Ice'
-
-    ! -- Coefficient data
-    INTEGER, PARAMETER :: N_COEFFICIENTS = 8
-    REAL( fp_kind ), PARAMETER, DIMENSION( 0:N_COEFFICIENTS ) :: COEFFICIENTS = &
-      (/ 6.09868993e+00_fp_kind, 4.99320233e-01_fp_kind, 1.84672631e-02_fp_kind, &
-         4.02737184e-04_fp_kind, 5.65392987e-06_fp_kind, 5.21693933e-08_fp_kind, &
-         3.07839583e-10_fp_kind, 1.05785160e-12_fp_kind, 1.61444444e-15_fp_kind /)
-
-    ! -- Valid Temperature range
-    REAL( fp_kind ), PARAMETER :: MIN_TEMPERATURE = 183.15_fp_kind
-    REAL( fp_kind ), PARAMETER :: MAX_TEMPERATURE = 273.15_fp_kind
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SVP_Ice'
+    INTEGER,  PARAMETER :: N_COEFFICIENTS = 8
+    REAL(fp), PARAMETER :: COEFFICIENTS(0:N_COEFFICIENTS) = &
+      (/ 6.09868993e+00_fp, 4.99320233e-01_fp, 1.84672631e-02_fp, &
+         4.02737184e-04_fp, 5.65392987e-06_fp, 5.21693933e-08_fp, &
+         3.07839583e-10_fp, 1.05785160e-12_fp, 1.61444444e-15_fp /)
+    REAL(fp), PARAMETER :: MIN_TEMPERATURE = 183.15_fp
+    REAL(fp), PARAMETER :: MAX_TEMPERATURE = 273.15_fp
     ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: message
-
-    INTEGER :: i
-    REAL( fp_kind ) :: T_Celsius
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
+    CHARACTER(256) :: Message
+    INTEGER  :: i
+    REAL(fp) :: T_Celsius
+    
+    ! Setup
     IF ( Temperature < MIN_TEMPERATURE .OR. &
          Temperature > MAX_TEMPERATURE ) THEN
-      WRITE( message, '( "Input Temperature ", f6.2, &
-                        &" outside valid range: ", &
-                        &f6.2, "K < T < ", f6.2, "K" )' ) &
+      WRITE( Message,'("Input Temperature ",f6.2,&
+                      &" outside valid range: ",&
+                      &f6.2,"K < T < ",f6.2,"K")' ) &
                       Temperature, MIN_TEMPERATURE, MAX_TEMPERATURE
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( message ), &
+                            TRIM(Message), &
                             WARNING, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- CALCULATE SATURATION VAPOR PRESSURE --                #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate saturation vapor pressure
     T_Celsius = Temperature - CELSIUS_TO_KELVIN
     svp       = COEFFICIENTS(N_COEFFICIENTS)
-
     DO i = N_COEFFICIENTS-1, 0, -1
       svp = ( svp * T_Celsius ) + COEFFICIENTS(i)
     END DO
@@ -1234,67 +708,29 @@ CONTAINS
   END FUNCTION SVPi_scalar
 
 
-
-!##############################################################################
-!                              Rank-1 version
-!##############################################################################
-
-  FUNCTION SVPi_rank1 ( Temperature,   &  ! Input
-                        Message_Log  ) &  ! Error messaging
-                      RESULT ( svp )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Rank-1 version
+  ! ==============
+  FUNCTION SVPi_rank1( Temperature,   &  ! Input
+                       Message_Log  ) &  ! Error messaging
+                     RESULT( svp )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ------
-    ! Result
-    ! ------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Temperature ) ) :: svp
-
-
-    ! ----------------
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    ! Function result
+    REAL(fp) :: svp(SIZE(Temperature))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'SVP_Ice'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SVP_Ice'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    DO i = 1, SIZE( Temperature )
-
+    ! Calculate saturation vapor pressure
+    DO i = 1, SIZE(Temperature)
       SVP( i ) = SVPi_scalar( Temperature( i ), &
-                              Message_Log = Message_Log )
-
+                              Message_Log=Message_Log )
     END DO
 
   END FUNCTION SVPi_rank1
-
-
-
 
 
 !--------------------------------------------------------------------------------
@@ -1306,31 +742,25 @@ CONTAINS
 !       Function to calculate the saturation mixing ratio for a given
 !       pressure and temperature
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       smr = Saturation_Mixing_Ratio( Pressure,                          &  ! Input
-!                                      Temperature,                       &  ! Input
-!                                      Ice_Temperature = Ice_Temperature, &  ! optional input
-!                                      Min_Pressure    = Min_Pressure,    &  ! Optional input
-!                                      Message_Log     = Message_Log      )  ! Error messaging
+!       smr = Saturation_Mixing_Ratio( Pressure,                        &  ! Input
+!                                      Temperature,                     &  ! Input
+!                                      Ice_Temperature=Ice_Temperature, &  ! optional input
+!                                      Min_Pressure   =Min_Pressure,    &  ! Optional input
+!                                      Message_Log    =Message_Log      )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:       Atmospheric Temperature.
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Same as input Pressure
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Ice_Temperature:   Temperature below which the saturation vapor
@@ -1338,9 +768,9 @@ CONTAINS
 !                          By default, only the saturation vapor pressure
 !                          over water is used.
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !   
 !       Min_Pressure:      Pressure value below which the saturation
 !                          mixing ratio is not calculated. The default
@@ -1350,47 +780,25 @@ CONTAINS
 !                          saturation vapour pressure, which is based only on
 !                          temperature, can exceed the total air pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !   
 !       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
+!                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
+!                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       smr:               The saturation mixing ratio
 !                          If an error occurs, -1.0 is returned.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Pressure
-!
-! CALLS:
-!       SVP_Water:       Function to calculate the saturation vapor pressure
-!                        over water.
-!
-!       SVP_Ice:         Function to calculate the saturation vapor pressure
-!                        over ice
-!
-!       Display_Message: Subroutine to output messages
-!                        SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! PROCEDURE:
 !       The saturation mixing ratio can be defined as:
@@ -1446,156 +854,78 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION SMR_scalar( Pressure,        &  ! Input
                        Temperature,     &  ! Input
                        Ice_Temperature, &  ! Optional Input
                        Min_Pressure,    &  ! Optional Input
                        Message_Log )    &  ! Error messaging
                      RESULT( smr )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Ice_Temperature
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Min_Pressure
-
-    ! -- Error handler message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Ice_Temperature
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Min_Pressure
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: smr
-
-
-    ! ----------------
+    REAL(fp) :: smr
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Saturation_Mixing_Ratio'
-
-    ! -- Default minimum pressure is 50hPa
-    REAL( fp_kind ), PARAMETER :: DEFAULT_MIN_PRESSURE = 50.0_fp_kind
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Saturation_Mixing_Ratio'
+    REAL(fp),     PARAMETER :: DEFAULT_MIN_PRESSURE = 50.0_fp
     ! Local variables
-    ! ---------------
-
     LOGICAL :: Use_Ice_Temperature
+    REAL(fp) :: Ice_T
+    REAL(fp) :: Min_P
+    REAL(fp) :: svp
+    REAL(fp) :: dp
 
-    REAL( fp_kind ) :: Ice_T
-    REAL( fp_kind ) :: Min_P
-    REAL( fp_kind ) :: svp
-    REAL( fp_kind ) :: dp
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     smr = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
- 
-    ! ------------
-    ! Check values
-    ! ------------
-
     IF ( Pressure    < TOLERANCE .OR. &
          Temperature < TOLERANCE ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input argument values < or = 0.0 found.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
-    ! ------------------------
-    ! Check optional arguments
-    ! ------------------------
-
     IF ( PRESENT( Min_Pressure ) ) THEN
       Min_P = Min_Pressure
     ELSE
       Min_P = DEFAULT_MIN_PRESSURE
     END IF
-
-
-    ! -- Default is NOT to use ice Temperature
+    ! Default is NOT to use ice Temperature
     Use_Ice_Temperature = .FALSE.
     Ice_T               = ZERO
-    ! -- ...unless Ice_Temperature argument is present
+    ! ...unless Ice_Temperature argument is present
     IF ( PRESENT( Ice_Temperature ) ) THEN
       Use_Ice_Temperature = .TRUE.
       Ice_T               = Ice_Temperature
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#       -- ONLY DO CALCULATIONS AT PRESSURES GREATER THAN THE MIN_P --     #
-    !#--------------------------------------------------------------------------#
-
+    ! Only do calculation at pressures greater than the minumum
     Pressure_check: IF ( Pressure > Min_P ) THEN
 
-
-      ! -----------------------------------
       ! Calculate saturation vapor pressure
-      ! -----------------------------------
-
       IF ( Use_Ice_Temperature .AND. ( Temperature < Ice_T ) ) THEN
-
-        ! -- Vapor pressure over ice if required
-        svp = SVPi_scalar( Temperature, &
-                           Message_Log = Message_Log )
-
+        svp = SVPi_scalar( Temperature, Message_Log=Message_Log )
       ELSE
-
-        ! -- Otherwise, over water
-        svp = SVPw_scalar( Temperature, &
-                           Message_Log = Message_Log )
-
+        svp = SVPw_scalar( Temperature, Message_Log=Message_Log )
       END IF
 
-
-      ! ---------------------------------------------
       ! Calculate saturation mixing ratio only if the
       ! total pressure is greater than the saturation
       ! vapor pressure.
-      ! ---------------------------------------------
-
       dp = Pressure - svp
-
       IF ( dp > ZERO ) THEN
         smr = KG_TO_G * EPS * svp / dp
       ELSE
         smr = ZERO
       END IF
 
-    ELSE ! Pressure_check
+    ELSE
 
       smr = ZERO
 
@@ -1604,88 +934,40 @@ CONTAINS
   END FUNCTION SMR_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION SMR_rank1( Pressure,        &  ! Input
                       Temperature,     &  ! Input
                       Ice_Temperature, &  ! Optional Input
                       Min_Pressure,    &  ! Optional Input
                       Message_Log )    &  ! Error messaging
                     RESULT( smr )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL,       INTENT( IN ) :: Ice_Temperature
-    REAL( fp_kind ), OPTIONAL,       INTENT( IN ) :: Min_Pressure
-
-    ! -- Error handler message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Ice_Temperature
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Min_Pressure
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: smr
-
-
-    ! ----------------
+    REAL(fp) :: smr(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Saturation_Mixing_Ratio'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Saturation_Mixing_Ratio'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     smr = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature ) /=  n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature) /=  n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate saturation mixing ratio
     DO i = 1, n
       smr( i ) = SMR_scalar( Pressure( i ), &
                              Temperature( i ), &
@@ -1696,7 +978,6 @@ CONTAINS
     END DO
 
   END FUNCTION SMR_rank1
-
 
 
 !--------------------------------------------------------------------------------
@@ -1711,30 +992,24 @@ CONTAINS
 !       There is also an "inverse" capability to compute the temperature given
 !       the virtual temperature and the water vapor mixing ratio.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
 !       Tv = Virtual_Temperature( Temperature,              &  ! Input
 !                                 Water_Vapor_Mixing_Ratio, &  ! Input
-!                                 Inverse = Inverse,        &  ! Optional Input
-!                                 Message_Log = Message_Log )  ! Error messaging
+!                                 Inverse    =Inverse,      &  ! Optional Input
+!                                 Message_Log=Message_Log   )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Temperature:               Atmospheric temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or Rank-1
-!                                  ATTRIBUTES: INTENT( IN )
+!                                  ATTRIBUTES: INTENT(IN)
 !   
 !       Water_Vapor_Mixing_Ratio:  Water vapor mass mixing ratio.
 !                                  UNITS:      g/kg
-!                                  TYPE:       REAL( fp_kind )
-!                                  DIMENSION:  Same as input Temperature
-!                                  ATTRIBUTES: INTENT( IN )
+!                                  TYPE:       REAL(fp)
+!                                  DIMENSION:  Same as Temperature
+!                                  ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Inverse:                   Set this argument to compute the temperature
@@ -1746,22 +1021,16 @@ CONTAINS
 !                                  UNITS:      N/A
 !                                  TYPE:       INTEGER
 !                                  DIMENSION:  Scalar
-!                                  ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:               Character string specifying a filename in which any
-!                                  messages will be logged. If not specified, or if an
+!                                  Messages will be logged. If not specified, or if an
 !                                  error occurs opening the log file, the default action
-!                                  is to output messages to standard output.
+!                                  is to output Messages to standard output.
 !                                  UNITS:      N/A
-!                                  TYPE:       CHARACTER( * )
+!                                  TYPE:       CHARACTER(*)
 !                                  DIMENSION:  Scalar
-!                                  ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Tv:                        The virtual temperature. If the optional Inverse
@@ -1769,18 +1038,8 @@ CONTAINS
 !                                  atmospheric temperature.
 !                                  If an error occurs, -1.0 is returned.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as input Temperature
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! PROCEDURE:
 !       The virtual temperature, the temperature that dry air must have in
@@ -1819,106 +1078,47 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
-  FUNCTION Tv_scalar ( Temperature,              &  ! Input
-                       Water_Vapor_Mixing_Ratio, &  ! Input
-                       Inverse,                  &  ! Optional input
-                       Message_Log )             &  ! Error messaging
-                     RESULT ( Tv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Scalar version
+  ! ==============
+  FUNCTION Tv_scalar( Temperature,              &  ! Input
+                      Water_Vapor_Mixing_Ratio, &  ! Input
+                      Inverse,                  &  ! Optional input
+                      Message_Log )             &  ! Error messaging
+                    RESULT( Tv )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Water_Vapor_Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL, INTENT( IN ) :: Inverse
-
-    ! -- Error handler message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: Water_Vapor_Mixing_Ratio
+    INTEGER,      OPTIONAL, INTENT(IN) :: Inverse
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Tv
-
-
-    ! ----------------
+    REAL(fp) :: Tv
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Virtual_Temperature'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Virtual_Temperature'
     ! Local variables
-    ! ---------------
-
     LOGICAL :: Forward
-
-    REAL( fp_kind ) :: mr_H2O
-    REAL( fp_kind ) :: Wterm
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    REAL(fp) :: mr_H2O
+    REAL(fp) :: Wterm
+    
+    ! Setup
     Tv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Temperature < TOLERANCE .OR. Water_Vapor_Mixing_Ratio < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input temperature/water vapor mixing ratio < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
-    ! ------------------
-    ! Optional arguments
-    ! ------------------
-
-    ! -- Always do the forward calculation....
+    ! Always do the forward calculation....
     Forward = .TRUE.
-
-    ! -- ...unless the Inverse argument is set
+    ! ...unless the Inverse argument is set
     IF ( PRESENT( Inverse ) ) THEN
       IF( Inverse == SET ) Forward = .FALSE.
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- CALCULATE VIRTUAL TEMPERATURE --                     #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate the virtual temperature
     mr_H2O = G_TO_KG * Water_Vapor_Mixing_Ratio
-
-    Wterm  =      ( EPS + mr_H2O )      / &
-    !        --------------------------
-             ( EPS * ( ONE + mr_H2O ) )
-
-
+    Wterm  = ( EPS + mr_H2O ) / ( EPS * ( ONE + mr_H2O ) )
     IF ( Forward ) THEN
       Tv = Temperature * Wterm
     ELSE
@@ -1928,97 +1128,48 @@ CONTAINS
   END FUNCTION Tv_scalar 
 
 
-
-!##############################################################################
-!                              Rank-1 version
-!##############################################################################
-
-  FUNCTION Tv_rank1 ( Temperature,              &  ! Input
-                      Water_Vapor_Mixing_Ratio, &  ! Input
-                      Inverse,                  &  ! Optional input
-                      Message_Log )             &  ! Error messaging
-                    RESULT ( Tv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Rank-1 version
+  ! ==============
+  FUNCTION Tv_rank1( Temperature,              &  ! Input
+                     Water_Vapor_Mixing_Ratio, &  ! Input
+                     Inverse,                  &  ! Optional input
+                     Message_Log )             &  ! Error messaging
+                   RESULT( Tv )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Water_Vapor_Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL,       INTENT( IN ) :: Inverse
-
-    ! -- Error handler message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Water_Vapor_Mixing_Ratio(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Inverse
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Temperature ) ) :: Tv
-
-
-    ! ----------------
+    REAL(fp) :: Tv(SIZE(Temperature))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Virtual_Temperature'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Virtual_Temperature'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     Tv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Temperature )
-
-    IF ( SIZE( Water_Vapor_Mixing_Ratio ) /= n ) THEN
+    n = SIZE(Temperature)
+    IF ( SIZE(Water_Vapor_Mixing_Ratio) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Temperature/Water_Vapor_'//&
                             'Mixing_Ratio array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Compute the virtual temperature (or inverse)
     DO i = 1, n
       Tv( i ) = Tv_scalar( Temperature( i ), &
                            Water_Vapor_Mixing_Ratio( i ), &
-                           Inverse = Inverse, &
-                           Message_Log = Message_Log )
+                           Inverse    =Inverse, &
+                           Message_Log=Message_Log )
       IF ( Tv( i ) < ZERO ) RETURN
     END DO
 
   END FUNCTION Tv_rank1
-
 
 
 !--------------------------------------------------------------------------------
@@ -2033,30 +1184,24 @@ CONTAINS
 !       There is also an "inverse" capability to compute the temperature given
 !       the potential temperature and pressure.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Theta = Potential_Temperature( Temperature,              &  ! Input
-!                                      Pressure,                 &  ! Input
-!                                      Inverse = Inverse,        &  ! Optional input
-!                                      Message_Log = Message_Log )  ! Error messaging
+!       Theta = Potential_Temperature( Temperature,            &  ! Input
+!                                      Pressure,               &  ! Input
+!                                      Inverse    =Inverse,    &  ! Optional input
+!                                      Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Temperature:       Atmospheric temperature.
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Pressure:          Atmospheric pressure
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Same as input Temperature
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Temperature
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Inverse:           Set this argument to compute the temperature
@@ -2068,22 +1213,16 @@ CONTAINS
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
+!                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
+!                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Theta:             The potential temperature. If the optional Inverse
@@ -2091,18 +1230,8 @@ CONTAINS
 !                          atmospheric temperature.
 !                          If an error occurs, -1.0 is returned.
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Temperature
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! PROCEDURE:
 !       The potential temperature of a parcel of air is that temperature
@@ -2138,100 +1267,46 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
-  FUNCTION Theta_scalar ( Temperature,  &  ! Input
-                          Pressure,     &  ! Input
-                          Inverse,      &  ! Optional Input
-                          Message_Log ) &  ! Error messaging
-                        RESULT ( Theta )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Scalar version
+  ! ==============
+  FUNCTION Theta_scalar( Temperature,  &  ! Input
+                         Pressure,     &  ! Input
+                         Inverse,      &  ! Optional Input
+                         Message_Log ) &  ! Error messaging
+                       RESULT( Theta )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL, INTENT( IN ) :: Inverse
-
-    ! -- Error handler message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: Pressure
+    INTEGER,      OPTIONAL, INTENT(IN) :: Inverse
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Theta
-
-
-    ! ----------------
+    REAL(fp) :: Theta
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'Potential_Temperature'
-
-    REAL( fp_kind ), PARAMETER :: EXPONENT_TERM = R_DRYAIR / Cp_DRYAIR
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Potential_Temperature'
+    REAL(fp),     PARAMETER :: EXPONENT_TERM = R_DRYAIR / Cp_DRYAIR
     ! Local variables
-    ! ---------------
-
-    LOGICAL :: Forward
-    REAL( fp_kind ) :: PressureTerm
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    LOGICAL  :: Forward
+    REAL(fp) :: PressureTerm
+    
+    ! Setup
     Theta = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Temperature < TOLERANCE .OR. Pressure < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input temperature/pressure < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
-    ! --------
-    ! Keywords
-    ! --------
-
-    ! -- Always do the forward calculation....
+    ! Always do the forward calculation....
     Forward = .TRUE.
-
-    ! -- ...unless the Inverse argument is set
+    ! ...unless the Inverse argument is set
     IF ( PRESENT( Inverse ) ) THEN
       IF( Inverse == SET ) Forward = .FALSE.
     END IF
 
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- CALCULATE POTENTIAL TEMPERATURE --                    #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate the potential temperature
     PressureTerm = ( ( P0 / Pressure )**EXPONENT_TERM )
-
     IF ( Forward ) THEN
       Theta = Temperature * PressureTerm
     ELSE
@@ -2241,139 +1316,46 @@ CONTAINS
   END FUNCTION Theta_scalar 
 
 
-
-!##############################################################################
-!                              Rank-1 version
-!##############################################################################
-
-  FUNCTION Theta_rank1 ( Temperature,  &  ! Input
-                         Pressure,     &  ! Input
-                         Inverse,      &  ! Optional Input
-                         Message_Log ) &  ! Error messaging
-                       RESULT ( Theta )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+  ! ==============
+  ! Rank-1 version
+  ! ==============
+  FUNCTION Theta_rank1( Temperature,  &  ! Input
+                        Pressure,     &  ! Input
+                        Inverse,      &  ! Optional Input
+                        Message_Log ) &  ! Error messaging
+                      RESULT( Theta )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL,        INTENT( IN ) :: Inverse
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Inverse
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Temperature ) ) :: Theta
-
-
-    ! ----------------
+    REAL(fp) :: Theta(SIZE(Temperature))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Potential_Temperature'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Potential_Temperature'
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Theta = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Temperature )
-
-    IF ( SIZE( Pressure ) /= n ) THEN
+    n = SIZE(Temperature)
+    IF ( SIZE(Pressure) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Temperature/Pressure array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate the potential temperature
     DO i = 1, n
       Theta( i ) = Theta_scalar( Temperature( i ), &
                                  Pressure( i ), &
-                                 Inverse = Inverse, &
-                                 Message_Log = Message_Log )
+                                 Inverse    =Inverse, &
+                                 Message_Log=Message_Log )
       IF ( Theta( i ) < ZERO ) RETURN
     END DO
 
   END FUNCTION Theta_rank1
 
 END MODULE Atmospheric_Properties
-
-
-
-!--------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!--------------------------------------------------------------------------------
-!
-! $Id: Atmospheric_Properties.f90,v 1.7 2006/05/02 22:04:35 wd20pd Exp $
-!
-! $Date: 2006/05/02 22:04:35 $
-!
-! $Revision: 1.7 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Atmospheric_Properties.f90,v $
-! Revision 1.7  2006/05/02 22:04:35  wd20pd
-! - Replaced all references to Error_Handler with Message_Handler.
-!
-! Revision 1.6  2004/11/29 23:37:01  paulv
-! - Cosmetic changes only.
-!
-! Revision 1.5  2004/11/18 18:38:41  paulv
-! - Upgraded to Fortran-95.
-! - Updated header documentation.
-!
-! Revision 1.4  2003/05/22 15:42:52  paulv
-! - Updated documentation.
-!
-! Revision 1.3  2002/10/04 20:53:50  paulv
-! - Cosmetic changes.
-!
-! Revision 1.2  2002/09/20 16:21:53  paulv
-! - Added potential temperature function.
-! - Checking before changes to some interfaces. Incomplete.
-!
-! Revision 1.1  2002/08/30 22:48:12  paulv
-! Initial checkin. Untested.
-! - The contents of this module have been extracted from the old PROFILE_CONVERSION
-!   module and split up into different categories of profile processing.
-!
-!
-!

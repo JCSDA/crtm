@@ -1,7 +1,7 @@
 !
 ! Profile_Utility module
 !
-! Container module for all the Profile_Utility modules.
+! Container module for all the Profile_Utility modules and dependencies.
 !
 !
 ! CREATION HISTORY:

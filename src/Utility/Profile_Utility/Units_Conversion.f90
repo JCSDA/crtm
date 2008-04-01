@@ -1,40 +1,9 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Units_Conversion
 !
-! PURPOSE:
-!       Module containing routines to convert atmospheric profile
-!       concentration units.
+! Units_Conversion
 !
-! CATEGORY:
-!       Profile Utility
+! Module containing routines to convert atmospheric profile
+! concentration units.
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE Units_Conversion
-!
-! MODULES:
-!       Type_Kinds:                   Module containing definitions for kinds of
-!                                     variable types.
-!
-!       Message_Handler:                Module containing definitions of simple error
-!                                     codes and error handling routines.
-!                                     USEs: FILE_UTILITY module
-!
-!       Profile_Utility_Parameters:   Module containing parameters used in the
-!                                     profile utility modules.
-!                                     USEs: TYPE_KINDS module
-!                                           FUNDAMENTAL_CONSTANTS module
-!
-!       Atmospheric_Properties:       Module containing utility routines to
-!                                     calculate various and sundry atmospheric
-!                                     properties
-!                                     USEs: TYPE_KINDS module
-!                                           ERROR_HANDLER module
-!                                           PROFILE_UTILITY_PARAMETERS module
 !
 ! CONTAINS:
 !       Specific amount <-> mixing ratio
@@ -119,66 +88,28 @@
 !         KMOL_to_PPMV:   Function to convert gas concentrations from kilomoles
 !                         per cm^2 to parts-per-million by volume.
 !
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
-!
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 01-May-2000
+!                       paul.vandelst@noaa.gov
 !
-!  Copyright (C) 2000, 2001, 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE Units_Conversion
 
-
-  ! ------------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Modules used
-  ! ------------
-
-  USE Type_Kinds, ONLY: fp_kind
+  USE Type_Kinds, ONLY: fp
   USE Message_Handler
-
-  USE Profile_Utility_Parameters
-
   USE Atmospheric_Properties
-
-
-  ! ---------------------------
+  USE Profile_Utility_Parameters
   ! Disable all implicit typing
-  ! ---------------------------
-
   IMPLICIT NONE
 
 
-  ! -----------------------------
-  ! Default and member visibility
-  ! -----------------------------
-
+  ! ------------
+  ! Visibilities
+  ! ------------
   PRIVATE
   PUBLIC :: SA_to_MR,     MR_to_SA
   PUBLIC :: RH_to_MR,     MR_to_RH
@@ -194,7 +125,6 @@ MODULE Units_Conversion
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-
   INTERFACE SA_to_MR
     MODULE PROCEDURE SA_to_MR_scalar
     MODULE PROCEDURE SA_to_MR_rank1
@@ -289,18 +219,13 @@ MODULE Units_Conversion
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  REAL( fp_kind ), PRIVATE, PARAMETER :: HUNDRED      = 100.0_fp_kind
-  REAL( fp_kind ), PRIVATE, PARAMETER :: FROM_PERCENT = ONE / HUNDRED
-
-
-
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
+  REAL(fp), PARAMETER :: HUNDRED      = 100.0_fp
+  REAL(fp), PARAMETER :: FROM_PERCENT = ONE / HUNDRED
 
 
 CONTAINS
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -311,65 +236,42 @@ CONTAINS
 ! PURPOSE:
 !       Function to convert gas specific amounts to mass mixing ratio
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Mixing_Ratio = SA_to_MR( Specific_Amount,           &  ! Input
-!                                Water_Vapor = Water_Vapor, &  ! Optional input
-!                                Message_Log = Message_Log  )  ! Error messaging
+!       Mixing_Ratio = SA_to_MR( Specific_Amount,         &  ! Input
+!                                Water_Vapor=Water_Vapor, &  ! Optional input
+!                                Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Specific_Amount:   Gas specific amount comcentration.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor mass mixing ratio. If this argument is
 !                          not supplied, the mandatory input SPECIFIC_AMOUNT
 !                          argument is assumed to be water vapor.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Mixing_Ratio:      The gas mass mixing ratio. If an error occurs,
 !                          the value -1.0 is returned.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Specific_Amount)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Specific_Amount
 !
 ! PROCEDURE:
 !       The specific amount is defined as the ratio of the mass of gas
@@ -442,212 +344,100 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION SA_to_MR_scalar( Specific_Amount, &  ! Input
                             Water_Vapor,     &  ! Optional Input
                             Message_Log )    &  ! Error messaging
                           RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp_kind ),           INTENT( IN ) :: Specific_Amount
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Specific_Amount
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio
     ! Local parameters
-    ! ----------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SA_to_MR'
 
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'SA_to_MR'
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Specific_Amount < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input specific amount < 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- CALCULATE MIXING RATIO IN G/KG --                   #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate mixing ratio in g/kg
     IF ( PRESENT( Water_Vapor ) ) THEN
-
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input Water_Vapor mixing ratio < 0.0.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       Mixing_Ratio = Specific_Amount * ( ONE + ( G_TO_KG * Water_Vapor ) )
-
     ELSE
-
-      Mixing_Ratio =              Specific_Amount              / &
-      !              -----------------------------------------
-                      ( ONE - ( G_TO_KG * Specific_Amount ) )
-
+      Mixing_Ratio = Specific_Amount / ( ONE - ( G_TO_KG * Specific_Amount ) )
     END IF
 
   END FUNCTION SA_to_MR_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION SA_to_MR_rank1( Specific_Amount, &  ! Input
                            Water_Vapor,     &  ! Optional Input
                            Message_Log )    &  ! Error messaging
                          RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Specific_Amount
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Specific_Amount(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Specific_Amount ) ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio(SIZE(Specific_Amount))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'SA_to_MR'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SA_to_MR'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#              -- CONVERT SPECIFIC AMOUNTS TO MIXING RATIO --              #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! --------------------------------
+    ! Calculate mixing ratio in g/kg
+    IF ( PRESENT(Water_Vapor) ) THEN
+    
       ! Water vapour argument is present
-      ! --------------------------------
-
-      ! -- Check the size
-      IF ( SIZE( Water_Vapor ) /= SIZE( Specific_Amount ) ) THEN
+      IF ( SIZE(Water_Vapor) /= SIZE(Specific_Amount) ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Specific_Amount/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-
-      ! -- Loop over each element calling the scalar function
-      DO k = 1, SIZE( Specific_Amount )
-
+      DO k = 1, SIZE(Specific_Amount)
         Mixing_Ratio( k ) = SA_to_MR_scalar( Specific_Amount( k ), &
-                                             Water_Vapor = Water_Vapor(k), &
-                                             Message_Log = Message_Log )
+                                             Water_Vapor=Water_Vapor(k), &
+                                             Message_Log=Message_Log )
         IF ( Mixing_Ratio( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! ------------------------------------
       ! Water vapour argument is NOT present
-      ! ------------------------------------
-
-      DO k = 1, SIZE( Specific_Amount )
-
+      DO k = 1, SIZE(Specific_Amount)
         Mixing_Ratio( k ) = SA_to_MR_scalar( Specific_Amount( k ), &
-                                             Message_Log = Message_Log )
+                                             Message_Log=Message_Log )
         IF ( Mixing_Ratio( k ) < ZERO ) RETURN
-
       END DO
-
 
     END IF
 
   END FUNCTION SA_to_MR_rank1
-
-
-
-
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -666,58 +456,41 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       Specific_Amount = MR_to_SA( Mixing_Ratio,              &  ! Input
-!                                   Water_Vapor = Water_Vapor, &  ! Optional input
-!                                   Message_Log = Message_Log  )  ! Error messaging
+!       Specific_Amount = MR_to_SA( Mixing_Ratio,            &  ! Input
+!                                   Water_Vapor=Water_Vapor, &  ! Optional input
+!                                   Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Mixing_Ratio:      Gas mass mixing ratio.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor specific humidity. If this argument is
 !                          not supplied, the mandatory input MIXING_RATIO
 !                          argument is assumed to be water vapor.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Specific_Amount:   The gas specific amount. If an error occurs,
 !                          the value -1.0 is returned.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Mixing_Ratio)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Mixing_Ratio
 !
 ! PROCEDURE:
 !       From the SA_to_MR conversion, we know that for input units of
@@ -751,213 +524,101 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION MR_to_SA_scalar( Mixing_Ratio, &  ! Input
                             Water_Vapor,  &  ! Optional Input
                             Message_Log ) &  ! Error messaging
                           RESULT( Specific_Amount )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp_kind ),           INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Specific_Amount
-
-
-    ! ----------------
+    REAL(fp) :: Specific_Amount
     ! Local parameters
-    ! ----------------
+    CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'MR_to_SA'
 
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'MR_to_SA'
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Specific_Amount = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Mixing_Ratio < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input mixing ratio < 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- CALCULATE SPECIFIC AMOUNT IN G/KG --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
+    ! Calculate specific amount in g/kg
+    IF ( PRESENT(Water_Vapor) ) THEN
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input Water_Vapor specific humidity < 0.0.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       Specific_Amount = Mixing_Ratio * ( ONE - ( G_TO_KG * Water_Vapor ) )
-
     ELSE
-
-      Specific_Amount =              Mixing_Ratio              / &
-      !                 --------------------------------------
-                         ( ONE + ( G_TO_KG * Mixing_Ratio ) )
-
+      Specific_Amount = Mixing_Ratio / ( ONE + ( G_TO_KG * Mixing_Ratio ) )
     END IF
 
   END FUNCTION MR_to_SA_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION MR_to_SA_rank1( Mixing_Ratio, &  ! Input
                            Water_Vapor,  &  ! Optional Input
                            Message_Log ) &  ! Error messaging
                          RESULT( Specific_Amount )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Mixing_Ratio ) ) :: Specific_Amount
-
-
-    ! ----------------
+    REAL(fp) :: Specific_Amount(SIZE(Mixing_Ratio))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_SA'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_SA'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Specific_Amount = -ONE
 
+    ! Calculate specific amount in g/kg
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-
-    !#--------------------------------------------------------------------------#
-    !#              -- CONVERT MIXING RATIO TO SPECIFIC AMOUNTS --              #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! --------------------------------
       ! Water vapour argument is present
-      ! --------------------------------
-
-      ! -- Check the size
-      IF ( SIZE( Water_Vapor ) /= SIZE( Mixing_Ratio ) ) THEN
+      IF ( SIZE(Water_Vapor) /= SIZE(Mixing_Ratio) ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Mixing_Ratio/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-
-      ! -- Loop over each element calling the scalar function
-      DO k = 1, SIZE( Mixing_Ratio )
+      DO k = 1, SIZE(Mixing_Ratio)
 
         Specific_Amount( k ) = MR_to_SA_scalar( Mixing_Ratio( k ), &
-                                                Water_Vapor = Water_Vapor(k), &
-                                                Message_Log = Message_Log )
+                                                Water_Vapor=Water_Vapor(k), &
+                                                Message_Log=Message_Log )
         IF ( Specific_Amount( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! ------------------------------------
       ! Water vapour argument is NOT present
-      ! ------------------------------------
-
-      DO k = 1, SIZE( Mixing_Ratio )
-
+      DO k = 1, SIZE(Mixing_Ratio)
         Specific_Amount( k ) = MR_to_SA_scalar( Mixing_Ratio( k ), &
-                                                Message_Log = Message_Log )
+                                                Message_Log=Message_Log )
         IF ( Specific_Amount( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION MR_to_SA_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -968,48 +629,42 @@ CONTAINS
 ! PURPOSE:
 !       Function to convert relative humidity to water vapor mixing ratio
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Mixing_Ratio = RH_to_MR( Pressure,                          &  ! Input
-!                                Temperature,                       &  ! Input
-!                                Relative_Humidity,                 &  ! Input
-!                                Ice_Temperature = Ice_Temperature, &  ! optional input
-!                                Min_Pressure    = Min_Pressure,    &  ! Optional input
-!                                Message_Log     = Message_Log      )  ! Error messaging
+!       Mixing_Ratio = RH_to_MR( Pressure,                        &  ! Input
+!                                Temperature,                     &  ! Input
+!                                Relative_Humidity,               &  ! Input
+!                                Ice_Temperature=Ice_Temperature, &  ! optional input
+!                                Min_Pressure   =Min_Pressure,    &  ! Optional input
+!                                Message_Log    =Message_Log      )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:       Atmospheric temperature.
-!                          UNITS:      Kelvin, K, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          UNITS:      Kelvin, K
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Relative_Humidity: Atmospheric relative humidity.
 !                          UNITS:      %
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Ice_Temperature:   Temperature below which the saturation vapor
 !                          pressure over ice is used in the conversion.
 !                          By default, only the saturation vapor pressure
 !                          over water is used.
-!                          UNITS:      Kelvin, K, K
-!                          TYPE:       REAL( fp_kind )
+!                          UNITS:      Kelvin, K
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !   
 !       Min_Pressure:      Pressure value below which the saturation
 !                          mixing ratio is not calculated. The default
@@ -1020,46 +675,25 @@ CONTAINS
 !                          only on temperature, can exceed the total
 !                          air Pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !   
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Mixing_Ratio:      Water vapor mass mixing ratio. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Saturation_Mixing_Ratio: Function to calculate the saturation mixing
-!                                ratio for a given pressure and temperature.
-!                                SOURCE: ATMOSPHERIC_PROPERTIES module
-!
-!       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       Once the saturation mixing ratio is calculated the mixing ratio
@@ -1075,10 +709,9 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION RH_to_MR_scalar( Pressure,          &  ! Input
                             Temperature,       &  ! Input
                             Relative_Humidity, &  ! Input
@@ -1086,114 +719,61 @@ CONTAINS
                             Min_Pressure,      &  ! Optional Input
                             Message_Log )      &  ! Error messaging
                           RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Relative_Humidity
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Ice_Temperature
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Min_Pressure
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),              INTENT(IN) :: Pressure
+    REAL(fp),              INTENT(IN) :: Temperature
+    REAL(fp),              INTENT(IN) :: Relative_Humidity
+    REAL(fp),    OPTIONAL, INTENT(IN) :: Ice_Temperature
+    REAL(fp),    OPTIONAL, INTENT(IN) :: Min_Pressure
+    CHARACTER(*),OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'RH_to_MR'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'RH_to_MR'
     ! Local variables
-    ! ---------------
+    REAL(fp) :: smr
 
-    REAL( fp_kind ) :: smr
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure          < TOLERANCE .OR. &
          Temperature       < TOLERANCE .OR. &
          Relative_Humidity < ZERO      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input argument values < or = 0.0 found.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
     IF ( Relative_Humidity > HUNDRED ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Relative_Humidity > 100%', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-    !#--------------------------------------------------------------------------#
-    !#             -- CALCULATE SATURATION MIXING RATIO IN G/KG --              #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate saturation mixing ratio in g/kg
     smr = Saturation_Mixing_Ratio( Pressure, &
                                    Temperature, &
-                                   Ice_Temperature = Ice_Temperature, &
-                                   Min_Pressure    = Min_Pressure )
-
+                                   Ice_Temperature=Ice_Temperature, &
+                                   Min_Pressure   =Min_Pressure )
     IF ( smr < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating saturation mixing ratio.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- CALCULATE MIXING RATIO IN G/KG --                   #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate mixing ratio in g/kg
     Mixing_Ratio = FROM_PERCENT * Relative_Humidity * smr
 
   END FUNCTION RH_to_MR_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION RH_to_MR_rank1( Pressure,          &  ! Input
                            Temperature,       &  ! Input
                            Relative_Humidity, &  ! Input
@@ -1201,92 +781,44 @@ CONTAINS
                            Min_Pressure,      &  ! Optional Input
                            Message_Log )      &  ! Error messaging
                          RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Relative_Humidity
-
-    REAL( fp_kind ), OPTIONAL,       INTENT( IN ) :: Ice_Temperature
-    REAL( fp_kind ), OPTIONAL,       INTENT( IN ) :: Min_Pressure
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Relative_Humidity(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Ice_Temperature
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Min_Pressure
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'RH_to_MR'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'RH_to_MR'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature       ) /= n .OR. & 
-         SIZE( Relative_Humidity ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature)       /= n .OR. & 
+         SIZE(Relative_Humidity) /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate mixing ratio in g/kg
     DO k = 1, n
-
       Mixing_Ratio( k ) = RH_to_MR_scalar( Pressure( k ), &
                                            Temperature( k ), &
                                            Relative_Humidity( k ), &
-                                           Ice_Temperature = Ice_Temperature, &
-                                           Min_Pressure = Min_Pressure, &
-                                           Message_Log = Message_Log )
+                                           Ice_Temperature=Ice_Temperature, &
+                                           Min_Pressure   =Min_Pressure, &
+                                           Message_Log    =Message_Log )
       IF ( Mixing_Ratio( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION RH_to_MR_rank1
-
 
 
 
@@ -1298,48 +830,42 @@ CONTAINS
 ! PURPOSE:
 !       Function to convert water vapor mixing ratio to relative humidity
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Relative_Humidty = MR_to_RH( Pressure,                          &  ! Input
-!                                    Temperature,                       &  ! Input
-!                                    Mixing_Ratio,                      &  ! Input
-!                                    Ice_Temperature = Ice_Temperature, &  ! optional input
-!                                    Min_Pressure    = Min_Pressure,    &  ! Optional input
-!                                    Message_Log     = Message_Log      )  ! Error messaging
+!       Relative_Humidty = MR_to_RH( Pressure,                        &  ! Input
+!                                    Temperature,                     &  ! Input
+!                                    Mixing_Ratio,                    &  ! Input
+!                                    Ice_Temperature=Ice_Temperature, &  ! optional input
+!                                    Min_Pressure   =Min_Pressure,    &  ! Optional input
+!                                    Message_Log    =Message_Log      )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:       Atmospheric temperature.
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Mixing_Ratio:      Water vapor mixing ratio.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Ice_Temperature:   Temperature below which the saturation vapor
 !                          pressure over ice is used in the conversion.
 !                          By default, only the saturation vapor pressure
 !                          over water is used.
-!                          UNITS:      Kelvin, K, K
-!                          TYPE:       REAL( fp_kind )
+!                          UNITS:      Kelvin, K
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !   
 !       Min_Pressure:      Pressure value below which the saturation
 !                          mixing ratio is not calculated. The default
@@ -1350,46 +876,25 @@ CONTAINS
 !                          only on temperature, can exceed the total
 !                          air Pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !   
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Relative_Humidity: Relative humidity. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      %
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Saturation_Mixing_Ratio: Function to calculate the saturation mixing
-!                                ratio for a given pressure and temperature.
-!                                SOURCE: ATMOSPHERIC_PROPERTIES module
-!
-!       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       Once the saturation mixing ratio is calculated the relative humidity
@@ -1405,10 +910,9 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION MR_to_RH_scalar( Pressure,        &  ! Input
                             Temperature,     &  ! Input
                             Mixing_Ratio,    &  ! Input
@@ -1416,102 +920,49 @@ CONTAINS
                             Min_Pressure,    &  ! Optional Input
                             Message_Log )    &  ! Error messaging
                           RESULT( Relative_Humidity )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Ice_Temperature
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Min_Pressure
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),           INTENT(IN) :: Pressure
+    REAL(fp),           INTENT(IN) :: Temperature
+    REAL(fp),           INTENT(IN) :: Mixing_Ratio
+    REAL(fp), OPTIONAL, INTENT(IN) :: Ice_Temperature
+    REAL(fp), OPTIONAL, INTENT(IN) :: Min_Pressure
+    CHARACTER(*),  OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Relative_Humidity
-
-
-    ! ----------------
+    REAL(fp) :: Relative_Humidity
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_RH'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_RH'
     ! Local variables
-    ! ---------------
+    REAL(fp) :: smr
 
-    REAL( fp_kind ) :: smr
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Relative_Humidity = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure     < TOLERANCE .OR. &
          Temperature  < TOLERANCE .OR. &
-         Mixing_Ratio < ZERO      ) THEN
+         Mixing_Ratio < ZERO           ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input argument values < or = 0.0 found.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#            -- CALCULATE SATURATION MIXING RATIO IN G/KG --               #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate saturation mixing ratio in g/kg
     smr = Saturation_Mixing_Ratio( Pressure, &
                                    Temperature, &
-                                   Ice_Temperature = Ice_Temperature, &
-                                   Min_Pressure = Min_Pressure, &
-                                   Message_Log = Message_Log )
-
+                                   Ice_Temperature=Ice_Temperature, &
+                                   Min_Pressure   =Min_Pressure, &
+                                   Message_Log    =Message_Log )
     IF ( smr < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating saturation mixing ratio.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- CALCULATE RELATIVE HUMIDITY IN % --                  # 
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate relative humidity in %
     IF ( smr > ZERO ) THEN
-      Relative_Humidity = HUNDRED * Mixing_Ratio / &
-      !                             ------------
-                                        smr
+      Relative_Humidity = HUNDRED * Mixing_Ratio / smr
     ELSE
       Relative_Humidity = ZERO
     END IF
@@ -1519,11 +970,9 @@ CONTAINS
   END FUNCTION MR_to_RH_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION MR_to_RH_rank1( Pressure,        &  ! Input
                            Temperature,     &  ! Input
                            Mixing_Ratio,    &  ! Input
@@ -1531,95 +980,44 @@ CONTAINS
                            Min_Pressure,    &  ! Optional Input
                            Message_Log )    &  ! Error messaging
                          RESULT( Relative_Humidity )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL,       INTENT( IN ) :: Ice_Temperature
-    REAL( fp_kind ), OPTIONAL,       INTENT( IN ) :: Min_Pressure
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Ice_Temperature
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Min_Pressure
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Relative_Humidity
-
-
-    ! ----------------
+    REAL(fp) :: Relative_Humidity(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_RH'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_RH'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Relative_Humidity = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature  ) /= n .OR. & 
-         SIZE( Mixing_Ratio ) /= n      ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature)  /= n .OR. & 
+         SIZE(Mixing_Ratio) /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Calculate relative humidity in %
     DO k = 1, n
-
       Relative_Humidity( k ) = MR_to_RH_scalar( Pressure( k ), &
                                                 Temperature( k ), &
                                                 Mixing_Ratio( k ), &
-                                                Ice_Temperature = Ice_Temperature, &
-                                                Min_Pressure = Min_Pressure, &
-                                                Message_Log = Message_Log )
+                                                Ice_Temperature=Ice_Temperature, &
+                                                Min_Pressure   =Min_Pressure, &
+                                                Message_Log    =Message_Log )
       IF ( Relative_Humidity( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION MR_to_RH_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -1631,28 +1029,24 @@ CONTAINS
 !       Function to convert gas concentrations from mass mixing ratio in g/kg
 !       to volume mixing ratio in ppmv
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       ppmv = MR_to_PPMV( Mixing_Ratio,              &  ! Input
-!                          Molecule_ID = Molecule_ID, &  ! Input
-!                          Message_Log = Message_Log  )  ! Error messaging
+!       ppmv = MR_to_PPMV( Mixing_Ratio,            &  ! Input
+!                          Molecule_ID=Molecule_ID, &  ! Input
+!                          Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Mixing_Ratio:  Mass mixing ratio of gas.
 !                      UNITS:      g/kg
-!                      TYPE:       REAL( fp_kind )
+!                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar or Rank-1 (K x 1)
-!                      ATTRIBUTES: INTENT( IN )
+!                      ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Molecule_ID:   HITRAN molecular designation identifying the
 !                      molecule for which the concentration units
-!                      conversion is required. Valid values are:
+!                      conversion is required. If not specified, the
+!                      default value is that for water vapor.
+!                      Valid values are:
 !                        1: H2O       9: SO2      17: HI       25: H2O2
 !                        2: CO2      10: NO2      18: ClO      26: C2H2
 !                        3: O3       11: NH3      19: OCS      27: C2H6
@@ -1661,45 +1055,26 @@ CONTAINS
 !                        6: CH4      14: HF       22: N2       30: SF6
 !                        7: O2       15: HCl      23: HCN      31: H2S
 !                        8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                      If not specified, the default value is that for
-!                      water vapor, 1.
-!                      UNITS:      N/A.
+!                      UNITS:      N/A
 !                      TYPE:       INTEGER
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:   Character string specifying a filename in which any
 !                      Messages will be logged. If not specified, or if an
 !                      error occurs opening the log file, the default action
 !                      is to output Messages to standard output.
 !                      UNITS:      N/A
-!                      TYPE:       CHARACTER( * )
+!                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       ppmv:          Volume mixing ratio of gas. If an error occurs,
 !                      -1.0 is returned.
 !                      UNITS:      ppmv
-!                      TYPE:       REAL( fp_kind )
-!                      DIMENSION:  Scalar or Rank-1
-!                                  (same dimensionality as input Mixing_Ratio)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Same as input Mixing_Ratio
 !
 ! PROCEDURE:
 !       To convert mixing ratio in g/kg to parts-per-million, the following
@@ -1721,183 +1096,83 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION MR_to_PPMV_scalar( Mixing_Ratio, &  ! Input
                               Molecule_ID,  &  ! Optional Input
                               Message_Log ) &  ! Error messaging
                             RESULT( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV'
-
-    REAL( fp_kind ), PARAMETER :: SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV'
+    REAL(fp),     PARAMETER :: SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
     ! Local variables
-    ! ---------------
-
     INTEGER :: Id
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Mixing_Ratio < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input mixing ratio < 0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
     IF ( PRESENT( Molecule_ID ) ) THEN
-
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Assign ID value
       Id = Molecule_ID
-
     ELSE
-
-      ! - Default value is for water vapor
-      Id = 1
-
+      Id = 1  ! Default value is for water vapor
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- CONVERT PPMV TO MIXING RATIO --                     #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert mass to volume mixing ratio
     ppmv = SCALE_FACTOR * Mixing_Ratio * MW_DRYAIR / MOLECULAR_WEIGHT( Id )
 
   END FUNCTION MR_to_PPMV_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION MR_to_PPMV_rank1( Mixing_Ratio, &  ! Input
                              Molecule_ID,  &  ! Input
                              Message_Log ) &  ! Error messaging
                            RESULT( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL,       INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Mixing_Ratio ) ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv(SIZE(Mixing_Ratio))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     ppmv = -ONE
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    DO k = 1, SIZE( Mixing_Ratio )
-
+    ! Convert mass to volume mixing ratio
+    DO k = 1, SIZE(Mixing_Ratio)
       ppmv( k ) = MR_to_PPMV_scalar( Mixing_Ratio( k ), &
-                                     Molecule_ID = Molecule_ID, &
-                                     Message_Log = Message_Log )
+                                     Molecule_ID=Molecule_ID, &
+                                     Message_Log=Message_Log )
       IF ( ppmv( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION MR_to_PPMV_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -1909,28 +1184,24 @@ CONTAINS
 !       Function to convert gas concentrations from volume mixing ratio in
 !       ppmv to mass mixing ratio in g/kg.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Mixing_Ratio = PPMV_to_MR( ppmv,                      &  ! Input
-!                                  Molecule_ID = Molecule_ID, &  ! Input
-!                                  Message_Log = Message_Log )   ! Error messaging
+!       Mixing_Ratio = PPMV_to_MR( ppmv,                    &  ! Input
+!                                  Molecule_ID=Molecule_ID, &  ! Input
+!                                  Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       ppmv:          Volume mixing ratio of gas.
 !                      UNITS:      ppmv
-!                      TYPE:       REAL( fp_kind )
+!                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar or Rank-1 (K x 1)
-!                      ATTRIBUTES: INTENT( IN )
+!                      ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Molecule_ID:   HITRAN molecular designation identifying the
 !                      molecule for which the concentration units
-!                      conversion is required. Valid values are:
+!                      conversion is required. If not specified, the
+!                      default value is that for water vapor.
+!                      Valid values are:
 !                        1: H2O       9: SO2      17: HI       25: H2O2
 !                        2: CO2      10: NO2      18: ClO      26: C2H2
 !                        3: O3       11: NH3      19: OCS      27: C2H6
@@ -1939,45 +1210,26 @@ CONTAINS
 !                        6: CH4      14: HF       22: N2       30: SF6
 !                        7: O2       15: HCl      23: HCN      31: H2S
 !                        8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                      If not specified, the default value is that for
-!                      water vapor, 1.
-!                      UNITS:      N/A.
+!                      UNITS:      N/A
 !                      TYPE:       INTEGER
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:   Character string specifying a filename in which any
 !                      Messages will be logged. If not specified, or if an
 !                      error occurs opening the log file, the default action
 !                      is to output Messages to standard output.
 !                      UNITS:      N/A
-!                      TYPE:       CHARACTER( * )
+!                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Mixing_Ratio:  Mass mixing ratio of gas. If an error occurs,
 !                      -1.0 is returned.
 !                      UNITS:      g/kg
-!                      TYPE:       REAL( fp_kind )
-!                      DIMENSION:  Scalar or Rank-1
-!                                  (same dimensionality as input ppmv)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Same as input ppmv
 !
 ! PROCEDURE:
 !       To convert ppmv to mixing ratio, the following is used:
@@ -1999,185 +1251,84 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PPMV_to_MR_scalar( ppmv,         &  ! Input
                               Molecule_ID,  &  ! Optional Input
                               Message_Log ) &  ! Optional input
                             RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: ppmv
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'PPMV_to_MR'
-
-    REAL( fp_kind ), PARAMETER :: SCALE_FACTOR = KG_TO_G * PPMV_TO_PPV
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_MR'
+    REAL(fp),     PARAMETER :: SCALE_FACTOR = KG_TO_G * PPMV_TO_PPV
     ! Local variables
-    ! ---------------
-
     INTEGER :: Id
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( ppmv < ZERO ) THEN
       Mixing_Ratio = -ONE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input ppmv < 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
     IF ( PRESENT( Molecule_ID ) ) THEN
-
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Assign ID value
       Id = Molecule_ID
-
     ELSE
-
-      ! - Default value is for water vapor
-      Id = 1
-
+      Id = 1  ! Default value is for water vapor
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- CONVERT PPMV TO MIXING RATIO --                     #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert volume to mass mixing ratio
     Mixing_Ratio = SCALE_FACTOR * ppmv * MOLECULAR_WEIGHT( Id ) / MW_DRYAIR
 
   END FUNCTION PPMV_to_MR_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PPMV_to_MR_rank1( ppmv,         &  ! Input
                              Molecule_ID,  &  ! Optional Input
                              Message_Log ) &  ! Error messaging
                            RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL,       INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: ppmv(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( ppmv ) ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio(SIZE(ppmv))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_MR'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_MR'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    DO k = 1, SIZE( ppmv )
-
+    ! Convert volume to mass mixing ratio
+    DO k = 1, SIZE(ppmv)
       Mixing_Ratio( k ) = PPMV_to_MR_scalar( ppmv( k ), &
-                                             Molecule_ID = Molecule_ID, &
-                                             Message_Log = Message_Log )
+                                             Molecule_ID=Molecule_ID, &
+                                             Message_Log=Message_Log )
       IF ( Mixing_Ratio( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION PPMV_to_MR_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -2188,72 +1339,49 @@ CONTAINS
 ! PURPOSE:
 !       Function to convert gas concentrations from ppmv to partial pressure
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Partial_Pressure = PPMV_to_PP( Pressure,                  &  ! Input
-!                                      ppmv,                      &  ! Input
-!                                      Water_Vapor = Water_Vapor, &  ! Optional Input
-!                                      Message_Log = Message_Log )   ! Error messaging
+!       Partial_Pressure = PPMV_to_PP( Pressure,                &  ! Input
+!                                      ppmv,                    &  ! Input
+!                                      Water_Vapor=Water_Vapor, &  ! Optional Input
+!                                      Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       ppmv:              Gas volume mixing ratio in ppmv.
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor partial pressure. If this argument is
 !                          not supplied, the mandatory input PPMV argument is
 !                          assumed to be water vapor.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Partial_Pressure:  Gas partial pressure. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       To convert volume mixing ratio in ppmv of a molecular species, 
@@ -2277,242 +1405,124 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PPMV_to_PP_scalar( Pressure,     &  ! Input
                               ppmv,         &  ! Input
                               Water_Vapor,  &  ! Optional Input
                               Message_Log ) &  ! Error messaging
                             RESULT( Partial_Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: ppmv
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Partial_Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Partial_Pressure
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_PP'
     ! Local variables
-    ! ---------------
+    REAL(fp) :: ppv
+    REAL(fp) :: Dry_Air_Pressure
 
-    REAL( fp_kind ) :: ppv
-    REAL( fp_kind ) :: Dry_Air_Pressure
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Partial_Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure < TOLERANCE .OR. &
          ppmv     < ZERO           ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Pressure = 0.0 or ppmv < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- CONVERT PPMV TO PARTIAL PRESSURE --                  #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------
     ! Convert input to parts-per
-    ! --------------------------
-
     ppv = PPMV_TO_PPV * ppmv
 
-
-    ! --------------------------------------
     ! Calculate the dry air partial pressure
-    ! --------------------------------------
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
+    IF ( PRESENT(Water_Vapor) ) THEN
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input Water_Vapor partial pressure < 0.0.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       Dry_Air_Pressure = Pressure - Water_Vapor
-
     ELSE
-
       Dry_Air_Pressure = Pressure * ( ONE / ( ONE + ppv ) )
-
     END IF
 
-
-    ! ------------------------------
     ! Calculate the partial pressure
-    ! ------------------------------
-
     Partial_Pressure = ppv * Dry_Air_Pressure
 
   END FUNCTION PPMV_to_PP_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PPMV_to_PP_rank1( Pressure,     &  ! Input
                              ppmv,         &  ! Input
                              Water_Vapor,  &  ! Optional Input
                              Message_Log ) &  ! Error messaging
                            RESULT( Partial_Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: ppmv(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Partial_Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Partial_Pressure(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_PP'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Partial_Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( ppmv ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(ppmv) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/ppmv array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+      
+    ! Calculate the partial pressure
+    IF ( PRESENT(Water_Vapor) ) THEN
+    
+      ! Water vapour argument is present
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-    END IF
-      
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
       DO k = 1, n
-  
         Partial_Pressure( k ) = PPMV_to_PP_scalar( Pressure( k ), &
                                                    ppmv( k ), &
-                                                   Water_Vapor = Water_Vapor( k ), &
-                                                   Message_Log = Message_Log )
+                                                   Water_Vapor=Water_Vapor( k ), &
+                                                   Message_Log=Message_Log )
         IF ( Partial_Pressure( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
-
+    
+      ! Water vapour argument is NOT present
       DO k = 1, n
-  
         Partial_Pressure( k ) = PPMV_to_PP_scalar( Pressure( k ), &
                                                    ppmv( k ), &
-                                                   Message_Log = Message_Log )
+                                                   Message_Log=Message_Log )
         IF ( Partial_Pressure( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION PPMV_to_PP_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -2524,72 +1534,49 @@ CONTAINS
 !       Function to convert gas concentrations from partial pressure to 
 !       volume mixing ratio in ppmv
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       ppmv = PP_to_PPMV( Pressure,                  &  ! Input
-!                          Partial_Pressure,          &  ! Input
-!                          Water_Vapor = Water_Vapor, &  ! Optional Input
-!                          Message_Log = Message_Log )   ! Error messaging
+!       ppmv = PP_to_PPMV( Pressure,                &  ! Input
+!                          Partial_Pressure,        &  ! Input
+!                          Water_Vapor=Water_Vapor, &  ! Optional Input
+!                          Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Partial_Pressure:  Gas partial pressure
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor volume mixing ratio. If this argument is
 !                          not supplied, the mandatory Partial_Pressure argument
 !                          is assumed to be water vapor.
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       ppmv:              Gas volume mixing ratio. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       To convert the partial pressure of a molecular species, designated
@@ -2619,240 +1606,124 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PP_to_PPMV_scalar( Pressure,         &  ! Input
                               Partial_Pressure, &  ! Input
                               Water_Vapor,      &  ! Optional Input
                               Message_Log )     &  ! Error messaging
                             RESULT( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Partial_Pressure
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Partial_Pressure
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_PPMV'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_PPMV'
     ! Local variables
-    ! ---------------
+    REAL(fp) :: ppv
+    REAL(fp) :: Dry_Air_Pressure
 
-    REAL( fp_kind ) :: ppv
-    REAL( fp_kind ) :: Dry_Air_Pressure
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure         < TOLERANCE .OR. &
-         Partial_Pressure < ZERO      ) THEN
+         Partial_Pressure < ZERO           ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input pressures < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- CONVERT PARTIAL PRESSURE TO PPMV --                  #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------------
     ! Calculate the dry air partial pressure
-    ! --------------------------------------
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
+    IF ( PRESENT(Water_Vapor) ) THEN
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input Water_Vapor ppmv < 0.0.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Convert water vapor ppmv to ppv
+      ! Convert water vapor ppmv to ppv
       ppv = PPMV_TO_PPV * Water_Vapor
-
       Dry_Air_Pressure = Pressure * ( ONE / ( ONE + ppv ) )
-
     ELSE
-
-      ! -- Input partial pressure is for water vapor
+      ! Input partial pressure is for water vapor
       Dry_Air_Pressure = Pressure - Partial_Pressure
-
     END IF
 
-
-    ! ---------------------------------
     ! Calculate the volume mixing ratio
-    ! ---------------------------------
-
     ppmv = PPV_TO_PPMV * Partial_Pressure / Dry_Air_Pressure
 
   END FUNCTION PP_to_PPMV_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PP_to_PPMV_rank1( Pressure,         &  ! Input
                              Partial_Pressure, &  ! Input
                              Water_Vapor,      &  ! Optional Input
                              Message_Log )     &  ! Error messaging
                            RESULT( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Partial_Pressure
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Partial_Pressure(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_PPMV'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_PPMV'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Partial_Pressure ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Partial_Pressure) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Partial_Pressure array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-    IF ( PRESENT( Water_Vapor ) ) THEN
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+    ! Calculate the volume mixing ratio
+    IF ( PRESENT(Water_Vapor) ) THEN
+
+      ! Water vapour argument is present
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
       DO k = 1, n
-
         ppmv( k ) = PP_to_PPMV_scalar( Pressure( k ), &
                                        Partial_Pressure( k ), &
-                                       Water_Vapor = Water_Vapor( k ), &
-                                       Message_Log = Message_Log )
+                                       Water_Vapor=Water_Vapor( k ), &
+                                       Message_Log=Message_Log )
         IF ( ppmv( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
+      ! Water vapour argument is NOT present
       DO k = 1, n
-
         ppmv( k ) = PP_to_PPMV_scalar( Pressure( k ), &
                                        Partial_Pressure( k ), &
-                                       Message_Log = Message_Log )
+                                       Message_Log=Message_Log )
         IF ( ppmv( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION PP_to_PPMV_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -2864,36 +1735,32 @@ CONTAINS
 !       Function to convert gas concentrations from mixing ratio in g/kg
 !       to partial pressure in hectoPascals.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Partial_Pressure = MR_to_PP( Pressure,                  &  ! Input
-!                                    Mixing_Ratio,              &  ! Input
-!                                    Molecule_ID = Molecule_ID, &  ! Optional Input
-!                                    Water_Vapor = Water_Vapor, &  ! Optional Input
-!                                    Message_Log = Message_Log )   ! Error messaging
+!       Partial_Pressure = MR_to_PP( Pressure,                &  ! Input
+!                                    Mixing_Ratio,            &  ! Input
+!                                    Molecule_ID=Molecule_ID, &  ! Optional Input
+!                                    Water_Vapor=Water_Vapor, &  ! Optional Input
+!                                    Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Mixing_Ratio:      Mass mixing ratio of gas.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Molecule_ID:       HITRAN molecular designation identifying the
 !                          molecule for which the concentration units
-!                          conversion is required. Valid values are:
+!                          conversion is required. If not specified, the
+!                          default value is that for water vapor.
+!                          Valid values are:
 !                            1: H2O       9: SO2      17: HI       25: H2O2
 !                            2: CO2      10: NO2      18: ClO      26: C2H2
 !                            3: O3       11: NH3      19: OCS      27: C2H6
@@ -2902,55 +1769,36 @@ CONTAINS
 !                            6: CH4      14: HF       22: N2       30: SF6
 !                            7: O2       15: HCl      23: HCN      31: H2S
 !                            8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                          If not specified, the default value is that for
-!                          water vapor, 1.
-!                          UNITS:      N/A.
+!                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Water_Vapor:       Water vapor partial pressure. If this argument is
-!                          not supplied, the mandatory Mixing_Ratio argument
+!                          not supplied, the mandatory MIXING_RATIO argument
 !                          is assumed to be water vapor.
 !                          This argument is ignored if the specified or default
 !                          molecule ID is set to 1.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Partial_Pressure:  Gas partial pressure. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       First a definition. In this routine, the mass mixing ratio of a gas
@@ -3069,142 +1917,79 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION MR_to_PP_scalar( Pressure,     &  ! Input
                             Mixing_Ratio, &  ! Input
                             Molecule_ID,  &  ! Optional Input
                             Water_Vapor,  &  ! Optional Input
                             Message_Log ) &  ! Error messaging
                           RESULT( Partial_Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL, INTENT( IN ) :: Molecule_ID
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Partial_Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Partial_Pressure
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'MR_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'MR_to_PP'
     ! Local variables
-    ! ---------------
-
     INTEGER :: Id
-    REAL( fp_kind ) :: w
+    REAL(fp) :: w
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Partial_Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- CHECK INPUT --                               #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure     < TOLERANCE .OR. &
          Mixing_Ratio < ZERO      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Pressure/Mixing_Ratio < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
     IF ( PRESENT( Molecule_ID ) ) THEN
-
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Assign ID value
       Id = Molecule_ID
-
     ELSE
-
-      ! - Default value is for water vapor
-      Id = 1
-
+      Id = 1  ! Default value is for water vapor
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#               -- CONVERT MIXING RATIO TO PARTIAL PRESSURE --             #
-    !#--------------------------------------------------------------------------#
-
-    ! ------------------------
     ! Calculate the "w" factor
-    ! ------------------------
-
     w = G_TO_KG * Mixing_Ratio * MW_DRYAIR / MOLECULAR_WEIGHT( Id )
 
-
-    ! -----------------------------------
     ! Convert amount based on molecule ID
-    ! -----------------------------------
-
     IF ( Id == 1 ) THEN
 
+      ! Conversion is for water vapor
       Partial_Pressure = ( w / ( ONE + w ) ) * Pressure
 
     ELSE
 
-      IF ( .NOT. PRESENT( Water_Vapor ) ) THEN
+      ! Conversion is for some other molecular species
+      IF ( .NOT. PRESENT(Water_Vapor) ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Must specify Water_Vapor partial pressure for '//&
                               'non-H2O Mixing_Ratio input.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input Water_Vapor partial pressure < 0.0.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       Partial_Pressure = w * ( Pressure - Water_Vapor )
 
     END IF
@@ -3212,149 +1997,73 @@ CONTAINS
   END FUNCTION MR_to_PP_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION MR_to_PP_rank1( Pressure,     &  ! Input
                            Mixing_Ratio, &  ! Input
                            Molecule_ID,  &  ! Optional Input
                            Water_Vapor,  &  ! Opotional Input
                            Message_Log ) &  ! Error messaging
                          RESULT( Partial_Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL,                 INTENT( IN ) :: Molecule_ID
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Partial_Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Partial_Pressure(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_PP'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Partial_Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- CHECK INPUT --                               #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Mixing_Ratio ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Mixing_Ratio) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Mixing_Ratio array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-    IF ( PRESENT( Water_Vapor ) ) THEN
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+    ! Calculate partial pressures
+    IF ( PRESENT(Water_Vapor) ) THEN
+
+      ! Water vapour argument is present
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -------------------------------
-      ! Water vapor argument was passed
-      ! -------------------------------
-
-      ! -- Check array size
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Inconsistent input Pressure/Water_Vapor array sizes.', &
-                              FAILURE, &
-                              Message_Log = Message_Log )
-        RETURN
-      ENDIF
-
-      ! -- Loop over elements
       DO k = 1, n
-
         Partial_Pressure( k ) = MR_to_PP_scalar( Pressure( k ), &
                                                  Mixing_Ratio( k ), &
-                                                 Molecule_ID = Molecule_ID, &
-                                                 Water_Vapor = Water_Vapor( k ), &
-                                                 Message_Log = Message_Log )
+                                                 Molecule_ID=Molecule_ID, &
+                                                 Water_Vapor=Water_Vapor( k ), &
+                                                 Message_Log=Message_Log )
         IF ( Partial_Pressure( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! -----------------------------------
       ! Water vapor argument was NOT passed
-      ! -----------------------------------
-
       DO k = 1, n
-
         Partial_Pressure( k ) = MR_to_PP_scalar( Pressure( k ), &
                                                  Mixing_Ratio( k ), &
-                                                 Molecule_ID = Molecule_ID, &
-                                                 Message_Log = Message_Log )
+                                                 Molecule_ID=Molecule_ID, &
+                                                 Message_Log=Message_Log )
         IF ( Partial_Pressure( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION MR_to_PP_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -3366,36 +2075,32 @@ CONTAINS
 !       Function to convert gas concentrations from partial pressure in
 !       hectoPascals to mass mixing ratio in g/kg.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Mixing_Ratio = PP_to_MR( Pressure,                  &  ! Input
-!                                Partial_Pressure,          &  ! Input
-!                                Molecule_ID = Molecule_ID, &  ! Optional Input
-!                                Water_Vapor = Water_Vapor, &  ! Optional Input
-!                                Message_Log = Message_Log )   ! Error messaging
+!       Mixing_Ratio = PP_to_MR( Pressure,                &  ! Input
+!                                Partial_Pressure,        &  ! Input
+!                                Molecule_ID=Molecule_ID, &  ! Optional Input
+!                                Water_Vapor=Water_Vapor, &  ! Optional Input
+!                                Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Partial_Pressure:  Partial pressure of gas.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Molecule_ID:       HITRAN molecular designation identifying the
 !                          molecule for which the concentration units
-!                          conversion is required. Valid values are:
+!                          conversion is required. If not specified, the
+!                          default value is that for water vapor.
+!                          Valid values are:
 !                            1: H2O       9: SO2      17: HI       25: H2O2
 !                            2: CO2      10: NO2      18: ClO      26: C2H2
 !                            3: O3       11: NH3      19: OCS      27: C2H6
@@ -3404,55 +2109,36 @@ CONTAINS
 !                            6: CH4      14: HF       22: N2       30: SF6
 !                            7: O2       15: HCl      23: HCN      31: H2S
 !                            8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                          If not specified, the default value is that for
-!                          water vapor, 1.
-!                          UNITS:      N/A.
+!                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Water_Vapor:       Water vapor mass mixing ratio. If this argument is
-!                          not supplied, the mandatory Partial_Pressure argument
+!                          not supplied, the mandatory PARTIAL_PRESSURE argument
 !                          is assumed to be water vapor.
 !                          This argument is ignored if the specified or default
 !                          molecule ID is set to 1.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Mixing_Ratio:      Mass mixing ratio of gas. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      g/kg
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       First a definition. In this routine, the mass mixing ratio of a gas
@@ -3591,284 +2277,158 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PP_to_MR_scalar( Pressure,         &  ! Input
                             Partial_Pressure, &  ! Input
                             Molecule_ID,      &  ! Optional Input
                             Water_Vapor,      &  ! Optional Input
                             Message_Log )     &  ! Error messaging
                           RESULT( Mixing_Ratio )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Partial_Pressure
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL, INTENT( IN ) :: Molecule_ID
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Partial_Pressure
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Mixing_Ratio
-
-
-    ! ----------------
+    REAL(fp) :: Mixing_Ratio
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'PP_to_MR'
-
-
-    ! ---------------
+    CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'PP_to_MR'
     ! Local variables
-    ! ---------------
-
     INTEGER :: Id
-    REAL( fp_kind ) :: w
-    REAL( fp_kind ) :: Dry_Air_Pressure
+    REAL(fp) :: w
+    REAL(fp) :: Dry_Air_Pressure
 
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mixing_Ratio = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- CHECK INPUT --                               #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure         < TOLERANCE .OR. &
          Partial_Pressure < ZERO      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Pressure/Partial_Pressure < or = 0.0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
     IF ( PRESENT( Molecule_ID ) ) THEN
-
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Assign ID value
       Id = Molecule_ID
-
     ELSE
-
-      ! -- Default value is for water vapor
-      Id = 1
-
+      Id = 1  ! Default value is for water vapor
     END IF
 
 
 
-    !#--------------------------------------------------------------------------#
-    !#               -- CONVERT PARTIAL PRESSURE TO MIXING RATIO --             #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------------
     ! Calculate the dry air partial pressure
-    ! --------------------------------------
-
     IF ( Id == 1 ) THEN
 
+      ! Conversion is for water vapor
       Dry_Air_Pressure = Pressure - Partial_Pressure
 
     ELSE
 
+      ! Conversion is for some other molecular species
       IF ( .NOT. PRESENT( Water_Vapor ) ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Must specify Water_Vapor mixing ratio for '//&
                               'non-H2O Partial_Pressure input.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input Water_Vapor mixing ratio < 0.0.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       w = G_TO_KG * Water_Vapor * MW_DRYAIR / MW_H2O
       Dry_Air_Pressure = Pressure / ( ONE + w ) 
 
     END IF
 
-
-    ! -------------------------------
     ! Calculate the mass mixing ratio
-    ! -------------------------------
-
     w = KG_TO_G * MOLECULAR_WEIGHT( Id ) / MW_DRYAIR
     Mixing_Ratio = w * Partial_Pressure / Dry_Air_Pressure
 
   END FUNCTION PP_to_MR_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PP_to_MR_rank1( Pressure,     &  ! Input
                            Mixing_Ratio, &  ! Input
                            Molecule_ID,  &  ! Optional Input
                            Water_Vapor,  &  ! Opotional Input
                            Message_Log ) &  ! Error messaging
                          RESULT( Partial_Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
-
-    ! -- Optional input
-    INTEGER,         OPTIONAL,                 INTENT( IN ) :: Molecule_ID
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Mixing_Ratio(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Partial_Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Partial_Pressure(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_MR'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Partial_Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- CHECK INPUT --                               #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Mixing_Ratio ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Mixing_Ratio) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Mixing_Ratio array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
+    ! Calculate partial pressures
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -------------------------------
-      ! Water vapor argument was passed
-      ! -------------------------------
-
-      ! -- Check array size
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+      ! Water vapour argument is present
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-
-      ! -- Loop over elements
       DO k = 1, n
-
         Partial_Pressure( k ) = PP_to_MR_scalar( Pressure( k ), &
                                                  Mixing_Ratio( k ), &
-                                                 Molecule_ID = Molecule_ID, &
-                                                 Water_Vapor = Water_Vapor( k ), &
-                                                 Message_Log = Message_Log )
+                                                 Molecule_ID=Molecule_ID, &
+                                                 Water_Vapor=Water_Vapor( k ), &
+                                                 Message_Log=Message_Log )
         IF ( Partial_Pressure( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! -----------------------------------
       ! Water vapor argument was NOT passed
-      ! -----------------------------------
-
       DO k = 1, n
-
         Partial_Pressure( k ) = PP_to_MR_scalar( Pressure( k ), &
                                                  Mixing_Ratio( k ), &
-                                                 Molecule_ID = Molecule_ID, &
-                                                 Message_Log = Message_Log )
+                                                 Molecule_ID=Molecule_ID, &
+                                                 Message_Log=Message_Log )
         IF ( Partial_Pressure( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION PP_to_MR_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -3880,36 +2440,32 @@ CONTAINS
 !       Function to convert gas concentrations in pressure units to 
 !       mass density.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Mass_Density = PP_to_MD( Pressure,                  &  ! Input
-!                                Temperature,               &  ! Input
-!                                Molecule_ID = Molecule_ID, &  ! Optional Input
-!                                Message_Log = Message_Log  )  ! Error messaging
+!       Mass_Density = PP_to_MD( Pressure,                &  ! Input
+!                                Temperature,             &  ! Input
+!                                Molecule_ID=Molecule_ID, &  ! Optional Input
+!                                Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total or partial pressure to provide number
 !                          density of air or specific gas species.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Temperature:       Atmospheric temperature
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Same as input pressure
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Molecule_ID:       HITRAN molecular designation identifying the
 !                          molecule for which the concentration units
-!                          conversion is required. Valid values are:
+!                          conversion is required. If not specified, the
+!                          default value is that for water vapor.
+!                          Valid values are:
 !                            1: H2O       9: SO2      17: HI       25: H2O2
 !                            2: CO2      10: NO2      18: ClO      26: C2H2
 !                            3: O3       11: NH3      19: OCS      27: C2H6
@@ -3918,45 +2474,26 @@ CONTAINS
 !                            6: CH4      14: HF       22: N2       30: SF6
 !                            7: O2       15: HCl      23: HCN      31: H2S
 !                            8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                          If not specified, the default value is that for
-!                          water vapor, 1.
-!                          UNITS:      N/A.
+!                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Mass_Density:      Number density of gas. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      g/m^3
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same as input pressure/temperature.)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       The ideal gas law is
@@ -4026,206 +2563,96 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PP_to_MD_scalar( Pressure,     &  ! Input
                             Temperature,  &  ! Input
                             Molecule_ID,  &  ! Optional Input
                             Message_Log ) &  ! Error messaging
                           RESULT( Mass_Density )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Pressure
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),          INTENT(IN) :: Pressure
+    REAL(fp),          INTENT(IN) :: Temperature
+    INTEGER,        OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Mass_Density
-
-
-    ! ----------------
+    REAL(fp) :: Mass_Density
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_MD'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_MD'
     ! Local variables
-    ! ---------------
-
     INTEGER :: Id
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
-    MAss_Density = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
+    Mass_Density = -ONE
     IF ( Pressure    < ZERO      .OR. &
          Temperature < TOLERANCE      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input partial pressure < 0, or temperature = 0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
     IF ( PRESENT( Molecule_ID ) ) THEN
-
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Assign ID value
       Id = Molecule_ID
-
     ELSE
-
-      ! -- Default value is for water vapor
-      Id = 1
-
+      Id = 1  ! Default value is for water vapor
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#              -- CONVERT PARTIAL PRESSURE TO MASS DENSITY --              #
-    !#--------------------------------------------------------------------------#
-
-    Mass_Density = HPA_TO_PA * Pressure * MOLECULAR_WEIGHT( Id ) / &
-    !              ---------------------------------------------
-                               ( Temperature * R0 )
+    ! Convert partial pressure to mass density
+    Mass_Density = HPA_TO_PA * Pressure * MOLECULAR_WEIGHT( Id ) / ( Temperature * R0 )
 
   END FUNCTION PP_to_MD_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PP_to_MD_rank1( Pressure,     &  ! Input
                            Temperature,  &  ! Input
                            Molecule_ID,  &  ! Optional Input
                            Message_Log ) &  ! Error messaging
                          RESULT( Mass_Density )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL,        INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Mass_Density
-
-
-    ! ----------------
+    REAL(fp) :: Mass_Density(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_MD'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_MD'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Mass_Density = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert partial pressure to mass density
     DO k = 1, n
-
       Mass_Density( k ) = PP_to_MD_scalar( Pressure( k ), &
                                            Temperature( k ), &
-                                           Molecule_ID = Molecule_ID, &
-                                           Message_Log = Message_Log )
+                                           Molecule_ID=Molecule_ID, &
+                                           Message_Log=Message_Log )
       IF ( Mass_Density( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION PP_to_MD_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -4237,35 +2664,31 @@ CONTAINS
 !       Function to convert gas concentration mass density to partial
 !       pressure.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Pressure = MD_to_PP( Mass_Density,              &  ! Input
-!                            Temperature,               &  ! Input
-!                            Molecule_ID = Molecule_ID, &  ! Optional Input
-!                            Message_Log = Message_Log  )  ! Error messaging
+!       Pressure = MD_to_PP( Mass_Density,            &  ! Input
+!                            Temperature,             &  ! Input
+!                            Molecule_ID=Molecule_ID, &  ! Optional Input
+!                            Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Mass_Density:      Number density of gas.
 !                          UNITS:      g/m^3
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Temperature:       Atmospheric temperature
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Same as input mass density
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Mass_Density
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Molecule_ID:       HITRAN molecular designation identifying the
 !                          molecule for which the concentration units
-!                          conversion is required. Valid values are:
+!                          conversion is required. If not specified, the
+!                          default value is that for water vapor.
+!                          Valid values are:
 !                            1: H2O       9: SO2      17: HI       25: H2O2
 !                            2: CO2      10: NO2      18: ClO      26: C2H2
 !                            3: O3       11: NH3      19: OCS      27: C2H6
@@ -4274,44 +2697,25 @@ CONTAINS
 !                            6: CH4      14: HF       22: N2       30: SF6
 !                            7: O2       15: HCl      23: HCN      31: H2S
 !                            8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                          If not specified, the default value is that for
-!                          water vapor, 1.
-!                          UNITS:      N/A.
+!                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Pressure:          Partial pressure for specified gas species.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same as mass density/temperature)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Mass_Density
 !
 ! PROCEDURE:
 !       The ideal gas law is
@@ -4391,205 +2795,96 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION MD_to_PP_scalar( Mass_Density, &  ! Input
                             Temperature,  &  ! Input
                             Molecule_ID,  &  ! Optional Input
                             Message_Log ) &  ! Error messaging
                           RESULT( Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Mass_Density
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Mass_Density
+    REAL(fp),               INTENT(IN) :: Temperature
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Pressure
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MD_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MD_to_PP'
     ! Local variables
-    ! ---------------
-
     INTEGER :: Id
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Mass_Density < ZERO      .OR. &
          Temperature  < TOLERANCE      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input mass density < 0, or temperature = 0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
     IF ( PRESENT( Molecule_ID ) ) THEN
-
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Assign ID value
       Id = Molecule_ID
-
     ELSE
-
-      ! -- Default value is for water vapor
-      Id = 1
-
+      Id = 1  ! Default value is for water vapor
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#              -- CONVERT MASS DENSITY TO PARTIAL PRESSURE --              #
-    !#--------------------------------------------------------------------------#
-
-    Pressure = PA_TO_HPA * Mass_Density * R0 * Temperature / & 
-    !          -------------------------------------------
-                          MOLECULAR_WEIGHT( Id )
+    ! Convert mass density to partial pressure
+    Pressure = PA_TO_HPA * Mass_Density * R0 * Temperature / MOLECULAR_WEIGHT( Id )
 
   END FUNCTION MD_to_PP_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION MD_to_PP_rank1( Mass_Density, &  ! Input
                            Temperature,  &  ! Input
                            Molecule_ID,  &  ! Optional Input
                            Message_Log ) &  ! Error messaging
                          RESULT( Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Mass_Density
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL,        INTENT( IN ) :: Molecule_ID
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Mass_Density(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Mass_Density ) ) :: Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Pressure(SIZE(Mass_Density))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MD_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MD_to_PP'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Mass_Density )
-
-    IF ( SIZE( Temperature ) /= n ) THEN
+    n = SIZE(Mass_Density)
+    IF ( SIZE(Temperature) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Mass Density/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Convert mass density to partial pressure
     DO k = 1, n
-
       Pressure( k ) = MD_to_PP_scalar( Mass_Density( k ), &
                                        Temperature( k ), &
-                                       Molecule_ID = Molecule_ID, &
-                                       Message_Log = Message_Log )
+                                       Molecule_ID=Molecule_ID, &
+                                       Message_Log=Message_Log )
       IF ( Pressure( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION MD_to_PP_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -4601,30 +2896,24 @@ CONTAINS
 !       Function to convert gas concentrations in pressure units to 
 !       number density.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
 !       Number_Density = PP_to_ND( Pressure,                 &  ! Input
 !                                  Temperature,              &  ! Input
-!                                  Message_Log = Message_Log )  ! Error messaging
+!                                  Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total or partial pressure to provide number
 !                          density of air or specific gas species.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Temperature:       Atmospheric temperature
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:       Character string specifying a filename in which any
@@ -4632,33 +2921,16 @@ CONTAINS
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Number_Density:    Number density of gas. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      molecules/m^3
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       The ideal gas law is
@@ -4722,166 +2994,77 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PP_to_ND_scalar( Pressure,     &  ! Input
                             Temperature,  &  ! Input
                             Message_Log ) &  ! Error messaging
                           RESULT( Number_Density )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Pressure
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Number_Density
-
-
-    ! ----------------
+    REAL(fp) :: Number_Density
     ! Local parameters
-    ! ----------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_ND'
 
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_ND'
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Number_Density = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure    < ZERO      .OR. &
          Temperature < TOLERANCE      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input partial Pressure < 0, or Temperature = 0.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#             -- CONVERT PARTIAL PRESSURE TO NUMBER DENSITY --             #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert partial pressure to number density
     Number_Density = HPA_TO_PA * Pressure * L0 * T0 / ( Temperature * P0 )
 
   END FUNCTION PP_to_ND_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PP_to_ND_rank1( Pressure,     &  ! Input
                            Temperature,  &  ! Input
                            Message_Log ) &  ! Error messaging
                          RESULT( Number_Density )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Number_Density
-
-
-    ! ----------------
+    REAL(fp) :: Number_Density(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_ND'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_ND'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Number_Density = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature ) /= n ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert partial pressure to number density
     DO k = 1, n
-
       Number_Density( k ) = PP_to_ND_scalar( Pressure( k ), &
                                              Temperature( k ), &
-                                             Message_Log = Message_Log )
+                                             Message_Log=Message_Log )
       IF ( Number_Density( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION PP_to_ND_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -4893,29 +3076,23 @@ CONTAINS
 !       Function to convert gas concentrations from number density to
 !       pressure units.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Partial_Pressure = ND_to_PP( Number_Density,           &  ! Input
-!                                    Temperature,              &  ! Input
-!                                    Message_Log = Message_Log )  ! Error messaging
+!       Partial_Pressure = ND_to_PP( Number_Density,         &  ! Input
+!                                    Temperature,            &  ! Input
+!                                    Message_Log=Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Number_Density:    Molecular density.
 !                          UNITS:      molecules/m^3
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Temperature:       Atmospheric Temperature
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Number_Density
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:       Character string specifying a filename in which any
@@ -4923,33 +3100,16 @@ CONTAINS
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Partial_Pressure:  Gas partial pressure. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Number_Density)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Number_Density
 !
 ! PROCEDURE:
 !       The ideal gas law is
@@ -5014,167 +3174,77 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION ND_to_PP_scalar( Number_Density, &  ! Input
                             Temperature,    &  ! Input
                             Message_Log )   &  ! Optional input
                           RESULT( Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),          INTENT( IN ) :: Number_Density
-    REAL( fp_kind ),          INTENT( IN ) :: Temperature
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Number_Density
+    REAL(fp),               INTENT(IN) :: Temperature
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Pressure
     ! Local parameters
-    ! ----------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ND_to_PP'
 
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'ND_to_PP'
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Number_Density < ZERO      .OR. &
          Temperature    < TOLERANCE      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input number density < 0.0, or Temperature < or = 0.0', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- CONVERT NUMBER DENSITY TO PRESSURE --                 #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert number density to pressure
     Pressure = PA_TO_HPA * P0 * Number_Density * Temperature / ( L0 * T0 )
-
 
   END FUNCTION ND_to_PP_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION ND_to_PP_rank1( Number_Density, &  ! Input
                            Temperature,    &  ! Input
                            Message_Log )   &  ! Optional input
                          RESULT( Pressure )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Number_Density
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN ) :: Temperature
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Number_Density(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Number_Density ) ) :: Pressure
-
-
-    ! ----------------
+    REAL(fp) :: Pressure(SIZE(Number_Density))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'ND_to_PP'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ND_to_PP'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Pressure = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Number_Density )
-
-    IF ( SIZE( Temperature ) /= n ) THEN
+    n = SIZE(Number_Density)
+    IF ( SIZE(Temperature) /= n ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Number_Density/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
+    ! Convert number density to pressure
     DO k = 1, n
-
       Pressure( k ) = ND_to_PP_scalar( Number_Density( k ), &
-                                       Temperature( k ),    &
-                                       Message_Log = Message_Log )
+                                       Temperature( k ), &
+                                       Message_Log=Message_Log )
       IF ( Pressure( k ) < ZERO ) RETURN
-
     END DO
 
   END FUNCTION ND_to_PP_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -5185,82 +3255,56 @@ CONTAINS
 ! PURPOSE:
 !       Function to convert volume mixing ratio in ppmv to number density.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Number_Density = PPMV_to_ND( Pressure,                  &  ! Input
-!                                    Temperature,               &  ! Input
-!                                    ppmv,                      &  ! Input
-!                                    Water_Vapor = Water_Vapor, &  ! Optional Input
-!                                    Message_Log = Message_Log  )  ! Error messaging
+!       Number_Density = PPMV_to_ND( Pressure,                &  ! Input
+!                                    Temperature,             &  ! Input
+!                                    ppmv,                    &  ! Input
+!                                    Water_Vapor=Water_Vapor, &  ! Optional Input
+!                                    Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:         Total atmospheric pressure.
 !                         UNITS:      hectoPascals, hPa
-!                         TYPE:       REAL( fp_kind )
+!                         TYPE:       REAL(fp)
 !                         DIMENSION:  Scalar or Rank-1 (K x 1)
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:      Atmospheric temperature
 !                         UNITS:      Kelvin, K
-!                         TYPE:       REAL( fp_kind )
-!                         DIMENSION:  Scalar or Rank-1 (K x 1)
-!                         ATTRIBUTES: INTENT( IN )
+!                         TYPE:       REAL(fp)
+!                         DIMENSION:  Same as Pressure
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       ppmv:             Volume mixing ratio.
 !                         UNITS:      ppmv
-!                         TYPE:       REAL( fp_kind )
-!                         DIMENSION:  Scalar or Rank-1 (K x 1)
-!                         ATTRIBUTES: INTENT( IN )
+!                         TYPE:       REAL(fp)
+!                         DIMENSION:  Same as Pressure
+!                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:      Water vapor number density. If this argument is
 !                         not supplied, the mandatory PPMV input argument
 !                         is assumed to be water vapor.
 !                         UNITS:      molecules/m^3
-!                         TYPE:       REAL( fp_kind )
+!                         TYPE:       REAL(fp)
 !                         DIMENSION:  Scalar or Rank-1 (K x 1)
-!                         ATTRIBUTES: INTENT( IN )
+!                         ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:      Character string specifying a filename in which any
 !                         Messages will be logged. If not specified, or if an
 !                         error occurs opening the log file, the default action
 !                         is to output Messages to standard output.
 !                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
+!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                         ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Number_Density:   Number density of gas. If an error occurs,
 !                         -1.0 is returned.
 !                         UNITS:      molecules/m^3
-!                         TYPE:       REAL( fp_kind )
-!                         DIMENSION:  Scalar or Rank-1
-!                                     (same dimensionality as input Pressure)
-!
-! CALLS:
-!       PP_to_ND:         Function to calculate number density
-!                         given the pressure.
-!
-!       Display_Message:  Subroutine to output messages
-!                         SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                         TYPE:       REAL(fp)
+!                         DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       To convert the volume mixing ratio of a molecular species, designated
@@ -5296,129 +3340,72 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PPMV_to_ND_scalar( Pressure,     &  ! Input
                               Temperature,  &  ! Input
                               ppmv,         &  ! Input
                               Water_Vapor,  &  ! Optional input
                               Message_Log ) &  ! Error messaging
                             RESULT( Number_Density )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: ppmv
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: Number_Density
-
-
-    ! ----------------
+    REAL(fp) :: Number_Density
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_ND'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_ND'
     ! Local variables
-    ! ---------------
+    REAL(fp) :: ppv
+    REAL(fp) :: Total_Density
 
-    REAL( fp_kind ) :: ppv
-    REAL( fp_kind ) :: Total_Density
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Number_Density = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure    < ZERO      .OR. &
          Temperature < TOLERANCE .OR. &
          ppmv        < ZERO           ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input pressure,ppmv < 0.0, or temperature < or = 0.0', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- CONVERT PPMV TO NUMBER DENSITY --                  #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------
     ! Convert ppmv to ppv
-    ! -------------------
-
     ppv = PPMV_TO_PPV * ppmv
 
-
-    ! ----------------------------------
     ! Calculate total air number density
-    ! ----------------------------------
-
     Total_Density = PP_to_ND_scalar( Pressure, &
                                      Temperature, &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
     IF ( Total_Density < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
+    ! Calculate the molecular number density
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-    ! ----------------------------
-    ! Calculate the number density
-    ! ----------------------------
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
+      ! Water vapor argument is present
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input water vapor number density < 0.0', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       Number_Density = ppv * ( Total_Density - Water_Vapor )
 
     ELSE
 
+      ! Water vapor argument was NOT passed
       Number_Density = ( ppv / ( ONE + ppv ) ) * Total_Density
 
     END IF
@@ -5426,139 +3413,74 @@ CONTAINS
   END FUNCTION PPMV_to_ND_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PPMV_to_ND_rank1( Pressure,     &  ! Input
                              Temperature,  &  ! Input
                              ppmv,         &  ! Input
                              Water_Vapor,  &  ! Optional input
                              Message_Log ) &  ! Error messaging
                            RESULT( Number_Density )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: ppmv(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: Number_Density
-
-
-    ! ----------------
+    REAL(fp) :: Number_Density(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_ND'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_ND'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Setup
     Number_Density = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature ) /= n .OR. &
-         SIZE( ppmv        ) /= n      ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature) /= n .OR. &
+         SIZE(ppmv)        /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
+    ! Calculate the molecular number density
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -------------------------------
       ! Water vapor argument was passed
-      ! -------------------------------
-
-      ! -- Check size
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       ENDIF
-
-      ! -- Loop over elements
       DO k = 1, n
-
-        Number_Density( k ) = PPMV_to_ND_scalar( Pressure( k ),    &
+        Number_Density( k ) = PPMV_to_ND_scalar( Pressure( k ), &
                                                  Temperature( k ), &
-                                                 ppmv( k ),        &
-                                                 Water_Vapor = Water_Vapor( k ), &
-                                                 Message_Log = Message_Log )
+                                                 ppmv( k ), &
+                                                 Water_Vapor=Water_Vapor( k ), &
+                                                 Message_Log=Message_Log )
         IF ( Number_Density( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! -------------------------------------
       ! Water vapor argument was *NOT* passed
-      ! -------------------------------------
-
       DO k = 1, n
-
-        Number_Density( k ) = PPMV_to_ND_scalar( Pressure( k ),    &
+        Number_Density( k ) = PPMV_to_ND_scalar( Pressure( k ), &
                                                  Temperature( k ), &
-                                                 ppmv( k ),        &
-                                                 Message_Log = Message_Log )
+                                                 ppmv( k ), &
+                                                 Message_Log=Message_Log )
         IF ( Number_Density( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION PPMV_to_ND_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -5570,82 +3492,56 @@ CONTAINS
 !       Function to convert gas concentrations from number density to volume
 !       mixing ratio in ppmv.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       ppmv = ND_to_PPMV( Pressure,                  &  ! Input
-!                          Temperature,               &  ! Input
-!                          Number_Density,            &  ! Input
-!                          Water_Vapor = Water_Vapor, &  ! Optional Input
-!                          Message_Log = Message_Log  )  ! Error messaging
+!       ppmv = ND_to_PPMV( Pressure,                &  ! Input
+!                          Temperature,             &  ! Input
+!                          Number_Density,          &  ! Input
+!                          Water_Vapor=Water_Vapor, &  ! Optional Input
+!                          Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Total atmospheric pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Temperature:       Atmospheric temperature
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 !       Number_Density:    Molecular number density.
 !                          UNITS:      molecules/m^3
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor volume mixing ratio. If this argument is
-!                          not supplied, the mandatory Number_Density input
+!                          not supplied, the mandatory NUMBER_DENSITY input
 !                          argument is assumed to be water vapor.
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       ppmv:              Gas volume mixing ratio. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       PP_to_ND:         Function to calculate number density
-!                         given the tressure.
-!
-!       Display_Message:  Subroutine to output messages
-!                         SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       To convert the number density of a molecular species, designated
@@ -5686,274 +3582,149 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION ND_to_PPMV_scalar( Pressure,       &  ! Input
                               Temperature,    &  ! Input
                               Number_Density, &  ! Input
                               Water_Vapor,    &  ! Optional Input
                               Message_Log )   &  ! Error messaging
                             RESULT( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Number_Density
-
-    ! -- Optional Input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-   
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: Number_Density
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'ND_to_PPMV'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ND_to_PPMV'
     ! Local variables
-    ! ---------------
-
-    REAL( fp_kind ) :: Total_Density
-    REAL( fp_kind ) :: ppv
-    REAL( fp_kind ) :: Dry_Air_Density
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    REAL(fp) :: Total_Density
+    REAL(fp) :: ppv
+    REAL(fp) :: Dry_Air_Density
+    
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
     IF ( Pressure       < ZERO      .OR. &
          Temperature    < TOLERANCE .OR. &
          Number_Density < ZERO           ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input pressure, number density < 0.0, or Temperature < or = 0.0', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- CONVERT NUMBER DENSITY TO PPMV --                   #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------------------------------
     ! Calculate total air number density
-    ! ----------------------------------
-
     Total_Density = PP_to_ND_scalar( Pressure, &
                                      Temperature, &
-                                     Message_Log = Message_Log )
+                                     Message_Log=Message_Log )
     IF ( Total_Density < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
-
-    ! ------------------------------------
     ! Calculate the dry air number density
-    ! ------------------------------------
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
+      ! Water vapor argument is present
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input water vapor volume mixing ratio < 0.0.', &
                               FAILURE, &
-                             Message_Log = Message_Log )
+                             Message_Log=Message_Log )
         RETURN
       END IF
-
       ppv = PPMV_TO_PPV * Water_Vapor
-
       Dry_Air_Density = Total_Density * ( ONE / ( ONE + ppv ) )
 
     ELSE
 
+      ! Water vapor argument was *NOT* passed
       Dry_Air_Density = Total_Density - Number_Density
 
     END IF
 
-
-    ! ---------------------------------
     ! Calculate the volume mixing ratio
-    ! ---------------------------------
-
     ppmv = PPV_TO_PPMV * Number_Density / Dry_Air_Density
 
   END FUNCTION ND_to_PPMV_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION ND_to_PPMV_rank1( Pressure,       &  ! Input
                              Temperature,    &  ! Input
                              Number_Density, &  ! Input
                              Water_Vapor,    &  ! Optional Input
                              Message_Log )   &  ! Error messaging
                            RESULT( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Number_Density
-
-    ! -- Optional Input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-   
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Number_Density(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'ND_to_PPMV'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ND_to_PPMV'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature    ) /= n .OR. &
-         SIZE( Number_Density ) /= n      ) THEN
-      ppmv = -ONE
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature)    /= n .OR. &
+         SIZE(Number_Density) /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Number_Density/Temperature array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
+    ! Calculate the volume mixing ratio
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -------------------------------
       ! Water vapor argument was passed
-      ! -------------------------------
-
-      ! -- Check array size
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Loop over elements
       DO k = 1, n
-
-        ppmv( k ) = ND_to_PPMV_scalar( Pressure( k ),       &
-                                       Temperature( k ),    &
+        ppmv( k ) = ND_to_PPMV_scalar( Pressure( k ), &
+                                       Temperature( k ), &
                                        Number_Density( k ), &
-                                       Water_Vapor = Water_Vapor( k ), &
-                                       Message_Log = Message_Log )
+                                       Water_Vapor=Water_Vapor( k ), &
+                                       Message_Log=Message_Log )
         IF ( ppmv( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! -------------------------------------
       ! Water vapor argument was *NOT* passed
-      ! -------------------------------------
-
       DO k = 1, n
-
-        ppmv( k ) = ND_to_PPMV_scalar( Pressure( k ),       &
-                                       Temperature( k ),    &
+        ppmv( k ) = ND_to_PPMV_scalar( Pressure( k ), &
+                                       Temperature( k ), &
                                        Number_Density( k ), &
-                                       Message_Log = Message_Log )
+                                       Message_Log=Message_Log )
         IF ( ppmv( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
 
   END FUNCTION ND_to_PPMV_rank1
-
-
-
 
 
 !------------------------------------------------------------------------------
@@ -5965,86 +3736,63 @@ CONTAINS
 !       Function to convert layer gas concentrations from volume mixing ratio
 !       in ppmv to column density in kmol.cm^-2.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       kmol_per_cm2 = PPMV_to_KMOL( Pressure,                  &  ! Input
-!                                    Temperature,               &  ! Input
-!                                    Delta_Z,                   &  ! Input
-!                                    ppmv,                      &  ! Input
-!                                    Water_Vapor = Water_Vapor, &  ! Optional Input
-!                                    Message_Log = Message_Log  )  ! Error messaging
+!       kmol_per_cm2 = PPMV_to_KMOL( Pressure,                &  ! Input
+!                                    Temperature,             &  ! Input
+!                                    Delta_Z,                 &  ! Input
+!                                    ppmv,                    &  ! Input
+!                                    Water_Vapor=Water_Vapor, &  ! Optional Input
+!                                    Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Average layer pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:       Average layer temperature
 !                          UNITS:      Kelvin, K (K)
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Delta_Z:           Layer thickness
 !                          UNITS:      metres, m
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       ppmv:              Average layer gas concentration
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor column density. If this argument is
-!                          not supplied, the mandatory ppmv input
+!                          not supplied, the mandatory PPMV input
 !                          argument is assumed to be water vapor.
-!                          UNITS:      kmoles/cm^2
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          UNITS:      kmol.cm^-2
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       kmol_per_cm2:      Layer gas concentration. If an error occurs,
 !                          -1.0 is returned.
-!                          UNITS:      kmoles/cm^2
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          UNITS:      kmol.cm^-2
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same input Pressure
 !
 ! PROCEDURE:
 !       The column density of a particular molecular species, designated
@@ -6094,287 +3842,154 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION PPMV_to_KMOL_scalar( Pressure,     &  ! Input
                                 Temperature,  &  ! Input
                                 Delta_Z,      &  ! Input
                                 ppmv,         &  ! Input
                                 Water_Vapor,  &  ! Optional input
                                 Message_Log ) &  ! Error messaging
-                              RESULT ( kmol_per_cm2 )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+                              RESULT( kmol_per_cm2 )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Delta_Z
-    REAL( fp_kind ),           INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
- 
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: Delta_Z
+    REAL(fp),               INTENT(IN) :: ppmv
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: kmol_per_cm2
-
-
-    ! ----------------
+    REAL(fp) :: kmol_per_cm2
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
-
-    REAL( fp_kind ), PARAMETER :: SCALE_FACTOR = 1.0e-07_fp_kind / NA
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
+    REAL(fp),     PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
     ! Local variables
-    ! ---------------
-
-    REAL( fp_kind ) :: ppv
-    REAL( fp_kind ) :: Number_Density
-    REAL( fp_kind ) :: Column_Density
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    REAL(fp) :: ppv
+    REAL(fp) :: Number_Density
+    REAL(fp) :: Column_Density
+    
+    ! Setup
     kmol_per_cm2 = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    IF ( Pressure       < TOLERANCE .OR. &
-         Temperature    < TOLERANCE .OR. &
-         ABS( Delta_Z ) < TOLERANCE .OR. &
-         ppmv           < ZERO           ) THEN
+    IF ( Pressure     < TOLERANCE .OR. &
+         Temperature  < TOLERANCE .OR. &
+         ABS(Delta_Z) < TOLERANCE .OR. &
+         ppmv         < ZERO           ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input values < or = 0.0 found.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- CONVERT PPMV TO KMOL.CM^-2 --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------
     ! Convert ppmv to ppv
-    ! -------------------
-
     ppv = PPMV_TO_PPV * ppmv
 
-
-    ! ----------------------------------------------------
     ! Calculate total air number density in molecules.m^-3
-    ! ----------------------------------------------------
-
     Number_Density = PP_to_ND_scalar( Pressure, &
                                       Temperature, &
-                                      Message_Log = Message_Log )
+                                      Message_Log=Message_Log )
     IF ( Number_Density < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
-
-    ! ------------------------------------------------
     ! Calculate total air column density in kmol.cm^-2
-    ! ------------------------------------------------
+    Column_Density = SCALE_FACTOR * ABS(Delta_Z) * Number_Density
 
-    Column_Density = SCALE_FACTOR * ABS( Delta_Z ) * Number_Density
-
-
-    ! --------------------------------
     ! Calculate the gas column density
-    ! --------------------------------
-
     IF ( PRESENT( Water_Vapor ) ) THEN
-
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input water vapor column density < 0.0', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
       kmol_per_cm2 = ppv * ( Column_Density - Water_Vapor )
-
     ELSE
-
       kmol_per_cm2 = ( ppv / ( ONE + ppv ) ) * Column_Density
-
     END IF
 
   END FUNCTION PPMV_to_KMOL_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION PPMV_to_KMOL_rank1( Pressure,     &  ! Input
                                Temperature,  &  ! Input
                                Delta_Z,      &  ! Input
                                ppmv,         &  ! Input
                                Water_Vapor,  &  ! Optional input
                                Message_Log ) &  ! Error messaging
-                             RESULT ( kmol_per_cm2 )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+                             RESULT( kmol_per_cm2 )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Delta_Z
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: ppmv
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
- 
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Delta_Z(:)
+    REAL(fp),               INTENT(IN) :: ppmv(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: kmol_per_cm2
-
-
-    ! ----------------
+    REAL(fp) :: kmol_per_cm2(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     kmol_per_cm2 = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature ) /= n .OR. & 
-         SIZE( Delta_Z     ) /= n .OR. & 
-         SIZE( ppmv        ) /= n      ) THEN
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature) /= n .OR. & 
+         SIZE(Delta_Z)     /= n .OR. & 
+         SIZE(ppmv)        /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
+    ! Calculate the gas column density
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -------------------------------
       ! Water vapor argument was passed
-      ! -------------------------------
-
-      ! -- Check array size
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Loop over elements
       DO k = 1, n
-
         kmol_per_cm2( k ) = PPMV_to_KMOL_scalar( Pressure( k ), &
                                                  Temperature( k ), &
                                                  Delta_Z( k ), &
                                                  ppmv( k ), &
-                                                 Water_Vapor = Water_Vapor( k ), &
-                                                 Message_Log = Message_Log )
+                                                 Water_Vapor=Water_Vapor( k ), &
+                                                 Message_Log=Message_Log )
         IF ( kmol_per_cm2( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-
-      ! ------------------------------------
       ! Water vapor argument was *NOT*passed
-      ! ------------------------------------
-
       DO k = 1, n
-
         kmol_per_cm2( k ) = PPMV_to_KMOL_scalar( Pressure( k ), &
                                                  Temperature( k ), &
                                                  Delta_Z( k ), &
                                                  ppmv( k ), &
-                                                 Message_Log = Message_Log )
+                                                 Message_Log=Message_Log )
         IF ( kmol_per_cm2( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
    
   END FUNCTION PPMV_to_KMOL_rank1
-
-
 
 
 !------------------------------------------------------------------------------
@@ -6386,86 +4001,63 @@ CONTAINS
 !       Function to convert layer gas concentrations from column density in
 !       kmol.cm^-2 to volume mixing ratio in ppmv.
 !
-! CATEGORY:
-!       Profile Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       ppmv = KMOL_to_PPMV( Pressure,                  &  ! Input
-!                            Temperature,               &  ! Input
-!                            Delta_Z,                   &  ! Input
-!                            kmol_per_cm2,              &  ! Input
-!                            Water_Vapor = Water_Vapor, &  ! Optional Input
-!                            Message_Log = Message_Log  )  ! Error messaging
+!       ppmv = KMOL_to_PPMV( Pressure,                &  ! Input
+!                            Temperature,             &  ! Input
+!                            Delta_Z,                 &  ! Input
+!                            kmol_per_cm2,            &  ! Input
+!                            Water_Vapor=Water_Vapor, &  ! Optional Input
+!                            Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       Pressure:          Average layer pressure.
 !                          UNITS:      hectoPascals, hPa
-!                          TYPE:       REAL( fp_kind )
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Temperature:       Average layer temperature
 !                          UNITS:      Kelvin, K
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       Delta_Z:           Layer thickness
 !                          UNITS:      metres, m
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       kmol_per_cm2:      Column density for molecular species.
-!                          UNITS:      kmoles/cm^2
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: INTENT( IN )
+!                          UNITS:      kmol.cm^-2
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as Pressure
+!                          ATTRIBUTES: INTENT(IN)
 !   
 ! OPTIONAL INPUT ARGUMENTS:
 !       Water_Vapor:       Water vapor volume mixing ratio. If this argument
-!                          is not supplied, the mandatory kmol_per_cm2 input
+!                          is not supplied, the mandatory KMOL_PER_CM2 input
 !                          argument is assumed to be water vapor.
-!                          UNITS:      kmoles/cm^2
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1 (K x 1)
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
+!                          UNITS:      ppmv
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as pressure
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 !       Message_Log:       Character string specifying a filename in which any
 !                          Messages will be logged. If not specified, or if an
 !                          error occurs opening the log file, the default action
 !                          is to output Messages to standard output.
 !                          UNITS:      N/A
-!                          TYPE:       CHARACTER( * )
+!                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       ppmv:              Layer gas volume mixing ratio. If an error occurs,
 !                          -1.0 is returned.
 !                          UNITS:      ppmv
-!                          TYPE:       REAL( fp_kind )
-!                          DIMENSION:  Scalar or Rank-1
-!                                      (same dimensionality as input Pressure)
-!
-! CALLS:
-!       Display_Message:   Subroutine to output messages
-!                          SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Same as input Pressure
 !
 ! PROCEDURE:
 !       The volume mixing ratio of a particular molecular species, designated
@@ -6517,304 +4109,157 @@ CONTAINS
 !S-
 !------------------------------------------------------------------------------
 
-!##############################################################################
-!                              Scalar version
-!##############################################################################
-
+  ! ==============
+  ! Scalar version
+  ! ==============
   FUNCTION KMOL_to_PPMV_scalar( Pressure,     &  ! Input
                                 Temperature,  &  ! Input
                                 Delta_Z,      &  ! Input
                                 kmol_per_cm2, &  ! Input
                                 Water_Vapor,  &  ! Optional Input
                                 Message_Log ) &  ! Error messaging
-                              RESULT ( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+                              RESULT( ppmv )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           INTENT( IN ) :: Delta_Z
-    REAL( fp_kind ),           INTENT( IN ) :: kmol_per_cm2
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure
+    REAL(fp),               INTENT(IN) :: Temperature
+    REAL(fp),               INTENT(IN) :: Delta_Z
+    REAL(fp),               INTENT(IN) :: kmol_per_cm2
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'KMOL_to_PPMV'
-
-    REAL( fp_kind ), PARAMETER :: SCALE_FACTOR = 1.0e-07_fp_kind / NA
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'KMOL_to_PPMV'
+    REAL(fp),     PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
     ! Local variables
-    ! ---------------
-
-    REAL( fp_kind ) :: ppv
-    REAL( fp_kind ) :: Number_Density
-    REAL( fp_kind ) :: Column_density
-    REAL( fp_kind ) :: Dry_Column_density
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    REAL(fp) :: ppv
+    REAL(fp) :: Number_Density
+    REAL(fp) :: Column_density
+    REAL(fp) :: Dry_Column_density
+    
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    IF ( Pressure       < TOLERANCE .OR. &
-         Temperature    < TOLERANCE .OR. &
-         ABS( Delta_Z ) < TOLERANCE .OR. &
-         kmol_per_cm2   < ZERO      ) THEN
+    IF ( Pressure     < TOLERANCE .OR. &
+         Temperature  < TOLERANCE .OR. &
+         ABS(Delta_Z) < TOLERANCE .OR. &
+         kmol_per_cm2 < ZERO      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input values  < or = 0.0 found.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- CONVERT KMOL.CM^-2 TO PPMV --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------------
-    ! Convert input ppmv to ppv
-    ! -------------------------
-
-
-
-    ! ----------------------------------------------------
     ! Calculate total air number density in molecules.m^-3
-    ! ----------------------------------------------------
-
     Number_Density = PP_to_ND_scalar( Pressure, &
                                       Temperature, &
-                                      Message_Log = Message_Log )
+                                      Message_Log=Message_Log )
     IF ( Number_Density < ZERO ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     END IF
 
-
-    ! ------------------------------------------------
     ! Calculate total air column density in kmol.cm^-2
-    ! ------------------------------------------------
+    Column_Density = SCALE_FACTOR * ABS(Delta_Z) * Number_Density
 
-    Column_Density = SCALE_FACTOR * ABS( Delta_Z ) * Number_Density
-
-
-    ! ------------------------------------
     ! Calculate the dry gas column density
-    ! ------------------------------------
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -------------------------------
       ! Water vapor input was specified
-      ! -------------------------------
-
-      ! -- Check array size
       IF ( Water_Vapor < ZERO ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Input water vapor ppmv < 0.0', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Convert input ppmv to ppv
       ppv = PPMV_TO_PPV * Water_Vapor
-
-      ! -- Compute the dry column density
       Dry_Column_Density = ( ONE / ( ONE + ppv ) ) * Column_Density
 
     ELSE
 
-
-      ! ----------------------------------------
-      ! Water vapor input was *NOT* specified so
-      ! kmol_per_cm2 input is assumed to be
-      ! for water vapor
-      ! ----------------------------------------
-
+      ! Water vapor input was *NOT* specified
       Dry_Column_Density = Column_Density - kmol_per_cm2
 
     END IF
 
-
-    ! ----------------------------------------
     ! Convert the column density ratio to ppmv
-    ! ----------------------------------------
-
     ppmv = PPV_TO_PPMV * kmol_per_cm2 / Dry_Column_Density
 
   END FUNCTION KMOL_to_PPMV_scalar
 
 
-
-!##############################################################################
-!                              Rank1 version
-!##############################################################################
-
+  ! ==============
+  ! Rank-1 version
+  ! ==============
   FUNCTION KMOL_to_PPMV_rank1( Pressure,     &  ! Input
                                Temperature,  &  ! Input
                                Delta_Z,      &  ! Input
                                kmol_per_cm2, &  ! Input
                                Water_Vapor,  &  ! Optional Input
                                Message_Log ) &  ! Error messaging
-                             RESULT ( ppmv )
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
- 
-    ! ---------
+                             RESULT( ppmv )
     ! Arguments
-    ! ---------
-
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Pressure
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Temperature
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: Delta_Z
-    REAL( fp_kind ),           DIMENSION( : ), INTENT( IN ) :: kmol_per_cm2
-
-    ! -- Optional input
-    REAL( fp_kind ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
-
-    ! -- Error handler Message log
-    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
-
-
-    ! ---------------
+    REAL(fp),               INTENT(IN) :: Pressure(:)
+    REAL(fp),               INTENT(IN) :: Temperature(:)
+    REAL(fp),               INTENT(IN) :: Delta_Z(:)
+    REAL(fp),               INTENT(IN) :: kmol_per_cm2(:)
+    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    ! ---------------
- 
-    REAL( fp_kind ), DIMENSION( SIZE( Pressure ) ) :: ppmv
-
-
-    ! ----------------
+    REAL(fp) :: ppmv(SIZE(Pressure))
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'KMOL_to_PPMV'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'KMOL_to_PPMV'
     ! Local variables
-    ! ---------------
-
     INTEGER :: k, n
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INITIALIZE RETURN VALUE --                        #
-    !#--------------------------------------------------------------------------#
-
+    
+    ! Setup
     ppmv = -ONE
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    n = SIZE( Pressure )
-
-    IF ( SIZE( Temperature  ) /= n .OR. & 
-         SIZE( Delta_Z      ) /= n .OR. & 
-         SIZE( kmol_per_cm2 ) /= n      ) THEN
-      ppmv = -ONE
+    n = SIZE(Pressure)
+    IF ( SIZE(Temperature)  /= n .OR. & 
+         SIZE(Delta_Z)      /= n .OR. & 
+         SIZE(kmol_per_cm2) /= n      ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
                             FAILURE, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
       RETURN
     ENDIF
 
+    ! Convert column desnity to ppmv
+    IF ( PRESENT(Water_Vapor) ) THEN
 
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- LOOP OVER ELEMENTS --                          #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( Water_Vapor ) ) THEN
-
-
-      ! -----------------------------------
       ! The water vapor argument was passed
-      ! -----------------------------------
-
-      ! -- Check array size
-      IF ( SIZE( Water_Vapor ) /= n ) THEN
+      IF ( SIZE(Water_Vapor) /= n ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
                               FAILURE, &
-                              Message_Log = Message_Log )
+                              Message_Log=Message_Log )
         RETURN
       END IF
-
-      ! -- Loop over elements
       DO k = 1, n
-
         ppmv( k ) = KMOL_to_PPMV_scalar( Pressure( k ), &
                                          Temperature( k ), &
                                          Delta_Z( k ), &
                                          kmol_per_cm2( k ), &
-                                         Water_Vapor = Water_Vapor( k ), &
-                                         Message_Log = Message_Log )
+                                         Water_Vapor=Water_Vapor( k ), &
+                                         Message_Log=Message_Log )
         IF ( ppmv( k ) < ZERO ) RETURN
-
       END DO
 
     ELSE
 
-      ! -----------------------------------------
       ! The water vapor argument was *NOT* passed
-      ! -----------------------------------------
-
       DO k = 1, n
-
         ppmv( k ) = KMOL_to_PPMV_scalar( Pressure( k ), &
                                          Temperature( k ), &
                                          Delta_Z( k ), &
                                          kmol_per_cm2( k ), &
-                                         Message_Log = Message_Log )
+                                         Message_Log=Message_Log )
         IF ( ppmv( k ) < ZERO ) RETURN
-
       END DO
 
     END IF
@@ -6822,89 +4267,3 @@ CONTAINS
   END FUNCTION KMOL_to_PPMV_rank1
 
 END MODULE Units_Conversion
-
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Units_Conversion.f90,v 2.9 2006/05/02 22:04:35 wd20pd Exp $
-!
-! $Date: 2006/05/02 22:04:35 $
-!
-! $Revision: 2.9 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Units_Conversion.f90,v $
-! Revision 2.9  2006/05/02 22:04:35  wd20pd
-! - Replaced all references to Error_Handler with Message_Handler.
-!
-! Revision 2.8  2004/11/29 19:46:34  paulv
-! - Removed unused variable declarations.
-!
-! Revision 2.7  2004/11/25 01:08:51  paulv
-! - Fixed bug in calculation of the dry air partial pressure in the
-!   PP_to_MR routine. Previously the dry air partial pressure was calculated
-!   using,
-!     Dry_Air_Pressure = Pressure / ( ONE + ( G_TO_KG * Water_Vapor ) )
-!   where Water_Vapor is the water vapor mixing ratio. The correct method
-!   is,
-!     w = G_TO_KG * Water_Vapor * MW_DRYAIR / MW_H2O
-!     Dry_Air_Pressure = Pressure / ( ONE + w )
-!   This makes the routine consistent with the MR_to_PP routine.
-! - Updated both the PP_to_MR and MR_to_PP routines header documentation.
-!
-! Revision 2.6  2004/11/09 18:05:01  paulv
-! - Upgraded to Fortran-95
-! - Added routines for converting partial pressure to/from mass density.
-!
-! Revision 2.5  2003/12/05 22:14:56  paulv
-! - Replaced SH_to_MR and MR_to_SH functions with SA_to_MR and MR_to_SA
-!   functions to allow gases other than water vapour to be converted from/to
-!   specific amount.
-! - Updated function header documentation.
-!
-! Revision 2.4  2003/05/22 15:43:27  paulv
-! - Updated documentation.
-!
-! Revision 2.3  2002/11/27 15:10:30  paulv
-! - Added optional argument and logic for separate water vapor input in
-!   amount conversion routines.
-!
-! Revision 2.2  2002/10/08 17:03:59  paulv
-! - Corrected bug in the water vapor input array dimension check in the
-!   rank-1 version of ND_to_PPMV.
-!
-! Revision 2.1  2002/10/04 21:02:34  paulv
-! - Changed conversion codes to be consistent with LBLRTM definitions of
-!   mixing ratios. Changes are incomplete. The conversion methods used
-!   to convert inputs to number density are
-!
-!     Input Units                   Conversion
-!   -------------------------------------------------------------------------
-!       ppmv                nd = ppmv * 1.0e-06 * (nd(tot) - nd(H2O))
-!
-!       g/kg, w             nd = MWair/MW * w * 1.0e-03 * (nd(tot) - nd(H2O))
-!
-!       g/m^3, w            nd = Na/MW * w * 1.0e-06
-!
-!       hPa, pp             nd = L0 * pp/p0 * T0/T
-!
-!   Note that for ppmv and g/kg input, the conversion is done relative to the
-!   number density of DRY AIR.
-!
-! Revision 1.2  2002/09/20 16:24:37  paulv
-! - Corrected some minor errors in transitions from the monster profile
-!   conversion module.
-!
-! Revision 1.1  2002/08/30 22:48:12  paulv
-! Initial checkin. Untested.
-! - The contents of this module have been extracted from the old PROFILE_CONVERSION
-!   module and split up into different categories of profile processing.
-!
-!
-!
