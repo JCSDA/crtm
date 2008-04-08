@@ -19,7 +19,10 @@ SRC_FILES = Type_Kinds.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Unit_Test.f90 \
-            CRTM_Interpolation.f90
+            CRTM_Interpolation.f90 \
+            Test_Interpolation_Functions.f90 \
+            Test_Interpolation_Index.f90 \
+            Test_Interpolation_LPoly.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
