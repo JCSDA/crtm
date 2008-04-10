@@ -42,6 +42,7 @@ PROGRAM Test_Interpolation
   ! Polynomial tests
   ! ----------------
   CALL Test_LPoly(UTest)
+  CALL Test_LPoly_FWDTL(UTest)
   CALL Test_LPoly_TLAD(UTest)
   
   ! Interpolation tests

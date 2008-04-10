@@ -537,7 +537,7 @@ CONTAINS
   
     ! 1-D test
     ! --------
-    CALL Init_Test(UTest,'1-D FWD-TL interpolation test',Caller=ROUTINE_NAME)
+    CALL Init_Test(UTest,'1-D FWD/TL interpolation test',Caller=ROUTINE_NAME)
     ! Loop over number of interpolations
     DO i = 1, N_INDICES
       iN = INDICES(i)
@@ -566,7 +566,7 @@ CONTAINS
   
     ! 2-D test
     ! --------
-    CALL Init_Test(UTest,'2-D FWD-TL interpolation test',Caller=ROUTINE_NAME)
+    CALL Init_Test(UTest,'2-D FWD/TL interpolation test',Caller=ROUTINE_NAME)
     ! Loop over number of interpolations
     DO i = 1, N_INDICES
       iN = INDICES(i)
@@ -603,7 +603,7 @@ CONTAINS
   
     ! 3-D test
     ! --------
-    CALL Init_Test(UTest,'3-D FWD-TL interpolation test',Caller=ROUTINE_NAME)
+    CALL Init_Test(UTest,'3-D FWD/TL interpolation test',Caller=ROUTINE_NAME)
     ! Loop over number of interpolations
     DO i = 1, N_INDICES
       iN = INDICES(i)
@@ -669,8 +669,8 @@ CONTAINS
     REAL(fp) :: wint, wint_TL, wint_AD
     REAL(fp) :: xint, xint_TL, xint_AD
     REAL(fp) :: yint, yint_TL, yint_AD
-    REAL(fp) :: zint, zint_TL
-    REAL(fp) :: TLtTL, dxtADTL
+    REAL(fp) :: zint, zint_TL, zint_AD
+    REAL(fp) :: TLtTL, dxtAD
     TYPE(Lpoly_type) :: wlp   , xlp   , ylp
     TYPE(Lpoly_type) :: wlp_TL, xlp_TL, ylp_TL
     TYPE(Lpoly_type) :: wlp_AD, xlp_AD, ylp_AD
@@ -697,7 +697,7 @@ CONTAINS
   
     ! 1-D test
     ! --------
-    CALL Init_Test(UTest,'1-D TL-AD interpolation test',Caller=ROUTINE_NAME)
+    CALL Init_Test(UTest,'1-D TL/AD interpolation test',Caller=ROUTINE_NAME)
     ! Loop over number of interpolations
     DO i = 1, N_INDICES
       iN = INDICES(i)
@@ -711,22 +711,23 @@ CONTAINS
       CALL lpoly_TL(W(i1:i2),wint,wlp,w_TL(i1:i2),wint_TL,wlp_TL)
       CALL interp_1D_TL(z1(i1:i2),wlp,z1_TL(i1:i2),wlp_TL,zint_TL)
       ! Adjoint computations, with zint_TL input
+      zint_AD = zint_TL
       z1_AD(i1:i2) = ZERO
       CALL Clear_LPoly(wlp_AD)
       wint_AD = ZERO
-      CALL interp_1D_AD(z1(i1:i2),wlp,zint_TL,z1_AD(i1:i2),wlp_AD)
+      CALL interp_1D_AD(z1(i1:i2),wlp,zint_AD,z1_AD(i1:i2),wlp_AD)
       CALL lpoly_AD(W(i1:i2),wint,wlp,wlp_AD,w_AD(i1:i2),wint_AD)
-      ! Compute metric;  (TL)^t.TL == dx^t.AD.TL
-      TLtTL   = zint_TL**2
-      dxtADTL = wint_TL*wint_AD
+      ! Compute metric;  TL^t.TL == dx^t.AD
+      TLtTL = zint_TL**2
+      dxtAD = wint_TL*wint_AD
       ! Check that metrics agree
-      CALL Is_Equal_Within(TLtTL, dxtADTL, TOLERANCE, UTest)
+      CALL Is_Equal_Within(TLtTL, dxtAD, TOLERANCE, UTest)
     END DO
     CALL Report_Test(UTest)
 
     ! 2-D test
     ! --------
-    CALL Init_Test(UTest,'2-D TL-AD interpolation test',Caller=ROUTINE_NAME)
+    CALL Init_Test(UTest,'2-D TL/AD interpolation test',Caller=ROUTINE_NAME)
     ! Loop over number of interpolations
     DO i = 1, N_INDICES
       iN = INDICES(i)
@@ -745,26 +746,27 @@ CONTAINS
       CALL lpoly_TL(X(j1:j2),xint,xlp,x_TL(j1:j2),xint_TL,xlp_TL)
       CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xlp,z2_TL(i1:i2,j1:j2),wlp_TL,xlp_TL,zint_TL)
       ! Adjoint computations, with zint_TL input
+      zint_AD = zint_TL
       z2_AD(i1:i2,j1:j2) = ZERO
       CALL Clear_LPoly(wlp_AD)
       CALL Clear_LPoly(xlp_AD)
       wint_AD = ZERO
       xint_AD = ZERO
-      CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xlp,zint_TL,z2_AD(i1:i2,j1:j2),wlp_AD,xlp_AD)
+      CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xlp,zint_AD,z2_AD(i1:i2,j1:j2),wlp_AD,xlp_AD)
       CALL lpoly_AD(X(j1:j2),xint,xlp,xlp_AD,x_AD(j1:j2),xint_AD)
       CALL lpoly_AD(W(i1:i2),wint,wlp,wlp_AD,w_AD(i1:i2),wint_AD)
-      ! Compute metric;  (TL)^t.TL == dx^t.AD.TL
-      TLtTL   = zint_TL**2
-      dxtADTL = wint_TL*wint_AD + &
-                xint_TL*xint_AD
+      ! Compute metric;  TL^t.TL == dx^t.AD
+      TLtTL = zint_TL**2
+      dxtAD = wint_TL*wint_AD + &
+              xint_TL*xint_AD
       ! Check that metrics agree
-      CALL Is_Equal_Within(TLtTL, dxtADTL, TOLERANCE, UTest)
+      CALL Is_Equal_Within(TLtTL, dxtAD, TOLERANCE, UTest)
     END DO
     CALL Report_Test(UTest)
 
     ! 3-D test
     ! --------
-    CALL Init_Test(UTest,'3-D TL-AD interpolation test',Caller=ROUTINE_NAME)
+    CALL Init_Test(UTest,'3-D TL/AD interpolation test',Caller=ROUTINE_NAME)
     ! Loop over number of interpolations
     DO i = 1, N_INDICES
       iN = INDICES(i)
@@ -788,6 +790,7 @@ CONTAINS
       CALL lpoly_TL(Y(k1:k2),yint,ylp,y_TL(k1:k2),yint_TL,ylp_TL)
       CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,z3_TL(i1:i2,j1:j2,k1:k2),wlp_TL,xlp_TL,ylp_TL,zint_TL)
       ! Adjoint computations, with zint_TL input
+      zint_AD = zint_TL
       z3_AD(i1:i2,j1:j2,k1:k2) = ZERO
       CALL Clear_LPoly(wlp_AD)
       CALL Clear_LPoly(xlp_AD)
@@ -795,17 +798,17 @@ CONTAINS
       wint_AD = ZERO
       xint_AD = ZERO
       yint_AD = ZERO
-      CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint_TL,z3_AD(i1:i2,j1:j2,k1:k2),wlp_AD,xlp_AD,ylp_AD)
+      CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint_AD,z3_AD(i1:i2,j1:j2,k1:k2),wlp_AD,xlp_AD,ylp_AD)
       CALL lpoly_AD(Y(k1:k2),yint,ylp,ylp_AD,y_AD(k1:k2),yint_AD)
       CALL lpoly_AD(X(j1:j2),xint,xlp,xlp_AD,x_AD(j1:j2),xint_AD)
       CALL lpoly_AD(W(i1:i2),wint,wlp,wlp_AD,w_AD(i1:i2),wint_AD)
-      ! Compute metric;  (TL)^t.TL == dx^t.AD.TL
-      TLtTL   = zint_TL**2
-      dxtADTL = wint_TL*wint_AD + &
-                xint_TL*xint_AD + &
-                yint_TL*yint_AD
+      ! Compute metric;  TL^t.TL == dx^t.AD
+      TLtTL = zint_TL**2
+      dxtAD = wint_TL*wint_AD + &
+              xint_TL*xint_AD + &
+              yint_TL*yint_AD
       ! Check that metrics agree
-      CALL Is_Equal_Within(TLtTL, dxtADTL, TOLERANCE, UTest)
+      CALL Is_Equal_Within(TLtTL, dxtAD, TOLERANCE, UTest)
     END DO
     CALL Report_Test(UTest)
 
@@ -819,18 +822,14 @@ CONTAINS
   ! ==================
 
   ! Routine to provide powers of the indep variables
-  ! ------------------------------------------------
+  ! NOTE: Maximum power cannot be greater than that
+  !       of the highest order interpolating polynomial
+  ! ---------------------------------------------------
   SUBROUTINE get_powers(wPower,xPower,yPower)
     INTEGER, INTENT(OUT) :: wPower,xPower,yPower
-    IF ( NPTS == 2 ) THEN
-      wPower = 1
-      xPower = 1
-      yPower = 1
-    ELSE
-      wPower = 2
-      xPower = 3
-      yPower = 1
-    END IF
+    wPower = 2
+    xPower = 2
+    yPower = 2
   END SUBROUTINE get_powers
 
   ! z = f(w), f(x), f(y) functions and their derivatives

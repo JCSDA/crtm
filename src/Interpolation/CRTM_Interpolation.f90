@@ -29,8 +29,6 @@ MODULE CRTM_Interpolation
   ! Derived types and associated procedures
   PUBLIC :: LPoly_type
   PUBLIC :: Clear_LPoly
-  PUBLIC :: Set_LPoly
-  PUBLIC :: Get_LPoly
   ! Procedures
   PUBLIC :: Interp_1D
   PUBLIC :: Interp_2D
@@ -63,19 +61,30 @@ MODULE CRTM_Interpolation
   '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
-  INTEGER,  PARAMETER :: ORDER = 1
-  INTEGER,  PARAMETER :: NPTS  = ORDER+1
+  INTEGER,  PARAMETER :: ORDER     = 2            ! Quadratic
+  INTEGER,  PARAMETER :: NPOLY_PTS = ORDER+1      ! No. of points in each polynomial
+  INTEGER,  PARAMETER :: NPTS      = NPOLY_PTS+1  ! No. of points total
 
 
   ! -----------------------
   ! Derived type definition
   ! -----------------------
   TYPE :: LPoly_type
-    PRIVATE
+!    PRIVATE
     INTEGER :: Order=ORDER
-    INTEGER :: nPts =NPTS
-    REAL(fp) :: ilp(0:NPTS,NPTS) = ZERO
-    REAL(fp) :: lp(NPTS)         = ZERO
+    INTEGER :: nPts =NPOLY_PTS
+    ! Left and right side polynomials
+    REAL(fp) :: lp_left(NPOLY_PTS)  = ZERO
+    REAL(fp) :: lp_right(NPOLY_PTS) = ZERO
+    ! Left and right side weighting factors
+    REAL(fp) :: w_left  = ZERO
+    REAL(fp) :: w_right = ZERO
+    ! Polynomial numerator differences
+    REAL(fp) :: dxi_left(NPOLY_PTS)  = ZERO
+    REAL(fp) :: dxi_right(NPOLY_PTS) = ZERO
+    ! Polynomial denominator differences
+    REAL(fp) :: dx_left(NPOLY_PTS)  = ZERO
+    REAL(fp) :: dx_right(NPOLY_PTS) = ZERO
   END TYPE LPoly_type
 
 
@@ -89,23 +98,17 @@ CONTAINS
   ! -------------------------------------------
   SUBROUTINE Clear_LPoly(p)
     TYPE(LPoly_type), INTENT(OUT) :: p
-    p%ilp = ZERO
-    p%lp  = ZERO
+    p%Order = ORDER
+    p%nPts  = NPOLY_PTS
+    p%lp_left   = ZERO
+    p%lp_right  = ZERO
+    p%w_left    = ZERO
+    p%w_right   = ZERO
+    p%dxi_left  = ZERO
+    p%dxi_right = ZERO
+    p%dx_left   = ZERO
+    p%dx_right  = ZERO
   END SUBROUTINE Clear_LPoly
-  
-  SUBROUTINE Set_LPoly(p,i,value)
-    TYPE(LPoly_type), INTENT(IN OUT) :: p
-    INTEGER,          INTENT(IN)     :: i
-    REAL(fp),         INTENT(IN)     :: value
-    p%lp(i) = value
-  END SUBROUTINE Set_LPoly
-  
-  SUBROUTINE Get_LPoly(p,i,value)
-    TYPE(LPoly_type), INTENT(IN)  :: p
-    INTEGER,          INTENT(IN)  :: i
-    REAL(fp),         INTENT(OUT) :: value
-    value = p%lp(i)
-  END SUBROUTINE Get_LPoly
   
   
   ! ------------------------------------
@@ -119,14 +122,15 @@ CONTAINS
     TYPE(LPoly_type), INTENT(IN)  :: xlp
     REAL(fp),         INTENT(OUT) :: y_int
     ! Local variables
-    INTEGER  :: i
+    INTEGER :: i
     ! Perform interpolation
     y_int = ZERO
-    DO i = 1,NPTS
-      y_int = y_int + xlp%lp(i)*y(i)
+    DO i = 1, NPOLY_PTS
+      y_int = y_int + (xlp%w_left *xlp%lp_left(i) *y(i)  ) + &
+                      (xlp%w_right*xlp%lp_right(i)*y(i+1))
     END DO
   END SUBROUTINE Interp_1D
-  
+
   ! 2-D routine
   SUBROUTINE Interp_2D(z, xlp, ylp, &  ! Input
                        z_int        )  ! Output
@@ -138,7 +142,7 @@ CONTAINS
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
     ! Interpolate z in x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_1D(z(:,i),xlp,a(i))
     END DO
     ! Interpolate z in y dimension
@@ -156,7 +160,7 @@ CONTAINS
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
     ! Interpolate z in w,x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_2D(z(:,:,i),wlp,xlp,a(i))
     END DO
     ! Interpolate a in y dimension
@@ -181,8 +185,13 @@ CONTAINS
     INTEGER  :: i
     ! Perform TL interpolation
     y_int_TL = ZERO
-    DO i = 1,NPTS
-      y_int_TL = y_int_TL + xlp%lp(i)*y_TL(i) + xlp_TL%lp(i)*y(i)
+    DO i = 1, NPOLY_PTS
+      y_int_TL = y_int_TL + ( xlp%w_left    * xlp%lp_left(i)    * y_TL(i) ) + &
+                            ( xlp%w_left    * xlp_TL%lp_left(i) * y(i)    ) + &
+                            ( xlp_TL%w_left * xlp%lp_left(i)    * y(i)    ) + &
+                            ( xlp%w_right    * xlp%lp_right(i)    * y_TL(i+1) ) + &
+                            ( xlp%w_right    * xlp_TL%lp_right(i) * y(i+1)    ) + &
+                            ( xlp_TL%w_right * xlp%lp_right(i)    * y(i+1)    )
     END DO
   END SUBROUTINE Interp_1D_TL
   
@@ -199,7 +208,7 @@ CONTAINS
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_TL(NPTS)
     ! Interpolate z in x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_1D(z(:,i),xlp,a(i))
       CALL Interp_1D_TL(z(:,i),xlp,z_TL(:,i),xlp_TL,a_TL(i))
     END DO
@@ -221,7 +230,7 @@ CONTAINS
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_TL(NPTS)
     ! Interpolate z in w,x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_2D(z(:,:,i),wlp,xlp,a(i))
       CALL Interp_2D_TL(z(:,:,i),wlp,xlp,z_TL(:,:,i),wlp_TL,xlp_TL,a_TL(i))
     END DO
@@ -246,9 +255,15 @@ CONTAINS
     ! Local variables
     INTEGER  :: i
     ! Perform adjoint interpolation
-    DO i = 1,NPTS
-      xlp_AD%lp(i) = xlp_AD%lp(i) + y(i)     *y_int_AD
-      y_AD(i)      = y_AD(i)      + xlp%lp(i)*y_int_AD
+    DO i = 1, NPOLY_PTS
+      ! "Right" side
+      xlp_AD%w_right     = xlp_AD%w_right     + ( xlp%lp_right(i) * y(i+1)          * y_int_AD )
+      xlp_AD%lp_right(i) = xlp_AD%lp_right(i) + ( xlp%w_right     * y(i+1)          * y_int_AD )
+      y_AD(i+1)          = y_AD(i+1)          + ( xlp%w_right     * xlp%lp_right(i) * y_int_AD )
+      ! "Left" side
+      xlp_AD%w_left     = xlp_AD%w_left     + ( xlp%lp_left(i) * y(i)           * y_int_AD )
+      xlp_AD%lp_left(i) = xlp_AD%lp_left(i) + ( xlp%w_left     * y(i)           * y_int_AD )
+      y_AD(i)           = y_AD(i)           + ( xlp%w_left     * xlp%lp_left(i) * y_int_AD )
     END DO
   END SUBROUTINE Interp_1D_AD
 
@@ -267,7 +282,7 @@ CONTAINS
     REAL(fp) :: a(NPTS), a_AD(NPTS)
     ! Forward calculations
     ! Interpolate z in x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_1D(z(:,i),xlp,a(i))
     END DO
     ! Adjoint calculations
@@ -276,7 +291,7 @@ CONTAINS
     ! Adjoint of z interpolation in y dimension
     CALL Interp_1D_AD(a,ylp,z_int_AD,a_AD,ylp_AD)
     ! Adjoint of z interpolation in x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_1D_AD(z(:,i),xlp,a_AD(i),z_AD(:,i),xlp_AD)
     END DO
   END SUBROUTINE Interp_2D_AD
@@ -298,7 +313,7 @@ CONTAINS
 
     ! Forward calculations
     ! Interpolate z in w and x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_2D(z(:,:,i),wlp,xlp,a(i))
     END DO
     
@@ -308,7 +323,7 @@ CONTAINS
     ! Adjoint of a interpolation in y dimension
     CALL Interp_1D_AD(a,ylp,z_int_AD,a_AD,ylp_AD)
     ! Adjoint of z interpolation in w and x dimension for all y
-    DO i = 1,NPTS
+    DO i = 1, NPTS
       CALL Interp_2D_AD(z(:,:,i),wlp,xlp,a_AD(i),z_AD(:,:,i),wlp_AD,xlp_AD)
     END DO
   END SUBROUTINE Interp_3D_AD
@@ -324,9 +339,9 @@ CONTAINS
     INTEGER , INTENT(OUT) :: i1, i2
     INTEGER :: n
     n = SIZE(x)
-    i1 = FLOOR((x_int-x(1))/dx)+1-(ORDER/2)
-    i1 = MIN(MAX(i1,1),n-ORDER)
-    i2 = i1 + ORDER
+    i1 = FLOOR((x_int-x(1))/dx)+1-(NPOLY_PTS/2)
+    i1 = MIN(MAX(i1,1),n-NPOLY_PTS)
+    i2 = i1 + NPOLY_PTS
   END SUBROUTINE Find_Regular_Index
   
   ! Find lower index for random spacing.
@@ -341,99 +356,269 @@ CONTAINS
     DO k=1,n
       IF (x_int <= x(k) ) EXIT
     END DO
-    i1 = MIN(MAX(1,k-1-(ORDER/2)),n-ORDER)
-    i2 = i1 + ORDER
+    i1 = MIN(MAX(1,k-1-(NPOLY_PTS/2)),n-NPOLY_PTS)
+    i2 = i1 + NPOLY_PTS
   END SUBROUTINE Find_Random_Index
 
-  
+
   ! --------------------
   ! Polynomial functions
   ! --------------------
   ! Forward model
   SUBROUTINE LPoly(x, x_int, p)
-    REAL(fp),         INTENT(IN)  :: x(:)
-    REAL(fp),         INTENT(IN)  :: x_int
-    TYPE(LPoly_type), INTENT(OUT) :: p
-    INTEGER :: i, j, n
-    n = SIZE(x)
-    Order_Loop: DO j = 1, n
-      p%ilp(0,j) = ONE
-      Product_Loop: DO i = 1, n
-        IF ( i == j ) THEN
-          p%ilp(i,j) = p%ilp(i-1,j)
-          CYCLE Product_Loop
-        END IF
-        p%ilp(i,j) = p%ilp(i-1,j)*(x_int-x(i))/(x(j)-x(i))
-      END DO Product_Loop
-      p%lp(j) = p%ilp(n,j)
-    END DO Order_Loop
-  END SUBROUTINE LPoly
+    REAL(fp),         INTENT(IN)  :: x(:)  ! Input
+    REAL(fp),         INTENT(IN)  :: x_int ! Input
+    TYPE(LPoly_type), INTENT(OUT) :: p     ! Input
+    ! Compute the numerator differences
+    CALL Compute_dxi(x(1:3),x_int,p%dxi_left)
+    CALL Compute_dxi(x(2:4),x_int,p%dxi_right)
 
+    ! Compute the denominator differences
+    CALL Compute_dx(x(1:3),p%dx_left)
+    CALL Compute_dx(x(2:4),p%dx_right)
+    
+    ! Compute the quadratic polynomials
+    CALL Compute_QPoly(p%dxi_left , p%dx_left , p%lp_left)
+    CALL Compute_QPoly(p%dxi_right, p%dx_right, p%lp_right)
+
+    ! Polynomial weights
+    IF ( x_int < x(2) ) THEN
+      p%w_right = ZERO
+      p%w_left  = ONE
+    ELSE IF ( x_int > x(3) ) THEN
+      p%w_right = ONE
+      p%w_left  = ZERO
+    ELSE
+      p%w_right = p%dxi_left(2) / (-p%dx_left(3))
+      p%w_left  = ONE - p%w_right
+    END IF
+  END SUBROUTINE LPoly
+  
   ! Tangent-linear model
-  SUBROUTINE LPoly_TL(x   , x_int   , &  ! FWD Input
-                      p   , &            ! FWD Input
-                      x_TL, x_int_TL, &  ! TL  Input
-                      p_TL)              ! TL  Output
-    REAL(fp),         INTENT(IN)  :: x(:)
-    REAL(fp),         INTENT(IN)  :: x_int
-    TYPE(LPoly_type), INTENT(IN)  :: p
-    REAL(fp),         INTENT(IN)  :: x_TL(:)
-    REAL(fp),         INTENT(IN)  :: x_int_TL
-    TYPE(LPoly_type), INTENT(OUT) :: p_TL
-    INTEGER  :: i, j, n
-    REAL(fp) :: c
-    n = SIZE(x)
-    Order_Loop: DO j = 1, n
-      p_TL%ilp(0,j) = ZERO
-      Product_Loop: DO i = 1, n
-        IF ( i == j ) THEN
-          p_TL%ilp(i,j) = p_TL%ilp(i-1,j)
-          CYCLE Product_Loop
-        END IF
-        c = ONE/(x(j)-x(i))
-        p_TL%ilp(i,j) = c * ( (x_int-x(i))*p_TL%ilp(i-1,j) + &
-                              p%ilp(i-1,j)*x_int_TL + &
-                              p%ilp(i-1,j)*(x_int-x(j))*c*x_TL(i) - &
-                              p%ilp(i-1,j)*(x_int-x(i))*c*x_TL(j)   )
-      END DO Product_Loop
-      p_TL%lp(j) = p_TL%ilp(n,j)
-    END DO Order_Loop
+  SUBROUTINE LPoly_TL(x   , x_int   , p , &
+                      x_TL, x_int_TL, p_TL)
+    REAL(fp),         INTENT(IN)  :: x(:)      ! FWD Input
+    REAL(fp),         INTENT(IN)  :: x_int     ! FWD Input
+    TYPE(LPoly_type), INTENT(IN)  :: p         ! FWD Input
+    REAL(fp),         INTENT(IN)  :: x_TL(:)   ! TL  Input
+    REAL(fp),         INTENT(IN)  :: x_int_TL  ! TL  Input
+    TYPE(LPoly_type), INTENT(OUT) :: p_TL      ! TL  Output
+    ! Compute the tangent-linear numerator differences
+    CALL Compute_dxi_TL(x_TL(1:3),x_int_TL,p_TL%dxi_left)
+    CALL Compute_dxi_TL(x_TL(2:4),x_int_TL,p_TL%dxi_right)
+
+    ! Compute the tangent-linear denominator differences
+    CALL Compute_dx_TL(x_TL(1:3),p_TL%dx_left)
+    CALL Compute_dx_TL(x_TL(2:4),p_TL%dx_right)
+    
+    ! Compute the tangent-linear quadratic polynomials
+    CALL Compute_QPoly_TL(p%dxi_left   , p%dx_left    , p%lp_left,  &
+                          p_TL%dxi_left, p_TL%dx_left , p_TL%lp_left)
+    CALL Compute_QPoly_TL(p%dxi_right   , p%dx_right   , p%lp_right,  &
+                          p_TL%dxi_right, p_TL%dx_right, p_TL%lp_right)
+
+    ! Polynomial weights
+    IF ( x_int < x(2) .OR. x_int > x(3) ) THEN
+      p_TL%w_right = ZERO
+      p_TL%w_left  = ZERO
+    ELSE
+      p_TL%w_right = -( p_TL%dxi_left(2) + (p%w_right*p_TL%dx_left(3)) ) / p%dx_left(3)
+      p_TL%w_left  = -p_TL%w_right
+    END IF
   END SUBROUTINE LPoly_TL
   
   ! Adjoint model
-  SUBROUTINE LPoly_AD(x   , x_int   , &  ! FWD Input
-                      p   , &            ! FWD Input
-                      p_AD, &            ! AD  Input
-                      x_AD, x_int_AD  )  ! AD  Output
-    REAL(fp),         INTENT(IN)     :: x(:)
-    REAL(fp),         INTENT(IN)     :: x_int
-    TYPE(LPoly_type), INTENT(IN)     :: p
-    TYPE(LPoly_type), INTENT(IN OUT) :: p_AD
-    REAL(fp),         INTENT(IN OUT) :: x_AD(:)
-    REAL(fp),         INTENT(IN OUT) :: x_int_AD
-    INTEGER  :: i, j, n
-    REAL(fp) :: c, c2
-    n = SIZE(x)
-    Order_Loop: DO j = 1, n
-      p_AD%ilp(n,j) = p_AD%ilp(n,j) + p_AD%lp(j)
-      p_AD%lp(j)    = ZERO
-      Product_Loop: DO i = n, 1, -1
-        IF ( i == j ) THEN
-          p_AD%ilp(i-1,j) = p_AD%ilp(i-1,j) + p_AD%ilp(i,j)
-          p_AD%ilp(i  ,j) = ZERO
-          CYCLE Product_Loop
-        END IF
-        c  = ONE/(x(j)-x(i))
-        c2 = c*c
-        x_AD(j)  = x_AD(j)  - c2*p%ilp(i-1,j)*(x_int-x(i))*p_AD%ilp(i,j)
-        x_AD(i)  = x_AD(i)  + c2*p%ilp(i-1,j)*(x_int-x(j))*p_AD%ilp(i,j)
-        x_int_AD = x_int_AD + c *p%ilp(i-1,j)*             p_AD%ilp(i,j)
-        p_AD%ilp(i-1,j) = p_AD%ilp(i-1,j) + c*(x_int-x(i))*p_AD%ilp(i,j)
-        p_AD%ilp(i  ,j) = ZERO
-      END DO Product_Loop
-      p_AD%ilp(0,j) = ZERO
-    END DO Order_Loop
+  SUBROUTINE LPoly_AD(x   , x_int   , p , &
+                      p_AD, x_AD, x_int_AD)
+    REAL(fp),         INTENT(IN)     :: x(:)      ! FWD Input
+    REAL(fp),         INTENT(IN)     :: x_int     ! FWD Input
+    TYPE(LPoly_type), INTENT(IN)     :: p         ! FWD Input
+    TYPE(LPoly_type), INTENT(IN OUT) :: p_AD      ! AD  Input
+    REAL(fp),         INTENT(IN OUT) :: x_AD(:)   ! AD  Output
+    REAL(fp),         INTENT(IN OUT) :: x_int_AD  ! AD  Output
+
+    ! Polynomial weights
+    IF ( x_int < x(2) .OR. x_int > x(3) ) THEN
+      p_AD%w_right = ZERO
+      p_AD%w_left  = ZERO
+    ELSE
+      p_AD%w_right = p_AD%w_right - p_AD%w_left
+      p_AD%w_left  = ZERO
+      p_AD%dx_left(3)  = p_AD%dx_left(3)  - (p%w_right*p_AD%w_right/p%dx_left(3))
+      p_AD%dxi_left(2) = p_AD%dxi_left(2) - (p_AD%w_right/p%dx_left(3))
+      p_AD%w_right = ZERO
+    END IF
+
+    ! "Right" side quadratic
+    CALL Compute_QPoly_AD(p%dxi_right   , p%dx_right,  &
+                          p%lp_right    , &
+                          p_AD%lp_right , &
+                          p_AD%dxi_right, p_AD%dx_right)
+                          
+    ! "Left" side quadratic
+    CALL Compute_QPoly_AD(p%dxi_left   , p%dx_left,  &
+                          p%lp_left    , &
+                          p_AD%lp_left , &
+                          p_AD%dxi_left, p_AD%dx_left)
+
+    ! Compute the adjoint denominator differences
+    CALL Compute_dx_AD(p_AD%dx_right,x_AD(2:4))
+    CALL Compute_dx_AD(p_AD%dx_left ,x_AD(1:3))
+
+    ! Compute the adjoint numerator differences
+    CALL Compute_dxi_AD(p_AD%dxi_right,x_AD(2:4),x_int_AD)
+    CALL Compute_dxi_AD(p_AD%dxi_left ,x_AD(1:3),x_int_AD)
   END SUBROUTINE LPoly_AD
+
+  ! ------------------------------------------------
+  ! Subroutines to compute the quadratic polynomials
+  ! ------------------------------------------------
+  ! Forward model
+  SUBROUTINE Compute_QPoly(dxi, dx, lp)
+    REAL(fp), INTENT(IN)     :: dxi(:)  ! Input
+    REAL(fp), INTENT(IN)     :: dx(:)   ! Input
+    REAL(fp), INTENT(IN OUT) :: lp(:)   ! Output
+    lp(1) = dxi(2)*dxi(3) / ( dx(1)*dx(2))
+    lp(2) = dxi(1)*dxi(3) / (-dx(1)*dx(3))
+    lp(3) = dxi(1)*dxi(2) / ( dx(2)*dx(3))
+  END SUBROUTINE Compute_QPoly
+  
+  ! Tangent-linear model
+  SUBROUTINE Compute_QPoly_TL(dxi   , dx   , lp,  &
+                              dxi_TL, dx_TL, lp_TL)
+    REAL(fp), INTENT(IN)     :: dxi(:)     ! FWD Input
+    REAL(fp), INTENT(IN)     :: dx(:)      ! FWD Input
+    REAL(fp), INTENT(IN)     :: lp(:)      ! FWD Input
+    REAL(fp), INTENT(IN)     :: dxi_TL(:)  ! TL  Input
+    REAL(fp), INTENT(IN)     :: dx_TL(:)   ! TL  Input
+    REAL(fp), INTENT(IN OUT) :: lp_TL(:)   ! TL  Output
+    lp_TL(1) = ( (dxi(3)*dxi_TL(2)      ) + &
+                 (dxi(2)*dxi_TL(3)      ) - &
+                 (dx(2) *dx_TL(1) *lp(1)) - &
+                 (dx(1) *dx_TL(2) *lp(1))   ) / (dx(1)*dx(2))
+
+    lp_TL(2) = ( (dxi(3)*dxi_TL(1)      ) + &
+                 (dxi(1)*dxi_TL(3)      ) + &
+                 (dx(3) *dx_TL(1) *lp(2)) + &
+                 (dx(1) *dx_TL(3) *lp(2))   ) / (-dx(1)*dx(3))
+
+    lp_TL(3) = ( (dxi(2)*dxi_TL(1)      ) + &
+                 (dxi(1)*dxi_TL(2)      ) - &
+                 (dx(3) *dx_TL(2) *lp(3)) - &
+                 (dx(2) *dx_TL(3) *lp(3))   ) / (dx(2)*dx(3))
+  END SUBROUTINE Compute_QPoly_TL
+  
+  ! Adjoint model
+  SUBROUTINE Compute_QPoly_AD(dxi   , dx, &
+                              lp    , &
+                              lp_AD , &
+                              dxi_AD, dx_AD)
+    REAL(fp), INTENT(IN)     :: dxi(:)     ! FWD Input
+    REAL(fp), INTENT(IN)     :: dx(:)      ! FWD Input
+    REAL(fp), INTENT(IN)     :: lp(:)      ! FWD Input
+    REAL(fp), INTENT(IN OUT) :: lp_AD(:)   ! AD  Input
+    REAL(fp), INTENT(IN OUT) :: dxi_AD(:)  ! AD  Output
+    REAL(fp), INTENT(IN OUT) :: dx_AD(:)   ! AD  Output
+    REAL(fp) :: d
+    ! Adjoint of lp(3)
+    d = lp_AD(3)/(dx(2)*dx(3))
+    dxi_AD(1) = dxi_AD(1) + d*dxi(2)
+    dxi_AD(2) = dxi_AD(2) + d*dxi(1)
+    dx_AD(2)  = dx_AD(2)  - d*dx(3)*lp(3)
+    dx_AD(3)  = dx_AD(3)  - d*dx(2)*lp(3)
+    lp_AD(3) = ZERO
+    ! Adjoint of lp(2)
+    d = lp_AD(2)/(-dx(1)*dx(3))
+    dxi_AD(1) = dxi_AD(1) + d*dxi(3)
+    dxi_AD(3) = dxi_AD(3) + d*dxi(1)
+    dx_AD(2)  = dx_AD(2)  + d*dx(3)*lp(2)
+    dx_AD(3)  = dx_AD(3)  + d*dx(2)*lp(2)
+    lp_AD(2) = ZERO
+    ! Adjoint of lp(1)
+    d = lp_AD(1)/(dx(1)*dx(2))
+    dxi_AD(2) = dxi_AD(2) + d*dxi(3)
+    dxi_AD(3) = dxi_AD(3) + d*dxi(2)
+    dx_AD(1)  = dx_AD(1)  - d*dx(2)*lp(1)
+    dx_AD(2)  = dx_AD(2)  - d*dx(1)*lp(1)
+    lp_AD(1) = ZERO
+  END SUBROUTINE Compute_QPoly_AD
+  
+
+  
+  ! -------------------------------------------------------------
+  ! Subroutines to compute the polynomial denominator differences
+  ! -------------------------------------------------------------
+  ! Forward model
+  SUBROUTINE Compute_dx(x,dx)
+    REAL(fp), INTENT(IN)     :: x(:)   ! Input
+    REAL(fp), INTENT(IN OUT) :: dx(:)  ! Output
+    dx(1) = x(1)-x(2)
+    dx(2) = x(1)-x(3)
+    dx(3) = x(2)-x(3)
+  END SUBROUTINE Compute_dx
+  
+  ! Tangent-linear model
+  SUBROUTINE Compute_dx_TL(x_TL,dx_TL)
+    REAL(fp), INTENT(IN)     :: x_TL(:)   ! TL Input
+    REAL(fp), INTENT(IN OUT) :: dx_TL(:)  ! TL Output
+    dx_TL(1) = x_TL(1)-x_TL(2)
+    dx_TL(2) = x_TL(1)-x_TL(3)
+    dx_TL(3) = x_TL(2)-x_TL(3)
+  END SUBROUTINE Compute_dx_TL
+  
+  ! Adjoint model
+  SUBROUTINE Compute_dx_AD(dx_AD,x_AD)
+    REAL(fp), INTENT(IN OUT) :: dx_AD(:)  ! AD Input
+    REAL(fp), INTENT(IN OUT) :: x_AD(:)   ! AD Output
+    x_AD(3) = x_AD(3) - dx_AD(3)
+    x_AD(2) = x_AD(2) + dx_AD(3)
+    dx_AD(3) = ZERO
+    x_AD(3) = x_AD(3) - dx_AD(2)
+    x_AD(1) = x_AD(1) + dx_AD(2)
+    dx_AD(2) = ZERO
+    x_AD(2) = x_AD(2) - dx_AD(1)
+    x_AD(1) = x_AD(1) + dx_AD(1)
+    dx_AD(1) = ZERO
+  END SUBROUTINE Compute_dx_AD
+
+
+  ! -----------------------------------------------------------
+  ! Subroutines to compute the polynomial numerator differences
+  ! -----------------------------------------------------------
+  ! Forward model
+  SUBROUTINE Compute_dxi(x,xi,dxi)
+    REAL(fp), INTENT(IN)     :: x(:)    ! Input
+    REAL(fp), INTENT(IN)     :: xi      ! Input
+    REAL(fp), INTENT(IN OUT) :: dxi(:)  ! Output
+    INTEGER :: i
+    DO i = 1, NPOLY_PTS
+      dxi(i) = xi-x(i)
+    END DO
+  END SUBROUTINE Compute_dxi
+  
+  ! Tangent-linear model
+  SUBROUTINE Compute_dxi_TL(x_TL,xi_TL,dxi_TL)
+    REAL(fp), INTENT(IN)     :: x_TL(:)    ! TL Input
+    REAL(fp), INTENT(IN)     :: xi_TL      ! TL Input
+    REAL(fp), INTENT(IN OUT) :: dxi_TL(:)  ! TL Output
+    INTEGER :: i
+    DO i = 1, NPOLY_PTS
+      dxi_TL(i) = xi_TL-x_TL(i)
+    END DO
+  END SUBROUTINE Compute_dxi_TL
+  
+  ! Adjoint model
+  SUBROUTINE Compute_dxi_AD(dxi_AD,x_AD,xi_AD)
+    REAL(fp), INTENT(IN OUT) :: dxi_AD(:)  ! AD Input
+    REAL(fp), INTENT(IN OUT) :: x_AD(:)    ! AD Output
+    REAL(fp), INTENT(IN OUT) :: xi_AD      ! AD Output
+    INTEGER :: i
+    DO i = 1, NPOLY_PTS
+      x_AD(i)   = x_AD(i) - dxi_AD(i)
+      xi_AD     = xi_AD   + dxi_AD(i)
+      dxi_AD(i) = ZERO
+    END DO
+  END SUBROUTINE Compute_dxi_AD
 
 END MODULE CRTM_Interpolation
 
