@@ -7,8 +7,8 @@ MODULE Unit_Test
   ! Module usage
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: INFORMATION, Display_Message
-  USE Compare_Float_Numbers
-
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.), &
+                                   OPERATOR(.LessThan.)
   ! Disable all implicit typing
   IMPLICIT NONE
   
@@ -17,8 +17,10 @@ MODULE Unit_Test
   PRIVATE
   PUBLIC :: UTest_type
   PUBLIC :: Assert
-  PUBLIC :: Assert_Equal
-  PUBLIC :: Assert_NotEqual
+  PUBLIC :: Is_Equal
+  PUBLIC :: Is_LessThan
+  PUBLIC :: Is_Equal_Within
+  PUBLIC :: Is_NotEqual
   PUBLIC :: Init_AllTests
   PUBLIC :: Init_Test
   PUBLIC :: Report_Test
@@ -28,18 +30,31 @@ MODULE Unit_Test
 
   ! Procedure overloads
   ! -------------------
-  INTERFACE Assert_Equal
+  INTERFACE Is_Equal
     MODULE PROCEDURE ip_equal
     MODULE PROCEDURE fp_equal_scalar
     MODULE PROCEDURE fp_equal_rank1
     MODULE PROCEDURE fp_equal_rank2
-  END INTERFACE Assert_Equal
+  END INTERFACE Is_Equal
   
-  INTERFACE Assert_NotEqual
+  INTERFACE Is_LessThan
+    MODULE PROCEDURE ip_lessthan
+    MODULE PROCEDURE fp_lessthan_scalar
+    MODULE PROCEDURE fp_lessthan_rank1
+    MODULE PROCEDURE fp_lessthan_rank2
+  END INTERFACE Is_LessThan
+  
+  INTERFACE Is_Equal_Within
+    MODULE PROCEDURE fp_equal_within_scalar
+    MODULE PROCEDURE fp_equal_within_rank1
+    MODULE PROCEDURE fp_equal_within_rank2
+  END INTERFACE Is_Equal_Within
+  
+  INTERFACE Is_NotEqual
     MODULE PROCEDURE ip_notequal
     MODULE PROCEDURE fp_notequal_scalar
     MODULE PROCEDURE fp_notequal_rank1
-  END INTERFACE Assert_NotEqual
+  END INTERFACE Is_NotEqual
   
   ! Module parameters
   ! -----------------
@@ -59,7 +74,7 @@ MODULE Unit_Test
   TYPE :: UTest_type
     PRIVATE
     ! Test settings
-    LOGICAL       :: Verbose = .FALSE.
+    LOGICAL       :: Verbose = DEFAULT_NOISY
     CHARACTER(SL) :: Title   = ' '
     CHARACTER(SL) :: Caller  = ' '
 
@@ -67,8 +82,8 @@ MODULE Unit_Test
     INTEGER :: n_Tests        = 0
     INTEGER :: n_Passed_Tests = 0
     INTEGER :: n_Failed_Tests = 0
+
     ! All test counters
-    
     INTEGER :: n_AllTests        = 0
     INTEGER :: n_Passed_AllTests = 0
     INTEGER :: n_Failed_AllTests = 0
@@ -135,17 +150,15 @@ CONTAINS
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!       Assert_Equal
+!       Is_Equal
 !
 ! PURPOSE:
 !       Subroutine to assert that two arguments are equal
 !
 ! CALLING SEQUENCE:
-!       CALL Assert_Equal(v1, v2                 , &  ! Input
-!                         UTest                  , &  ! Input
-!                         ULP        =ULP        , &  ! Optional input
-!                         Percent    =Percent    , &  ! Optional input
-!                         Message_Log=Message_Log  )  ! Optional input
+!       CALL Is_Equal(v1, v2                 , &  ! Input
+!                     UTest                  , &  ! Input
+!                     Message_Log=Message_Log  )  ! Optional input
 !
 !------------------------------------------------------------------------------
 
@@ -155,7 +168,7 @@ CONTAINS
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assert_Equal'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_Equal'
     ! Variables
     CHARACTER(256) :: Message
     LOGICAL :: Verbose
@@ -182,30 +195,22 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE ip_equal
   
-  SUBROUTINE fp_equal_scalar(r1,r2,UTest,ULP,Percent,Message_Log)
+  SUBROUTINE fp_equal_scalar(r1,r2,UTest,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN)     :: r1,r2
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
-    INTEGER,      OPTIONAL, INTENT(IN)     :: ULP
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assert_Equal'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_Equal'
     ! Variables
     CHARACTER(256) :: Message
-    LOGICAL  :: Verbose
-    INTEGER  :: rel
-
-    ! Minimum error by default...
-    rel = 1
-    ! ...unless ULP argument is passed
-    IF ( PRESENT(ULP) ) rel = ABS(ULP)
+    LOGICAL :: Verbose
 
     ! Default output
     Verbose = UTest%Verbose
 
     ! Check equality
-    IF ( Compare_Float(r1,r2,ULP=rel,Percent=Percent) ) THEN
+    IF ( r1.EqualTo.r2 ) THEN
       CALL test_passed(UTest)
       WRITE( Message, '(4x,"Assert equal passed for test#",i0,&
                       &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
@@ -223,29 +228,24 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE fp_equal_scalar
 
-  SUBROUTINE fp_equal_rank1(r1,r2,UTest,ULP,Percent,Message_Log)
+  SUBROUTINE fp_equal_rank1(r1,r2,UTest,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN)     :: r1(:),r2(:)
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
-    INTEGER,      OPTIONAL, INTENT(IN)     :: ULP
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Variables
     INTEGER :: i
     
     ! Loop over elements
     DO i = 1, MIN(SIZE(r1),SIZE(r2))
-      CALL fp_equal_scalar(r1(i),r2(i),UTest,ULP=ULP,Percent=Percent,Message_Log=Message_Log)
+      CALL fp_equal_scalar(r1(i),r2(i),UTest,Message_Log=Message_Log)
     END DO
   END SUBROUTINE fp_equal_rank1
 
-
-  SUBROUTINE fp_equal_rank2(r1,r2,UTest,ULP,Percent,Message_Log)
+  SUBROUTINE fp_equal_rank2(r1,r2,UTest,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN)     :: r1(:,:),r2(:,:)
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
-    INTEGER,      OPTIONAL, INTENT(IN)     :: ULP
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Variables
     INTEGER :: i, j, m, n
@@ -256,26 +256,226 @@ CONTAINS
     ! Loop over elements
     DO j = 1, n
       DO i = 1, m
-        CALL fp_equal_scalar(r1(i,j),r2(i,j),UTest,ULP=ULP,Percent=Percent,Message_Log=Message_Log)
+        CALL fp_equal_scalar(r1(i,j),r2(i,j),UTest,Message_Log=Message_Log)
       END DO
     END DO
   END SUBROUTINE fp_equal_rank2
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Is_LessThan
+!
+! PURPOSE:
+!       Subroutine to assert that one argument is less than another, 
+!       i.e. that v1 < v2
+!
+! CALLING SEQUENCE:
+!       CALL Is_Equal(v1, v2                 , &  ! Input
+!                     UTest                  , &  ! Input
+!                     Message_Log=Message_Log  )  ! Optional input
+!
+!------------------------------------------------------------------------------
+
+  SUBROUTINE ip_lessthan(i1,i2,UTest,Message_Log)
+    ! Arguments
+    INTEGER,                INTENT(IN)     :: i1,i2
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_LessThan'
+    ! Variables
+    CHARACTER(256) :: Message
+    LOGICAL :: Verbose
+    
+    ! Default output
+    Verbose = UTest%Verbose
+    
+    ! Check args
+    IF ( i1 < i2 ) THEN
+      CALL test_passed(UTest)
+      WRITE( Message,'(4x,"Assert lessthan passed for test#",i0,&
+                     &". Value ",i0," is less than ",i0)') UTest%n_Tests, i1, i2
+    ELSE
+      CALL test_failed(UTest)
+      Verbose = .TRUE.  ! Always output test failure
+      WRITE( Message,'(4x,"Assert lessthan FAILED for test#",i0,&
+                     &". Value ",i0," is NOT less than ",i0)') UTest%n_Tests, i1, i2
+    END IF
+    
+    ! Output message
+    IF ( Verbose ) CALL Display_Message( ROUTINE_NAME, &
+                                         TRIM(Message), &
+                                         INFORMATION, &
+                                         Message_Log=Message_Log )
+  END SUBROUTINE ip_lessthan
+  
+  SUBROUTINE fp_lessthan_scalar(r1,r2,UTest,Message_Log)
+    ! Arguments
+    REAL(fp),               INTENT(IN)     :: r1,r2
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_LessThan'
+    ! Variables
+    CHARACTER(256) :: Message
+    LOGICAL :: Verbose
+
+    ! Default output
+    Verbose = UTest%Verbose
+
+    ! Check args
+    IF ( r1.LessThan.r2 ) THEN
+      CALL test_passed(UTest)
+      WRITE( Message, '(4x,"Assert lessthan passed for test#",i0,&
+                      &". Value ",'//RFMT//'," is less than ",'//RFMT//')') UTest%n_Tests, r1,r2
+    ELSE
+      CALL test_failed(UTest)
+      Verbose = .TRUE.  ! Always output test failure
+      WRITE( Message, '(4x,"Assert lessthan FAILED for test#",i0,&
+                      &". Value ",'//RFMT//'," is NOT less than ",'//RFMT//')') UTest%n_Tests, r1,r2
+    END IF
+
+    ! Output message
+    IF ( Verbose ) CALL Display_Message( ROUTINE_NAME, &
+                                         TRIM(Message), &
+                                         INFORMATION, &
+                                         Message_Log=Message_Log )
+  END SUBROUTINE fp_lessthan_scalar
+
+  SUBROUTINE fp_lessthan_rank1(r1,r2,UTest,Message_Log)
+    ! Arguments
+    REAL(fp),               INTENT(IN)     :: r1(:),r2(:)
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Variables
+    INTEGER :: i
+    
+    ! Loop over elements
+    DO i = 1, MIN(SIZE(r1),SIZE(r2))
+      CALL fp_lessthan_scalar(r1(i),r2(i),UTest,Message_Log=Message_Log)
+    END DO
+  END SUBROUTINE fp_lessthan_rank1
+
+  SUBROUTINE fp_lessthan_rank2(r1,r2,UTest,Message_Log)
+    ! Arguments
+    REAL(fp),               INTENT(IN)     :: r1(:,:),r2(:,:)
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Variables
+    INTEGER :: i, j, m, n
+    
+    m = MIN(SIZE(r1,DIM=1),SIZE(r2,DIM=1))
+    n = MIN(SIZE(r1,DIM=2),SIZE(r2,DIM=2))
+    
+    ! Loop over elements
+    DO j = 1, n
+      DO i = 1, m
+        CALL fp_lessthan_scalar(r1(i,j),r2(i,j),UTest,Message_Log=Message_Log)
+      END DO
+    END DO
+  END SUBROUTINE fp_lessthan_rank2
 
 
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!       Assert_NotEqual
+!       Is_Equal_Within
+!
+! PURPOSE:
+!       Subroutine to assert that two floating point arguments are equal to
+!       within some tolerance
+!
+! CALLING SEQUENCE:
+!       CALL Is_Equal_Within(v1, v2                 , &  ! Input
+!                            tol                    , &  ! Input
+!                            UTest                  , &  ! Input
+!                            Message_Log=Message_Log  )  ! Optional input
+!
+!------------------------------------------------------------------------------
+
+  SUBROUTINE fp_equal_within_scalar(r1,r2,tol,UTest,Message_Log)
+    ! Arguments
+    REAL(fp),               INTENT(IN)     :: r1,r2
+    REAL(fp),               INTENT(IN)     :: tol
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_Equal_Within'
+    ! Variables
+    CHARACTER(256) :: Message
+    LOGICAL :: Verbose
+
+    ! Default output
+    Verbose = UTest%Verbose
+
+    ! Check equality
+    IF ( ABS(r1-r2) < tol ) THEN
+      CALL test_passed(UTest)
+      WRITE( Message, '(4x,"Assert equal within passed for test#",i0,&
+                      &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
+    ELSE
+      CALL test_failed(UTest)
+      Verbose = .TRUE.  ! Always output test failure
+      WRITE( Message, '(4x,"Assert equal within FAILED for test#",i0,&
+                      &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
+    END IF
+
+    ! Output message
+    IF ( Verbose ) CALL Display_Message( ROUTINE_NAME, &
+                                         TRIM(Message), &
+                                         INFORMATION, &
+                                         Message_Log=Message_Log )
+  END SUBROUTINE fp_equal_within_scalar
+
+  SUBROUTINE fp_equal_within_rank1(r1,r2,tol,UTest,Message_Log)
+    ! Arguments
+    REAL(fp),               INTENT(IN)     :: r1(:),r2(:)
+    REAL(fp),               INTENT(IN)     :: tol
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Variables
+    INTEGER :: i
+    
+    ! Loop over elements
+    DO i = 1, MIN(SIZE(r1),SIZE(r2))
+      CALL fp_equal_within_scalar(r1(i),r2(i),tol,UTest,Message_Log=Message_Log)
+    END DO
+  END SUBROUTINE fp_equal_within_rank1
+
+  SUBROUTINE fp_equal_within_rank2(r1,r2,tol,UTest,Message_Log)
+    ! Arguments
+    REAL(fp),               INTENT(IN)     :: r1(:,:),r2(:,:)
+    REAL(fp),               INTENT(IN)     :: tol
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Variables
+    INTEGER :: i, j, m, n
+    
+    m = MIN(SIZE(r1,DIM=1),SIZE(r2,DIM=1))
+    n = MIN(SIZE(r1,DIM=2),SIZE(r2,DIM=2))
+    
+    ! Loop over elements
+    DO j = 1, n
+      DO i = 1, m
+        CALL fp_equal_within_scalar(r1(i,j),r2(i,j),tol,UTest,Message_Log=Message_Log)
+      END DO
+    END DO
+  END SUBROUTINE fp_equal_within_rank2
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Is_NotEqual
 !
 ! PURPOSE:
 !       Subroutine to assert that two arguments are NOT equal
 !
 ! CALLING SEQUENCE:
-!       CALL Assert_NotEqual(v1, v2                 , &  ! Input
-!                            UTest                  , &  ! Input
-!                            ULP        =ULP        , &  ! Optional input
-!                            Percent    =Percent    , &  ! Optional input
-!                            Message_Log=Message_Log  )  ! Optional input
+!       CALL Is_NotEqual(v1, v2                 , &  ! Input
+!                        UTest                  , &  ! Input
+!                        Message_Log=Message_Log  )  ! Optional input
 !
 !------------------------------------------------------------------------------
 
@@ -285,7 +485,7 @@ CONTAINS
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assert_Equal'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_Not_Equal'
     ! Variables
     CHARACTER(256) :: Message
     LOGICAL :: Verbose
@@ -312,30 +512,22 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE ip_notequal
   
-  SUBROUTINE fp_notequal_scalar(r1,r2,UTest,ULP,Percent,Message_Log)
+  SUBROUTINE fp_notequal_scalar(r1,r2,UTest,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN)     :: r1,r2
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
-    INTEGER,      OPTIONAL, INTENT(IN)     :: ULP
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assert_Equal'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_Not_Equal'
     ! Variables
     CHARACTER(256) :: Message
     LOGICAL :: Verbose
-    INTEGER :: rel
-
-    ! Minimum error by default...
-    rel = 1
-    ! ...unless ULP argument is passed
-    IF ( PRESENT(ULP) ) rel = ABS(ULP)
 
     ! Default output
     Verbose = UTest%Verbose
 
     ! Check inequality    
-    IF ( .NOT. Compare_Float(r1,r2,ULP=rel,Percent=Percent) ) THEN
+    IF ( .NOT. (r1.EqualTo.r2) ) THEN
       CALL test_passed(UTest)
       WRITE( Message, '(4x,"Assert not equal passed for test#",i0,&
                       &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
@@ -353,19 +545,17 @@ CONTAINS
                                          Message_Log=Message_Log )
   END SUBROUTINE fp_notequal_scalar
 
-  SUBROUTINE fp_notequal_rank1(r1,r2,UTest,ULP,Percent,Message_Log)
+  SUBROUTINE fp_notequal_rank1(r1,r2,UTest,Message_Log)
     ! Arguments
     REAL(fp),               INTENT(IN)     :: r1(:),r2(:)
     TYPE(UTest_type),       INTENT(IN OUT) :: UTest
-    INTEGER,      OPTIONAL, INTENT(IN)     :: ULP
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Percent
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Variables
     INTEGER :: i
     
     ! Loop over elements
     DO i = 1, MIN(SIZE(r1),SIZE(r2))
-      CALL fp_notequal_scalar(r1(i),r2(i),UTest,ULP=ULP,Percent=Percent,Message_Log=Message_Log)
+      CALL fp_notequal_scalar(r1(i),r2(i),UTest,Message_Log=Message_Log)
     END DO
   END SUBROUTINE fp_notequal_rank1
 
