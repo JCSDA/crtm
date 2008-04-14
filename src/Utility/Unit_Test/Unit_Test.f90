@@ -68,6 +68,7 @@ MODULE Unit_Test
   INTEGER,      PARAMETER :: SET = 1
   CHARACTER(*), PARAMETER :: RFMT = 'es25.18'
   LOGICAL,      PARAMETER :: DEFAULT_NOISY = .FALSE.
+  LOGICAL,      PARAMETER :: DEFAULT_REPORT = .TRUE.
 
   ! Derived type definitions
   ! ------------------------
@@ -75,6 +76,7 @@ MODULE Unit_Test
     PRIVATE
     ! Test settings
     LOGICAL       :: Verbose = DEFAULT_NOISY
+    LOGICAL       :: Report  = DEFAULT_REPORT
     CHARACTER(SL) :: Title   = ' '
     CHARACTER(SL) :: Caller  = ' '
 
@@ -573,8 +575,13 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Init_AllTests(UTest)
-    TYPE(UTest_type), INTENT(OUT) :: UTest
+  SUBROUTINE Init_AllTests(UTest,Report)
+    TYPE(UTest_type) , INTENT(OUT) :: UTest
+    LOGICAL, OPTIONAL, INTENT(IN)  :: Report
+
+    UTest%Report = DEFAULT_REPORT
+    IF ( PRESENT(Report) ) UTest%Report=Report
+
     UTest%n_Tests        = 0
     UTest%n_Passed_Tests = 0
     UTest%n_Failed_Tests = 0
@@ -621,15 +628,15 @@ CONTAINS
     UTest%Caller = 'Init_Test'
     IF ( PRESENT(Caller) ) UTest%Caller = TRIM(ADJUSTL(Caller))
     
-    ! Set output selection
+    ! Set output selections
     UTest%Verbose = DEFAULT_NOISY
     IF ( PRESENT(Verbose) ) UTest%Verbose=Verbose
     
     ! Output test title
-    CALL Display_Message( TRIM(UTest%Caller), &
-                          'TEST: '//TRIM(UTest%Title), &
-                          INFORMATION, &
-                          Message_Log=Message_Log )
+    IF ( UTest%Report ) CALL Display_Message( TRIM(UTest%Caller), &
+                                              'TEST: '//TRIM(UTest%Title), &
+                                              INFORMATION, &
+                                              Message_Log=Message_Log )
   END SUBROUTINE Init_Test
 
 
@@ -654,6 +661,8 @@ CONTAINS
     ! Variables
     CHARACTER(256) :: Message
     CHARACTER(256) :: Attention
+    
+    IF ( .NOT. UTest%Report ) RETURN
     
     ! Test fail attention-grabber
     Attention = ''
@@ -700,17 +709,17 @@ CONTAINS
     IF ( UTest%n_Failed_AllTests /= 0 ) Attention = '  <----<<<  **WARNING**'
 
     ! Output results
-    WRITE( Message,'(a,2x,"=======================",&
-                    &a,2x,"SUMMARY of test results",&
-                    &a,2x,"=======================",&
-                    &a,2x,"Passed ",i0," of ",i0," tests",&
+    WRITE( Message,'(a,2x,"Passed ",i0," of ",i0," tests",&
                     &a,2x,"Failed ",i0," of ",i0," tests",a)') &
-                    CRLF,CRLF,CRLF,CRLF, &
+                    CRLF, &
                     UTest%n_Passed_AllTests, UTest%n_AllTests, &
                     CRLF, &
                     UTest%n_Failed_AllTests, UTest%n_AllTests, &
                     TRIM(Attention)
-    CALL Display_Message(TRIM(UTest%Caller), &
+    CALL Display_Message(CRLF//&
+                         '  ======================='//CRLF//&
+                         '  SUMMARY of test results'//CRLF//&
+                         '  ======================='//CRLF, &
                          TRIM(Message), &
                          INFORMATION, &
                          Message_Log=Message_Log )
