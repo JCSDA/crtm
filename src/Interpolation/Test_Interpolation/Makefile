@@ -19,6 +19,7 @@ SRC_FILES = Type_Kinds.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Unit_Test.f90 \
+            Timing_Utility.f90 \
             CRTM_Interpolation.f90 \
             Test_Interpolation_Functions.f90 \
             Test_Interpolation_Index.f90 \

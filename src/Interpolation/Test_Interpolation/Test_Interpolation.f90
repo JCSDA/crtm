@@ -17,6 +17,7 @@ PROGRAM Test_Interpolation
   USE Test_Interpolation_LPoly
   USE Test_Interpolation_Functions
   USE Unit_Test
+  USE Timing_Utility
   USE CRTM_Interpolation
   ! Disable implicit typing
   IMPLICIT NONE
@@ -24,16 +25,21 @@ PROGRAM Test_Interpolation
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id: $'  
   ! Variables
-  TYPE(UTest_type) :: UTest
+  TYPE(UTest_type)  :: UTest
+  TYPE(Timing_type) :: Timing 
 
 
   ! Initialisation
   ! --------------
-  CALL Init_AllTests(UTest)
+  CALL Init_AllTests(UTest,Report=.FALSE.)
   WRITE(*,'(5x,"==================================")')
   WRITE(*,'(5x,"Testing ",i0,"-pt interpolation...")') NPTS
   WRITE(*,'(5x,"==================================",/)')
-  
+
+  ! Start timing
+  ! ------------
+  CALL Begin_Timing(Timing)
+
   ! Index finding tests
   ! -------------------
   CALL Test_Index_Regular(UTest)
@@ -48,14 +54,21 @@ PROGRAM Test_Interpolation
   ! Interpolation tests
   ! -------------------
   CALL Test_Hingepoint_Interpolation(UTest)
+  CALL Test_Hingepoint_TL_Interpolation(UTest)
+  CALL Test_Hingepoint_AD_Interpolation(UTest)
   CALL Test_Actual_Interpolation(UTest)
   CALL Test_TL_Interpolation(UTest)
   CALL Test_AD_Interpolation(UTest)
   CALL Test_FWDTL_Interpolation(UTest)
   CALL Test_TLAD_Interpolation(UTest)
 
+  ! End timing
+  ! ----------
+  CALL End_Timing(Timing)
+
   ! Test summary
   ! ------------
   CALL Report_AllTests(UTest)
+  CALL Display_Timing(Timing)
   
 END PROGRAM Test_Interpolation

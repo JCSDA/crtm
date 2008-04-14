@@ -12,6 +12,8 @@ MODULE Test_Interpolation_Functions
   PUBLIC :: zy, dzy
   PUBLIC :: z_1d, z_2d, z_3d
   PUBLIC :: Test_Hingepoint_Interpolation
+  PUBLIC :: Test_Hingepoint_TL_Interpolation
+  PUBLIC :: Test_Hingepoint_AD_Interpolation
   PUBLIC :: Test_Actual_Interpolation
   PUBLIC :: Test_TL_Interpolation
   PUBLIC :: Test_AD_Interpolation
@@ -29,7 +31,7 @@ MODULE Test_Interpolation_Functions
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   REAL(fp), PARAMETER :: TWO  = 2.0_fp
   ! Floating point comparison tolerance
-  REAL(fp), PARAMETER :: TOLERANCE = 1.0e-12_fp
+  REAL(fp), PARAMETER :: TOLERANCE = 1.0e-11_fp
   ! The coefficients for the independent variables
   REAL(fp), PARAMETER :: WC = 3.0_fp
   REAL(fp), PARAMETER :: XC = 0.1_fp
@@ -37,7 +39,11 @@ MODULE Test_Interpolation_Functions
   ! The number of dimension points
   INTEGER , PARAMETER :: N = 21
   ! Dimension axes for interpolation tests
-  REAL(fp), PARAMETER :: W(N) = (/ (REAL(i,fp), i=(-N/2),(N/2)) /)
+  REAL(fp), PARAMETER :: W(N) = (/ -10.0_fp, -9.0_fp, -8.0_fp, -7.0_fp, -6.0_fp, &             
+                                    -5.0_fp, -4.0_fp, -3.0_fp, -2.0_fp, -1.0_fp, &             
+                                     0.0_fp, &                                                 
+                                     1.0_fp,  2.0_fp,  3.0_fp,  4.0_fp,  5.0_fp, &             
+                                     6.0_fp,  7.0_fp,  8.0_fp,  9.0_fp, 10.0_fp /)             
   REAL(fp), PARAMETER :: X(N) = W - 5.0_fp
   REAL(fp), PARAMETER :: Y(N) = W + 3.5_fp
   ! Index locations for actual interpolations between points
@@ -119,6 +125,272 @@ CONTAINS
     END DO
     CALL Report_Test(UTest)
   END SUBROUTINE Test_Hingepoint_Interpolation
+
+
+  SUBROUTINE Test_Hingepoint_TL_Interpolation(UTest)
+    ! Arguments
+    TYPE(UTest_type), INTENT(IN OUT) :: UTest
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_TL_Interpolation'
+    REAL(fp), PARAMETER :: DELTA = 0.01_fp
+    ! Local variables
+    INTEGER  :: i, j, k
+    INTEGER  :: i1, i2
+    INTEGER  :: j1, j2
+    INTEGER  :: k1, k2
+    INTEGER  :: wPower, xPower, yPower
+    REAL(fp) :: z1(N), z2(N,N), z3(N,N,N)
+    REAL(fp) :: w_TL(N), x_TL(N), y_TL(N)
+    REAL(fp) :: z1_TL(N), z2_TL(N,N), z3_TL(N,N,N)
+    REAL(fp) :: wint, wint_TL
+    REAL(fp) :: xint, xint_TL
+    REAL(fp) :: yint, yint_TL
+    REAL(fp) :: dzcalc, zint_TL
+    TYPE(Lpoly_type) :: wlp   , xlp   , ylp
+    TYPE(Lpoly_type) :: wlp_TL, xlp_TL, ylp_TL
+    
+    ! Get the function powers
+    ! -----------------------
+    CALL get_powers(wPower,xPower,yPower)
+    
+    ! Initialise TL values
+    ! --------------------
+    wint_TL = DELTA
+    xint_TL = DELTA
+    yint_TL = DELTA
+    w_TL = ZERO
+    x_TL = ZERO
+    y_TL = ZERO
+    z1_TL = ZERO
+    z2_TL = ZERO
+    z3_TL = ZERO
+
+    ! 1-D test
+    ! --------
+    CALL Init_Test(UTest,'1-D hingepoint TL test',Caller=ROUTINE_NAME)
+    z1 = z_1d(W,wPower)
+    DO i = 1,N
+      wint = W(i)
+      ! Compute the analytic derivative
+      dzcalc = dzw(wint,wPower)*wint_TL
+      ! Compute the w-dimension polynomials
+      CALL find_index(W,wint,i1,i2)
+      CALL lpoly(W(i1:i2),wint,wlp)
+      CALL lpoly_TL(W(i1:i2),wint,wlp,w_TL(i1:i2),wint_TL,wlp_TL)
+      ! Perform the interpolation
+      CALL interp_1D_TL(z1(i1:i2),wlp,z1_TL(i1:i2),wlp_TL,zint_TL)
+      CALL Is_Equal_Within(dzcalc, zint_TL, TOLERANCE, UTest)
+    END DO
+    CALL Report_Test(UTest)
+
+    ! 2-D test
+    ! --------
+    CALL Init_Test(UTest,'2-D hingepoint TL test',Caller=ROUTINE_NAME)
+    z2 = z_2d(W,X,wPower,xPower)
+    DO j = 1,N
+      xint = X(j)
+      ! Compute the x-dimension polynomials
+      CALL find_index(X,xint,j1,j2)
+      CALL lpoly(X(j1:j2),xint,xlp)
+      CALL lpoly_TL(X(j1:j2),xint,xlp,x_TL(j1:j2),xint_TL,xlp_TL)
+      DO i = 1,N
+        wint = W(i)
+        ! Compute the analytic derivative
+        dzcalc = dzw(wint,wPower)*wint_TL + dzx(xint,xPower)*xint_TL
+        ! Compute the w-dimension polynomials
+        CALL find_index(W,wint,i1,i2)
+        CALL lpoly(W(i1:i2),wint,wlp)
+        CALL lpoly_TL(W(i1:i2),wint,wlp,w_TL(i1:i2),wint_TL,wlp_TL)
+        ! Perform the interpolation
+        CALL interp_2D_TL(z2(i1:i2,j1:j2),wlp,xlp,z2_TL(i1:i2,j1:j2),wlp_TL,xlp_TL,zint_TL)
+        CALL Is_Equal_Within(dzcalc, zint_TL, TOLERANCE, UTest)
+      END DO
+    END DO
+    CALL Report_Test(UTest)
+  
+    ! 3-D test
+    ! --------
+    CALL Init_Test(UTest,'3-D hingepoint TL test',Caller=ROUTINE_NAME)
+    z3 = z_3d(W,X,Y,wPower,xPower,yPower)
+    DO k = 1,N
+      yint = Y(k)
+      ! Compute the y-dimension polynomials
+      CALL find_index(Y,yint,k1,k2)
+      CALL lpoly(Y(k1:k2),yint,ylp)
+      CALL lpoly_TL(Y(k1:k2),yint,ylp,y_TL(k1:k2),yint_TL,ylp_TL)
+      DO j = 1,N
+        xint = X(j)
+        ! Compute the x-dimension polynomials
+        CALL find_index(X,xint,j1,j2)
+        CALL lpoly(X(j1:j2),xint,xlp)
+        CALL lpoly_TL(X(j1:j2),xint,xlp,x_TL(j1:j2),xint_TL,xlp_TL)
+        DO i = 1,N
+          wint = W(i)
+          ! Compute the analytic derivative
+          dzcalc = dzw(wint,wPower)*wint_TL + dzx(xint,xPower)*xint_TL + dzy(yint,yPower)*yint_TL
+          ! Compute the w-dimension polynomials
+          CALL find_index(W,wint,i1,i2)
+          CALL lpoly(W(i1:i2),wint,wlp)
+          CALL lpoly_TL(W(i1:i2),wint,wlp,w_TL(i1:i2),wint_TL,wlp_TL)
+          ! Perform the interpolation
+          CALL interp_3D_TL(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,z3_TL(i1:i2,j1:j2,k1:k2),wlp_TL,xlp_TL,ylp_TL,zint_TL)
+          CALL Is_Equal_Within(dzcalc, zint_TL, TOLERANCE, UTest)
+        END DO
+      END DO
+    END DO
+    CALL Report_Test(UTest)
+  END SUBROUTINE Test_Hingepoint_TL_Interpolation
+
+
+  SUBROUTINE Test_Hingepoint_AD_Interpolation(UTest)
+    ! Arguments
+    TYPE(UTest_type), INTENT(IN OUT) :: UTest
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_AD_Interpolation'
+    ! Local variables
+    INTEGER  :: wPower, xPower, yPower
+    INTEGER  :: i, j, k
+    INTEGER  :: i1, i2
+    INTEGER  :: j1, j2
+    INTEGER  :: k1, k2
+    TYPE(Lpoly_type) :: wlp   , xlp   , ylp
+    TYPE(Lpoly_type) :: wlp_AD, xlp_AD, ylp_AD
+    REAL(fp) :: w_AD(N), x_AD(N), y_AD(N)
+    REAL(fp) :: z1(N)   , z2(N,N)   , z3(N,N,N)
+    REAL(fp) :: z1_AD(N), z2_AD(N,N), z3_AD(N,N,N)
+    REAL(fp) :: wint, wint_AD
+    REAL(fp) :: xint, xint_AD
+    REAL(fp) :: yint, yint_AD
+    REAL(fp) ::       zint_AD
+    REAL(fp) :: dzwcalc, dzxcalc, dzycalc
+
+    ! Compute the values to interpolate between
+    ! -----------------------------------------
+    CALL get_powers(wPower,xPower,yPower)
+    
+    ! Initialise AD values
+    ! --------------------
+    w_AD = ZERO
+    x_AD = ZERO
+    y_AD = ZERO
+    z1_AD = ZERO
+    z2_AD = ZERO
+    z3_AD = ZERO
+  
+    ! 1-D test
+    ! --------
+    CALL Init_Test(UTest,'1-D hingepoint AD test',Caller=ROUTINE_NAME)
+    z1 = z_1d(W,wPower)
+    DO i = 1, N
+      wint = W(i)
+      ! Compute the analytic derivative
+      dzwcalc = dzw(wint,wPower)
+      ! Compute the w-dimension polynomials
+      CALL find_index(W,wint,i1,i2)
+      CALL lpoly(W(i1:i2),wint,wlp)
+      ! Reset the adjoints
+      zint_AD      = ONE
+      z1_AD(i1:i2) = ZERO
+      CALL Clear_LPoly(wlp_AD)
+      wint_AD      = ZERO
+      w_AD(i1:i2)  = ZERO
+      ! Perform the adjoint interpolation
+      CALL interp_1D_AD(z1(i1:i2),wlp,zint_AD,z1_AD(i1:i2),wlp_AD)
+      ! Compute the polynomial adjoint
+      CALL lpoly_AD(w(i1:i2),wint,wlp,wlp_AD,w_AD(i1:i2),wint_AD)
+      CALL Is_Equal_Within(dzwcalc, wint_AD, TOLERANCE, UTest)
+    END DO
+    CALL Report_Test(UTest)
+
+    ! 2-D test
+    ! --------
+    CALL Init_Test(UTest,'2-D hingepoint AD test',Caller=ROUTINE_NAME)
+    z2 = z_2d(W,X,wPower,xPower)
+    DO j = 1,N
+      xint = X(j)
+      ! Compute the analytic derivative
+      dzxcalc = dzx(xint,xPower)
+      ! Compute the x-dimension polynomials
+      CALL find_index(X,xint,j1,j2)
+      CALL lpoly(X(j1:j2),xint,xlp)
+      DO i = 1,N
+        wint = W(i)
+        ! Compute the analytic derivative
+        dzwcalc = dzw(wint,wPower)
+        ! Compute the w-dimension polynomials
+        CALL find_index(W,wint,i1,i2)
+        CALL lpoly(W(i1:i2),wint,wlp)
+        ! Reset the adjoints
+        zint_AD            = ONE
+        z2_AD(i1:i2,j1:j2) = ZERO
+        CALL Clear_LPoly(wlp_AD)
+        wint_AD            = ZERO
+        w_AD(i1:i2)        = ZERO
+        CALL Clear_LPoly(xlp_AD)
+        xint_AD            = ZERO
+        x_AD(i1:i2)        = ZERO
+        ! Perform the adjoint interpolation
+        CALL interp_2D_AD(z2(i1:i2,j1:j2),wlp,xlp,zint_AD,z2_AD(i1:i2,j1:j2),wlp_AD,xlp_AD)
+        ! Compute the polynomial adjoints
+        CALL lpoly_AD(x(j1:j2),xint,xlp,xlp_AD,x_AD(j1:j2),xint_AD)
+        CALL lpoly_AD(w(i1:i2),wint,wlp,wlp_AD,w_AD(i1:i2),wint_AD)
+        CALL Is_Equal_Within(dzxcalc, xint_AD, TOLERANCE, UTest)
+        CALL Is_Equal_Within(dzwcalc, wint_AD, TOLERANCE, UTest)
+      END DO
+    END DO
+    CALL Report_Test(UTest)
+
+    ! 3-D test
+    ! --------
+    CALL Init_Test(UTest,'3-D hingepoint AD test',Caller=ROUTINE_NAME)
+    z3 = z_3d(W,X,Y,wPower,xPower,yPower)
+    DO k = 1,N
+      yint = Y(k)
+      ! Compute the analytic derivative
+      dzycalc = dzy(yint,yPower)
+      ! Compute the y-dimension polynomials
+      CALL find_index(Y,yint,k1,k2)
+      CALL lpoly(Y(k1:k2),yint,ylp)
+      DO j = 1,N
+        xint = X(j)
+        ! Compute the analytic derivative
+        dzxcalc = dzx(xint,xPower)
+        ! Compute the x-dimension polynomials
+        CALL find_index(X,xint,j1,j2)
+        CALL lpoly(X(j1:j2),xint,xlp)
+        DO i = 1,N
+          wint = W(i)
+          ! Compute the analytic derivative
+          dzwcalc = dzw(wint,wPower)
+          ! Compute the w-dimension polynomials
+          CALL find_index(W,wint,i1,i2)
+          CALL lpoly(W(i1:i2),wint,wlp)
+          ! Reset the adjoints
+          zint_AD                  = ONE
+          z3_AD(i1:i2,j1:j2,k1:k2) = ZERO
+          CALL Clear_LPoly(wlp_AD)
+          wint_AD                  = ZERO
+          w_AD(i1:i2)              = ZERO
+          CALL Clear_LPoly(xlp_AD)
+          xint_AD                  = ZERO
+          x_AD(j1:j2)              = ZERO
+          CALL Clear_LPoly(ylp_AD)
+          yint_AD                  = ZERO
+          y_AD(k1:k2)              = ZERO
+          ! Perform the adjoint interpolation
+          CALL interp_3D_AD(z3(i1:i2,j1:j2,k1:k2),wlp,xlp,ylp,zint_AD,z3_AD(i1:i2,j1:j2,k1:k2),wlp_AD,xlp_AD,ylp_AD)
+          ! Compute the polynomial adjoints
+          CALL lpoly_AD(y(k1:k2),yint,ylp,ylp_AD,y_AD(k1:k2),yint_AD)
+          CALL lpoly_AD(x(j1:j2),xint,xlp,xlp_AD,x_AD(j1:j2),xint_AD)
+          CALL lpoly_AD(w(i1:i2),wint,wlp,wlp_AD,w_AD(i1:i2),wint_AD)
+          CALL Is_Equal_Within(dzycalc, yint_AD, TOLERANCE, UTest)
+          CALL Is_Equal_Within(dzxcalc, xint_AD, TOLERANCE, UTest)
+          CALL Is_Equal_Within(dzwcalc, wint_AD, TOLERANCE, UTest)
+        END DO
+      END DO
+    END DO
+    CALL Report_Test(UTest)
+  END SUBROUTINE Test_Hingepoint_AD_Interpolation
 
 
   SUBROUTINE Test_Actual_Interpolation(UTest)
