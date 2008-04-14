@@ -97,7 +97,7 @@ CONTAINS
   ! routines are only used in testing.
   ! -------------------------------------------
   SUBROUTINE Clear_LPoly(p)
-    TYPE(LPoly_type), INTENT(OUT) :: p
+    TYPE(LPoly_type), INTENT(IN OUT) :: p
     p%Order = ORDER
     p%nPts  = NPOLY_PTS
     p%lp_left   = ZERO
@@ -115,38 +115,52 @@ CONTAINS
   ! Forward model interpolation routines
   ! ------------------------------------
   ! 1-D routine
-  SUBROUTINE Interp_1D(y, xlp, &  ! Input
-                       y_int   )  ! Output
+  SUBROUTINE Interp_1D(z, wlp, &  ! Input
+                       z_int   )  ! Output
     ! Arguments
-    REAL(fp),         INTENT(IN)  :: y(:)
-    TYPE(LPoly_type), INTENT(IN)  :: xlp
-    REAL(fp),         INTENT(OUT) :: y_int
+    REAL(fp),         INTENT(IN)  :: z(:)
+    TYPE(LPoly_type), INTENT(IN)  :: wlp
+    REAL(fp),         INTENT(IN OUT) :: z_int
+!    REAL(fp),         INTENT(OUT) :: z_int
     ! Local variables
-    INTEGER :: i
-    ! Perform interpolation
-    y_int = ZERO
-    DO i = 1, NPOLY_PTS
-      y_int = y_int + (xlp%w_left *xlp%lp_left(i) *y(i)  ) + &
-                      (xlp%w_right*xlp%lp_right(i)*y(i+1))
-    END DO
+!    INTEGER :: i
+!    ! Perform interpolation
+!    z_int = ZERO
+!    DO i = 1, NPOLY_PTS
+!      z_int = z_int + (wlp%w_left *wlp%lp_left(i) *z(i)  ) + &
+!                      (wlp%w_right*wlp%lp_right(i)*z(i+1))
+!    END DO
+!    z_int = ( wlp%w_left  * DOT_PRODUCT(wlp%lp_left ,z(1:3)) ) + &
+!            ( wlp%w_right * DOT_PRODUCT(wlp%lp_right,z(2:4)) )
+    z_int = ( wlp%w_left  * ( wlp%lp_left(1) *z(1) + &
+                              wlp%lp_left(2) *z(2) + &
+                              wlp%lp_left(3) *z(3) ) ) + &
+            ( wlp%w_right * ( wlp%lp_right(1)*z(2) + &
+                              wlp%lp_right(2)*z(3) + &
+                              wlp%lp_right(3)*z(4) ) )
   END SUBROUTINE Interp_1D
 
   ! 2-D routine
-  SUBROUTINE Interp_2D(z, xlp, ylp, &  ! Input
+  SUBROUTINE Interp_2D(z, wlp, xlp, &  ! Input
                        z_int        )  ! Output
     ! Arguments
     REAL(fp),         INTENT(IN)  :: z(:,:)
-    TYPE(LPoly_type), INTENT(IN)  :: xlp, ylp
-    REAL(fp),         INTENT(OUT) :: z_int
+    TYPE(LPoly_type), INTENT(IN)  :: wlp, xlp
+    REAL(fp),         INTENT(IN OUT) :: z_int
+!    REAL(fp),         INTENT(OUT) :: z_int
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
-    ! Interpolate z in x dimension for all y
+    ! Interpolate z in w dimension for all x
     DO i = 1, NPTS
-      CALL Interp_1D(z(:,i),xlp,a(i))
+      CALL Interp_1D(z(:,i),wlp,a(i))
     END DO
+!    CALL Interp_1D(z(:,1),wlp,a(1))
+!    CALL Interp_1D(z(:,2),wlp,a(2))
+!    CALL Interp_1D(z(:,3),wlp,a(3))
+!    CALL Interp_1D(z(:,4),wlp,a(4))
     ! Interpolate z in y dimension
-    CALL Interp_1D(a,ylp,z_int)
+    CALL Interp_1D(a,xlp,z_int)
   END SUBROUTINE Interp_2D
 
   ! 3-D routine
@@ -155,7 +169,8 @@ CONTAINS
     ! Arguments
     REAL(fp),         INTENT(IN)  :: z(:,:,:)
     TYPE(LPoly_type), INTENT(IN)  :: wlp, xlp, ylp
-    REAL(fp),         INTENT(OUT) :: z_int
+    REAL(fp),         INTENT(IN OUT) :: z_int
+!    REAL(fp),         INTENT(OUT) :: z_int
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
@@ -172,48 +187,91 @@ CONTAINS
   ! Tangent-linear model interpolation routines
   ! -------------------------------------------
   ! 1-D routine
-  SUBROUTINE Interp_1D_TL( y   , xlp   , &  ! FWD Input
-                           y_TL, xlp_TL, &  ! TL  Input
-                           y_int_TL      )  ! TL  Output
+  SUBROUTINE Interp_1D_TL( x   , wlp   , &  ! FWD Input
+                           x_TL, wlp_TL, &  ! TL  Input
+                           x_int_TL      )  ! TL  Output
     ! Arguments
-    REAL(fp),         INTENT(IN) :: y(:)
-    TYPE(LPoly_type), INTENT(IN) :: xlp
-    REAL(fp),         INTENT(IN) :: y_TL(:)
-    TYPE(LPoly_type), INTENT(IN) :: xlp_TL
-    REAL(fp),         INTENT(OUT):: y_int_TL
+    REAL(fp),         INTENT(IN) :: x(:)
+    TYPE(LPoly_type), INTENT(IN) :: wlp
+    REAL(fp),         INTENT(IN) :: x_TL(:)
+    TYPE(LPoly_type), INTENT(IN) :: wlp_TL
+    REAL(fp),         INTENT(IN OUT):: x_int_TL
+!    REAL(fp),         INTENT(OUT):: x_int_TL
     ! Local variables
-    INTEGER  :: i
-    ! Perform TL interpolation
-    y_int_TL = ZERO
-    DO i = 1, NPOLY_PTS
-      y_int_TL = y_int_TL + ( xlp%w_left    * xlp%lp_left(i)    * y_TL(i) ) + &
-                            ( xlp%w_left    * xlp_TL%lp_left(i) * y(i)    ) + &
-                            ( xlp_TL%w_left * xlp%lp_left(i)    * y(i)    ) + &
-                            ( xlp%w_right    * xlp%lp_right(i)    * y_TL(i+1) ) + &
-                            ( xlp%w_right    * xlp_TL%lp_right(i) * y(i+1)    ) + &
-                            ( xlp_TL%w_right * xlp%lp_right(i)    * y(i+1)    )
-    END DO
+!    INTEGER  :: i
+!    ! Perform TL interpolation
+!    x_int_TL = ZERO
+!    DO i = 1, NPOLY_PTS
+!      x_int_TL = x_int_TL + ( wlp%w_left    * wlp%lp_left(i)    * x_TL(i) ) + &
+!                            ( wlp%w_left    * wlp_TL%lp_left(i) * x(i)    ) + &
+!                            ( wlp_TL%w_left * wlp%lp_left(i)    * x(i)    ) + &
+!                            ( wlp%w_right    * wlp%lp_right(i)    * x_TL(i+1) ) + &
+!                            ( wlp%w_right    * wlp_TL%lp_right(i) * x(i+1)    ) + &
+!                            ( wlp_TL%w_right * wlp%lp_right(i)    * x(i+1)    )
+!    END DO
+
+!    x_int_TL = wlp%w_left    * wlp%lp_left(1)    * x_TL(1) + &
+!               wlp%w_left    * wlp_TL%lp_left(1) * x(1)    + &
+!               wlp_TL%w_left * wlp%lp_left(1)    * x(1)    + &
+!               wlp%w_left    * wlp%lp_left(2)    * x_TL(2) + &
+!               wlp%w_left    * wlp_TL%lp_left(2) * x(2)    + &
+!               wlp_TL%w_left * wlp%lp_left(2)    * x(2)    + &
+!               wlp%w_left    * wlp%lp_left(3)    * x_TL(3) + &
+!               wlp%w_left    * wlp_TL%lp_left(3) * x(3)    + &
+!               wlp_TL%w_left * wlp%lp_left(3)    * x(3)    + &
+!               
+!               wlp%w_right    * wlp%lp_right(1)    * x_TL(2) + &
+!               wlp%w_right    * wlp_TL%lp_right(1) * x(2)    + &
+!               wlp_TL%w_right * wlp%lp_right(1)    * x(2)    + &
+!               wlp%w_right    * wlp%lp_right(2)    * x_TL(3) + &
+!               wlp%w_right    * wlp_TL%lp_right(2) * x(3)    + &
+!               wlp_TL%w_right * wlp%lp_right(2)    * x(3)    + &
+!               wlp%w_right    * wlp%lp_right(3)    * x_TL(4) + &
+!               wlp%w_right    * wlp_TL%lp_right(3) * x(4)    + &
+!               wlp_TL%w_right * wlp%lp_right(3)    * x(4)
+
+    x_int_TL = ( wlp%w_left    * ( wlp%lp_left(1)    * x_TL(1) + &
+                                   wlp_TL%lp_left(1) * x(1)    + &
+                                   wlp%lp_left(2)    * x_TL(2) + &
+                                   wlp_TL%lp_left(2) * x(2)    + &
+                                   wlp%lp_left(3)    * x_TL(3) + &
+                                   wlp_TL%lp_left(3) * x(3)    ) ) + &
+               ( wlp_TL%w_left * ( wlp%lp_left(1)    * x(1)    + &
+                                   wlp%lp_left(2)    * x(2)    + &
+                                   wlp%lp_left(3)    * x(3)    ) ) + &
+               
+               ( wlp%w_right    * ( wlp%lp_right(1)    * x_TL(2) + &
+                                    wlp_TL%lp_right(1) * x(2)    + &
+                                    wlp%lp_right(2)    * x_TL(3) + &
+                                    wlp_TL%lp_right(2) * x(3)    + &
+                                    wlp%lp_right(3)    * x_TL(4) + &
+                                    wlp_TL%lp_right(3) * x(4)    ) ) + &
+               ( wlp_TL%w_right * ( wlp%lp_right(1)    * x(2)    + &
+                                    wlp%lp_right(2)    * x(3)    + &
+                                    wlp%lp_right(3)    * x(4)    ) )
+
   END SUBROUTINE Interp_1D_TL
   
   ! 2-D routine
-  SUBROUTINE Interp_2D_TL( z,    xlp   , ylp   , &  ! FWD Input
-                           z_TL, xlp_TL, ylp_TL, &  ! TL  Input
+  SUBROUTINE Interp_2D_TL( z,    wlp   , xlp   , &  ! FWD Input
+                           z_TL, wlp_TL, xlp_TL, &  ! TL  Input
                            z_int_TL              )  ! TL  Output
     REAL(fp),         INTENT(IN)  :: z(:,:)
-    TYPE(LPoly_type), INTENT(IN)  :: xlp, ylp
+    TYPE(LPoly_type), INTENT(IN)  :: wlp, xlp
     REAL(fp),         INTENT(IN)  :: z_TL(:,:)
-    TYPE(LPoly_type), INTENT(IN)  :: xlp_TL, ylp_TL
-    REAL(fp),         INTENT(OUT) :: z_int_TL
+    TYPE(LPoly_type), INTENT(IN)  :: wlp_TL, xlp_TL
+    REAL(fp),         INTENT(IN OUT) :: z_int_TL
+!    REAL(fp),         INTENT(OUT) :: z_int_TL
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_TL(NPTS)
     ! Interpolate z in x dimension for all y
     DO i = 1, NPTS
-      CALL Interp_1D(z(:,i),xlp,a(i))
-      CALL Interp_1D_TL(z(:,i),xlp,z_TL(:,i),xlp_TL,a_TL(i))
+      CALL Interp_1D(z(:,i),wlp,a(i))
+      CALL Interp_1D_TL(z(:,i),wlp,z_TL(:,i),wlp_TL,a_TL(i))
     END DO
     ! Interpolate z in y dimension
-    CALL Interp_1D_TL(a,ylp,a_TL,ylp_TL,z_int_TL)
+    CALL Interp_1D_TL(a,xlp,a_TL,xlp_TL,z_int_TL)
   END SUBROUTINE Interp_2D_TL
   
   ! 3-D routine
@@ -225,7 +283,8 @@ CONTAINS
     TYPE(LPoly_type), INTENT(IN)  :: wlp, xlp, ylp
     REAL(fp),         INTENT(IN)  :: z_TL(:,:,:)
     TYPE(LPoly_type), INTENT(IN)  :: wlp_TL, xlp_TL, ylp_TL
-    REAL(fp),         INTENT(OUT) :: z_int_TL
+    REAL(fp),         INTENT(IN OUT) :: z_int_TL
+!    REAL(fp),         INTENT(OUT) :: z_int_TL
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_TL(NPTS)
@@ -253,18 +312,80 @@ CONTAINS
     REAL(fp),         INTENT(IN OUT) :: y_AD(:)
     TYPE(LPoly_type), INTENT(IN OUT) :: xlp_AD
     ! Local variables
-    INTEGER  :: i
-    ! Perform adjoint interpolation
-    DO i = 1, NPOLY_PTS
-      ! "Right" side
-      xlp_AD%w_right     = xlp_AD%w_right     + ( xlp%lp_right(i) * y(i+1)          * y_int_AD )
-      xlp_AD%lp_right(i) = xlp_AD%lp_right(i) + ( xlp%w_right     * y(i+1)          * y_int_AD )
-      y_AD(i+1)          = y_AD(i+1)          + ( xlp%w_right     * xlp%lp_right(i) * y_int_AD )
-      ! "Left" side
-      xlp_AD%w_left     = xlp_AD%w_left     + ( xlp%lp_left(i) * y(i)           * y_int_AD )
-      xlp_AD%lp_left(i) = xlp_AD%lp_left(i) + ( xlp%w_left     * y(i)           * y_int_AD )
-      y_AD(i)           = y_AD(i)           + ( xlp%w_left     * xlp%lp_left(i) * y_int_AD )
-    END DO
+    REAL(fp) :: wl_y_int_AD, wr_y_int_AD
+!    INTEGER  :: i
+!    ! Perform adjoint interpolation
+!    DO i = 1, NPOLY_PTS
+!      ! "Right" side
+!      xlp_AD%w_right     = xlp_AD%w_right     + ( xlp%lp_right(i) * y(i+1)          * y_int_AD )
+!      xlp_AD%lp_right(i) = xlp_AD%lp_right(i) + ( xlp%w_right     * y(i+1)          * y_int_AD )
+!      y_AD(i+1)          = y_AD(i+1)          + ( xlp%w_right     * xlp%lp_right(i) * y_int_AD )
+!      ! "Left" side
+!      xlp_AD%w_left     = xlp_AD%w_left     + ( xlp%lp_left(i) * y(i)           * y_int_AD )
+!      xlp_AD%lp_left(i) = xlp_AD%lp_left(i) + ( xlp%w_left     * y(i)           * y_int_AD )
+!      y_AD(i)           = y_AD(i)           + ( xlp%w_left     * xlp%lp_left(i) * y_int_AD )
+!    END DO
+    
+!    ! "Right" side
+!    xlp_AD%w_right     = xlp_AD%w_right     + ( xlp%lp_right(1) * y(2)            * y_int_AD )
+!    xlp_AD%lp_right(1) = xlp_AD%lp_right(1) + ( xlp%w_right     * y(2)            * y_int_AD )
+!    y_AD(2)            = y_AD(2)            + ( xlp%w_right     * xlp%lp_right(1) * y_int_AD )
+!    ! "Left" side
+!    xlp_AD%w_left     = xlp_AD%w_left     + ( xlp%lp_left(1) * y(1)           * y_int_AD )
+!    xlp_AD%lp_left(1) = xlp_AD%lp_left(1) + ( xlp%w_left     * y(1)           * y_int_AD )
+!    y_AD(1)           = y_AD(1)           + ( xlp%w_left     * xlp%lp_left(1) * y_int_AD )
+!
+!
+!    ! "Right" side
+!    xlp_AD%w_right     = xlp_AD%w_right     + ( xlp%lp_right(2) * y(3)            * y_int_AD )
+!    xlp_AD%lp_right(2) = xlp_AD%lp_right(2) + ( xlp%w_right     * y(3)            * y_int_AD )
+!    y_AD(3)            = y_AD(3)            + ( xlp%w_right     * xlp%lp_right(2) * y_int_AD )
+!    ! "Left" side
+!    xlp_AD%w_left     = xlp_AD%w_left     + ( xlp%lp_left(2) * y(2)           * y_int_AD )
+!    xlp_AD%lp_left(2) = xlp_AD%lp_left(2) + ( xlp%w_left     * y(2)           * y_int_AD )
+!    y_AD(2)           = y_AD(2)           + ( xlp%w_left     * xlp%lp_left(2) * y_int_AD )
+!
+!    ! "Right" side
+!    xlp_AD%w_right     = xlp_AD%w_right     + ( xlp%lp_right(3) * y(4)            * y_int_AD )
+!    xlp_AD%lp_right(3) = xlp_AD%lp_right(3) + ( xlp%w_right     * y(4)            * y_int_AD )
+!    y_AD(4)            = y_AD(4)            + ( xlp%w_right     * xlp%lp_right(3) * y_int_AD )
+!    ! "Left" side
+!    xlp_AD%w_left     = xlp_AD%w_left     + ( xlp%lp_left(3) * y(3)           * y_int_AD )
+!    xlp_AD%lp_left(3) = xlp_AD%lp_left(3) + ( xlp%w_left     * y(3)           * y_int_AD )
+!    y_AD(3)           = y_AD(3)           + ( xlp%w_left     * xlp%lp_left(3) * y_int_AD )
+!
+
+    xlp_AD%w_right     = xlp_AD%w_right + &
+                         ( y_int_AD * ( ( xlp%lp_right(1) * y(2) ) + &
+                                        ( xlp%lp_right(2) * y(3) ) + &
+                                        ( xlp%lp_right(3) * y(4) ) ) )
+
+    xlp_AD%w_left     = xlp_AD%w_left + &
+                        ( y_int_AD * ( ( xlp%lp_left(1) * y(1) ) + &
+                                       ( xlp%lp_left(2) * y(2) ) + &
+                                       ( xlp%lp_left(3) * y(3) ) ) )
+
+    wr_y_int_AD = xlp%w_right * y_int_AD
+    xlp_AD%lp_right(1) = xlp_AD%lp_right(1) + ( wr_y_int_AD * y(2) )
+    xlp_AD%lp_right(2) = xlp_AD%lp_right(2) + ( wr_y_int_AD * y(3) )
+    xlp_AD%lp_right(3) = xlp_AD%lp_right(3) + ( wr_y_int_AD * y(4) )
+
+    wl_y_int_AD = xlp%w_left * y_int_AD
+    xlp_AD%lp_left(1) = xlp_AD%lp_left(1) + ( wl_y_int_AD * y(1) )
+    xlp_AD%lp_left(2) = xlp_AD%lp_left(2) + ( wl_y_int_AD * y(2) )
+    xlp_AD%lp_left(3) = xlp_AD%lp_left(3) + ( wl_y_int_AD * y(3) )
+
+    y_AD(1) = y_AD(1) + ( wl_y_int_AD * xlp%lp_left(1) )
+    
+    y_AD(2) = y_AD(2) + ( wr_y_int_AD * xlp%lp_right(1) ) + &
+                        ( wl_y_int_AD * xlp%lp_left(2)  )
+                        
+    y_AD(3) = y_AD(3) + ( wr_y_int_AD * xlp%lp_right(2) ) + &
+                        ( wl_y_int_AD * xlp%lp_left(3)  )
+                        
+    y_AD(4) = y_AD(4) + ( wr_y_int_AD * xlp%lp_right(3) )
+
+
   END SUBROUTINE Interp_1D_AD
 
   ! 2-D routine
@@ -368,7 +489,8 @@ CONTAINS
   SUBROUTINE LPoly(x, x_int, p)
     REAL(fp),         INTENT(IN)  :: x(:)  ! Input
     REAL(fp),         INTENT(IN)  :: x_int ! Input
-    TYPE(LPoly_type), INTENT(OUT) :: p     ! Input
+    TYPE(LPoly_type), INTENT(IN OUT) :: p     ! Input
+!    TYPE(LPoly_type), INTENT(OUT) :: p     ! Input
     ! Compute the numerator differences
     CALL Compute_dxi(x(1:3),x_int,p%dxi_left)
     CALL Compute_dxi(x(2:4),x_int,p%dxi_right)
@@ -402,7 +524,8 @@ CONTAINS
     TYPE(LPoly_type), INTENT(IN)  :: p         ! FWD Input
     REAL(fp),         INTENT(IN)  :: x_TL(:)   ! TL  Input
     REAL(fp),         INTENT(IN)  :: x_int_TL  ! TL  Input
-    TYPE(LPoly_type), INTENT(OUT) :: p_TL      ! TL  Output
+    TYPE(LPoly_type), INTENT(IN OUT) :: p_TL      ! TL  Output
+!    TYPE(LPoly_type), INTENT(OUT) :: p_TL      ! TL  Output
     ! Compute the tangent-linear numerator differences
     CALL Compute_dxi_TL(x_TL(1:3),x_int_TL,p_TL%dxi_left)
     CALL Compute_dxi_TL(x_TL(2:4),x_int_TL,p_TL%dxi_right)
@@ -470,6 +593,7 @@ CONTAINS
     CALL Compute_dxi_AD(p_AD%dxi_left ,x_AD(1:3),x_int_AD)
   END SUBROUTINE LPoly_AD
 
+
   ! ------------------------------------------------
   ! Subroutines to compute the quadratic polynomials
   ! ------------------------------------------------
@@ -478,6 +602,7 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: dxi(:)  ! Input
     REAL(fp), INTENT(IN)     :: dx(:)   ! Input
     REAL(fp), INTENT(IN OUT) :: lp(:)   ! Output
+!    REAL(fp), INTENT(OUT) :: lp(:)   ! Output
     lp(1) = dxi(2)*dxi(3) / ( dx(1)*dx(2))
     lp(2) = dxi(1)*dxi(3) / (-dx(1)*dx(3))
     lp(3) = dxi(1)*dxi(2) / ( dx(2)*dx(3))
@@ -492,6 +617,7 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: dxi_TL(:)  ! TL  Input
     REAL(fp), INTENT(IN)     :: dx_TL(:)   ! TL  Input
     REAL(fp), INTENT(IN OUT) :: lp_TL(:)   ! TL  Output
+!    REAL(fp), INTENT(OUT) :: lp_TL(:)   ! TL  Output
     lp_TL(1) = ( (dxi(3)*dxi_TL(2)      ) + &
                  (dxi(2)*dxi_TL(3)      ) - &
                  (dx(2) *dx_TL(1) *lp(1)) - &
@@ -552,6 +678,7 @@ CONTAINS
   SUBROUTINE Compute_dx(x,dx)
     REAL(fp), INTENT(IN)     :: x(:)   ! Input
     REAL(fp), INTENT(IN OUT) :: dx(:)  ! Output
+!    REAL(fp), INTENT(OUT) :: dx(:)  ! Output
     dx(1) = x(1)-x(2)
     dx(2) = x(1)-x(3)
     dx(3) = x(2)-x(3)
@@ -561,6 +688,7 @@ CONTAINS
   SUBROUTINE Compute_dx_TL(x_TL,dx_TL)
     REAL(fp), INTENT(IN)     :: x_TL(:)   ! TL Input
     REAL(fp), INTENT(IN OUT) :: dx_TL(:)  ! TL Output
+!    REAL(fp), INTENT(OUT) :: dx_TL(:)  ! TL Output
     dx_TL(1) = x_TL(1)-x_TL(2)
     dx_TL(2) = x_TL(1)-x_TL(3)
     dx_TL(3) = x_TL(2)-x_TL(3)
@@ -590,10 +718,14 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: x(:)    ! Input
     REAL(fp), INTENT(IN)     :: xi      ! Input
     REAL(fp), INTENT(IN OUT) :: dxi(:)  ! Output
-    INTEGER :: i
-    DO i = 1, NPOLY_PTS
-      dxi(i) = xi-x(i)
-    END DO
+!    REAL(fp), INTENT(OUT) :: dxi(:)  ! Output
+!    INTEGER :: i
+!    DO i = 1, NPOLY_PTS
+!      dxi(i) = xi-x(i)
+!    END DO
+    dxi(1) = xi - x(1)
+    dxi(2) = xi - x(2)
+    dxi(3) = xi - x(3)
   END SUBROUTINE Compute_dxi
   
   ! Tangent-linear model
@@ -601,10 +733,14 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: x_TL(:)    ! TL Input
     REAL(fp), INTENT(IN)     :: xi_TL      ! TL Input
     REAL(fp), INTENT(IN OUT) :: dxi_TL(:)  ! TL Output
-    INTEGER :: i
-    DO i = 1, NPOLY_PTS
-      dxi_TL(i) = xi_TL-x_TL(i)
-    END DO
+!    REAL(fp), INTENT(OUT) :: dxi_TL(:)  ! TL Output
+!    INTEGER :: i
+!    DO i = 1, NPOLY_PTS
+!      dxi_TL(i) = xi_TL-x_TL(i)
+!    END DO
+    dxi_TL(1) = xi_TL - x_TL(1)
+    dxi_TL(2) = xi_TL - x_TL(2)
+    dxi_TL(3) = xi_TL - x_TL(3)
   END SUBROUTINE Compute_dxi_TL
   
   ! Adjoint model
@@ -612,12 +748,21 @@ CONTAINS
     REAL(fp), INTENT(IN OUT) :: dxi_AD(:)  ! AD Input
     REAL(fp), INTENT(IN OUT) :: x_AD(:)    ! AD Output
     REAL(fp), INTENT(IN OUT) :: xi_AD      ! AD Output
-    INTEGER :: i
-    DO i = 1, NPOLY_PTS
-      x_AD(i)   = x_AD(i) - dxi_AD(i)
-      xi_AD     = xi_AD   + dxi_AD(i)
-      dxi_AD(i) = ZERO
-    END DO
+!    INTEGER :: i
+!    DO i = 1, NPOLY_PTS
+!      x_AD(i)   = x_AD(i) - dxi_AD(i)
+!      xi_AD     = xi_AD   + dxi_AD(i)
+!      dxi_AD(i) = ZERO
+!    END DO
+    x_AD(1)   = x_AD(1) - dxi_AD(1)
+    xi_AD     = xi_AD   + dxi_AD(1)
+    dxi_AD(1) = ZERO
+    x_AD(2)   = x_AD(2) - dxi_AD(2)
+    xi_AD     = xi_AD   + dxi_AD(2)
+    dxi_AD(2) = ZERO
+    x_AD(3)   = x_AD(3) - dxi_AD(3)
+    xi_AD     = xi_AD   + dxi_AD(3)
+    dxi_AD(3) = ZERO
   END SUBROUTINE Compute_dxi_AD
 
 END MODULE CRTM_Interpolation
