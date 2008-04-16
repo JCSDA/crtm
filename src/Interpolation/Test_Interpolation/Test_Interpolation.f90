@@ -53,14 +53,14 @@ PROGRAM Test_Interpolation
   
   ! Interpolation tests
   ! -------------------
-  CALL Test_Hingepoint_Interpolation(UTest)
-  CALL Test_Hingepoint_TL_Interpolation(UTest)
-  CALL Test_Hingepoint_AD_Interpolation(UTest)
-  CALL Test_Actual_Interpolation(UTest)
-  CALL Test_TL_Interpolation(UTest)
-  CALL Test_AD_Interpolation(UTest)
-  CALL Test_FWDTL_Interpolation(UTest)
-  CALL Test_TLAD_Interpolation(UTest)
+  CALL Test_Hingepoint_Interp(UTest)
+  CALL Test_Hingepoint_TL_Interp(UTest)
+  CALL Test_Hingepoint_AD_Interp(UTest)
+  CALL Test_Interp(UTest)
+  CALL Test_TL_Interp(UTest)
+  CALL Test_AD_Interp(UTest)
+  CALL Test_FWDTL_Interp(UTest)
+  CALL Test_TLAD_Interp(UTest)
 
   ! End timing
   ! ----------

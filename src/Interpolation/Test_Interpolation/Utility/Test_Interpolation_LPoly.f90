@@ -106,12 +106,12 @@ CONTAINS
     ! Perform comparisons
     DO i = 1, NPTS-1
       ! Left polynomials
-      IF ( ABS(p_TL%lp_left(i)) > ZERO ) THEN
+      IF ( ABS(p_TL%lp_left(i)) > TOLERANCE ) THEN
         delta = ( (p_NL%lp_left(i) - p%lp_left(i)) / (ALPHA*p_TL%lp_left(i) ) )
         CALL Is_Equal_Within(delta, ONE, ALPHA, UTest)
       END IF
       ! Right polynomials
-      IF ( ABS(p_TL%lp_right(i)) > ZERO ) THEN
+      IF ( ABS(p_TL%lp_right(i)) > TOLERANCE ) THEN
         delta = ( (p_NL%lp_right(i) - p%lp_right(i)) / (ALPHA*p_TL%lp_right(i) ) )
         CALL Is_Equal_Within(delta, ONE, ALPHA, UTest)
       END IF
@@ -133,12 +133,12 @@ CONTAINS
       ! Perform comparisons
       DO i = 1, NPTS-1
         ! Left polynomials
-        IF ( ABS(p_TL%lp_left(i)) > ZERO ) THEN
+        IF ( ABS(p_TL%lp_left(i)) > TOLERANCE ) THEN
           delta = ( (p_NL%lp_left(i) - p%lp_left(i)) / (ALPHA*p_TL%lp_left(i) ) )
           CALL Is_Equal_Within(delta, ONE, ALPHA, UTest)
         END IF
         ! Right polynomials
-        IF ( ABS(p_TL%lp_right(i)) > ZERO ) THEN
+        IF ( ABS(p_TL%lp_right(i)) > TOLERANCE ) THEN
           delta = ( (p_NL%lp_right(i) - p%lp_right(i)) / (ALPHA*p_TL%lp_right(i) ) )
           CALL Is_Equal_Within(delta, ONE, ALPHA, UTest)
         END IF

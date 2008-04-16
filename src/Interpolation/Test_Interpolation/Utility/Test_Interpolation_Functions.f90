@@ -11,14 +11,14 @@ MODULE Test_Interpolation_Functions
   PUBLIC :: zx, dzx
   PUBLIC :: zy, dzy
   PUBLIC :: z_1d, z_2d, z_3d
-  PUBLIC :: Test_Hingepoint_Interpolation
-  PUBLIC :: Test_Hingepoint_TL_Interpolation
-  PUBLIC :: Test_Hingepoint_AD_Interpolation
-  PUBLIC :: Test_Actual_Interpolation
-  PUBLIC :: Test_TL_Interpolation
-  PUBLIC :: Test_AD_Interpolation
-  PUBLIC :: Test_FWDTL_Interpolation
-  PUBLIC :: Test_TLAD_Interpolation
+  PUBLIC :: Test_Hingepoint_Interp
+  PUBLIC :: Test_Hingepoint_TL_Interp
+  PUBLIC :: Test_Hingepoint_AD_Interp
+  PUBLIC :: Test_Interp
+  PUBLIC :: Test_TL_Interp
+  PUBLIC :: Test_AD_Interp
+  PUBLIC :: Test_FWDTL_Interp
+  PUBLIC :: Test_TLAD_Interp
   
   ! Module variables
   ! ----------------
@@ -58,11 +58,11 @@ MODULE Test_Interpolation_Functions
 CONTAINS
 
 
-  SUBROUTINE Test_Hingepoint_Interpolation(UTest)
+  SUBROUTINE Test_Hingepoint_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_Interp'
     ! Local variables
     INTEGER  :: i, j, k
     INTEGER  :: i1, i2
@@ -124,14 +124,14 @@ CONTAINS
       END DO
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_Hingepoint_Interpolation
+  END SUBROUTINE Test_Hingepoint_Interp
 
 
-  SUBROUTINE Test_Hingepoint_TL_Interpolation(UTest)
+  SUBROUTINE Test_Hingepoint_TL_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_TL_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_TL_Interp'
     REAL(fp), PARAMETER :: DELTA = 0.01_fp
     ! Local variables
     INTEGER  :: i, j, k
@@ -239,14 +239,14 @@ CONTAINS
       END DO
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_Hingepoint_TL_Interpolation
+  END SUBROUTINE Test_Hingepoint_TL_Interp
 
 
-  SUBROUTINE Test_Hingepoint_AD_Interpolation(UTest)
+  SUBROUTINE Test_Hingepoint_AD_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_AD_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Hingepoint_AD_Interp'
     ! Local variables
     INTEGER  :: wPower, xPower, yPower
     INTEGER  :: i, j, k
@@ -390,14 +390,14 @@ CONTAINS
       END DO
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_Hingepoint_AD_Interpolation
+  END SUBROUTINE Test_Hingepoint_AD_Interp
 
 
-  SUBROUTINE Test_Actual_Interpolation(UTest)
+  SUBROUTINE Test_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Actual_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_Interp'
     ! Local variables
     INTEGER  :: i, iN
     INTEGER  :: i1, i2
@@ -478,14 +478,14 @@ CONTAINS
       CALL Is_Equal_Within(zcalc, zint, TOLERANCE, UTest)
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_Actual_Interpolation
+  END SUBROUTINE Test_Interp
 
   
-  SUBROUTINE Test_TL_Interpolation(UTest)
+  SUBROUTINE Test_TL_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_TL_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_TL_Interp'
     ! Local variables
     INTEGER  :: i, iN
     INTEGER  :: iw, ix, iy
@@ -614,14 +614,14 @@ CONTAINS
       END DO
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_TL_Interpolation
+  END SUBROUTINE Test_TL_Interp
 
 
-  SUBROUTINE Test_AD_Interpolation(UTest)
+  SUBROUTINE Test_AD_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_AD_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_AD_Interp'
     ! Local variables
     INTEGER  :: wPower, xPower, yPower
     INTEGER  :: i, iN
@@ -762,14 +762,14 @@ CONTAINS
       CALL Is_Equal_Within(dzwcalc, wint_AD, TOLERANCE, UTest)
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_AD_Interpolation
+  END SUBROUTINE Test_AD_Interp
 
 
-  SUBROUTINE Test_FWDTL_Interpolation(UTest)
+  SUBROUTINE Test_FWDTL_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_FWDTL_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_FWDTL_Interp'
     REAL(fp)    , PARAMETER :: ALPHA = 0.01_fp
     REAL(fp)    , PARAMETER :: DELTA = 0.1_fp
     ! Local variables
@@ -917,14 +917,14 @@ CONTAINS
       CALL Is_LessThan(Metric, ALPHA, UTest)
     END DO
     CALL Report_Test(UTest)
-  END SUBROUTINE Test_FWDTL_Interpolation
+  END SUBROUTINE Test_FWDTL_Interp
 
 
-  SUBROUTINE Test_TLAD_Interpolation(UTest)
+  SUBROUTINE Test_TLAD_Interp(UTest)
     ! Arguments
     TYPE(UTest_type), INTENT(IN OUT) :: UTest
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_TLAD_Interpolation'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Test_TLAD_Interp'
     REAL(fp)    , PARAMETER :: ALPHA = 0.01_fp
     REAL(fp)    , PARAMETER :: DELTA = 0.1_fp
     ! Local variables
@@ -1084,7 +1084,7 @@ CONTAINS
     END DO
     CALL Report_Test(UTest)
 
-  END SUBROUTINE Test_TLAD_Interpolation
+  END SUBROUTINE Test_TLAD_Interp
 
 
 
