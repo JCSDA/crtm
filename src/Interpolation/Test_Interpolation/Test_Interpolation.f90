@@ -3,8 +3,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-Feb-2007
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 01-Feb-2007
+!                       paul.vandelst@noaa.gov
 !
 
 PROGRAM Test_Interpolation
@@ -31,7 +31,7 @@ PROGRAM Test_Interpolation
 
   ! Initialisation
   ! --------------
-  CALL Init_AllTests(UTest,Report=.FALSE.)
+  CALL Init_AllTests(UTest)
   WRITE(*,'(5x,"==================================")')
   WRITE(*,'(5x,"Testing ",i0,"-pt interpolation...")') NPTS
   WRITE(*,'(5x,"==================================",/)')
