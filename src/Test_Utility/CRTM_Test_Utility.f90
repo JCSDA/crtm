@@ -98,7 +98,7 @@ MODULE CRTM_Test_Utility
   INTEGER,      PARAMETER :: USED_N_PROFILES  = 10
 
   ! Datafile names and dimensions for model comparison (FWD/TL, TL/AD, TL/K) tests
-  CHARACTER(*), PARAMETER :: TEST_ATM_FILENAME = 'Test.Atmosphere.Cloud.bin'
+  CHARACTER(*), PARAMETER :: TEST_ATM_FILENAME = 'Test.Atmosphere.Cloud.Aerosol.bin'
   CHARACTER(*), PARAMETER :: TEST_SFC_FILENAME = 'Test.Surface.bin'
   INTEGER,      PARAMETER :: TEST_N_PROFILES   = 6
 
