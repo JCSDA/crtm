@@ -122,7 +122,7 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "FL=${NAME_AIX}" \
                  "FC_FLAGS= -c \
                             -qdbg \
-                            -qarch=pwr4 \
+                            -qarch=auto \
                             -qfree=f90 \
                             -qhalt=W \
                             -qlanglvl=95pure \

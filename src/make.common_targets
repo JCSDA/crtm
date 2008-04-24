@@ -91,7 +91,7 @@ g95:
 # Build the program
 # -----------------
 build: $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
+	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
 
 
 # --------

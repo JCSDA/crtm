@@ -17,6 +17,7 @@ INCLUDE_DIR = include
 
 # The linkfile script
 LINKSCRIPT = linkfiles
+UNLINKSCRIPT = unlinkfiles
 
 # Source files to link
 include $(BUILD_DIR)/$(SOURCE_DIR)/make.filelist
@@ -57,11 +58,11 @@ create_links: macro_links
 	cd ../..
 
 remove_links:
-	@cd $(BUILD_DIR); \
-	unlinkfiles make.macros ; \
-	cd $(SOURCE_DIR); \
-	unlinkfiles make.rules $(SRC_FILES) ; \
-	cd ../..
+	@cd $(BUILD_DIR)/$(SOURCE_DIR) ; \
+	$(UNLINKSCRIPT) make.rules $(SRC_FILES) ; \
+	cd .. ; \
+	$(UNLINKSCRIPT) make.macros ; \
+	cd ..
 
 
 # --------------------------------------------------
