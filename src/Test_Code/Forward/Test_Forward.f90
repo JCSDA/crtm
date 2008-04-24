@@ -20,7 +20,9 @@ PROGRAM Test_Forward
   USE CRTM_Atmosphere_Binary_IO
   USE CRTM_Surface_Binary_IO
   USE CRTM_Test_Utility, &
-        ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_N_PROFILES, &
+        ONLY: ATMDATA_FILENAME=>TEST_ATM_FILENAME, &
+              SFCDATA_FILENAME=>TEST_SFC_FILENAME, &
+              USED_N_PROFILES =>TEST_N_PROFILES, &
               EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, ANTCORR_TEST, MAX_N_TESTS, &
               TEST_ZENITH_ANGLE, TEST_SCAN_ANGLE, &
               D_PERCENT, &
@@ -42,7 +44,7 @@ PROGRAM Test_Forward
               Begin_Timing, End_Timing, Display_Timing
   USE Unit_Test, &
         ONLY: UTest_type, &
-              Init_AllTests, Init_Test, Assert_Equal, &
+              Init_AllTests, Init_Test, Is_Equal, &
               Report_AllTests, n_Tests_Failed
   USE SignalFile_Utility, &
         ONLY: Create_SignalFile
@@ -261,6 +263,7 @@ PROGRAM Test_Forward
 
     Exp_ID = ''
     Exp_Description = ''
+
     
     ! Turn experiments on and off
     ! ---------------------------
@@ -353,7 +356,7 @@ PROGRAM Test_Forward
       Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution, &
                                             Percent_Difference=D_PERCENT, &
                                             Check_All=1 )
-      CALL Assert_Equal(Error_Status,SUCCESS,UTest)
+      CALL Is_Equal(Error_Status,SUCCESS,UTest)
     END IF
 
   END DO Test_Loop

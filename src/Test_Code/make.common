@@ -30,15 +30,14 @@ LINK_SCRIPT = linkfiles
 UNLINK_SCRIPT = unlinkfiles
 
 # The test input data files
-#ATM_DATA_FILES = Truncated.ECMWF.Atmosphere.bin
-ATM_DATA_FILES = ECMWF-Atmosphere.Cloud.Aerosol.bin
-SFC_DATA_FILES = ECMWF-Surface.bin
+ATM_DATA_FILES = Test.Atmosphere.Cloud.Aerosol.bin
+SFC_DATA_FILES = Test.Surface.bin
 
 # The instrument independent coefficient files
 COEFF_DATA_FILES = EmisCoeff.bin AerosolCoeff.bin CloudCoeff.bin
 
 # The sensors Ids for the sensors to test
-IR_SENSOR_IDS = hirs3_n17 imgr_g11 hirs4_n18 iasi_metop-a airs_aqua
+IR_SENSOR_IDS = hirs3_n17 imgr_g11 hirs4_n18 iasi_metop-a airs_aqua iasiB1_metop-a
 MW_SENSOR_IDS_NO_AC = ssmis_f16
 MW_SENSOR_IDS_AC = amsua_n17 amsua_n18 mhs_n18
 MW_SENSOR_IDS = $(MW_SENSOR_IDS_NO_AC) $(MW_SENSOR_IDS_AC)

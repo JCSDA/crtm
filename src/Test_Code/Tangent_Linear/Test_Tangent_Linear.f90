@@ -20,7 +20,9 @@ PROGRAM Test_Tangent_Linear
   USE CRTM_Atmosphere_Binary_IO  ! Just for reading test datafiles
   USE CRTM_Surface_Binary_IO     ! Just for reading test datafiles
   USE CRTM_Test_Utility, &
-        ONLY: ATMDATA_FILENAME, SFCDATA_FILENAME, USED_N_PROFILES, &
+        ONLY: ATMDATA_FILENAME=>TEST_ATM_FILENAME, &
+              SFCDATA_FILENAME=>TEST_SFC_FILENAME, &
+              USED_N_PROFILES =>TEST_N_PROFILES, &
               EMISSIVITY_TEST, CLOUDS_TEST, AEROSOLS_TEST, ANTCORR_TEST, MAX_N_TESTS, &
               TEST_ZENITH_ANGLE, TEST_SCAN_ANGLE, &
               D_PERCENT, TEST_DELTA, &
@@ -42,7 +44,7 @@ PROGRAM Test_Tangent_Linear
               Begin_Timing, End_Timing, Display_Timing
   USE Unit_Test, &
         ONLY: UTest_type, &
-              Init_AllTests, Init_Test, Assert_Equal, &
+              Init_AllTests, Init_Test, Is_Equal, &
               Report_AllTests, n_Tests_Failed
   USE SignalFile_Utility, &
         ONLY: Create_SignalFile
@@ -407,7 +409,7 @@ PROGRAM Test_Tangent_Linear
       Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution_TL, &
                                             Percent_Difference=D_PERCENT, &
                                             Check_All=1 )
-      CALL Assert_Equal(Error_Status,SUCCESS,UTest)
+      CALL Is_Equal(Error_Status,SUCCESS,UTest)
     END IF
 
   END DO Test_Loop
