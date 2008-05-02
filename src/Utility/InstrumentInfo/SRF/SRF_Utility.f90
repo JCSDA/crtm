@@ -90,8 +90,8 @@ MODULE SRF_Utility
   USE Message_Handler
   USE Compare_Float_Numbers
 
-  USE Interpolate
-  USE Integrate
+  USE Interpolate_Utility
+  USE Integrate_Utility
 
   USE SRF_Define
 
