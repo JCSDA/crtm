@@ -4,7 +4,7 @@
 require('includes/noCacheHeader.inc');
 ?>
 <META name="verify-v1" content="CwbLBcFt9+GqRTgaLZsENmPnSWNB5MStHHdYsB7U2nI=">
-<title>Community Radiative Transfer Model (CRTM) - Downloads</title>
+<title>Community Radiative Transfer Model (CRTM) - User Interface: Destruction</title>
 <?php
 // style links and the icon link
 // pulls in .css files for regular and print display
@@ -40,23 +40,24 @@ require('includes/banner.inc');
 				<!-- EXCEPT for the contents of the <title></title> TAG!! -->
 				<!-- You can start project specific content HERE -->
 			
-				<h1><acronym title="Community Radiative Transfer Model">CRTM</acronym> Downloads</h1>
+<h1><acronym title="Community Radiative Transfer Model">CRTM</acronym> User Interface: Destruction</h1>
 				
-				<p>To download any of the files listed on this page, site users must register 
-					with the CRTM project organizers. To do so, send an e-mail to 
-					<a href="mailto:CRTMdownload@jcsda.noaa.gov">CRTM code download</a>
-					that includes your name, your organization, address, phone, and e-mail address, and 
-					we will send you an ID and password. When you click on any of the links
-					listed here, you will be prompted for your ID and password, and after you
-				enter them, you will be able to download various project files. </p>
-				
-				<h2>Files available for download by registered users</h2>
-				<ul>
-					<li><a href="CRTMcode/">Source code</a></li>
-					<li><a href="CRTMcode/">Coefficient files</a></li>
-					<li><a href="CRTMcode/">Test Code</a></li>
-				</ul>
+During the model initialization, the <tt>ChannelInfo</tt> input structure and the coefficient
+shared data structures are allocated to the required size, determined by dimensions in the
+coefficient datafiles. To release this memory, the model destruction routine should be called,
 
+<pre>
+  Error_Status = CRTM_Destroy( ChannelInfo            , &  ! Output
+                               Process_ID =Process_ID , &  ! Optional input
+                               RCS_Id     =RCS_Id     , &  ! Revision control
+                               Message_Log=Message_Log  )  ! Error messaging
+</pre>
+
+<p>Note also that any allocated CRTM input and output structures may also need to be destroyed.
+This is achieved via the <tt>CRTM_Destroy_</tt>&lt;<em>Structure name</em>&gt;. These are discussed
+further below.
+
+				<!-- END your project-specific content HERE -->
 				<!-- DO NOT DELETE OR ALTER BELOW THIS COMMENT! -->
 			</div>
 		</td>

@@ -4,7 +4,7 @@
 require('includes/noCacheHeader.inc');
 ?>
 <META name="verify-v1" content="CwbLBcFt9+GqRTgaLZsENmPnSWNB5MStHHdYsB7U2nI=">
-<title>Community Radiative Transfer Model (CRTM) - Developer Interface</title>
+<title>Community Radiative Transfer Model (CRTM) - Team Members</title>
 <?php
 // style links and the icon link
 // pulls in .css files for regular and print display
@@ -13,6 +13,12 @@ require('includes/styleLinks.inc');
 
 <!-- if you need to include your own .css files
      put the links HERE, before the closing head tag. -->
+
+<link href="crtm.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="crtm.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
 
 </head>
 <body>
@@ -34,15 +40,15 @@ require('includes/banner.inc');
 				<!-- EXCEPT for the contents of the <title></title> TAG!! -->
 				<!-- You can start project specific content HERE -->
 			
-				<h1><acronym title="Community Radiative Transfer Model">CRTM</acronym> Developer Interface</h1>
+				<h1><acronym title="Community Radiative Transfer Model">CRTM</acronym> - Team Members</h1>
 				
-				<p>Don't forget to:</p>
+				<p>para 1</p>
 				
-				<ul>
-					<li>Put an 'alt' attribute on all images.</li>
-					<li>Provide a text equivalent for all charts and graphs. You have to DESCRIBE whatever
-					you use an illustration to show, so that blind folks can get the same info.</li>
-				</ul>
+				<p>para 2</p>
+				
+				<p>etc.</p>
+
+
 
 				<!-- END your project-specific content HERE -->
 				<!-- DO NOT DELETE OR ALTER BELOW THIS COMMENT! -->

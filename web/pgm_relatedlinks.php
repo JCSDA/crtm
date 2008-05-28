@@ -4,7 +4,7 @@
 require('includes/noCacheHeader.inc');
 ?>
 <META name="verify-v1" content="CwbLBcFt9+GqRTgaLZsENmPnSWNB5MStHHdYsB7U2nI=">
-<title>Community Radiative Transfer Model (CRTM) - Description</title>
+<title>Community Radiative Transfer Model (CRTM) - Related Links</title>
 <?php
 // style links and the icon link
 // pulls in .css files for regular and print display
@@ -13,6 +13,12 @@ require('includes/styleLinks.inc');
 
 <!-- if you need to include your own .css files
      put the links HERE, before the closing head tag. -->
+
+<link href="crtm.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="crtm.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
 
 </head>
 <body>
@@ -34,9 +40,17 @@ require('includes/banner.inc');
 				<!-- EXCEPT for the contents of the <title></title> TAG!! -->
 				<!-- You can start project specific content HERE -->
 			
-				<h1><acronym title="Community Radiative Transfer Model">CRTM</acronym> - Description</h1>
+				<h1><acronym title="Community Radiative Transfer Model">CRTM</acronym> - Related Links</h1>
 				
-				<p>Once upon a time....</p>
+				<ul>
+					<li>List item</li>
+					
+					<li>List item</li>
+
+					<li>Another item</li>
+
+				</ul>
+
 
 				<!-- END your project-specific content HERE -->
 				<!-- DO NOT DELETE OR ALTER BELOW THIS COMMENT! -->

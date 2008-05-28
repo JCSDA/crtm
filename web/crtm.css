@@ -1,0 +1,94 @@
+/* ==========
+   CODE BOXES
+   ========== */
+/* Just fancy up the <pre> tag for this */
+pre {
+	font-family:"Courier New", Courier, monospace;
+	color:#900;
+	padding:10px;
+	background:#fff;
+	border:3px solid #eef;
+	overflow:auto;
+	width: 630px; /* Needed in Safari to force the overflow to work */
+/*	width:auto; /* This doesn't work in Safari */
+}
+pre a {
+	border-bottom:1px dotted #900 !important;
+	color:#900 !important;
+}
+pre a:hover {
+	border-bottom-style:solid !important;
+}
+
+
+/* ======================
+   IN-CONTENT TABLE STUFF
+   ====================== */
+
+.tablecontent table {
+	background-color:#f6f6db;
+/*	border:thin;*/
+	border-color:#06c;
+	padding: 5px;
+}
+.tablecontent th {
+/*	border:thin;*/
+	border-color:#06c;
+	font: normal 1.0em Arial, Helvetica, sans-serif;
+	color:#06c;
+}
+.tablecontent td {
+/*	border:thin;*/
+	border-color:#06c;
+	text-align:center;
+}
+
+/* NEW STUFF.....*/
+
+.tablecontent2 table {
+	margin: 0 auto 0 auto;
+}
+.tablecontent2 th, .tablecontent2 td {
+	padding: 10px;
+}
+.tablecontent2 table {
+	background-color:#f6f6db;
+}
+.tablecontent2 table th {
+	font: normal 1.0em Arial, Helvetica, sans-serif;
+	color:#06c;
+	background-color: #dfdfdf !important;
+}
+.tablecontent2 td {
+	text-align:center;
+}
+
+/* BORDERS */
+.tablecontent2 table, .tablecontent2 th, .tablecontent2 td {
+	border: 1px solid;
+	border-right: none;
+	border-top: none;
+}
+.tablecontent2 table {
+	border-top: 1px solid;
+	border-right: 1px solid;
+	border-left: none;
+	border-bottom: none;
+}
+
+/* + select the next sibling of the listed element - i.e., 
+        p + p {}  
+   will select all paragraphs that follow another paragraph (and
+   are at the same level in the DOM hirearchy */
+/*.tablecontent2 table tr:first-child th:first-child,
+.tablecontent2 table tr:first-child th:first-child + th,
+.tablecontent2 table tr:first-child + tr th:first-child + th + th + th,
+.tablecontent2 table tr:first-child + tr th:first-child + th + th + th + th, 
+.tablecontent2 table tr:first-child + tr + tr td:first-child + td + td + td,
+.tablecontent2 table tr:first-child + tr + tr td:first-child + td + td + td + td {
+    border-right: solid 3px; 
+}*/
+
+.tablecontent2 table, .tablecontent2 th, .tablecontent2 td {
+	border-color: #666 !important;
+}

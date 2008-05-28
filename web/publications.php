@@ -14,6 +14,12 @@ require('includes/styleLinks.inc');
 <!-- if you need to include your own .css files
      put the links HERE, before the closing head tag. -->
 
+<link href="crtm.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="crtm.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
+
 </head>
 <body>
 <?php
