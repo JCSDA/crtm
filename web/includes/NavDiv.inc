@@ -26,7 +26,14 @@
         </ul>
       </li>
       <li id="ui_initialization"><a href="ui_initialization.php">Initialization</a></li>
-      <li id="ui_components"><a href="ui_components.php">Components</a></li>
+      <li id="ui_components"><a href="ui_components.php">Components</a>
+        <ul>
+          <li id="ui_cmp_forward"><a href="ui_cmp_forward.php">Forward Model</a></li>
+          <li id="ui_cmp_tangentlinear"><a href="ui_cmp_tangentlinear.php">Tangent-Linear Model</a></li>
+          <li id="ui_cmp_adjoint"><a href="ui_cmp_adjoint.php">Adjoint Model</a></li>
+          <li id="ui_cmp_kmatrix"><a href="ui_cmp_kmatrix.php">K-Matrix Model</a></li>
+        </ul>
+      </li>
       <li id="ui_destruction"><a href="ui_destruction.php">Destruction</a></li>
     </ul>
     </li>
