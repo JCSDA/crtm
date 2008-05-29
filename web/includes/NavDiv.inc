@@ -15,15 +15,16 @@
   <ul>
     <li id="userinterface"><a href="userinterface.php">User Interface</a>
     <ul class="detailContainer">
-      <li id="ui_publicstructures"><a href="ui_publicstructures.php">Public Structures</a></li>
-      <ul class="detailContainer">
-        <li id="ui_ps_atmosphere"><a href="ui_ps_atmosphere.php">Atmosphere</a></li>
-        <li id="ui_ps_channelinfo"><a href="ui_ps_channelinfo.php">ChannelInfo</a></li>
-        <li id="ui_ps_geometryinfo"><a href="ui_ps_geometryinfo.php">GeometryInfo</a></li>
-        <li id="ui_ps_options"><a href="ui_ps_options.php">Options</a></li>
-        <li id="ui_ps_rtsolution"><a href="ui_ps_rtsolution.php">RTSolution</a></li>
-        <li id="ui_ps_surface"><a href="ui_ps_surface.php">Surface</a></li>
-      </ul>
+      <li id="ui_publicstructures"><a href="ui_publicstructures.php">Public Structures</a>
+        <ul>
+          <li id="ui_ps_atmosphere"><a href="ui_ps_atmosphere.php">Atmosphere</a></li>
+          <li id="ui_ps_channelinfo"><a href="ui_ps_channelinfo.php">ChannelInfo</a></li>
+          <li id="ui_ps_geometryinfo"><a href="ui_ps_geometryinfo.php">GeometryInfo</a></li>
+          <li id="ui_ps_options"><a href="ui_ps_options.php">Options</a></li>
+          <li id="ui_ps_rtsolution"><a href="ui_ps_rtsolution.php">RTSolution</a></li>
+          <li id="ui_ps_surface"><a href="ui_ps_surface.php">Surface</a></li>
+        </ul>
+      </li>
       <li id="ui_initialization"><a href="ui_initialization.php">Initialization</a></li>
       <li id="ui_components"><a href="ui_components.php">Components</a></li>
       <li id="ui_destruction"><a href="ui_destruction.php">Destruction</a></li>

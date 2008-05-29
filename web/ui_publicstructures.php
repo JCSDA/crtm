@@ -53,9 +53,7 @@ public CRTM structure types.
 <p><a name="struct_table"></a>
 <div class="tablecontent2">
   <table cellspacing="0" cellpadding="0" border="0">
-	<caption align="top">
-	List of the Public CRTM structure types
-	</caption>
+    <caption align="top">List of the Public CRTM structure types</caption>
     <tr>
       <th scope="col">TYPE NAME</th>
       <th scope="col">DESCRIPTION</th>
