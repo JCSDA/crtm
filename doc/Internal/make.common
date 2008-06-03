@@ -8,6 +8,9 @@ all: tex
 
 tex: $(DOC_FILE)
 	latex $(DOC_FILE)
+	bibtex ${DOC_FILE:.tex=}
+	latex $(DOC_FILE)
+	latex $(DOC_FILE)
 
 ps: tex
 	dvips -o ${PS_FILE} ${DVI_FILE}
@@ -16,7 +19,7 @@ pdf: tex
 	dvipdfm $(DVI_FILE)
 
 clean:
-	$(REMOVE) *.aux *.dvi *.log *.out
+	$(REMOVE) *.aux *.dvi *.log *.out *.bbl *.blg
 
 realclean: clean
 	$(REMOVE) ${PS_FILE} ${PDF_FILE}
