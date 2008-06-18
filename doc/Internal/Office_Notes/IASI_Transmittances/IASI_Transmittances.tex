@@ -33,7 +33,7 @@ The details of the line-by-line (LBL) transmittance computation and the subseque
 The relationships between the spectral frequency interval and bandwidth, {\df} and {\Df}, and the interferogram sampling interval and maximum optical path difference, {\dx} and {\Dx}, can be simply expressed by,
 \begin{equation}\df = \frac{1}{2.\Dx}\label{eqn:df_deltax}\end{equation}
 \begin{equation}\Df = \frac{1}{2.\dx}\label{eqn:deltaf_dx}\end{equation}
-(Fully general definitions are more nuanced than this, but for this exercise, the above will suffice. See \cite{ref:bell} for an exhaustive treatment.)
+(Fully general definitions are more nuanced than this, but for this exercise, the above will suffice. See \cite{Bell1972} for an exhaustive treatment.)
 
 The relationship between the number of spectral (SPC) and double-sided interferogram (IFG) points is given by,
 \begin{equation}N_{IFG} = 2.(N_{SPC}-1)\end{equation}
@@ -42,7 +42,7 @@ The relationship between the number of spectral (SPC) and double-sided interfero
 These relationships are shown schematically in figure \ref{fig:X_F_defn}. Note that maximum positive abscissa at $x = \Dx$, or $f = f_{2}$, does not have an equivalent negative point pairing.
 \begin{figure}[htp]
   \centering
-  \includegraphics[scale=0.8]{graphics/X_F_definition.eps}
+  \input{graphics/X_F_definition.pstex_t}
   \caption{Schematic illustration of interferogram and spectrum point ordering. The circles represent positive delays or frequencies, and the squares negative. (ZPD=Zero Path Difference)}
   \label{fig:X_F_defn}
 \end{figure}
@@ -77,7 +77,7 @@ is always true.
 \subsection{Apodisation and Spectral Response Function}
 %------------------------------------------------------
 
-The IASI resolution transmittances are derived from the very high resolution line-by-line (LBL) transmittances by applying the IASI apodisation function in the interferogram domain. The IASI apodisation function is a truncated Gaussian function (GFT)\footnote{The terms ``GFT'' and ``apodisation function'' are used interchangeably in this document.} with the following properties\cite{ref:gftppt}:
+The IASI resolution transmittances are derived from the very high resolution line-by-line (LBL) transmittances by applying the IASI apodisation function in the interferogram domain. The IASI apodisation function is a truncated Gaussian function (GFT)\footnote{The terms ``GFT'' and ``apodisation function'' are used interchangeably in this document.} with the following properties\cite{IASI_GFTPPT}:
 \begin{equation}
   GFT(x) = \begin{cases}
              exp\left(-ln(2)\left( \frac{x}{\sigma_{x}} \right) ^2\right) & :\quad x \in [-X_{eff},+X_{eff}] \\
@@ -123,7 +123,7 @@ Plots of the IASI apodisation function and its Fourier transform, the IASI Spect
   \label{fig:iasi_srf}
 \end{figure}
 
-Note that the sampling interval and maximum optical delay computed using equations \ref{eqn:dx_eff} and \ref{eqn:x_eff} are slightly different that those that are derived using the specified, fixed value of $X_{eff}$ from \cite{ref:gftppt}. Given a value for $X_{eff}$, we can rearrange equation \ref{eqn:x_eff},
+Note that the sampling interval and maximum optical delay computed using equations \ref{eqn:dx_eff} and \ref{eqn:x_eff} are slightly different that those that are derived using the specified, fixed value of $X_{eff}$ from \cite{IASI_GFTPPT}. Given a value for $X_{eff}$, we can rearrange equation \ref{eqn:x_eff},
 \begin{equation*}
   \dx = \frac{2.X_{eff}}{N_{FFT}}
 \end{equation*}
@@ -152,7 +152,7 @@ Figure \ref{fig:iasi_dsrf} shows the negligible difference in the computed IASI 
 
 \subsection{Band frequency limits and spacing}
 %---------------------------------------------
-As described in \cite{ref:iasi_spectral_characteristics}, IASI has 8461 spectral samples (channels) distributed amongst three bands between 645.0{\invcm} and 2760.0{\invcm} as shown in table \ref{tab:iasi_bands}.
+As described in \cite{IASI_spectral_characteristics}, IASI has 8461 spectral samples (channels) distributed amongst three bands between 645.0{\invcm} and 2760.0{\invcm} as shown in table \ref{tab:iasi_bands}.
 \begin{table}[htp]
   \centering
   \begin{tabular}{c c}
@@ -178,9 +178,9 @@ In addition, the IASI measured spectra are resampled onto the frequency grid giv
 \section{Computing IASI resolution transmittance spectra}
 %========================================================
 \label{sec:computing_iasi_tau}
-The monochromatic, or line-by-line (LBL), transmittances are generated using LBLRTM\cite{ref:lblrtm}. The atmospheric profile dataset used is that UMBC 48 profile dependent set (UMBC48) (need ref). The UMBC48 dependent set contains absorber amount information for four molecular species - H\subscript{2}O, O\subscript{3}, CO, and CH\subscript{4} - but only H\subscript{2}O and O\subscript{3} are used here. All the other absorbers are fixed to the values in the U.S. Standard Atmosphere, except for CO\subscript{2} where the default amount is fixed to 380ppmv throughout the entire profile.
+The monochromatic, or line-by-line (LBL), transmittances are generated using LBLRTM\cite{Clough2005}. The atmospheric profile dataset used is that UMBC 48 profile dependent set (UMBC48) (need ref). The UMBC48 dependent set contains absorber amount information for four molecular species - H\subscript{2}O, O\subscript{3}, CO, and CH\subscript{4} - but only H\subscript{2}O and O\subscript{3} are used here. All the other absorbers are fixed to the values in the U.S. Standard Atmosphere, except for CO\subscript{2} where the default amount is fixed to 380ppmv throughout the entire profile.
 
-LBLRTM is used to compute the layer optical depth spectra, which are then converted into layer-to-space transmittances at a fixed frequency spacing. Two different frequency intervals were used in testing: 0.01{\invcm} and 0.001{\invcm}. The FFT package used\cite{ref:fft_package} employs a Prime Factor Algorithm (PFA) but only for factors of 2, 3, and 5. In all the LBLRTM calculations, a ``discard band'' of 40\invcm{} was added to each end of the calculation limits for filtering purposes. A cosine rolloff filter of width 20{\invcm} was applied at the spectra edges.
+LBLRTM is used to compute the layer optical depth spectra, which are then converted into layer-to-space transmittances at a fixed frequency spacing. Two different frequency intervals were used in testing: 0.01{\invcm} and 0.001{\invcm}. The FFT package used\cite{Purser_FFT} employs a Prime Factor Algorithm (PFA) but only for factors of 2, 3, and 5. In all the LBLRTM calculations, a ``discard band'' of 40\invcm{} was added to each end of the calculation limits for filtering purposes. A cosine rolloff filter of width 20{\invcm} was applied at the spectra edges.
 
 \subsection{Minimum spectral bandwidth}
 %--------------------------------------
@@ -628,16 +628,8 @@ Combining the two set of effective transmittances by using \taup{wvo} derived ef
 
 % The references section
 %=======================
-\begin{thebibliography}{99}
-  \bibitem{ref:bell} Bell, R.J., \underline{Introductory Fourier Transform Spectroscopy}, New York:Academic Press, 1972.
-  \bibitem{ref:gftppt} Camy-Peyret, C., S.Payan, B.Tournier, and D.Blumstein, ``Finalization of the level 1c for IASI MetOp1'', presented at ISSWG-21, 5-7 April 2005, Potenza, Italy.
-  \bibitem{ref:iasi_spectral_characteristics} IASI Level 1 Products Overview,\\ \texttt{http://oiswww.eumetsat.org/WEBOPS/eps-pg/IASI-L1/IASIL1-PG-4ProdOverview.htm}
-  \bibitem{ref:lblrtm} Clough, S.A., M.W. Shephard, E.J. Mlawer, J.S. Delamere, M.J. Iacono, K. Cady-Pereira, S. Boukabara, and P.D. Brown, Atmospheric radiative transfer modeling: a summary of the AER codes, Short Communication, {\it J. Quant. Spectrosc. Radiat. Transfer}, {\bf 91}, 233-244, 2005.
-  \bibitem{ref:fft_package} Purser,J., Private communication.
-
-
-\end{thebibliography}
-
+\bibliographystyle{plain}
+\bibliography{bibliography}	
 
 
 % The appendices section
