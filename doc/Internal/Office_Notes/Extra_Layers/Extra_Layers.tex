@@ -35,7 +35,7 @@ The monochromatic atmospheric transmittance, $\tau$, from some pressure level, $
   \tau(f,T,p,\theta) = \exp\left[-\left(\frac{\sec\theta}{g}\right)\sum_{j}\int_{p_{toa}}^{p}\chi_{j}(f,T,p') q_{j}(p')dp'\right]
   \label{eqn:tau}
 \end{equation}
-where $q_{j}(p)$ is the mass mixing ratio of molecular species $j$; $g$ is the acceleration due to gravity; and $\chi_{j}$ is the absorption coefficient of molecular species $j$ at frequency $f$, pressure $p$, and temperature $T(p)$. The OPTRAN algorithm\cite{ref:optran3} recasts equation \ref{eqn:tau} in terms of the integrated absorber amount, $u$,
+where $q_{j}(p)$ is the mass mixing ratio of molecular species $j$; $g$ is the acceleration due to gravity; and $\chi_{j}$ is the absorption coefficient of molecular species $j$ at frequency $f$, pressure $p$, and temperature $T(p)$. The OPTRAN algorithm\cite{OPTRAN3} recasts equation \ref{eqn:tau} in terms of the integrated absorber amount, $u$,
 \begin{equation}
   u_{j}(p) = \frac{\sec\theta}{g}\int_{p_{toa}}^{p}q_{j}(p')dp'
   \label{eqn:int_u}
@@ -50,7 +50,7 @@ Using equation \ref{eqn:diff_u} to perform variable substitution in equation \re
   \tau(f,T,p,u) = \exp\left[-\sum_{j}\int_{u_{toa}}^{u_{j}}\chi_{j}(f,T(u_{j}'),p(u_{j}'))du_{j}'\right]
   \label{eqn:tau_u}
 \end{equation}
-Dropping the molecular species reference, $j$, for a given absorber we have\footnote{Equation \ref{eqn:tau_udu} is equivalent to equation(5) in \cite{ref:optran3}},
+Dropping the molecular species reference, $j$, for a given absorber we have\footnote{Equation \ref{eqn:tau_udu} is equivalent to equation(5) in \cite{OPTRAN3}},
 \begin{equation}
   \tau(f,T,p,u+\Delta{u}) = \tau(f,T,p,u)\cdot\exp\left[-\int_{u}^{u+\Delta{u}}\chi(f,T(u'),p(u'))du'\right]
   \label{eqn:tau_udu}
@@ -84,13 +84,13 @@ Assigning the subscript $l$ to a particular sensor channel $\phi(f)$ integration
   \chi_{k,l} = \sum_{i}^{I}b_{i,k,l}\cdot X_{i,k}
   \label{eqn:reg_layer_chi}
 \end{equation}
-where the $b$ are the regression coefficients and $X$ are the predictors. It was found\cite{ref:optran1}\cite{ref:optran3} that to preserve accuracy in the resultant polychromatic transmittances scaling approximations were required to be used. Thus, some of the predictors in \ref{eqn:reg_layer_chi} are absorber averaged temperature and pressures of the form,
+where the $b$ are the regression coefficients and $X$ are the predictors. It was found\cite{OPTRAN1}\cite{OPTRAN3} that to preserve accuracy in the resultant polychromatic transmittances scaling approximations were required to be used. Thus, some of the predictors in \ref{eqn:reg_layer_chi} are absorber averaged temperature and pressures of the form,
 \begin{eqnarray}
   T_{k}^{*(n)} & = & \frac{\displaystyle\int_{u_{toa}}^{u_{k}}u^{n-1}T(u)du}{\displaystyle\int_{0}^{u_{k}}u^{n-1}du}\nonumber\\
   \textrm{and} & &\\
   p_{k}^{*(n)} & = & \frac{\displaystyle\int_{u_{toa}}^{u_{k}}u^{n-1}p(u)du}{\displaystyle\int_{0}^{u_{k}}u^{n-1}du}\nonumber
 \end{eqnarray}
-A full description of the origin of these predictors is more nuanced and can be found in \cite{ref:optran3}. The important thing to note here (and in equation \ref{eqn:tau_u}) is the lower integration limit, $u_{toa}$.
+A full description of the origin of these predictors is more nuanced and can be found in \cite{OPTRAN3}. The important thing to note here (and in equation \ref{eqn:tau_u}) is the lower integration limit, $u_{toa}$.
 
 Note that the polychromatic optical depths and absorption coefficients derived from the result of equation \ref{eqn:poly_tau} used in equations \ref{eqn:layer_od} and \ref{eqn:layer_chi} are inherently non-physical.
 
@@ -202,7 +202,7 @@ is then used to shift the model \emph{level} profile so there is no discontinuit
 \begin{equation*}
   X_{m} = X_{m} + \Delta X
 \end{equation*}
-These shifted level values are then averaged to produce the final blended profile. This is done for the water vapour and ozone absorber amounts also, but with a check for negative values. An example of a supplemented profile showing the unshifted and shifted model data is shown in figure \ref{fig:blended_profile49} for a profile from the ECMWF set of 52 model profiles\cite{ref:ecmwf_profile_set}\footnote{Profiles were interpolated to the standard 101-levels used for AIRS processing}.
+These shifted level values are then averaged to produce the final blended profile. This is done for the water vapour and ozone absorber amounts also, but with a check for negative values. An example of a supplemented profile showing the unshifted and shifted model data is shown in figure \ref{fig:blended_profile49} for a profile from the ECMWF set of 52 model profiles\cite{ECMWF_profile_set}\footnote{Profiles were interpolated to the standard 101-levels used for AIRS processing}.
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.8]{graphics/ECMWF.blended_profile_49.eps}
@@ -324,17 +324,14 @@ The impact of the TOA extra layering on the ozone Jacobians from the infrared in
 
 % The references section
 %=======================
-\begin{thebibliography}{99}
-  \bibitem{ref:optran1}McMillin,L.M. and H.E.Fleming, Atmospheric transmittance of an absorbing gas: A computationally fast and accurate transmittance model for absorbing gases with constant mixing ratios in inhomogeneous atmospheres, \emph{Appl. Opt.}, \textbf{15}(2), 358-363, 1976.
-  \bibitem{ref:optran3}McMillin,L.M., H.E.Fleming, and M.L.Hill, Atmospheric transmittance of an absorbing gas. 3: A computationally fast and accurate transmittance model for absorbing gases with variable mixing ratios, \emph{Appl. Opt.}, \textbf{18}(10), 1600-1606, 1979.
-  \bibitem{ref:ecmwf_profile_set}F. Chevallier, ``Sampled databases of 60-level atmospheric profiles from the ECMWF analysis'', EUMETSAT/ECMWF SAF programme, Research Report No. 4, (2001). This dataset and the smaller 52 member set can be accessed at \href{http://www.metoffice.com/research/interproj/nwpsaf/rtm}{http://www.metoffice.com/research/interproj/nwpsaf/rtm}.
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{bibliography}	
 
 
 % The appendices section
 %=======================
-\begin{appendix}
-\end{appendix}
+%\begin{appendix}
+%\end{appendix}
 
 
 \end{document}
