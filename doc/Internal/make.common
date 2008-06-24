@@ -12,10 +12,13 @@ tex: $(DOC_FILE)
 	latex $(DOC_FILE)
 	latex $(DOC_FILE)
 
-ps: tex
+noref: $(DOC_FILE)
+	latex $(DOC_FILE)
+
+ps:
 	dvips -o ${PS_FILE} ${DVI_FILE}
 
-pdf: tex
+pdf:
 	dvipdfm $(DVI_FILE)
 
 clean:
