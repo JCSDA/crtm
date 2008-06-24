@@ -31,7 +31,7 @@ The following details the proposed procedure for development and acceptance of s
   \item Prior to any coding
   \begin{itemize}
     \item Developer shall propose changes in advance. For significant changes, a design review should be held to ensure the proposed changes will integrate into the CRTM; or, alternatively, suggest alterations to the internal structure of the CRTM to accomodate the developer's code.
-    \item Developer shall adhere to CRTM Coding Guidelines\cite{ref:crtm_coding_guidelines}.
+    \item Developer shall adhere to CRTM Coding Guidelines\cite{CRTM_Coding_Guidelines}.
     \item Developer shall update their CRTM working copy to the repository head revision and ensure that tests pass. For significant changes, a repository branch will be created for the developer.
   \end{itemize}
   \item Prior to any CRTM trunk commit
@@ -52,24 +52,25 @@ The following details the proposed procedure for development and acceptance of s
 \section{Code Selection Criteria}
 %================================
 \label{sec:code_selection_criteria}
-\textcolor{red}{This section needs some quantitative guidance from operational users.}
+\textcolor{red}{This section needs some quantitative guidance from operational users.Additional, or more useful criteria?}
 
-The current criteria for code acceptance are
+Currently, there are three categories of code acceptance criteria.
+
+\subsection{Review}
+%------------------
 \begin{itemize}
-  \item Via code review
-  \begin{itemize}
-    \item Clarity. Is the code understandable?
-    \item Maintainability. Is the code designed for easy maintenance?
-  \end{itemize}
-  \item Via specification
-  \begin{itemize}
-    \item Speed. Is it fast enough?
-    \item Accuracy. Is it accurate enough?
-    \item Memory usage. Does it use too much memory?
-  \end{itemize}
+  \item Clarity. Is the code understandable?
+  \item Maintainability. Is the code designed for easy maintenance?
 \end{itemize}
-The first two criteria are somewhat subjective but, as stated, they can be satisfied via iterations of the code review process discussed in section \ref{sec:code_review_process}.
+These criteria are somewhat subjective but, as stated, they can be satisfied via iterations of the code review process discussed in section \ref{sec:code_review_process}.
 
+\subsection{Specification}
+%-------------------------
+\begin{itemize}
+  \item Speed. Is it fast enough?
+  \item Accuracy. Is it accurate enough?
+  \item Memory usage. Does it use too much memory?
+\end{itemize}
 To be useful, the specification criteria obviously need to be quantified but the relative importance of each is dependent on the application. A two-tiered approach is suggested.
 
 Firstly, what are the limits that would cause current operational codes to fail? That is, if the code is too slow then much less satellite data will make it into the data assimilation system eventually degrading the forecast; or if the code uses too much memory, page faulting causes it to halt.
@@ -78,12 +79,44 @@ Secondly, what are the margins that developers can use to guide their developmen
 
 \textcolor{red}{A chart of typical/suggested values for the different JCSDA partners?}
 
-\textcolor{red}{Additional, or more useful criteria?}
+
+\subsection{Testing}
+%-------------------
+\subsubsection{Baseline model tests}
+%...................................
+Code should be provided that runs the CRTM module under development and compares it with  supplied results that are known to be correct.
+
+\textcolor{red}{Baseline test for all components, i.e. forward, tangent-linear, adjoint, K-matrix (if appropriate)? Or just the forward model since the following should test for the others?}
+
+
+\subsubsection{Forward/Tangent-linear test}
+%..........................................
+Let $F(x)$ represent the forward model for input $x$, and $TL(\delta x)$ represent the tangent-linear model for perturbation input $\delta x$. The relationship
+\begin{equation}
+  \frac{F(x+\alpha\cdot\delta x) - F(x)}{\alpha\cdot TL(\delta x)} = 1+O(\alpha)
+\end{equation}
+should be true, where $\alpha = 0.1,0.01,0.001,$\ldots
+
+\subsubsection{Tangent-linear/Adjoint Test}
+%..........................................
+Let $\mathbf{TL(\delta x)}$ represent the tangent-linear model result for perturbation input vector  $\mathbf{\delta x}$, and $\mathbf{AD\left(TL(\delta x)\right)}$ represent the adjoint model result where the tangent-linear model output is used as adjoint model input. The following relationship,
+\begin{equation}
+  \mathbf{TL(\delta x)^{t}\cdot TL(\delta x) = \delta x^{t}\cdot AD\left(TL(\delta x)\right)}
+\end{equation}
+must be true to within numerical precision.
+
+\subsubsection{Adjoint/K-matrix Test}
+%....................................
+For specified adjoint input, $\delta y^{*}$, let $AD(\delta y^{*})$ represent the adjoint model result, and $K_{l}(\delta y^{*})$ the K-matrix result for sensor channel $l$. The following relationship
+\begin{equation}
+  AD(\delta y^{*}) = \sum_{l=1}^{L} K_{l}(\delta y^{*})
+\end{equation}
+must be true to within numerical precision. 
 
 
 \section{Repository Organisation}
 %================================
-The top-level CRTM repository structure is shown in figure \ref{fig:CRTM_Repository_Structure}. This type of structure is standard for repositories in general\cite{ref:svnbook1,ref:svnbook2}. The naming of branches and tags as shown in figure \ref{fig:CRTM_Repository_Structure} is also a \textit{de facto} standard (see \cite{ref:svnbook2} for additional examples) that emphasises convention over configuration. That is, any developer should be able to inspect the repository and determine branch and tag information from their names.
+The top-level CRTM repository structure is shown in figure \ref{fig:CRTM_Repository_Structure}. This type of structure is standard for repositories in general\cite{SubversionManual,Mason2005}. The naming of branches and tags as shown in figure \ref{fig:CRTM_Repository_Structure} is also a \textit{de facto} standard (see \cite{Mason2005} for additional examples) that emphasises convention over configuration. That is, any developer should be able to inspect the repository and determine branch and tag information from their names.
 \begin{figure}[htp]
   \hfill
   \begin{minipage}[t]{.475\textwidth}
@@ -311,11 +344,8 @@ Many of the guidelines and policies in this document were adapted from those for
 
 % The references section
 %=======================
-\begin{thebibliography}{99}
-  \bibitem{ref:crtm_coding_guidelines} van Delst, P., ``CRTM: Fortran95 Coding Guidelines'', JCSDA Report; January, 2008.
-  \bibitem{ref:svnbook1} Collins-Sussman, B., B.W.Fitzpatrick, and C.M.Pilato, ``Version Control with Subversion'', 2007. \href{http://svnbook.red-bean.com}{http://svnbook.red-bean.com}
-  \bibitem{ref:svnbook2} Mason, M. ``Pragmatic Version Control. Using Subversion.'', The Pragmatic Bookshelf, Raleigh, North Carolina, 2005. \href{http://www.pragmaticprogrammer.com}{http://www.pragmaticprogrammer.com}
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{bibliography}
 
 % The appendices section
 %=======================
