@@ -1,0 +1,33 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/single_passband.pstex}%
+\end{picture}%
+\setlength{\unitlength}{2368sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(6066,5088)(1779,-5683)
+\put(4951,-811){\makebox(0,0)[b]{\smash{{\SetFigFont{11}{13.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textbf{Single Passband Channel}}%
+}}}}
+\put(4951,-1336){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Channel Bandwidth, $\Delta f$}%
+}}}}
+\put(4801,-1861){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Stopband}%
+}}}}
+\put(4801,-2161){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}HALFwidth, $\Delta f_{SB}/2$}%
+}}}}
+\put(3451,-2911){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Passband}%
+}}}}
+\put(3451,-3211){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}HALFwidth,}%
+}}}}
+\put(3451,-3511){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$(\Delta f-\Delta f_{SB})/2$}%
+}}}}
+\put(4951,-5011){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Central}%
+}}}}
+\put(4951,-5311){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Frequency,}%
+}}}}
+\put(4951,-5611){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_0$}%
+}}}}
+\end{picture}%

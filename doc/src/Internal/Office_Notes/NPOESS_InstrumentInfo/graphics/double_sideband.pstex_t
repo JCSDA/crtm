@@ -1,0 +1,47 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/double_sideband.pstex}%
+\end{picture}%
+\setlength{\unitlength}{2368sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(5188,4641)(2057,-5386)
+\put(3151,-2311){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Sideband}%
+}}}}
+\put(3151,-2611){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}HALFwidth,}%
+}}}}
+\put(3151,-2911){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\Delta f/2$}%
+}}}}
+\put(4651,-4711){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Central}%
+}}}}
+\put(4651,-5011){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Frequency,}%
+}}}}
+\put(4651,-5311){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_0$}%
+}}}}
+\put(6451,-5086){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Upper}%
+}}}}
+\put(6451,-5386){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Sideband}%
+}}}}
+\put(2851,-5086){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Lower}%
+}}}}
+\put(2851,-5386){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Sideband}%
+}}}}
+\put(2851,-4711){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_0 - df_1$}%
+}}}}
+\put(6451,-4711){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_0 + df_1$}%
+}}}}
+\put(5551,-2611){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Sideband}%
+}}}}
+\put(5551,-2911){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Offset,}%
+}}}}
+\put(5551,-3211){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$df_1$}%
+}}}}
+\put(2851,-1411){\makebox(0,0)[b]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Channel Bandwidth, $\Delta f$}%
+}}}}
+\put(4651,-961){\makebox(0,0)[b]{\smash{{\SetFigFont{11}{13.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textbf{Double Sideband Channel}}%
+}}}}
+\end{picture}%
