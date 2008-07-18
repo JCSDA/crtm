@@ -64,7 +64,7 @@ with $n=1$. For cubic (or 4-point) interpolation, the same code was used but wit
   \label{eqn:interpolating_poly}
 \end{equation}
 
-The averaged quadratic scheme\cite{ref:avgquad_interpolation} uses a weighted average of two adjacent 3-point (i.e. $n=2$) interpolating polynomials to perform interpolation in the overlapping region,
+The averaged quadratic scheme\cite{Purser_AvgQuad_Interpolation} uses a weighted average of two adjacent 3-point (i.e. $n=2$) interpolating polynomials to perform interpolation in the overlapping region,
 \begin{equation}
   P(x) = W_{l}\sum_{j=1}^{n+1} p_{j}(x)\cdot y_{j} + W_{r}\sum_{j=2}^{n+2} p_{j}(x)\cdot y_{j}
   \label{eqn:avgquad_poly}
@@ -99,10 +99,8 @@ In addition, the construction of the LUT data needs to be done more carefully. I
 
 % The references section
 %=======================
-\begin{thebibliography}{99}
-  \bibitem{ref:avgquad_interpolation} Purser,R.J., Private communication, Feb. 2007.
-  \bibitem{ref:variable_transform} Purser,R.J., Private communication, Mar. 2008.
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{bibliography}
 
 
 %% The appendices section
