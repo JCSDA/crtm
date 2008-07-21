@@ -27,6 +27,8 @@ MODULE Unit_Test
   PUBLIC :: Report_AllTests
   PUBLIC :: n_Tests_Passed
   PUBLIC :: n_Tests_Failed
+  PUBLIC :: Last_Test_Passed
+  PUBLIC :: Last_Test_Failed
 
   ! Procedure overloads
   ! -------------------
@@ -35,6 +37,9 @@ MODULE Unit_Test
     MODULE PROCEDURE fp_equal_scalar
     MODULE PROCEDURE fp_equal_rank1
     MODULE PROCEDURE fp_equal_rank2
+    MODULE PROCEDURE cp_equal_scalar
+    MODULE PROCEDURE cp_equal_rank1
+    MODULE PROCEDURE cp_equal_rank2
   END INTERFACE Is_Equal
   
   INTERFACE Is_LessThan
@@ -67,6 +72,7 @@ MODULE Unit_Test
   CHARACTER(2), PARAMETER :: CRLF = ACHAR(CR)//ACHAR(LF)
   INTEGER,      PARAMETER :: SET = 1
   CHARACTER(*), PARAMETER :: RFMT = 'es25.18'
+  CHARACTER(*), PARAMETER :: ZFMT = '"(",'//RFMT//',",",'//RFMT//',")"'
   LOGICAL,      PARAMETER :: DEFAULT_NOISY = .FALSE.
   LOGICAL,      PARAMETER :: DEFAULT_REPORT = .TRUE.
 
@@ -80,6 +86,9 @@ MODULE Unit_Test
     CHARACTER(SL) :: Title   = ' '
     CHARACTER(SL) :: Caller  = ' '
 
+    ! Last test result
+    LOGICAL :: Last_Test_Result = .TRUE.
+    
     ! Individual test counter
     INTEGER :: n_Tests        = 0
     INTEGER :: n_Passed_Tests = 0
@@ -134,9 +143,11 @@ CONTAINS
     ! Check Test
     IF ( Test ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message,'(4x,"Assert passed for test#",i0)') UTest%n_Tests
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message,'(4x,"Assert FAILED for test#",i0)') UTest%n_Tests
     END IF
@@ -181,10 +192,12 @@ CONTAINS
     ! Check equality
     IF ( i1 == i2 ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message,'(4x,"Assert equal passed for test#",i0,&
                      &". Expected ",i0," and got ",i0)') UTest%n_Tests, i1, i2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message,'(4x,"Assert equal FAILED for test#",i0,&
                      &". Expected ",i0," and got ",i0)') UTest%n_Tests, i1, i2
@@ -214,10 +227,12 @@ CONTAINS
     ! Check equality
     IF ( r1.EqualTo.r2 ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message, '(4x,"Assert equal passed for test#",i0,&
                       &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message, '(4x,"Assert equal FAILED for test#",i0,&
                       &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
@@ -263,6 +278,74 @@ CONTAINS
     END DO
   END SUBROUTINE fp_equal_rank2
 
+  SUBROUTINE cp_equal_scalar(z1,z2,UTest,Message_Log)
+    ! Arguments
+    COMPLEX(fp),            INTENT(IN)     :: z1,z2
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Is_Equal'
+    ! Variables
+    CHARACTER(256) :: Message
+    LOGICAL :: Verbose
+
+    ! Default output
+    Verbose = UTest%Verbose
+
+    ! Check equality
+    IF ( z1.EqualTo.z2 ) THEN
+      CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
+      WRITE( Message, '(4x,"Assert equal passed for test#",i0,&
+                      &". Expected ",'//ZFMT//'," and got ",'//ZFMT//')') UTest%n_Tests, z1,z2
+    ELSE
+      CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
+      Verbose = .TRUE.  ! Always output test failure
+      WRITE( Message, '(4x,"Assert equal FAILED for test#",i0,&
+                      &". Expected ",'//ZFMT//'," and got ",'//ZFMT//')') UTest%n_Tests, z1,z2
+    END IF
+
+    ! Output message
+    IF ( Verbose ) CALL Display_Message( ROUTINE_NAME, &
+                                         TRIM(Message), &
+                                         INFORMATION, &
+                                         Message_Log=Message_Log )
+  END SUBROUTINE cp_equal_scalar
+
+  SUBROUTINE cp_equal_rank1(z1,z2,UTest,Message_Log)
+    ! Arguments
+    COMPLEX(fp),            INTENT(IN)     :: z1(:),z2(:)
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Variables
+    INTEGER :: i
+    
+    ! Loop over elements
+    DO i = 1, MIN(SIZE(z1),SIZE(z2))
+      CALL cp_equal_scalar(z1(i),z2(i),UTest,Message_Log=Message_Log)
+    END DO
+  END SUBROUTINE cp_equal_rank1
+
+  SUBROUTINE cp_equal_rank2(z1,z2,UTest,Message_Log)
+    ! Arguments
+    COMPLEX(fp),            INTENT(IN)     :: z1(:,:),z2(:,:)
+    TYPE(UTest_type),       INTENT(IN OUT) :: UTest
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Variables
+    INTEGER :: i, j, m, n
+    
+    m = MIN(SIZE(z1,DIM=1),SIZE(z2,DIM=1))
+    n = MIN(SIZE(z1,DIM=2),SIZE(z2,DIM=2))
+    
+    ! Loop over elements
+    DO j = 1, n
+      DO i = 1, m
+        CALL cp_equal_scalar(z1(i,j),z2(i,j),UTest,Message_Log=Message_Log)
+      END DO
+    END DO
+  END SUBROUTINE cp_equal_rank2
+
 !------------------------------------------------------------------------------
 !
 ! NAME:
@@ -296,10 +379,12 @@ CONTAINS
     ! Check args
     IF ( i1 < i2 ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message,'(4x,"Assert lessthan passed for test#",i0,&
                      &". Value ",i0," is less than ",i0)') UTest%n_Tests, i1, i2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message,'(4x,"Assert lessthan FAILED for test#",i0,&
                      &". Value ",i0," is NOT less than ",i0)') UTest%n_Tests, i1, i2
@@ -329,10 +414,12 @@ CONTAINS
     ! Check args
     IF ( r1.LessThan.r2 ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message, '(4x,"Assert lessthan passed for test#",i0,&
                       &". Value ",'//RFMT//'," is less than ",'//RFMT//')') UTest%n_Tests, r1,r2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message, '(4x,"Assert lessthan FAILED for test#",i0,&
                       &". Value ",'//RFMT//'," is NOT less than ",'//RFMT//')') UTest%n_Tests, r1,r2
@@ -414,13 +501,17 @@ CONTAINS
     ! Check equality
     IF ( ABS(r1-r2) < tol ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message, '(4x,"Assert equal within passed for test#",i0,&
-                      &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
+                      &". Expected ",'//RFMT//'," to within ",es13.6," and got ",'//RFMT//')') &
+                      UTest%n_Tests, r1,tol,r2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message, '(4x,"Assert equal within FAILED for test#",i0,&
-                      &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
+                      &". Expected ",'//RFMT//'," to within ",es13.6," and got ",'//RFMT//')') &
+                      UTest%n_Tests, r1,tol,r2
     END IF
 
     ! Output message
@@ -498,10 +589,12 @@ CONTAINS
     ! Check inequality    
     IF ( i1 /= i2 ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message, '(4x,"Assert not equal passed for test#",i0,&
                      &". Expected ",i0," and got ",i0)') UTest%n_Tests, i1, i2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message, '(4x,"Assert not equal FAILED for test#",i0,&
                      &". Expected ",i0," and got ",i0)') UTest%n_Tests, i1, i2
@@ -531,10 +624,12 @@ CONTAINS
     ! Check inequality    
     IF ( .NOT. (r1.EqualTo.r2) ) THEN
       CALL test_passed(UTest)
+      UTest%Last_Test_Result = .TRUE.
       WRITE( Message, '(4x,"Assert not equal passed for test#",i0,&
                       &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
     ELSE
       CALL test_failed(UTest)
+      UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
       WRITE( Message, '(4x,"Assert not equal FAILED for test#",i0,&
                       &". Expected ",'//RFMT//'," and got ",'//RFMT//')') UTest%n_Tests, r1,r2
@@ -766,6 +861,45 @@ CONTAINS
   END FUNCTION n_Tests_Failed
   
 
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Last_Test_Passed
+!
+! PURPOSE:
+!       Function to inform if the last test performed passed
+!
+! CALLING SEQUENCE:
+!       .true./.false. = Last_Test_Passed(UTest)
+!
+!------------------------------------------------------------------------------
+
+  PURE FUNCTION Last_Test_Passed(UTest) RESULT(tf)
+    TYPE(UTest_type), INTENT(IN) :: UTest
+    LOGICAL :: tf
+    tf = UTest%Last_Test_Result
+  END FUNCTION Last_Test_Passed
+  
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Last_Test_Failed
+!
+! PURPOSE:
+!       Function to inform if the last test performed failed
+!
+! CALLING SEQUENCE:
+!       .true./.false. = Last_Test_Failed(UTest)
+!
+!------------------------------------------------------------------------------
+
+  PURE FUNCTION Last_Test_Failed(UTest) RESULT(tf)
+    TYPE(UTest_type), INTENT(IN) :: UTest
+    LOGICAL :: tf
+    tf = .NOT. UTest%Last_Test_Result
+  END FUNCTION Last_Test_Failed
+  
   
 !################################################################################
 !################################################################################

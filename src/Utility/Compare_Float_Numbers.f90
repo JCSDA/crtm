@@ -44,8 +44,10 @@ MODULE Compare_Float_Numbers
   END INTERFACE Compare_Float
 
   INTERFACE OPERATOR (.EqualTo.)
-    MODULE PROCEDURE Is_Equal_To_Single
-    MODULE PROCEDURE Is_Equal_To_Double
+    MODULE PROCEDURE EqualTo_Real_Single
+    MODULE PROCEDURE EqualTo_Real_Double
+    MODULE PROCEDURE EqualTo_Complex_Single
+    MODULE PROCEDURE EqualTo_Complex_Double
   END INTERFACE OPERATOR (.EqualTo.)
 
   INTERFACE OPERATOR (.GreaterThan.)
@@ -91,9 +93,8 @@ CONTAINS
 ! OPERANDS:
 !       x, y:        Two congruent floating point data objects to compare.
 !                    UNITS:      N/A
-!                    TYPE:       REAL(Single)   [ == default real]
-!                                  OR
-!                                REAL(Double)
+!                    TYPE:       REAL(Single),    REAL(Double)
+!                                COMPLEX(Single), COMPLEX(Double)
 !                    DIMENSION:  Scalar, or any allowed rank array.
 !
 ! OPERATOR RESULT:
@@ -108,21 +109,42 @@ CONTAINS
 !
 !         ABS( x - y ) < SPACING( MAX(ABS(x),ABS(y)) )
 !
-!       If the result is .TRUE., the numbers are considered equal.
+!       If the result is .TRUE., the numbers are considered equal. For complex
+!       input the test is applied separately to the real and imaginary parts.
 !
 !----------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Is_Equal_To_Single( x, y ) RESULT( Equal_To )
+  ELEMENTAL FUNCTION EqualTo_Real_Single( x, y ) RESULT( EqualTo )
     REAL(Single), INTENT(IN)  :: x, y
-    LOGICAL :: Equal_To
-    Equal_To = ABS(x-y) < SPACING( MAX(ABS(x),ABS(y)) )
-  END FUNCTION Is_Equal_To_Single
+    LOGICAL :: EqualTo
+    EqualTo = ABS(x-y) < SPACING( MAX(ABS(x),ABS(y)) )
+  END FUNCTION EqualTo_Real_Single
 
-  ELEMENTAL FUNCTION Is_Equal_To_Double( x, y ) RESULT( Equal_To )
+  ELEMENTAL FUNCTION EqualTo_Real_Double( x, y ) RESULT( EqualTo )
     REAL(Double), INTENT(IN)  :: x, y
-    LOGICAL :: Equal_To
-    Equal_To = ABS(x-y) < SPACING( MAX(ABS(x),ABS(y)) )
-  END FUNCTION Is_Equal_To_Double
+    LOGICAL :: EqualTo
+    EqualTo = ABS(x-y) < SPACING( MAX(ABS(x),ABS(y)) )
+  END FUNCTION EqualTo_Real_Double
+
+  ELEMENTAL FUNCTION EqualTo_Complex_Single( x, y ) RESULT( EqualTo )
+    COMPLEX(Single), INTENT(IN)  :: x, y
+    LOGICAL :: EqualTo
+    REAL(Single) :: rx, ix
+    REAL(Single) :: ry, iy
+    rx = REAL(x,Single); ix = AIMAG(x)
+    ry = REAL(y,Single); iy = AIMAG(y)
+    EqualTo = EqualTo_Real_Single( rx, ry ) .AND. EqualTo_Real_Single( ix, iy )
+  END FUNCTION EqualTo_Complex_Single
+
+  ELEMENTAL FUNCTION EqualTo_Complex_Double( x, y ) RESULT( EqualTo )
+    COMPLEX(Double), INTENT(IN)  :: x, y
+    LOGICAL :: EqualTo
+    REAL(Double) :: rx, ix
+    REAL(Double) :: ry, iy
+    rx = REAL(x,Double); ix = AIMAG(x)
+    ry = REAL(y,Double); iy = AIMAG(y)
+    EqualTo = EqualTo_Real_Double( rx, ry ) .AND. EqualTo_Real_Double( ix, iy )
+  END FUNCTION EqualTo_Complex_Double
 
 
 !----------------------------------------------------------------------------------
