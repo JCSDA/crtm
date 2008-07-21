@@ -8,7 +8,7 @@
 !       Written by:     Masahiro Kazumori, JCSDA
 !                       Masahiro.Kazumori@noaa.gov
 !       Modified by:    Paul van Delst, CIMSS/SSEC 11-Apr-2007
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 
 MODULE Fresnel
 
@@ -115,7 +115,7 @@ CONTAINS
 !       Written by:     Masahiro Kazumori, JCSDA
 !                       Masahiro.Kazumori@noaa.gov
 !       Modified by:    Paul van Delst, CIMSS/SSEC 11-Apr-2007
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
 !--------------------------------------------------------------------------------
 
@@ -210,7 +210,7 @@ CONTAINS
 !       Written by:     Masahiro Kazumori, JCSDA
 !                       Masahiro.Kazumori@noaa.gov
 !       Modified by:    Paul van Delst, CIMSS/SSEC 11-Apr-2007
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
 !--------------------------------------------------------------------------------
 
@@ -236,7 +236,7 @@ CONTAINS
     z1_TL = POINT5 * permittivity_TL / iVar%z1
     z2_TL = cos_i * permittivity_TL
     zRh_TL = -TWO * cos_i * z1_TL / (cos_i+iVar%z1)**2
-    zRv_TL = TWO * (iVar%z1*z2_TL - iVar%z2*z1_TL) / (iVar%z2+iVar%z1)**2
+    zRv_TL =  TWO * (iVar%z1*z2_TL - iVar%z2*z1_TL) / (iVar%z2+iVar%z1)**2
 
     ! The square of the tangent-linear vertical abs value
     rzRv_TL = REAL(zRv_TL,fp)
@@ -312,7 +312,7 @@ CONTAINS
 !       Written by:     Masahiro Kazumori, JCSDA
 !                       Masahiro.Kazumori@noaa.gov
 !       Modified by:    Paul van Delst, CIMSS/SSEC 11-Apr-2007
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
 !--------------------------------------------------------------------------------
 
@@ -342,11 +342,11 @@ CONTAINS
     zRh_AD = CMPLX(rzRh_AD, -izRh_AD, fp)  ! complex conjugate
 
     ! The adjoint of the vertical reflectivity
-    izRv_AD = TWO*iVar%izRv*Rv_AD
+    izRv_AD = TWO*iVar%izRv*Rv_AD 
     rzRv_AD = TWO*iVar%rzRv*Rv_AD
     Rv_AD  = ZERO
     zRv_AD = CMPLX(rzRv_AD, -izRv_AD, fp)  ! complex conjugate
-    
+
     ! The adjoint of the complex vertical polarised component
     denom = (iVar%z2+iVar%z1)**2
     z1_AD = -TWO*iVar%z2*zRv_AD / denom
@@ -356,8 +356,8 @@ CONTAINS
     z1_AD = z1_AD - ( TWO*cos_i*zRh_AD / (cos_i+iVar%z1)**2 )
     
     ! The adjoint of the preserved variables
-    permittivity_AD = permittivity_AD + (cos_i*z2_AD)
-    permittivity_AD = permittivity_AD + (POINT5*z1_AD/iVar%z1)
+    permittivity_AD = permittivity_AD + CONJG(cos_i*z2_AD)
+    permittivity_AD = permittivity_AD + CONJG(POINT5*z1_AD/iVar%z1)
 
   END SUBROUTINE Fresnel_Reflectivity_AD
   
