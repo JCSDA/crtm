@@ -1,0 +1,239 @@
+\section{Tangent-linear and Adjoint testing of complex square root}
+%==================================================================
+
+During testing of the entire emissivity model, the TL/AD tests consistently failed. The problem was tracked to down to the adjoint of the Fresnel reflectivities. Note that the standalone TL/AD Fresnel tests were all successful. 
+
+\subsection{Simple Test Case}
+%----------------------------
+A simplified test case was run where the reflectivity results used ($r_v$ and $r_h$) were the real and imaginary parts of the square root of the complex permittivity,
+\begin{eqnarray}
+  z &=& \sqrt{\epsilon}\nonumber\\
+  r_v &=& \Re\{z\}\label{eqn:fwd_sqrt}\\
+  r_h &=& \Im\{z\}\nonumber
+\end{eqnarray}
+and implemented in the code as shown in figure \ref{fig:fwd_code_intrinsic}.
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{4in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  COMPLEX :: permittivity, z
+  REAL :: rv, rh
+  ...
+  z  = SQRT(permittivity)
+  rv = REAL(z)
+  rh = AIMAG(z)\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{Test case forward implementation using the \texttt{SQRT()} instrinsic function to compute the complex square root.}
+  \label{fig:fwd_code_intrinsic}
+\end{figure}
+
+The tangent-linear form of equation \ref{eqn:fwd_sqrt} that was used was,
+\begin{eqnarray}
+  \delta{z} &=& \frac{\de}{2\sqrt{\epsilon}}\nonumber\\
+  \delta{r_v} &=& \Re\{\delta{z}\}\label{eqn:tl_sqrt}\\
+  \delta{r_h} &=& \Im\{\delta{z}\}\nonumber
+\end{eqnarray}
+and implemented as shown in figure \ref{fig:tl_code_intrinsic}.
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{4in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  COMPLEX :: permittivity_tl, z_tl
+  REAL :: rv_tl, rh_tl
+  ...
+  z_tl  = 0.5 * permittivity_TL / z
+  rv_tl = REAL(z_tl)
+  rh_tl = AIMAG(z_tl)\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{Test case tangent-linear implementation using the \texttt{SQRT()} instrinsic function to compute the complex square root.}
+  \label{fig:tl_code_intrinsic}
+\end{figure}
+
+The adjoint form of equation \ref{eqn:tl_sqrt} is,
+\begin{eqnarray}
+  \dstar z &=& \dstar r_v - i\,\dstar r_h\nonumber\\
+  \dstar\epsilon &=& \frac{\dstar z}{2\sqrt{\epsilon}}
+  \label{eqn:ad_sqrt}
+\end{eqnarray}
+and implemented in the adjoint code as shown in figure \ref{fig:ad_code_intrinsic}.
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{4in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  REAL :: rv_ad, rh_ad
+  COMPLEX :: permittivity_ad, z_ad
+  ...
+  z_ad = CMPLX(rv_ad,-rh_ad)
+  rv_ad = 0.0; rh_ad = 0.0
+  permittivity_AD = 0.5 * z_AD / z\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{Test case adjoint implementation using the \texttt{SQRT()} instrinsic function to compute the complex square root.}
+  \label{fig:ad_code_intrinsic}
+\end{figure}
+
+Running the FWD/TL and TL/AD tests using the above simplified representations for the Fresnel reflectivities, the FWD/TL tests consistently passed and the TL/AD tests consistently failed. Because the test is relatively simple, it appears that there is some misunderstanding of how the adjoint is being constructed.
+
+
+\subsection{Using an Explicit Expression for the Complex Square Root}
+%--------------------------------------------------------------------
+
+To try to determine the cause of the TL/AD failures the complex square root was computed explicitly using,
+\begin{equation}
+  \sqrt{x + i\,y} = \sqrt{\frac{r+x}{2}} + i\;\textrm{SIGN}(y)\sqrt{\frac{r-x}{2}}
+  \label{eqn:compute_sqrt}
+\end{equation}
+where
+\begin{equation*}
+  r = \sqrt{x^2 + y^2}
+\end{equation*}
+and
+\begin{equation*}
+  \textrm{SIGN}(y) = \begin{cases}
+                       -1 & \textrm{if } y < 0\\
+                       \hfill 1 & \textrm{if } y \ge 1
+                     \end{cases}
+\end{equation*}
+
+Using equation \ref{eqn:compute_sqrt} in equation \ref{eqn:fwd_sqrt}, we get a series of expressions for the simplified test case,
+\begin{eqnarray}
+  x &=& \Re\{\epsilon\}\nonumber\\
+  y &=& \Im\{\epsilon\}\nonumber\\
+  r &=& \sqrt{x^2 + y^2}\label{eqn:fwd_sqrt_explicit}\\
+  r_v &=& \sqrt{\frac{r+x}{2}}\nonumber\\
+  r_h &=& \textrm{SIGN}(y)\sqrt{\frac{r-x}{2}}\nonumber
+\end{eqnarray}
+These are implemented as,
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{4in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  COMPLEX :: permittivity
+  REAL :: x, y, r, sgn
+  REAL :: rv, rh
+  ...
+  x = REAL(permittivity)
+  y = AIMAG(permittivity)
+  r = SQRT(x**2 + y**2)
+  IF ( y < 0.0 ) THEN
+    sgn = -1.0
+  ELSE
+    sgn =  1.0
+  END IF
+  rv =     SQRT((r+x)/2.0)
+  rh = sgn*SQRT((r-x)/2.0)\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{Test case forward implementation using an explicit expression to compute the complex square root.}
+  \label{fig:fwd_code_explicit}
+\end{figure}
+
+The tangent-linear form of equation \ref{eqn:fwd_sqrt_explicit} is thus,
+\begin{eqnarray}
+  \delta{x} &=& \Re\{\de\}\nonumber\\
+  \delta{y} &=& \Im\{\de\}\nonumber\\
+  \delta{r} &=& \frac{x\,\delta{x} + y\,\delta{y}}{r}\label{eqn:tl_sqrt_explicit}\\
+  \delta{r_v} &=& \frac{\delta{r} + \delta{x}}{4\sqrt{\displaystyle\frac{r+x}{2}}}\nonumber\\
+  \delta{r_h} &=& \textrm{SIGN}(y)\frac{\delta{r} - \delta{x}}{4\sqrt{\displaystyle\frac{r-x}{2}}}\nonumber
+\end{eqnarray}
+and are implemented as shown in figure \ref{fig:tl_code_explicit}.
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{4in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  COMPLEX :: permittivity_tl
+  REAL :: x_tl, y_tl, r_tl
+  REAL :: rv_tl, rh_tl
+  ...
+  x_tl = REAL(permittivity_tl)
+  y_tl = AIMAG(permittivity_tl)
+  r_tl = (x*x_tl + y*y_tl)/r
+  rv_tl =     (r_tl+x_tl)/(4.0*SQRT((r+x)/2.0))
+  rh_tl = sgn*(r_tl-x_tl)/(4.0*SQRT((r-x)/2.0))\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{Test case tangent-linear implementation using an explicit expression to compute the complex square root.}
+  \label{fig:tl_code_explicit}
+\end{figure}
+
+The adjoints of the $\delta r_h$ terms in equation \ref{eqn:tl_sqrt_explicit} are,
+\begin{eqnarray}
+  \dstar x &=& \displaystyle\frac{-\textrm{SIGN}(y)}{4\sqrt{\displaystyle\frac{r-x}{2}}}\, \dstar r_h\nonumber\\
+  & & \label{eqn:ad_sqrt_explicit1}\\
+  \dstar r &=& \displaystyle\frac{\textrm{SIGN}(y)}{4\sqrt{\displaystyle\frac{r-x}{2}}}\, \dstar r_h\nonumber
+\end{eqnarray}
+the adjoints of the $\delta r_v$ terms are,
+\begin{eqnarray}
+  \dstar x &=& \displaystyle\frac{1}{4\sqrt{\displaystyle\frac{r+x}{2}}}\, \dstar r_v\nonumber\\
+  & & \label{eqn:ad_sqrt_explicit2}\\
+  \dstar r &=& \displaystyle\frac{1}{4\sqrt{\displaystyle\frac{r+x}{2}}}\, \dstar r_v\nonumber
+\end{eqnarray}
+the adjoints of the $\delta r$ terms are,
+\begin{eqnarray}
+  \dstar y &=& \displaystyle\frac{y}{r}\, \dstar r\nonumber\\
+  & & \label{eqn:ad_sqrt_explicit3}\\
+  \dstar x &=& \displaystyle\frac{x}{r}\, \dstar r\nonumber
+\end{eqnarray}
+with the final adjoint of the $\delta x$ and $\delta y$ terms being
+\begin{equation}
+  \dstar\epsilon = \dstar x + i\,\dstar y
+  \label{eqn:ad_sqrt_explicit4}
+\end{equation}
+The adjoint equations \ref{eqn:ad_sqrt_explicit1} to \ref{eqn:ad_sqrt_explicit4} are implemented as shown in figure \ref{fig:ad_code_explicit}
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{4in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  REAL :: rv_ad, rh_ad
+  REAL :: x_ad, y_ad, r_ad
+  COMPLEX :: permittivity_ad
+  ...
+  ! Adjoint of rh_tl
+  x_ad = -sgn/(4.0*SQRT((r-x)/2.0)) * rh_ad
+  r_ad =  sgn/(4.0*SQRT((r-x)/2.0)) * rh_ad
+  rh_ad = zero
+  ! Adjoint of rv_tl
+  x_ad = x_ad + 1.0/(4.0*SQRT((r+x)/2.0)) * rv_ad
+  r_ad = r_ad + 1.0/(4.0*SQRT((r+x)/2.0)) * rv_ad
+  rv_ad = zero
+  ! Adjoint of r_tl
+  y_ad =        (y/r) * r_ad
+  x_ad = x_ad + (x/r) * r_ad
+  r_ad = zero
+  ! Adjoint of x_tl and y_tl
+  permittivity_ad = CMPLX(x_ad,y_ad)\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{Test case adjoint implementation using an explicit expression to compute the complex square root.}
+  \label{fig:ad_code_explicit}
+\end{figure}
+
+Running the FWD/TL and TL/AD tests using the simplified representations for the Fresnel reflectivities derived via an explicit expression for the complex square root, both the FWD/TL and TL/AD tests consistently passed.
+
+In addition, when the forward and tangent-linear code was reverted to that using the intrinsic \texttt{SQRT()} form of figures \ref{fig:fwd_code_intrinsic} and \ref{fig:tl_code_intrinsic} respectively - that is, \textit{only} the adjoint code used the explicit form - all the FWD/TL and TL/AD tests still passed.
+

@@ -1,0 +1,93 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/Flowcharts/MWSSEM_Flowchart.pstex}%
+\end{picture}%
+\setlength{\unitlength}{1973sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(4994,14724)(-5721,-19873)
+\put(-4574,-8986){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Call Guillou ocean}%
+}}}}
+\put(-4574,-9211){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}permittivity model}%
+}}}}
+\put(-1874,-8986){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Call Ellison ocean}%
+}}}}
+\put(-1874,-9211){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}permittivity model}%
+}}}}
+\put(-3224,-12511){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Is}%
+}}}}
+\put(-3224,-12736){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$v <$ 7m.s$^{-1}$}%
+}}}}
+\put(-3224,-12961){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}?}%
+}}}}
+\put(-3224,-7861){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Is}%
+}}}}
+\put(-3224,-8086){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f <$ 20GHz}%
+}}}}
+\put(-3224,-8311){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}?}%
+}}}}
+\put(-3224,-15061){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Is}%
+}}}}
+\put(-3224,-15286){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f >$ 15GHz}%
+}}}}
+\put(-3224,-15511){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}?}%
+}}}}
+\put(-4574,-16186){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Apply reflectivity small-}%
+}}}}
+\put(-4574,-16411){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}scale correction}%
+}}}}
+\put(-1874,-16186){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}No reflectivity}%
+}}}}
+\put(-1874,-16411){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}correction}%
+}}}}
+\put(-3224,-17386){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Apply reflectivity large-}%
+}}}}
+\put(-3224,-17611){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}scale correction}%
+}}}}
+\put(-3224,-5611){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}MWSSE model}%
+}}}}
+\put(-3224,-5386){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Begin}%
+}}}}
+\put(-4199,-7861){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Yes}%
+}}}}
+\put(-2324,-7861){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}No}%
+}}}}
+\put(-3224,-10186){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Compute Fresnel}%
+}}}}
+\put(-3224,-10411){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}reflectivities}%
+}}}}
+\put(-3224,-11461){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}reflectivities}%
+}}}}
+\put(-3224,-11236){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Compute foam}%
+}}}}
+\put(-4199,-12511){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Yes}%
+}}}}
+\put(-2324,-12511){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}No}%
+}}}}
+\put(-3224,-6436){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Interpolate ocean height}%
+}}}}
+\put(-3224,-6661){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}variance to input}%
+}}}}
+\put(-3224,-6886){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f$ and $v$}%
+}}}}
+\put(-4574,-13786){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}No foam coverage}%
+}}}}
+\put(-1874,-13786){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Compute foam coverage}%
+}}}}
+\put(-4199,-15061){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Yes}%
+}}}}
+\put(-2324,-15061){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}No}%
+}}}}
+\put(-3224,-18661){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\epsilon_{V}$ and $\epsilon_{H}$}%
+}}}}
+\put(-3224,-18436){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Compute emissivities}%
+}}}}
+\put(-3224,-19486){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}MWSSE model}%
+}}}}
+\put(-3224,-19711){\makebox(0,0)[b]{\smash{{\SetFigFont{6}{7.2}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}complete}%
+}}}}
+\end{picture}%

@@ -2,24 +2,21 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{Ocean_Height_Variance_LUT,Complex_Number_TLAD.appendix}
+\includeonly{Introduction,Interface_Description,Model_Test,Component_Test,Conclusions,Fresnel_Reflectivity.appendix,Poly_Routine_Speed.appendix}
 
-
-% Definitions for tables
+% Local definitions
 \newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
-\newcommand{\po}{\ensuremath{p_{0}}}
-\newcommand{\bpo}{\boldmath\po\unboldmath}
-\newcommand{\Dp}{\ensuremath{\Delta p}}
-\newcommand{\bDp}{\boldmath\Dp\unboldmath}
-\newcommand{\reff}{\ensuremath{R_{eff}}}
-\newcommand{\breff}{\boldmath\reff\unboldmath}
-\newcommand{\bhpa}{\textbf{(hPa)}}
-\newcommand{\bmicron}{\boldmath\micron\unboldmath}
+\newcommand{\de}{\ensuremath{\delta\epsilon}}
+\newcommand{\es}{\ensuremath{\epsilon_{s}}}
+\newcommand{\einf}{\ensuremath{\epsilon_{\infty}}}
+\newcommand{\eo}{\ensuremath{\epsilon_{0}}}
+\newcommand{\twopnt}{\ensuremath{2\pi\nu\tau}}
+\newcommand{\dstar}{\ensuremath{\delta^{*}\!}}
 
 % Title info
 \title{Implementation of a Low Frequency Microwave Sea Surface Emissivity Model}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
-\date{April, 2008}
+\date{July, 2008}
 \docnumber{(unassigned)}
 \docseries{CRTM}
 
@@ -33,27 +30,22 @@
 \draftwatermark
 
 \begin{abstract}
-The implementation of M.Kazumori's low frequency microwave sea surface emissivity model, for use with the AMSR-E instrument, involved refactoring some existing code.
+Implementing the low frequency microwave sea surface emissivity model of Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008} in the CRTM involved testing the consistency of the forward, tangent-linear and adjoint model. The code to compute the ocean surface permittivities according to the Guillou\cite{Guillou_etal_1998} model were also tested separately, as were the Fresnel reflectivity codes.
 
-\textbf{Keywords}: CRTM, microwave sea surface emissivity
+\textbf{Keywords}: CRTM, low frequency microwave sea surface emissivity, Guillou permittivity, Fresnel reflectivity, forward, tangent-linear, adjoint model.
 \end{abstract}
 
 
-\section{Introduction}
-%=====================
-blah blah blah
-
 % Include all the other various sections
 %=======================================
-\include{Ocean_Height_Variance_LUT}
+\include{Introduction}
 
+\include{Interface_Description}
+\include{Model_Test}
+\include{Component_Test}
 
+\include{Conclusions}
 
-
-\section{Conclusions}
-%====================
-blah blah blah
-\cite{Guillou_etal_1998}
 
 % The references section
 %=======================
@@ -64,9 +56,9 @@ blah blah blah
 % The appendices section
 %=======================
 \begin{appendix}
-  \include{Complex_Number_TLAD.appendix}
+  \include{Fresnel_Reflectivity.appendix}
+  \include{Poly_Routine_Speed.appendix}
 \end{appendix}
-
 
 \end{document}
 
