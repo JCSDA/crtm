@@ -578,7 +578,7 @@ CONTAINS
 !                                    Salinity_TL   , &  ! TL  Input
 !                                    Wind_Speed_TL , &  ! TL  Input
 !                                    Emissivity_TL , &  ! TL  Output
-!                                    iVar            )  ! Internal variable output
+!                                    iVar            )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Frequency:       Microwave frequency

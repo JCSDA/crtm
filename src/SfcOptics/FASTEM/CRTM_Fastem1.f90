@@ -38,18 +38,6 @@
 !                       Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
 !                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
 !
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!M-
 !------------------------------------------------------------------------------------------------------------
 
 MODULE CRTM_Fastem1
@@ -70,7 +58,7 @@ MODULE CRTM_Fastem1
 
   PRIVATE
 
-  PUBLIC :: Fastem1_OCeanEM
+  PUBLIC :: Fastem1
 
 
 ! Explanation for Fastem1_Coef :
@@ -139,22 +127,22 @@ MODULE CRTM_Fastem1
 !    [57]: Term a50 in horizontal pol mode of large scale correction model
 !    [58]: Term a51 in horizontal pol mode of large scale correction model
 !    [59]: Term a52 in horizontal pol mode of large scale correction model
-  REAL( fp_kind ), PARAMETER :: emc(59) = Reshape( &
-   & (/0.175350E+02_fp_kind, -.617670E+00_fp_kind,  .894800E-02_fp_kind,  .318420E+01_fp_kind,&
-       0.191890E-01_fp_kind, -.108730E-01_fp_kind,  .258180E-03_fp_kind,  .683960E+02_fp_kind,&
-       -.406430E+00_fp_kind,  .228320E-01_fp_kind, -.530610E-03_fp_kind,  .476290E+01_fp_kind,&
-       0.154100E+00_fp_kind, -.337170E-01_fp_kind,  .844280E-03_fp_kind,  .782870E+02_fp_kind,&
-       -.434630E-02_fp_kind,  .531250E+01_fp_kind, -.114770E-01_fp_kind,  .314159E+01_fp_kind,&
-       -.100000E+01_fp_kind,  .195000E-04_fp_kind,  .255000E+01_fp_kind, -.637182E+01_fp_kind,&
-       0.253918E-01_fp_kind,  .357569E-04_fp_kind,  .942928E+01_fp_kind, -.332839E-01_fp_kind,&
-       -.647724E-04_fp_kind, -.329282E+01_fp_kind,  .965450E-02_fp_kind,  .281588E-04_fp_kind,&
-       0.252676E+00_fp_kind,  .343867E-02_fp_kind, -.156362E-04_fp_kind, -.156669E-03_fp_kind,&
-       0.139485E-04_fp_kind, -.407633E-07_fp_kind, -.141316E+00_fp_kind, -.356556E-02_fp_kind,&
-       0.142869E-04_fp_kind, -.240701E+01_fp_kind, -.563888E-01_fp_kind,  .325227E-03_fp_kind,&
-       0.296005E+01_fp_kind,  .704675E-01_fp_kind, -.426440E-03_fp_kind, -.751252E+00_fp_kind,&
-       -.191934E-01_fp_kind,  .125937E-03_fp_kind, -.288253E+00_fp_kind, -.102655E-02_fp_kind,&
-       0.226701E-05_fp_kind, -.119072E-02_fp_kind, -.263165E-04_fp_kind,  .114597E-06_fp_kind,&
-       0.406300E+00_fp_kind,  .200031E-02_fp_kind, -.781635E-05_fp_kind/), (/59/) )
+  REAL( fp ), PARAMETER :: emc(59) = Reshape( &
+   & (/0.175350E+02_fp, -.617670E+00_fp,  .894800E-02_fp,  .318420E+01_fp,&
+       0.191890E-01_fp, -.108730E-01_fp,  .258180E-03_fp,  .683960E+02_fp,&
+       -.406430E+00_fp,  .228320E-01_fp, -.530610E-03_fp,  .476290E+01_fp,&
+       0.154100E+00_fp, -.337170E-01_fp,  .844280E-03_fp,  .782870E+02_fp,&
+       -.434630E-02_fp,  .531250E+01_fp, -.114770E-01_fp,  .314159E+01_fp,&
+       -.100000E+01_fp,  .195000E-04_fp,  .255000E+01_fp, -.637182E+01_fp,&
+       0.253918E-01_fp,  .357569E-04_fp,  .942928E+01_fp, -.332839E-01_fp,&
+       -.647724E-04_fp, -.329282E+01_fp,  .965450E-02_fp,  .281588E-04_fp,&
+       0.252676E+00_fp,  .343867E-02_fp, -.156362E-04_fp, -.156669E-03_fp,&
+       0.139485E-04_fp, -.407633E-07_fp, -.141316E+00_fp, -.356556E-02_fp,&
+       0.142869E-04_fp, -.240701E+01_fp, -.563888E-01_fp,  .325227E-03_fp,&
+       0.296005E+01_fp,  .704675E-01_fp, -.426440E-03_fp, -.751252E+00_fp,&
+       -.191934E-01_fp,  .125937E-03_fp, -.288253E+00_fp, -.102655E-02_fp,&
+       0.226701E-05_fp, -.119072E-02_fp, -.263165E-04_fp,  .114597E-06_fp,&
+       0.406300E+00_fp,  .200031E-02_fp, -.781635E-05_fp/), (/59/) )
 
 
 CONTAINS
@@ -163,7 +151,7 @@ CONTAINS
 !-------------------------------------------------------------------------------------------------------------
 !M+
 ! NAME:
-!       FASTEM1_OCeanEM
+!       FASTEM1
 !
 ! PURPOSE:
 !       Subroutine to compute ocean emissivity and its derivative to wind speed. This code is adopted from
@@ -183,7 +171,7 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -191,17 +179,17 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         SST                      Ocean surface temperature
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Wind_Speed               Ocean surface wind speed
 !                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -211,21 +199,21 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  ONE
 !
 !         dEH_dWindSpeed:          The surface horizontally polarized emissivity derivative to wind speed.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         dEV_dWindSpeed:          The surface vertically polarized emissivity derivative to wind speed.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -241,18 +229,18 @@ CONTAINS
 !M-
 !------------------------------------------------------------------------------------------------------------
 
-  SUBROUTINE Fastem1_OCeanEM(Frequency,                                         & ! INPUT
-                             Sat_Zenith_Angle,                                  & ! INPUT
-                             SST,                                               & ! INPUT
-                             Wind_Speed,                                        & ! INPUT
-                             Emissivity,                                        & ! OUTPUT
-                             dEH_dWindSpeed,                                    & ! OUTPUT)  
-                             dEV_dWindSpeed)                                      ! OUTPUT)
+  SUBROUTINE Fastem1(Frequency,                                         & ! INPUT
+                     Sat_Zenith_Angle,                                  & ! INPUT
+                     SST,                                               & ! INPUT
+                     Wind_Speed,                                        & ! INPUT
+                     Emissivity,                                        & ! OUTPUT
+                     dEH_dWindSpeed,                                    & ! OUTPUT)  
+                     dEV_dWindSpeed)                                      ! OUTPUT)
 ! ---------------------------------------------------------------------------------------------------
 !
-  REAL( fp_kind ), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
-  REAL( fp_kind ), INTENT( IN ) ::  SST, Wind_Speed
-  REAL( fp_kind ), INTENT( IN OUT ) :: Emissivity(:), dEH_dWindSpeed, dEV_dWindSpeed
+  REAL( fp ), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
+  REAL( fp ), INTENT( IN ) ::  SST, Wind_Speed
+  REAL( fp ), INTENT( IN OUT ) :: Emissivity(:), dEH_dWindSpeed, dEV_dWindSpeed
 
 !
 
@@ -262,17 +250,17 @@ CONTAINS
   INTEGER ::  kcho,n,kch,nn,nnp,i
   INTEGER ::  error_status
 
-  real(fp_kind) zch4,xcorr2v,evertr,ehorzr,xcorr2h,ffoam,zcv2,zcv3
-  real(fp_kind) xcorr1,zcv1,zcv4,zch1,zch2,zcv5,zcv6,tau2,degre
-  real(fp_kind) wind,ehorz,evert,sec,sec2,freqghz2,dtde
-  real(fp_kind) u10mps2,usec,tccub,tau1,tc,tcsq,term2,freqghz
-  real(fp_kind) term1,u10mps,ps2,pc2,pcc,pss,rvertsi,rverts,rvertsr
-  real(fp_kind) rverts5,rhorzs5,xcorr15,ffoam5,evertr5,ehorzr5
-  real(fp_kind) perm_real,perm_imag,rhorzsr,zch5,zch6,zch3,rhorzsi
-  real(fp_kind) rhorzs,perm_imag2,einf,fen,del2,del1,fen2,perm_real2
-  real(fp_kind) perm_imag1,perm_real1,den1,den2,emisst
-  real(fp_kind) ffoamv,ffoamh,xcorr1h,xcorr1v
-  complex(fp_kind) perm1,perm2,rvth,rhth,xperm
+  real(fp) zch4,xcorr2v,evertr,ehorzr,xcorr2h,ffoam,zcv2,zcv3
+  real(fp) xcorr1,zcv1,zcv4,zch1,zch2,zcv5,zcv6,tau2,degre
+  real(fp) wind,ehorz,evert,sec,sec2,freqghz2,dtde
+  real(fp) u10mps2,usec,tccub,tau1,tc,tcsq,term2,freqghz
+  real(fp) term1,u10mps,ps2,pc2,pcc,pss,rvertsi,rverts,rvertsr
+  real(fp) rverts5,rhorzs5,xcorr15,ffoam5,evertr5,ehorzr5
+  real(fp) perm_real,perm_imag,rhorzsr,zch5,zch6,zch3,rhorzsi
+  real(fp) rhorzs,perm_imag2,einf,fen,del2,del1,fen2,perm_real2
+  real(fp) perm_imag1,perm_real1,den1,den2,emisst
+  real(fp) ffoamv,ffoamh,xcorr1h,xcorr1v
+  complex(fp) perm1,perm2,rvth,rhth,xperm
 
 !    
 !          First set constants.  Then perform the calculation.
@@ -293,7 +281,7 @@ CONTAINS
 !          to calculate xperm of saline water based on piom model.
 !          convert from kelvin to centigrate and define quadratic and
 !          cubic functions for later polynomials
-           tc=SST-273.15_fp_kind
+           tc=SST-273.15_fp
            tcsq=tc*tc
            tccub=tcsq*tc
         
@@ -307,7 +295,7 @@ CONTAINS
            einf=emc(18)+emc(19)*tc
          
 !          calculate xperm using double-debye formula
-           fen=two*pi*freqghz*0.001_fp_kind
+           fen=two*pi*freqghz*0.001_fp
            fen2=fen**two
            den1=one+fen2*tau1*tau1
            den2=one+fen2*tau2*tau2
@@ -323,15 +311,15 @@ CONTAINS
 !          to calculate vertical and horizontal polarised reflectivities
 !          given xperm at local incidencence angle for all channels
 !          and profiles
-           perm1 = sqrt(xperm - cmplx(ps2,zero,fp_kind))
+           perm1 = sqrt(xperm - cmplx(ps2,zero,fp))
            perm2  = xperm*pcc
            rhth = (pcc - perm1)/(pcc + perm1)                     
            rvth = (perm2 - perm1)/(perm2 + perm1)
-           rvertsr=real(rvth,fp_kind)
+           rvertsr=real(rvth,fp)
 !           rvertsi=dimag(rvth)
            rvertsi=aimag(rvth)
            rverts=rvertsr*rvertsr+rvertsi*rvertsi
-           rhorzsr=real(rhth,fp_kind)
+           rhorzsr=real(rhth,fp)
 !           rhorzsi=dimag(rhth)
            rhorzsi=aimag(rhth)
            rhorzs=rhorzsr*rhorzsr+rhorzsi*rhorzsi
@@ -358,8 +346,8 @@ CONTAINS
            zch6=(emc(57)+emc(58)*freqghz+emc(59)*freqghz2)*usec
 
 !          calculate correction for this polarisation
-           xcorr2v=.01_fp_kind*(zcv1+zcv2+zcv3+zcv4+zcv5+zcv6)
-           xcorr2h=.01_fp_kind*(zch1+zch2+zch3+zch4+zch5+zch6)
+           xcorr2v=.01_fp*(zcv1+zcv2+zcv3+zcv4+zcv5+zcv6)
+           xcorr2h=.01_fp*(zch1+zch2+zch3+zch4+zch5+zch6)
         
            evertr=one-rverts*xcorr1+xcorr2v
            ehorzr=one-rhorzs*xcorr1+xcorr2h
@@ -403,12 +391,12 @@ CONTAINS
 
 !          calculate foam emissivity correction
 !          calculate correction for this polarisation
-           zch4=.01_fp_kind*xcorr2h
-           zch5=.01_fp_kind*xcorr2h
-           zch6=.01_fp_kind*xcorr2h
-           zcv4=.01_fp_kind*xcorr2v
-           zcv5=.01_fp_kind*xcorr2v
-           zcv6=.01_fp_kind*xcorr2v
+           zch4=.01_fp*xcorr2h
+           zch5=.01_fp*xcorr2h
+           zch6=.01_fp*xcorr2h
+           zcv4=.01_fp*xcorr2v
+           zcv5=.01_fp*xcorr2v
+           zcv6=.01_fp*xcorr2v
 
 !          calculate large scale geometric correction
 !          to calculate a correction to the fresnel reflection coefficients
@@ -427,6 +415,6 @@ CONTAINS
                     zcv6*(emc(39)+emc(40)*freqghz+emc(41)*freqghz2)*sec +  &
                     zcv5*(emc(36)+emc(37)*freqghz+emc(38)*freqghz2)*two*wind
 
- END SUBROUTINE Fastem1_OCeanEM
+ END SUBROUTINE Fastem1
 
 END MODULE CRTM_Fastem1
