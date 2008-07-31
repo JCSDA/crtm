@@ -6,11 +6,15 @@
 \usepackage[dvips]{graphicx,color}
 \usepackage{amsmath,amssymb}
 \usepackage{bm}
-\usepackage[bf]{caption}
+\usepackage{caption}
 \usepackage{xr}
 \usepackage{ifthen}
 \usepackage[dvipdfm,colorlinks,urlcolor=blue]{hyperref}
 \usepackage{fancybox}
+\usepackage{textcomp}
+%\usepackage{floatflt}
+%\usepackage{svn}
+
 
 % Redefine default page
 \setlength{\textheight}{9in}  % 1" above and below
@@ -21,8 +25,10 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
 
-% Define caption width
+% Define caption width and default fonts
 \setlength{\captionmargin}{0.5in}
+\renewcommand{\captionfont}{\sffamily}
+\renewcommand{\captionlabelfont}{\bfseries\sffamily}
 
 % Define commands for super- and subscript in text mode
 \newcommand{\superscript}[1]{\ensuremath{^\textrm{#1}}}
@@ -44,6 +50,8 @@
 
 \newcommand{\taup}[1]{\ensuremath{\tau_{#1}}}
 \newcommand{\efftaup}[1]{\ensuremath{\tau_{#1}^{*}}}
+
+\newcommand{\textbfm}[1]{\boldmath\ensuremath{#1}\unboldmath}
 
 % Define how equations are numbered
 \numberwithin{equation}{section}
