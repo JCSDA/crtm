@@ -50,8 +50,9 @@ MODULE CRTM_Fastem3
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds
-  USE CRTM_Parameters
+  USE Type_Kinds,      ONLY: fp
+  USE CRTM_Parameters, ONLY: ZERO, ONE, &
+                             PI, DEGREES_TO_RADIANS
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -71,10 +72,8 @@ MODULE CRTM_Fastem3
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id:$'
+  '$Id$'
   ! Literal constants
-  REAL(fp), PARAMETER :: ZERO    = 0.0_fp
-  REAL(fp), PARAMETER :: ONE     = 1.0_fp
   REAL(fp), PARAMETER :: HUNDRED = 100.0_fp
   
   

@@ -223,32 +223,32 @@ CONTAINS
     
     ! Low frequency model coupled with Fastem3
     ! ----------------------------------------
-    IF( SC(SensorIndex)%Frequency(Channel_Index) < LOW_F_THRESHOLD ) THEN
+    IF( SC(SensorIndex)%Frequency(ChannelIndex) < LOW_F_THRESHOLD ) THEN
       ! Call the low frequency model
       DO i = 1, SfcOptics%n_Angles
-        CALL LowFrequency_MWSSEM( SC(SensorIndex)%Frequency(Channel_Index), &  ! Input
-                                  SfcOptics%Angle(i)                      , &  ! Input
-                                  Surface%Water_Temperature               , &  ! Input
-                                  Surface%Salinity                        , &  ! Input
-                                  Surface%Wind_Speed                      , &  ! Input
-                                  SfcOptics%Emissivity(i,:)               , &  ! Output
-                                  MWWSOV%LF_MWSSEM_Var                      )  ! Internal variable output
+        CALL LowFrequency_MWSSEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input
+                                  SfcOptics%Angle(i)                     , &  ! Input
+                                  Surface%Water_Temperature              , &  ! Input
+                                  Surface%Salinity                       , &  ! Input
+                                  Surface%Wind_Speed                     , &  ! Input
+                                  SfcOptics%Emissivity(i,:)              , &  ! Output
+                                  MWWSOV%LF_MWSSEM_Var                     )  ! Internal variable output
         SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
         SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
       END DO
     ELSE
       ! Call Fastem3
       DO i = 1, SfcOptics%n_Angles
-        CALL Fastem3( SC(SensorIndex)%Frequency(Channel_Index), & ! Input
-                      SfcOptics%Angle(i)                      , & ! Input
-                      GeometryInfo%Source_Azimuth_Angle       , & ! Input
-                      Surface%Water_Temperature               , & ! Input
-                      Surface%Wind_Speed                      , & ! Input
-                      Surface%Wind_Direction                  , & ! Input
-                      INVALID_TRANSMITTANCE                   , & ! Input
-                      FASTEM_VERSION                          , & ! Input
-                      SfcOptics%Emissivity(i,:)               , & ! Output
-                      Reflectivity                              ) ! Output
+        CALL Fastem3( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
+                      SfcOptics%Angle(i)                     , & ! Input
+                      GeometryInfo%Source_Azimuth_Angle      , & ! Input
+                      Surface%Water_Temperature              , & ! Input
+                      Surface%Wind_Speed                     , & ! Input
+                      Surface%Wind_Direction                 , & ! Input
+                      INVALID_TRANSMITTANCE                  , & ! Input
+                      FASTEM_VERSION                         , & ! Input
+                      SfcOptics%Emissivity(i,:)              , & ! Output
+                      Reflectivity                             ) ! Output
         SfcOptics%Reflectivity(i,1,i,1) = Reflectivity(1) 
         SfcOptics%Reflectivity(i,2,i,2) = Reflectivity(2) 
         SfcOptics%Reflectivity(i,3,i,3) = Reflectivity(3)
@@ -260,16 +260,16 @@ CONTAINS
 !    ! The Fastem3 model
 !    ! -----------------
 !    DO i = 1, SfcOptics%n_Angles
-!      CALL Fastem3( SC(SensorIndex)%Frequency(Channel_Index), & ! Input
-!                    SfcOptics%Angle(i)                      , & ! Input
-!                    GeometryInfo%Source_Azimuth_Angle       , & ! Input
-!                    Surface%Water_Temperature               , & ! Input
-!                    Surface%Wind_Speed                      , & ! Input
-!                    Surface%Wind_Direction                  , & ! Input
-!                    INVALID_TRANSMITTANCE                   , & ! Input
-!                    FASTEM_VERSION                          , & ! Input
-!                    SfcOptics%Emissivity(i,:)               , & ! Output
-!                    Reflectivity                              ) ! Output
+!      CALL Fastem3( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
+!                    SfcOptics%Angle(i)                     , & ! Input
+!                    GeometryInfo%Source_Azimuth_Angle      , & ! Input
+!                    Surface%Water_Temperature              , & ! Input
+!                    Surface%Wind_Speed                     , & ! Input
+!                    Surface%Wind_Direction                 , & ! Input
+!                    INVALID_TRANSMITTANCE                  , & ! Input
+!                    FASTEM_VERSION                         , & ! Input
+!                    SfcOptics%Emissivity(i,:)              , & ! Output
+!                    Reflectivity                             ) ! Output
 !      SfcOptics%Reflectivity(i,1,i,1) = Reflectivity(1) 
 !      SfcOptics%Reflectivity(i,2,i,2) = Reflectivity(2) 
 !      SfcOptics%Reflectivity(i,3,i,3) = Reflectivity(3)
@@ -454,7 +454,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_MW_Water_SfcOptics_TL'
     ! Local variables
     INTEGER :: i
-    REAL(fp) :: Reflectivity(4), Transmittance_TL
+    REAL(fp) :: Reflectivity(4), Reflectivity_TL(4)
+    REAL(fp) :: Transmittance_TL
 
 
     ! ------
@@ -470,39 +471,39 @@ CONTAINS
     
     ! Low frequency model coupled with Fastem3
     ! ----------------------------------------
-    IF( SC(SensorIndex)%Frequency(Channel_Index) < LOW_F_THRESHOLD ) THEN
+    IF( SC(SensorIndex)%Frequency(ChannelIndex) < LOW_F_THRESHOLD ) THEN
       ! Call the low frequency model
       DO i = 1, SfcOptics%n_Angles
-        CALL LowFrequency_MWSSEM_TL( SC(SensorIndex)%Frequency(Channel_Index), &  ! Input
-                                     SfcOptics%Angle(i)                      , &  ! Input
-                                     Surface%Water_Temperature               , &  ! FWD Input
-                                     Surface%Salinity                        , &  ! FWD Input
-                                     Surface%Wind_Speed                      , &  ! FWD Input
-                                     Surface_TL%Water_Temperature            , &  ! TL  Input
-                                     Surface_TL%Salinity                     , &  ! TL  Input
-                                     Surface_TL%Wind_Speed                   , &  ! TL  Input
-                                     SfcOptics_TL%Emissivity(i,:)            , &  ! TL  Output
-                                     MWWSOV%LF_MWSSEM_Var                      )  ! Internal variable input
+        CALL LowFrequency_MWSSEM_TL( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input
+                                     SfcOptics%Angle(i)                     , &  ! Input
+                                     Surface%Water_Temperature              , &  ! FWD Input
+                                     Surface%Salinity                       , &  ! FWD Input
+                                     Surface%Wind_Speed                     , &  ! FWD Input
+                                     Surface_TL%Water_Temperature           , &  ! TL  Input
+                                     Surface_TL%Salinity                    , &  ! TL  Input
+                                     Surface_TL%Wind_Speed                  , &  ! TL  Input
+                                     SfcOptics_TL%Emissivity(i,:)           , &  ! TL  Output
+                                     MWWSOV%LF_MWSSEM_Var                     )  ! Internal variable input
         SfcOptics_TL%Reflectivity(i,1,i,1) = -SfcOptics_TL%Emissivity(i,1)
         SfcOptics_TL%Reflectivity(i,2,i,2) = -SfcOptics_TL%Emissivity(i,2)
       END DO
     ELSE
       ! Call Fastem3
       DO i = 1, SfcOptics%n_Angles
-        CALL Fastem3_TL( SC(SensorIndex)%Frequency(Channel_Index), & ! Input
-                         SfcOptics%Angle(i)                      , & ! Input
-                         GeometryInfo%Source_Azimuth_Angle       , & ! Input
-                         Surface%Water_Temperature               , & ! Input
-                         Surface%Wind_Speed                      , & ! Input
-                         Surface%Wind_Direction                  , & ! Input
-                         INVALID_TRANSMITTANCE                   , & ! Input
-                         Surface_TL%Water_Temperature            , & ! Input
-                         Surface_TL%Wind_Speed                   , & ! Input
-                         Surface_TL%Wind_Direction               , & ! Input
-                         Transmittance_TL                        , & ! Input
-                         FASTEM_VERSION                          , & ! Input
-                         SfcOptics_TL%Emissivity(i,:)            , & ! Output
-                         Reflectivity_TL                           ) ! Output
+        CALL Fastem3_TL( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
+                         SfcOptics%Angle(i)                     , & ! Input
+                         GeometryInfo%Source_Azimuth_Angle      , & ! Input
+                         Surface%Water_Temperature              , & ! Input
+                         Surface%Wind_Speed                     , & ! Input
+                         Surface%Wind_Direction                 , & ! Input
+                         INVALID_TRANSMITTANCE                  , & ! Input
+                         Surface_TL%Water_Temperature           , & ! Input
+                         Surface_TL%Wind_Speed                  , & ! Input
+                         Surface_TL%Wind_Direction              , & ! Input
+                         Transmittance_TL                       , & ! Input
+                         FASTEM_VERSION                         , & ! Input
+                         SfcOptics_TL%Emissivity(i,:)           , & ! Output
+                         Reflectivity_TL                          ) ! Output
         SfcOptics_TL%Reflectivity(i,1,i,1) = Reflectivity_TL(1) 
         SfcOptics_TL%Reflectivity(i,2,i,2) = Reflectivity_TL(2) 
         SfcOptics_TL%Reflectivity(i,3,i,3) = Reflectivity_TL(3)
@@ -514,20 +515,20 @@ CONTAINS
 !    ! The Fastem3 model
 !    ! -----------------
 !    DO i = 1, SfcOptics%n_Angles
-!      CALL Fastem3_TL( SC(SensorIndex)%Frequency(Channel_Index), & ! Input
-!                       SfcOptics%Angle(i)                      , & ! Input
-!                       GeometryInfo%Source_Azimuth_Angle       , & ! Input
-!                       Surface%Water_Temperature               , & ! Input
-!                       Surface%Wind_Speed                      , & ! Input
-!                       Surface%Wind_Direction                  , & ! Input
-!                       INVALID_TRANSMITTANCE                   , & ! Input
-!                       Surface_TL%Water_Temperature            , & ! Input
-!                       Surface_TL%Wind_Speed                   , & ! Input
-!                       Surface_TL%Wind_Direction               , & ! Input
-!                       Transmittance_TL                        , & ! Input
-!                       FASTEM_VERSION                          , & ! Input
-!                       SfcOptics_TL%Emissivity(i,:)            , & ! Output
-!                       Reflectivity_TL                           ) ! Output
+!      CALL Fastem3_TL( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
+!                       SfcOptics%Angle(i)                     , & ! Input
+!                       GeometryInfo%Source_Azimuth_Angle      , & ! Input
+!                       Surface%Water_Temperature              , & ! Input
+!                       Surface%Wind_Speed                     , & ! Input
+!                       Surface%Wind_Direction                 , & ! Input
+!                       INVALID_TRANSMITTANCE                  , & ! Input
+!                       Surface_TL%Water_Temperature           , & ! Input
+!                       Surface_TL%Wind_Speed                  , & ! Input
+!                       Surface_TL%Wind_Direction              , & ! Input
+!                       Transmittance_TL                       , & ! Input
+!                       FASTEM_VERSION                         , & ! Input
+!                       SfcOptics_TL%Emissivity(i,:)           , & ! Output
+!                       Reflectivity_TL                          ) ! Output
 !      SfcOptics_TL%Reflectivity(i,1,i,1) = Reflectivity_TL(1) 
 !      SfcOptics_TL%Reflectivity(i,2,i,2) = Reflectivity_TL(2) 
 !      SfcOptics_TL%Reflectivity(i,3,i,3) = Reflectivity_TL(3)
@@ -710,21 +711,21 @@ CONTAINS
     
     ! Low frequency model coupled with Fastem3
     ! ----------------------------------------
-    IF( SC(SensorIndex)%Frequency(Channel_Index) < LOW_F_THRESHOLD ) THEN
+    IF( SC(SensorIndex)%Frequency(ChannelIndex) < LOW_F_THRESHOLD ) THEN
       ! Call the low frequency model
       DO i = 1, SfcOptics%n_Angles
         SfcOptics_AD%Emissivity(i,1) = SfcOptics_AD%Emissivity(i,1)-SfcOptics_AD%Reflectivity(i,1,i,1)
         SfcOptics_AD%Emissivity(i,2) = SfcOptics_AD%Emissivity(i,2)-SfcOptics_AD%Reflectivity(i,2,i,2)
-        CALL LowFrequency_MWSSEM_AD( SC(SensorIndex)%Frequency(Channel_Index), &  ! Input
-                                     SfcOptics%Angle(i)                      , &  ! Input
-                                     Surface%Water_Temperature               , &  ! FWD Input
-                                     Surface%Salinity                        , &  ! FWD Input
-                                     Surface%Wind_Speed                      , &  ! FWD Input
-                                     SfcOptics_AD%Emissivity_AD(i,:)         , &  ! AD  Input
-                                     Surface_AD%Temperature                  , &  ! AD  Output
-                                     Surface_AD%Salinity                     , &  ! AD  Output
-                                     Surface_AD%Wind_Speed                   , &  ! AD  Output
-                                     MWWSOV%LF_MWSSEM_Var                      )  ! Internal variable input
+        CALL LowFrequency_MWSSEM_AD( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input
+                                     SfcOptics%Angle(i)                     , &  ! Input
+                                     Surface%Water_Temperature              , &  ! FWD Input
+                                     Surface%Salinity                       , &  ! FWD Input
+                                     Surface%Wind_Speed                     , &  ! FWD Input
+                                     SfcOptics_AD%Emissivity(i,:)           , &  ! AD  Input
+                                     Surface_AD%Water_Temperature           , &  ! AD  Output
+                                     Surface_AD%Salinity                    , &  ! AD  Output
+                                     Surface_AD%Wind_Speed                  , &  ! AD  Output
+                                     MWWSOV%LF_MWSSEM_Var                     )  ! Internal variable input
       END DO
     ELSE
       ! Call Fastem3
@@ -732,21 +733,21 @@ CONTAINS
         DO j = 1, 4
           Reflectivity_AD(j) = SfcOptics_AD%Reflectivity(i,j,i,j)
         END DO
-        CALL Fastem3_AD( SC(SensorIndex)%Frequency(Channel_Index), & ! Input
-                         SfcOptics%Angle(i),                     , & ! Input
-                         GeometryInfo%Source_Azimuth_Angle,      , & ! Input
-                         Surface%Water_Temperature,              , & ! Input
-                         Surface%Wind_Speed ,                    , & ! Input
-                         Surface%Wind_Direction,                 , & ! Input
-                         INVALID_TRANSMITTANCE,                  , & ! Input
-                         Emissivity,                             , & ! Output
-                         Reflectivity,                           , & ! Output
-                         FASTEM_VERSION,                         , & ! Input
-                         SfcOptics_AD%Emissivity(i,:),           , & ! Input/Output
-                         Reflectivity_AD,                        , & ! Input/Output
-                         Surface_AD%Water_Temperature,           , & ! Output
-                         Surface_AD%Wind_Speed,                  , & ! Output
-                         Surface_AD%Wind_Direction,              , & ! Output
+        CALL Fastem3_AD( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
+                         SfcOptics%Angle(i)                      , & ! Input
+                         GeometryInfo%Source_Azimuth_Angle       , & ! Input
+                         Surface%Water_Temperature               , & ! Input
+                         Surface%Wind_Speed                      , & ! Input
+                         Surface%Wind_Direction                  , & ! Input
+                         INVALID_TRANSMITTANCE                   , & ! Input
+                         Emissivity                              , & ! Output
+                         Reflectivity                            , & ! Output
+                         FASTEM_VERSION                          , & ! Input
+                         SfcOptics_AD%Emissivity(i,:)            , & ! Input/Output
+                         Reflectivity_AD                         , & ! Input/Output
+                         Surface_AD%Water_Temperature            , & ! Output
+                         Surface_AD%Wind_Speed                   , & ! Output
+                         Surface_AD%Wind_Direction               , & ! Output
                          Transmittance_AD                          ) ! Output
       END DO
     END IF
@@ -758,7 +759,7 @@ CONTAINS
 !      DO j = 1, 4
 !        Reflectivity_AD(j) = SfcOptics_AD%Reflectivity(i,j,i,j)
 !      END DO
-!      CALL Fastem3_AD( SC(SensorIndex)%Frequency(Channel_Index), & ! Input
+!      CALL Fastem3_AD( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
 !                       SfcOptics%Angle(i),                     , & ! Input
 !                       GeometryInfo%Source_Azimuth_Angle,      , & ! Input
 !                       Surface%Water_Temperature,              , & ! Input
