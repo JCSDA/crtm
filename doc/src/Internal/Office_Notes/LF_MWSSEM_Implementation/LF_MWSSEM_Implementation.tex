@@ -2,7 +2,7 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{Introduction,Interface_Description,Model_Test,Component_Test,Conclusions,Fresnel_Reflectivity.appendix,Poly_Routine_Speed.appendix}
+\includeonly{Introduction,Interface_Description,Component_Test,Model_Test,Comparison_Test,Conclusions,Fresnel_Reflectivity.appendix,Poly_Routine_Speed.appendix}
 
 % Local definitions
 \newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
@@ -14,7 +14,7 @@
 \newcommand{\dstar}{\ensuremath{\delta^{*}\!}}
 
 % Title info
-\title{Implementation of a Low Frequency Microwave Sea Surface Emissivity Model}
+\title{Implementation of the Low Frequency Microwave Sea Surface Emissivity Model}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
 \date{July, 2008}
 \docnumber{(unassigned)}
@@ -30,9 +30,11 @@
 \draftwatermark
 
 \begin{abstract}
-Implementing the low frequency microwave sea surface emissivity model of Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008} in the CRTM involved testing the consistency of the forward, tangent-linear and adjoint model. The code to compute the ocean surface permittivities according to the Guillou\cite{Guillou_etal_1998} model were also tested separately, as were the Fresnel reflectivity codes.
+Implementing the low frequency microwave sea surface emissivity model of Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008} in the CRTM involved extensive refactoring of the code and subsequent tests of the consistency of the forward, tangent-linear and adjoint model. The code to compute the ocean surface permittivities according to the Guillou\cite{Guillou_etal_1998} model were also tested separately, as were the Fresnel reflectivity codes.
 
-\textbf{Keywords}: CRTM, low frequency microwave sea surface emissivity, Guillou permittivity, Fresnel reflectivity, forward, tangent-linear, adjoint model.
+Fastem3 was implemented for instrument frequencies greater than 20GHz. Some initial CRTM comparisons were performed comparing the updated model with the current CRTM sea surface emissivity model, Fastem1.
+
+\textbf{Keywords}: CRTM, low frequency microwave sea surface emissivity, Fastem3, Guillou permittivity, Fresnel reflectivity, forward, tangent-linear, adjoint model.
 \end{abstract}
 
 
@@ -41,8 +43,9 @@ Implementing the low frequency microwave sea surface emissivity model of Kazumor
 \include{Introduction}
 
 \include{Interface_Description}
-\include{Model_Test}
 \include{Component_Test}
+\include{Model_Test}
+\include{Comparison_Test}
 
 \include{Conclusions}
 

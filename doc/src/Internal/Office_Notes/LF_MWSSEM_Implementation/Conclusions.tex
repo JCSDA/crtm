@@ -6,3 +6,5 @@ Validating the forward/tangent-linear model consistency for frequencies greater 
 
 Validation of the tangent-linear/adjoint model was comparatively easy in that all test residuals could be objectively compared to within numerical precision. All model components passed this test. 
 
+The impact of the updated microwave sea surface emissivity model on computed brightness temperatures in the CRTM can be quite large, 20-30K, for those channels that are senstive to the surface. The largest portion of the change is due to the emissivity model in the current v1.1 release of the CRTM being Fastem1 which is known to not handle low frequencies very well. However, for the very lowest frequencies tested, the low frequency model still produces an additional brightness temperature difference from Fastem3 of the order of 4-8K. 
+

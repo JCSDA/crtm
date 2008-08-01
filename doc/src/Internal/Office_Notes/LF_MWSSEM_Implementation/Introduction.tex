@@ -1,6 +1,6 @@
 \section{Introduction}
 %=====================
-This article documents the implementation and testing of a low-frequency microwave sea surface emissivity model in the CRTM. The model was developed for use with AMSR-E data, but is applicable to any frequencies below 20GHz. Characteristics of the model affecting the testing will be described, but for a full model description readers are referred to Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008}.
+This article documents the implementation and testing of a low-frequency microwave sea surface emissivity model in the CRTM. The model was developed for use with AMSR-E data, but is applicable to any frequencies below 20GHz. Characteristics of the model affecting the testing will be described, but for a full model description readers are referred to Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008}. For frequencies greater than 20GHz, the Fastem3 model was implemented.
 
 \subsection{Model description}
 %-----------------------------
@@ -12,7 +12,7 @@ A flowchart of the forward model is shown in figure \ref{fig:main_flowchart}. Th
   \caption{Flowchart of the forward microwave sea surface emissivity model. $f$ and $v$ are input frequency and wind speed respectively.}
   \label{fig:main_flowchart}
 \end{figure}
-This model is referred to as a low-frequency model since it is not invoked in the calling CRTM SfcOptics module unless the microwave channel frequency is less than 20GHz. For frequencies greater than 20GHz, the FASTEM-3 model (reference!) is called. Note however that the 20GHz branch is also performed in the model itself.
+This model is referred to as a low-frequency model since it is not invoked in the calling CRTM SfcOptics module unless the microwave channel frequency is less than 20GHz. For frequencies greater than 20GHz, the Fastem3 model (REF!) is called. Note however that the 20GHz branch is also performed in the model itself.
 
 Additionally, note that for low frequencies the Guillou permittivity model \cite{Guillou_etal_1998} is called. For frequencies greater than the 20GHz limit the Ellison permittivity model \cite{Ellison_etal_2003} is called. One difference in the implementation of the Ellison model compared to its reference is that no salinity dependence was included. This is due to the model always being invoked for frequencies beyond 20GHz where the salinity dependence is negligible (or, at least, less than the precision of the measurements used to derive the relationships.)
 
