@@ -4,11 +4,28 @@
 % Define included documents
 \includeonly{Introduction,Get,Build,Use}
 
+% Define fixed font for the various component names
+\newcommand{\Atmosphere}{\texttt{Atmosphere}}
+\newcommand{\Surface}{\texttt{Surface}}
+\newcommand{\GeometryInfo}{\texttt{GeometryInfo}}
+\newcommand{\ChannelInfo}{\texttt{ChannelInfo}}
+\newcommand{\Options}{\texttt{Options}}
+\newcommand{\AtmOptics}{\texttt{AtmOptics}}
+\newcommand{\SfcOptics}{\texttt{SfcOptics}}
+\newcommand{\RTSolution}{\texttt{RTSolution}}
+\newcommand{\AtmAbsorption}{\texttt{AtmAbsorption}}
+\newcommand{\AtmScatter}{\texttt{AtmScatter}}
+\newcommand{\CloudScatter}{\texttt{CloudScatter}}
+\newcommand{\AerosolScatter}{\texttt{AerosolScatter}}
+% Define the adjoint operator with correct spacing
+\newcommand{\dstar}{\ensuremath{\delta^{*}\!}}
+% Space/nudging commands
+\newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
+
 % Title info
 \title{User Guide}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
 \date{July, 2008}
-\docseries{CRTM}
 
 
 %-------------------------------------------------------------------------------
@@ -19,6 +36,9 @@
 
 \draftwatermark
 
+% The tables of content
+%======================
+\tableofcontents
 
 % Include all the sections
 %=========================

@@ -1,2 +1,337 @@
-\section{How to use the CRTM library}
+\chapter{How to use the CRTM library}
 %====================================
+
+error status description
+
+\section{Quick Start}
+%====================
+
+Quick start guide via examples. Refer to the following sections for more information about the structures and interfaces.
+
+The first thing you need to do is identify what sensors you want to use. The list of supported sensors, along with their associated \texttt{Sensor\_Id}'s, are shown in appendix BLAH
+
+
+%GOES-R ABI & abi\_gr 
+%Aqua AIRS 281 & airs281\_aqua 
+%Aqua AIRS 324 & airs324\_aqua 
+%Aqua AIRS Module-1a & airsM1a\_aqua 
+%Aqua AIRS Module-1b & airsM1b\_aqua 
+%Aqua AIRS Module-2a & airsM2a\_aqua 
+%Aqua AIRS Module-2b & airsM2b\_aqua 
+%Aqua AIRS Module-3  & airsM3\_aqua 
+%Aqua AIRS Module-4a & airsM4a\_aqua 
+%Aqua AIRS Module-4b & airsM4b\_aqua 
+%Aqua AIRS Module-4c & airsM4c\_aqua 
+%Aqua AIRS Module-4d & airsM4d\_aqua 
+%Aqua AIRS Module-5  & airsM5\_aqua 
+%Aqua AIRS Module-6  & airsM6\_aqua 
+%Aqua AIRS Module-7  & airsM7\_aqua 
+%Aqua AIRS Module-8  & airsM8\_aqua 
+%Aqua AIRS Module-9  & airsM9\_aqua 
+%Aqua AIRS Module-10 & airsM10\_aqua 
+%Aqua AIRS Module-11 & airsM11\_aqua 
+%Aqua AIRS Module-12 & airsM12\_aqua 
+%Aqua AIRS & airs\_aqua 
+% & avhrr2\_n06 
+% & avhrr2\_n07 
+% & avhrr2\_n08 
+% & avhrr2\_n09 
+% & avhrr2\_n10 
+% & avhrr2\_n11 
+% & avhrr2\_n12 
+% & avhrr2\_n14 
+% & avhrr2\_tirosn 
+% & avhrr3\_metop-a 
+% & avhrr3\_n15 
+% & avhrr3\_n16 
+% & avhrr3\_n17 
+% & avhrr3\_n18 
+% & hirs2\_n06 
+% & hirs2\_n07 
+% & hirs2\_n08 
+% & hirs2\_n09 
+% & hirs2\_n10 
+% & hirs2\_n11 
+% & hirs2\_n12 
+% & hirs2\_n14 
+% & hirs2\_tirosn 
+% & hirs3\_n15 
+% & hirs3\_n16 
+% & hirs3\_n17 
+% & hirs4\_metop-a 
+% & hirs4\_n18 
+% & iasi300\_metop-a 
+% & iasi316\_metop-a 
+% & iasi616\_metop-a 
+% & iasiB1\_metop-a 
+% & iasiB2\_metop-a 
+% & iasiB3\_metop-a 
+% & iasi\_metop-a 
+% & imgr\_g08 
+% & imgr\_g09 
+% & imgr\_g10 
+% & imgr\_g11 
+% & imgr\_g12 
+% & imgr\_g13 
+% & imgr\_mt1r 
+% & modis\_aqua 
+% & modis\_terra 
+% & seviri\_m08 
+% & seviri\_m09 
+% & seviri\_m10 
+% & sndr\_g08 
+% & sndr\_g09 
+% & sndr\_g10 
+% & sndr\_g11 
+% & sndr\_g12 
+% & sndr\_g13 
+% & ssu\_n06 
+% & ssu\_n07 
+% & ssu\_n08 
+% & ssu\_n09 
+% & ssu\_n11 
+% & ssu\_n14 
+% & ssu\_tirosn 
+% & vissrDetA\_gms5 
+% & amsre\_aqua 
+% & amsua\_aqua 
+% & amsua\_metop-a 
+% & amsua\_metop-b 
+% & amsua\_metop-c 
+% & amsua\_n15 
+% & amsua\_n16 
+% & amsua\_n17 
+% & amsua\_n18 
+% & amsua\_n19 
+% & amsub\_n15 
+% & amsub\_n16 
+% & amsub\_n17 
+% & atms\_c1 
+% & hsb\_aqua 
+% & mhs\_metop-a 
+% & mhs\_metop-b 
+% & mhs\_metop-c 
+% & mhs\_n18 
+% & mhs\_n19 
+% & msu\_n06 
+% & msu\_n07 
+% & msu\_n08 
+% & msu\_n09 
+% & msu\_n10 
+% & msu\_n11 
+% & msu\_n12 
+% & msu\_n14 
+% & msu\_tirosn 
+% & ssmi\_f08 
+% & ssmi\_f10 
+% & ssmi\_f11 
+% & ssmi\_f13 
+% & ssmi\_f14 
+% & ssmi\_f15 
+% & ssmis\_f16 
+% & ssmt1\_f13 
+% & ssmt1\_f15 
+% & ssmt2\_f14 
+% & ssmt2\_f15 
+% & windsat\_coriolis 
+
+
+\section{Interface Descriptions}
+%===============================
+
+\subsection{CRTM Initialisation}
+%-------------------------------
+
+\subsection{Forward Model}
+%-------------------------
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  FUNCTION CRTM_Forward( Atmosphere  , &  ! Input, M
+                         Surface     , &  ! Input, M    
+                         GeometryInfo, &  ! Input, M    
+                         ChannelInfo , &  ! Input, N
+                         RTSolution  , &  ! Output, L x M   
+                         Options     , &  ! Optional input, M    
+                         RCS_Id      , &  ! Revision control
+                         Message_Log ) &  ! Error messaging
+                       RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)     ! M
+    TYPE(CRTM_Surface_type),           INTENT(IN)     :: Surface(:)        ! M
+    TYPE(CRTM_GeometryInfo_type),      INTENT(IN OUT) :: GeometryInfo(:)   ! M
+    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)    ! N 
+    TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)   ! L x M
+    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)        ! M
+    CHARACTER(*),            OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                    & \textbf{Rank}    & \textbf{Intent} \\
+      \hline\hline
+      Atmosphere         & Atmospheric state                      & n\_Profiles (M)  & IN      \\
+      \hline
+      Surface            & Surface state                          & n\_Profiles (M)  &         \\
+      \hline
+      GeometryInfo       & Geometry information (e.g. angles)     & n\_Profiles (M)  & IN      \\
+      \hline
+      ChannelInfo        & Sensor channel information             & n\_Sensors (N)   & IN      \\
+      \hline
+      RTSolution         & Radiative transfer solution            & n\_Channels x n\_Profiles                 & IN      \\
+      \hline
+      Options            & Structure for optional input           & n\_Profiles (M)  &         \\
+      \hline
+      RCS\_Id            & Version control ID for the module      &                  &         \\
+      \hline
+      Message\_Log       & Log message filename                   &                  &         \\
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{CRTM Forward model interface and argument description.}
+  \label{fig:fwd_interface}
+\end{figure}
+
+
+\subsection{K-Matrix Model}
+%--------------------------
+
+\subsection{CRTM Destruction}
+%----------------------------
+
+\section{Structure Descriptions}
+%===============================
+
+\subsection{\Atmosphere{} Structure}
+%-----------------------------------
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  TYPE :: CRTM_Atmosphere_type
+    ! Dimension values
+    INTEGER :: n_Layers     = 0  ! K dimension
+    INTEGER :: n_Absorbers  = 0  ! J dimension
+    INTEGER :: n_Clouds     = 0  ! Nc dimension
+    INTEGER :: n_Aerosols   = 0  ! Na dimension
+    ! Number of added layers
+    INTEGER :: n_Added_Layers = 0
+    ! Climatology model associated with the profile
+    INTEGER :: Climatology = INVALID_MODEL
+    ! Absorber ID and units
+    INTEGER, POINTER :: Absorber_ID(:)    => NULL() ! J
+    INTEGER, POINTER :: Absorber_Units(:) => NULL() ! J
+    ! Profile LEVEL and LAYER quantities
+    REAL(fp), POINTER :: Level_Pressure(:) => NULL()  ! 0:K
+    REAL(fp), POINTER :: Pressure(:)       => NULL()  ! K
+    REAL(fp), POINTER :: Temperature(:)    => NULL()  ! K
+    REAL(fp), POINTER :: Absorber(:,:)     => NULL()  ! K x J
+    ! Clouds associated with each profile
+    TYPE(CRTM_Cloud_type),   POINTER :: Cloud(:)   => NULL()  ! Nc
+    ! Aerosols associated with each profile
+    TYPE(CRTM_Aerosol_type), POINTER :: Aerosol(:) => NULL()  ! Na
+  END TYPE CRTM_Atmosphere_type
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                    & \textbf{Rank}    & \textbf{Intent} \\
+      \hline\hline
+      Atmosphere         & Atmospheric state                      & n\_Profiles (M)  & IN      \\
+      \hline
+      Surface            & Surface state                          & n\_Profiles (M)  &         \\
+      \hline
+      GeometryInfo       & Geometry information (e.g. angles)     & n\_Profiles (M)  & IN      \\
+      \hline
+      ChannelInfo        & Sensor channel information             & n\_Sensors (N)   & IN      \\
+      \hline
+      RTSolution         & Radiative transfer solution            & n\_Channels x n\_Profiles                 & IN      \\
+      \hline
+      Options            & Structure for optional input           & n\_Profiles (M)  &         \\
+      \hline
+      RCS\_Id            & Version control ID for the module      &                  &         \\
+      \hline
+      Message\_Log       & Log message filename                   &                  &         \\
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{CRTM Atmosphere structure definition and component description.}
+  \label{fig:atm_structure}
+\end{figure}
+
+\begin{table}
+  \centering
+  \begin{tabular}{|c|c||c|c|}
+    \hline
+    \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter} & \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter}\\
+    \hline\hline
+     H\subscript{2}O  & \texttt{H2O\_ID}  &    HI & \texttt{   HI\_ID}\\
+     CO\subscript{2}  & \texttt{CO2\_ID}  &   ClO & \texttt{  ClO\_ID}\\
+     O\subscript{3}   & \texttt{O3\_ID}   &   OCS & \texttt{  OCS\_ID}\\
+     N\subscript{2}O  & \texttt{N2O\_ID}  &  H\subscript{2}CO & \texttt{ H2CO\_ID}\\
+     CO               & \texttt{CO\_ID}   &  HOCl & \texttt{ HOCl\_ID}\\
+     CH\subscript{4}  & \texttt{CH4\_ID}  &    N\subscript{2} & \texttt{   N2\_ID}\\
+     O\subscript{2}   & \texttt{O2\_ID}   &   HCN & \texttt{  HCN\_ID}\\
+     NO               & \texttt{NO\_ID}   &  CH\subscript{3}l & \texttt{ CH3l\_ID}\\
+     SO\subscript{2}  & \texttt{SO2\_ID}  &  H\subscript{2}O\subscript{2} & \texttt{ H2O2\_ID}\\
+     NO\subscript{2}  & \texttt{NO2\_ID}  &  C\subscript{2}H\subscript{2} & \texttt{ C2H2\_ID}\\
+     NH\subscript{3}  & \texttt{NH3\_ID}  &  C\subscript{2}H\subscript{6} & \texttt{ C2H6\_ID}\\
+     HNO\subscript{3} & \texttt{HNO3\_ID} &   PH\subscript{3} & \texttt{  PH3\_ID}\\
+     OH               & \texttt{OH\_ID}   &  COF\subscript{2} & \texttt{ COF2\_ID}\\
+     HF               & \texttt{HF\_ID}   &   SF\subscript{6} & \texttt{  SF6\_ID}\\
+     HCl              & \texttt{HCl\_ID}  &   H\subscript{2}S & \texttt{  H2S\_ID}\\
+     HBr              & \texttt{HBr\_ID}  & HCOOH & \texttt{HCOOH\_ID}\\
+    \hline
+  \end{tabular}
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_ID} definitions. The same molecule set as defined for HITRAN is used.}
+  \label{tab:absorber_id}
+\end{table}
+
+\begin{table}
+  \centering
+  \begin{tabular}{|c|c|}
+    \hline
+    \sffamily\textbf{Units} & \sffamily\textbf{Parameter} \\
+    \hline\hline
+     Volume mixing ratio, ppmv                    & \texttt{VOLUME\_MIXING\_RATIO\_UNITS} \\
+     Number density, cm$^{-3}$                    & \texttt{NUMBER\_DENSITY\_UNITS} \\
+     Mass mixing ratio, g/kg                      & \texttt{MASS\_MIXING\_RATIO\_UNITS} \\
+     Mass density, g.m$^{-3}$                     & \texttt{MASS\_DENSITY\_UNITS} \\
+     Partial pressure, hPa                        & \texttt{PARTIAL\_PRESSURE\_UNITS} \\
+     Dewpoint temperature, K  \textbf{(H2O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_K\_UNITS} \\
+     Dewpoint temperature, C  \textbf{(H2O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_C\_UNITS} \\
+     Relative humidity, \%    \textbf{(H2O ONLY)} & \texttt{RELATIVE\_HUMIDITY\_UNITS} \\
+     Specific amount, g/g                         & \texttt{SPECIFIC\_AMOUNT\_UNITS} \\
+     Integrated path, mm                          & \texttt{INTEGRATED\_PATH\_UNITS} \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_Units} definitions. The same set as defined for LBLRTM is used.}
+  \label{tab:absorber_units}
+\end{table}
+
+
+\subsection{\Surface{} Structure}
+%--------------------------------
+
+\subsection{\GeometryInfo{} Structure}
+%-------------------------------------
+
+\subsection{\ChannelInfo{} Structure}
+%------------------------------------
+
+\subsection{\RTSolution{} Structure}
+%-----------------------------------
+
+\subsection{\Options{} Structure}
+%--------------------------------
+

@@ -1,2 +1,57 @@
-\section{Introduction}
+\chapter{Introduction}
 %=====================
+
+What version does this apply to?
+
+Overview of CRTM; nomenclature (AtmAbsorption, SfcOptics, CloudScatter, RTSolution etc)
+
+Flowcharts
+
+
+\section{Components}
+%===================
+The radiative transfer problem is divided into three broad categories: atmospheric optics, surface optics and radiative transfer.
+
+\subsection{Atmospheric Optics}
+%------------------------------
+(\AtmOptics) Includes computation of the absorption by atmospheric gases (\AtmAbsorption) and scattering and absorption by both clouds (\CloudScatter) and aerosols (\AerosolScatter).
+
+  Concerned with the interpolation of a lut of data to obtain the optical properties of clouds and aerosols for the current set of parameters.
+
+
+\subsection{Surface Optics}
+%------------------------------
+  Separate models for each gross surface type for each spectral type (IR or MW).
+
+(\SfcOptics) Includes the computation of surface emissivity and reflectivity for four gross surface types (land, sea, snow, and ice).
+
+\subsection{Radiative Transfer Solution}
+%------------------------------
+  The solutin of the RT problem using the various bits.
+(\RTSolution) Takes the \AtmOptics{} and \SfcOptics{} data and solves the radiative transfer problem.
+
+
+\section{Models}
+%===============
+FWD, tL, AD, and K-Matrix
+
+\begin{subequations}
+  \begin{eqnarray}
+    \mathbf{T_{B}},\mathbf{R} &=& \mathbf{F}(\mathbf{T},\mathbf{q},T_{s},...)\\\nonumber\\
+    \mathbf{\delta{T_{B}}},\mathbf{\delta{R}} &=& \mathbf{H}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\delta{T}},\mathbf{\delta{q}},\delta{T_{s}},...)\\\nonumber\\
+    \mathbf{\dstar{T}},\mathbf{\dstar{q}},\dstar{T_{s}},... &=& \mathbf{H^T}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\dstar{T_{B}}},\mathbf{\dstar{R}})\\\nonumber\\
+    \mathbf{\dstar{T}}_l,\mathbf{\dstar{q}}_l,\dstar{T_{s,l}},... &=& \mathbf{K}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\dstar{T_{B}}},\mathbf{\dstar{R}})\textrm{ for }l=1,2,...,L
+  \end{eqnarray}
+\end{subequations}
+
+
+\section{Design Framework}
+%=========================
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/Flowcharts/CRTM_Flowcharts.pstex_t}
+  \caption{Flowchart of the CRTM Forward and K-Matrix models.}
+  \label{fig:fwd_k_flowchart}
+\end{figure}
+
