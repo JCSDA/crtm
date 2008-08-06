@@ -1,5 +1,4 @@
-\documentclass[10pt,letterpaper,fleqn,titlepage]{article}
-\pagestyle{empty}
+\documentclass[10pt,letterpaper,fleqn,titlepage]{report}
 
 % Define packages to use
 \usepackage{cite}
@@ -12,14 +11,33 @@
 \usepackage[dvipdfm,colorlinks,urlcolor=blue]{hyperref}
 \usepackage{fancybox}
 \usepackage{textcomp}
-%\usepackage{floatflt}
-%\usepackage{svn}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
 
+\titleformat{\chapter}[frame]
+  {\normalfont}
+  {\filright\slshape\huge\enspace\thechapter\enspace}
+  {8pt}
+  {\normalfont\Huge\filcenter\slshape\sffamily} 
 
+\titleformat{\section}[hang]
+  {\normalfont}
+  {\filright\sffamily\bfseries\Large\thesection}
+  {5pt}
+  {\normalfont\Large\filright\sffamily\bfseries}[\vspace{2pt}\titlerule]
+
+\titleformat{\subsection}[hang]
+  {\normalfont}
+  {\filright\slshape\sffamily\large\thesubsection}
+  {5pt}
+  {\normalfont\large\filright\slshape\sffamily} 
+  
 % Redefine default page
 \setlength{\textheight}{9.0in}  % 1" above and below
 \setlength{\textwidth}{6.75in}   % 0.5" left and right
 \setlength{\oddsidemargin}{-0.25in}
+\setlength{\topmargin}{0.0pt}
+\setlength{\headsep}{16.0pt}
 
 % Redefine default paragraph
 \setlength{\parindent}{0pt}
@@ -30,33 +48,17 @@
 \renewcommand{\captionfont}{\sffamily}
 \renewcommand{\captionlabelfont}{\bfseries\sffamily}
 
-% Define commands for super- and subscript in text mode
+% Defined commands
 \newcommand{\superscript}[1]{\ensuremath{^\textrm{#1}}}
 \newcommand{\subscript}[1]{\ensuremath{_\textrm{#1}}}
-
-% Derived commands
 \newcommand{\invcm}{\textrm{cm\superscript{-1}}}
 \newcommand{\micron}{\ensuremath{\mu\textrm{m}}}
-
-\newcommand{\df}{\ensuremath{\delta f}}
-\newcommand{\Df}{\ensuremath{\Delta f}}
-\newcommand{\dx}{\ensuremath{\delta x}}
-\newcommand{\Dx}{\ensuremath{X_{max}}}
-\newcommand{\Xeff}{\ensuremath{X_{eff}}}
-
-\newcommand{\water}{\textrm{H\subscript{2}O}}
-\newcommand{\carbondioxide}{\textrm{CO\subscript{2}}}
-\newcommand{\ozone}{\textrm{O\subscript{3}}}
-
-\newcommand{\taup}[1]{\ensuremath{\tau_{#1}}}
-\newcommand{\efftaup}[1]{\ensuremath{\tau_{#1}^{*}}}
-
 \newcommand{\textbfm}[1]{\boldmath\ensuremath{#1}\unboldmath}
 
 % Define how equations are numbered
-\numberwithin{equation}{section}
-\numberwithin{figure}{section}
-\numberwithin{table}{section}
+\numberwithin{equation}{chapter}
+\numberwithin{figure}{chapter}
+\numberwithin{table}{chapter}
 
 % Define a command for title page author email footnote
 \newcommand{\email}[1]
@@ -66,32 +68,19 @@
   \renewcommand{\thefootnote}{\arabic{footnote}}
 }
 
-% Define a command to print the Office Note subheading
-\newcommand{\notesubheading}[1]
-{%
-  \ifthenelse{\equal{#1}{}}{}
-  { {\Large\bfseries Office Note #1\par}%
-    {\scriptsize \sc This is an unreviewed manuscript, primarily intended for informal}\\ 
-    {\scriptsize \sc exchange of information among JCSDA researchers\par}%
-  }
-}
-
 % Redefine the maketitle macro
 \makeatletter
-\def\docseries#1{\def\@docseries{#1}}
-\def\docnumber#1{\def\@docnumber{#1}}
 \renewcommand{\maketitle}
 {%
   \vspace*{1in}
   \begin{center}%
      \sffamily
      {\huge\bfseries Joint Center for Satellite Data Assimilation\par}%
-     \notesubheading{\@docnumber}
   \end{center}
   \begin{flushleft}%
      \sffamily
      \vspace*{0.5in}
-     {\Large\bfseries\ifthenelse{\equal{\@docseries}{}}{}{\@docseries: }\@title\par}%
+     {\Large\bfseries CRTM: \@title\par}%
      \medskip
      {\large\@author\par}%
      \medskip
@@ -102,8 +91,6 @@
   \setcounter{footnote}{0}
 }
 \makeatother
-\docseries{}
-\docnumber{}
 
 
 % Define a command for a DRAFT watermark
