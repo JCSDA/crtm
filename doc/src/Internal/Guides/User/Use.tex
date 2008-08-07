@@ -142,6 +142,73 @@ The first thing you need to do is identify what sensors you want to use. The lis
 \subsection{CRTM Initialisation}
 %-------------------------------
 
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  FUNCTION CRTM_Init( ChannelInfo      , &  ! Output, N
+                      Sensor_ID        , &  ! Optional input, N
+                      CloudCoeff_File  , &  ! Optional input
+                      AerosolCoeff_File, &  ! Optional input
+                      EmisCoeff_File   , &  ! Optional input
+                      File_Path        , &  ! Optional input
+                      Quiet            , &  ! Optional input
+                      Process_ID       , &  ! Optional input
+                      Output_Process_ID, &  ! Optional input
+                      RCS_Id           , &  ! Revision control
+                      Message_Log      ) &  ! Error messaging
+                    RESULT( Error_Status )
+
+    ! Arguments
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)  ! N
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)    ! N
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: CloudCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: EmisCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: File_Path
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Quiet
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Output_Process_ID
+    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                     & \textbf{Rank}   & \textbf{Intent} \\
+      \hline\hline
+      ChannelInfo        & Sensor and channel info structure       & n\_Sensors (N)  & IN OUT      \\
+      \hline
+      Sensor\_Id         & Sensor identification string            & n\_Sensors (N)  & IN      \\
+      \hline
+      CloudCoeff\_File   & Cloud optical property LUT filename     & Scalar          & IN      \\
+      \hline
+      AerosolCoeff\_File & Aerosol optical property LUT filename   & Scalar          & IN      \\
+      \hline
+      EmisCoeff\_File    & IR sea surface emissivity LUT filename  & Scalar          & IN      \\
+      \hline
+      File\_Path         & Path to *Coeff files                    & Scalar          & IN      \\
+      \hline
+      Quiet              & Keyword to control information message output & Scalar         & IN      \\
+      \hline
+      Process\_Id        & MPI process Id                          & Scalar          & IN      \\
+      \hline
+      Output\_Process\_Id & MPI process Id for message output      & Scalar          & IN      \\
+      \hline
+      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
+      \hline
+      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{CRTM Initialisation interface and argument description.}
+  \label{fig:init_interface}
+\end{figure}
+
 \subsection{Forward Model}
 %-------------------------
 
@@ -179,19 +246,19 @@ The first thing you need to do is identify what sensors you want to use. The lis
       \hline\hline
       Atmosphere         & Atmospheric state                      & n\_Profiles (M)  & IN      \\
       \hline
-      Surface            & Surface state                          & n\_Profiles (M)  &         \\
+      Surface            & Surface state                          & n\_Profiles (M)  & IN      \\
       \hline
       GeometryInfo       & Geometry information (e.g. angles)     & n\_Profiles (M)  & IN      \\
       \hline
       ChannelInfo        & Sensor channel information             & n\_Sensors (N)   & IN      \\
       \hline
-      RTSolution         & Radiative transfer solution            & n\_Channels x n\_Profiles                 & IN      \\
+      RTSolution         & Radiative transfer solution            & n\_Channels x n\_Profiles                 & IN OUT  \\
       \hline
-      Options            & Structure for optional input           & n\_Profiles (M)  &         \\
+      Options            & Structure for optional input           & n\_Profiles (M)  & IN      \\
       \hline
-      RCS\_Id            & Version control ID for the module      &                  &         \\
+      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
       \hline
-      Message\_Log       & Log message filename                   &                  &         \\
+      Message\_Log       & Log message filename                   & Scalar           & IN      \\
     \end{tabular}
   \end{minipage}
   }
@@ -203,8 +270,114 @@ The first thing you need to do is identify what sensors you want to use. The lis
 \subsection{K-Matrix Model}
 %--------------------------
 
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  FUNCTION CRTM_K_Matrix( Atmosphere  , &  ! FWD Input, M
+                          Surface     , &  ! FWD Input, M
+                          RTSolution_K, &  ! K   Input, L x M   
+                          GeometryInfo, &  ! Input, M
+                          ChannelInfo , &  ! Input, N  
+                          Atmosphere_K, &  ! K   Output, L x M
+                          Surface_K   , &  ! K   Output, L x M
+                          RTSolution  , &  ! FWD Output, L x M
+                          Options     , &  ! Optional FWD input, M
+                          RCS_Id      , &  ! Revision control
+                          Message_Log ) &  ! Error messaging
+                        RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere(:)     ! M
+    TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface(:)        ! M
+    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution_K(:,:) ! L x M
+    TYPE(CRTM_GeometryInfo_type)     , INTENT(IN OUT) :: GeometryInfo(:)   ! M
+    TYPE(CRTM_ChannelInfo_type)      , INTENT(IN)     :: ChannelInfo(:)    ! N
+    TYPE(CRTM_Atmosphere_type)       , INTENT(IN OUT) :: Atmosphere_K(:,:) ! L x M
+    TYPE(CRTM_Surface_type)          , INTENT(IN OUT) :: Surface_K(:,:)    ! L x M
+    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution(:,:)   ! L x M
+    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)        ! M
+    CHARACTER(*),            OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                    & \textbf{Rank}    & \textbf{Intent} \\
+      \hline\hline
+      Atmosphere         & Atmospheric state                      & n\_Profiles (M)  & IN      \\
+      \hline
+      Surface            & Surface state                          & n\_Profiles (M)  & IN      \\
+      \hline
+      RTSolution\_K      & Adjoint radiative transfer solution    & n\_Channels (L) x n\_Profiles (M) & IN OUT  \\
+      \hline
+      GeometryInfo       & Geometry information (e.g. angles)     & n\_Profiles (M)  & IN      \\
+      \hline
+      ChannelInfo        & Sensor channel information             & n\_Sensors (N)   & IN      \\
+      \hline
+      Atmosphere\_K      & Atmospheric state Jacobians            & n\_Channels (L) x n\_Profiles (M) & IN OUT  \\
+      \hline
+      Surface\_K         & Surface state Jacobians                & n\_Channels (L) x n\_Profiles (M) & IN OUT  \\
+      \hline
+      RTSolution         & Radiative transfer solution            & n\_Channels (L) x n\_Profiles (M) & IN OUT      \\
+      \hline
+      Options            & Structure for optional input           & n\_Profiles (M)  & IN      \\
+      \hline
+      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
+      \hline
+      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{CRTM K-Matrix model interface and argument description.}
+  \label{fig:k_interface}
+\end{figure}
+
+
 \subsection{CRTM Destruction}
 %----------------------------
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  FUNCTION CRTM_Destroy( ChannelInfo , &  ! Output
+                         Process_ID  , &  ! Optional input
+                         RCS_Id      , &  ! Revision control
+                         Message_Log ) &  ! Error messaging
+                       RESULT ( Error_Status )
+    ! Arguments
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
+    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
+    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                     & \textbf{Rank}   & \textbf{Intent} \\
+      \hline\hline
+      ChannelInfo        & Sensor and channel info structure       & n\_Sensors (N)  & IN OUT      \\
+      \hline
+      Process\_Id        & MPI process Id                          & Scalar          & IN      \\
+      \hline
+      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
+      \hline
+      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{CRTM Destruction interface and argument description.}
+  \label{fig:destroy_interface}
+\end{figure}
+
 
 \section{Structure Descriptions}
 %===============================
@@ -303,16 +476,16 @@ The first thing you need to do is identify what sensors you want to use. The lis
     \hline
     \sffamily\textbf{Units} & \sffamily\textbf{Parameter} \\
     \hline\hline
-     Volume mixing ratio, ppmv                    & \texttt{VOLUME\_MIXING\_RATIO\_UNITS} \\
-     Number density, cm$^{-3}$                    & \texttt{NUMBER\_DENSITY\_UNITS} \\
-     Mass mixing ratio, g/kg                      & \texttt{MASS\_MIXING\_RATIO\_UNITS} \\
-     Mass density, g.m$^{-3}$                     & \texttt{MASS\_DENSITY\_UNITS} \\
-     Partial pressure, hPa                        & \texttt{PARTIAL\_PRESSURE\_UNITS} \\
-     Dewpoint temperature, K  \textbf{(H2O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_K\_UNITS} \\
-     Dewpoint temperature, C  \textbf{(H2O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_C\_UNITS} \\
-     Relative humidity, \%    \textbf{(H2O ONLY)} & \texttt{RELATIVE\_HUMIDITY\_UNITS} \\
-     Specific amount, g/g                         & \texttt{SPECIFIC\_AMOUNT\_UNITS} \\
-     Integrated path, mm                          & \texttt{INTEGRATED\_PATH\_UNITS} \\
+     Volume mixing ratio, ppmv                       & \texttt{VOLUME\_MIXING\_RATIO\_UNITS} \\
+     Number density, cm$^{-3}$                       & \texttt{NUMBER\_DENSITY\_UNITS} \\
+     Mass mixing ratio, g/kg                         & \texttt{MASS\_MIXING\_RATIO\_UNITS} \\
+     Mass density, g.m$^{-3}$                        & \texttt{MASS\_DENSITY\_UNITS} \\
+     Partial pressure, hPa                           & \texttt{PARTIAL\_PRESSURE\_UNITS} \\
+     Dewpoint temperature, K  \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_K\_UNITS} \\
+     Dewpoint temperature, C  \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_C\_UNITS} \\
+     Relative humidity, \%    \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{RELATIVE\_HUMIDITY\_UNITS} \\
+     Specific amount, g/g                            & \texttt{SPECIFIC\_AMOUNT\_UNITS} \\
+     Integrated path, mm                             & \texttt{INTEGRATED\_PATH\_UNITS} \\
     \hline
   \end{tabular}
   \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_Units} definitions. The same set as defined for LBLRTM is used.}
