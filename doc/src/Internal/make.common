@@ -9,7 +9,7 @@ BIB_FILE = bibliography.bib
 all: tex
 
 tex: $(DOC_FILE)
-	latex $(DOC_FILE); \
+	@latex $(DOC_FILE); \
 	if [ -f ${BIB_FILE} ]; then \
 	  bibtex ${DOC_FILE:.tex=}; \
 	  latex $(DOC_FILE); \
@@ -26,7 +26,7 @@ pdf:
 	dvipdfm $(DVI_FILE)
 
 clean:
-	$(REMOVE) *.aux *.dvi *.log *.out *.bbl *.blg
+	$(REMOVE) *.aux *.dvi *.log *.out *.bbl *.blg *.toc *.lof *.lot
 
 realclean: clean
 	$(REMOVE) ${PS_FILE} ${PDF_FILE}
