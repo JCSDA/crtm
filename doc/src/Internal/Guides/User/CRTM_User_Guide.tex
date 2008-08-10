@@ -2,10 +2,12 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{Introduction,Get,Build,Use}
+\includeonly{Introduction,Get,Build,Use,StructDef.appendix}
 
 % Define fixed font for the various component names
 \newcommand{\Atmosphere}{\texttt{Atmosphere}}
+\newcommand{\Cloud}{\texttt{Cloud}}
+\newcommand{\Aerosol}{\texttt{Aerosol}}
 \newcommand{\Surface}{\texttt{Surface}}
 \newcommand{\GeometryInfo}{\texttt{GeometryInfo}}
 \newcommand{\ChannelInfo}{\texttt{ChannelInfo}}
@@ -23,7 +25,7 @@
 \newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
 
 % Title info
-\title{User Guide}
+\title{v1.1 User Guide}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
 \date{July, 2008}
 
@@ -40,12 +42,9 @@
 %======================
 \setcounter{page}{1}
 \pagenumbering{roman}
-\tableofcontents
-\newpage
-\listoffigures 
-\newpage
-\listoftables 
-\newpage
+  \tableofcontents\newpage
+  \listoffigures\newpage
+  \listoftables\newpage
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -58,6 +57,12 @@
 \include{Build}
 \include{Use}
 
+
+% The appendices
+%===============
+\begin{appendix}
+  \include{StructDef.appendix}
+\end{appendix}
 
 \end{document}
 
