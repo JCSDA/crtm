@@ -21,7 +21,7 @@ PROGRAM Test_AntCorr_Application
   USE File_Utility
 
   USE SpcCoeff_Define
-  USE SpcCoeff_netCDF_IO
+  USE SpcCoeff_Binary_IO
 
   USE AntCorr_Application
   ! Disable all implicit typing
@@ -36,7 +36,7 @@ PROGRAM Test_AntCorr_Application
   '$Id$'
   
   ! Test data filenames
-  CHARACTER(*), PARAMETER :: SC_FILENAME  = 'Data/amsua_metop-a.SpcCoeff.nc'
+  CHARACTER(*), PARAMETER :: SC_FILENAME  = 'Data/amsua_metop-a.SpcCoeff.bin'
   CHARACTER(*), PARAMETER :: AC_FILENAME  = 'Data/amsua_metop-a.AntCorr.nc'
   
   ! Test temperature
@@ -82,7 +82,7 @@ PROGRAM Test_AntCorr_Application
 
   ! Read the SpcCoeff datafile
   ! --------------------------
-  Error_Status = Read_SpcCoeff_netCDF( SC_FILENAME, SpcCoeff )
+  Error_Status = Read_SpcCoeff_Binary( SC_FILENAME, SpcCoeff )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, 'Error reading SpcCoeff data.', FAILURE )
     STOP
