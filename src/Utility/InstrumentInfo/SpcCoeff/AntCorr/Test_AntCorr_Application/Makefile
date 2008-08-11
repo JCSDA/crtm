@@ -30,7 +30,7 @@ SRC_FILES = Type_Kinds.f90 \
             AntCorr_Define.f90 \
             AntCorr_Binary_IO.f90 \
             AntCorr_netCDF_IO.f90 \
-            AntCorr.f90
+            AntCorr_Application.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

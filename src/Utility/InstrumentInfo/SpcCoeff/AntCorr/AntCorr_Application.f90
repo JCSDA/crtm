@@ -1,5 +1,5 @@
 !
-! AntCorr
+! AntCorr_Application
 !
 ! Module containing routines to apply/remove antenna corrections to/from 
 ! supported microwave sensor observations.
@@ -10,7 +10,7 @@
 !                       paul.vandelst@noaa.gov
 !
 
-MODULE AntCorr
+MODULE AntCorr_Application
 
   ! ------------------
   ! Environment set up
@@ -279,4 +279,4 @@ CONTAINS
     END DO
   END SUBROUTINE Remove_AntCorr
   
-END MODULE AntCorr
+END MODULE AntCorr_Application

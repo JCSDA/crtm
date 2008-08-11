@@ -23,7 +23,7 @@ PROGRAM Test_AntCorr_Application
   USE SpcCoeff_Define
   USE SpcCoeff_netCDF_IO
 
-  USE AntCorr
+  USE AntCorr_Application
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -39,6 +39,13 @@ PROGRAM Test_AntCorr_Application
   CHARACTER(*), PARAMETER :: SC_FILENAME  = 'Data/amsua_metop-a.SpcCoeff.nc'
   CHARACTER(*), PARAMETER :: AC_FILENAME  = 'Data/amsua_metop-a.AntCorr.nc'
   
+  ! Test temperature
+  REAL(fp), PARAMETER :: TEST_TEMPERATURE = 283.1415927_fp
+  
+  ! Data output format stuff
+  CHARACTER(*), PARAMETER :: RPT_FMT = '8'
+  CHARACTER(*), PARAMETER :: T_FMT   = 'f13.7'
+  CHARACTER(*), PARAMETER :: DT_FMT  = 'es13.6'
 
   ! ---------
   ! Variables
@@ -61,6 +68,12 @@ PROGRAM Test_AntCorr_Application
                         'using data embedded within an SpcCoeff data structure, as well '//&
                         'as a standalone AntCorr structure.', &
                         '$Revision$' )
+
+
+  ! Print the spacing between model numbers
+  ! ---------------------------------------
+  WRITE( *,'(/2x,"Spacing of model numbers near T =",'//T_FMT//'," : ",'//DT_FMT//',/)' ) &
+           TEST_TEMPERATURE, SPACING(TEST_TEMPERATURE)
 
 
   ! =========================================================
@@ -88,7 +101,7 @@ PROGRAM Test_AntCorr_Application
   
   ! Some pretend antenna temperatures
   ! ---------------------------------
-  Torig = 283.1415927_fp
+  Torig = TEST_TEMPERATURE
   Tsc   = Torig
 
   ! Apply and remove the antenna correction at each FOV
@@ -101,15 +114,15 @@ PROGRAM Test_AntCorr_Application
     CALL Apply_AntCorr(SpcCoeff%AC, i, Tsc)
     
     WRITE(*,'(4x,"Tb values:")') 
-    WRITE(*,'(10(1x,f7.3))') Tsc
+    WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tsc
     Tb(:,i) = Tsc
     
     CALL Remove_AntCorr(SpcCoeff%AC, i, Tsc)
     
     WRITE(*,'(4x,"Restored Ta values:")') 
-    WRITE(*,'(10(1x,f7.3))') Tsc
+    WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tsc
     WRITE(*,'(4x,"Torig-Ta residuals:")') 
-    WRITE(*,'(10(1x,f7.4))') Torig-Tsc
+    WRITE(*,'('//RPT_FMT//'(1x,'//DT_FMT//'))') Torig-Tsc
     READ(*,*)
   END DO
 
@@ -137,7 +150,7 @@ PROGRAM Test_AntCorr_Application
   
   ! Some pretend antenna temperatures
   ! ---------------------------------
-  Tac = Torig
+  Tac = TEST_TEMPERATURE
 
   ! Apply and remove the antenna correction at each FOV
   ! ---------------------------------------------------
@@ -149,16 +162,16 @@ PROGRAM Test_AntCorr_Application
     CALL Apply_AntCorr(AntCorr, i, Tac)
     
     WRITE(*,'(4x,"Tb values:")') 
-    WRITE(*,'(10(1x,f7.3))') Tac
+    WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tac
     WRITE(*,'(4x,"Tb(SC)-Tb(AC) residuals:")') 
-    WRITE(*,'(10(1x,f7.4))') Tb(:,i)-Tac
+    WRITE(*,'('//RPT_FMT//'(1x,'//DT_FMT//'))') Tb(:,i)-Tac
     
     CALL Remove_AntCorr(AntCorr, i, Tac)
     
     WRITE(*,'(4x,"Restored Ta values:")') 
-    WRITE(*,'(10(1x,f7.3))') Tac
+    WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tac
     WRITE(*,'(4x,"Torig-Ta residuals:")') 
-    WRITE(*,'(10(1x,f7.4))') Torig-Tac
+    WRITE(*,'('//RPT_FMT//'(1x,'//DT_FMT//'))') Torig-Tac
     READ(*,*)
   END DO
 
