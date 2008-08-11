@@ -50,6 +50,8 @@ MODULE AntCorr_Define
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
+  ! Default message string length
+  INTEGER, PARAMETER :: ML = 512
   ! String length
   INTEGER, PARAMETER :: SL = 20
   ! Current valid release and version numbers
@@ -257,7 +259,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AntCorr'
     ! Local variables
-    CHARACTER(256)  :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
     
@@ -418,7 +420,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AntCorr'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     
     ! Set up
@@ -738,7 +740,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_AntCorr'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
     INTEGER :: n, l
@@ -957,7 +959,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CheckRelease_AntCorr'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
 
     ! Set up
     ! ------
