@@ -33,51 +33,43 @@
     TYPE(CRTM_Cloud_type),   POINTER :: Cloud(:)   => NULL()  ! Nc
     ! Aerosols associated with each profile
     TYPE(CRTM_Aerosol_type), POINTER :: Aerosol(:) => NULL()  ! Na
-  END TYPE CRTM_Atmosphere_type
-      \end{verbatim}
+  END TYPE CRTM_Atmosphere_type\end{verbatim}
     \end{ttfamily}
-    \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Component} & \textbf{Description} & \textbf{Units} & \textbf{Dimensions} \\
-      \hline\hline
-      n\_Layers & The number of atmospheric profile layers & N/A & Scalar \\
-      \hline
-      n\_Absorbers & The number of atmospheric absorbers & N/A & Scalar \\
-      \hline
-      n\_Clouds & The number of clouds & N/A & Scalar \\
-      \hline
-      n\_Aerosols & The number of aerosols & N/A & Scalar \\
-      \hline
-                            & The number of layers added so as to      &          & \\
-      \rb{n\_Added\_Layers} & extend the input profile to nominal TOA  & \rb{N/A} & \rb{Scalar} \\
-      \hline
-      Climatology & The climatology of the profile (see table \ref{tab:climatology}) & N/A & Scalar \\
-      \hline
-      Absorber\_Id & The absorber identifiers (see table \ref{tab:absorber_id}) & N/A & n\_Absorbers (J)\\
-      \hline
-      Absorber\_Units & The absorber amount units (see table \ref{tab:absorber_units}) & N/A & n\_Absorbers (J)\\
-      \hline
-      Level\_Pressure & The interface pressures of the profile layers & hPa & 0:n\_Layers (K+1) \\
-      \hline
-      Pressure & The average layer pressure & hPa & n\_Layers \\
-      \hline
-      Temperatures & The layer temperatures & Kelvin & n\_Layers \\
-      \hline
-                     &                                & Variable                             & n\_Layers (K) x\\
-      \rb{Absorbers} & \rb{The layer absorber amount} & (see table \ref{tab:absorber_units}) & n\_Absorbers (J)\\
-      \hline
-      Cloud & The cloud structure array & N/A & n\_Clouds (Nc)\\
-      \hline
-      Aerosol & The aerosol structure array & N/A & n\_Clouds (Nc)\\
-    \end{tabular}
   \end{minipage}
   }
-  \caption{CRTM Atmosphere structure definition and component description.}
+  \caption{CRTM \Atmosphere{} structure definition.}
   \label{fig:atmosphere_structure}
 \end{figure}
 
+% Atmosphere component description table
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|l|p{7cm}|c|c|}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Layers} & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
+    \texttt{n\_Absorbers} & Number of atmospheric absorbers (\texttt{J}) & N/A & Scalar \\
+    \texttt{n\_Clouds} & Number of clouds (\texttt{Nc}) & N/A & Scalar \\
+    \texttt{n\_Aerosols} & Number of aerosols (\texttt{Na}) & N/A & Scalar \\
+    \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
+    \texttt{Climatology} & Climatology of the profile (see table \ref{tab:climatology}) & N/A & Scalar \\
+    \texttt{Absorber\_Id} & Gaseous absorber identifiers (see table \ref{tab:absorber_id}) & N/A & \texttt{J}\\
+    \texttt{Absorber\_Units} & Gaseous absorber amount units (see table \ref{tab:absorber_units}) & N/A & \texttt{J}\\
+    \texttt{Level\_Pressure} & Interface pressures of the profile layers & hPa & \texttt{0:K} \\
+    \texttt{Pressure} & Average layer pressure & hPa & \texttt{K} \\
+    \texttt{Temperatures} & Layer temperatures & Kelvin & \texttt{K} \\
+    \texttt{Absorbers} & Layer absorber amount & Variable & \texttt{K} $\times$ \texttt{J}\\
+    \texttt{Cloud} & Cloud structure array & N/A & \texttt{Nc}\\
+    \texttt{Aerosol} & Aerosol structure array & N/A & \texttt{Na}\\
+    \hline
+  \end{tabular}
+  \caption{CRTM \Atmosphere{} structure component description.}
+  \label{tab:atmosphere_structure}
+\end{table}
+
 % Climatology table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|}
     \hline
@@ -168,31 +160,32 @@
     REAL(fp), POINTER :: Effective_Radius(:)   => NULL() ! K
     REAL(fp), POINTER :: Effective_Variance(:) => NULL() ! K
     REAL(fp), POINTER :: Water_Content(:)      => NULL() ! K
-  END TYPE CRTM_Cloud_type
-      \end{verbatim}
+  END TYPE CRTM_Cloud_type\end{verbatim}
     \end{ttfamily}
-    \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Component} & \textbf{Description} & \textbf{Units} & \textbf{Rank} \\
-      \hline\hline
-      n\_Layers & The number of atmospheric profile layers & N/A & Scalar \\
-      \hline
-                            & The number of layers added so as to      &          & \\
-      \rb{n\_Added\_Layers} & extend the input profile to nominal TOA  & \rb{N/A} & \rb{Scalar} \\
-      \hline
-      Type & The cloud type (see table \ref{tab:cloud_type} & N/A & Scalar \\
-      \hline
-      Effective\_Radius & The cloud particle $r_{eff}$ profile & \micron & n\_Layers (K) \\
-      \hline
-      Effective\_Variance & The cloud particle $\sigma_{eff}$ profile & \micron$^2$ & n\_Layers (K) \\
-      \hline
-      Water\_Content & The cloud water content profile & kg.m$^{-2}$ & n\_Layers (K) \\
-    \end{tabular}
   \end{minipage}
   }
-  \caption{CRTM Cloud structure definition and component description.}
+  \caption{CRTM \Cloud{} structure definition.}
   \label{fig:cloud_structure}
 \end{figure}
+
+% Cloud component description table
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|l|p{7cm}|c|c|}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Layers} & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
+    \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
+    \texttt{Type} & Type of cloud (see table \ref{tab:cloud_type}) & N/A & Scalar \\
+    \texttt{Effective\_Radius} & Cloud particle $r_{eff}$ profile & \micron & \texttt{K} \\
+    \texttt{Effective\_Variance} & Cloud particle $\sigma_{eff}$ profile & \micron$^2$ & \texttt{K} \\
+    \texttt{Water\_Content} & Cloud water content profile & kg.m$^{-2}$ & \texttt{K} \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \Cloud{} structure component description.}
+  \label{tab:cloud_structure}
+\end{table}
 
 % Cloud type table
 \begin{table}
@@ -235,29 +228,31 @@
     ! Aerosol state variables
     REAL(fp), POINTER :: Effective_Radius(:) => NULL()  ! K
     REAL(fp), POINTER :: Concentration(:)    => NULL()  ! K
-  END TYPE CRTM_Aerosol_type
-      \end{verbatim}
+  END TYPE CRTM_Aerosol_type\end{verbatim}
     \end{ttfamily}
-    \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Component} & \textbf{Description} & \textbf{Units} & \textbf{Rank} \\
-      \hline\hline
-      n\_Layers & The number of atmospheric profile layers & N/A & Scalar \\
-      \hline
-                            & The number of layers added so as to      &          & \\
-      \rb{n\_Added\_Layers} & extend the input profile to nominal TOA  & \rb{N/A} & \rb{Scalar} \\
-      \hline
-      Type & The aerosol type (see table \ref{tab:aerosol_type} & N/A & Scalar \\
-      \hline
-      Effective\_Radius & The aerosol particle $r_{eff}$ profile & \micron & n\_Layers (K) \\
-      \hline
-      Concentration & The aerosol concentration profile & kg.m$^{-2}$ & n\_Layers (K) \\
-    \end{tabular}
   \end{minipage}
   }
-  \caption{CRTM Aerosol structure definition and component description.}
+  \caption{CRTM \Aerosol{} structure definition.}
   \label{fig:aerosol_structure}
 \end{figure}
+
+% Aerosol component description table
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|l|p{7cm}|c|c|}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Layers} & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
+    \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
+    \texttt{Type} & Type of Aerosol (see table \ref{tab:aerosol_type}) & N/A & Scalar \\
+    \texttt{Effective\_Radius} & Aerosol particle $r_{eff}$ profile & \micron & \texttt{K} \\
+    \texttt{Concentration} & Aerosol concentration profile & kg.m$^{-2}$ & \texttt{K} \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \Aerosol{} structure component description.}
+  \label{tab:aerosol_structure}
+\end{table}
 
 % Aerosol type table
 \begin{table}
@@ -328,35 +323,62 @@
     REAL(fp) :: Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
     ! SensorData containing channel brightness temperatures
     TYPE(CRTM_SensorData_type) :: SensorData  ! N
-  END TYPE CRTM_Surface_type
-      \end{verbatim}
+  END TYPE CRTM_Surface_type\end{verbatim}
     \end{ttfamily}
-    \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Component} & \textbf{Description} & \textbf{Units} & \textbf{Rank} \\
-      \hline\hline
-      n\_Layers & The number of atmospheric profile layers & N/A & Scalar \\
-      \hline
-                            & The number of layers added so as to      &          & \\
-      \rb{n\_Added\_Layers} & extend the input profile to nominal TOA  & \rb{N/A} & \rb{Scalar} \\
-      \hline
-      Type & The cloud type (see table \ref{tab:cloud_type} & N/A & Scalar \\
-      \hline
-      Effective\_Radius & The cloud particle $r_{eff}$ profile & \micron & n\_Layers (K) \\
-      \hline
-      Effective\_Variance & The cloud particle $\sigma_{eff}$ profile & \micron$^2$ & n\_Layers (K) \\
-      \hline
-      Water\_Content & The cloud water content profile & kg.m$^{-2}$ & n\_Layers (K) \\
-    \end{tabular}
   \end{minipage}
   }
-  \caption{CRTM Surface structure definition and component description.}
+  \caption{CRTM \Surface{} structure definition.}
   \label{fig:surface_structure}
 \end{figure}
 
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|l|p{7cm}|c|c|}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Sensors} & The number of sensors for which data is provided inside the SensorData structure & N/A & Scalar \\
+    \hline
+    \texttt{Land\_Coverage}  & Fraction of the FOV that is land surface & N/A & Scalar \\
+    \texttt{Water\_Coverage} & Fraction of the FOV that is water surface & N/A & Scalar \\
+    \texttt{Snow\_Coverage}  & Fraction of the FOV that is snow surface & N/A & Scalar \\
+    \texttt{Ice\_Coverage}   & Fraction of the FOV that is ice surface & N/A & Scalar \\
+    \hline
+    \texttt{Wind\_Speed}     & Surface wind speed & m.s$^{-1}$ & Scalar \\
+    \texttt{Wind\_Direction} & Surface wind direction & deg. E from N & Scalar \\
+    \hline
+    \texttt{Land\_Type}              & Land surface type & N/A & Scalar \\
+    \texttt{Land\_Temperature}       & Land surface temperature & Kelvin & Scalar \\
+    \texttt{Soil\_Moisture\_Content} & Volumetric water content of the soil & g.cm$^{-3}$ & Scalar \\
+    \texttt{Canopy\_Water\_Content}  & Gravimetric water content of the canopy & g.cm$^{-3}$ & Scalar \\
+    \texttt{Vegetation\_Fraction}    & Vegetation fraction of the surface & \% & Scalar \\
+    \texttt{Soil\_Temperature}       & Soil temperature & Kelvin & Scalar \\
+    \hline
+    \texttt{Water\_Type}        & Water surface type & N/A & Scalar \\
+    \texttt{Water\_Temperature} & Water surface temperature & Kelvin & Scalar \\
+    \texttt{Salinity}           & Water salinity & \textperthousand & Scalar \\
+    \hline
+    \texttt{Snow\_Type}        & Snow surface type & N/A & Scalar \\ 
+    \texttt{Snow\_Temperature} & Snow surface temperature & Kelvin & Scalar \\ 
+    \texttt{Snow\_Depth}       & Snow depth & mm & Scalar \\ 
+    \texttt{Snow\_Density}     & Snow density & g.m$^{-3}$ & Scalar \\ 
+    \texttt{Snow\_Grain\_Size} & Snow grain size & mm & Scalar \\ 
+    \hline
+    \texttt{Ice\_Type}        & Ice surface type & N/A & Scalar \\ 
+    \texttt{Ice\_Temperature} & Ice surface temperature & Kelvin & Scalar \\ 
+    \texttt{Ice\_Thickness}   & Thickness of ice & mm & Scalar \\ 
+    \texttt{Ice\_Density}     & Density of ice & g.m$^{-3}$ & Scalar \\ 
+    \texttt{Ice\_Roughness}   & Measure of the surface roughness of the ice & N/A & Scalar \\ 
+    \hline
+    \texttt{SensorData} & Satellite sensor data required for some surface emissivity algorithms & N/A & Scalar \\ 
+    \hline
+  \end{tabular}
+  \caption{CRTM \Surface{} structure component description.}
+  \label{tav:surface_structure}
+\end{table}
 
 % Default surface value table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|c|}
     \hline
@@ -365,7 +387,7 @@
     \multicolumn{3}{|c|}{Surface type independent data}\\
     \hline
     \texttt{DEFAULT\_WIND\_SPEED}             & 5.0        & m.s$^{-1}$\\
-    \texttt{DEFAULT\_WIND\_DIRECTION}         & 0.0        & degrees from North\\
+    \texttt{DEFAULT\_WIND\_DIRECTION}         & 0.0        & deg. E from N\\
     \hline
     \multicolumn{3}{|c|}{Land surface type data}\\
     \hline
@@ -404,7 +426,7 @@
 \end{table}
 
 % Land surface type table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|}
     \hline
@@ -437,7 +459,7 @@
 \end{table}
 
 % Water surface type table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|}
     \hline
@@ -452,11 +474,11 @@
 \end{table}
 
 % Snow surface type table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|}
     \hline
-    \sffamily\textbf{Water Type} & \sffamily\textbf{Parameter} \\
+    \sffamily\textbf{Snow Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
          Wet snow          &   \texttt{WET\_SNOW} \\           
       Grass after snow     &   \texttt{GRASS\_AFTER\_SNOW} \\   
@@ -481,11 +503,11 @@
 \end{table}
 
 % Ice surface type table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|}
     \hline
-    \sffamily\textbf{Water Type} & \sffamily\textbf{Parameter} \\
+    \sffamily\textbf{Ice Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
             Fresh ice        &   \texttt{FRESH\_ICE} \\       
         First year sea ice   &   \texttt{FIRST\_YEAR\_SEA\_ICE} \\
@@ -497,6 +519,7 @@
   \caption{CRTM \Surface{} structure valid \texttt{Ice\_Type} definitions.}
   \label{tab:surface_ice_type}
 \end{table}
+
 %
 %\subsection{\SensorData{} Structure}
 %%-----------------------------------
