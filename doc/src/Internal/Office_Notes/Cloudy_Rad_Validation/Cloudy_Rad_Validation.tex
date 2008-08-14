@@ -263,6 +263,10 @@ LBLRTM optical depth calculations.
 \section{LBLDIS versus CRTM for Clear Sky Conditions}
 
 \subsection{Independent Set Comparisons}
+
+In this section the result of passing LBLRTM derived data at instrument resolution through the CRTM's radiative transfer solver is referred to as CRTM(TauProfile). The CRTM(TauProfile) result is used as a tool to obtain differences for individual components of the radiative transfer models. For clear sky conditions these components
+are the solvers of the radiative transfer equation and the methods for handling gas absorption. 
+
 The plots in \ref{fig:Clear_Sky_Tropical}, \ref{fig:Clear_Sky_Midlatitude_summer}, \ref{fig:Clear_Sky_Subarctic_summer} and \ref{fig:Clear_Sky_Subarctic_winter} show brightness temperature comparisons between the LBLDIS, CRTM and CRTM(TauProfile) calculations for Tropical, Subarctic summer, Subarctic winter and Midlatitude summer for a dataset independent to the CRTM (not used to train the CRTM coefficients). For these comparisons the source is turned off in the CRTM related calculations and the LBLDIS calculations. There is no default solar geometry for the LBLDIS model, but for the CRTM the default solar zenith angle is 0$\degree$. When the CRTM solar is not turned off and the LBLDIS solar is turned off the absolute value of the differences between LBLDIS and CRTM(TauProfile) for channels 17, 18 and 19 range from about 0.5K to 8K (results not shown in this document). 
 
 The comparisons between LBLDIS and CRTM(TauProfile) are representative of the clear sky differences between the LBLDIS and CRTM that can be attributed to the solvers of the radiative transfer equation used by the respective models. For most scenarios shown in \ref{fig:Clear_Sky_Tropical}, \ref{fig:Clear_Sky_Midlatitude_summer}, \ref{fig:Clear_Sky_Subarctic_winter} and \ref{fig:Clear_Sky_Subarctic_summer} the differences between LBLDIS and CRTM(TauProfile) are 0.1K or less. 
@@ -339,7 +343,32 @@ attributed to gas absorption computations are two times greater than the largest
   \label{fig:Subarctic_Winter_Dep}
 \end{figure}
 
+\newpage{}
 
+\section{LBLDIS versus CRTM for Cloudy Sky Conditions}
+
+In this section the CRTM(TauProfile) result is combined with CRTM cloud calculations in order to isolate the difference between LBLDIS and 
+the CRTM that can be attributed to clouds. This new result will be referred to as CRTM\textunderscore{}Cloud(TauProfile).
+
+Figures \ref{fig:MidLat_Cloud} and \ref{fig:SubArctic_Cloud} show brightness temperature differences between the CRTM, CRTM\textunderscore{}Cloud(TauProfile) and LBLDIS for
+SubArctic summer and Midlatitude summer CloudSat data profiles that contain clouds. The comparisons between LBLDIS and the CRTM\textunderscore{}Cloud(TauProfile) are representative of the differences between LBLDIS and the CRTM that can be attributed to radiative transfer solvers and the methods for calculating cloud layer optical properties. The differences between CRTM\textunderscore{}Cloud(TauProfile) and LBLDIS approach 10K in many instances. As was shown in the clear sky comparisons the radiative transfer solver differences are typically 0.2k or smaller. Therefore, the differences for cloudy scenes shown in figures \ref{fig:MidLat_Cloud} and \ref{fig:SubArctic_Cloud} are almost entirely a result of how the cloud layer optical properties are calculated. The differences between LBLDIS and CRTM are similar to the differences between LBLDIS and the CRTM\textunderscore{}Cloud(TauProfile) demonstrating that differences associated with the handling of gas absorption are also relatively insignificant relative to the differences associated with calculating cloud layer optical depth properties. LBLDIS appears to have a warm bias relative to the CRTM for cloudy conditions.
+
+
+\begin{figure}[htp]
+  \centering{}
+  \includegraphics[scale=0.8]{./graphics/Midlatitude_Clouds_01.eps}
+  \caption{Plots of differences between LBLDIS, CRTM and CRTM\textunderscore{}Cloud(TauProfile) calculated brightness temperatures for 
+   a Midlatitude summer atmosphere profile that contains clouds.}
+  \label{fig:MidLat_Cloud}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering{}
+  \includegraphics[scale=0.8]{./graphics/SubArctic_Clouds_14.eps}
+  \caption{Plots of differences between LBLDIS, CRTM and CRTM\textunderscore{}Cloud(TauProfile) calculated brightness temperatures for 
+   a Subarctic summer atmosphere profile that contains clouds.}
+  \label{fig:SubArctic_Cloud}
+\end{figure}  
 
 
 % The references section
