@@ -335,6 +335,7 @@ CONTAINS
             CSV%g(kc,n)          = ZERO
             CSV%pcoeff(:,:,kc,n) = ZERO
         END SELECT
+        
 
         ! Compute the volume scattering coefficient for the current
         ! cloud layer and accumulate it for the layer total for the
@@ -347,7 +348,7 @@ CONTAINS
         !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
         bs = Atm%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)
         CSV%Total_bs(kc) = CSV%Total_bs(kc) + bs
-             
+
         ! Compute the optical depth (absorption + scattering)
         !   tau = rho.ke
         ! where
@@ -646,6 +647,7 @@ CONTAINS
             pcoeff_TL = ZERO
         END SELECT
 
+
         ! Compute the volume scattering coefficient
         bs = Atm%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)
         bs_TL = (Atm_TL%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)) + &
@@ -732,6 +734,7 @@ CONTAINS
         CScat_TL%Single_Scatter_Albedo(k) = &
           (Total_bs_TL(k) - (CScat%Single_Scatter_Albedo(k)*CScat_TL%Optical_Depth(k))) / &
           CScat%Optical_Depth(k)
+          
         CScat_TL%Delta_Truncation(k) = CScat_TL%Phase_Coefficient(l,1,k)
       END IF
     END DO Layer_loop
@@ -910,7 +913,7 @@ CONTAINS
     l = n_Legendre_Terms
     
     ! Begin full atmosphere layer loop
-    Layer_loop: DO k = 1, Atm%n_Layers
+    Layer_loop: DO k = Atm%n_Layers, 1, -1 !1, Atm%n_Layers
     
       ! Only process layers that scatter
       IF (CSV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
@@ -972,20 +975,22 @@ CONTAINS
       nCloud_Layers = COUNT(Layer_Mask)
       IF ( nCloud_Layers == 0 ) CYCLE Cloud_loop
 
+
       ! ------------------------------------
       ! Loop over the current cloud's layers
       ! ------------------------------------
       Layer_Index(1:nCloud_Layers) = PACK((/(k, k=1,Atm%Cloud(n)%n_Layers)/), Layer_Mask)
-      Cloud_Layer_loop: DO k = 1, nCloud_Layers
+      Cloud_Layer_loop: DO k = nCloud_Layers, 1, -1 !1, nCloud_Layers
         kc = Layer_Index(k)
 
         ! Initialise the individual
         ! cloud adjoint variables
         bs_AD = ZERO
-        pcoeff_AD = ZERO  ! Should this be here of in outer loop?
-        g_AD      = ZERO  ! Should this be here of in outer loop?
-        ke_AD     = ZERO  ! Should this be here of in outer loop?
-        w_AD      = ZERO  ! Should this be here of in outer loop?
+        pcoeff_AD = ZERO
+        g_AD      = ZERO
+        ke_AD     = ZERO
+        w_AD      = ZERO
+
 
         ! Recompute the forward model volume scattering
         ! coefficient for the current cloud ONLY
@@ -1024,6 +1029,7 @@ CONTAINS
         w_AD  = w_AD  + (Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * bs_AD )
         Atm_AD%Cloud(n)%Water_Content(kc) = Atm_AD%Cloud(n)%Water_Content(kc) + &
                                             ( CSV%w(kc,n) * CSV%ke(kc,n) * bs_AD )
+
 
         ! Call sensor specific routines
         SELECT CASE (Sensor_Type)
@@ -1115,7 +1121,8 @@ CONTAINS
     ! radius indices for interpolation
     ! --------------------------------
     f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
-    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+!    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+    CALL find_index(CloudC%Frequency_IR, f_int, i1,i2)
     f = CloudC%Frequency_IR(i1:i2)
 
     r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_IR_Radii),Reff),CloudC%Reff_IR(1))
@@ -1226,7 +1233,8 @@ CONTAINS
     ! radius indices for interpolation
     ! --------------------------------
     f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
-    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+!    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+    CALL find_index(CloudC%Frequency_IR, f_int, i1,i2)
     f = CloudC%Frequency_IR(i1:i2)
 
     r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_IR_Radii),Reff),CloudC%Reff_IR(1))
@@ -1367,7 +1375,8 @@ CONTAINS
     ! radius indices for interpolation
     ! --------------------------------
     f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
-    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+!    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
+    CALL find_index(CloudC%Frequency_IR, f_int, i1,i2)
     f = CloudC%Frequency_IR(i1:i2)
 
     r_int = MAX(MIN(CloudC%Reff_IR(CloudC%n_IR_Radii),Reff),CloudC%Reff_IR(1))
@@ -1521,7 +1530,8 @@ CONTAINS
     SELECT CASE (Cloud_Type)
     
       ! Only 2-D interpolation of extinction coefficient as a
-      ! fn. of frequency and temperature for water cloud
+      ! fn. of frequency and temperature for water cloud; i.e.
+      ! we're only considering Rayleigh scattering here.
       CASE (WATER_CLOUD)
         j = 1
         CALL interp_2D( CloudC%ke_L_MW(i1:i2,j,k1:k2), wlp, ylp, ke )
@@ -1691,13 +1701,17 @@ CONTAINS
     SELECT CASE (Cloud_Type)
 
       ! Only 2-D interpolation of extinction coefficient as a
-      ! fn. of frequency and temperature for water cloud
+      ! fn. of frequency and temperature for water cloud; i.e.
+      ! we're only considering Rayleigh scattering here.
       CASE (WATER_CLOUD)
         ! No TL output when temperature
         ! is outside LUT bounds
         IF ( Temperature < CloudC%Temperature(1) .OR. &
              Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) THEN
-          ke_TL = ZERO
+          ke_TL     = ZERO
+          w_TL      = ZERO
+          g_TL      = ZERO
+          pcoeff_TL = ZERO
           RETURN
         END IF
         j = 1
@@ -1895,7 +1909,8 @@ CONTAINS
     SELECT CASE (Cloud_Type)
 
       ! Only 2-D interpolation of extinction coefficient as a
-      ! fn. of frequency and temperature for water cloud
+      ! fn. of frequency and temperature for water cloud; i.e.
+      ! we're only considering Rayleigh scattering here.
       CASE (WATER_CLOUD)
         ! No AD output when temperature
         ! is outside LUT bounds
@@ -1913,6 +1928,8 @@ CONTAINS
         CALL interp_2D_AD( z2   , wlp   , ylp   , &  ! FWD Input
                            ke_AD                , &  ! AD  Input
                            z2_AD, wlp_AD, ylp_AD  )  ! AD  Output
+        
+                           
         ! Compute the AD of the interpolating polynomials
         ! -----------------------------------------------
         ! Temperature term
@@ -1928,7 +1945,6 @@ CONTAINS
         ! The AD outputs
         ! --------------
         Temperature_AD = Temperature_AD + t_int_AD
-
 
       ! All 3-D interpolations for rain cloud!
       CASE (RAIN_CLOUD)
