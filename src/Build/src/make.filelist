@@ -70,9 +70,13 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_MW_Land_SfcOptics.f90 \
             CRTM_MW_Snow_SfcOptics.f90 \
             CRTM_MW_Water_SfcOptics.f90 \
+            CRTM_LowFrequency_MWSSEM.f90 \
+            Ocean_Permittivity.f90 \
+            Fresnel.f90 \
+            CRTM_Fastem1.f90 \
+            CRTM_Fastem3.f90 \
             CRTM_IRSSEM.f90 \
             CRTM_surface_ir_emissivity.f90 \
-            CRTM_Fastem1.f90 \
             CRTM_AtmOptics.f90 \
             CRTM_RTSolution_Define.f90 \
             CRTM_RTSolution_Binary_IO.f90 \
