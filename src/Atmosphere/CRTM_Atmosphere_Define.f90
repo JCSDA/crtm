@@ -2022,7 +2022,7 @@ CONTAINS
     ! Assign Cloud structure
     ! ----------------------
     IF ( Atmosphere_in%n_Clouds > 0 ) THEN
-      Error_Status = CRTM_Assign_Cloud( Atmosphere_in%Cloud, &
+      Error_Status = CRTM_Assign_Cloud( Atmosphere_in%Cloud(1:Atmosphere_in%n_Clouds), &
                                         Atmosphere_out%Cloud, &
                                         n_Added_Layers=n_Added_Layers, &
                                         Message_Log   =Message_Log )
@@ -2039,7 +2039,7 @@ CONTAINS
     ! Assign Aerosol structure
     ! ------------------------
     IF ( Atmosphere_in%n_Aerosols > 0 ) THEN
-      Error_Status = CRTM_Assign_Aerosol( Atmosphere_in%Aerosol, &
+      Error_Status = CRTM_Assign_Aerosol( Atmosphere_in%Aerosol(1:Atmosphere_in%n_Aerosols), &
                                           Atmosphere_out%Aerosol, &
                                           n_Added_Layers=n_Added_Layers, &
                                           Message_Log   =Message_Log )
