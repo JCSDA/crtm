@@ -32,6 +32,8 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
+# $Id$
+#
 #------------------------------------------------------------------------------
 
 #################################################################################
@@ -90,10 +92,10 @@ ARCHIVER_FLAGS = crvs
 #       See AIX_FLAGS definition for default.                                   #
 #-------------------------------------------------------------------------------#
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_AIX = xlf95
 
-# -- Compiler settings for DEBUG builds
+# Compiler settings for DEBUG builds
 AIX_COMMON_FLAGS_DEBUG = 
 AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
 	          "FL=${NAME_AIX}" \
@@ -116,7 +118,7 @@ AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
                               -o" \
                    "ENDIAN=Big_Endian"
 
-# -- Compiler settings for PRODUCTION builds
+# Compiler settings for PRODUCTION builds
 AIX_COMMON_FLAGS_PROD = -O3
 AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "FL=${NAME_AIX}" \
@@ -137,7 +139,7 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                             -o" \
                  "ENDIAN=Big_Endian"
 
-# -- Here set the DEFAULT AIX compiler flags
+# Here set the DEFAULT AIX compiler flags
 AIX_FLAGS = $(AIX_FLAGS_PROD)
 
 
@@ -146,10 +148,10 @@ AIX_FLAGS = $(AIX_FLAGS_PROD)
 #                              -- Sun Fortran 95 --                             #
 #-------------------------------------------------------------------------------#
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_SUNOS = f95
 
-# -- Only one set of compiler flags
+# Only one set of compiler flags
 SUNOS_COMMON_FLAGS = 
 SUNOS_FLAGS = "FC=${NAME_SUNOS}" \
 	      "FL=${NAME_SUNOS}" \
@@ -176,10 +178,10 @@ SUNOS_FLAGS_PROD  = ${SUNOS_FLAGS)
 #                    -- SGI IRIX64 MIPSpro f90 compiler --                      #
 #-------------------------------------------------------------------------------#
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_IRIX64 = f90
 
-# -- Only one set of compiler flags for 64-bit build
+# Only one set of compiler flags for 64-bit build
 IRIX64_COMMON_FLAGS = -64
 IRIX64_FLAGS = "FC=${NAME_IRIX64}" \
 	       "FL=${NAME_IRIX64}" \
@@ -204,21 +206,109 @@ IRIX64_FLAGS_PROD  = ${IRIX64_FLAGS)
 
 
 #-------------------------------------------------------------------------------#
+#                          -- HP-UX Fortran 90 (95) --                          #
+#-------------------------------------------------------------------------------#
+
+# The compiler and linker name
+NAME_HPUX = f90
+
+# Compiler settings for DEBUG builds
+HPUX_COMMON_FLAGS_DEBUG = 
+HPUX_FLAGS_DEBUG = "FC=${NAME_HPUX}" \
+                   "FL=${NAME_HPUX}" \
+                   "FC_FLAGS= +ppu -c +fltconst_strict \
+                              ${INCLUDES} \
+                              ${HPUX_COMMON_FLAGS_DEBUG}" \
+                   "FL_FLAGS= ${HPUX_COMMON_FLAGS_DEBUG} \
+                              ${LIBRARIES} \
+                              -o" \
+                   "ENDIAN=Big_Endian"
+
+
+# Compiler settings for PRODUCTION builds
+HPUX_COMMON_FLAGS_PROD = -O3
+HPUX_FLAGS_PROD = "FC=${NAME_HPUX}" \
+                  "FL=${NAME_HPUX}" \
+                  "FC_FLAGS= +ppu -c +fltconst_strict \
+                             ${INCLUDES} \
+                             ${HPUX_COMMON_FLAGS_PROD}" \
+                  "FL_FLAGS= ${HPUX_COMMON_FLAGS_PROD} \
+                             ${LIBRARIES} \
+                             -o" \
+                  "ENDIAN=Big_Endian"
+
+
+# Here set the DEFAULT HPUX compiler flags
+HPUX_FLAGS = $(HPUX_FLAGS_PROD)
+
+
+
+#-------------------------------------------------------------------------------#
 #                               -- Linux compilers --                           #
 #-------------------------------------------------------------------------------#
 
-# -------------------------------------------------
-# Portland Group f95 compiler for linux
-#
-# NOTE: There are two sets of PGI flags.
-#       DEBUG and PRODUCTION.
-#       See LINUX_FLAGS_PGI definition for default.
-# -------------------------------------------------
+# ---------------------------
+# gfortran compiler for linux
+# ---------------------------
 
-# -- The compiler and linker name
+# The compiler and linker name
+NAME_GFORTRAN = gfortran
+
+# Compiler settings for DEBUG builds
+LINUX_COMMON_FLAGS_GFORTRAN_DEBUG =
+LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
+	                     "FL=${NAME_GFORTRAN}" \
+	                     "FC_FLAGS= -c \
+                                        -fbounds-check \
+                                        -fconvert=big-endian \
+                                        -ffpe-trap=overflow,zero \
+                                        -ffree-form \
+                                        -fno-second-underscore \
+                                        -frecord-marker=4 \
+                                        -ggdb \
+	                                -static \
+                                        -Wall \
+                                        ${INCLUDES} \
+                                        ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
+	                     "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
+                                        ${LIBRARIES} \
+                                        -o" \
+                             "ENDIAN=Little_Endian"
+
+# Compiler settings for DEBUG builds
+LINUX_COMMON_FLAGS_GFORTRAN_PROD =
+LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
+	                    "FL=${NAME_GFORTRAN}" \
+	                    "FC_FLAGS= -c \
+                                       -O3 \
+                                       -fconvert=big-endian \
+                                       -ffast-math \
+                                       -ffree-form \
+                                       -fno-second-underscore \
+                                       -frecord-marker=4 \
+                                       -funroll-loops \
+	                               -static \
+                                       -Wall \
+                                       ${INCLUDES} \
+                                       ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
+	                    "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \
+                                       ${LIBRARIES} \
+                                       -o" \
+                            "ENDIAN=Little_Endian"
+                            
+# Here set the DEFAULT gfortran compiler flags
+#LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
+LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_PROD)
+
+
+# -------------------------------------
+# Portland Group f95 compiler for linux
+# -------------------------------------
+
+# The compiler and linker name
 NAME_PGI = pgf95
 
-# -- Compiler settings for DEBUG builds
+# Compiler settings for DEBUG builds
 LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee
 LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                         "FL=${NAME_PGI}" \
@@ -243,7 +333,7 @@ LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
 # for pgf95 6.0-5 32-bit target on x86 Linux
 #                                   -Mstandard \
 
-# -- Compiler settings for PRODUCTION builds
+# Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_PGI_PROD =
 LINUX_FLAGS_PGI_PROD = "FC=${NAME_PGI}" \
                        "FL=${NAME_PGI}" \
@@ -257,23 +347,19 @@ LINUX_FLAGS_PGI_PROD = "FC=${NAME_PGI}" \
                                   -o" \
                        "ENDIAN=Little_Endian"
 
-# -- Here set the DEFAULT PGI compiler flags
+# Here set the DEFAULT PGI compiler flags
 LINUX_FLAGS_PGI = $(LINUX_FLAGS_PGI_DEBUG)
 
 
 
-# ---------------------------------------------------
+# ----------------------------
 # Intel f95 compiler for linux
-#
-# NOTE: There are two sets of Intel flags.
-#       DEBUG and PRODUCTION.
-#       See LINUX_FLAGS_INTEL definition for default.
-# ---------------------------------------------------
+# ----------------------------
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_INTEL = ifort
 
-# -- Compiler settings for DEBUG builds
+# Compiler settings for DEBUG builds
 LINUX_COMMON_FLAGS_INTEL_DEBUG =
 LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                           "FL=${NAME_INTEL}" \
@@ -296,7 +382,7 @@ LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                                      -o" \
                           "ENDIAN=Little_Endian"
 
-# -- Compiler settings for PRODUCTION builds
+# Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_INTEL_PROD =
 LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
 	                 "FL=${NAME_INTEL}" \
@@ -314,23 +400,19 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
                                     -o" \
                          "ENDIAN=Little_Endian"
 
-# -- Here set the DEFAULT Intel compiler flags
+# Here set the DEFAULT Intel compiler flags
 LINUX_FLAGS_INTEL = $(LINUX_FLAGS_INTEL_DEBUG)
 
 
 
-# ---------------------------------------------------
+# ----------------------------
 # Lahey f95 compiler for linux
-#
-# NOTE: There are two sets of Lahey flags.
-#       DEBUG and PRODUCTION.
-#       See LINUX_FLAGS_LAHEY definition for default.
-# ---------------------------------------------------
+# ----------------------------
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_LAHEY = lf95
 
-# -- Compiler settings for DEBUG builds
+# Compiler settings for DEBUG builds
 LINUX_COMMON_FLAGS_LAHEY_DEBUG =
 LINUX_FLAGS_LAHEY_DEBUG = "FC=${NAME_LAHEY}" \
 	                  "FL=${NAME_LAHEY}" \
@@ -349,7 +431,7 @@ LINUX_FLAGS_LAHEY_DEBUG = "FC=${NAME_LAHEY}" \
                                      -o" \
                           "ENDIAN=Little_Endian"
 
-# -- Compiler settings for PRODUCTION builds
+# Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_LAHEY_PROD =
 LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
 	                 "FL=${NAME_LAHEY}" \
@@ -365,23 +447,19 @@ LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
                                     -o" \
                          "ENDIAN=Little_Endian"
 
-# -- Here set the DEFAULT Lahey compiler flags
+# Here set the DEFAULT Lahey compiler flags
 #LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
 LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_PROD)
 
 
-# -------------------------------------------------
+# ----------------------
 # g95 compiler for linux
-#
-# NOTE: There are two sets of g95 flags.
-#       DEBUG and PRODUCTION.
-#       See LINUX_FLAGS_G95 definition for default.
-# -------------------------------------------------
+# ----------------------
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_G95 = g95
 
-# -- Compiler settings for DEBUG builds
+# Compiler settings for DEBUG builds
 LINUX_COMMON_FLAGS_G95_DEBUG =
 LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
 	                "FL=${NAME_G95}" \
@@ -401,7 +479,7 @@ LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
                                    -o" \
                         "ENDIAN=Little_Endian"
 
-# -- Compiler settings for PRODUCTION builds
+# Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_G95_PROD =
 LINUX_FLAGS_G95_PROD = "FC=${NAME_G95}" \
 	               "FL=${NAME_G95}" \
@@ -422,73 +500,18 @@ LINUX_FLAGS_G95_PROD = "FC=${NAME_G95}" \
                        "ENDIAN=Little_Endian"
 
 
-# -- Here set the DEFAULT g95 compiler flags
+# Here set the DEFAULT g95 compiler flags
 LINUX_FLAGS_G95 = $(LINUX_FLAGS_G95_DEBUG)
-
-
-# ---------------------------
-# gfortran compiler for linux
-# ---------------------------
-
-# -- The compiler and linker name
-NAME_GFORTRAN = gfortran
-
-# -- Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_GFORTRAN_DEBUG =
-LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
-	                     "FL=${NAME_GFORTRAN}" \
-	                     "FC_FLAGS= -c \
-                                        -fbounds-check \
-                                        -fconvert=big-endian \
-                                        -ffpe-trap=overflow,zero \
-                                        -ffree-form \
-                                        -fno-second-underscore \
-                                        -frecord-marker=4 \
-                                        -ggdb \
-	                                -static \
-                                        -Wall \
-                                        ${INCLUDES} \
-                                        ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
-	                     "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
-                                        ${LIBRARIES} \
-                                        -o" \
-                             "ENDIAN=Little_Endian"
-
-# -- Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_GFORTRAN_PROD =
-LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
-	                    "FL=${NAME_GFORTRAN}" \
-	                    "FC_FLAGS= -c \
-                                       -O3 \
-                                       -fconvert=big-endian \
-                                       -ffast-math \
-                                       -ffree-form \
-                                       -fno-second-underscore \
-                                       -frecord-marker=4 \
-                                       -funroll-loops \
-	                               -static \
-                                       -Wall \
-                                       ${INCLUDES} \
-                                       ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
-	                    "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \
-                                       ${LIBRARIES} \
-                                       -o" \
-                            "ENDIAN=Little_Endian"
-                            
-# -- Here set the DEFAULT gfortran compiler flags
-LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
-#LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_PROD)
-
 
 
 # -----------------------------
 # Absoft f90 compiler for linux
 # -----------------------------
 
-# -- The compiler and linker name
+# The compiler and linker name
 NAME_ABSOFT = f90
 
-# -- Only one set of compiler flags
+# Only one set of compiler flags
 LINUX_COMMON_FLAGS_ABSOFT = 
 LINUX_FLAGS_ABSOFT = "FC=${NAME_ABSOFT}" \
                      "FL=${NAME_ABSOFT}" \
@@ -512,10 +535,11 @@ LINUX_FLAGS_ABSOFT_PROD  = $(LINUX_FLAGS_ABSOFT)
 # Define the default Linux compiler flags
 # ---------------------------------------
 
+LINUX_FLAGS = $(LINUX_FLAGS_GFORTRAN)
+
 #LINUX_FLAGS = $(LINUX_FLAGS_LAHEY)
 #LINUX_FLAGS = $(LINUX_FLAGS_PGI)
 #LINUX_FLAGS = $(LINUX_FLAGS_INTEL)
 #LINUX_FLAGS = $(LINUX_FLAGS_G95)
-LINUX_FLAGS = $(LINUX_FLAGS_GFORTRAN)
 #LINUX_FLAGS = $(LINUX_FLAGS_ABSOFT)
 
