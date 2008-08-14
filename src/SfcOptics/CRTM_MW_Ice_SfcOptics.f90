@@ -24,7 +24,7 @@ MODULE CRTM_MW_Ice_SfcOptics
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,                 ONLY: fp=>fp_kind
+  USE Type_Kinds,                 ONLY: fp
   USE Message_Handler,            ONLY: SUCCESS
   USE CRTM_Parameters,            ONLY: ZERO, ONE
   USE CRTM_SpcCoeff,              ONLY: SC
@@ -461,7 +461,8 @@ CONTAINS
 
     ! -----------------------------------------------------
     ! Compute the tangent-linear surface optical parameters
-    ! ***Default TL output***
+    !
+    ! ***No TL models yet, so default TL output is zero***
     ! -----------------------------------------------------
     SfcOptics_TL%Reflectivity = ZERO
     SfcOptics_TL%Emissivity   = ZERO
@@ -620,6 +621,15 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
 
+
+    ! ----------------------------------------------
+    ! Compute the adjoint surface optical parameters
+    !
+    ! ***No AD models yet, so there is no impact on AD result***
+    ! ----------------------------------------------
+    SfcOptics_AD%Reflectivity = ZERO
+    SfcOptics_AD%Emissivity   = ZERO
+    
   END FUNCTION Compute_MW_Ice_SfcOptics_AD
 
 END MODULE CRTM_MW_Ice_SfcOptics

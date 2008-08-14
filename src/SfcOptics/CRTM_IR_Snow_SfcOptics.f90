@@ -381,7 +381,8 @@ CONTAINS
 
     ! -----------------------------------------------------
     ! Compute the tangent-linear surface optical parameters
-    ! ***Default TL output***
+    !
+    ! ***No TL models yet, so default TL output is zero***
     ! -----------------------------------------------------
     SfcOptics_TL%Reflectivity = ZERO
     SfcOptics_TL%Emissivity   = ZERO
@@ -539,6 +540,15 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
+
+
+    ! ----------------------------------------------
+    ! Compute the adjoint surface optical parameters
+    !
+    ! ***No AD models yet, so there is no impact on AD result***
+    ! ----------------------------------------------
+    SfcOptics_AD%Reflectivity = ZERO
+    SfcOptics_AD%Emissivity   = ZERO
 
   END FUNCTION Compute_IR_Snow_SfcOptics_AD
 
