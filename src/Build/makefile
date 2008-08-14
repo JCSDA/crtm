@@ -8,6 +8,9 @@
 # file definition of LINUX_FLAGS.
 #
 # Note there are production and debug targets. Default build is production.
+#
+# $Id$
+#
 #================================================================================
 
 # -------------
@@ -30,11 +33,13 @@ INCLUDE_DIR = include
 # Compilation targets
 # -------------------
 # Default compiler build
+# ----------------------
 all:
 	cd $(SOURCE_DIR); make; cd ..
 
 
 # IBM AIX Compiler
+# ----------------
 ibm_debug:
 	cd $(SOURCE_DIR); make ibm_debug; cd ..
 
@@ -42,7 +47,17 @@ ibm:
 	cd $(SOURCE_DIR); make ibm; cd ..
 
 
+# HP-UX Compiler
+# --------------
+hp_debug:
+	cd $(SOURCE_DIR); make hp_debug; cd ..
+
+hp:
+	cd $(SOURCE_DIR); make hp; cd ..
+
+
 # SGI IRIX64 Compiler
+# -------------------
 sgi_debug:
 	cd $(SOURCE_DIR); make sgi_debug; cd ..
 
@@ -51,6 +66,7 @@ sgi:
 
 
 # SunOS Compiler
+# --------------
 sun_debug:
 	cd $(SOURCE_DIR); make sun_debug; cd ..
 
@@ -59,11 +75,20 @@ sun:
 
 
 # Linux compilers
+# ---------------
+gfortran_debug:
+	cd $(SOURCE_DIR); make gfortran_debug; cd ..
+
+gfortran:
+	cd $(SOURCE_DIR); make gfortran; cd ..
+
+
 intel_debug:
 	cd $(SOURCE_DIR); make intel_debug; cd ..
 
 intel:
 	cd $(SOURCE_DIR); make intel; cd ..
+
 
 lahey_debug:
 	cd $(SOURCE_DIR); make lahey_debug; cd ..
@@ -71,23 +96,26 @@ lahey_debug:
 lahey:
 	cd $(SOURCE_DIR); make lahey; cd ..
 
+
 pgi_debug:
 	cd $(SOURCE_DIR); make pgi_debug; cd ..
 
 pgi:
 	cd $(SOURCE_DIR); make pgi; cd ..
 
-gfortran_debug:
-	cd $(SOURCE_DIR); make gfortran_debug; cd ..
-
-gfortran:
-	cd $(SOURCE_DIR); make gfortran; cd ..
 
 g95_debug:
 	cd $(SOURCE_DIR); make g95_debug; cd ..
 
 g95:
 	cd $(SOURCE_DIR); make g95; cd ..
+
+
+absoft_debug:
+	cd $(SOURCE_DIR); make absoft_debug; cd ..
+
+absoft:
+	cd $(SOURCE_DIR); make absoft; cd ..
 
 
 # ---------------------------------------------------------------------
