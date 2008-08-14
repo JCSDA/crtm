@@ -285,7 +285,7 @@ MODULE CRTM_GeometryInfo_Define
     REAL(fp) :: Sensor_Zenith_Angle  = ZERO
     REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
     ! Source angle information
-    REAL(fp) :: Source_Zenith_Angle  = ZERO
+    REAL(fp) :: Source_Zenith_Angle  = 100.0_fp  ! Below horizon
     REAL(fp) :: Source_Azimuth_Angle = ZERO
     ! Flux angle information
     REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
