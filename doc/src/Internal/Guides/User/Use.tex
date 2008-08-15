@@ -1,16 +1,97 @@
 \chapter{How to use the CRTM library}
 %====================================
-
-error status description
-
 \section{Quick Start}
 %====================
+This section will hopefully get you started using the CRTM library as quickly as possible. Refer to the following sections for more information about the structures and interfaces.
 
-Quick start guide via examples. Refer to the following sections for more information about the structures and interfaces.
+Assumptions:
+All examples here will assume you are processing 1 sensor at a time. the crtm can handle multiple sensors at once, but specifying the input information in a simple way is difficult (e.g. geometryinfo - sensors on the same platform typical have different numbers of FOVs/scan.
 
-The first thing you need to do is identify what sensors you want to use. The list of supported sensors, along with their associated \texttt{Sensor\_Id}'s, are shown in appendix BLAH
+
+Need to alter the example below.
+
+The first thing you need to do is identify what sensors you want to use. The list of supported sensors, along with their associated \f{Sensor\_Id}'s, are shown in appendix BLAH
 
 
+
+\subsection{Step 1: Access the CRTM module}
+%------------------------------------------
+All of the CRTM user procedures, parameters, and derived data types are accessible via the container module \f{CRTM\_Module}. Thus, one needs to put the following statement in any calling program, module or procedure,
+
+\qquad\f{USE CRTM\_Module}
+
+If you're very familiar with the components of the CRTM you require, you can also specify an \f{ONLY} clause with the \f{USE} statement,
+
+\qquad\f{USE CRTM\_Module}[\f{, ONLY:}\textit{only-list}]
+
+where \textit{only-list} is a list of the symbols you want to ``import'' from \f{CRTM\_Module}. This latter form is the preferred style for self-documenting your code; e.g. when you give the code to someone else, they will be able to identify from which module various symbols in your code originate.
+
+\subsection{Step 2: Declare the CRTM structures}
+%-----------------------------------------------
+To compute satellite radiances you need to declare structures for the following information,
+\begin{enumerate}
+  \item Atmospheric profile data such as pressure, temperature, absorber amounts, clouds, aerosols, etc. Handled using the \Atmosphere{} structure.
+  \item Surface data such as type of surface, temperature, surface type specific parameters etc. Handled using the \Surface{} structure.
+  \item Geometry information such as sensor scan angle, zenith angle, etc. Handled using the \GeometryInfo{} structure.
+  \item Instrument information, particularly which instrument(s) you want to simulate. Handled using the \ChannelInfo{} structure.
+  \item Results of the radiative transfer calculation. Handled using the \RTSolution{} structure.
+\end{enumerate}
+Because there are many variations in what information is known ahead of time (and by ``ahead of time'' I mean at compile-time of your code), let's approach this via examples.
+
+\subsubsection{Example 1: Fixed number of profiles \textbf{and} sensors}
+Here we'll assume you want to process, say, 50 profiles for three sensors: NOAA-18 HIRS/4, AMSU-A, and MHS. That's a total of 39 channels. For simplicity, we'll also assume that the fields-of-view (FOVs) of the various sensors coincide (which is not true).
+\begin{ttfamily}
+  \begin{verbatim}
+  ! Processing parameters
+  INTEGER, PARAMETER :: N_PROFILES = 50
+  INTEGER, PARAMETER :: N_CHANNELS = 39
+  INTEGER, PARAMETER :: N_SENSORS  =  3
+  CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = (/'hirs4_n18',&
+                                                      'amsua_n18',&
+                                                      'mhs_n18  '/)
+  ! Structure array definitions
+  TYPE(CRTM_Atmosphere_type)   :: atm(N_PROFILES)
+  TYPE(CRTM_Surface_type)      :: sfc(N_PROFILES)
+  TYPE(CRTM_GeometryInfo_type) :: gInfo(N_PROFILES)  
+  TYPE(CRTM_ChannelInfo_type)  :: chInfo(N_SENSORS)  
+  TYPE(CRTM_RTSolution_type)   :: rts(N_CHANNELS,N_PROFILES)\end{verbatim}
+\end{ttfamily}
+The point I want to make here is that we know how many channels we will be processing ahead of time, hence we can declare the sizes of the various structure arrays.
+
+\subsubsection{Example 2: Fixed number of profiles, but variable number of sensors}
+If you don't know ahead of time which sensors you will be processing at any particular time, then you don't know the number of sensors and channels. You can handle this by using the \f{ALLOCATABLE} attribute for those arrays whose dimensions are unknown at compile-time,
+\begin{ttfamily}
+  \begin{verbatim}
+  ! Processing parameters
+  INTEGER, PARAMETER :: N_PROFILES = 50
+
+  ! Sensor Id definition
+  CHARACTER(STRLEN), ALLOCATABLE :: Sensor_Id(:) ! n_Sensors dimension
+  ! Structure array definitions
+  TYPE(CRTM_Atmosphere_type)   :: atm(N_PROFILES)
+  TYPE(CRTM_Surface_type)      :: sfc(N_PROFILES)
+  TYPE(CRTM_GeometryInfo_type) :: gInfo(N_PROFILES)  
+  TYPE(CRTM_ChannelInfo_type), ALLOCATABLE :: chInfo(:) ! n_Sensors dimension
+  TYPE(CRTM_RTSolution_type),  ALLOCATABLE :: rts(:,:)  ! n_Channels x n_Profiles\end{verbatim}
+\end{ttfamily}
+
+
+
+
+\subsection{Step 3: Initialise the CRTM}
+%---------------------------------------
+
+\subsection{Step 4: Allocate the CRTM structures}
+%------------------------------------------------
+
+\subsection{Step 5: Fill the CRTM input structures with data}
+%------------------------------------------------------------
+
+\subsection{Step 6: Call the required cRTM function}
+%---------------------------------------------------
+
+\subsection{Step 7: Destroy the CRTM}
+%------------------------------------
 
 
 \section{Interface Descriptions}
