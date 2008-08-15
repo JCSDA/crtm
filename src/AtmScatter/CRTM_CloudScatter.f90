@@ -21,7 +21,6 @@ MODULE CRTM_CloudScatter
   USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,          ONLY: ZERO, ONE, POINT_5, ONEpointFIVE, &
-                                      FOUR, &  ! <<< NEED TO REMOVE THIS IN FUTURE
                                       MAX_N_LAYERS, &
                                       MAX_N_CLOUDS, &
                                       WATER_CONTENT_THRESHOLD, &
@@ -58,7 +57,8 @@ MODULE CRTM_CloudScatter
                                       CRTM_Associated_AtmScatter, &
                                       CRTM_Destroy_AtmScatter   , &
                                       CRTM_Allocate_AtmScatter  , &
-                                      CRTM_Assign_AtmScatter
+                                      CRTM_Assign_AtmScatter    , &
+                                      CRTM_Zero_AtmScatter
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -84,6 +84,7 @@ MODULE CRTM_CloudScatter
   PUBLIC :: CRTM_Destroy_AtmScatter
   PUBLIC :: CRTM_Allocate_AtmScatter
   PUBLIC :: CRTM_Assign_AtmScatter
+  PUBLIC :: CRTM_Zero_AtmScatter
 
 
   ! -----------------
@@ -102,12 +103,6 @@ MODULE CRTM_CloudScatter
   INTEGER, PARAMETER :: SIXTEEN_STREAMS   = 16
   INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
   
-!<<<<BEGIN TEMPORARY>>>>>
-  ! LUT indexing variables
-  REAL(fp), PARAMETER :: MINIMUM_WAVENUMBER = 102.0_fp
-  REAL(fp), PARAMETER :: WAVENUMBER_SPACING = FOUR
-!<<<<END TEMPORARY>>>>>
-
 
   ! --------------------------------------
   ! Structure definition to hold forward
@@ -252,10 +247,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     ! Initialise and return if no clouds
-    CScat%Optical_Depth         = ZERO
-    CScat%Single_Scatter_Albedo = ZERO
-    CScat%Asymmetry_Factor      = ZERO
-    IF (CloudC%n_Phase_Elements > 0) CScat%Phase_Coefficient = ZERO
+    CALL CRTM_Zero_AtmScatter(CScat)
     IF (Atm%n_Clouds == 0) RETURN
     ! Spectral variables
     Sensor_Type  = SC(SensorIndex)%Sensor_Type
@@ -578,10 +570,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     ! Initialise and return if no clouds
-    CScat_TL%Optical_Depth         = ZERO
-    CScat_TL%Single_Scatter_Albedo = ZERO
-    CScat_TL%Asymmetry_Factor      = ZERO
-    IF (CloudC%n_Phase_Elements > 0) CScat_TL%Phase_Coefficient = ZERO
+    CALL CRTM_Zero_AtmScatter(CScat_TL)
     IF (Atm%n_Clouds == 0) RETURN
     Total_bs_TL = ZERO
     ! Spectral variables
@@ -734,7 +723,6 @@ CONTAINS
         CScat_TL%Single_Scatter_Albedo(k) = &
           (Total_bs_TL(k) - (CScat%Single_Scatter_Albedo(k)*CScat_TL%Optical_Depth(k))) / &
           CScat%Optical_Depth(k)
-          
         CScat_TL%Delta_Truncation(k) = CScat_TL%Phase_Coefficient(l,1,k)
       END IF
     END DO Layer_loop
@@ -1121,7 +1109,6 @@ CONTAINS
     ! radius indices for interpolation
     ! --------------------------------
     f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
-!    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
     CALL find_index(CloudC%Frequency_IR, f_int, i1,i2)
     f = CloudC%Frequency_IR(i1:i2)
 
@@ -1233,7 +1220,6 @@ CONTAINS
     ! radius indices for interpolation
     ! --------------------------------
     f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
-!    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
     CALL find_index(CloudC%Frequency_IR, f_int, i1,i2)
     f = CloudC%Frequency_IR(i1:i2)
 
@@ -1375,7 +1361,6 @@ CONTAINS
     ! radius indices for interpolation
     ! --------------------------------
     f_int = MAX(MIN(CloudC%Frequency_IR(CloudC%n_IR_Frequencies),Frequency),CloudC%Frequency_IR(1))
-!    CALL find_index(CloudC%Frequency_IR, WAVENUMBER_SPACING, f_int, i1,i2)
     CALL find_index(CloudC%Frequency_IR, f_int, i1,i2)
     f = CloudC%Frequency_IR(i1:i2)
 

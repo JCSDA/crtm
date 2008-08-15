@@ -75,49 +75,6 @@ MODULE CRTM_AtmScatter_Define
 CONTAINS
 
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_AtmScatter
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_AtmScatter structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_AtmScatter( AtmScatter ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       AtmScatter:  CRTM_AtmScatter structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_AtmScatter_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmScatter argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_AtmScatter( AtmScatter )
-    TYPE(CRTM_AtmScatter_type), INTENT(IN OUT) :: AtmScatter
-    AtmScatter%lOffset = 0
-  END SUBROUTINE CRTM_Clear_AtmScatter
-
-
-
-
-
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -649,6 +606,40 @@ CONTAINS
   END FUNCTION CRTM_Assign_AtmScatter
 
 
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Zero_AtmScatter
+! 
+! PURPOSE:
+!       Subroutine to zero-out a CRTM_AtmScatter structure
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Zero_AtmScatter( AtmScatter )
+!
+! OUTPUT ARGUMENTS:
+!       AtmScatter:   Zeroed out AtmScatter structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_AtmScatter_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       - No checking of the input structure is performed, so there are no
+!         tests for component association status. This means the AtmScatter
+!         structure must have allocated components upon entry to this
+!         routine.
+!
+!       - The dimension components of the structure are *NOT* set to zero.
+!
+!       - The Legendre LUT offset component is *NOT* zeroed out in this routine.
+!
+!       - Note the INTENT on the output AtmScatter argument is IN OUT rather than
+!         just OUT. This is necessary because the argument must be defined upon
+!         input.
+!
+!--------------------------------------------------------------------------------
+
   SUBROUTINE CRTM_Zero_AtmScatter( AtmScatter )
     TYPE(CRTM_AtmScatter_type),  INTENT(IN OUT) :: AtmScatter
     ! Reset the array components
@@ -658,5 +649,45 @@ CONTAINS
     AtmScatter%Delta_Truncation      = ZERO
     AtmScatter%Phase_Coefficient     = ZERO
   END SUBROUTINE CRTM_Zero_AtmScatter
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_AtmScatter
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM_AtmScatter structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_AtmScatter( AtmScatter ) ! Output
+!
+! OUTPUT ARGUMENTS:
+!       AtmScatter:  CRTM_AtmScatter structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_AtmScatter_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output AtmScatter argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_AtmScatter( AtmScatter )
+    TYPE(CRTM_AtmScatter_type), INTENT(IN OUT) :: AtmScatter
+    AtmScatter%lOffset = 0
+  END SUBROUTINE CRTM_Clear_AtmScatter
 
 END MODULE CRTM_AtmScatter_Define

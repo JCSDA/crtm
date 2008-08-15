@@ -61,7 +61,8 @@ MODULE CRTM_AerosolScatter
                                       CRTM_Associated_AtmScatter, &
                                       CRTM_Destroy_AtmScatter   , &
                                       CRTM_Allocate_AtmScatter  , &
-                                      CRTM_Assign_AtmScatter
+                                      CRTM_Assign_AtmScatter    , &
+                                      CRTM_Zero_AtmScatter
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -87,6 +88,7 @@ MODULE CRTM_AerosolScatter
   PUBLIC :: CRTM_Destroy_AtmScatter
   PUBLIC :: CRTM_Allocate_AtmScatter
   PUBLIC :: CRTM_Assign_AtmScatter
+  PUBLIC :: CRTM_Zero_AtmScatter
 
 
   ! -----------------
@@ -140,7 +142,7 @@ CONTAINS
 !                                                   SensorIndex            , &  ! Input
 !                                                   ChannelIndex           , &  ! Input
 !                                                   AerosolScatter         , &  ! Output    
-!                                                   ASV                    , &  ! Internal variable output
+!                                                   ASVariables            , &  ! Internal variable output
 !                                                   Message_Log=Message_Log  )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -244,16 +246,13 @@ CONTAINS
     Error_Status = SUCCESS
     ! Sensor Type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
+    ! Initialise and return if: - sensor if mocrowave, or
+    !                           - no aerosols
+    CALL CRTM_Zero_AtmScatter(AScat)
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
-    ! Initialize and return if no aerosols
-    AScat%Optical_Depth         = ZERO
-    AScat%Single_Scatter_Albedo = ZERO
-    AScat%Asymmetry_Factor      = ZERO
-    IF (AeroC%n_Phase_Elements > 0) AScat%Phase_Coefficient = ZERO
     IF (Atm%n_Aerosols == 0) RETURN
     ! Wavelength in microns
     Wavelength = 10000.0_fp/SC(SensorIndex)%Wavenumber(ChannelIndex)
-    
     ! Determine offset for Legendre coefficients in the
     ! AeroC lookup table corresponding to the 
     ! number of streams        
@@ -393,10 +392,8 @@ CONTAINS
           ! Normalization requirement
           AScat%Phase_Coefficient(0,1,k) = POINT_5
           AScat%Single_Scatter_Albedo(k) = ASV%Total_bs(k) / AScat%Optical_Depth(k)
-
-          AScat%Delta_Truncation(k) = AScat%Phase_Coefficient(l,1,k)
+          AScat%Delta_Truncation(k)      = AScat%Phase_Coefficient(l,1,k)
         END IF
-        
     END DO Layer_loop
                                                     
   END FUNCTION CRTM_Compute_AerosolScatter
@@ -419,7 +416,7 @@ CONTAINS
 !                                                      SensorIndex            , &  ! Input
 !                                                      ChannelIndex           , &  ! Input
 !                                                      AerosolScatter_TL      , &  ! Output  
-!                                                      ASV                    , &  ! Internal Variable input
+!                                                      ASVariables            , &  ! Internal Variable input
 !                                                      Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -547,12 +544,10 @@ CONTAINS
     Error_Status = SUCCESS
     ! Sensor Type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
-    IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
-    ! Initialize and return if no Aerosols
-    AScat_TL%Optical_Depth         = ZERO
-    AScat_TL%Single_Scatter_Albedo = ZERO
-    AScat_TL%Asymmetry_Factor      = ZERO
-    IF (AeroC%n_Phase_Elements > 0) AScat_TL%Phase_Coefficient = ZERO
+    ! Initialise and return if: - sensor if mocrowave, or
+    !                           - no aerosols
+    CALL CRTM_Zero_AtmScatter(AScat_TL)
+    IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
     IF (Atm%n_Aerosols == 0) RETURN
     Total_bs_TL = ZERO
     ! Wavelength in Microns
@@ -607,7 +602,7 @@ CONTAINS
 
         ! Compute the asymmetry factor
         AScat_TL%Asymmetry_Factor(ka) = AScat_TL%Asymmetry_Factor(ka) + &
-                                        (g_TL * bs) + &
+                                        (g_TL        * bs   ) + &
                                         (ASV%g(ka,n) * bs_TL)
 
         ! Compute the phase matrix coefficients
@@ -702,7 +697,7 @@ CONTAINS
 !                                                       SensorIndex            , &  ! Input
 !                                                       ChannelIndex           , &  ! Input
 !                                                       Atmosphere_AD          , &  ! Output
-!                                                       ASV                    , &  ! Internal Variable Output  
+!                                                       ASVariables            , &  ! Internal Variable Output  
 !                                                       Message_Log=Message_Log  )  ! Error messaging 
 !
 ! INPUT ARGUMENTS:
@@ -835,7 +830,6 @@ CONTAINS
     ! Sensor type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
-    ! Return if no Aerosols
     IF (Atm%n_Aerosols == 0) RETURN
     ! Initialize local adjoint variables
     Total_bs_AD = ZERO
