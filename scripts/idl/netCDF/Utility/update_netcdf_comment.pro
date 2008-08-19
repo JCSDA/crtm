@@ -1,13 +1,11 @@
 ;+
 ;
-; Procedure to update a netCDF file "comment" attribute.
+; Procedure to update a netCDF file "comment" global attribute.
 ;
-PRO Update_netCDF_Comment, File, Update
+PRO Update_netCDF_Comment, NCfile, $  ; Input. File to modify.
+                           Update     ; Input. String to prepend to comment GAtt.
 ;-
-  ncid = NCDF_OPEN(file,/WRITE)
-  NCDF_ATTGET, ncid, /GLOBAL, 'comment', comment
-  comment = update+'; ' + STRING(comment)
-  NCDF_CONTROL, ncid, /REDEF
-  NCDF_ATTPUT, ncid, /GLOBAL, 'comment', comment
-  NCDF_CLOSE, ncid
+  Update_netCDF_String_GAtt, NCfile   , $
+                             'comment', $
+                             Update
 END
