@@ -113,7 +113,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 43
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 47
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -126,43 +126,38 @@ MODULE MW_SensorData_Define
     'amsua_n18           ','mhs_n18             ','windsat_coriolis    ','atms_c1             ',&
     'amsua_n19           ','mhs_n19             ','amsua_metop-a       ','mhs_metop-a         ',&
     'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         ',&
-    'ssmi_f08            ','ssmi_f10            ','ssmi_f11            '/)
+    'ssmi_f08            ','ssmi_f10            ','ssmi_f11            ','mwri_fy3a           ',&
+    'mwhs_fy3a           ','tmi_trmm            ','gmi_gpm             '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
-  (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
-     206, 207, 208, &                                ! NOAA-15 to -17 AMSU-A
-     206, 207, 208, &                                ! NOAA-15 to -17 AMSU-B
-     246, 247, 248, &                                ! DMSP-13 to -15 SSM/I
-     246, 247, 248, &                                ! DMSP-13 to -15 SSM/T-1
-     246, 247, 248, &                                ! DMSP-13 to -15 SSM/T-2
-     249, &                                          ! DMSP-16 SSMIS
-     784, 784, 784, &                                ! AQUA AMSU-A, HSB, and AMSR-E
-     209, 209, &                                     ! NOAA-18 AMSU-A and MHS
-     283, &                                          ! Coriolis WindSat (MISSING VALUE)
-     INVALID_WMO_SATELLITE_ID, &                     ! NPOESS-C1 ATMS (MISSING VALUE)
-     210, 210, &                                     ! NOAA-N' AMSU-A and MHS (GUESS. NOT LISTED IN C-5)
-       4,   4, &                                     ! MetOp-A AMSU-A and MHS
-       3,   3, &                                     ! MetOp-B AMSU-A and MHS
-       5,   5, &                                     ! MetOp-C AMSU-A and MHS
-     241, 243, 244 /)                                ! DMSP-08,-10,-11 SSM/I
+  (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
+     206, 207, 208, 206, 207, 208, &                        ! NOAA-15 to -17 AMSU-A; AMSU-B
+     246, 247, 248, 246, 247, 248, 246, 247, 248, &         ! DMSP-13 to -15 SSM/I; SSM/T-1; SSM/T-2
+     249, &                                                 ! DMSP-16 SSMIS
+     784, 784, 784, &                                       ! AQUA AMSU-A, HSB, and AMSR-E
+     209, 209, &                                            ! NOAA-18 AMSU-A and MHS
+     283, &                                                 ! Coriolis WindSat
+     INVALID_WMO_SATELLITE_ID, &                            ! NPOESS-C1 ATMS (MISSING VALUE)
+     210, 210, &                                            ! NOAA-N' AMSU-A and MHS (GUESS. NOT LISTED IN C-5)
+     4, 4, 3, 3, 5, 5, &                                    ! MetOp-A - C AMSU-A; MHS
+     241, 243, 244, &                                       ! DMSP-08,-10,-11 SSM/I
+     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! Fengyun-3A MWRI; MWHS
+     282, INVALID_WMO_SATELLITE_ID /)                       ! TRMM TMI; GPM GMI
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
-     570, 570, 570, &                                ! NOAA-15 to -17 AMSU-A
-     574, 574, 574, &                                ! NOAA-15 to -17 AMSU-B
-     905, 905, 905, &                                ! DMSP-13 to -15 SSM/I
-     906, 906, 906, &                                ! DMSP-13 to -15 SSM/T-1
-     907, 907, 907, &                                ! DMSP-13 to -15 SSM/T-2
+     570, 570, 570, 574, 574, 574, &                 ! NOAA-15 to -17 AMSU-A; AMSU-B
+     905, 905, 905, 906, 906, 906, 907, 907, 907, &  ! DMSP-13 to -15 SSM/I; SSM/T-1; SSM/T-2
      908, &                                          ! DMSP-16 SSMIS
      570, 246, 479, &                                ! AQUA AMSU-A, HSB, and AMSR-E
      570, 203, &                                     ! NOAA-18 AMSU-A and MHS
      INVALID_WMO_SENSOR_ID, &                        ! Coriolis WindSat (MISSING VALUE)
      621, &                                          ! NPOESS-C1 ATMS
      570, 203, &                                     ! NOAA-N' AMSU-A and MHS
-     570, 203, &                                     ! MetOp-A AMSU-A and MHS
-     570, 203, &                                     ! MetOp-B AMSU-A and MHS
-     570, 203, &                                     ! MetOp-C AMSU-A and MHS
-     905, 905, 905 /)                                ! DMSP-08,-10,-11 SSM/I
+     570, 203, 570, 203, 570, 203, &                 ! MetOp-A - C AMSU-A; MHS
+     905, 905, 905, &                                ! DMSP-08,-10,-11 SSM/I
+     938, 936, &                                     ! Fengyun-3A MWRI; MWHS
+     365, INVALID_WMO_SENSOR_ID /)                   ! TRMM TMI; GPM GMI
 
 
   !#----------------------------------------------------------------------------#
@@ -182,6 +177,10 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_AMSRE_CHANNELS   = 12
   INTEGER, PARAMETER :: N_WINDSAT_CHANNELS = 16
   INTEGER, PARAMETER :: N_ATMS_CHANNELS    = 22
+  INTEGER, PARAMETER :: N_MWRI_CHANNELS    = 12
+  INTEGER, PARAMETER :: N_MWHS_CHANNELS    =  5
+  INTEGER, PARAMETER :: N_TMI_CHANNELS     =  9
+  INTEGER, PARAMETER :: N_GMI_CHANNELS     = 13
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
@@ -202,7 +201,9 @@ MODULE MW_SensorData_Define
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-A AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
-       N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS /)            ! DMSP-08,-10,-11 SSM/I
+       N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS, &            ! DMSP-08,-10,-11 SSM/I
+       N_MWRI_CHANNELS, N_MWHS_CHANNELS, &                               ! Fengyun-3A MWRI; MWHS
+       N_TMI_CHANNELS, N_GMI_CHANNELS /)                                 ! TRMM TMI; GPM GMI
 
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/ (i,i=1,N_MSU_CHANNELS    ) /)
@@ -217,6 +218,10 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: AMSRE_SENSOR_CHANNEL(N_AMSRE_CHANNELS)    =(/ (i,i=1,N_AMSRE_CHANNELS  ) /)
   INTEGER, PARAMETER :: WINDSAT_SENSOR_CHANNEL(N_WINDSAT_CHANNELS)=(/ (i,i=1,N_WINDSAT_CHANNELS) /)
   INTEGER, PARAMETER :: ATMS_SENSOR_CHANNEL(N_ATMS_CHANNELS)      =(/ (i,i=1,N_ATMS_CHANNELS   ) /)
+  INTEGER, PARAMETER :: MWRI_SENSOR_CHANNEL(N_MWRI_CHANNELS)      =(/ (i,i=1,N_MWRI_CHANNELS   ) /)
+  INTEGER, PARAMETER :: MWHS_SENSOR_CHANNEL(N_MWHS_CHANNELS)      =(/ (i,i=1,N_MWHS_CHANNELS   ) /)
+  INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/ (i,i=1,N_TMI_CHANNELS    ) /)
+  INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/ (i,i=1,N_GMI_CHANNELS    ) /)
 
 
   !#----------------------------------------------------------------------------#
@@ -249,6 +254,9 @@ MODULE MW_SensorData_Define
                                                                    1, 1, 1, 1, 1, &
                                                                    2, 2, 2, 2, &
                                                                    1, 1, 1, 1, 1, 1, 1 /)
+
+  INTEGER, PARAMETER :: TMI_N_SIDEBANDS(N_TMI_CHANNELS)=(/ 1, 1, 1, 1, 1, 1, 1, 1, 1 /)
+  INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS)=(/ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2 /)
 
 
   !#----------------------------------------------------------------------------#
@@ -1045,6 +1053,57 @@ MODULE MW_SensorData_Define
              (/ 2, MAX_N_SIDEBANDS, N_MHS_CHANNELS /) )
 
 
+  ! TRMM TMI
+  ! --------
+  ! TMI central frequencies in GHz.
+  REAL(fp), PARAMETER :: TMI_F0( N_TMI_CHANNELS ) = &
+    (/  10.65_fp, 10.65_fp, 19.35_fp, 19.35_fp, 21.3_fp, &
+        37.0_fp , 37.0_fp , 85.0_fp , 85.0_fp /)
+
+  ! TMI I/F band limits in GHz.
+  REAL(fp), PARAMETER :: TMI_IF_BAND( 2, MAX_N_SIDEBANDS, N_TMI_CHANNELS ) = &
+    RESHAPE( (/ ZERO, 0.05_fp, ZERO, ZERO, &    ! TMI ch1
+                ZERO, 0.05_fp, ZERO, ZERO, &    ! TMI ch2
+                ZERO, 0.25_fp, ZERO, ZERO, &    ! TMI ch3
+                ZERO, 0.25_fp, ZERO, ZERO, &    ! TMI ch4
+                ZERO, 0.1_fp , ZERO, ZERO, &    ! TMI ch5
+                ZERO, 1.0_fp , ZERO, ZERO, &    ! TMI ch6
+                ZERO, 1.0_fp , ZERO, ZERO, &    ! TMI ch7
+                ZERO, 1.5_fp , ZERO, ZERO, &    ! TMI ch8
+                ZERO, 1.5_fp , ZERO, ZERO /), & ! TMI ch9
+             (/ 2, MAX_N_SIDEBANDS, N_TMI_CHANNELS /) )
+
+
+  ! GPM GMI
+  ! -------
+  ! GMI central frequencies in GHz.
+  REAL(fp), PARAMETER :: GMI_F0( N_GMI_CHANNELS ) = &
+    (/  10.65_fp, 10.65_fp, 18.7_fp, 19.7_fp, 23.8_fp, &
+        36.5_fp , 36.5_fp , 89.0_fp, 89.0_fp, &
+       165.5_fp ,165.5_fp , &
+       183.31_fp,183.31_fp/)
+
+  ! GMI I/F band limits in GHz.
+  ! NOTE: For channel 13, the I/F limits are based on +/- 8GHz sidebands.
+  !       This channel may be +/- 9GHz, so the sideband values would then 
+  !       be: "6.75_fp, 11.25_fp, ZERO, ZERO"
+  REAL(fp), PARAMETER :: GMI_IF_BAND( 2, MAX_N_SIDEBANDS, N_GMI_CHANNELS ) = &
+    RESHAPE( (/    ZERO,  0.05_fp, ZERO, ZERO, &    ! GMI ch1
+                   ZERO,  0.05_fp, ZERO, ZERO, &    ! GMI ch2
+                   ZERO,  0.1_fp , ZERO, ZERO, &    ! GMI ch3
+                   ZERO,  0.1_fp , ZERO, ZERO, &    ! GMI ch4
+                   ZERO,  0.2_fp , ZERO, ZERO, &    ! GMI ch5
+                   ZERO,  0.5_fp , ZERO, ZERO, &    ! GMI ch6
+                   ZERO,  0.5_fp , ZERO, ZERO, &    ! GMI ch7
+                   ZERO,  3.0_fp , ZERO, ZERO, &    ! GMI ch8
+                   ZERO,  3.0_fp , ZERO, ZERO, &    ! GMI ch9
+                   ZERO,  1.5_fp , ZERO, ZERO, &    ! GMI ch10
+                   ZERO,  1.5_fp , ZERO, ZERO, &    ! GMI ch11
+                1.25_fp,  4.75_fp, ZERO, ZERO, &    ! GMI ch12
+                5.75_fp, 10.25_fp, ZERO, ZERO /), & ! GMI ch13 For +/- 8GHz. May be 6.75_fp, 11.25_fp for +/-9GHz
+             (/ 2, MAX_N_SIDEBANDS, N_GMI_CHANNELS /) )
+
+
   !#----------------------------------------------------------------------------#
   !                           Sensor polariztion data
   !#----------------------------------------------------------------------------#
@@ -1226,6 +1285,36 @@ MODULE MW_SensorData_Define
      HL_MIXED_POLARIZATION, &  ! ATMS ch20
      HL_MIXED_POLARIZATION, &  ! ATMS ch21
      HL_MIXED_POLARIZATION /)  ! ATMS ch22
+
+  ! TRMM TMI
+  ! --------
+  INTEGER, PARAMETER :: TMI_POLARIZATION( N_TMI_CHANNELS ) = &
+  (/ VL_POLARIZATION, &  ! TMI ch1
+     HL_POLARIZATION, &  ! TMI ch2
+     VL_POLARIZATION, &  ! TMI ch3
+     HL_POLARIZATION, &  ! TMI ch4
+     VL_POLARIZATION, &  ! TMI ch5
+     VL_POLARIZATION, &  ! TMI ch6
+     HL_POLARIZATION, &  ! TMI ch7
+     VL_POLARIZATION, &  ! TMI ch8
+     HL_POLARIZATION /)  ! TMI ch9
+
+  ! GPM GMI
+  ! -------
+  INTEGER, PARAMETER :: GMI_POLARIZATION( N_GMI_CHANNELS ) = &
+  (/ VL_POLARIZATION, &  ! GMI ch1
+     HL_POLARIZATION, &  ! GMI ch2
+     VL_POLARIZATION, &  ! GMI ch3
+     HL_POLARIZATION, &  ! GMI ch4
+     VL_POLARIZATION, &  ! GMI ch5
+     VL_POLARIZATION, &  ! GMI ch6
+     HL_POLARIZATION, &  ! GMI ch7
+     VL_POLARIZATION, &  ! GMI ch8
+     HL_POLARIZATION, &  ! GMI ch9
+     VL_POLARIZATION, &  ! GMI ch10
+     HL_POLARIZATION, &  ! GMI ch11
+     VL_POLARIZATION, &  ! GMI ch12
+     VL_POLARIZATION /)  ! GMI ch13
 
 
 CONTAINS
@@ -2191,6 +2280,20 @@ CONTAINS
         MW_SensorData%Polarization      = MHS_POLARIZATION
         MW_SensorData%n_Sidebands       = MHS_N_SIDEBANDS
         MW_SensorData%IF_Band           = MHS_METOPC_IF_BAND
+
+      CASE ('tmi_trmm')
+        MW_SensorData%Sensor_Channel    = TMI_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = TMI_F0
+        MW_SensorData%Polarization      = TMI_POLARIZATION
+        MW_SensorData%n_Sidebands       = TMI_N_SIDEBANDS
+        MW_SensorData%IF_Band           = TMI_IF_BAND
+
+      CASE ('gmi_gpm')
+        MW_SensorData%Sensor_Channel    = GMI_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = GMI_F0
+        MW_SensorData%Polarization      = GMI_POLARIZATION
+        MW_SensorData%n_Sidebands       = GMI_N_SIDEBANDS
+        MW_SensorData%IF_Band           = GMI_IF_BAND
 
       ! No match! Should never get here!
       ! --------------------------------
