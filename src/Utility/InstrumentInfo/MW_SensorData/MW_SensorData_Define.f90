@@ -206,22 +206,22 @@ MODULE MW_SensorData_Define
        N_TMI_CHANNELS, N_GMI_CHANNELS /)                                 ! TRMM TMI; GPM GMI
 
   ! The sensor channel numbers
-  INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/ (i,i=1,N_MSU_CHANNELS    ) /)
-  INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)    =(/ (i,i=1,N_AMSUA_CHANNELS  ) /)
-  INTEGER, PARAMETER :: AMSUB_SENSOR_CHANNEL(N_AMSUB_CHANNELS)    =(/ (i,i=1,N_AMSUB_CHANNELS  ) /)
-  INTEGER, PARAMETER :: SSMI_SENSOR_CHANNEL(N_SSMI_CHANNELS)      =(/ (i,i=1,N_SSMI_CHANNELS   ) /)
-  INTEGER, PARAMETER :: SSMT1_SENSOR_CHANNEL(N_SSMT1_CHANNELS)    =(/ (i,i=1,N_SSMT1_CHANNELS  ) /)
-  INTEGER, PARAMETER :: SSMT2_SENSOR_CHANNEL(N_SSMT2_CHANNELS)    =(/ (i,i=1,N_SSMT2_CHANNELS  ) /)
-  INTEGER, PARAMETER :: SSMIS_SENSOR_CHANNEL(N_SSMIS_CHANNELS)    =(/ (i,i=1,N_SSMIS_CHANNELS  ) /)
-  INTEGER, PARAMETER :: HSB_SENSOR_CHANNEL(N_HSB_CHANNELS)        =(/ (i,i=1,N_HSB_CHANNELS    ) /)
-  INTEGER, PARAMETER :: MHS_SENSOR_CHANNEL(N_MHS_CHANNELS)        =(/ (i,i=1,N_MHS_CHANNELS    ) /)
-  INTEGER, PARAMETER :: AMSRE_SENSOR_CHANNEL(N_AMSRE_CHANNELS)    =(/ (i,i=1,N_AMSRE_CHANNELS  ) /)
-  INTEGER, PARAMETER :: WINDSAT_SENSOR_CHANNEL(N_WINDSAT_CHANNELS)=(/ (i,i=1,N_WINDSAT_CHANNELS) /)
-  INTEGER, PARAMETER :: ATMS_SENSOR_CHANNEL(N_ATMS_CHANNELS)      =(/ (i,i=1,N_ATMS_CHANNELS   ) /)
-  INTEGER, PARAMETER :: MWRI_SENSOR_CHANNEL(N_MWRI_CHANNELS)      =(/ (i,i=1,N_MWRI_CHANNELS   ) /)
-  INTEGER, PARAMETER :: MWHS_SENSOR_CHANNEL(N_MWHS_CHANNELS)      =(/ (i,i=1,N_MWHS_CHANNELS   ) /)
-  INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/ (i,i=1,N_TMI_CHANNELS    ) /)
-  INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/ (i,i=1,N_GMI_CHANNELS    ) /)
+  INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/(i,i=1,N_MSU_CHANNELS    )/)
+  INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)    =(/(i,i=1,N_AMSUA_CHANNELS  )/)
+  INTEGER, PARAMETER :: AMSUB_SENSOR_CHANNEL(N_AMSUB_CHANNELS)    =(/(i,i=1,N_AMSUB_CHANNELS  )/)
+  INTEGER, PARAMETER :: SSMI_SENSOR_CHANNEL(N_SSMI_CHANNELS)      =(/(i,i=1,N_SSMI_CHANNELS   )/)
+  INTEGER, PARAMETER :: SSMT1_SENSOR_CHANNEL(N_SSMT1_CHANNELS)    =(/(i,i=1,N_SSMT1_CHANNELS  )/)
+  INTEGER, PARAMETER :: SSMT2_SENSOR_CHANNEL(N_SSMT2_CHANNELS)    =(/(i,i=1,N_SSMT2_CHANNELS  )/)
+  INTEGER, PARAMETER :: SSMIS_SENSOR_CHANNEL(N_SSMIS_CHANNELS)    =(/(i,i=1,N_SSMIS_CHANNELS  )/)
+  INTEGER, PARAMETER :: HSB_SENSOR_CHANNEL(N_HSB_CHANNELS)        =(/(i,i=1,N_HSB_CHANNELS    )/)
+  INTEGER, PARAMETER :: MHS_SENSOR_CHANNEL(N_MHS_CHANNELS)        =(/(i,i=1,N_MHS_CHANNELS    )/)
+  INTEGER, PARAMETER :: AMSRE_SENSOR_CHANNEL(N_AMSRE_CHANNELS)    =(/(i,i=1,N_AMSRE_CHANNELS  )/)
+  INTEGER, PARAMETER :: WINDSAT_SENSOR_CHANNEL(N_WINDSAT_CHANNELS)=(/(i,i=1,N_WINDSAT_CHANNELS)/)
+  INTEGER, PARAMETER :: ATMS_SENSOR_CHANNEL(N_ATMS_CHANNELS)      =(/(i,i=1,N_ATMS_CHANNELS   )/)
+  INTEGER, PARAMETER :: MWRI_SENSOR_CHANNEL(N_MWRI_CHANNELS)      =(/(i,i=1,N_MWRI_CHANNELS   )/)
+  INTEGER, PARAMETER :: MWHS_SENSOR_CHANNEL(N_MWHS_CHANNELS)      =(/(i,i=1,N_MWHS_CHANNELS   )/)
+  INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/(i,i=1,N_TMI_CHANNELS    )/)
+  INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/(i,i=1,N_GMI_CHANNELS    )/)
 
 
   !#----------------------------------------------------------------------------#
@@ -254,9 +254,10 @@ MODULE MW_SensorData_Define
                                                                    1, 1, 1, 1, 1, &
                                                                    2, 2, 2, 2, &
                                                                    1, 1, 1, 1, 1, 1, 1 /)
-
-  INTEGER, PARAMETER :: TMI_N_SIDEBANDS(N_TMI_CHANNELS)=(/ 1, 1, 1, 1, 1, 1, 1, 1, 1 /)
-  INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS)=(/ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2 /)
+  INTEGER, PARAMETER :: MWRI_N_SIDEBANDS(N_MWRI_CHANNELS) = 1
+  INTEGER, PARAMETER :: MWHS_N_SIDEBANDS(N_MWHS_CHANNELS) = 1
+  INTEGER, PARAMETER :: TMI_N_SIDEBANDS(N_TMI_CHANNELS) = 1
+  INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS) = 1
 
 
   !#----------------------------------------------------------------------------#
@@ -1104,6 +1105,47 @@ MODULE MW_SensorData_Define
              (/ 2, MAX_N_SIDEBANDS, N_GMI_CHANNELS /) )
 
 
+  ! FengYun-3 MWRI
+  ! --------------
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: MWRI_F0( N_MWRI_CHANNELS ) = &
+    (/ 10.65_fp, 10.65_fp, 18.7_fp, 18.7_fp,  23.8_fp,  23.8_fp, &
+       36.5_fp , 36.5_fp , 89.0_fp, 89.0_fp, 150.0_fp, 150.0_fp /)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MWRI_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWRI_CHANNELS ) = &
+    RESHAPE( (/ ZERO, 0.09_fp, ZERO, ZERO, &    ! ch1
+                ZERO, 0.09_fp, ZERO, ZERO, &    ! ch2
+                ZERO, 0.10_fp, ZERO, ZERO, &    ! ch3
+                ZERO, 0.10_fp, ZERO, ZERO, &    ! ch4
+                ZERO, 0.20_fp, ZERO, ZERO, &    ! ch5
+                ZERO, 0.20_fp, ZERO, ZERO, &    ! ch6
+                ZERO, 0.45_fp, ZERO, ZERO, &    ! ch7
+                ZERO, 0.45_fp, ZERO, ZERO, &    ! ch8
+                ZERO, 2.30_fp, ZERO, ZERO, &    ! ch9  :Only bandwidth info available. No I/F
+                ZERO, 2.30_fp, ZERO, ZERO, &    ! ch10 :Only bandwidth info available. No I/F
+                ZERO, 1.00_fp, ZERO, ZERO, &    ! ch11 :The 1.0 value is completely made up
+                ZERO, 1.00_fp, ZERO, ZERO /), & ! ch12 :The 1.0 value is completely made up
+             (/ 2, MAX_N_SIDEBANDS, N_MWRI_CHANNELS /) )
+
+
+  ! FengYun-3 MWHS
+  ! --------------
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: MWHS_F0( N_MWHS_CHANNELS ) = &
+    (/ 150.006812_fp, 150.006812_fp, &
+       183.315120_fp, 183.315120_fp, 183.315120_fp/)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MWHS_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS ) = &
+    RESHAPE( (/ 0.3837500000_fp, 1.3852083_fp, ZERO, ZERO, &    ! ch1
+                0.4077080000_fp, 1.3947917_fp, ZERO, ZERO, &    ! ch2
+                0.7820512821_fp, 1.2628205_fp, ZERO, ZERO, &    ! ch3
+                2.4471153850_fp, 3.4807692_fp, ZERO, ZERO, &    ! ch4
+                5.9134615380_fp, 8.0961538_fp, ZERO, ZERO /), & ! ch5
+             (/ 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS /) )
+
+
   !#----------------------------------------------------------------------------#
   !                           Sensor polariztion data
   !#----------------------------------------------------------------------------#
@@ -1316,6 +1358,30 @@ MODULE MW_SensorData_Define
      VL_POLARIZATION, &  ! GMI ch12
      VL_POLARIZATION /)  ! GMI ch13
 
+  ! FengYun-3 MWRI
+  ! --------------
+  INTEGER, PARAMETER :: MWRI_POLARIZATION( N_MWRI_CHANNELS ) = &
+  (/ VL_POLARIZATION, &  ! MWRI ch1
+     HL_POLARIZATION, &  ! MWRI ch2
+     VL_POLARIZATION, &  ! MWRI ch3
+     HL_POLARIZATION, &  ! MWRI ch4
+     VL_POLARIZATION, &  ! MWRI ch5
+     HL_POLARIZATION, &  ! MWRI ch6
+     VL_POLARIZATION, &  ! MWRI ch7
+     HL_POLARIZATION, &  ! MWRI ch8
+     VL_POLARIZATION, &  ! MWRI ch9
+     HL_POLARIZATION, &  ! MWRI ch10
+     VL_POLARIZATION, &  ! MWRI ch11
+     HL_POLARIZATION /)  ! MWRI ch12
+
+  ! FengYun-3 MWHS
+  ! --------------
+  INTEGER, PARAMETER :: MWHS_POLARIZATION( N_MWHS_CHANNELS ) = &
+  (/ VL_MIXED_POLARIZATION, &  ! MWHS ch1
+     HL_MIXED_POLARIZATION, &  ! MWHS ch2
+     VL_MIXED_POLARIZATION, &  ! MWHS ch3
+     VL_MIXED_POLARIZATION, &  ! MWHS ch4
+     VL_MIXED_POLARIZATION /)  ! MWHS ch5
 
 CONTAINS
 
@@ -2294,6 +2360,20 @@ CONTAINS
         MW_SensorData%Polarization      = GMI_POLARIZATION
         MW_SensorData%n_Sidebands       = GMI_N_SIDEBANDS
         MW_SensorData%IF_Band           = GMI_IF_BAND
+
+      CASE ('mwri_fy3a')
+        MW_SensorData%Sensor_Channel    = MWRI_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MWRI_F0
+        MW_SensorData%Polarization      = MWRI_POLARIZATION
+        MW_SensorData%n_Sidebands       = MWRI_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MWRI_IF_BAND
+
+      CASE ('mwhs_fy3a')
+        MW_SensorData%Sensor_Channel    = MWHS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MWHS_F0
+        MW_SensorData%Polarization      = MWHS_POLARIZATION
+        MW_SensorData%n_Sidebands       = MWHS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MWHS_IF_BAND
 
       ! No match! Should never get here!
       ! --------------------------------
