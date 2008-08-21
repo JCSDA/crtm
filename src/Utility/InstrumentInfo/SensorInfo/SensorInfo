@@ -1398,6 +1398,138 @@
    11    1      1.000000E+02
    12    1      1.000000E+02
    13    1      1.000000E+02
+  MWRI         FengYun-3A   mwri_fy3a            1         938  1023    12
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+    8    1      1.000000E+02
+    9    1      1.000000E+02
+   10    1      1.000000E+02
+   11    1      1.000000E+02
+   12    1      1.000000E+02
+  MWHS         FengYun-3A   mwhs_fy3a            1         936  1023     5
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+  VIRR         FengYun-3A   virr_fy3a            0         950  1023     3
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+  IRAS         FengYun-3A   iras_fy3a            0         933  1023    26
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+    8    1      1.000000E+02
+    9    1      1.000000E+02
+   10    1      1.000000E+02
+   11    1      1.000000E+02
+   12    1      1.000000E+02
+   13    1      1.000000E+02
+   14    1      1.000000E+02
+   15    1      1.000000E+02
+   16    1      1.000000E+02
+   17    1      1.000000E+02
+   18    1      1.000000E+02
+   19    1      1.000000E+02
+   20    1      1.000000E+02
+   21    1      1.000000E+02
+   22    1      1.000000E+02
+   23    1      1.000000E+02
+   24    1      1.000000E+02
+   25    1      1.000000E+02
+   26    1      1.000000E+02
+  MERSI        FengYun-3A   mersi_fy3a           0        2047  1023     1
+    5    1      1.000000E+02
+  MERSI        FengYun-3A   mersiD01_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD02_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD03_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD04_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD05_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD06_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD07_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD08_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD09_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD10_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD11_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD12_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD13_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD14_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD15_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD16_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD17_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD18_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD19_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD20_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD21_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD22_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD23_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD24_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD25_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD26_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD27_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD28_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD29_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD30_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD31_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD32_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD33_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD34_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD35_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD36_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD37_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD38_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD39_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
+  MERSI        FengYun-3A   mersiD40_fy3a        0        2047  1023     1
+    5    1      1.000000e+02
   AIRS         Aqua         airs281SUBSET_aqua   0         420   784   281
     1    1      6.490000E-01
     6    1      6.540000E-01
