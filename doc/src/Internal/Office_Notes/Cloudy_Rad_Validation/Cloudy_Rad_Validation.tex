@@ -351,9 +351,9 @@ In this section the CRTM(TauProfile) result is combined with CRTM cloud calculat
 the CRTM that can be attributed to clouds. This new result will be referred to as CRTM\textunderscore{}Cloud(TauProfile).
 
 Figures \ref{fig:MidLat_Cloud} and \ref{fig:SubArctic_Cloud} show brightness temperature differences between the CRTM, CRTM\textunderscore{}Cloud(TauProfile) and LBLDIS for
-SubArctic summer and Midlatitude summer CloudSat data profiles that contain clouds. The comparisons between LBLDIS and the CRTM\textunderscore{}Cloud(TauProfile) are representative of the differences between LBLDIS and the CRTM that can be attributed to radiative transfer solvers and the methods for calculating cloud layer optical properties. The differences between CRTM\textunderscore{}Cloud(TauProfile) and LBLDIS approach 10K in many instances. As was shown in the clear sky comparisons the radiative transfer solver differences are typically 0.2k or smaller. Therefore, the differences for cloudy scenes shown in figures \ref{fig:MidLat_Cloud} and \ref{fig:SubArctic_Cloud} are almost entirely a result of how the cloud layer optical properties are calculated. The differences between LBLDIS and CRTM are similar to the differences between LBLDIS and the CRTM\textunderscore{}Cloud(TauProfile) demonstrating that differences associated with the handling of gas absorption are also relatively insignificant relative to the differences associated with calculating cloud layer optical depth properties. LBLDIS appears to have a warm bias relative to the CRTM for cloudy conditions.
+MidLatitude summer and SubArctic summer CloudSat data profiles. The SubArctic summer profile contains only ice clouds and the MidLatitude summer profile contains layers with ice and water clouds. The comparisons between LBLDIS and the CRTM\textunderscore{}Cloud(TauProfile) are representative of the differences between LBLDIS and the CRTM that can be attributed to radiative transfer solvers and the methods for calculating cloud layer optical properties. The differences between CRTM\textunderscore{}Cloud(TauProfile) and LBLDIS approach 10K in many instances. As was shown in the clear sky comparisons the radiative transfer solver differences are typically 0.2k or smaller. Therefore, the differences for cloudy scenes shown in figures \ref{fig:MidLat_Cloud} and \ref{fig:SubArctic_Cloud} are almost entirely a result of how the cloud layer optical properties are calculated. The differences between LBLDIS and CRTM are similar to the differences between LBLDIS and the CRTM\textunderscore{}Cloud(TauProfile) demonstrating that differences associated with the handling of gas absorption are also relatively insignificant relative to the differences associated with calculating cloud layer optical depth properties. LBLDIS appears to have a warm bias relative to the CRTM for cloudy conditions.
 
-
+\newpage{}
 \begin{figure}[htp]
   \centering{}
   \includegraphics[scale=0.8]{./graphics/Midlatitude_Clouds_01.eps}
@@ -362,13 +362,37 @@ SubArctic summer and Midlatitude summer CloudSat data profiles that contain clou
   \label{fig:MidLat_Cloud}
 \end{figure}
 
+
 \begin{figure}[htp]
   \centering{}
   \includegraphics[scale=0.8]{./graphics/SubArctic_Clouds_14.eps}
   \caption{Plots of differences between LBLDIS, CRTM and CRTM\textunderscore{}Cloud(TauProfile) calculated brightness temperatures for 
    a Subarctic summer atmosphere profile that contains clouds.}
   \label{fig:SubArctic_Cloud}
+\end{figure} 
+
+
+\newpage{}
+Figures \ref{fig:MidLat_Cloud_WO} and \ref{fig:Tropical_Cloud_WO} show brightness temperature differences between the CRTM, CRTM\textunderscore{}Cloud(TauProfile) and LBLDIS for MidLatitude summer and Tropical CloudSat data profiles. Ice clouds have been
+removed from these MidLatitude summer and Tropical CloudSat data profiles. The differences for these profiles are an order of magnitude
+smaller than the differences for profiles that do contain ice clouds.
+\newpage{}
+\begin{figure}[htp]
+  \centering{}
+  \includegraphics[scale=0.8]{./graphics/Midlatitude_Clouds_WO_01.eps}
+  \caption{Plots of differences between LBLDIS, CRTM and CRTM\textunderscore{}Cloud(TauProfile) calculated brightness temperatures for 
+   a Midlatitude summer atmosphere profile. The profile contains water clouds, but no ice clouds.}
+  \label{fig:MidLat_Cloud_WO}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering{}
+  \includegraphics[scale=0.8]{./graphics/Tropical_Clouds_WO_08.eps}
+  \caption{Plots of differences between LBLDIS, CRTM and CRTM\textunderscore{}Cloud(TauProfile) calculated brightness temperatures for 
+   a Tropical atmosphere profile. The profile contains water clouds, but no ice clouds.}
+  \label{fig:Tropical_Cloud_WO}
 \end{figure}  
+
 
 
 % The references section
