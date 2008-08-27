@@ -57,7 +57,7 @@ hp:
 
 
 # SGI MIPSpro Compiler
-! --------------------
+# --------------------
 sgi_debug:
 	make -f $(MAKE_FILE) library $(IRIX64_FLAGS_DEBUG)
 
