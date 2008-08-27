@@ -533,6 +533,7 @@ CONTAINS
     ! Loop over elements
     DO i = 1, MIN(SIZE(r1),SIZE(r2))
       CALL fp_equal_within_scalar(r1(i),r2(i),tol,UTest,Message_Log=Message_Log)
+      IF ( .NOT. UTest%Last_Test_Result ) RETURN
     END DO
   END SUBROUTINE fp_equal_within_rank1
 
@@ -552,6 +553,7 @@ CONTAINS
     DO j = 1, n
       DO i = 1, m
         CALL fp_equal_within_scalar(r1(i,j),r2(i,j),tol,UTest,Message_Log=Message_Log)
+        IF ( .NOT. UTest%Last_Test_Result ) RETURN
       END DO
     END DO
   END SUBROUTINE fp_equal_within_rank2
