@@ -43,7 +43,6 @@ MODULE Sensor_Planck_Functions
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
-
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Numeric literals
@@ -64,6 +63,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Sensor_Radiance
@@ -131,18 +131,16 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-! 
 ! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the Planck calculation was successful
-!                             == FAILURE an error occurred.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
+!       Error_Status:     The return value is an integer defining the error status.
+!                         The error codes are defined in the Message_Handler module.
+!                         If == SUCCESS the Planck calculation was successful
+!                            == FAILURE an error occurred.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Sensor_Radiance( Sensor_SpcCoeff , &  ! Input
@@ -153,7 +151,7 @@ CONTAINS
                             Message_Log     ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
-    TYPE( SpcCoeff_type ) , INTENT(IN)  :: Sensor_SpcCoeff
+    TYPE(SpcCoeff_type)   , INTENT(IN)  :: Sensor_SpcCoeff
     INTEGER               , INTENT(IN)  :: Sensor_Channel
     REAL(fp)              , INTENT(IN)  :: Temperature
     REAL(fp)              , INTENT(OUT) :: Radiance
@@ -173,7 +171,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    
     ! Sensor channel input
     IF ( .NOT. ( ANY(Sensor_SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
       Error_Status = FAILURE
@@ -184,17 +181,6 @@ CONTAINS
                             Message_Log=Message_Log )
       RETURN
     ENDIF
- 
-    ! Temperature input
-    IF ( Temperature < TOLERANCE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid Temperature argument', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
     ! Default units are in terms of frequency....
     Frequency_Units = .TRUE.
     ! ....unless the WAVELENGTH_UNITS argument is set
@@ -216,7 +202,7 @@ CONTAINS
     ! Calculate the temperature corrected
     ! for polychromaticity
     ! -----------------------------------
-    Effective_Temperature = Sensor_SpcCoeff%Band_C1(l) + (Sensor_SpcCoeff%Band_C2(l)*Temperature)
+    Effective_Temperature = Compute_Effective_Temperature(Sensor_SpcCoeff, l, Temperature)
 
 
     ! Calculate the monochromatic Planck radiance
@@ -240,6 +226,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Sensor_Temperature
@@ -316,6 +303,7 @@ CONTAINS
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Sensor_Temperature( Sensor_SpcCoeff , &  ! Input
@@ -346,7 +334,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-
     ! Sensor channel input
     IF ( .NOT. ( ANY(Sensor_SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
       Error_Status = FAILURE
@@ -357,17 +344,6 @@ CONTAINS
                             Message_Log=Message_Log )
       RETURN
     ENDIF
- 
-    ! Radiance input
-    IF ( Radiance < TOLERANCE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid Radiance argument', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
     ! Default units are in terms of frequency....
     Frequency_Units = .TRUE.
     ! ....unless the WAVELENGTH_UNITS argument is set
@@ -408,12 +384,13 @@ CONTAINS
     ! Correct the brightness temperature
     ! for polychromaticity
     ! ----------------------------------
-    Temperature = ( Effective_Temperature-Sensor_SpcCoeff%Band_C1(l) ) / Sensor_SpcCoeff%Band_C2(l)
+    Temperature = Compute_Temperature(Sensor_SpcCoeff, l, Effective_Temperature)
 
   END FUNCTION Sensor_Temperature
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Sensor_dBdT
@@ -492,6 +469,7 @@ CONTAINS
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Sensor_dBdT( Sensor_SpcCoeff , &  ! Input
@@ -534,16 +512,6 @@ CONTAINS
       RETURN
     ENDIF
  
-    ! Temperature input
-    IF ( Temperature < TOLERANCE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid Temperature argument', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
     ! Default units are in terms of frequency....
     Frequency_Units = .TRUE.
     ! ....unless the WAVELENGTH_UNITS argument is set
@@ -565,7 +533,7 @@ CONTAINS
     ! Calculate the temperature corrected
     ! for polychromaticity
     ! -----------------------------------
-    Effective_Temperature = Sensor_SpcCoeff%Band_C1(l) + (Sensor_SpcCoeff%Band_C2(l)*Temperature)
+    Effective_Temperature = Compute_Effective_Temperature( Sensor_SpcCoeff, l, Temperature )
 
 
     ! Calculate the monochromatic Planck dB/dT
@@ -590,6 +558,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Sensor_dTdB
@@ -673,6 +642,7 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Sensor_dTdB( Sensor_SpcCoeff , &  ! Input
@@ -715,16 +685,6 @@ CONTAINS
       RETURN
     ENDIF
  
-    ! Radiance input
-    IF ( Radiance < TOLERANCE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid Radiance argument', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
     ! Default units are in terms of frequency....
     Frequency_Units = .TRUE.
     ! ....unless the WAVELENGTH_UNITS argument is set
@@ -779,6 +739,8 @@ CONTAINS
 !################################################################################
 !################################################################################
 
+  ! Function to search the SpcCoeff
+  ! structure for a particular channel
   FUNCTION Get_ChannelIndex( SC, Ch ) RESULT( ChIdx )
     TYPE(SpcCoeff_type), INTENT(IN) :: SC
     INTEGER            , INTENT(IN) :: Ch
@@ -789,6 +751,8 @@ CONTAINS
     ChIdx = Idx(1)
   END FUNCTION Get_ChannelIndex
 
+  ! Function to retrieive the required
+  ! spectral variable
   FUNCTION Get_SpectralVariable( SC, FUnits, ChIdx ) RESULT( x )
     TYPE(SpcCoeff_type), INTENT(IN) :: SC
     LOGICAL            , INTENT(IN) :: FUnits
@@ -803,5 +767,24 @@ CONTAINS
       x = TEN_THOUSAND/SC%Wavenumber(ChIdx)
     END IF
   END FUNCTION Get_SpectralVariable
+  
+  ! Function to compute an effective temperature
+  ! due to polychromaticity.
+  FUNCTION Compute_Effective_Temperature(SC, ChIdx, T ) RESULT( Teff )
+    TYPE(SpcCoeff_type), INTENT(IN) :: SC
+    INTEGER            , INTENT(IN) :: ChIdx
+    REAL(fp)           , INTENT(IN) :: T
+    REAL(fp) :: Teff
+    Teff = SC%Band_C1(ChIdx) + (SC%Band_C2(ChIdx)*T)
+  END FUNCTION Compute_Effective_Temperature
+  
+  ! Function to correct temperatures for polychromaticity
+  FUNCTION Compute_Temperature(SC, ChIdx, Teff ) RESULT( T )
+    TYPE(SpcCoeff_type), INTENT(IN) :: SC
+    INTEGER            , INTENT(IN) :: ChIdx
+    REAL(fp)           , INTENT(IN) :: Teff
+    REAL(fp) :: T
+    T = (Teff - SC%Band_C1(ChIdx))/SC%Band_C2(ChIdx)
+  END FUNCTION Compute_Temperature
   
 END MODULE Sensor_Planck_Functions
