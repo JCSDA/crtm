@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Planck functions test program
+# Makefile for Sensor Planck functions test program
 #
 #==============================================================================
 
@@ -11,7 +11,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Planck_Functions_Test
+EXE_FILE = Sensor_Planck_Functions_Test
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -23,6 +23,8 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
+            AntCorr_Define.f90 \
+            AntCorr_netCDF_IO.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_netCDF_IO.f90 \
             Planck_Functions.f90 \
