@@ -64,7 +64,7 @@ MODULE Unit_Test
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: $'
+  '$Id$'
   CHARACTER(*), PARAMETER :: MODULE_NAME = 'Unit_Test'
   INTEGER,      PARAMETER :: SL = 256
   INTEGER,      PARAMETER :: CR = 13
