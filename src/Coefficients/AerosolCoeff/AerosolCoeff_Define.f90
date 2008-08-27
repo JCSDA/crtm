@@ -1253,9 +1253,9 @@ CONTAINS
     ! Write the required data to the local string
     WRITE( Long_String, '( a,1x,"AerosolCoeff RELEASE.VERSION: ", i2, ".", i2.2, 2x, &
                            &"N_WAVELENGTHS=",i4,2x,&
-                           &"N_RADII=",i2,2x,&
+                           &"N_RADII=",i3,2x,&
                            &"N_TYPES=",i2,2x,&
-                           &"N_RH=",i2,2x,&
+                           &"N_RH=",i3,2x,&
                            &"N_LEGENDRE_TERMS=",i2,2x,&
                            &"N_PHASE_ELEMENTS=",i2 )' ) &
                         ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
