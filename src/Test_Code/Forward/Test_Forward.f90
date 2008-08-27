@@ -163,22 +163,22 @@ PROGRAM Test_Forward
   Error_Status = CRTM_Read_Atmosphere_Binary( ATMDATA_FILENAME, &
                                               Atmosphere )
   IF ( Error_Status /= SUCCESS ) THEN 
-     CALL Display_Message( PROGRAM_NAME, &
-                           'Error reading Atmosphere structure file '//&
-                           ATMDATA_FILENAME, & 
-                           Error_Status )
-   STOP
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error reading Atmosphere structure file '//&
+                          ATMDATA_FILENAME, & 
+                          Error_Status )
+    STOP
   END IF
 
   WRITE( *, '( /5x, "Reading Surface structure file..." )' )
   Error_Status = CRTM_Read_Surface_Binary( SFCDATA_FILENAME, &
                                            Surface )
   IF ( Error_Status /= SUCCESS ) THEN 
-     CALL Display_Message( PROGRAM_NAME, &
-                           'Error reading Surface structure file '//&
-                           SFCDATA_FILENAME, & 
-                           Error_Status )
-   STOP
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error reading Surface structure file '//&
+                          SFCDATA_FILENAME, & 
+                          Error_Status )
+    STOP
   END IF
 
   ! Save the number of clouds and
