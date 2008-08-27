@@ -23,6 +23,8 @@ PROGRAM Test_AntCorr_Application
   USE SpcCoeff_Define
   USE SpcCoeff_Binary_IO
 
+  USE Sensor_Planck_Functions
+  
   USE AntCorr_Application
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -39,9 +41,6 @@ PROGRAM Test_AntCorr_Application
   INTEGER, PARAMETER :: N_SENSORS = 2
   CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = (/'amsua_metop-a',&
                                                       'mhs_n18      '/)
-  
-!  CHARACTER(*), PARAMETER :: SC_FILENAME  = 'Data/amsua_metop-a.SpcCoeff.bin'
-!  CHARACTER(*), PARAMETER :: AC_FILENAME  = 'Data/amsua_metop-a.AntCorr.nc'
   
   ! Test temperature
   REAL(fp), PARAMETER :: TEST_TEMPERATURE = 283.1415927_fp
@@ -60,10 +59,11 @@ PROGRAM Test_AntCorr_Application
   CHARACTER(256) :: Comment
   CHARACTER(256) :: Filename
   INTEGER :: Error_Status, Allocate_Status
-  INTEGER :: i, n
+  INTEGER :: i, l, n
   TYPE(AntCorr_type)  :: AntCorr
   TYPE(SpcCoeff_type) :: SpcCoeff
   REAL(fp), ALLOCATABLE :: Torig(:), Tsc(:), Tac(:), Tb(:,:) 
+  REAL(fp), ALLOCATABLE :: Rorig(:), Rsc(:), Tscr(:)
 
                                                            
   ! Output header
@@ -102,6 +102,9 @@ PROGRAM Test_AntCorr_Application
     ALLOCATE( Torig(SpcCoeff%AC%n_Channels), &
               Tsc(SpcCoeff%AC%n_Channels), &
               Tb(SpcCoeff%AC%n_Channels,SpcCoeff%AC%n_FOVS), &
+              Rorig(SpcCoeff%AC%n_Channels), &
+              Rsc(SpcCoeff%AC%n_Channels), &
+              Tscr(SpcCoeff%AC%n_Channels), &
               STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( PROGRAM_NAME, 'Error allocating SpcCoeff T arrays.', FAILURE )
@@ -112,6 +115,10 @@ PROGRAM Test_AntCorr_Application
     ! ---------------------------------
     Torig = TEST_TEMPERATURE
     Tsc   = Torig
+    ! ... and radiances
+    Rorig = Compute_Radiance(SpcCoeff,Torig)
+    Rsc   = Rorig
+
 
     ! Apply and remove the antenna correction at each FOV
     ! ---------------------------------------------------
@@ -121,10 +128,10 @@ PROGRAM Test_AntCorr_Application
       WRITE(*,'(/2x,"FOV: ",i0)') i
       
       CALL Apply_AntCorr(SpcCoeff%AC, i, Tsc)
-      
+
       WRITE(*,'(4x,"Tb values:")') 
       WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tsc
-      Tb(:,i) = Tsc
+      Tb(:,i)  = Tsc
       
       CALL Remove_AntCorr(SpcCoeff%AC, i, Tsc)
       
@@ -132,6 +139,20 @@ PROGRAM Test_AntCorr_Application
       WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tsc
       WRITE(*,'(4x,"Torig-Ta residuals:")') 
       WRITE(*,'('//RPT_FMT//'(1x,'//DT_FMT//'))') Torig-Tsc
+      
+      IF ( TRIM(SENSOR_ID(n)) == 'mhs_n18' ) THEN
+        CALL Apply_AntCorr(SpcCoeff%AC, i, Rsc)
+        Tscr = Compute_Temperature(SpcCoeff,Rsc)
+        WRITE(*,'(4x,"Tb(from R) values:")') 
+        WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tscr
+        CALL Remove_AntCorr(SpcCoeff%AC, i, Rsc)
+        Tscr = Compute_Temperature(SpcCoeff,Rsc)
+        WRITE(*,'(4x,"Restored Ta(from R) values:")') 
+        WRITE(*,'('//RPT_FMT//'(1x,'//T_FMT//'))') Tscr
+        WRITE(*,'(4x,"Torig-Ta(from R) residuals:")') 
+        WRITE(*,'('//RPT_FMT//'(1x,'//DT_FMT//'))') Torig-Tscr
+      END IF
+
       READ(*,*)
     END DO
 
@@ -189,7 +210,9 @@ PROGRAM Test_AntCorr_Application
     ! ========
     ! Clean up
     ! ========
-    DEALLOCATE( Torig, Tsc, Tac, Tb, STAT=Allocate_Status )
+    DEALLOCATE( Torig, Tsc, Tac, Tb, &
+                Rorig, Rsc, Tscr, &
+                STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       CALL Display_Message( PROGRAM_NAME, 'Error deallocating T arrays.', FAILURE )
       STOP
@@ -216,4 +239,32 @@ PROGRAM Test_AntCorr_Application
     
   END DO Sensor_Loop
 
+CONTAINS
+
+  FUNCTION Compute_Radiance( SC, T ) RESULT(R)
+    TYPE(SpcCoeff_type), INTENT(IN) :: SC
+    REAL(fp)           , INTENT(IN) :: T(:)
+    REAL(fp)                        :: R(SIZE(T))
+    DO l = 1, SC%n_Channels
+      Error_Status = Sensor_Radiance( SC, SC%Sensor_Channel(l), T(l), R(l) ) 
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( PROGRAM_NAME, 'Error computing radiances.', FAILURE )
+        STOP
+      END IF
+    END DO
+  END FUNCTION Compute_Radiance
+  
+  FUNCTION Compute_Temperature( SC, R ) RESULT(T)
+    TYPE(SpcCoeff_type), INTENT(IN) :: SC
+    REAL(fp)           , INTENT(IN) :: R(:)
+    REAL(fp)                        :: T(SIZE(R))
+    DO l = 1, SC%n_Channels
+      Error_Status = Sensor_Temperature( SC, SC%Sensor_Channel(l), R(l), T(l) ) 
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( PROGRAM_NAME, 'Error computing temperatures.', FAILURE )
+        STOP
+      END IF
+    END DO
+  END FUNCTION Compute_Temperature
+    
 END PROGRAM Test_AntCorr_Application

@@ -20,10 +20,13 @@ SRC_FILES = Type_Kinds.f90 \
             Compare_Float_Numbers.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
+            Fundamental_Constants.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
             netCDF_Variable_Utility.f90 \
+            Planck_Functions.f90 \
+            Sensor_Planck_Functions.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_Binary_IO.f90 \
             AntCorr_Define.f90 \
