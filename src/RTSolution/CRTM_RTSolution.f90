@@ -2656,6 +2656,15 @@ CONTAINS
       RTSolution%Down_Radiance           = RTV%e_Level_Rad_DOWN(Atmosphere%n_Layers)
       RTSolution%Down_Solar_Radiance     = RTV%Down_Solar_Radiance
       RTSolution%Surface_Planck_Radiance = RTV%Planck_Surface
+      IF ( ASSOCIATED( RTSolution%Upwelling_Radiance ) ) THEN
+        ! Shorter names for indexing
+        no = RTSolution%n_Layers  ! Original no. of layers
+        na = RTV%n_Added_Layers   ! No. of added layers
+        nt = RTV%n_Layers         ! Current total no. of layers
+        ! Assign only the upwelling radiance profile
+        ! defined by the user input layering
+        RTSolution%Upwelling_Radiance(1:no) = RTV%e_Level_Rad_UP(na+1:nt)
+      END IF
     END IF
 
 

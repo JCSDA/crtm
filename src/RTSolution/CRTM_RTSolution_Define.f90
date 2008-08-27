@@ -73,6 +73,9 @@ MODULE CRTM_RTSolution_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  ! Default message string length
+  INTEGER, PARAMETER :: ML = 256
+  ! Scalar initialisaiton values
   REAL(fp), PARAMETER :: FP_DEFAULT = ZERO
   INTEGER,  PARAMETER :: IP_DEFAULT = 0
   LOGICAL,  PARAMETER :: LP_DEFAULT = .TRUE.
@@ -85,6 +88,10 @@ MODULE CRTM_RTSolution_Define
     INTEGER :: n_Allocates = 0
     ! Dimensions
     INTEGER :: n_Layers = 0  ! K
+    ! Internal variables. Users do not need to worry about these.
+    INTEGER :: n_Full_Streams  = IP_DEFAULT
+    LOGICAL :: Scattering_Flag = LP_DEFAULT
+    INTEGER :: n_Stokes        = IP_DEFAULT
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
@@ -93,11 +100,9 @@ MODULE CRTM_RTSolution_Define
     REAL(fp) :: Down_Radiance           = FP_DEFAULT
     REAL(fp) :: Down_Solar_Radiance     = FP_DEFAULT
     REAL(fp) :: Surface_Planck_Radiance = FP_DEFAULT
+    REAL(fp), POINTER :: Upwelling_Radiance(:)  => NULL()  ! K
+    ! The layer optical depths
     REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
-    ! Internal variables. Users do not need to worry about these.
-    INTEGER :: n_Full_Streams  = IP_DEFAULT
-    LOGICAL :: Scattering_Flag = LP_DEFAULT
-    INTEGER :: n_Stokes        = IP_DEFAULT
     ! Radiative transfer results for a single channel/node
     REAL(fp) :: Radiance               = FP_DEFAULT
     REAL(fp) :: Brightness_Temperature = FP_DEFAULT
@@ -195,18 +200,18 @@ CONTAINS
 
     ! Test the structure pointer association
     ! --------------------------------------
-    ! NOTE: The Any/All test logic is included for future changes
-    !       when/if there is more than one pointer member
     Association_Status = .FALSE.
-!    IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( RTSolution%Layer_Optical_Depth ) ) THEN  ! .AND.
+    IF ( ALL_Test ) THEN
+      IF ( ASSOCIATED(RTSolution%Upwelling_Radiance)  .AND. &
+           ASSOCIATED(RTSolution%Layer_Optical_Depth)       ) THEN
         Association_Status = .TRUE.
       END IF
-!    ELSE
-!      IF ( ASSOCIATED( RTSolution%Layer_Optical_Depth ) ) THEN  ! .OR.
-!        Association_Status = .TRUE.
-!      END IF
-!    END IF
+    ELSE
+      IF ( ASSOCIATED(RTSolution%Upwelling_Radiance)  .OR. &
+           ASSOCIATED(RTSolution%Layer_Optical_Depth)      ) THEN
+        Association_Status = .TRUE.
+      END IF
+    END IF
 
   END FUNCTION CRTM_Associated_RTSolution
 
@@ -290,15 +295,18 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTSolution(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
+    ! Re-initialise the dimensions
+    RTSolution%n_Layers = 0
+    
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
@@ -313,15 +321,16 @@ CONTAINS
 
     ! Deallocate the pointer members
     ! ------------------------------
-    DEALLOCATE( RTSolution%Layer_Optical_Depth, STAT = Allocate_Status )
+    DEALLOCATE( RTSolution%Upwelling_Radiance, &
+                RTSolution%Layer_Optical_Depth, &
+                STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message,'("Error deallocating CRTM_RTSolution Layer_Optical_Depth ",&
-                      &"member. STAT = ",i0)' ) &
+      WRITE( Message,'("Error deallocating CRTM_RTSolution. STAT = ",i0)' ) &
                       Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
+      CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status,    &
+                            Error_Status, &
                             Message_Log=Message_Log )
     END IF
 
@@ -331,11 +340,11 @@ CONTAINS
     RTSolution%n_Allocates = RTSolution%n_Allocates - 1
     IF ( RTSolution%n_Allocates /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i0 )' ) &
+      WRITE( Message,'("Allocation counter /= 0, Value = ",i0)' ) &
                       RTSolution%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
+      CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status,    &
+                            Error_Status, &
                             Message_Log=Message_Log )
     END IF
   END FUNCTION Destroy_Scalar
@@ -356,14 +365,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -400,14 +409,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -538,13 +547,13 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     IF ( n_Layers < 1 ) THEN
@@ -574,7 +583,8 @@ CONTAINS
 
     ! Allocate the structure
     ! ----------------------
-    ALLOCATE( RTSolution%Layer_Optical_Depth(n_Layers), &
+    ALLOCATE( RTSolution%Upwelling_Radiance(n_Layers), &
+              RTSolution%Layer_Optical_Depth(n_Layers), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -591,6 +601,7 @@ CONTAINS
     ! Assign dimensions and initialise variables
     ! ------------------------------------------
     RTSolution%n_Layers = n_Layers
+    RTSolution%Upwelling_Radiance  = ZERO
     RTSolution%Layer_Optical_Depth = ZERO
 
 
@@ -624,14 +635,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -668,14 +679,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -785,7 +796,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
     IF ( .NOT. CRTM_Associated_RTSolution( RTSolution_In ) ) THEN
@@ -828,6 +839,7 @@ CONTAINS
 
     ! Assign array data
     ! -----------------
+    RTSolution_out%Upwelling_Radiance  = RTSolution_in%Upwelling_Radiance
     RTSolution_out%Layer_Optical_Depth = RTSolution_in%Layer_Optical_Depth
     
   END FUNCTION Assign_Scalar
@@ -848,16 +860,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, n
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     n = SIZE( RTSolution_in )
@@ -871,8 +881,6 @@ CONTAINS
       RETURN
     END IF
 
-
-    ! ---------------------
     ! Perform the asignment
     ! ---------------------
     DO i = 1, n
@@ -907,16 +915,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: i, j, l, m
 
-
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     l = SIZE(RTSolution_in, DIM=1)
@@ -932,8 +938,6 @@ CONTAINS
       RETURN
     END IF
 
-
-    ! ---------------------
     ! Perform the asignment
     ! ---------------------
     DO j = 1, m
@@ -1093,7 +1097,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_RTSolution(scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     LOGICAL :: Include_Intermediate
     INTEGER :: k
@@ -1101,7 +1105,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1229,6 +1233,24 @@ CONTAINS
         IF ( Check_Once ) RETURN
       END IF
       DO k = 1, RTSolution_LHS%n_Layers
+        IF ( .NOT. Compare_Float( RTSolution_LHS%Upwelling_Radiance(k), &
+                                  RTSolution_RHS%Upwelling_Radiance(k), &
+                                  ULP    =ULP_Scale, &
+                                  Percent=Percent_Difference ) ) THEN
+          Error_Status = FAILURE
+          WRITE( Message,'("Upwelling_Radiance(",i3,") values are different:",3(1x,es13.6))') &
+                         k, &
+                         RTSolution_LHS%Upwelling_Radiance(k), &
+                         RTSolution_RHS%Upwelling_Radiance(k), &
+                         RTSolution_LHS%Upwelling_Radiance(k)-RTSolution_RHS%Upwelling_Radiance(k)
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(Message), &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          IF ( Check_Once ) RETURN
+        END IF
+      END DO
+      DO k = 1, RTSolution_LHS%n_Layers
         IF ( .NOT. Compare_Float( RTSolution_LHS%Layer_Optical_Depth(k), &
                                   RTSolution_RHS%Layer_Optical_Depth(k), &
                                   ULP    =ULP_Scale, &
@@ -1306,7 +1328,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_RTSolution(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: Scalar_Status
     INTEGER :: i, n
@@ -1314,7 +1336,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1382,7 +1404,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_RTSolution(Rank-2)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Check_Once
     INTEGER :: Scalar_Status
     INTEGER :: i, j, l, m
@@ -1390,7 +1412,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1476,7 +1498,6 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_RTSolution( RTSolution )
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
-    RTSolution%n_Layers = 0
     RTSolution%Surface_Emissivity      = FP_DEFAULT
     RTSolution%Up_Radiance             = FP_DEFAULT
     RTSolution%Down_Radiance           = FP_DEFAULT
