@@ -29,7 +29,7 @@ PROGRAM Sensor_Planck_Functions_Test
   ! ---------- 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Sensor_Planck_Functions_Test'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Sensor_Planck_Functions_Test.f90,v 2.3 2006/09/21 17:58:25 wd20pd Exp $'
+  '$Id$'
   ! Unit name strings
   INTEGER,      PARAMETER :: N_UNITS = 2
   CHARACTER(*), PARAMETER :: V_UNIT_STRING(N_UNITS)    = (/ 'frequency (cm-1)' , 'wavelength (um) '  /)
@@ -83,7 +83,7 @@ PROGRAM Sensor_Planck_Functions_Test
   ! ---------------------
   CALL Program_Message(PROGRAM_NAME, &
                        'Program to test the sensor Planck functions module routines.', &
-                       '$Revision: 2.3 $' )
+                       '$Revision$' )
 
   ! Read the test SpcCoeff datafile
   ! -------------------------------
