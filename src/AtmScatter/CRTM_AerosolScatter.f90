@@ -90,6 +90,10 @@ MODULE CRTM_AerosolScatter
   PUBLIC :: CRTM_Assign_AtmScatter
   PUBLIC :: CRTM_Zero_AtmScatter
 
+!  ! FOR TESTING ONLY
+!  PUBLIC :: Get_Aerosol_Opt
+!  PUBLIC :: Get_Aerosol_Opt_TL
+!  PUBLIC :: Get_Aerosol_Opt_AD
 
   ! -----------------
   ! Module parameters
@@ -120,7 +124,7 @@ MODULE CRTM_AerosolScatter
     REAL(fp), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
                         MAX_N_PHASE_ELEMENTS,  &
                         MAX_N_LAYERS,          &
-                        MAX_N_AEROSOLS         )  :: pcoeff = ZERO   ! Phase coefficients
+                        MAX_N_AEROSOLS         )  :: pcoeff          ! Phase coefficients
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: Total_bs = ZERO             ! Volume scattering coefficient
   END TYPE CRTM_ASVariables_type
 
@@ -234,7 +238,7 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: k, ka, l, m, n
     INTEGER  :: Sensor_Type
-    REAL(fp) :: Wavelength
+    REAL(fp) :: Frequency
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
     INTEGER  :: nAerosol_Layers
@@ -246,13 +250,13 @@ CONTAINS
     Error_Status = SUCCESS
     ! Sensor Type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
-    ! Initialise and return if: - sensor if mocrowave, or
+    ! Initialise and return if: - sensor is microwave, or
     !                           - no aerosols
     CALL CRTM_Zero_AtmScatter(AScat)
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
     IF (Atm%n_Aerosols == 0) RETURN
-    ! Wavelength in microns
-    Wavelength = 10000.0_fp/SC(SensorIndex)%Wavenumber(ChannelIndex)
+    ! Frequency in inverse centimetres
+    Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Determine offset for Legendre coefficients in the
     ! AeroC lookup table corresponding to the 
     ! number of streams        
@@ -301,14 +305,14 @@ CONTAINS
       
         ! Get the aerosol optical properties
         CALL Get_Aerosol_Opt( AScat                              , & ! Input
-                              Wavelength                         , & ! Input
+                              Frequency                          , & ! Input
                               Atm%Aerosol(n)%Type                , & ! Input
                               Atm%Aerosol(n)%Effective_Radius(ka), & ! Input                               
                               ASV%ke(ka,n)                       , & ! Output
                               ASV%w(ka,n)                        , & ! Output
                               ASV%g(ka,n)                        , & ! Output
                               ASV%pcoeff(:,:,ka,n)                 )
-          
+
         ! Compute the volume scattering coefficient for the current
         ! aerosol layer and accumulate it for the layer total for the
         ! profile (i.e. all aerosols)
@@ -371,29 +375,29 @@ CONTAINS
       ! Only process layers that scatter
       IF (ASV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
 
-        ! Normalize the asymmetry factor with the total
-        ! volume scattering coefficient, bs.
-        AScat%Asymmetry_Factor(k) = AScat%Asymmetry_Factor(k) / ASV%Total_bs(k)
+      ! Normalize the asymmetry factor with the total
+      ! volume scattering coefficient, bs.
+      AScat%Asymmetry_Factor(k) = AScat%Asymmetry_Factor(k) / ASV%Total_bs(k)
 
-        IF ( AScat%n_Phase_Elements > 0 ) THEN
-          IF (l > 2) THEN
-            ! Normalize the phase matrix coefficients with
-            ! the total volume scattering coefficient, bs.
-            DO m = 1, AScat%n_Phase_Elements
-              AScat%Phase_Coefficient(0:l,m,k) = AScat%Phase_Coefficient(0:l,m,k) / &
-                                                          ASV%Total_bs(k)
-            END DO
-          ELSE
-            ! Henyey-Greenstein phase function
-            AScat%Phase_Coefficient(1,1,k) = ONEpointFIVE * AScat%Asymmetry_Factor(k)
-            AScat%Phase_Coefficient(2,1,k) = ZERO
-          END IF
-          
-          ! Normalization requirement
-          AScat%Phase_Coefficient(0,1,k) = POINT_5
-          AScat%Single_Scatter_Albedo(k) = ASV%Total_bs(k) / AScat%Optical_Depth(k)
-          AScat%Delta_Truncation(k)      = AScat%Phase_Coefficient(l,1,k)
+      IF ( AScat%n_Phase_Elements > 0 ) THEN
+        IF (l > 2) THEN
+          ! Normalize the phase matrix coefficients with
+          ! the total volume scattering coefficient, bs.
+          DO m = 1, AScat%n_Phase_Elements
+            AScat%Phase_Coefficient(0:l,m,k) = AScat%Phase_Coefficient(0:l,m,k) / &
+                                                        ASV%Total_bs(k)
+          END DO
+        ELSE
+          ! Henyey-Greenstein phase function
+          AScat%Phase_Coefficient(1,1,k) = ONEpointFIVE * AScat%Asymmetry_Factor(k)
+          AScat%Phase_Coefficient(2,1,k) = ZERO
         END IF
+        
+        ! Normalization requirement
+        AScat%Phase_Coefficient(0,1,k) = POINT_5
+        AScat%Single_Scatter_Albedo(k) = ASV%Total_bs(k) / AScat%Optical_Depth(k)
+        AScat%Delta_Truncation(k)      = AScat%Phase_Coefficient(l,1,k)
+      END IF
     END DO Layer_loop
                                                     
   END FUNCTION CRTM_Compute_AerosolScatter
@@ -529,7 +533,7 @@ CONTAINS
     INTEGER  :: k, ka, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
-    REAL(fp) :: Wavelength
+    REAL(fp) :: Frequency
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
     INTEGER  :: nAerosol_Layers
@@ -544,14 +548,14 @@ CONTAINS
     Error_Status = SUCCESS
     ! Sensor Type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
-    ! Initialise and return if: - sensor if mocrowave, or
+    ! Initialise and return if: - sensor is microwave, or
     !                           - no aerosols
     CALL CRTM_Zero_AtmScatter(AScat_TL)
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
     IF (Atm%n_Aerosols == 0) RETURN
     Total_bs_TL = ZERO
-    ! Wavelength in Microns
-    Wavelength = 10000.0_fp/SC(SensorIndex)%Wavenumber(ChannelIndex)
+    ! Frequency
+    Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
     n_Legendre_Terms = AScat_TL%n_Legendre_Terms
     n_Phase_Elements = AScat_TL%n_Phase_Elements
@@ -579,7 +583,7 @@ CONTAINS
 
         ! Obtain bulk aerosol optical properties
         CALL Get_Aerosol_Opt_TL(AScat_TL                              , & ! Input
-                                Wavelength                            , & ! Input
+                                Frequency                             , & ! Input
                                 Atm%Aerosol(n)%Type                   , & ! Input
                                 Atm%Aerosol(n)%Effective_Radius(ka)   , & ! FWD Input
                                 Atm_TL%Aerosol(n)%Effective_Radius(ka), & ! TL  Input
@@ -814,7 +818,7 @@ CONTAINS
     INTEGER   :: k, ka, l, m, n
     INTEGER   :: n_Legendre_Terms, n_Phase_Elements
     INTEGER   :: Sensor_Type
-    REAL(fp)  :: Wavelength
+    REAL(fp)  :: Frequency
     LOGICAL   :: Layer_Mask(Atm%n_Layers)
     INTEGER   :: Layer_Index(Atm%n_Layers)
     INTEGER   :: nAerosol_Layers
@@ -833,8 +837,8 @@ CONTAINS
     IF (Atm%n_Aerosols == 0) RETURN
     ! Initialize local adjoint variables
     Total_bs_AD = ZERO
-    ! Wavelength in Microns
-    Wavelength = 10000.0_fp/SC(SensorIndex)%Wavenumber(ChannelIndex)
+    ! Frequency
+    Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
     n_Legendre_Terms = AScat_AD%n_Legendre_Terms
     n_Phase_Elements = AScat_AD%n_Phase_Elements
@@ -964,7 +968,7 @@ CONTAINS
                                                      
         ! Adjoint AScat interpolation routine
         CALL Get_Aerosol_Opt_AD(AScat_AD                              , & ! Input
-                                Wavelength                            , & ! Input
+                                Frequency                             , & ! Input
                                 Atm%Aerosol(n)%Type                   , & ! Input
                                 Atm%Aerosol(n)%Effective_Radius(ka)   , & ! FWD Input
                                 ke_AD                                 , & ! AD Input
@@ -1016,7 +1020,7 @@ CONTAINS
   ! spherical Legendre coefficients (pcoeff)
   ! ----------------------------------------
   SUBROUTINE Get_Aerosol_Opt( AerosolScatter, &  ! Input AerosolScatter structure
-                              Wavelength    , &  ! Input in microns
+                              Frequency     , &  ! Input in cm^-1
                               Aerosol_Type  , &  ! Input see CRTM_Aerosol_Define.f90
                               Reff          , &  ! Input effective radius (mm)
                               ke            , &  ! Output extinction coefficient (=~ optical depth)
@@ -1025,7 +1029,7 @@ CONTAINS
                               pcoeff          )  ! Output spherical Legendre coefficients
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter
-    REAL(fp)                  , INTENT(IN)     :: Wavelength
+    REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Aerosol_Type
     REAL(fp)                  , INTENT(IN)     :: Reff
     REAL(fp)                  , INTENT(OUT)    :: ke
@@ -1044,12 +1048,12 @@ CONTAINS
     ! ------------------------------
     k = Aerosol_Type_Index( Aerosol_Type )
 
-    ! Find the wavelength and effective
+    ! Find the Frequency and effective
     ! radius indices for interpolation
     ! --------------------------------
-    f_int = MAX(MIN(AeroC%Wavelength(AeroC%n_Wavelengths),Wavelength),AeroC%Wavelength(1))
-    CALL find_index(AeroC%Wavelength(:),f_int,i1,i2)
-    f = AeroC%Wavelength(i1:i2)
+    f_int = MAX(MIN(AeroC%Frequency(AeroC%n_Wavelengths),Frequency),AeroC%Frequency(1))
+    CALL find_index(AeroC%Frequency(:),f_int,i1,i2)
+    f = AeroC%Frequency(i1:i2)
 
     r_int = MAX(MIN(AeroC%Reff(AeroC%n_Radii,k),Reff),AeroC%Reff(1,k)) 
     CALL find_index(AeroC%Reff(:,k), r_int, j1, j2)
@@ -1071,8 +1075,9 @@ CONTAINS
     CALL interp_2D( AeroC%g(i1:i2,j1:j2,k) , wlp, xlp, g  )
     IF (AerosolScatter%n_Phase_Elements > 0 .AND.  &
         AerosolScatter%n_Legendre_Terms > 2        ) THEN
+      pcoeff(0,1) = POINT_5
       DO m = 1, AerosolScatter%n_Phase_Elements
-        DO l = 0, AerosolScatter%n_Legendre_Terms
+        DO l = 1, AerosolScatter%n_Legendre_Terms
           CALL interp_2D( AeroC%pcoeff(i1:i2,j1:j2,k,l+AerosolScatter%lOffset,m), &
                           wlp, xlp, pcoeff(l,m) )
         END DO
@@ -1091,7 +1096,7 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_TL(AerosolScatter_TL, &  ! Input  AerosolScatterTL structure
-                                Wavelength       , &  ! Input  in microns
+                                Frequency        , &  ! Input  in cm^-1
                                 Aerosol_Type     , &  ! Input  see CRTM_Aerosol_Define.f90
                                 Reff             , &  ! Input  FWD effective radius
                                 Reff_TL          , &  ! Input  TL effective radius (mm)
@@ -1102,7 +1107,7 @@ CONTAINS
 
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter_TL
-    REAL(fp),                   INTENT(IN)     :: Wavelength
+    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Aerosol_Type
     REAL(fp),                   INTENT(IN)     :: Reff
     REAL(fp),                   INTENT(IN)     :: Reff_TL
@@ -1126,10 +1131,12 @@ CONTAINS
     ! -----
     ! Get the aerosol type LUT index
     k = Aerosol_Type_Index( Aerosol_Type )
-    ! No TL output when effective radius
-    ! is outside LUT bounds
-    IF ( Reff < AeroC%Reff(1,k) .OR. &
-         Reff > AeroC%Reff(AeroC%n_Radii,k)) THEN
+    ! No TL output all dimensions
+    ! are outside LUT bounds
+    IF ( ( Frequency < AeroC%Frequency(1) .OR. &
+           Frequency > AeroC%Frequency(AeroC%n_Wavelengths) ) .AND. &
+         ( Reff      < AeroC%Reff(1,k) .OR. &
+           Reff      > AeroC%Reff(AeroC%n_Radii,k) ) ) THEN
       ke_TL     = ZERO
       w_TL      = ZERO
       g_TL      = ZERO
@@ -1143,12 +1150,12 @@ CONTAINS
     r_TL     = ZERO
     z_TL = ZERO
 
-    ! Find the wavelength and effective
+    ! Find the frequency and effective
     ! radius indices for interpolation
     ! ---------------------------------
-    f_int = MAX(MIN(AeroC%Wavelength(AeroC%n_Wavelengths),Wavelength),AeroC%Wavelength(1))
-    CALL find_index(AeroC%Wavelength, f_int, i1,i2)
-    f = AeroC%Wavelength(i1:i2)
+    f_int = MAX(MIN(AeroC%Frequency(AeroC%n_Wavelengths),Frequency),AeroC%Frequency(1))
+    CALL find_index(AeroC%Frequency, f_int, i1,i2)
+    f = AeroC%Frequency(i1:i2)
     
     r_int = MAX(MIN(AeroC%Reff(AeroC%n_Radii,k),Reff),AeroC%Reff(1,k))
     CALL find_index(AeroC%Reff(:,k), r_int, j1,j2)
@@ -1197,8 +1204,9 @@ CONTAINS
     ! Phase matrix coefficients    
     IF (AerosolScatter_TL%n_Phase_Elements > 0 .AND. &
         AerosolScatter_TL%n_Legendre_Terms > 2       ) THEN
+      pcoeff_TL(0,1) = ZERO
       DO m = 1, AerosolScatter_TL%n_Phase_Elements
-        DO l = 0, AerosolScatter_TL%n_Legendre_Terms
+        DO l = 1, AerosolScatter_TL%n_Legendre_Terms
           z = AeroC%pcoeff(i1:i2,j1:j2,k,l+AerosolScatter_TL%lOffset,m)
           CALL interp_2D_TL( z   , wlp   , xlp   , &  ! FWD Input
                              z_TL, wlp_TL, xlp_TL, &  ! TL  Input
@@ -1219,7 +1227,7 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_AD)
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_AD( AerosolScatter_AD, & ! Input AerosolScatter AD structure
-                                 Wavelength       , & ! Input Wavelength in microns
+                                 Frequency        , & ! Input Frequency in cm^-1
                                  Aerosol_Type     , & ! Input see CRTM_Aerosol_Define.f90
                                  Reff             , & ! FWD Input effective radius
                                  ke_AD            , & ! AD Input extinction cross section
@@ -1229,7 +1237,7 @@ CONTAINS
                                  Reff_AD            ) ! AD Output effective radius
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter_AD
-    REAL(fp),                   INTENT(IN)     :: Wavelength
+    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Aerosol_Type
     REAL(fp),                   INTENT(IN)     :: Reff  
     REAL(fp),                   INTENT(IN OUT) :: ke_AD            ! AD Input
@@ -1253,10 +1261,12 @@ CONTAINS
     ! -----
     ! Get the aerosol type LUT index
     k = Aerosol_Type_Index( Aerosol_Type )
-    ! No AD output when effective radius
-    ! is outside LUT bounds
-    IF ( Reff < AeroC%Reff(1,k) .OR. &
-         Reff > AeroC%Reff(AeroC%n_Radii,k)) THEN
+    ! No AD output all dimensions
+    ! are outside LUT bounds
+    IF ( ( Frequency < AeroC%Frequency(1) .OR. &
+           Frequency > AeroC%Frequency(AeroC%n_Wavelengths) ) .AND. &
+         ( Reff      < AeroC%Reff(1,k) .OR. &
+           Reff      > AeroC%Reff(AeroC%n_Radii,k) ) ) THEN
       Reff_AD = ZERO
       ke_AD     = ZERO
       w_AD      = ZERO
@@ -1273,12 +1283,12 @@ CONTAINS
     CALL Clear_LPoly(wlp_AD)
     CALL Clear_LPoly(xlp_AD)
 
-    ! Find the wavelength and effective
+    ! Find the Frequency and effective
     ! radius indices for interpolation
     ! ---------------------------------
-    f_int = MAX(MIN(AeroC%Wavelength(AeroC%n_Wavelengths),Wavelength),AeroC%Wavelength(1))
-    CALL find_index(AeroC%Wavelength, f_int, i1,i2)
-    f = AeroC%Wavelength(i1:i2)
+    f_int = MAX(MIN(AeroC%Frequency(AeroC%n_Wavelengths),Frequency),AeroC%Frequency(1))
+    CALL find_index(AeroC%Frequency, f_int, i1,i2)
+    f = AeroC%Frequency(i1:i2)
 
     r_int = MAX(MIN(AeroC%Reff(AeroC%n_Radii,k),Reff),AeroC%Reff(1,k))
     CALL find_index(AeroC%Reff(:,k), r_int, j1,j2)
@@ -1299,13 +1309,14 @@ CONTAINS
     IF (AerosolScatter_AD%n_Phase_Elements > 0 .AND. &
         AerosolScatter_AD%n_Legendre_Terms > 2       ) THEN
       DO m = 1, AerosolScatter_AD%n_Phase_Elements
-        DO l = 0, AerosolScatter_AD%n_Legendre_Terms
+        DO l = 1, AerosolScatter_AD%n_Legendre_Terms
           z = AeroC%pcoeff(i1:i2,j1:j2,k,l+AerosolScatter_AD%lOffset,m)
           CALL interp_2D_AD( z   , wlp   , xlp   , &  ! FWD Input
                              pcoeff_AD(l,m)      , &  ! AD  Input
                              z_AD, wlp_AD, xlp_AD  )  ! AD  Output
         END DO
       END DO
+      pcoeff_AD(0,1) = ZERO
     END IF
     ! Asymmetry factor
     z = AeroC%g(i1:i2,j1:j2,k)

@@ -86,6 +86,13 @@ MODULE CRTM_CloudScatter
   PUBLIC :: CRTM_Assign_AtmScatter
   PUBLIC :: CRTM_Zero_AtmScatter
 
+!  ! FOR TESTING ONLY
+!  PUBLIC :: Get_Cloud_Opt_IR
+!  PUBLIC :: Get_Cloud_Opt_IR_TL
+!  PUBLIC :: Get_Cloud_Opt_IR_AD
+!  PUBLIC :: Get_Cloud_Opt_MW
+!  PUBLIC :: Get_Cloud_Opt_MW_TL
+!  PUBLIC :: Get_Cloud_Opt_MW_AD
 
   ! -----------------
   ! Module parameters
@@ -1144,7 +1151,8 @@ CONTAINS
     CALL interp_2D( CloudC%g_IR(i1:i2,j1:j2,k) , wlp, xlp, g  )
     IF (CloudScatter%n_Phase_Elements > 0 .AND. &
         CloudScatter%n_Legendre_Terms > 2       ) THEN
-      DO l = 0, CloudScatter%n_Legendre_Terms
+      pcoeff(0,1) = POINT_5
+      DO l = 1, CloudScatter%n_Legendre_Terms
         CALL interp_2D( CloudC%pcoeff_IR(i1:i2,j1:j2,k,l+CloudScatter%lOffset), &
                         wlp, xlp, pcoeff(l,1) )
       END DO
@@ -1199,10 +1207,12 @@ CONTAINS
     
     ! Setup
     ! -----
-    ! No TL output when effective radius
-    ! is outside LUT bounds
-    IF ( Reff < CloudC%Reff_IR(1) .OR. &
-         Reff > CloudC%Reff_IR(CloudC%n_IR_Radii) ) THEN
+    ! No TL output when all dimensions
+    ! are outside LUT bounds
+    IF ( ( Frequency < CloudC%Frequency_IR(1) .OR. &
+           Frequency > CloudC%Frequency_IR(CloudC%n_IR_Frequencies) ) .AND. &
+         ( Reff      < CloudC%Reff_IR(1) .OR. &
+           Reff      > CloudC%Reff_IR(CloudC%n_IR_Radii)            ) ) THEN
       ke_TL     = ZERO
       w_TL      = ZERO
       g_TL      = ZERO
@@ -1281,7 +1291,8 @@ CONTAINS
     ! Phase matrix coefficients
     IF ( CloudScatter_TL%n_Phase_Elements > 0 .AND. &
          CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
-      DO l = 0, CloudScatter_TL%n_Legendre_Terms
+      pcoeff_TL(0,1) = ZERO
+      DO l = 1, CloudScatter_TL%n_Legendre_Terms
         z = CloudC%pcoeff_IR(i1:i2,j1:j2,k,l+CloudScatter_TL%lOffset)
         CALL interp_2D_TL( z   , wlp   , xlp   , &  ! FWD Input
                            z_TL, wlp_TL, xlp_TL, &  ! TL  Input
@@ -1336,10 +1347,12 @@ CONTAINS
 
     ! Setup
     ! -----
-    ! No AD output when effective radius
-    ! is outside LUT bounds
-    IF ( Reff < CloudC%Reff_IR(1) .OR. &
-         Reff > CloudC%Reff_IR(CloudC%n_IR_Radii) ) THEN
+    ! No AD output when all dimensions
+    ! are outside LUT bounds
+    IF ( ( Frequency < CloudC%Frequency_IR(1) .OR. &
+           Frequency > CloudC%Frequency_IR(CloudC%n_IR_Frequencies) ) .AND. &
+         ( Reff      < CloudC%Reff_IR(1) .OR. &
+           Reff      > CloudC%Reff_IR(CloudC%n_IR_Radii)            ) ) THEN
       Reff_AD     = ZERO
       Reff_Var_AD = ZERO
       ke_AD     = ZERO
@@ -1394,12 +1407,13 @@ CONTAINS
     ! Phase matrix coefficients
     IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
         CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
-      DO l = 0, CloudScatter_AD%n_Legendre_Terms
+      DO l = 1, CloudScatter_AD%n_Legendre_Terms
         z = CloudC%pcoeff_IR(i1:i2,j1:j2,k,l+CloudScatter_AD%lOffset)
         CALL interp_2D_AD( z   , wlp   , xlp   , &  ! FWD Input
                            pcoeff_AD(l,1)      , &  ! AD  Input
                            z_AD, wlp_AD, xlp_AD  )  ! AD  Output
       END DO
+      pcoeff_AD(0,1) = ZERO
     END IF
     ! Asymmetry factor
     z = CloudC%g_IR(i1:i2,j1:j2,k)
@@ -1528,8 +1542,9 @@ CONTAINS
         CALL interp_3D( CloudC%g_L_MW(i1:i2,j1:j2,k1:k2) , wlp, xlp, ylp, g  )
         IF ( CloudScatter%n_Phase_Elements > 0 .AND. &
              CloudScatter%n_Legendre_Terms > 2       ) THEN
+          pcoeff(0,1) = POINT_5
           DO m = 1, CloudScatter%n_Phase_Elements
-            DO l = 0, CloudScatter%n_Legendre_Terms
+            DO l = 1, CloudScatter%n_Legendre_Terms
               CALL interp_3D( CloudC%pcoeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter%lOffset,m), &
                               wlp, xlp, ylp, pcoeff(l,m) )
             END DO
@@ -1545,7 +1560,7 @@ CONTAINS
       ! The remaining cloud types have 2-D interpolation
       ! as a fn. of frequency and radius
       CASE DEFAULT
-        ! Select the LUT temperature
+        ! Select the LUT density
         SELECT CASE (Cloud_Type)
           CASE (GRAUPEL_CLOUD); k = 2
           CASE (HAIL_CLOUD)   ; k = 3
@@ -1557,8 +1572,9 @@ CONTAINS
         CALL interp_2D( CloudC%g_S_MW(i1:i2,j1:j2,k) , wlp, xlp, g  )
         IF (CloudScatter%n_Phase_Elements > 0 .AND. &
             CloudScatter%n_Legendre_Terms > 2       ) THEN
+          pcoeff(0,1) = POINT_5
           DO m = 1, CloudScatter%n_Phase_Elements
-            DO l = 0, CloudScatter%n_Legendre_Terms
+            DO l = 1, CloudScatter%n_Legendre_Terms
               CALL interp_2D( CloudC%pcoeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter%lOffset,m), &
                               wlp, xlp, pcoeff(l,m) )
             END DO
@@ -1689,14 +1705,15 @@ CONTAINS
       ! fn. of frequency and temperature for water cloud; i.e.
       ! we're only considering Rayleigh scattering here.
       CASE (WATER_CLOUD)
-        ! No TL output when temperature
-        ! is outside LUT bounds
-        IF ( Temperature < CloudC%Temperature(1) .OR. &
-             Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) THEN
-          ke_TL     = ZERO
-          w_TL      = ZERO
-          g_TL      = ZERO
-          pcoeff_TL = ZERO
+        ! No TL output when all dimensions
+        ! are outside LUT bounds
+        IF ( ( Frequency   < CloudC%Frequency_MW(1) .OR. &
+               Frequency   > CloudC%Frequency_MW(CloudC%n_MW_Frequencies) ) .AND. &
+             ( Reff        < CloudC%Reff_MW(1) .OR. &
+               Reff        > CloudC%Reff_MW(CloudC%n_MW_Radii)            ) .AND. &
+             ( Temperature < CloudC%Temperature(1) .OR. &
+               Temperature > CloudC%Temperature(CloudC%n_Temperatures)    ) ) THEN
+          ke_TL = ZERO
           RETURN
         END IF
         j = 1
@@ -1707,12 +1724,14 @@ CONTAINS
 
       ! All 3-D interpolations for rain cloud!
       CASE (RAIN_CLOUD)
-        ! No TL output when both effective radius
-        ! and temperature are outside LUT bounds
-        IF ( ( Reff < CloudC%Reff_MW(1) .OR. &
-               Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) .AND. &
+        ! No TL output when all dimensions
+        ! are outside LUT bounds
+        IF ( ( Frequency   < CloudC%Frequency_MW(1) .OR. &
+               Frequency   > CloudC%Frequency_MW(CloudC%n_MW_Frequencies) ) .AND. &
+             ( Reff        < CloudC%Reff_MW(1) .OR. &
+               Reff        > CloudC%Reff_MW(CloudC%n_MW_Radii)            ) .AND. &
              ( Temperature < CloudC%Temperature(1) .OR. &
-               Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) ) THEN
+               Temperature > CloudC%Temperature(CloudC%n_Temperatures)    ) ) THEN
           ke_TL = ZERO
           RETURN
         END IF
@@ -1734,8 +1753,9 @@ CONTAINS
         ! Phase matrix coefficients
         IF ( CloudScatter_TL%n_Phase_Elements > 0 .AND. &
              CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
+          pcoeff_TL(0,1) = ZERO
           DO m = 1, CloudScatter_TL%n_Phase_Elements
-            DO l = 0, CloudScatter_TL%n_Legendre_Terms
+            DO l = 1, CloudScatter_TL%n_Legendre_Terms
               z3 = CloudC%pcoeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter_TL%lOffset,m)
               CALL interp_3D_TL( z3   , wlp   , xlp   , ylp   , &  ! FWD Input
                                  z3_TL, wlp_TL, xlp_TL, ylp_TL, &  ! TL  Input
@@ -1752,10 +1772,12 @@ CONTAINS
       ! The remaining cloud types have 2-D interpolation
       ! as a fn. of frequency and radius
       CASE DEFAULT
-        ! No TL output when effective radius
-        ! is outside LUT bounds
-        IF ( Reff < CloudC%Reff_MW(1) .OR. &
-             Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) THEN
+        ! No TL output when all dimensions
+        ! are outside LUT bounds
+        IF ( ( Frequency < CloudC%Frequency_MW(1) .OR. &
+               Frequency > CloudC%Frequency_MW(CloudC%n_MW_Frequencies) ) .AND. &
+             ( Reff      < CloudC%Reff_MW(1) .OR. &
+               Reff      > CloudC%Reff_MW(CloudC%n_MW_Radii)            ) ) THEN
           ke_TL = ZERO
           RETURN
         END IF
@@ -1783,8 +1805,9 @@ CONTAINS
         ! Phase matrix coefficients
         IF ( CloudScatter_TL%n_Phase_Elements > 0 .AND. &
              CloudScatter_TL%n_Legendre_Terms > 2       ) THEN
+          pcoeff_TL(0,1) = ZERO
           DO m = 1, CloudScatter_TL%n_Phase_Elements
-            DO l = 0, CloudScatter_TL%n_Legendre_Terms
+            DO l = 1, CloudScatter_TL%n_Legendre_Terms
               z2 = CloudC%pcoeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter_TL%lOffset,m)
               CALL interp_2D_TL( z2   , wlp   , xlp   , &  ! FWD Input
                                  z2_TL, wlp_TL, xlp_TL, &  ! TL  Input
@@ -1897,10 +1920,12 @@ CONTAINS
       ! fn. of frequency and temperature for water cloud; i.e.
       ! we're only considering Rayleigh scattering here.
       CASE (WATER_CLOUD)
-        ! No AD output when temperature
-        ! is outside LUT bounds
-        IF ( Temperature < CloudC%Temperature(1) .OR. &
-             Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) THEN
+        ! No AD output when all dimensions
+        ! are outside LUT bounds
+        IF ( ( Frequency   < CloudC%Frequency_MW(1) .OR. &
+               Frequency   > CloudC%Frequency_MW(CloudC%n_MW_Frequencies) ) .AND. &
+             ( Temperature < CloudC%Temperature(1) .OR. &
+               Temperature > CloudC%Temperature(CloudC%n_Temperatures)    ) ) THEN
           ke_AD     = ZERO
           w_AD      = ZERO
           g_AD      = ZERO
@@ -1933,12 +1958,14 @@ CONTAINS
 
       ! All 3-D interpolations for rain cloud!
       CASE (RAIN_CLOUD)
-        ! No TL output when both effective radius
-        ! and temperature are outside LUT bounds
-        IF ( ( Reff < CloudC%Reff_MW(1) .OR. &
-               Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) .AND. &
+        ! No TL output when all dimensions
+        ! are outside LUT bounds
+        IF ( ( Frequency   < CloudC%Frequency_MW(1) .OR. &
+               Frequency   > CloudC%Frequency_MW(CloudC%n_MW_Frequencies) ) .AND. &
+             ( Reff        < CloudC%Reff_MW(1) .OR. &
+               Reff        > CloudC%Reff_MW(CloudC%n_MW_Radii)            ) .AND. &
              ( Temperature < CloudC%Temperature(1) .OR. &
-               Temperature > CloudC%Temperature(CloudC%n_Temperatures) ) ) THEN
+               Temperature > CloudC%Temperature(CloudC%n_Temperatures)    ) ) THEN
           ke_AD     = ZERO
           w_AD      = ZERO
           g_AD      = ZERO
@@ -1951,13 +1978,14 @@ CONTAINS
         IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
             CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter_AD%n_Phase_Elements
-            DO l = 0, CloudScatter_AD%n_Legendre_Terms
+            DO l = 1, CloudScatter_AD%n_Legendre_Terms
               z3 = CloudC%pcoeff_L_MW(i1:i2,j1:j2,k1:k2,l+CloudScatter_AD%lOffset,m)
               CALL interp_3D_AD( z3   , wlp   , xlp   , ylp   , &  ! FWD Input
                                  pcoeff_AD(l,m)               , &  ! AD  Input
                                  z3_AD, wlp_AD, xlp_AD, ylp_AD  )  ! AD  Output
             END DO
           END DO
+          pcoeff_AD(0,1) = ZERO 
         END IF
         ! Asymmetry factor
         z3 = CloudC%g_L_MW(i1:i2,j1:j2,k1:k2)
@@ -2007,10 +2035,12 @@ CONTAINS
       ! The remaining cloud types have 2-D interpolation
       ! as a fn. of frequency and radius
       CASE DEFAULT
-        ! No TL output when effective radius
-        ! is outside LUT bounds
-        IF ( Reff < CloudC%Reff_MW(1) .OR. &
-             Reff > CloudC%Reff_MW(CloudC%n_MW_Radii) ) THEN
+        ! No TL output when all dimensions
+        ! are outside LUT bounds
+        IF ( ( Frequency < CloudC%Frequency_MW(1) .OR. &
+               Frequency > CloudC%Frequency_MW(CloudC%n_MW_Frequencies) ) .AND. &
+             ( Reff      < CloudC%Reff_MW(1) .OR. &
+               Reff      > CloudC%Reff_MW(CloudC%n_MW_Radii)            ) ) THEN
           ke_AD     = ZERO
           w_AD      = ZERO
           g_AD      = ZERO
@@ -2029,13 +2059,14 @@ CONTAINS
         IF (CloudScatter_AD%n_Phase_Elements > 0 .AND. &
             CloudScatter_AD%n_Legendre_Terms > 2       ) THEN
           DO m = 1, CloudScatter_AD%n_Phase_Elements
-            DO l = 0, CloudScatter_AD%n_Legendre_Terms
+            DO l = 1, CloudScatter_AD%n_Legendre_Terms
               z2 = CloudC%pcoeff_S_MW(i1:i2,j1:j2,k,l+CloudScatter_AD%lOffset,m)
               CALL interp_2D_AD( z2   , wlp   , xlp   , &  ! FWD Input
                                  pcoeff_AD(l,m)       , &  ! AD  Input
                                  z2_AD, wlp_AD, xlp_AD  )  ! AD  Output
             END DO
           END DO
+          pcoeff_AD(0,1) = ZERO 
         END IF
         ! Asymmetry factor
         z2 = CloudC%g_S_MW(i1:i2,j1:j2,k)
