@@ -60,6 +60,20 @@
 \numberwithin{figure}{chapter}
 \numberwithin{table}{chapter}
 
+% Space/nudging commands
+\newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
+
+%Redefine the enumerate environment to decrease the item spacing.
+\let\oldenumerate=\enumerate
+\let\endoldenumerate=\endenumerate
+\renewenvironment{enumerate}{%
+  \begin{oldenumerate}%
+    \setlength{\itemsep}{0ex}%
+  }%
+  {%
+  \end{oldenumerate}%
+  }
+
 % Define a command for title page author email footnote
 \newcommand{\email}[1]
 {%
