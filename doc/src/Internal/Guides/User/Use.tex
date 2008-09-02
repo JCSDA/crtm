@@ -13,9 +13,12 @@ Need to alter the example below.
 The first thing you need to do is identify what sensors you want to use. The list of supported sensors, along with their associated \f{Sensor\_Id}'s, are shown in appendix BLAH
 
 
+\newcounter{step}
+\newcounter{example}[subsection]
 
 \subsection{Step 1: Access the CRTM module}
 %------------------------------------------
+\stepcounter{step}
 All of the CRTM user procedures, parameters, and derived data types are accessible via the container module \f{CRTM\_Module}. Thus, one needs to put the following statement in any calling program, module or procedure,
 
 \qquad\f{USE CRTM\_Module}
@@ -28,17 +31,22 @@ where \textit{only-list} is a list of the symbols you want to ``import'' from \f
 
 \subsection{Step 2: Declare the CRTM structures}
 %-----------------------------------------------
+\refstepcounter{step}
+\label{sec:quick_start_step2}
 To compute satellite radiances you need to declare structures for the following information,
 \begin{enumerate}
   \item Atmospheric profile data such as pressure, temperature, absorber amounts, clouds, aerosols, etc. Handled using the \Atmosphere{} structure.
   \item Surface data such as type of surface, temperature, surface type specific parameters etc. Handled using the \Surface{} structure.
   \item Geometry information such as sensor scan angle, zenith angle, etc. Handled using the \GeometryInfo{} structure.
-  \item Instrument information, particularly which instrument(s) you want to simulate. Handled using the \ChannelInfo{} structure.
+  \item Instrument information, particularly which instrument(s), or sensor(s)\footnote{The terms ``instrument'' and ``sensor'' are used interchangeably in this document.}, you want to simulate. Handled using the \ChannelInfo{} structure.
   \item Results of the radiative transfer calculation. Handled using the \RTSolution{} structure.
 \end{enumerate}
-Because there are many variations in what information is known ahead of time (and by ``ahead of time'' I mean at compile-time of your code), let's approach this via examples.
+ Because there are many variations in what information is known ahead of time (and by ``ahead of time'' I mean at compile-time of your code), let's approach this via examples.
 
-\subsubsection{Example 1: Fixed number of profiles \textbf{and} sensors}
+\subsubsection{Example 1: Fixed number of profiles \textit{and} sensors}
+\refstepcounter{example}
+\label{sec:quick_start_step2_ex1}
+
 Here we'll assume you want to process, say, 50 profiles for three sensors: NOAA-18 HIRS/4, AMSU-A, and MHS. That's a total of 39 channels. For simplicity, we'll also assume that the fields-of-view (FOVs) of the various sensors coincide (which is not true).
 \begin{ttfamily}
   \begin{verbatim}
@@ -46,9 +54,9 @@ Here we'll assume you want to process, say, 50 profiles for three sensors: NOAA-
   INTEGER, PARAMETER :: N_PROFILES = 50
   INTEGER, PARAMETER :: N_CHANNELS = 39
   INTEGER, PARAMETER :: N_SENSORS  =  3
-  CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = (/'hirs4_n18',&
-                                                      'amsua_n18',&
-                                                      'mhs_n18  '/)
+  CHARACTER(*), PARAMETER :: SID(N_SENSORS) = (/'hirs4_n18',&
+                                                'amsua_n18',&
+                                                'mhs_n18  '/)
   ! Structure array definitions
   TYPE(CRTM_Atmosphere_type)   :: atm(N_PROFILES)
   TYPE(CRTM_Surface_type)      :: sfc(N_PROFILES)
@@ -58,31 +66,133 @@ Here we'll assume you want to process, say, 50 profiles for three sensors: NOAA-
 \end{ttfamily}
 The point I want to make here is that we know how many channels we will be processing ahead of time, hence we can declare the sizes of the various structure arrays.
 
-\subsubsection{Example 2: Fixed number of profiles, but variable number of sensors}
-If you don't know ahead of time which sensors you will be processing at any particular time, then you don't know the number of sensors and channels. You can handle this by using the \f{ALLOCATABLE} attribute for those arrays whose dimensions are unknown at compile-time,
+\subsubsection{Example 2: Variable number of profiles, but fixed number of sensors}
+\refstepcounter{example}
+\label{sec:quick_start_step2_ex2}
+Say you want to process the same instruments as the previous example, but you don't know ahead of time how many profiles you will be processing. In this case you will need to define any profile-dependent arguments with the \f{ALLOCATABLE} attribute,
 \begin{ttfamily}
   \begin{verbatim}
   ! Processing parameters
-  INTEGER, PARAMETER :: N_PROFILES = 50
-
-  ! Sensor Id definition
-  CHARACTER(STRLEN), ALLOCATABLE :: Sensor_Id(:) ! n_Sensors dimension
+  INTEGER, PARAMETER :: N_CHANNELS = 39
+  INTEGER, PARAMETER :: N_SENSORS  =  3
+  CHARACTER(*), PARAMETER :: SID(N_SENSORS) = (/'hirs4_n18',&
+                                                'amsua_n18',&
+                                                'mhs_n18  '/)
   ! Structure array definitions
-  TYPE(CRTM_Atmosphere_type)   :: atm(N_PROFILES)
-  TYPE(CRTM_Surface_type)      :: sfc(N_PROFILES)
-  TYPE(CRTM_GeometryInfo_type) :: gInfo(N_PROFILES)  
-  TYPE(CRTM_ChannelInfo_type), ALLOCATABLE :: chInfo(:) ! n_Sensors dimension
-  TYPE(CRTM_RTSolution_type),  ALLOCATABLE :: rts(:,:)  ! n_Channels x n_Profiles\end{verbatim}
+  TYPE(CRTM_Atmosphere_type)  , ALLOCATABLE :: atm(:)
+  TYPE(CRTM_Surface_type)     , ALLOCATABLE :: sfc(:)
+  TYPE(CRTM_GeometryInfo_type), ALLOCATABLE :: gInfo(:)  
+  TYPE(CRTM_ChannelInfo_type)               :: chInfo(N_SENSORS)
+  TYPE(CRTM_RTSolution_type)  , ALLOCATABLE :: rts(:,:)\end{verbatim}
 \end{ttfamily}
 
 
+\subsubsection{Example 3: Variable number of profiles and sensors}
+\refstepcounter{example}
+\label{sec:quick_start_step2_ex3}
+If you don't know ahead of time which sensors you will be processing at any particular time, then you don't know the number of sensors and channels. Coupled with a variable number of profiles, this means \textit{all} the arguments are defined with the \f{ALLOCATABLE} attribute,
+\begin{ttfamily}
+  \begin{verbatim}
+  ! Sensor Id definition
+  CHARACTER(STRLEN), ALLOCATABLE :: SId(:)
+  ! Structure array definitions
+  TYPE(CRTM_Atmosphere_type)  , ALLOCATABLE :: atm(:)
+  TYPE(CRTM_Surface_type)     , ALLOCATABLE :: sfc(:)
+  TYPE(CRTM_GeometryInfo_type), ALLOCATABLE :: gInfo(:)  
+  TYPE(CRTM_ChannelInfo_type) , ALLOCATABLE :: chInfo(:)
+  TYPE(CRTM_RTSolution_type)  , ALLOCATABLE :: rts(:,:)\end{verbatim}
+\end{ttfamily}
 
 
 \subsection{Step 3: Initialise the CRTM}
 %---------------------------------------
+\stepcounter{step}
+This step involves calling the \f{CRTM\_Init()} function in the \f{CRTM\_LifeCycle.f90} module to load all the various coefficient data used by CRTM components into memory for later use. To start with, let's assume that all the required datafiles reside in the subdirectory \f{./coeff\_data} and, again, let's use examples for two different situations.
+ 
+\subsubsection{Example 1: Fixed number of sensors}
+\refstepcounter{example}
+This is the simplest case - you simply pass your previously declared Sensor Id values for the sensors you want to process. Here we'll use the parameter \f{SID} defined in example \ref{sec:quick_start_step2_ex1} of step \ref{sec:quick_start_step2}
+\begin{ttfamily}
+  \begin{verbatim}
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME='My Program Name'
+  INTEGER :: errStatus
+  ....
+  errStatus = CRTM_Init( chInfo, Sensor_Id=SID, File_Path='./coeff_data' )
+  IF ( errStatus /= SUCCESS ) THEN 
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error initializing CRTM', & 
+                          errStatus )
+    STOP
+  END IF\end{verbatim}
+\end{ttfamily}
+Here we see for the first time how the CRTM functions let you know if they were successful. As you can see the function result is an error status that is checked against a parameterised error code, \f{SUCCESS}. Other available error code parameters are \f{FAILURE}, \f{WARNING}, and \f{INFORMATION}; although the latter is never used as a function result. Note that you don't have to call the error message handler subroutine \f{Display\_Message}, it just outputs messages in a standard way (see appendix \ref{sec:utility_message_handler}) and is used throughout the CRTM code.
+
+\subsubsection{Example 2: Variable number of sensors}
+\refstepcounter{example}
+For this sort of usage you will need to allocate the \f{Sensor\_Id} argument (see the definition in example \ref{sec:quick_start_step2_ex3} of step \ref{sec:quick_start_step2}) to the number of sensors you wish to process as well as fill it. For illustrative purposes only, let's assume for the latter you simply type in the number and list of sensors,
+\begin{ttfamily}
+  \begin{verbatim}
+  CHARACTER(256) :: Message
+  INTEGER :: n
+  ....
+  ! Allocate the sensor id array
+  READ( *,'(/2x,"Enter the number of sensors to process: ")', ADVANCE="NO" ) n_Sensors
+  ALLOCATE( SId(n_Sensors), STAT=errStatus )
+  IF ( errStatus /= 0 ) THEN
+    WRITE( Message,'("Error allocating the sensor id array. STAT=",i0)' ) errStatus
+    CALL Display_Message( PROGRAM_NAME, &
+                          TRIM(Message), & 
+                          FAILURE )
+    STOP
+  END IF
+  
+  ! Get user sensor id input
+  DO n = 1, n_Sensors
+    READ( *,'(4x,"Enter sensor id #",i0,": ")', ADVANCE="NO" ) SId(n)
+  END DO
+  
+  ! Initialise the CRTM for the dynamic sensor list
+  errStatus = CRTM_Init( chInfo, Sensor_Id=SId, File_Path='./coeff_data' )
+  IF ( errStatus /= SUCCESS ) THEN 
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error initializing CRTM', & 
+                          errStatus )
+    STOP
+  END IF\end{verbatim}
+\end{ttfamily}
+This is, of course, a rather contrived example since it is guaranteed that typing in sensor identifiers by hand will get quite annoying very quickly.
+
+One thing to note in the above example is the use of the error status variable \f{errStatus} for both standard errors (e.g. the allocation \f{STAT} result) and CRTM errors. In the former case, \f{errStatus} doesn't have any meaning for the \f{Display\_Message} subroutine\footnote{Indeed, the actual values of standard error codes can vary widely not only with the cause of the error, but also with compiler, operating system, and combinations thereof.}, hence my use of the actual fail parameter \f{FAILURE} in the call.
+
 
 \subsection{Step 4: Allocate the CRTM structures}
 %------------------------------------------------
+\stepcounter{step}
+For the variable profiles and/or sensors cases, at this point we should know how many profiles (\f{n\_Profiles}) and how many sensors we are working with. So now we need to allocate the data arrays accordingly. The following allocations apply to both examples \ref{sec:quick_start_step2_ex2} and \ref{sec:quick_start_step2_ex3} of step \ref{sec:quick_start_step2},
+
+\begin{ttfamily}
+  \begin{verbatim}
+  INTEGER :: n_Channels, n_Profiles
+  ....
+  ! Determine the total number of channels for all the sensors
+  n_Channels = SUM(chInfo%n_Channels)
+  
+  ! Allocate the structure arrays
+  ALLOCATE( atm(n_Profiles), &
+            sfc(n_Profiles), &
+            gInfo(n_Profiles), &
+            rts(n_Channels, n_Profiles), &
+            STAT=errStatus )
+  IF ( errStatus /= 0 ) THEN 
+    WRITE( Message,'("Error allocating the structure arrays. STAT=",i0)' ) errStatus
+    CALL Display_Message( PROGRAM_NAME, &
+                          TRIM(Message), & 
+                          FAILURE )
+    STOP
+  END IF\end{verbatim}
+\end{ttfamily}
+
+
 
 \subsection{Step 5: Fill the CRTM input structures with data}
 %------------------------------------------------------------
@@ -106,22 +216,22 @@ If you don't know ahead of time which sensors you will be processing at any part
   \begin{minipage}[b]{6.5in}
     \begin{ttfamily}
       \begin{verbatim}
-  FUNCTION CRTM_Init( ChannelInfo      , &  ! Output, N
-                      Sensor_ID        , &  ! Optional input, N
-                      CloudCoeff_File  , &  ! Optional input
-                      AerosolCoeff_File, &  ! Optional input
-                      EmisCoeff_File   , &  ! Optional input
-                      File_Path        , &  ! Optional input
-                      Quiet            , &  ! Optional input
-                      Process_ID       , &  ! Optional input
-                      Output_Process_ID, &  ! Optional input
-                      RCS_Id           , &  ! Revision control
-                      Message_Log      ) &  ! Error messaging
+  FUNCTION CRTM_Init( ChannelInfo      , &
+                      Sensor_ID        , &
+                      CloudCoeff_File  , &
+                      AerosolCoeff_File, &
+                      EmisCoeff_File   , &
+                      File_Path        , &
+                      Quiet            , &
+                      Process_ID       , &
+                      Output_Process_ID, &
+                      RCS_Id           , &
+                      Message_Log      ) &
                     RESULT( Error_Status )
 
     ! Arguments
-    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)  ! N
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)    ! N
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
+    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: CloudCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: EmisCoeff_File
@@ -136,30 +246,21 @@ If you don't know ahead of time which sensors you will be processing at any part
       \end{verbatim}
     \end{ttfamily}
     \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Argument} & \textbf{Description}                     & \textbf{Rank}   & \textbf{Intent} \\
+    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
+      \hline
+      \tblhd{Argument}             & \tblhd{Description}                             & \tblhd{Rank} & \tblhd{Intent} \\
       \hline\hline
-      ChannelInfo        & Sensor and channel info structure       & n\_Sensors (N)  & IN OUT      \\
-      \hline
-      Sensor\_Id         & Sensor identification string            & n\_Sensors (N)  & IN      \\
-      \hline
-      CloudCoeff\_File   & Cloud optical property LUT filename     & Scalar          & IN      \\
-      \hline
-      AerosolCoeff\_File & Aerosol optical property LUT filename   & Scalar          & IN      \\
-      \hline
-      EmisCoeff\_File    & IR sea surface emissivity LUT filename  & Scalar          & IN      \\
-      \hline
-      File\_Path         & Path to *Coeff files                    & Scalar          & IN      \\
-      \hline
-      Quiet              & Keyword to control information message output & Scalar         & IN      \\
-      \hline
-      Process\_Id        & MPI process Id                          & Scalar          & IN      \\
-      \hline
-      Output\_Process\_Id & MPI process Id for message output      & Scalar          & IN      \\
-      \hline
-      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
-      \hline
-      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+      \f{ChannelInfo}              & Sensor and channel info structure               & $N$          & Output \\
+      \optarg{Sensor\_Id}          & \textit{Sensor identification string}           & $N$          & \textit{Input}  \\
+      \optarg{CloudCoeff\_File}    & \textit{Cloud optical property LUT filename}    & Scalar       & \textit{Input}  \\
+      \optarg{AerosolCoeff\_File}  & \textit{Aerosol optical property LUT filename}  & Scalar       & \textit{Input}  \\
+      \optarg{EmisCoeff\_File}     & \textit{IR sea surface emissivity LUT filename} & Scalar       & \textit{Input}  \\
+      \optarg{File\_Path}          & \textit{Path to *Coeff files}                   & Scalar       & \textit{Input}  \\
+      \optarg{Quiet}               & \textit{Keyword to control info message output} & Scalar       & \textit{Input}  \\
+      \optarg{Process\_Id}         & \textit{MPI process Id}                         & Scalar       & \textit{Input}  \\
+      \optarg{Output\_Process\_Id} & \textit{MPI process Id for message output}      & Scalar       & \textit{Input}  \\
+      \optarg{RCS\_Id}             & \textit{Version control ID for the module}      & Scalar       & \textit{Output} \\
+      \optarg{Message\_Log}        & \textit{Log message filename}                   & Scalar       & \textit{Input} 
     \end{tabular}
   \end{minipage}
   }
@@ -176,22 +277,22 @@ If you don't know ahead of time which sensors you will be processing at any part
   \begin{minipage}[b]{6.5in}
     \begin{ttfamily}
       \begin{verbatim}
-  FUNCTION CRTM_Forward( Atmosphere  , &  ! Input, M
-                         Surface     , &  ! Input, M    
-                         GeometryInfo, &  ! Input, M    
-                         ChannelInfo , &  ! Input, N
-                         RTSolution  , &  ! Output, L x M   
-                         Options     , &  ! Optional input, M    
-                         RCS_Id      , &  ! Revision control
-                         Message_Log ) &  ! Error messaging
+  FUNCTION CRTM_Forward( Atmosphere  , &
+                         Surface     , &
+                         GeometryInfo, &
+                         ChannelInfo , &
+                         RTSolution  , &
+                         Options     , &    
+                         RCS_Id      , &
+                         Message_Log ) &
                        RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)     ! M
-    TYPE(CRTM_Surface_type),           INTENT(IN)     :: Surface(:)        ! M
-    TYPE(CRTM_GeometryInfo_type),      INTENT(IN OUT) :: GeometryInfo(:)   ! M
-    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)    ! N 
-    TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)   ! L x M
-    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)        ! M
+    TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)
+    TYPE(CRTM_Surface_type),           INTENT(IN)     :: Surface(:)
+    TYPE(CRTM_GeometryInfo_type),      INTENT(IN OUT) :: GeometryInfo(:)
+    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)
+    TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)
+    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)
     CHARACTER(*),            OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
@@ -199,24 +300,18 @@ If you don't know ahead of time which sensors you will be processing at any part
       \end{verbatim}
     \end{ttfamily}
     \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Argument} & \textbf{Description}                    & \textbf{Rank}    & \textbf{Intent} \\
+    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
+      \hline
+      \tblhd{Argument}       & \tblhd{Description}                           & \tblhd{Rank} & \tblhd{Intent} \\
       \hline\hline
-      Atmosphere         & Atmospheric state                      & n\_Profiles (M)  & IN      \\
-      \hline
-      Surface            & Surface state                          & n\_Profiles (M)  & IN      \\
-      \hline
-      GeometryInfo       & Geometry information (e.g. angles)     & n\_Profiles (M)  & IN      \\
-      \hline
-      ChannelInfo        & Sensor channel information             & n\_Sensors (N)   & IN      \\
-      \hline
-      RTSolution         & Radiative transfer solution            & n\_Channels x n\_Profiles                 & IN OUT  \\
-      \hline
-      Options            & Structure for optional input           & n\_Profiles (M)  & IN      \\
-      \hline
-      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
-      \hline
-      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+      \f{Atmosphere}         & Atmospheric state                             & $M$          & Input  \\
+      \f{Surface}            & Surface state                                 & $M$          & Input  \\
+      \f{GeometryInfo}       & Geometry information (e.g. angles)            & $M$          & Input  \\
+      \f{ChannelInfo}        & Sensor channel information                    & $N$          & Input  \\
+      \f{RTSolution}         & Radiative transfer solution                   & $L \times M$ & Output \\
+      \optarg{Options}       & \textit{Structure containing optional inputs} & $M$          & \textit{Input}  \\
+      \optarg{RCS\_Id}       & \textit{Version control ID for the module}    & Scalar       & \textit{Output} \\
+      \optarg{Message\_Log}  & \textit{Log message filename}                 & Scalar       & \textit{Input} 
     \end{tabular}
   \end{minipage}
   }
@@ -234,28 +329,28 @@ If you don't know ahead of time which sensors you will be processing at any part
   \begin{minipage}[b]{6.5in}
     \begin{ttfamily}
       \begin{verbatim}
-  FUNCTION CRTM_K_Matrix( Atmosphere  , &  ! FWD Input, M
-                          Surface     , &  ! FWD Input, M
-                          RTSolution_K, &  ! K   Input, L x M   
-                          GeometryInfo, &  ! Input, M
-                          ChannelInfo , &  ! Input, N  
-                          Atmosphere_K, &  ! K   Output, L x M
-                          Surface_K   , &  ! K   Output, L x M
-                          RTSolution  , &  ! FWD Output, L x M
-                          Options     , &  ! Optional FWD input, M
-                          RCS_Id      , &  ! Revision control
-                          Message_Log ) &  ! Error messaging
+  FUNCTION CRTM_K_Matrix( Atmosphere  , &
+                          Surface     , &
+                          RTSolution_K, &
+                          GeometryInfo, &
+                          ChannelInfo , &
+                          Atmosphere_K, &
+                          Surface_K   , &
+                          RTSolution  , &
+                          Options     , &
+                          RCS_Id      , &
+                          Message_Log ) &
                         RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere(:)     ! M
-    TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface(:)        ! M
-    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution_K(:,:) ! L x M
-    TYPE(CRTM_GeometryInfo_type)     , INTENT(IN OUT) :: GeometryInfo(:)   ! M
-    TYPE(CRTM_ChannelInfo_type)      , INTENT(IN)     :: ChannelInfo(:)    ! N
-    TYPE(CRTM_Atmosphere_type)       , INTENT(IN OUT) :: Atmosphere_K(:,:) ! L x M
-    TYPE(CRTM_Surface_type)          , INTENT(IN OUT) :: Surface_K(:,:)    ! L x M
-    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution(:,:)   ! L x M
-    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)        ! M
+    TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere(:)
+    TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface(:)
+    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution_K(:,:)
+    TYPE(CRTM_GeometryInfo_type)     , INTENT(IN OUT) :: GeometryInfo(:)
+    TYPE(CRTM_ChannelInfo_type)      , INTENT(IN)     :: ChannelInfo(:)
+    TYPE(CRTM_Atmosphere_type)       , INTENT(IN OUT) :: Atmosphere_K(:,:)
+    TYPE(CRTM_Surface_type)          , INTENT(IN OUT) :: Surface_K(:,:)
+    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution(:,:)
+    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)
     CHARACTER(*),            OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
@@ -263,30 +358,21 @@ If you don't know ahead of time which sensors you will be processing at any part
       \end{verbatim}
     \end{ttfamily}
     \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Argument} & \textbf{Description}                    & \textbf{Rank}    & \textbf{Intent} \\
+    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
+      \hline
+      \tblhd{Argument}      & \tblhd{Description}                           & \tblhd{Rank} & \tblhd{Intent} \\
       \hline\hline
-      Atmosphere         & Atmospheric state                      & n\_Profiles (M)  & IN      \\
-      \hline
-      Surface            & Surface state                          & n\_Profiles (M)  & IN      \\
-      \hline
-      RTSolution\_K      & Adjoint radiative transfer solution    & n\_Channels (L) x n\_Profiles (M) & IN OUT  \\
-      \hline
-      GeometryInfo       & Geometry information (e.g. angles)     & n\_Profiles (M)  & IN      \\
-      \hline
-      ChannelInfo        & Sensor channel information             & n\_Sensors (N)   & IN      \\
-      \hline
-      Atmosphere\_K      & Atmospheric state Jacobians            & n\_Channels (L) x n\_Profiles (M) & IN OUT  \\
-      \hline
-      Surface\_K         & Surface state Jacobians                & n\_Channels (L) x n\_Profiles (M) & IN OUT  \\
-      \hline
-      RTSolution         & Radiative transfer solution            & n\_Channels (L) x n\_Profiles (M) & IN OUT      \\
-      \hline
-      Options            & Structure for optional input           & n\_Profiles (M)  & IN      \\
-      \hline
-      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
-      \hline
-      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+      \f{Atmosphere}        & Atmospheric state                             & $M$          & FWD Input  \\
+      \f{Surface}           & Surface state                                 & $M$          & FWD Input  \\
+      \f{RTSolution\_K}     & Adjoint radiative transfer solution           & $L \times M$ & K   Input  \\
+      \f{GeometryInfo}      & Geometry information (e.g. angles)            & $M$          & Input      \\
+      \f{ChannelInfo}       & Sensor channel information                    & $N$          & Input      \\
+      \f{Atmosphere\_K}     & Atmospheric state Jacobians                   & $L \times M$ & K   Output \\
+      \f{Surface\_K}        & Surface state Jacobians                       & $L \times M$ & K   Output \\
+      \f{RTSolution}        & Radiative transfer solution                   & $L \times M$ & FWD Output \\
+      \optarg{Options}      & \textit{Structure containing optional inputs} & $M$          & \textit{Input}  \\
+      \optarg{RCS\_Id}      & \textit{Version control ID for the module}    & Scalar       & \textit{Output} \\
+      \optarg{Message\_Log} & \textit{Log message filename}                 & Scalar       & \textit{Input} 
     \end{tabular}
   \end{minipage}
   }
@@ -301,7 +387,7 @@ If you don't know ahead of time which sensors you will be processing at any part
 \begin{figure}[htp]
   \centering
   \doublebox{
-  \begin{minipage}[b]{6.5in}
+  \begin{minipage}[b]{16.5cm}
     \begin{ttfamily}
       \begin{verbatim}
   FUNCTION CRTM_Destroy( ChannelInfo , &  ! Output
@@ -319,16 +405,14 @@ If you don't know ahead of time which sensors you will be processing at any part
       \end{verbatim}
     \end{ttfamily}
     \centering
-    \begin{tabular}{c|c|c|c}
-      \textbf{Argument} & \textbf{Description}                     & \textbf{Rank}   & \textbf{Intent} \\
+    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
+      \hline
+      \tblhd{Argument}      & \tblhd{Description}                           & \tblhd{Rank} & \tblhd{Intent} \\
       \hline\hline
-      ChannelInfo        & Sensor and channel info structure       & n\_Sensors (N)  & IN OUT      \\
-      \hline
-      Process\_Id        & MPI process Id                          & Scalar          & IN      \\
-      \hline
-      RCS\_Id            & Version control ID for the module      & Scalar           & OUT     \\
-      \hline
-      Message\_Log       & Log message filename                   & Scalar           & IN      \\
+      \f{ChannelInfo}       & Sensor and channel info structure             & $N$          & In/Output       \\
+      \optarg{Process\_Id}  & \textit{MPI process Id}                       & Scalar       & \textit{Input}  \\
+      \optarg{RCS\_Id}      & \textit{Version control ID for the module}    & Scalar       & \textit{Output} \\
+      \optarg{Message\_Log} & \textit{Log message filename}                 & Scalar       & \textit{Input} 
     \end{tabular}
   \end{minipage}
   }

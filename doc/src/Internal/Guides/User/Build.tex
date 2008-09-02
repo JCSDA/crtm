@@ -12,9 +12,6 @@ The build system for the CRTM is currently quite unsophisticated. It consists of
   \,\texttt{makefile} & The main makefile\\
   \,\texttt{make.macros} & The include file containing all the defined macros, including the compiler and linker flags.\\
   \,\texttt{make.rules} & The include file containing the suffix rules for compiling Fortran95 source code.\\
-  \,\texttt{src/makefile} & The makefile in the \texttt{src} subdirectory that compiles the Fortran95 source and builds the CRTM library.\\
-  \,\texttt{src/make.filelist} & The include file containing a macro definition of all the source files to be compiled.\\
-  \,\texttt{src/make.dependencies} & The include file containing all the source file dependency lists.
 \end{tabular}
 
 \subsection{Predefined Build Targets}
@@ -22,18 +19,19 @@ The build system for the CRTM is currently quite unsophisticated. It consists of
 Several targets are available for specific compilers. The compilers and makefile target names are shown in table \ref{tab:predefined_build_targets}. Both ``production'' and debug target names are supplied, with the former using compiler switches to produce fast code and the latter using compiler switches to turn on all the available debugging capabilities. Note that the debug targets will produce executables much slower than the production builds. 
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|l|c|c|}
+  \begin{tabular}{|c|l|c|c|}
     \hline
-    \sffamily\textbf{Compiler} & \sffamily\textbf{Production Target} & \sffamily\textbf{Debug Target} \\
+    \sffamily\textbf{Platform} & \sffamily\textbf{Compiler} & \sffamily\textbf{Production Target} & \sffamily\textbf{Debug Target} \\
     \hline\hline
-    IBM AIX xlf95     & \texttt{ibm}      & \texttt{ibm\_debug}     \\
-    GNU gfortran      & \texttt{gfortran} & \texttt{gfortran\_debug}\\
-    Lahey lf95        & \texttt{lahey}    & \texttt{lahey\_debug}   \\
-    Intel ifort       & \texttt{intel}    & \texttt{intel\_debug}   \\
-    PGI pgf95         & \texttt{pgi}      & \texttt{pgi\_debug}     \\
-    G95               & \texttt{g95}      & \texttt{g95\_debug}     \\
-    SGI f90$^\dagger$ & \texttt{sgi}      & \texttt{sgi\_debug}     \\
-    Sun f90$^\dagger$ & \texttt{sun}      & \texttt{sun\_debug}     \\
+    &GNU gfortran      & \texttt{gfortran} & \texttt{gfortran\_debug}\\
+    &Lahey lf95        & \texttt{lahey}    & \texttt{lahey\_debug}   \\
+    &Intel ifort       & \texttt{intel}    & \texttt{intel\_debug}   \\
+    &PGI pgf95         & \texttt{pgi}      & \texttt{pgi\_debug}     \\
+    &G95               & \texttt{g95}      & \texttt{g95\_debug}     \\
+    &Absoft            & \texttt{absoft}   & \texttt{absoft\_debug}  \\
+    &IBM AIX xlf95     & \texttt{ibm}      & \texttt{ibm\_debug}     \\
+    &SGI f90$^\dagger$ & \texttt{sgi}      & \texttt{sgi\_debug}     \\
+    &Sun f90$^\dagger$ & \texttt{sun}      & \texttt{sun\_debug}     \\
     \hline
   \end{tabular}
   \caption{Predefined makefile targets for CRTM library build. ($^\dagger$ Untested.)}

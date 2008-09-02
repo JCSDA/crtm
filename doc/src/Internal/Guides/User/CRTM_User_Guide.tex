@@ -2,7 +2,7 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix}
+\includeonly{Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Utility.appendix}
 
 % Define fixed font for the various component names
 \newcommand{\Atmosphere}{\texttt{Atmosphere}}
@@ -21,25 +21,20 @@
 \newcommand{\AerosolScatter}{\texttt{AerosolScatter}}
 % Generic fixed font command for Fortran95 syntax
 \newcommand{\f}[1]{\texttt{#1}}
+% Table heading format
+\newcommand{\tblhd}[1]{\sffamily\textbf{#1}}
+
+%Argument formatting
+\newcommand{\inarg}[1]{\f{\textcolor{green}{#1}}}
+\newcommand{\outarg}[1]{\f{\textcolor{red}{#1}}}
+\newcommand{\optarg}[1]{\f{\textit{#1}}}
+
 % Define the adjoint operator with correct spacing
 \newcommand{\dstar}{\ensuremath{\delta^{*}\!}}
-% Space/nudging commands
-\newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
-
-%Redefine the enumerate environment to decrease the item spacing.
-\let\oldenumerate=\enumerate
-\let\endoldenumerate=\endenumerate
-\renewenvironment{enumerate}{%
-  \begin{oldenumerate}%
-    \setlength{\itemsep}{0ex}%
-  }%
-  {%
-  \end{oldenumerate}%
-  }
 
 
 % Title info
-\title{v1.1 User Guide}
+\title{v1.2 User Guide}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
 \date{July, 2008}
 
@@ -77,6 +72,7 @@
 \begin{appendix}
   \include{StructDef.appendix}
   \include{SensorId.appendix}
+  \include{Utility.appendix}
 \end{appendix}
 
 \end{document}
