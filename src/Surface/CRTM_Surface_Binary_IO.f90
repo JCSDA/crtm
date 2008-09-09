@@ -133,8 +133,9 @@ CONTAINS
                      Surface%Ice_Coverage  
     IF ( Total_Coverage > ONE ) THEN
       Error_Status = WARNING
+      WRITE( Message,'("Total coverage fraction sum, ",es13.6,", is > 1.0")' ) Total_Coverage
       CALL Display_Message( ROUTINE_NAME, &
-                            'Total coverage fraction sum > 1.0', &
+                            TRIM(Message), &
                             Error_Status, &
                             Message_Log=Message_Log )
     END IF

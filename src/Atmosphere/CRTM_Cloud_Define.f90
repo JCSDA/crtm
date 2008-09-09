@@ -75,6 +75,7 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: CRTM_Allocate_Cloud
   PUBLIC :: CRTM_Assign_Cloud
   PUBLIC :: CRTM_Equal_Cloud
+  PUBLIC :: CRTM_SetLayers_Cloud
   PUBLIC :: CRTM_Sum_Cloud
   PUBLIC :: CRTM_Zero_Cloud
   PUBLIC :: CRTM_RCS_ID_Cloud
@@ -107,6 +108,11 @@ MODULE CRTM_Cloud_Define
     MODULE PROCEDURE Equal_Scalar
     MODULE PROCEDURE Equal_Rank1
   END INTERFACE CRTM_Equal_Cloud
+
+  INTERFACE CRTM_SetLayers_Cloud
+    MODULE PROCEDURE SetLayers_Scalar
+    MODULE PROCEDURE SetLayers_Rank1
+  END INTERFACE CRTM_SetLayers_Cloud
 
   INTERFACE CRTM_Sum_Cloud
     MODULE PROCEDURE Sum_Scalar
@@ -1177,6 +1183,156 @@ CONTAINS
   END FUNCTION Equal_Rank1
 
 
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SetLayers_Cloud
+! 
+! PURPOSE:
+!       Function to set the number of layers to use in a CRTM_Cloud
+!       structure.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_SetLayers_Cloud( n_Layers               , &  ! Input
+!                                            Cloud                  , &  ! In/Output
+!                                            Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       n_Layers:     The value to set the n_Layers component of the 
+!                     Cloud structure, as well as those of any of its
+!                     structure components.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Cloud_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       Cloud:        Cloud structure in which the n_Layers dimension
+!                     is to be updated.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Cloud_type
+!                     DIMENSION:  Scalar or Rank-1 array
+!                     ATTRIBUTES: INTENT(IN OUT)
+! OUTPUT ARGUMENTS:
+!       Cloud:        On output, the Cloud structure with the updated
+!                     n_Layers dimension.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Cloud_type
+!                     DIMENSION:  Scalar or Rank-1 array
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      None
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the layer reset was successful
+!                        == FAILURE an error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       The argument Cloud is INTENT(IN OUT) and is modified upon output. The
+!       elements of the structureare reinitialised
+!
+! COMMENTS:
+!       - Note that the n_Layers input is *ALWAYS* scalar. Thus, all Cloud
+!         elements will be set to the same number of layers.
+!
+!       - If n_Layers <= Cloud%Max_Layers, then only the dimension value
+!         of the structure and any sub-structures are changed.
+!
+!       - If n_Layers > Cloud%Max_Layers, then the entire structure is
+!         reallocated to the required number of layers.
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION SetLayers_Scalar( n_Layers   , &  ! Input
+                             Cloud      , &  ! In/Output
+                             Message_Log) &  ! Error Messaging
+                           RESULT( err_stat )
+    ! Arguments
+    INTEGER,                INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: Cloud
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Cloud(scalar)'
+
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Set dimension or allocate based on current size
+    ! -----------------------------------------------        
+    IF ( n_Layers < Cloud%Max_Layers ) THEN
+      Cloud%n_Layers = n_Layers
+      CALL CRTM_Zero_Cloud(Cloud)
+    ELSE
+      ! Deallocate
+      err_stat = CRTM_Destroy_Cloud( Cloud, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error deallocating cloud structure', &
+                              err_stat, Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Reallocate
+      err_stat = CRTM_Allocate_Cloud( n_Layers, Cloud, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error reallocating cloud structure', &
+                              err_stat, Message_Log=Message_Log )
+        RETURN
+      END IF
+    END IF
+    
+  END FUNCTION SetLayers_Scalar
+
+
+  FUNCTION SetLayers_Rank1( n_Layers   , &  ! Input
+                            Cloud      , &  ! In/Output
+                            Message_Log) &  ! Error Messaging
+                          RESULT( err_stat )
+    ! Arguments
+    INTEGER,                INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: Cloud(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Cloud(scalar)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: m, set_stat
+    
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Loop over elements. If an error is encountered,
+    ! report it but continue with the reset.
+    ! -----------------------------------------------
+    DO m = 1, SIZE(Cloud)
+      set_stat = SetLayers_Scalar( n_Layers, Cloud(m), Message_Log=Message_Log )
+      IF ( set_stat /= SUCCESS ) THEN
+        err_stat = FAILURE
+        WRITE( msg,'("Error resetting element ",i0," cloud array n_Layers")' ) m
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+      END IF
+    END DO
+  END FUNCTION SetLayers_Rank1
+  
+  
 !--------------------------------------------------------------------------------
 !
 ! NAME:

@@ -379,10 +379,10 @@ CONTAINS
     CHARACTER( 256 ) :: Message
 
     INTEGER :: IO_Status
-    CHARACTER( 256 ) :: Buffer
+    CHARACTER( 2000 ) :: Buffer
     INTEGER :: i, l, m, n
     CHARACTER( 256 ) :: Attribute_Name
-    CHARACTER( 256 ) :: Attribute_Value
+    CHARACTER( 2000 ) :: Attribute_Value
 
 
 

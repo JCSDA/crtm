@@ -91,7 +91,7 @@ PROGRAM Create_IR_SpcCoeff
   REAL(fp), PARAMETER :: MAX_TEMPERATURE = 340.0_fp
 
   ! Solar channel cut-off frequency
-  REAL(fp), PARAMETER :: SOLAR_CUTOFF_WAVENUMBER = 1800.0_fp
+  REAL(fp), PARAMETER :: SOLAR_CUTOFF_WAVENUMBER = 500.0_fp
 
   ! Integration methods
   INTEGER, PARAMETER :: N_INTEGRATION_METHODS = 2

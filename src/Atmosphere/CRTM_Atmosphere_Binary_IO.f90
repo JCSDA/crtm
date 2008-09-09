@@ -20,13 +20,15 @@ MODULE CRTM_Atmosphere_Binary_IO
   ! -----------------
   ! Module use
   USE File_Utility          , ONLY: File_Exists
-  USE Message_Handler       , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
-                                    Display_Message
+  USE Message_Handler       , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility   , ONLY: Open_Binary_File
-  USE CRTM_Parameters       , ONLY: ZERO, ONE, SET, YES
-  USE CRTM_Atmosphere_Define
-  USE CRTM_Cloud_Binary_IO
-  USE CRTM_Aerosol_Binary_IO
+  USE CRTM_Parameters       , ONLY: ZERO, ONE, SET, NOT_SET, YES
+  USE CRTM_Atmosphere_Define, ONLY: CRTM_Atmosphere_type, &
+                                    CRTM_Associated_Atmosphere, &
+                                    CRTM_Destroy_Atmosphere, &
+                                    CRTM_Allocate_Atmosphere
+  USE CRTM_Cloud_Binary_IO  , ONLY: CRTM_Read_Cloud_Binary, CRTM_Write_Cloud_Binary
+  USE CRTM_Aerosol_Binary_IO, ONLY: CRTM_Read_Aerosol_Binary, CRTM_Write_Aerosol_Binary
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -62,286 +64,11 @@ MODULE CRTM_Atmosphere_Binary_IO
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
+  ! Default message length
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-  ! ------------------------------------------------
-  ! Function to read a single atmosphere data record
-  ! ------------------------------------------------
-  FUNCTION Read_Atmosphere_Record( FileID     , &  ! Input
-                                   Atmosphere , &  ! Output
-                                   Message_Log) &  ! Error messaging
-                                 RESULT ( Error_Status )
-    ! Arguments
-    INTEGER,                    INTENT(IN)     :: FileID
-    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere
-    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Atmosphere_Binary(Record)'
-    ! Function variables
-    CHARACTER(256) :: Message
-    CHARACTER(256) :: Filename
-    INTEGER :: IO_Status
-    INTEGER :: Destroy_Status
-    INTEGER :: n_Layers 
-    INTEGER :: n_Absorbers
-    INTEGER :: n_Clouds
-    INTEGER :: n_Aerosols
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-
-    ! Read the data dimensions
-    ! ------------------------
-    READ( FileID, IOSTAT=IO_Status ) n_Layers, &
-                                     n_Absorbers, &
-                                     n_Clouds, &
-                                     n_Aerosols
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading Atmosphere data dimensions. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Allocate the Atmosphere structure
-    ! ---------------------------------
-    Error_Status = CRTM_Allocate_Atmosphere( n_Layers, &
-                                             n_Absorbers, &
-                                             n_Clouds, &
-                                             n_Aerosols, &
-                                             Atmosphere, &
-                                             Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error allocating Atmosphere data structure.'
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Read the climatology model flag and absorber IDs
-    ! ------------------------------------------------
-    READ( FileID, IOSTAT=IO_Status ) Atmosphere%Climatology, &
-                                     Atmosphere%Absorber_ID, &
-                                     Atmosphere%Absorber_Units
-
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading Atmosphere climatology and absorber IDs. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Read the atmospheric profile data
-    ! ---------------------------------
-    READ( FileID, IOSTAT=IO_Status ) Atmosphere%Level_Pressure, &
-                                     Atmosphere%Pressure, &
-                                     Atmosphere%Temperature, &
-                                     Atmosphere%Absorber
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading atmospheric profile data. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Read the cloud data
-    ! -------------------
-    IF ( n_Clouds > 0 ) THEN
-
-      ! Get the data filename
-      INQUIRE( UNIT=FileID, NAME=Filename )
-
-      ! Read the cloud data
-      Error_Status = CRTM_Read_Cloud_Binary( Filename, &
-                                             Atmosphere%Cloud, &
-                                             No_File_Close = SET, &
-                                             No_Allocate = SET, &
-                                             Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading Atmosphere Cloud(s)'
-        GOTO 1000  ! Clean up
-      END IF
-    END IF
-
-
-    ! Read the aerosol data
-    ! ---------------------
-    IF ( n_Aerosols > 0 ) THEN
-
-      ! Get the data filename
-      INQUIRE( UNIT=FileID, NAME=Filename )
-
-      ! Read the aerosol data
-      Error_Status = CRTM_Read_Aerosol_Binary( Filename, &
-                                               Atmosphere%Aerosol, &
-                                               No_File_Close = SET, &
-                                               No_Allocate = SET, &
-                                               Message_Log=Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading Atmosphere Aerosol(s)'
-        GOTO 1000  ! Clean up
-      END IF
-
-    END IF
-
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_Atmosphere( Atmosphere, &
-                                              Message_Log=Message_Log )
-    CLOSE( FileID, IOSTAT=IO_Status )
-
-  END FUNCTION Read_Atmosphere_Record
-
-
-  ! -------------------------------------------------
-  ! Function to write a single atmosphere data record
-  ! -------------------------------------------------
-  FUNCTION Write_Atmosphere_Record( FileID     , &  ! Input
-                                    Atmosphere , &  ! Input
-                                    Message_Log) &  ! Error messaging
-                                  RESULT ( Error_Status )
-    ! Arguments
-    INTEGER,                    INTENT(IN)  :: FileID
-    TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere
-    CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_CRTM_Atmosphere_Binary(Record)'
-    ! Function variables
-    CHARACTER(256) :: Message
-    CHARACTER(256) :: Filename
-    INTEGER :: IO_Status
- 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Check structure pointer association status
-    IF ( .NOT. CRTM_Associated_Atmosphere( Atmosphere, &
-                                           Skip_Cloud   = SET, &
-                                           Skip_Aerosol = SET  ) ) THEN
-      Message = 'Some or all INPUT Atmosphere pointer members are NOT associated.'
-      GOTO 1000
-    END IF
-
-
-    ! Write the data dimensions
-    ! -------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) Atmosphere%n_Layers, &
-                                      Atmosphere%n_Absorbers, &
-                                      Atmosphere%n_Clouds, &
-                                      Atmosphere%n_Aerosols
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing Atmosphere data dimensions. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Write the climatology model flag and absorber IDs
-    ! -------------------------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) Atmosphere%Climatology, &
-                                      Atmosphere%Absorber_ID, &
-                                      Atmosphere%Absorber_Units
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing Atmosphere climatology and absorber IDs. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Write the atmospheric profile data
-    ! ----------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) Atmosphere%Level_Pressure, &
-                                      Atmosphere%Pressure, &
-                                      Atmosphere%Temperature, &
-                                      Atmosphere%Absorber
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing atmospheric profile data. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
-    END IF
-
-
-    ! Write the cloud data
-    ! --------------------
-    IF ( Atmosphere%n_Clouds > 0 ) THEN
-
-      ! Get the data filename
-      INQUIRE( UNIT=FileID, NAME=Filename )
-
-      ! Write the cloud data
-      Error_Status = CRTM_Write_Cloud_Binary( Filename, &
-                                              Atmosphere%Cloud, &
-                                              No_File_Close = SET, &
-                                              Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error writing Atmosphere Cloud(s)'
-        GOTO 1000  ! Clean up
-      END IF
-    END IF
-
-
-    ! Read the aerosol data
-    ! ---------------------
-    IF ( Atmosphere%n_Aerosols > 0 ) THEN
-
-      ! Get the data filename
-      INQUIRE( UNIT=FileID, NAME=Filename )
-
-      ! Read the aerosol data
-      Error_Status = CRTM_Write_Aerosol_Binary( Filename, &
-                                                Atmosphere%Aerosol, &
-                                                No_File_Close = SET, &
-                                                Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error writing Atmosphere Aerosol(s)'
-        GOTO 1000  ! Clean up
-      END IF
-
-    END IF
-
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    CLOSE( FileID, STATUS=WRITE_ERROR_STATUS, IOSTAT=IO_Status )
-
-  END FUNCTION Write_Atmosphere_Record
 
 
 !################################################################################
@@ -353,6 +80,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Inquire_Atmosphere_Binary
@@ -417,6 +145,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Inquire_Atmosphere_Binary( Filename   , &  ! Input
@@ -424,7 +153,7 @@ CONTAINS
                                            n_Profiles , &  ! Optional output
                                            RCS_Id     , &  ! Revision control
                                            Message_Log) &  ! Error messaging
-                                         RESULT ( Error_Status )
+                                         RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels
@@ -432,84 +161,81 @@ CONTAINS
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Inquire_Atmosphere_Binary'
     ! Function variables
-    CHARACTER(256) :: Message
-    INTEGER :: IO_Status
-    INTEGER :: FileID
-    INTEGER :: n_Channels_in_File
-    INTEGER :: n_Profiles_in_File
+    CHARACTER(ML) :: msg
+    INTEGER :: io_stat
+    INTEGER :: fid
+    INTEGER :: l, m
  
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Message = 'File '//TRIM(Filename)//' not found.'
-      GOTO 2000  ! Clean up
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 2000
+    err_stat = Open_Binary_File( Filename, fid, Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Read the number of profiles
-    ! ---------------------------
-    CALL Read_Dimensions( Filename, FileID, &
-                          n_Channels_in_File, n_Profiles_in_File, &
-                          IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
-
-
-    ! Save optional return arguments
-    ! ------------------------------
-    IF ( PRESENT( n_Channels ) ) n_Channels = n_Channels_in_File
-    IF ( PRESENT( n_Profiles ) ) n_Profiles = n_Profiles_in_File
+    ! Read the number of channels,profiles
+    ! ------------------------------------
+    READ( fid,IOSTAT=io_stat ) l, m
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions from ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
 
 
     ! Close the file
     ! --------------
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    CLOSE( fid, IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
-    !=====
-    RETURN
-    !=====
 
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+    ! Set the return arguments
+    ! ------------------------
+    IF ( PRESENT(n_Channels) ) n_Channels = l
+    IF ( PRESENT(n_Profiles) ) n_Profiles = m
+
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,IOSTAT=io_stat )
+          IF ( io_stat /= SUCCESS ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup'
+        END IF
+      END IF
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION CRTM_Inquire_Atmosphere_Binary
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Read_Atmosphere_Binary
@@ -613,16 +339,18 @@ CONTAINS
 !       than just OUT. This is necessary because the argument may be defined on
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_Atmosphere_Rank1( Filename    , &  ! Input
-                                  Atmosphere  , &  ! Output
-                                  Quiet       , &  ! Optional input
-                                  n_Channels  , &  ! Optional output
-                                  n_Profiles  , &  ! Optional output
-                                  RCS_Id      , &  ! Revision control
-                                  Message_Log ) &  ! Error messaging
-                                RESULT ( Error_Status )
+  FUNCTION Read_Atmosphere_Rank1( Filename   , &  ! Input
+                                  Atmosphere , &  ! Output
+                                  Quiet      , &  ! Optional input
+                                  n_Channels , &  ! Optional output
+                                  n_Profiles , &  ! Optional output
+                                  RCS_Id     , &  ! Revision control
+                                  Message_Log, &  ! Error messaging
+                                  Debug      ) &  ! Debug output control
+                                RESULT( err_stat )
     ! Arguments
     CHARACTER(*),               INTENT(IN)     :: Filename
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere(:)  ! M
@@ -631,75 +359,75 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(OUT)    :: n_Profiles
     CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,          OPTIONAL, INTENT(IN)     :: Debug
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Atmosphere_Binary(M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: Destroy_Status
-    INTEGER :: FileID
-    INTEGER :: n_File_Channels
-    INTEGER :: m, n_File_Profiles, n_Input_Profiles
+    INTEGER :: Debug_Quiet
+    INTEGER :: io_stat
+    INTEGER :: fid
+    INTEGER :: n_File_Channels, n_File_Profiles
+    INTEGER :: m, n_Input_Profiles
  
 
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Message = 'File '//TRIM(Filename)//' not found.'
-      GOTO 2000  ! Clean up
-    END IF
-
-    ! Check Quiet optional argument
+    ! Default action is to output info messages...
     Noisy = .TRUE.
+    ! ...unless the Quiet optional argument is set.
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+    ! Default action is to NOT output debug messages...
+    Debug_Quiet = SET
+    ! ...unless the Debug optional argument is set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+    END IF
+    ! Check that the file exists
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 2000  ! Clean up
+    err_stat = Open_Binary_File( Filename, fid, Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Read the dimensions     
     ! -------------------
-    CALL Read_Dimensions( Filename, FileID, &
-                          n_File_Channels, n_File_Profiles, &
-                          IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
-
+    READ( fid,IOSTAT=io_stat ) n_File_Channels, n_File_Profiles
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions from ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
     ! Check that n_Channels is zero
     IF ( n_File_Channels /= 0 ) THEN
-      WRITE( Message, '("n_Channels dimensions in ",a," is not zero for a rank-1 ",&
-                        &"(i.e. profiles only) Atmosphere structure read." )' ) &
-                      TRIM(Filename)
-      GOTO 1000
+      WRITE( msg,'("n_Channels dimensions in ",a," is not zero for a rank-1 ",&
+                  &"(i.e. profiles only) Atmosphere structure read.")' ) TRIM(Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
-    
     ! Check if n_Profiles > size of output array
     n_Input_Profiles = SIZE(Atmosphere)
     IF ( n_File_Profiles > n_Input_Profiles ) THEN
-      WRITE( Message, '( "Number of profiles, ", i0, " > size of the output Atmosphere ", &
-                        &"structure array, ", i0, ". Only the first ", i0, &
-                        &" Atmosphere structures will be read." )' ) &
-                      n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+      WRITE( msg,'("Number of profiles, ",i0," > size of the output Atmosphere ", &
+                  &"structure array, ",i0,". Only the first ",i0, &
+                  &" Atmosphere structures will be read.")' ) &
+                  n_File_Profiles, n_Input_Profiles, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING, Message_Log=Message_Log )
     END IF
     n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
@@ -707,80 +435,69 @@ CONTAINS
     ! Loop over all the profiles
     ! --------------------------
     Profile_Loop: DO m = 1, n_Input_Profiles
-
-      ! Read the structure
-      Error_Status = Read_Atmosphere_Record( FileID, &
-                                             Atmosphere(m), &
-                                             Message_Log=Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error reading Atmosphere element (",i0,") from ", a )' ) &
-                        m, TRIM(Filename)
-        GOTO 1000  ! Clean up
+      err_stat = Read_Record( fid, Atmosphere(m), Message_Log=Message_Log, Debug=Debug_Quiet )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error reading Atmosphere element (",i0,") from ",a)' ) &
+                   m, TRIM(Filename)
+        CALL Read_Cleanup(Close_File=.TRUE.); RETURN
       END IF
-
     END DO Profile_Loop
-
-
-    ! Save optional return arguments
-    ! ------------------------------
-    IF ( PRESENT(n_Channels) ) n_Channels = 0
-    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
 
 
     ! Close the file
     ! --------------
-    CLOSE( FileID, STATUS='KEEP',   &
-                   IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = WARNING
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    CLOSE( fid, IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Read_Cleanup(); RETURN
     END IF
+
+    ! Set the return values
+    ! ---------------------
+    IF ( PRESENT(n_Channels) ) n_Channels = 0
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      WRITE( Message, '( "Number of profiles read from ", a, ": ", i0 )' ) &
-                      TRIM(Filename), n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+      WRITE( msg,'("Number of profiles read from ",a,": ",i0)' ) TRIM(Filename), n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION, Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_Atmosphere( Atmosphere, &
-                                              Message_Log=Message_Log )
+  CONTAINS
+  
+    SUBROUTINE Read_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,IOSTAT=io_stat )
+          IF ( io_stat /= 0 ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+        END IF
+      END IF
+      ! Destroy the structure
+      err_stat = CRTM_Destroy_Atmosphere( Atmosphere, Message_Log=Message_Log)
+      IF ( err_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error destroying Atmosphere structure during error cleanup.'
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Read_CleanUp
+  
   END FUNCTION Read_Atmosphere_Rank1
 
 
-  FUNCTION Read_Atmosphere_Rank2( Filename    , &  ! Input
-                                  Atmosphere  , &  ! Output
-                                  Quiet       , &  ! Optional input
-                                  n_Channels  , &  ! Optional output
-                                  n_Profiles  , &  ! Optional output
-                                  RCS_Id      , &  ! Revision control
-                                  Message_Log ) &  ! Error messaging
-                                RESULT ( Error_Status )
+  FUNCTION Read_Atmosphere_Rank2( Filename   , &  ! Input
+                                  Atmosphere , &  ! Output
+                                  Quiet      , &  ! Optional input
+                                  n_Channels , &  ! Optional output
+                                  n_Profiles , &  ! Optional output
+                                  RCS_Id     , &  ! Revision control
+                                  Message_Log, &  ! Error messaging
+                                  Debug      ) &  ! Debug output control
+                                RESULT( err_stat )
     ! Arguments
     CHARACTER(*),               INTENT(IN)     :: Filename
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere(:,:)  ! L x M
@@ -789,179 +506,146 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(OUT)    :: n_Profiles
     CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,          OPTIONAL, INTENT(IN)     :: Debug
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Atmosphere_Binary(L x M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: Destroy_Status
-    INTEGER :: FileID
+    INTEGER :: Debug_Quiet
+    INTEGER :: io_stat
+    INTEGER :: fid
     INTEGER :: l, n_File_Channels, n_Input_Channels
     INTEGER :: m, n_File_Profiles, n_Input_Profiles
  
 
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Message = 'File '//TRIM(Filename)//' not found.'
-      GOTO 2000  ! Clean up
-    END IF
-
-    ! Check Quiet optional argument
+    ! Default action is to output info messages...
     Noisy = .TRUE.
+    ! ...unless the Quiet optional argument is set.
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+    ! Default action is to NOT output debug messages...
+    Debug_Quiet = SET
+    ! ...unless the Debug optional argument is set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+    END IF
+    ! Check that the file exists
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 2000  ! Clean up
+    err_stat = Open_Binary_File( Filename, fid, Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Read the dimensions     
     ! -------------------
-    CALL Read_Dimensions( Filename, FileID, &
-                          n_File_Channels, n_File_Profiles, &
-                          IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
-
+    READ( fid,IOSTAT=io_stat ) n_File_Channels, n_File_Profiles
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions from ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
     ! Check if n_Channels in file is > size of output array
-    n_Input_Channels = SIZE(Atmosphere,1)
+    n_Input_Channels = SIZE(Atmosphere,DIM=1)
     IF ( n_File_Channels > n_Input_Channels ) THEN
-      WRITE( Message, '( "Number of channels, ",i0," > size of the output Atmosphere ", &
-                        &"structure array dimension, ",i0,". Only the first ",i0, &
-                        &" channel Atmosphere structures will be read." )' ) &
-                      n_File_Channels, n_Input_Channels, n_Input_Channels
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+      WRITE( msg,'("Number of channels, ",i0," > size of the output Atmosphere ", &
+                  &"structure array dimension, ",i0,". Only the first ",i0, &
+                  &" channel Atmosphere structures will be read.")' ) &
+                  n_File_Channels, n_Input_Channels, n_Input_Channels
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING, Message_Log=Message_Log )
     END IF
     n_Input_Channels = MIN(n_Input_Channels, n_File_Channels)
-    
     ! Check if n_Profiles in file is > size of output array
-    n_Input_Profiles = SIZE(Atmosphere,2)
+    n_Input_Profiles = SIZE(Atmosphere,DIM=2)
     IF ( n_File_Profiles > n_Input_Profiles ) THEN
-      WRITE( Message, '( "Number of profiles, ",i0," > size of the output Atmosphere ", &
-                        &"structure array dimension, ",i0,". Only the first ",i0, &
-                        &" profile Atmosphere structures will be read." )' ) &
-                      n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+      WRITE( msg, '( "Number of profiles, ",i0," > size of the output Atmosphere ", &
+                    &"structure array dimension, ",i0,". Only the first ",i0, &
+                    &" profile Atmosphere structures will be read.")' ) &
+                    n_File_Profiles, n_Input_Profiles, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING, Message_Log=Message_Log )
     END IF
     n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
 
-    ! Loop over all the profiles
-    ! --------------------------
+    ! Loop over all the profiles and channels
+    ! ---------------------------------------
     Profile_Loop: DO m = 1, n_Input_Profiles
       Channel_Loop: DO l = 1, n_Input_Channels
-  
-        ! Read the structure
-        Error_Status = Read_Atmosphere_Record( FileID, &
-                                               Atmosphere(l,m), &
-                                               Message_Log=Message_Log )
-
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message, '( "Error reading Atmosphere element (",i0,",",i0,") from ", a )' ) &
-                          l, m, TRIM(Filename)
-          GOTO 1000  ! Clean up
+        err_stat = Read_Record( fid, Atmosphere(l,m), Message_Log=Message_Log, Debug=Debug )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading Atmosphere element (",i0,",",i0,") from ",a)' ) &
+                     l, m, TRIM(Filename)
+          CALL Read_Cleanup(Close_File=.TRUE.); RETURN
         END IF
-
       END DO Channel_Loop
     END DO Profile_Loop
 
 
-    ! Save optional return arguments
-    ! ------------------------------
-    IF ( PRESENT(n_Channels) ) n_Channels = n_Input_Channels
-    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
-
-
     ! Close the file
     ! --------------
-    CLOSE( FileID, STATUS='KEEP',   &
-                   IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = WARNING
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    CLOSE( fid,IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Read_Cleanup(); RETURN
     END IF
+
+
+    ! Set the return values
+    ! ---------------------
+    IF ( PRESENT(n_Channels) ) n_Channels = n_Input_Channels
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      WRITE( Message, '("Number of channels and profiles read from ",a,": ",i0,1x,i0 )' ) &
-                      TRIM(Filename), n_Input_Channels, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+      WRITE( msg,'("Number of channels and profiles read from ",a,": ",i0,1x,i0)' ) &
+                 TRIM(Filename), n_Input_Channels, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION, Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_Atmosphere( Atmosphere, &
-                                              Message_Log=Message_Log )
+  CONTAINS
+  
+    SUBROUTINE Read_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,IOSTAT=io_stat )
+          IF ( io_stat /= 0 ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+        END IF
+      END IF
+      ! Destroy the structure
+      err_stat = CRTM_Destroy_Atmosphere( Atmosphere, Message_Log=Message_Log)
+      IF ( err_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error destroying Atmosphere structure during error cleanup.'
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Read_CleanUp
+  
   END FUNCTION Read_Atmosphere_Rank2
 
 
-  ! -------------------------------------------
-  ! Utility routine to read the file dimensions
-  ! -------------------------------------------
-  SUBROUTINE Read_Dimensions( Filename, FileID, &
-                              n_Channels, n_Profiles, &
-                              IO_Status, Message )
-    ! Arguments
-    CHARACTER(*), INTENT(IN)  :: Filename
-    INTEGER,      INTENT(IN)  :: FileID
-    INTEGER,      INTENT(OUT) :: n_Channels
-    INTEGER,      INTENT(OUT) :: n_Profiles
-    INTEGER,      INTENT(OUT) :: IO_Status
-    CHARACTER(*), INTENT(OUT) :: Message
-    ! Read the dimensions from file    
-    READ( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '("Error reading data dimensions from ", a, &
-                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-    END IF
-  END SUBROUTINE Read_Dimensions
-
-
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Write_Atmosphere_Binary
@@ -1048,271 +732,603 @@ CONTAINS
 !       - If an error occurs *during* the write phase, the output file is deleted
 !         before returning to the calling routine.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_Atmosphere_Rank1( Filename    , &  ! Input
-                                   Atmosphere  , &  ! Input
-                                   Quiet       , &  ! Optional input
-                                   RCS_Id      , &  ! Revision control
-                                   Message_Log ) &  ! Error messaging
-                                 RESULT ( Error_Status )
+  FUNCTION Write_Atmosphere_Rank1( Filename   , &  ! Input
+                                   Atmosphere , &  ! Input
+                                   Quiet      , &  ! Optional input
+                                   RCS_Id     , &  ! Revision control
+                                   Message_Log, &  ! Error messaging
+                                   Debug      ) &  ! Debug output control
+                                 RESULT( err_stat )
     ! Arguments
     CHARACTER(*),               INTENT(IN)  :: Filename
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere(:)  ! M
     INTEGER,          OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Atmosphere_Binary(M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: FileID
+    INTEGER :: Debug_Quiet
+    INTEGER :: io_stat
+    INTEGER :: fid
     INTEGER :: m, n_Output_Profiles
  
     ! Set up
     ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Any invalid profiles?
-    IF ( ANY( Atmosphere%n_Layers    == 0 .OR. &
-              Atmosphere%n_Absorbers == 0      ) ) THEN
-      Message = 'Zero dimension profiles in input!'
-      GOTO 1000
-    END IF
-    n_Output_Profiles = SIZE(Atmosphere)
-
-    ! Check Quiet optional argument
+    err_stat = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    ! Default action is to output info messages...
     Noisy = .TRUE.
-    IF ( PRESENT( Quiet ) ) THEN
+    ! ...unless the Quiet optional argument is set.
+    IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
+    ! Default action is to NOT output debug messages...
+    Debug_Quiet = SET
+    ! ...unless the Debug optional argument is set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+    END IF
+    ! Any invalid profiles?
+    IF ( ANY(Atmosphere%n_Layers    == 0 .OR. &
+             Atmosphere%n_Absorbers == 0      ) ) THEN
+      msg = 'Zero dimension profiles in input!'
+      CALL Write_Cleanup(); RETURN
+    END IF
+    n_Output_Profiles = SIZE(Atmosphere)
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     For_Output  = SET, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 1000
+    err_stat = Open_Binary_File( Filename, fid, For_Output=SET, Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Write the dimensions
     ! --------------------
-    CALL Write_Dimensions( Filename, FileID, 0, n_Output_Profiles, IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
+    WRITE( fid,IOSTAT=io_stat ) 0, n_Output_Profiles
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing data dimensions to ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
 
     
-    ! Loop over all the profiles
-    ! --------------------------
+    ! Write the data
+    ! --------------
     Profile_Loop: DO m = 1, n_Output_Profiles
-
-      ! Write the structure data
-      Error_Status = Write_Atmosphere_Record( FileID, &
-                                              Atmosphere(m), &
-                                              Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error writing Atmosphere element (",i0,") to ", a )' ) &
-                        m, TRIM(Filename)
-        GOTO 1000
+      err_stat = Write_Record( fid, Atmosphere(m), Message_Log=Message_Log, Debug=Debug_Quiet )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error writing Atmosphere element (",i0,") to ",a)' ) m, TRIM(Filename)
+        CALL Write_Cleanup(Close_File=.TRUE.); RETURN
       END IF
-
     END DO Profile_Loop
 
 
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, STATUS='KEEP',   &
-                   IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    ! Close the file (if error, no delete)
+    ! ------------------------------------
+    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      WRITE( Message, '( "Number of profiles written to ", a, ": ", i0 )' ) &
-                      TRIM(Filename), n_Output_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+      WRITE( msg,'("Number of profiles written to ",a,": ",i0)' ) &
+                 TRIM(Filename), n_Output_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION, Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+  CONTAINS
+  
+    SUBROUTINE Write_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+          IF ( io_stat /= 0 ) &
+            msg = TRIM(msg)//'; Error deleting output file during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_Atmosphere_Rank1
 
 
-  FUNCTION Write_Atmosphere_Rank2( Filename    , &  ! Input
-                                   Atmosphere  , &  ! Input
-                                   Quiet       , &  ! Optional input
-                                   RCS_Id      , &  ! Revision control
-                                   Message_Log ) &  ! Error messaging
-                                 RESULT ( Error_Status )
+  FUNCTION Write_Atmosphere_Rank2( Filename   , &  ! Input
+                                   Atmosphere , &  ! Input
+                                   Quiet      , &  ! Optional input
+                                   RCS_Id     , &  ! Revision control
+                                   Message_Log, &  ! Error messaging
+                                   Debug      ) &  ! Debug output control
+                                 RESULT ( err_stat )
     ! Arguments
     CHARACTER(*),               INTENT(IN)  :: Filename
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atmosphere(:,:)  ! L x M
     INTEGER,          OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_Atmosphere_Binary(L x M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: FileID
+    INTEGER :: Debug_Quiet
+    INTEGER :: io_stat
+    INTEGER :: fid
     INTEGER :: l, n_Output_Channels
     INTEGER :: m, n_Output_Profiles
  
     ! Set up
     ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Any invalid profiles?
-    IF ( ANY( Atmosphere%n_Layers    == 0 .OR. &
-              Atmosphere%n_Absorbers == 0      ) ) THEN
-      Message = 'Zero dimension profiles in input!'
-      GOTO 1000
-    END IF
-    n_Output_Channels = SIZE(Atmosphere,1)
-    n_Output_Profiles = SIZE(Atmosphere,2)
-
-    ! Check Quiet optional argument
+    err_stat = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    ! Default action is to output info messages...
     Noisy = .TRUE.
-    IF ( PRESENT( Quiet ) ) THEN
+    ! ...unless the Quiet optional argument is set.
+    IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
+    ! Default action is to NOT output debug messages...
+    Debug_Quiet = SET
+    ! ...unless the Debug optional argument is set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+    END IF
+    ! Any invalid profiles?
+    IF ( ANY(Atmosphere%n_Layers    == 0 .OR. &
+             Atmosphere%n_Absorbers == 0      ) ) THEN
+      msg = 'Zero dimension profiles in input!'
+      CALL Write_Cleanup(); RETURN
+    END IF
+    n_Output_Channels = SIZE(Atmosphere,DIM=1)
+    n_Output_Profiles = SIZE(Atmosphere,DIM=2)
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     For_Output  = SET, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 1000
+    err_stat = Open_Binary_File( TRIM(Filename), &
+                                 fid, &
+                                 For_Output  = SET, &
+                                 Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Write the dimensions
     ! --------------------
-    CALL Write_Dimensions( Filename, FileID, n_Output_Channels, n_Output_Profiles, &
-                           IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
+    WRITE( fid,IOSTAT=io_stat ) n_Output_Channels, n_Output_Profiles
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing data dimensions to ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
 
 
-    ! Loop over all the data
-    ! ----------------------
+    ! Write the data
+    ! --------------
     Profile_Loop: DO m = 1, n_Output_Profiles
       Channel_Loop: DO l = 1, n_Output_Channels
-
-        ! Write the structure data
-        Error_Status = Write_Atmosphere_Record( FileID, &
-                                                Atmosphere(l,m), &
-                                                Message_Log=Message_Log )
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message, '("Error writing Atmosphere element (",i0,",",i0,") to ",a)' ) &
-                          l, m, TRIM(Filename)
-          GOTO 1000
+        err_stat = Write_Record( fid, Atmosphere(l,m), Message_Log=Message_Log, Debug=Debug_Quiet )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error writing Atmosphere element (",i0,",",i0,") to ",a)' ) &
+                     l, m, TRIM(Filename)
+          CALL Write_Cleanup(Close_File=.TRUE.); RETURN
         END IF
-
       END DO Channel_Loop
     END DO Profile_Loop
 
 
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, STATUS='KEEP',   &
-                   IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    ! Close the file (if error, no delete)
+    ! ------------------------------------
+    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      WRITE( Message, '("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
-                      TRIM(Filename), n_Output_Channels, n_Output_Profiles
+      WRITE( msg,'("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
+                 TRIM(Filename), n_Output_Channels, n_Output_Profiles
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
+                            TRIM(msg), &
                             INFORMATION, &
                             Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+  CONTAINS
+  
+    SUBROUTINE Write_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+          IF ( io_stat /= 0 ) &
+            msg = TRIM(msg)//'; Error deleting output file during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_Atmosphere_Rank2
 
 
-  ! --------------------------------------------
-  ! Utility routine to write the file dimensions
-  ! --------------------------------------------
-  SUBROUTINE Write_Dimensions( Filename, FileID, n_Channels, n_Profiles, &
-                               IO_Status, Message )
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       Read_Record
+!
+! PURPOSE:
+!       Utility function to read a single atmosphere data record
+!
+! CALLING SEQUENCE:
+!       Error_Status = Read_Record( FileID                 , &  ! Input
+!                                   Atmosphere             , &  ! Output
+!                                   Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       FileID:       Logical unit number from which to read data.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Atmosphere:   CRTM Atmosphere structure containing the data read in.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Atmosphere_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the record read was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!----------------------------------------------------------------------------------
+
+  FUNCTION Read_Record( fid        , &  ! Input
+                        atm        , &  ! Output
+                        Message_Log, &  ! Error messaging
+                        Debug      ) &  ! Debug output control
+                      RESULT( err_stat )
     ! Arguments
-    CHARACTER(*), INTENT(IN)  :: Filename
-    INTEGER,      INTENT(IN)  :: FileID
-    INTEGER,      INTENT(IN)  :: n_Channels
-    INTEGER,      INTENT(IN)  :: n_Profiles
-    INTEGER,      INTENT(OUT) :: IO_Status
-    CHARACTER(*), INTENT(OUT) :: Message
-    ! Write the dimensions to file    
-    WRITE( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '("Error writing data dimensions to ", a, &
-                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-      CLOSE( FileID, STATUS=WRITE_ERROR_STATUS )
+    INTEGER,                    INTENT(IN)     :: fid
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: atm
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,          OPTIONAL, INTENT(IN)     :: Debug
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_Atmosphere_Binary(Record)'
+    ! Function variables
+    CHARACTER(ML)  :: msg
+    CHARACTER(256) :: fname
+    INTEGER :: io_stat
+    INTEGER :: n_Layers 
+    INTEGER :: n_Absorbers
+    INTEGER :: n_Clouds
+    INTEGER :: n_Aerosols
+
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Read the data dimensions
+    ! ------------------------
+    READ( fid,IOSTAT=io_stat ) n_Layers, &
+                               n_Absorbers, &
+                               n_Clouds, &
+                               n_Aerosols
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'( "Error reading atm data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
     END IF
+
+
+    ! Allocate the atm structure
+    ! ---------------------------------
+    err_stat = CRTM_Allocate_Atmosphere( n_Layers, &
+                                         n_Absorbers, &
+                                         n_Clouds, &
+                                         n_Aerosols, &
+                                         atm, &
+                                         Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error allocating atm data structure.'
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+
+
+    ! Read the climatology model flag and absorber IDs
+    ! ------------------------------------------------
+    READ( fid,IOSTAT=io_stat ) atm%Climatology, &
+                               atm%Absorber_ID, &
+                               atm%Absorber_Units
+
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading atm climatology and absorber IDs. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+
+
+    ! Read the atmospheric profile data
+    ! ---------------------------------
+    READ( fid,IOSTAT=io_stat ) atm%Level_Pressure, &
+                               atm%Pressure, &
+                               atm%Temperature, &
+                               atm%Absorber
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading atmospheric profile data. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+
+    ! Read the cloud data
+    ! -------------------
+    IF ( n_Clouds > 0 ) THEN
+      ! Get the data filename
+      INQUIRE( UNIT=fid,NAME=fname )
+      ! Read the cloud data
+      err_stat = CRTM_Read_Cloud_Binary( fname, &
+                                         atm%Cloud, &
+                                         Quiet        =Debug, &
+                                         No_File_Close=SET, &
+                                         No_Allocate  =SET, &
+                                         Message_Log  =Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error reading atm Cloud(s)'
+        CALL Read_Record_Cleanup(); RETURN
+      END IF
+    END IF
+
+
+    ! Read the aerosol data
+    ! ---------------------
+    IF ( n_Aerosols > 0 ) THEN
+      ! Get the data filename
+      INQUIRE( UNIT=fid,NAME=fname )
+      ! Read the aerosol data
+      err_stat = CRTM_Read_Aerosol_Binary( fname, &
+                                           atm%Aerosol, &
+                                           Quiet        =Debug, &
+                                           No_File_Close=SET, &
+                                           No_Allocate  =SET, &
+                                           Message_Log  =Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error reading atm Aerosol(s)'
+        CALL Read_Record_Cleanup(); RETURN
+      END IF
+    END IF
+
+  CONTAINS
   
-  END SUBROUTINE Write_Dimensions
+    SUBROUTINE Read_Record_Cleanup()
+      ! Deallocate atmosphere structure
+      err_stat = CRTM_Destroy_Atmosphere( atm, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error destroying atmosphere structure during error cleanup'
+      ! Close input file
+      CLOSE( fid,IOSTAT=io_stat )
+      IF ( io_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error closing file during error cleanup'
+      ! Report error(s)
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Read_Record_Cleanup
+
+  END FUNCTION Read_Record
+
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       Write_Record
+!
+! PURPOSE:
+!       Function to write a single atmosphere data record
+!
+! CALLING SEQUENCE:
+!       Error_Status = Write_Record( FileID                 , &  ! Input
+!                                    Atmosphere             , &  ! Input
+!                                    Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       FileID:       Logical unit number to which data is written
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       Atmosphere:   CRTM Atmosphere structure containing the data to write.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Atmosphere_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the record write was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!----------------------------------------------------------------------------------
+
+  FUNCTION Write_Record( fid        , &  ! Input
+                         atm        , &  ! Input
+                         Message_Log, &  ! Error messaging
+                         Debug      ) &  ! Debug output control
+                       RESULT( err_stat )
+    ! Arguments
+    INTEGER,                    INTENT(IN)  :: fid
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: atm
+    CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Debug
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_CRTM_Atmosphere_Binary(Record)'
+    ! Function variables
+    CHARACTER(ML)  :: msg
+    CHARACTER(256) :: fname
+    INTEGER :: io_stat
+ 
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+    ! Check structure pointer association status
+    IF ( .NOT. CRTM_Associated_Atmosphere( atm, Skip_Cloud=SET, Skip_Aerosol=SET ) ) THEN
+      msg = 'Some or all INPUT Atmosphere pointer members are NOT associated.'
+      CALL Write_Record_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the data dimensions
+    ! -------------------------
+    WRITE( fid,IOSTAT=io_stat ) atm%n_Layers, &
+                                atm%n_Absorbers, &
+                                atm%n_Clouds, &
+                                atm%n_Aerosols
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing Atmosphere data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Record_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the climatology model flag and absorber IDs
+    ! -------------------------------------------------
+    WRITE( fid,IOSTAT=io_stat ) atm%Climatology, &
+                                atm%Absorber_ID, &
+                                atm%Absorber_Units
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing Atmosphere climatology and absorber IDs. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Record_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the atmospheric profile data
+    ! ----------------------------------
+    WRITE( fid,IOSTAT=io_stat ) atm%Level_Pressure, &
+                                atm%Pressure, &
+                                atm%Temperature, &
+                                atm%Absorber
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing atmospheric profile data. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Record_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the cloud data
+    ! --------------------
+    IF ( atm%n_Clouds > 0 ) THEN
+      ! Get the data filename
+      INQUIRE( UNIT=fid,NAME=fname )
+      ! Write the cloud data
+      err_stat = CRTM_Write_Cloud_Binary( fname, &
+                                          atm%Cloud, &
+                                          Quiet        =Debug, &
+                                          No_File_Close=SET, &
+                                          Message_Log  =Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error writing Atmosphere Cloud(s)'
+        CALL Write_Record_Cleanup(); RETURN
+      END IF
+    END IF
+
+
+    ! Write the aerosol data
+    ! ----------------------
+    IF ( atm%n_Aerosols > 0 ) THEN
+      ! Get the data filename
+      INQUIRE( UNIT=fid,NAME=fname )
+      ! Write the aerosol data
+      err_stat = CRTM_Write_Aerosol_Binary( fname, &
+                                            atm%Aerosol, &
+                                            Quiet        =Debug, &
+                                            No_File_Close=SET, &
+                                            Message_Log  =Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error writing Atmosphere Aerosol(s)'
+        CALL Write_Record_Cleanup(); RETURN
+      END IF
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE Write_Record_Cleanup()
+      ! Close and delete output file
+      CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+      IF ( io_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error closing file during error cleanup'
+      ! Report error(s)
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Write_Record_Cleanup
+    
+  END FUNCTION Write_Record
 
 END MODULE CRTM_Atmosphere_Binary_IO

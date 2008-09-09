@@ -227,6 +227,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Allocate_Cloud, &
                                    CRTM_Assign_Cloud, &
                                    CRTM_Equal_Cloud, &
+                                   CRTM_SetLayers_Cloud, &
                                    CRTM_Sum_Cloud, &
                                    CRTM_Zero_Cloud
   USE CRTM_Aerosol_Define  , ONLY: N_VALID_AEROSOL_TYPES, &
@@ -246,6 +247,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Allocate_Aerosol, &
                                    CRTM_Assign_Aerosol, &
                                    CRTM_Equal_Aerosol, &
+                                   CRTM_SetLayers_Aerosol, &
                                    CRTM_Sum_Aerosol, &
                                    CRTM_Zero_Aerosol
   ! Disable implicit typing
@@ -277,6 +279,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Allocate_Cloud
   PUBLIC :: CRTM_Assign_Cloud
   PUBLIC :: CRTM_Equal_Cloud
+  PUBLIC :: CRTM_SetLayers_Cloud
   ! CRTM_Aerosol parameters
   PUBLIC :: N_VALID_AEROSOL_TYPES
   PUBLIC :: NO_AEROSOL
@@ -299,6 +302,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Allocate_Aerosol
   PUBLIC :: CRTM_Assign_Aerosol
   PUBLIC :: CRTM_Equal_Aerosol
+  PUBLIC :: CRTM_SetLayers_Aerosol
   ! CRTM_Atmosphere parameters
   PUBLIC :: N_VALID_ABSORBER_IDS
   PUBLIC :: INVALID_ABSORBER_ID
@@ -366,6 +370,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Allocate_Atmosphere
   PUBLIC :: CRTM_Assign_Atmosphere
   PUBLIC :: CRTM_Equal_Atmosphere
+  PUBLIC :: CRTM_SetLayers_Atmosphere
   PUBLIC :: CRTM_Sum_Atmosphere
   PUBLIC :: CRTM_Zero_Atmosphere
   ! Utility routines in this module
@@ -403,6 +408,12 @@ MODULE CRTM_Atmosphere_Define
     MODULE PROCEDURE Equal_Rank1
     MODULE PROCEDURE Equal_Rank2
   END INTERFACE CRTM_Equal_Atmosphere
+
+  INTERFACE CRTM_SetLayers_Atmosphere
+    MODULE PROCEDURE SetLayers_Scalar
+    MODULE PROCEDURE SetLayers_Rank1
+    MODULE PROCEDURE SetLayers_Rank2
+  END INTERFACE CRTM_SetLayers_Atmosphere
 
   INTERFACE CRTM_Sum_Atmosphere
     MODULE PROCEDURE Sum_Scalar
@@ -2633,6 +2644,226 @@ CONTAINS
   END FUNCTION Equal_Rank2
   
   
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SetLayers_Atmosphere
+! 
+! PURPOSE:
+!       Function to set the number of layers to use in a CRTM_Atmosphere
+!       structure.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_SetLayers_Atmosphere( n_Layers               , &  ! Input
+!                                                 Atmosphere             , &  ! In/Output
+!                                                 Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       n_Layers:     The value to set the n_Layers component of the 
+!                     Atmosphere structure, as well as any of its
+!                     Cloud or Aerosol structure components.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Atmosphere_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       Atmosphere:   Atmosphere structure in which the n_Layers dimension
+!                     is to be updated.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Atmosphere_type
+!                     DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                     ATTRIBUTES: INTENT(IN OUT)
+! OUTPUT ARGUMENTS:
+!       Atmosphere:   On output, the atmosphere structure with the updated
+!                     n_Layers dimension.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Atmosphere_type
+!                     DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      None
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the layer reset was successful
+!                        == FAILURE an error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       The argument Atmosphere is INTENT(IN OUT) and is modified upon output.
+!
+! COMMENTS:
+!       - Note that the n_Layers input is *ALWAYS* scalar. Thus, all Atmosphere
+!         elements will be set to the same number of layers.
+!
+!       - If n_Layers <= Atmosphere%Max_Layers, then only the dimension value
+!         of the structure and any sub-structures are changed.
+!
+!       - If n_Layers > Atmosphere%Max_Layers, then the entire structure is
+!         reallocated to the required number of layers. No other dimensions
+!         of the structure or substructures are altered.
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION SetLayers_Scalar( n_Layers   , &  ! Input
+                             Atmosphere , &  ! In/Output
+                             Message_Log) &  ! Error Messaging
+                           RESULT( err_stat )
+    ! Arguments
+    INTEGER,                    INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Atmosphere(scalar)'
+    ! Local variables
+    INTEGER :: n_Absorbers 
+    INTEGER :: Max_Clouds, n_Clouds    
+    INTEGER :: Max_Aerosols, n_Aerosols  
+
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+    
+    ! Set dimension or allocate based on current size
+    ! -----------------------------------------------        
+    IF ( n_Layers < Atmosphere%Max_Layers ) THEN
+      Atmosphere%n_Layers = n_Layers
+      ! Reset cloud structure
+      IF ( Atmosphere%n_Clouds > 0 ) THEN
+        err_stat = CRTM_SetLayers_Cloud( n_Layers, Atmosphere%Cloud, Message_Log=Message_Log )
+        IF ( err_stat /= SUCCESS ) THEN
+          CALL Display_Message( ROUTINE_NAME, 'Error resetting cloud component', &
+                                err_stat, Message_Log=Message_Log )
+          RETURN
+        END IF
+      END IF
+      ! Reset aerosol structure
+      IF ( Atmosphere%n_Aerosols > 0 ) THEN
+        err_stat = CRTM_SetLayers_Aerosol( n_Layers, Atmosphere%Aerosol, Message_Log=Message_Log )
+        IF ( err_stat /= SUCCESS ) THEN
+          CALL Display_Message( ROUTINE_NAME, 'Error resetting Aerosol component', &
+                                err_stat, Message_Log=Message_Log )
+          RETURN
+        END IF
+      END IF
+      ! Reinitialise
+      CALL CRTM_Zero_Atmosphere( Atmosphere )
+    ELSE
+      ! Save other dimensions
+      n_Absorbers  = Atmosphere%n_Absorbers 
+      Max_Clouds   = MAX(Atmosphere%n_Clouds, Atmosphere%Max_Clouds)
+      n_Clouds     = MIN(Atmosphere%n_Clouds, Atmosphere%Max_Clouds)
+      Max_Aerosols = MAX(Atmosphere%n_Aerosols, Atmosphere%Max_Aerosols)
+      n_Aerosols   = MIN(Atmosphere%n_Aerosols, Atmosphere%Max_Aerosols)
+      ! Deallocate
+      err_stat = CRTM_Destroy_Atmosphere( Atmosphere, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error deallocating atmosphere structure', &
+                              err_stat, Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Reallocate
+      err_stat = CRTM_Allocate_Atmosphere( n_Layers, n_Absorbers, Max_Clouds, Max_Aerosols, &
+                                           Atmosphere, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error reallocating atmosphere structure', &
+                              err_stat, Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Restore cloud and aerosol use dimensions
+      Atmosphere%n_Clouds   = n_Clouds
+      Atmosphere%n_Aerosols = n_Aerosols
+    END IF
+
+  END FUNCTION SetLayers_Scalar
+
+
+  FUNCTION SetLayers_Rank1( n_Layers    , &  ! Input
+                            Atmosphere  , &  ! In/Output
+                            Message_Log ) &  ! Error Messaging
+                          RESULT( err_stat )
+    ! Arguments
+    INTEGER,                    INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere(:)
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Atmosphere(rank-1)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: m, set_stat
+    
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Loop over elements. If an error is encountered,
+    ! report it but continue with the reset.
+    ! -----------------------------------------------
+    DO m = 1, SIZE(Atmosphere)
+      set_stat = SetLayers_Scalar( n_Layers, Atmosphere(m), Message_Log=Message_Log )
+      IF ( set_stat /= SUCCESS ) THEN
+        err_stat = FAILURE
+        WRITE( msg,'("Error resetting element ",i0," Atmosphere array n_Layers")' ) m
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+      END IF
+    END DO
+  END FUNCTION SetLayers_Rank1
+
+
+  FUNCTION SetLayers_Rank2( n_Layers    , &  ! Input
+                            Atmosphere  , &  ! In/Output
+                            Message_Log ) &  ! Error Messaging
+                          RESULT( err_stat )
+    ! Arguments
+    INTEGER,                    INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere(:,:)
+    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Atmosphere(rank-2)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: l, m, set_stat
+    
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Loop over elements. If an error is encountered,
+    ! report it but continue with the reset.
+    ! -----------------------------------------------
+    DO m = 1, SIZE(Atmosphere,DIM=2)
+      DO l = 1, SIZE(Atmosphere,DIM=1)
+        set_stat = SetLayers_Scalar( n_Layers, Atmosphere(l,m), Message_Log=Message_Log )
+        IF ( set_stat /= SUCCESS ) THEN
+          err_stat = FAILURE
+          WRITE( msg,'("Error resetting element (",i0,",",i0,") Atmosphere array n_Layers")' ) l, m
+          CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+        END IF
+      END DO
+    END DO
+  END FUNCTION SetLayers_Rank2
+
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:

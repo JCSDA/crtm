@@ -60,9 +60,11 @@ PROGRAM SRF_ASCII2NC
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'SRF_ASCII2NC'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
-
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
+  ! Invalid NCEP sensor ID. The NCEP sensor ID is no longer used and this
+  ! is a temporary fix until the SRF software is updated.
+  INTEGER, PARAMETER :: INVALID_NCEP_SENSOR_ID = -1
 
 
   ! ---------
@@ -76,7 +78,7 @@ PROGRAM SRF_ASCII2NC
   CHARACTER(256) :: History
   CHARACTER(256) :: Sensor_Name
   CHARACTER(256) :: Platform_Name
-  CHARACTER(256) :: Comment
+  CHARACTER(2000) :: Comment
   INTEGER :: ASCII_SRF_FileID
   INTEGER :: Error_Status
   INTEGER :: n_Channels, l
@@ -146,7 +148,7 @@ PROGRAM SRF_ASCII2NC
 
     ! Construct the SRF filenames
     ! ---------------------------
-    ASCII_SRF_Filename = TRIM(SensorInfo%File_Prefix)//'.srf'
+    ASCII_SRF_Filename = TRIM(SensorInfo%Sensor_Id)//'.srf'
     NC_SRF_Filename    = TRIM(ASCII_SRF_Filename)//'.nc'
 
 
@@ -201,7 +203,7 @@ PROGRAM SRF_ASCII2NC
     ! -----------------------------
     Error_Status = Create_SRF_netCDF( TRIM(NC_SRF_Filename), &
                                       Channel_List(1:n_Channels), &
-                                      NCEP_Sensor_ID   = SensorInfo%NCEP_Sensor_ID, &
+                                      NCEP_Sensor_ID   = INVALID_NCEP_SENSOR_ID, &
                                       WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID, &
                                       WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID, &
                                       Title            = TRIM(Title), &
@@ -241,7 +243,7 @@ PROGRAM SRF_ASCII2NC
       ! allocation clears the structure and the
       ! netCDF write double checks these values
       ! against the file contents.
-      SRF%NCEP_Sensor_Id   = SensorInfo%NCEP_Sensor_ID
+      SRF%NCEP_Sensor_Id   = INVALID_NCEP_SENSOR_ID
       SRF%WMO_Satellite_Id = SensorInfo%WMO_Satellite_ID
       SRF%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_ID
       

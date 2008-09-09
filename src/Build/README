@@ -1,25 +1,32 @@
-JCSDA CRTM v1.1 Build Instructions
+JCSDA CRTM v1.2 Build Instructions
 ==================================
+
+$Id:$
+
 
 0) Several targets are available for specific compilers. The target names are:
      ibm  
      gfortran
      sgi    (untested)  
      sun    (untested)
+     hp     (untested)
      intel
      lahey
      pgi
      g95
+     absoft (untested)
    Each target has a corresponding debug target, <name>_debug, that uses the typical
    set of compiler switches for debugging code,
      ibm_debug  
      gfortran_debug
-     sgi_debug    (untested)  
-     sun_debug    (untested)
+     sgi_debug      (untested)  
+     sun_debug      (untested)
+     hp_debug       (untested)
      intel_debug
      lahey_debug
      pgi_debug  
      g95_debug
+     absoft_debug   (untested)
    
    The actual compiler and switch definitions are listed in the "make.macros" files.
    Also note that not all of the above compilers have been tested for the current 

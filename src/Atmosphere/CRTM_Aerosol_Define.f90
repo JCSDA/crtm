@@ -81,6 +81,7 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: CRTM_Allocate_Aerosol
   PUBLIC :: CRTM_Assign_Aerosol
   PUBLIC :: CRTM_Equal_Aerosol
+  PUBLIC :: CRTM_SetLayers_Aerosol
   PUBLIC :: CRTM_Sum_Aerosol
   PUBLIC :: CRTM_Zero_Aerosol
   PUBLIC :: CRTM_RCS_ID_Aerosol
@@ -113,6 +114,11 @@ MODULE CRTM_Aerosol_Define
     MODULE PROCEDURE Equal_Scalar
     MODULE PROCEDURE Equal_Rank1
   END INTERFACE CRTM_Equal_Aerosol
+
+  INTERFACE CRTM_SetLayers_Aerosol
+    MODULE PROCEDURE SetLayers_Scalar
+    MODULE PROCEDURE SetLayers_Rank1
+  END INTERFACE CRTM_SetLayers_Aerosol
 
   INTERFACE CRTM_Sum_Aerosol
     MODULE PROCEDURE Sum_Scalar
@@ -1165,6 +1171,156 @@ CONTAINS
   END FUNCTION Equal_Rank1
 
 
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SetLayers_Aerosol
+! 
+! PURPOSE:
+!       Function to set the number of layers to use in a CRTM_Aerosol
+!       structure.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_SetLayers_Aerosol( n_Layers               , &  ! Input
+!                                              Aerosol                , &  ! In/Output
+!                                              Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       n_Layers:     The value to set the n_Layers component of the 
+!                     Aerosol structure, as well as those of any of its
+!                     structure components.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Aerosol_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       Aerosol:      Aerosol structure in which the n_Layers dimension
+!                     is to be updated.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Aerosol_type
+!                     DIMENSION:  Scalar or Rank-1 array
+!                     ATTRIBUTES: INTENT(IN OUT)
+! OUTPUT ARGUMENTS:
+!       Aerosol:      On output, the Aerosol structure with the updated
+!                     n_Layers dimension.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Aerosol_type
+!                     DIMENSION:  Scalar or Rank-1 array
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      None
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the layer reset was successful
+!                        == FAILURE an error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       The argument Aerosol is INTENT(IN OUT) and is modified upon output. The
+!       elements of the structureare reinitialised
+!
+! COMMENTS:
+!       - Note that the n_Layers input is *ALWAYS* scalar. Thus, all Aerosol
+!         elements will be set to the same number of layers.
+!
+!       - If n_Layers <= Aerosol%Max_Layers, then only the dimension value
+!         of the structure and any sub-structures are changed.
+!
+!       - If n_Layers > Aerosol%Max_Layers, then the entire structure is
+!         reallocated to the required number of layers.
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION SetLayers_Scalar( n_Layers   , &  ! Input
+                             Aerosol    , &  ! In/Output
+                             Message_Log) &  ! Error Messaging
+                           RESULT( err_stat )
+    ! Arguments
+    INTEGER,                 INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Aerosol(scalar)'
+
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Set dimension or allocate based on current size
+    ! -----------------------------------------------        
+    IF ( n_Layers < Aerosol%Max_Layers ) THEN
+      Aerosol%n_Layers = n_Layers
+      CALL CRTM_Zero_Aerosol(Aerosol)
+    ELSE
+      ! Deallocate
+      err_stat = CRTM_Destroy_Aerosol( Aerosol, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error deallocating Aerosol structure', &
+                              err_stat, Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Reallocate
+      err_stat = CRTM_Allocate_Aerosol( n_Layers, Aerosol, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error reallocating Aerosol structure', &
+                              err_stat, Message_Log=Message_Log )
+        RETURN
+      END IF
+    END IF
+    
+  END FUNCTION SetLayers_Scalar
+
+
+  FUNCTION SetLayers_Rank1( n_Layers   , &  ! Input
+                            Aerosol    , &  ! In/Output
+                            Message_Log) &  ! Error Messaging
+                          RESULT( err_stat )
+    ! Arguments
+    INTEGER,                 INTENT(IN)     :: n_Layers
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol(:)
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Aerosol(rank-1)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: m, set_stat
+    
+    ! Set up
+    ! ------
+    err_stat = SUCCESS
+
+
+    ! Loop over elements. If an error is encountered,
+    ! report it but continue with the reset.
+    ! -----------------------------------------------
+    DO m = 1, SIZE(Aerosol)
+      set_stat = SetLayers_Scalar( n_Layers, Aerosol(m), Message_Log=Message_Log )
+      IF ( set_stat /= SUCCESS ) THEN
+        err_stat = FAILURE
+        WRITE( msg,'("Error resetting element ",i0," Aerosol array n_Layers")' ) m
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+      END IF
+    END DO
+  END FUNCTION SetLayers_Rank1
+  
+  
 !--------------------------------------------------------------------------------
 !
 ! NAME:
