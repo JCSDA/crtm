@@ -1,6 +1,7 @@
 % The generic preamble
 \input{preamble}
 
+\includeonly{sndr_g14.app,sndr_g15.app}
 % Title info
 \title{GOES-14 and -15 Sounder Spectral Response Functions}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC\\[0.25in]
@@ -21,7 +22,7 @@
 
 \section{Introduction}
 %=====================
-This document displays the spectral response functions (SRFs) of the GOES-0(14) and -P(15) sounder instrument, obtained from http://cimss.ssec.wisc.edu/goes/calibration/SRF. These SRFs will be used to generate instrument resolution transmtitances and, from those, transmittance model coefficients for use in the CRTM.
+This document displays the spectral response functions (SRFs) of the GOES-O(14) and -P(15) sounder instrument, obtained from http://cimss.ssec.wisc.edu/goes/calibration/SRF. These SRFs will be used to generate instrument resolution transmtitances and, from those, transmittance model coefficients for use in the CRTM.
 
 
 \section{GOES-O(14) Sounder SRFs}
@@ -29,60 +30,19 @@ This document displays the spectral response functions (SRFs) of the GOES-0(14) 
 
 \subsection{Nominal SRF plots}
 %-----------------------------
-Plots of the SRF data for each channel detector, along with the detector average, are shown for channels 1-6 in figure \ref{fig:sndr_g14.ch1-6}, channels 7-12 in figure \ref{fig:sndr_g14.ch7-12}, and channels 13-18 in figure \ref{fig:sndr_g14.ch13-18}.
+Plots of the SRF data for each channel detector, along with the detector average, are shown in appendix \ref{app:sndr_g14}. SRF plots for channels 1-6 are shown in figure \ref{fig:sndr_g14.ch1-6}, channels 7-12 in figure \ref{fig:sndr_g14.ch7-12}, and channels 13-18 in figure \ref{fig:sndr_g14.ch13-18}.
 
-\begin{figure}[htp]
-  \centering
-  \begin{tabular}{c c}
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch1.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch2.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch3.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch4.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch5.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch6.srf.eps}
-  \end{tabular}
-  \caption{GOES-O(14) Sounder SRF for channels 1 to 6.}
-  \label{fig:sndr_g14.ch1-6}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \begin{tabular}{c c}
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch7.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch8.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch9.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch10.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch11.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch12.srf.eps}
-  \end{tabular}
-  \caption{GOES-O(14) Sounder SRF for channels 7 to 12.}
-  \label{fig:sndr_g14.ch7-12}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \begin{tabular}{c c}
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch13.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch14.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch15.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch16.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch17.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g14.ch18.srf.eps}
-  \end{tabular}
-  \caption{GOES-O(14) Sounder SRF for channels 13 to 18.}
-  \label{fig:sndr_g14.ch13-18}
-\end{figure}
 
 \subsection{Anomalous Features}
 %------------------------------
 Closer inspection of the GOES-0(14) sounder SRFs showed both ambiguous and clear anomalies for several channels. Magnifications of the SRF plots for the suspect channels are shown in figure \ref{fig:sndr_g14.zoom_anomaly}. The anomalies are
 \begin{description}
-  \item[Ch.5] The begin point of this channel is unlike any others in that it starts at a relatively large value. Was the begin point of the actual measurements somehow truncated, or is this feature an artifact of fitting the measurements?
-  \item[Ch.6] The negative values for the low-frequency beginning portions of this SRF have been truncated. The shape of the remaining positive data begs the question: are these data real or an artifact of the fitting algorithm (high order polynomial or spline)?
-  \item[Ch.9] There are clear, and for 1030\invcm{} quite large, discontinuities in the data.
-  \item[Ch.10] Again, discontinuities in the SRFs are evident. Here they clearly occur every 10\invcm{}.
-  \item[Ch.11] Discontinuities at 10\invcm{} intervals.
-  \item[Ch.12] Discontinuities at 10\invcm{} intervals.
+  \item[{\hyperref[fig:sndr_g14.zoom_anomaly]{Ch.5}}] The begin point of this channel is unlike any others in that it starts at a relatively large value. Was the begin point of the actual measurements somehow truncated, or is this feature an artifact of fitting the measurements?
+  \item[{\hyperref[fig:sndr_g14.zoom_anomaly]{Ch.6}}] The negative values for the low-frequency beginning portions of this SRF have been truncated. The shape of the remaining positive data begs the question: are these data real or an artifact of the fitting algorithm (high order polynomial or spline)?
+  \item[{\hyperref[fig:sndr_g14.zoom_anomaly]{Ch.9}}] There are clear, and for 1030\invcm{} quite large, discontinuities in the data.
+  \item[{\hyperref[fig:sndr_g14.zoom_anomaly]{Ch.10}}] Again, discontinuities in the SRFs are evident. Here they clearly occur every 10\invcm.
+  \item[{\hyperref[fig:sndr_g14.zoom_anomaly]{Ch.11}}] Discontinuities at 10\invcm{} intervals.
+  \item[{\hyperref[fig:sndr_g14.zoom_anomaly]{Ch.12}}] Discontinuities at 10\invcm{} intervals.
 \end{description}
 
 \begin{figure}[htp]
@@ -101,7 +61,7 @@ Closer inspection of the GOES-0(14) sounder SRFs showed both ambiguous and clear
     \includegraphics[scale=0.5]{graphics/zoom_anomaly/sndr_g14.ch11.srf.eps} &
     \includegraphics[scale=0.5]{graphics/zoom_anomaly/sndr_g14.ch12.srf.eps}
   \end{tabular}
-  \caption{Magnification of GOES-O(14) Sounder SRFs for channels 5, 6, 9, 10, 11, and 12; indicating possible data anomalies. Detector and average plot colours are the same as for previous figures.}
+  \caption{Magnification of GOES-O(14) Sounder individual detector and average SRFs for channels 5, 6, 9, 10, 11, and 12; indicating possible data anomalies. The detector average is plotted in black. The vertical dashed line represents the first moment (central frequency) of the average SRF.}
   \label{fig:sndr_g14.zoom_anomaly}
 \end{figure}
 
@@ -110,63 +70,20 @@ Closer inspection of the GOES-0(14) sounder SRFs showed both ambiguous and clear
 
 \section{GOES-P(15) Sounder SRFs}
 %================================
-Plots of the SRF data for each channel detector, along with the detector average, are shown for channels 1-6 in figure \ref{fig:sndr_g15.ch1-6}, channels 7-12 in figure \ref{fig:sndr_g15.ch7-12}, and channels 13-18 in figure \ref{fig:sndr_g15.ch13-18}.
-
 
 \subsection{Nominal SRF plots}
 %-----------------------------
-
-\begin{figure}[htp]
-  \centering
-  \begin{tabular}{c c}
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch1.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch2.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch3.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch4.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch5.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch6.srf.eps}
-  \end{tabular}
-  \caption{GOES-P(15) Sounder SRF for channels 1 to 6.}
-  \label{fig:sndr_g15.ch1-6}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \begin{tabular}{c c}
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch7.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch8.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch9.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch10.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch11.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch12.srf.eps}
-  \end{tabular}
-  \caption{GOES-P(15) Sounder SRF for channels 7 to 12.}
-  \label{fig:sndr_g15.ch7-12}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \begin{tabular}{c c}
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch13.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch14.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch15.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch16.srf.eps} \\
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch17.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/nominal/sndr_g15.ch18.srf.eps}
-  \end{tabular}
-  \caption{GOES-P(15) Sounder SRF for channels 13 to 18.}
-  \label{fig:sndr_g15.ch13-18}
-\end{figure}
+Plots of the SRF data for each channel detector, along with the detector average, are shown in appendix \ref{app:sndr_g15}. SRF plots for channels 1-6 are shown in figure \ref{fig:sndr_g15.ch1-6}, channels 7-12 in figure \ref{fig:sndr_g15.ch7-12}, and channels 13-18 in figure \ref{fig:sndr_g15.ch13-18}.
 
 \subsection{Anomalous Features}
 %------------------------------
 Closer inspection of the GOES-P(15) sounder SRFs showed some possible anomalies for several channels. Magnifications of the SRF plots for the suspect channels are shown in figure \ref{fig:sndr_g15.zoom_anomaly}. The anomalies in question here are,
 \begin{description}
-  \item[Ch.9] This is not so much an anomaly as an apparent overfit to noisy data using a spline (or high order polynomial). If the high frequency undulations are a fitting artifact, the radiometric impact is likely negligible, but they are cause for suspicion.
-  \item[Ch.11] Similarly to channel 9, there appear to be fit artifacts in the data.
-  \item[Ch.13] The detector plots are different. Does the GOES-P(15) sounder use different shortwave detector technology from the other sounder? Previously the InSb detector channels showed no difference between detectors. It may be a normalisation of fitted data issue, but it needs to be confirmed.
-  \item[Ch.17] Similarly to channel 13, we see significant differences between detector SRFs for InSb detectors.
-  \item[Ch.18] Again, we see significant differences between detector SRFs for InSb detectors.
+  \item[{\hyperref[fig:sndr_g15.zoom_anomaly]{Ch.9}}] This is not so much an anomaly as an apparent overfit to noisy data using a spline (or high order polynomial). If the high frequency undulations are a fitting artifact, the radiometric impact is likely negligible, but they are cause for suspicion.
+  \item[{\hyperref[fig:sndr_g15.zoom_anomaly]{Ch.11}}] Similarly to channel 9, there appear to be fit artifacts in the data.
+  \item[{\hyperref[fig:sndr_g15.zoom_anomaly]{Ch.13}}] The detector plots are different. Does the GOES-P(15) sounder use different shortwave detector technology from the other sounder? Previously the InSb detector channels showed no difference between detectors. It may be a normalisation of fitted data issue, but it needs to be confirmed.
+  \item[{\hyperref[fig:sndr_g15.zoom_anomaly]{Ch.17}}] Similarly to channel 13, we see significant differences between detector SRFs for InSb detectors.
+  \item[{\hyperref[fig:sndr_g15.zoom_anomaly]{Ch.18}}] Again, we see significant differences between detector SRFs for InSb detectors.
 \end{description}
 
 
@@ -184,8 +101,17 @@ Closer inspection of the GOES-P(15) sounder SRFs showed some possible anomalies 
     \hspace{1.0em}\textsf{InSb detector differences?} & \\
     \includegraphics[scale=0.5]{graphics/zoom_anomaly/sndr_g15.ch18.srf.eps} &
   \end{tabular}
-  \caption{Magnification of GOES-P(15) Sounder SRFs for channels 9, 11, 13, 17, and 18; indicating possible data anomalies. Detector and average plot colours are the same as for previous figures.}
+  \caption{Magnification of GOES-P(15) Sounder individual detector and average SRFs for channels 9, 11, 13, 17, and 18; indicating possible data anomalies. The detector average is plotted in black. The vertical dashed line represents the first moment (central frequency) of the average SRF.}
   \label{fig:sndr_g15.zoom_anomaly}
 \end{figure}
+
+
+% Begin appednices of nominal SRF plots
+%======================================
+\begin{appendix}
+  \include{sndr_g14.app}
+  \include{sndr_g15.app}
+\end{appendix}
+
 \end{document}
 
