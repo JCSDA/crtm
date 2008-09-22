@@ -1,112 +1,41 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       SRF_Utility
 !
-! PURPOSE:
-!       Module containing routines for application of SRF data.
+! SRF_Utility
 !
-! CATEGORY:
-!       Instrument Information : SRF
+! Module containing SRF application routines
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE SRF_Utility
-!
-! MODULES:
-!       Type_Kinds:             Module containing definitions for kinds
-!                               of variable types.
-!
-!       Message_Handler:        Module to define simple error codes and
-!                               handle error conditions
-!                               USEs: FILE_UTILITY module
-!
-!       Compare_Float_Numbers:  Module containing routines to perform equality
-!                               and relational comparisons on floating point
-!                               numbers.
-!                               USEs: TYPE_KINDS module
-!
-!       Interpolate:            Module containing interpolation routines.
-!                               USEs: TYPE_KINDS module
-!                                     Message_Handler module
-!
-!       Integrate:              Module containing integration routines.
-!                               USEs: TYPE_KINDS module
-!                                     Message_Handler module
-!                                     INTERPOLATE module
-!
-!       SRF_Define:             Module defining the SRF data structure and
-!                               containing routines to manipulate it.
-!                               USEs: TYPE_KINDS module
-!                                     Message_Handler module
-!
-! CONTAINS:
-!       Interpolate_SRF:        Function to interpolate input SRFs to another 
-!                               frequency grid.
-!
-!       Convolve_with_SRF:      Function to convolve an spectrum with an SRF.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 2003 Paul van Delst
+!       Modified by:    Yong Chen, CIRA/CSU/JCSDA 22-Aug-2008
+!                       Yong.Chen@noaa.gov
 !
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
-
+ 
 MODULE SRF_Utility
 
-
-  ! ------------
-  ! Module usage
-  ! ------------
-
-  USE Type_Kinds
-  USE Message_Handler
-  USE Compare_Float_Numbers
-
-  USE Interpolate_Utility
-  USE Integrate_Utility
-
-  USE SRF_Define
-
-
-  ! ---------------------------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
+  ! Module use
+  USE Type_Kinds,            ONLY: fp
+  USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
+  USE Interpolate_Utility,   ONLY: Polynomial_Interpolate
+  USE Integrate_Utility,     ONLY: Simpsons_Integral
+  USE SRF_Define,            ONLY: SRF_type, &
+                                   Associated_SRF, &
+                                   Destroy_SRF, &
+                                   Allocate_SRF, &
+                                   Assign_SRF, &
+                                   Frequency_SRF, &
+                                   Integrate_SRF
   ! Disable all implicit typing
-  ! ---------------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
   PRIVATE
   PUBLIC :: Interpolate_SRF
   PUBLIC :: Convolve_with_SRF
@@ -115,24 +44,513 @@ MODULE SRF_Utility
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! -- RCS Id for the module
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-
-  ! -- Keyword set value
-  INTEGER, PRIVATE, PARAMETER :: SET = 1
-
-  ! -- Literal constants
-  REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO = 0.0_fp_kind
-  REAL( fp_kind ), PRIVATE, PARAMETER :: ONE  = 1.0_fp_kind
-  REAL( fp_kind ), PRIVATE, PARAMETER :: ONEpointFIVE  = 1.5_fp_kind
+  ! Maximum msg length
+  INTEGER, PARAMETER :: ML = 256
+  ! Keyword set value
+  INTEGER, PARAMETER :: SET = 1
+  ! Literal constants
+  REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
+  REAL(fp), PARAMETER :: ONEpointFIVE  = 1.5_fp
 
 
 CONTAINS
 
 
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
 
+!------------------------------------------------------------------------------
+!:sdoc:+
+!
+! NAME:
+!       Interpolate_SRF
+!
+! PURPOSE:
+!       Function to interpolate an input SRF to another frequency grid.
+!
+! CALLING SEQUENCE:
+!       Error_STatus = Interpolate_SRF( SRF                    , &  ! Input
+!                                       iSRF                   , &  ! In/Output
+!                                       Order      =Order      , &  ! Optional input
+!                                       RCS_Id     =RCS_Id     , &  ! Revision control
+!                                       Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       SRF:          SRF structure containing the instrument channel
+!                     response to be interpolated.
+!                     UNITS:      N/A
+!                     TYPE:       SRF_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       iSRF:         On input contains the components used to generate the
+!                     interpolation frequency grid:
+!                       iSRF%f1_Band(:)
+!                       iSRF%f2_Band(:)
+!                       iSRF%npts_Band(:)
+!                     and the interpolation frequency grid itself:
+!                       iSRF%Frequency(:)
+!                     UNITS:      N/A
+!                     TYPE:       SRF_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OUTPUT ARGUMENTS:
+!       iSRF:         On output, contains the interpolated SRF response
+!                     in the component,
+!                       iSRF%Response(:)
+!                     UNITS:      N/A
+!                     TYPE:       SRF_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Order:        The order of the interpolating polynomial. This 
+!                     argument, if supplied, is passed to the interpolation
+!                     function where, if not specified, linear interpolation
+!                     (order = 1) is the default. If specified, must be an
+!                     odd number > 0.
+!                     UNITS:      None
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(IN)
+!
+!       Message_Log:  Character string specifying a filename in which any
+!                     msgs will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output msgs to standard output.
+!                     UNITS:      None
+!                     TYPE:       Character
+!                     DIMENSION:  Scalar, LEN = *
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:       Character string containing the Revision Control
+!                     System Id field for the module.
+!                     UNITS:      None
+!                     TYPE:       CHARACTER
+!                     DIMENSION:  Scalar, LEN = *
+!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the SRF integration was successful
+!                        == FAILURE an error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! COMMENTS:
+!       Note the INTENT on the output SRF argument is IN OUT rather
+!       than just OUT. This is necessary because the argument may be defined on
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
+!                       paul.vandelst@ssec.wisc.edu
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION Interpolate_SRF( SRF         , &  ! Input
+                            iSRF        , &  ! Output
+                            Order       , &  ! Optional input
+                            RCS_Id      , &  ! Revision control
+                            Message_Log ) &  ! Error messaging
+                          RESULT( Error_Status )
+    ! Arguments
+    TYPE(SRF_type),         INTENT(IN)     :: SRF
+    TYPE(SRF_type),         INTENT(IN OUT) :: iSRF
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Order
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Interpolate_SRF'
+    REAL(fp),     PARAMETER :: EPS = EPSILON(ONE)
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: i1, i2, j1, j2, m, ni, nj
+    REAL(fp) :: df
+
+    ! Setup
+    ! -----
+    Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    
+    ! Check structure association
+    IF ( .NOT. Associated_SRF( SRF ) ) THEN
+      Error_Status = FAILURE
+      msg = 'Some or all INPUT SRF pointer members are NOT associated.'
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    IF ( .NOT. Associated_SRF( iSRF ) ) THEN
+      Error_Status = FAILURE
+      msg = 'Some or all OUTPUT iSRF pointer members are NOT associated.'
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    ! Set the output SRF info
+    iSRF%Sensor_Id        = SRF%Sensor_Id       
+    iSRF%WMO_Satellite_ID = SRF%WMO_Satellite_ID
+    iSRF%WMO_Sensor_ID    = SRF%WMO_Sensor_ID   
+    iSRF%Sensor_Type      = SRF%Sensor_Type     
+    iSRF%Channel          = SRF%Channel
+    
+
+    ! Begin loop over bands for interpolation
+    ! ---------------------------------------
+    i2 = 0; j2 = 0
+    Band_Loop: DO m = 1, SRF%n_Bands
+
+      ! Determine where the old SRF slots into its frequency grid for this band
+      i1 = i2 + 1
+      i2 = SRF%npts_Band(m) + i1 - 1
+      
+      ! Determine where the new SRF slots into its frequency grid for this band
+      j1 = j2 + 1
+      j2 = iSRF%npts_Band(m) + j1 - 1
+
+      ! Perform the interpolation
+      Error_Status = Polynomial_Interpolate(  SRF%Frequency(i1:i2)  , &  ! Input,  X
+                                              SRF%Response(i1:i2)   , &  ! Input,  Y
+                                             iSRF%Frequency(j1:j2)  , &  ! Input,  Xint
+                                             iSRF%Response(j1:j2)   , &  ! Output, Yint
+                                             Order      =Order      , &  ! Optional input
+                                             Message_Log=Message_Log  )
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( msg,'("Error interpolating band ",i0," SRF response")' ) m
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN
+      END IF
+      
+    END DO Band_Loop
+
+
+    ! Integrate the interpolated SRF
+    ! ------------------------------
+    Error_Status = Integrate_SRF( iSRF,Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error occurred integrating interpolated SRF', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+  END FUNCTION Interpolate_SRF
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Convolve_with_SRF
+!
+! PURPOSE:
+!       Procedure to convolve a spectrum with an instrument channel SRF.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Convolve_with_SRF( Frequency              , &  ! Input
+!                                         Spectrum               , &  ! Input
+!                                         SRF                    , &  ! Input
+!                                         Convolved_Spectrum     , &  ! Output
+!                                         Interpolate=Interpolate, &  ! Optional input
+!                                         Integrate  =Integrate  , &  ! Optional input
+!                                         Order      =Order      , &  ! Optional input
+!                                         RCS_Id     =RCS_Id     , &  ! Revision control
+!                                         Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       Frequency:           Frequency grid of the input spectrum.
+!                            Must be evenly spaced in frequency.
+!                            UNITS:      Variable (cm^-1 or GHz)
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Rank-1
+!                            ATTRIBUTES: INTENT(IN)
+!
+!       Spectrum:            Spectrum to be convolved with the SRF response.
+!                            UNITS:      Variable.
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Rank-1
+!                            ATTRIBUTES: INTENT(IN)
+!
+!       SRF:                 SRF structure containing the instrument channel
+!                            response to be used in the convolution.
+!                            UNITS:      N/A
+!                            TYPE:       SRF_type
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Convolved_Spectrum:  The input spectrum convolved with the input SRF
+!                            response.
+!                            UNITS:      Same as input Spectrum argument
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Interpolate:         Set this argument to force interpolation of the SRF
+!                            response to the input frequency grid. If not set,
+!                            the default is to assume that the SRF and spectrum
+!                            frequency grids match up for the required span.
+!                            If = 0; do not interpolate the SRF response (DEFAULT)
+!                               = 1; interpolate input SRF response to the input
+!                                    frequency grid.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: OPTIONAL, INTENT(IN)
+!
+!       Integrate:           Set this argument to perform numerical integration
+!                            when doing the convolutions. If not set, the default
+!                            action is to simply sum the results.
+!                            If = 0; use summation to compute convolved value. (DEFAULT)
+!                               = 1; perform numerical integration to compute the
+!                                    convolved value.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: OPTIONAL, INTENT(IN)
+!
+!       Order:               The order of the interpolating polynomial. This
+!                            argument, if supplied, is passed to the interpolation
+!                            function where, if not specified, linear interpolation
+!                            (order = 1) is the default. If specified, must be an
+!                            odd number > 0.
+!                            UNITS:      None
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: OPTIONAL, INTENT(IN)
+!
+!       Message_Log:         Character string specifying a filename in which any
+!                            msgs will be logged. If not specified, or if an
+!                            error occurs opening the log file, the default action
+!                            is to output msgs to standard output.
+!                            UNITS:      None
+!                            TYPE:       Character
+!                            DIMENSION:  Scalar, LEN = *
+!                            ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:              Character string containing the Revision Control
+!                            System Id field for the module.
+!                            UNITS:      None
+!                            TYPE:       CHARACTER
+!                            DIMENSION:  Scalar, LEN = *
+!                            ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:        The return value is an integer defining the error status.
+!                            The error codes are defined in the Message_Handler module.
+!                            If == SUCCESS the spectrum convolution was successful
+!                               == FAILURE an error occurred
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
+!                       paul.vandelst@ssec.wisc.edu
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION Convolve_with_SRF( Frequency         , &  ! Input
+                              Spectrum          , &  ! Input
+                              SRF               , &  ! Input
+                              Convolved_Spectrum, &  ! Output
+                              Interpolate       , &  ! Optional input
+                              Integrate         , &  ! Optional input
+                              Order             , &  ! Optional input
+                              RCS_Id            , &  ! Revision control
+                              Message_Log       ) &  ! Error messaging
+                            RESULT( Error_Status )
+    ! Arguments
+    REAL(fp),               INTENT(IN)  :: Frequency(:)
+    REAL(fp),               INTENT(IN)  :: Spectrum(:)
+    TYPE(SRF_type),         INTENT(IN)  :: SRF
+    REAL(fp),               INTENT(OUT) :: Convolved_Spectrum
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Interpolate
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Integrate
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Order
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Convolve_with_SRF'
+    INTEGER, PARAMETER :: MAX_N_BANDS = 4
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: Destroy_Status
+    LOGICAL :: Frequency_Match
+    LOGICAL :: Summation
+    TYPE(SRF_type) :: uSRF
+    INTEGER :: n_Frequencies, n_Points
+    INTEGER :: i1, i2, j1, j2, m
+    REAL(fp) :: df, cspc
+    REAL(fp) :: f1_Band(MAX_N_BANDS), f2_Band(MAX_N_BANDS)
+    INTEGER  :: npts_Band(MAX_N_BANDS)
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+
+    ! Check for consistent array sizes
+    n_Frequencies = SIZE(Frequency)
+    IF ( SIZE(Spectrum) /= n_Frequencies ) THEN
+      Error_Status = FAILURE
+      msg = 'Size of input frequency and spectrum arrays are different'
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    ! Default is no interpolation as SRF and spectrum frequency match is assumed...
+    Frequency_Match = .TRUE.
+    ! ...unless the Interpolate argument is set
+    IF ( PRESENT( Interpolate ) ) THEN
+      IF ( Interpolate == SET ) Frequency_Match = .FALSE.
+    END IF
+
+    ! Default is to sum the convolved SRF and spectrum...
+    Summation = .TRUE.
+    ! ...unless the Integrate argument is set
+    IF ( PRESENT( Integrate ) ) THEN
+      IF ( Integrate == SET ) Summation = .FALSE.
+    END IF
+
+    ! Compute the input spectrum frequency interval
+    dF = Frequency(2) - Frequency(1)
+
+
+    ! Copy or interpolate SRF as required
+    ! -----------------------------------
+    IF ( Frequency_Match ) THEN
+      ! Copy the input SRF to a local structure
+      Error_Status = Assign_SRF( SRF,uSRF,Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        msg = 'Error copying SRF'
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN
+      END IF
+
+    ELSE
+      ! Find the frequency points that correspond to the input SRF band edge(s)
+      DO m = 1, SRF%n_Bands
+        j1 = f_Index( SRF%f1_Band(m),Frequency(1),dF,lowf_edge=.true. )
+        j2 = f_Index( SRF%f2_Band(m),Frequency(1),dF )
+        f1_Band(m)   = Frequency(j1)
+        f2_Band(m)   = Frequency(j2)
+        npts_Band(m) = j2-j1+1
+      END DO
+      ! Allocate local SRF structure
+      n_Points = SUM(npts_Band(1:SRF%n_Bands))
+      Error_Status = Allocate_SRF( n_Points,uSRF,n_Bands=SRF%n_Bands,Message_Log=Message_Log)
+      IF ( Error_Status /= SUCCESS ) THEN
+        msg = 'Error allocating SRF'
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Fill the band components
+      uSRF%f1_Band   = f1_Band(1:SRF%n_Bands)
+      uSRF%f2_Band   = f2_Band(1:SRF%n_Bands)
+      uSRF%npts_Band = npts_Band(1:SRF%n_Bands)
+      ! Compute the frequency grid
+      Error_Status = Frequency_SRF( uSRF,Message_Log=Message_Log)
+      IF ( Error_Status /= SUCCESS ) THEN
+        msg = 'Error computing SRF frequency grid'
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Interpolate the SRF
+      Error_Status = Interpolate_SRF( SRF,uSRF,Order=Order,Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        msg = 'Error interpolating SRF'
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN
+      END IF
+      ! Integrate the SRF
+      Error_Status = Integrate_SRF( uSRF,Message_Log=Message_Log)
+      IF ( Error_Status /= SUCCESS ) THEN
+        msg = 'Error integrating SRF'
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN
+      END IF
+    END IF
+
+
+    ! Perform the convolution
+    ! -----------------------
+    ! Initialise the point offsets and sum
+    Convolved_Spectrum = ZERO
+    i2 = 0
+    ! Begin loop over bands
+    Band_Loop: DO m = 1, uSRF%n_Bands
+
+      ! Determine where the current band SRF slots into its frequency grid
+      i1 = i2 + 1
+      i2 = uSRF%npts_Band(m) + i1 - 1
+
+      ! Determine where the current band SRF slots into the spectrum frequency grid
+      j1 = f_Index( uSRF%f1_Band(m),Frequency(1),dF )
+      j2 = f_Index( uSRF%f2_Band(m),Frequency(1),dF )
+
+      ! Perform the convolution
+      IF ( Summation ) THEN
+        ! Just sum it all up
+        cspc = SUM(uSRF%Response(i1:i2)*Spectrum(j1:j2))*dF
+      ELSE
+        ! Integrate it
+        Error_Status = Simpsons_Integral( Frequency(j1:j2), &
+                                          uSRF%Response(i1:i2)*Spectrum(j1:j2), &
+                                          cspc, &
+                                          Order=Order )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( msg,'("Error integrating SRF*SPC for band ",i0)' ) m
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+          RETURN
+        END IF
+      END IF
+      
+      ! Accumulate the result
+      Convolved_Spectrum = Convolved_Spectrum + cspc
+    END DO Band_Loop
+
+    ! Normalise the result
+    IF ( Summation ) THEN
+      Convolved_Spectrum = Convolved_Spectrum/uSRF%Summation_SRF
+    ELSE
+      Convolved_Spectrum = Convolved_Spectrum/uSRF%Integrated_SRF
+    END IF
+    
+
+    ! Clean up
+    ! --------
+    Destroy_Status = Destroy_SRF( uSRF,Message_Log=Message_Log )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error destroying local uSRF structure', &
+                            WARNING, &
+                            Message_Log=Message_Log )
+    END IF
+
+  END FUNCTION Convolve_with_SRF
 
 
 !##################################################################################
@@ -146,1073 +564,128 @@ CONTAINS
 !------------------------------------------------------------------------------------
 !
 ! NAME:
-!       Compute_Frequency_Interval
+!       f_Interval
 !
 ! PURPOSE:
-!       Function to compute the interval of the input frequency grid.
-!
-! CATEGORY:
-!       Instrument Information : SRF
-!
-! LANGUAGE:
-!       Fortran-95
+!       Function to compute the interval of a frequency grid from its parameters
 !
 ! CALLING SEQUENCE:
-!       dF = Compute_Frequency_Interval( F )
+!       df = f_Interval(f1,f2,n)
 !
 ! INPUT ARGUMENTS:
-!       F:   Array of frequency values. Should be regularly spaced and in
-!            ascending order for the result to have any meaning.
-!            UNITS:      Inverse centimetres (cm^-1)
-!            TYPE:       REAL( fp_kind )
-!            DIMENSION:  Rank-1
-!            ATTRIBUTES: INTENT( IN )
+!       f1:  Begin frequency of the grid.
+!            UNITS:      Variable (cm^-1 or GHz)
+!            TYPE:       REAL(fp)
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
+!       f2:  End frequency of the grid.
+!            UNITS:      Same as input f1 argument.
+!            TYPE:       REAL(fp)
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!       n:   Number of points in the frequency grid.
+!            UNITS:      N/A
+!            TYPE:       INTEGER
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       dF:  Interval of the input frequency grid. 
-!            UNITS:      Inverse centimetres (cm^-1)
-!            TYPE:       REAL( fp_kind )
+!       df:  Interval of the frequency grid. 
+!            UNITS:      Same as input f1 argument.
+!            TYPE:       REAL(fp)
 !            DIMENSION:  Scalar
 !
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       The input frequency grid should be regularly spaced and in ascending
-!       order for the result to be meaningful
-!
-! PROCEDURE:
-!       The average frequency interval for a frequency grid of nF points
-!       is computed,
-!
-!                 __ nF-1
-!                \
-!                 >  F(i+1) - F(i)
-!                /__
-!                    i=1
-!         dF = -----------------------
-!                     nF - 1
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
-!                       paul.vandelst@ssec.wisc.edu
-!
 !------------------------------------------------------------------------------------
 
-  FUNCTION Compute_Frequency_Interval( F ) RESULT( dF )
-
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN )  :: F
-    REAL( fp_kind ) :: dF
-    INTEGER :: nF
-
-    nF = SIZE( F )
-    dF = SUM( F( 2:nF ) - F( 1:nF-1 ) ) / REAL( nF-1, fp_kind )
-
-  END FUNCTION Compute_Frequency_Interval
-
-
-
+  FUNCTION f_Interval(f1,f2,n) RESULT(dF)
+    REAL(fp), INTENT(IN) :: f1, f2
+    INTEGER , INTENT(IN) :: n
+    REAL(fp) :: dF
+    dF = (f2-f1)/REAL(n-1,fp)
+  END FUNCTION f_Interval
 
 
 !------------------------------------------------------------------------------------
 !
 ! NAME:
-!       Bracket_Points
+!       f_Index
 !
 ! PURPOSE:
-!       Subroutine to determine the index values of a frequency grid that
-!       correspond to the begin and end frequencies of an SRF.
-!
-! CATEGORY:
-!       Instrument Information: SRF
-!
-! LANGUAGE:
-!       Fortran-95
+!       Subroutine to determine the index value of a frequency grid that
+!       correspond to a supplied frequency values.
 !
 ! CALLING SEQUENCE:
-!       CALL Bracket_Points( SRF_F1, &  ! Input
-!                            SRF_F2, &  ! Input
-!                            F1,     &  ! Input
-!                            dF,     &  ! Input
-!                            n1,     &  ! Output
-!                            n2,     &  ! Output
-!                            n       )  ! Output
+!       idx = f_Index( f, f1_grid, df_grid, lowf_edge )
 !
 ! INPUT ARGUMENTS:
-!       SRF_F1:   Frequency of the first point of an SRF.
-!                 UNITS:      Inverse centimetres (cm^-1)
-!                 TYPE:       REAL( fp_kind )
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( IN )
+!       f:          Frequency for which an index value is required.
+!                   UNITS:      Variable (cm^-1 or GHz)
+!                   TYPE:       REAL(fp)
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN)
 !
-!       SRF_F2:   Frequency of the last point of an SRF. Should be > SRF_F1
-!                 UNITS:      Inverse centimetres (cm^-1)
-!                 TYPE:       REAL( fp_kind )
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( IN )
+!       f1_grid:    Frequency of the first point of a frequency grid.
+!                   Should be <= f.
+!                   UNITS:      Same as input f argument.
+!                   TYPE:       REAL(fp)
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN)
 !
-!       F1:       Frequency of the first point of a frequency grid. Should
-!                 be < SRF_F1.
-!                 UNITS:      Inverse centimetres (cm^-1)
-!                 TYPE:       REAL( fp_kind )
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( IN )
-!
-!       dF:       Interval of the frequency grid.
-!                 UNITS:      Inverse centimetres (cm^-1)
-!                 TYPE:       REAL( fp_kind )
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       n1:       Index of the frequency grid that corresponds to the first
-!                 SRF point frequency.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( OUT )
-!
-!       n2:       Index of the frequency grid that corresponds to the last
-!                 SRF point frequency.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( OUT )
-!
-!       n:        Total number of points between n1 and n2, inclusive.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT( OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       The input frequency values should have magnitudes such that
-!
-!         F1 <= SRF_F1 < SRF_F2
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
-!                       paul.vandelst@ssec.wisc.edu
-!
-!------------------------------------------------------------------------------------
-
-  SUBROUTINE Bracket_Points( SRF_F1, SRF_F2, F1, dF, &  ! Inputs
-                             n1, n2, n )                ! Outputs
-
-    REAL( fp_kind ), INTENT( IN ) :: SRF_F1, SRF_F2  ! SRF begin and end frequencies
-    REAL( fp_kind ), INTENT( IN ) :: F1, dF          ! Spectrum start frequency and interval
-
-    INTEGER, INTENT( OUT ) :: n1, n2, n
-
-    ! -- The begin point and frequency
-    n1 = INT( ONEpointFIVE + ( ( SRF_F1 - F1 ) / dF ) )
-
-    ! -- The end point and frequency
-    n2 = INT( ONEpointFIVE + ( ( SRF_F2 - F1 ) / dF ) )
-
-    ! -- Total number of points
-    n = n2 - n1 + 1
-
-  END SUBROUTINE Bracket_Points
-
-
-
-
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Interpolate_SRF
-!
-! PURPOSE:
-!       Function to interpolate and input SRF to another frequency grid.
-!
-! CATEGORY:
-!       Instrument Information : SRF
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_STatus = Interpolate_SRF( Frequency,                &  ! Input
-!                                       SRF,                      &  ! Input
-!                                       iSRF,                     &  ! Output
-!                                       Order       = Order,      &  ! Optional input
-!                                       RCS_Id      = RCS_Id,     &  ! Revision control
-!                                       Message_Log = Message_Log )  ! Error messaging
+!       df_grid:    Interval of the frequency grid.
+!                   UNITS:      Same as input f argument.
+!                   TYPE:       REAL(fp)
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN)
 !
 ! INPUT ARGUMENTS:
-!       Frequency:    Frequency grid to which the SRF will be interpolated.
-!                     UNITS:      Inverse centimetres (cm^-1)
-!                     TYPE:       REAL( fp_kind )
-!                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT( IN )
-!
-!       SRF:          SRF structure containing the instrument channel
-!                     response to be interpolated.
-!                     UNITS:      N/A
-!                     TYPE:       SRF_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Order:        The order of the interpolating polynomial. This 
-!                     argument, if supplied, is passed to the interpolation
-!                     function where, if not specified, linear interpolation
-!                     (order = 1) is the default. If specified, must be an
-!                     odd number > 0.
-!                     UNITS:      None
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      None
-!                     TYPE:       Character
-!                     DIMENSION:  Scalar, LEN = *
-!                     ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       iSRF:         SRF structure containing the instrument channel
-!                     response interpolated to the input frequency grid.
-!                     UNITS:      N/A
-!                     TYPE:       SRF_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      None
-!                     TYPE:       CHARACTER
-!                     DIMENSION:  Scalar, LEN = *
-!                     ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!       lowf_edge:  Logical flag to indicate what SRF band edge we are at. This
+!                   flag affects how the index value is computed.
+!                   If .TRUE.  then idx is adjusted so that f1(idx) >= f
+!                      .FALSE. then idx is adjusted so that f1(idx) <= f [DEFAULT]
+!                   UNITS:      N/A
+!                   TYPE:       LOGICAL
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the SRF integration was successful
-!                        == FAILURE an error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       idx:        Index of the frequency grid, f1, that most closely corresponds
+!                   to the passed SRF band edge frequency.
+!                   UNITS:      N/A
+!                   TYPE:       INTEGER
+!                   DIMENSION:  Scalar
 !
-! OPERATORS:
-!       .GreaterThan.               Relational operator to test if one floating
-!                                   point operand is greater than another.
-!                                   SOURCE: COMPARE_FLOAT_NUMBERS module
-!
-!       .LessThan.                  Relational operator to test if one floating
-!                                   point operand is less than another.
-!                                   SOURCE: COMPARE_FLOAT_NUMBERS module
-!
-! CALLS:
-!      Allocate_SRF:                Function to allocate the pointer members
-!                                   of an SRF structure.
-!                                   SOURCE: SRF_DEFINE module
-!
-!      Frequency_SRF:               Function to compute the frequency grid
-!                                   for an SRF data structure
-!                                   SOURCE SRF_DEFINE module
-!
-!      Polynomial_Interpolate:      Function to perform polynomial interpolation.
-!                                   SOURCE: INTERPOLATE module
-!                                   
-!      Simpsons_Integral:           Function to integratea tabulated function
-!                                   using Simpson's rule.
-!                                   SOURCE: INTEGRATE module
-!
-!      Display_Message:             Subroutine to output messages
-!                                   SOURCE: Message_Handler module
-!
-!      Compute_Frequency_Interval:  PRIVATE subroutine to compute the frequency
-!                                   spacing of the input frequency grid.
-!
-!      Bracket_Points:              PRIVATE subroutine to compute the points
-!                                   in the frequency grid that bracket the
-!                                   SRF.
-!
-! CONTAINS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output SRF argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined on
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
-!                       paul.vandelst@ssec.wisc.edu
-!S-
-!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------------
 
-  FUNCTION Interpolate_SRF( Frequency,    &  ! Input
-                            SRF,          &  ! Input
-                            iSRF,         &  ! Output
-                            Order,        &  ! Optional input
-                            RCS_Id,       &  ! Revision control
-                            Message_Log ) &  ! Error messaging
-                          RESULT ( Error_Status )
+  FUNCTION f_Index(f,f1_grid,df_grid,lowf_edge) RESULT(idx)
+    REAL(fp),          INTENT(IN) :: f, f1_grid, df_grid
+    LOGICAL, OPTIONAL, INTENT(IN) :: lowf_edge
+    INTEGER :: idx
+    LOGICAL :: highf_edge
+    REAL(fp) :: f1
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN )     :: Frequency
-    TYPE( SRF_type ),                INTENT( IN )     :: SRF
-
-    ! -- Output
-    TYPE( SRF_type ),                INTENT( IN OUT ) :: iSRF
-
-    ! -- Optional input
-    INTEGER,               OPTIONAL, INTENT( IN )     :: Order
-
-    ! -- Revision control
-    CHARACTER( * ),        OPTIONAL, INTENT( OUT )    :: RCS_Id
-
-    ! -- Error handler message log
-    CHARACTER( * ),        OPTIONAL, INTENT( IN )     :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Interpolate_SRF'
-
-    REAL( fp_kind ), PARAMETER :: EPS = EPSILON( 1.0_fp_kind )
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: Message
-    INTEGER :: n_Frequencies
-    INTEGER :: n1, n2, n
-    REAL( fp_kind ) :: Frequency_Interval
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
+    ! Assume we are at the high frequency edge of a band...
+    highf_edge = .TRUE.
+    ! ...unless the low frequency edge keyword is set.
+    IF ( PRESENT(lowf_edge) ) THEN
+      IF ( lowf_edge ) highf_edge = .FALSE.
     END IF
 
+    ! Compute the index
+    idx = INT(ONEpointFIVE + ( (f-f1_grid)/df_grid ))
 
-
-    !#--------------------------------------------------------------------------#
-    !#             -- CHECK STRUCTURE POINTER ASSOCIATION STATUS --             #
-    !#                                                                          #
-    !#                ALL structure pointers must be associated                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( .NOT. Associated_SRF( SRF ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT SRF pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
+    ! Adjust the index based on whether we are
+    ! at a low or high frequency band edge.
+    f1 = f1_grid + REAL(idx-1)*df_grid
+    IF ( highf_edge ) THEN
+      IF ( f1 > f ) idx = idx-1
+    ELSE
+      IF ( f1 < f ) idx = idx+1
     END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                             -- CHECK INPUT --                            #
-    !#--------------------------------------------------------------------------#
-
-    ! -- Check frequency for -ve values
-    IF ( ANY( Frequency < ZERO ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Negative input frequencies found', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! -- Check frequency ordering
-    IF ( Frequency(2) <  Frequency(1) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input frequencies must be in ascending order', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! -- Check frequency limits
-    n_Frequencies = SIZE( Frequency )
-
-    IF ( ( Frequency(1)             .GreaterThan. SRF%Begin_Frequency ) .OR. &
-         ( Frequency(n_Frequencies) .LessThan.    SRF%End_Frequency   )      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Interpolating frequencies do not span entire SRF.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      WRITE( Message, '( "Frequency(1),             ", f22.16, " >  SRF%Begin_Frequency, ", f22.16 )' ) &
-                      Frequency(1), SRF%Begin_Frequency
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      WRITE( Message, '( "Frequency(n_Frequencies), ", f22.16, " <  SRF%End_Frequency,   ", f22.16 )' ) &
-                      Frequency(n_Frequencies), SRF%End_Frequency
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#        -- CALCULATE THE BEGIN AND END INTERPOLATED FREQUENCIES --        #
-    !#        -- AND THE NUMBER OF INTERPOLATED POINTS                --        #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------------
-    ! Calculate the input frequency interval
-    ! --------------------------------------
-
-    Frequency_Interval = Compute_Frequency_Interval( Frequency )
-
-
-    ! ------------------------------------------------
-    ! Get the SRF bracket points in the input spectrum
-    ! ------------------------------------------------
-
-    CALL Bracket_Points( SRF%Begin_Frequency, SRF%End_Frequency, &
-                         Frequency(1), Frequency_Interval, &
-                         n1, n2, n )
-
-
     
-    !#--------------------------------------------------------------------------#
-    !#                 -- ALLOCATE THE INTERPOLATED SRF STRUCTURE --            #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Allocate_SRF( n_Frequencies, iSRF )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating iSRF structure.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#           -- COPY THE SCALAR COMPONENTS OF THE INPUT SRF --              #
-    !#--------------------------------------------------------------------------#
-
-    ! -- All the scalar stuff
-    Error_Status = Assign_SRF( SRF, iSRF, &
-                               Scalar_Only = SET, &
-                               Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error copying scalar components of input SRF to output iSRF.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- INTERPOLATE THE INPUT SRF --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------------------------------
-    ! Assign the interpolation frequency
-    ! grid to the output SRF structure
-    ! ----------------------------------
-
-    iSRF%Begin_Frequency = Frequency(1)
-    iSRF%End_Frequency   = Frequency(n_Frequencies)
-    iSRF%Frequency       = Frequency
-
-
-    ! --------------------
-    ! Do the interpolation
-    ! --------------------
-
-    Error_Status = Polynomial_Interpolate( SRF%Frequency,  &  ! Input,  X
-                                           SRF%Response,   &  ! Input,  Y
-                                           iSRF%Frequency, &  ! Input,  Xint
-                                           iSRF%Response,  &  ! Output, Yint
-                                           Order = Order,  &  ! Optional input
-                                           Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error interpolating input SRF response', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! --------------------------------
-    ! Ensure there is no extrapolation
-    ! --------------------------------
-
-    ! -- Low frequency edge
-    IF ( n1 > 1 ) iSRF%Response(1:n1) = ZERO
-
-    ! -- High frequency edge
-    IF ( n2 < n_Frequencies ) iSRF%Response(n2:) = ZERO
-
-
-    ! ------------------------------
-    ! Integrate the interpolated SRF
-    ! ------------------------------
-
-    Error_Status = Integrate_SRF( iSRF, &
-                                  Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error occurred integrating interpolated SRF', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-  END FUNCTION Interpolate_SRF
-
-
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Convolve_with_SRF
-!
-! PURPOSE:
-!       Procedure to convolve a spectrum with an instrument channel SRF.
-!
-! CATEGORY:
-!       Instrument Information : SRF
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Convolve_with_SRF( Frequency,                 &  ! Input
-!                                         Spectrum,                  &  ! Input
-!                                         SRF,                       &  ! Input
-!                                         Convolved_Spectrum,        &  ! Output
-!                                         Interpolate = Interpolate, &  ! Optional input
-!                                         Integrate   = Integrate,   &  ! Optional input
-!                                         Order       = Order,       &  ! Optional input
-!                                         RCS_Id      = RCS_Id,      &  ! Revision control
-!                                         Message_Log = Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Frequency:           Frequency grid of the input spectrum.
-!                            UNITS:      Inverse centimetres (cm^-1)
-!                            TYPE:       REAL( fp_kind )
-!                            DIMENSION:  Rank-1
-!                            ATTRIBUTES: INTENT( IN )
-!
-!       Spectrum:            Spectrum to be convolved with the SRF response.
-!                            UNITS:      Variable.
-!                            TYPE:       REAL( fp_kind )
-!                            DIMENSION:  Rank-1
-!                            ATTRIBUTES: INTENT( IN )
-!
-!       SRF:                 SRF structure containing the instrument channel
-!                            response to be used in the convolution.
-!                            UNITS:      N/A
-!                            TYPE:       SRF_type
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Interpolate:         Set this argument to force interpolation of the SRF
-!                            response to the input frequency grid. If not set,
-!                            the default is to assume that the SRF and spectrum
-!                            frequency grids match up for the required span.
-!                            If = 0; do not interpolate the SRF response (DEFAULT)
-!                               = 1; interpolate input SRF response to the input
-!                                    frequency grid.
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       Integrate:           Set this argument to perform numerical integration
-!                            when doing the convolutions. If not set, the default
-!                            action is to simply sum the results.
-!                            If = 0; use summation to compute convolved value. (DEFAULT)
-!                               = 1; perform numerical integration to compute the
-!                                    convolved value.
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       Order:               The order of the interpolating polynomial. This
-!                            argument, if supplied, is passed to the interpolation
-!                            function where, if not specified, linear interpolation
-!                            (order = 1) is the default. If specified, must be an
-!                            odd number > 0.
-!                            UNITS:      None
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       Message_Log:         Character string specifying a filename in which any
-!                            messages will be logged. If not specified, or if an
-!                            error occurs opening the log file, the default action
-!                            is to output messages to standard output.
-!                            UNITS:      None
-!                            TYPE:       Character
-!                            DIMENSION:  Scalar, LEN = *
-!                            ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Convolved_Spectrum:  The input spectrum convolved with the input SRF
-!                            response.
-!                            UNITS:      Variable.
-!                            TYPE:       REAL( fp_kind )
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:              Character string containing the Revision Control
-!                            System Id field for the module.
-!                            UNITS:      None
-!                            TYPE:       CHARACTER
-!                            DIMENSION:  Scalar, LEN = *
-!                            ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:        The return value is an integer defining the error status.
-!                            The error codes are defined in the Message_Handler module.
-!                            If == SUCCESS the spectrum convolution was successful
-!                               == FAILURE an error occurred
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!
-! CALLS:
-!      Interpolate_SRF:             Function to interpolate and input SRF to
-!                                   another frequency grid.
-!
-!      Assign_SRF:                  Function to copy an SRF structure.
-!                                   SOURCE: SRF_DEFINE module
-!
-!      Destroy_SRF:                 Function to re-initialize an SRF structure.
-!                                   SOURCE: SRF_DEFINE module
-!
-!      Simpsons_Integral:           Function to integratea tabulated function
-!                                   using Simpson's rule.
-!                                   SOURCE: INTEGRATE module
-!
-!      Display_Message:             Subroutine to output messages
-!                                   SOURCE: Message_Handler module
-!
-!      Compute_Frequency_Interval:  PRIVATE subroutine to compute the frequency
-!                                   spacing of the input frequency grid.
-!
-!      Bracket_Points:              PRIVATE subroutine to compute the points
-!                                   in the frequency grid that bracket the
-!                                   SRF.
-! CONTAINS:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None
-!
-! SIDE EFFECTS:
-!       None
-!
-! RESTRICTIONS:
-!       None
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2003
-!                       paul.vandelst@ssec.wisc.edu
-!S-
-!------------------------------------------------------------------------------
-
-  FUNCTION Convolve_with_SRF( Frequency,          &  ! Input
-                              Spectrum,           &  ! Input
-                              SRF,                &  ! Input
-                              Convolved_Spectrum, &  ! Output
-                              Interpolate,        &  ! Optional input
-                              Integrate,          &  ! Optional input
-                              Order,              &  ! Optional input
-                              RCS_Id,             &  ! Revision control
-                              Message_Log )       &  ! Error messaging
-                            RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN )  :: Frequency
-    REAL( fp_kind ), DIMENSION( : ), INTENT( IN )  :: Spectrum
-    TYPE( SRF_type ),                INTENT( IN )  :: SRF
-
-    ! -- Output
-    REAL( fp_kind ),                 INTENT( OUT ) :: Convolved_Spectrum
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL,        INTENT( IN )  :: Interpolate
-    INTEGER,        OPTIONAL,        INTENT( IN )  :: Integrate
-    INTEGER,        OPTIONAL,        INTENT( IN )  :: Order
-
-    ! -- Revision control
-    CHARACTER( * ), OPTIONAL,        INTENT( OUT ) :: RCS_Id
-
-    ! -- Error handler message log
-    CHARACTER( * ), OPTIONAL,        INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Convolve_with_SRF'
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    LOGICAL :: Frequency_Match
-    LOGICAL :: Summation
-
-    TYPE( SRF_type ) :: SRF_To_Use
-
-    INTEGER :: n_Frequencies
-    INTEGER :: n1, n2, n
-
-    REAL( fp_kind ) :: Frequency_Interval
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                             -- CHECK INPUT --                            #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------
-    ! Check for consistent array sizes
-    ! --------------------------------
-
-    n_Frequencies = SIZE( Frequency )
-    IF ( SIZE( Spectrum ) /= n_Frequencies ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Size of input frequency and spectrum arrays are different', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! ------------------------
-    ! Check optional arguments
-    ! ------------------------
-
-    ! -- Default is no SRF interpolation as SRF and spectrum frequency match is assumed...
-    Frequency_Match = .TRUE.
-    ! -- ...unless the Interpolate argument is set
-    IF ( PRESENT( Interpolate ) ) THEN
-      IF ( Interpolate == SET ) Frequency_Match = .FALSE.
-    END IF
-
-    ! -- Default is to sum the convolved SRF and spectrum...
-    Summation = .TRUE.
-    ! -- ...unless the Integrate argument is set
-    IF ( PRESENT( Integrate ) ) THEN
-      IF ( Integrate == SET ) Summation = .FALSE.
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- COPY OR INTERPOLATE SRF AS REQUIRED --                #
-    !#--------------------------------------------------------------------------#
-
-    IF ( Frequency_Match ) THEN
-
-
-      ! ------------
-      ! Copy the SRF
-      ! ------------
-
-      Error_Status = Assign_SRF( SRF, SRF_To_Use, &
-                                 Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error copying SRF', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-
-    ELSE
-
-
-      ! -------------------
-      ! Interpolate the SRF
-      ! -------------------
-
-      Error_Status = Interpolate_SRF( Frequency, &
-                                      SRF, &
-                                      SRF_To_Use, &
-                                      Order = Order, &
-                                      Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error interpolating SRF', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-
-    END IF
-
-
-    !#--------------------------------------------------------------------------#
-    !#             -- CALCULATE THE BEGIN AND END SRF FREQUENCIES --            #
-    !#             -- AND THE NUMBER OF SRF POINTS                --            #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------------
-    ! Calculate the input frequency interval
-    ! --------------------------------------
-
-    Frequency_Interval = Compute_Frequency_Interval( Frequency )
-
-
-    ! ------------------------------------------------
-    ! Get the SRF bracket points in the input spectrum
-    ! ------------------------------------------------
-
-    CALL Bracket_Points( SRF_To_Use%Begin_Frequency, SRF_To_Use%End_Frequency, &
-                         Frequency(1), Frequency_Interval, &
-                         n1, n2, n )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- PERFORM THE CONVOLUTION --                       #
-    !#--------------------------------------------------------------------------#
-
-    IF ( Summation ) THEN
-
-
-      ! ----------------
-      ! Simple summation
-      ! ----------------
-
-      Convolved_Spectrum = SUM( SRF_To_Use%Response * Spectrum(n1:n2) ) * Frequency_Interval / &
-                           SRF_to_Use%Summation_SRF
-
-    ELSE
-
-
-      ! -----------
-      ! Integration
-      ! -----------
-
-      ! -- Integrate the function
-      Error_Status = Simpsons_Integral( Frequency(n1:n2), &
-                                        SRF_To_Use%Response * Spectrum(n1:n2), &
-                                        Convolved_Spectrum, &
-                                        Order = Order )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error occurred integrating SRF*Spectrum', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-
-      ! -- Normalize it
-      Convolved_Spectrum = Convolved_Spectrum / SRF_to_Use%Integrated_SRF
-
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- DESTROY THE LOCAL SRF STRUCTURE --                  #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Destroy_SRF( SRF_To_Use, &
-                                Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying local SRF_To_Use structure', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-  END FUNCTION Convolve_with_SRF
+  END FUNCTION f_Index
 
 END MODULE SRF_Utility
 
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id$
-!
-! $Date: 2006/08/15 20:51:04 $
-!
-! $Revision$
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: SRF_Utility.f90,v $
-! Revision 1.7  2006/08/15 20:51:04  wd20pd
-! Additional replacement of Error_Handler with Message_Handler.
-!
-! Revision 1.6  2006/05/02 16:58:02  dgroff
-! *** empty log message ***
-!
-! Revision 1.5  2004/08/31 20:57:15  paulv
-! - Upgraded to Fortran95.
-! - Now using Compare_Float_Numbers module for floating point comparisons.
-! - Changed INTENT of iSRF structure in Interpolate_SRF() function from OUT to
-!   IN OUT. Necessary to prevent memory leaks.
-! - Added structure association test to the Interpolate_SRF() function.
-!
-! Revision 1.4  2003/11/19 15:26:27  paulv
-! - Updated header documentation.
-!
-! Revision 1.3  2003/09/15 15:33:49  paulv
-! - Changes made to use updated SRF definition module.
-!
-! Revision 1.2  2003/03/25 22:31:19  paulv
-! - Corrected convolution to normalise the result with the integrated SRF.
-! - Added documentation.
-!
-! Revision 1.1  2003/03/21 22:40:36  paulv
-! Initial checkin. Incomplete.
-!
-!
-!
+ 
