@@ -113,7 +113,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 47
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 48
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -127,7 +127,7 @@ MODULE MW_SensorData_Define
     'amsua_n19           ','mhs_n19             ','amsua_metop-a       ','mhs_metop-a         ',&
     'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         ',&
     'ssmi_f08            ','ssmi_f10            ','ssmi_f11            ','mwri_fy3a           ',&
-    'mwhs_fy3a           ','tmi_trmm            ','gmi_gpm             '/)
+    'mwhs_fy3a           ','mwts_fy3a           ','tmi_trmm            ','gmi_gpm             '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -137,11 +137,13 @@ MODULE MW_SensorData_Define
      784, 784, 784, &                                       ! AQUA AMSU-A, HSB, and AMSR-E
      209, 209, &                                            ! NOAA-18 AMSU-A and MHS
      283, &                                                 ! Coriolis WindSat
-     INVALID_WMO_SATELLITE_ID, &                            ! NPOESS-C1 ATMS (MISSING VALUE)
+     INVALID_WMO_SATELLITE_ID, &                            ! NPOESS-C1 ATMS
      210, 210, &                                            ! NOAA-N' AMSU-A and MHS (GUESS. NOT LISTED IN C-5)
      4, 4, 3, 3, 5, 5, &                                    ! MetOp-A - C AMSU-A; MHS
      241, 243, 244, &                                       ! DMSP-08,-10,-11 SSM/I
-     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! Fengyun-3A MWRI; MWHS
+     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWRI
+     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWHS
+     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWTS
      282, INVALID_WMO_SATELLITE_ID /)                       ! TRMM TMI; GPM GMI
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
@@ -157,6 +159,7 @@ MODULE MW_SensorData_Define
      570, 203, 570, 203, 570, 203, &                 ! MetOp-A - C AMSU-A; MHS
      905, 905, 905, &                                ! DMSP-08,-10,-11 SSM/I
      938, 936, &                                     ! Fengyun-3A MWRI; MWHS
+     INVALID_WMO_SENSOR_ID, &                        ! Fengyun-3A MWTS
      365, INVALID_WMO_SENSOR_ID /)                   ! TRMM TMI; GPM GMI
 
 
@@ -179,6 +182,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_ATMS_CHANNELS    = 22
   INTEGER, PARAMETER :: N_MWRI_CHANNELS    = 12
   INTEGER, PARAMETER :: N_MWHS_CHANNELS    =  5
+  INTEGER, PARAMETER :: N_MWTS_CHANNELS    =  4
   INTEGER, PARAMETER :: N_TMI_CHANNELS     =  9
   INTEGER, PARAMETER :: N_GMI_CHANNELS     = 13
  
@@ -202,7 +206,7 @@ MODULE MW_SensorData_Define
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
        N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS, &            ! DMSP-08,-10,-11 SSM/I
-       N_MWRI_CHANNELS, N_MWHS_CHANNELS, &                               ! Fengyun-3A MWRI; MWHS
+       N_MWRI_CHANNELS, N_MWHS_CHANNELS, N_MWTS_CHANNELS, &              ! Fengyun-3A MWRI; MWHS; MWTS
        N_TMI_CHANNELS, N_GMI_CHANNELS /)                                 ! TRMM TMI; GPM GMI
 
   ! The sensor channel numbers
@@ -220,6 +224,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: ATMS_SENSOR_CHANNEL(N_ATMS_CHANNELS)      =(/(i,i=1,N_ATMS_CHANNELS   )/)
   INTEGER, PARAMETER :: MWRI_SENSOR_CHANNEL(N_MWRI_CHANNELS)      =(/(i,i=1,N_MWRI_CHANNELS   )/)
   INTEGER, PARAMETER :: MWHS_SENSOR_CHANNEL(N_MWHS_CHANNELS)      =(/(i,i=1,N_MWHS_CHANNELS   )/)
+  INTEGER, PARAMETER :: MWTS_SENSOR_CHANNEL(N_MWTS_CHANNELS)      =(/(i,i=1,N_MWTS_CHANNELS   )/)
   INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/(i,i=1,N_TMI_CHANNELS    )/)
   INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/(i,i=1,N_GMI_CHANNELS    )/)
 
@@ -256,6 +261,7 @@ MODULE MW_SensorData_Define
                                                                    1, 1, 1, 1, 1, 1, 1 /)
   INTEGER, PARAMETER :: MWRI_N_SIDEBANDS(N_MWRI_CHANNELS) = 1
   INTEGER, PARAMETER :: MWHS_N_SIDEBANDS(N_MWHS_CHANNELS) = 1
+  INTEGER, PARAMETER :: MWTS_N_SIDEBANDS(N_MWTS_CHANNELS) = 1
   INTEGER, PARAMETER :: TMI_N_SIDEBANDS(N_TMI_CHANNELS) = 1
   INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS) = 1
 
@@ -1146,6 +1152,27 @@ MODULE MW_SensorData_Define
              (/ 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS /) )
 
 
+  ! FengYun-3 MWTS
+  !
+  ! Data from presentation by Hu Yang given at the
+  ! 7th GPM International Planning Workshop Tokyo, Japan Dec.5-7 2007
+  ! See: http://www.eorc.jaxa.jp/GPM/ws7/program.html, talk 5_pm13,
+  !        or
+  !      http://www.eorc.jaxa.jp/GPM/ws7/pdf/5thDEC2007/PM/5_pm13.pdf
+  ! -----------------------------------------------------------------
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: MWTS_F0( N_MWTS_CHANNELS ) = &
+    (/ 50.30_fp, 53.596_fp, 54.94_fp, 57.290_fp/)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MWTS_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS ) = &
+    RESHAPE( (/ ZERO   , 0.09_fp , ZERO, ZERO, &    ! ch1
+                0.03_fp, 0.2_fp  , ZERO, ZERO, &    ! ch2
+                ZERO   , 0.2_fp  , ZERO, ZERO, &    ! ch3
+                ZERO   , 0.165_fp, ZERO, ZERO /), & ! ch4
+             (/ 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS /) )
+
+
   !#----------------------------------------------------------------------------#
   !                           Sensor polariztion data
   !#----------------------------------------------------------------------------#
@@ -1383,6 +1410,15 @@ MODULE MW_SensorData_Define
      VL_MIXED_POLARIZATION, &  ! MWHS ch4
      VL_MIXED_POLARIZATION /)  ! MWHS ch5
 
+  ! FengYun-3 MWTS (copied from MSU)
+  ! --------------
+  INTEGER, PARAMETER :: MWTS_POLARIZATION( N_MWTS_CHANNELS ) = &
+  (/ VL_MIXED_POLARIZATION, &  ! MWTS ch1
+     HL_MIXED_POLARIZATION, &  ! MWTS ch2
+     VL_MIXED_POLARIZATION, &  ! MWTS ch3
+     HL_MIXED_POLARIZATION /)  ! MWTS ch4
+     
+     
 CONTAINS
 
 
@@ -2374,6 +2410,13 @@ CONTAINS
         MW_SensorData%Polarization      = MWHS_POLARIZATION
         MW_SensorData%n_Sidebands       = MWHS_N_SIDEBANDS
         MW_SensorData%IF_Band           = MWHS_IF_BAND
+
+      CASE ('mwts_fy3a')
+        MW_SensorData%Sensor_Channel    = MWTS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MWTS_F0
+        MW_SensorData%Polarization      = MWTS_POLARIZATION
+        MW_SensorData%n_Sidebands       = MWTS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MWTS_IF_BAND
 
       ! No match! Should never get here!
       ! --------------------------------
