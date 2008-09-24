@@ -3,31 +3,33 @@
 ;       Inquire_SRF_netCDF
 ;
 ; PURPOSE:
-;       Function to inquire a netCDF SRF format file to obtain the number of
-;       channels, channel list, sensor IDs, and global attributes.
+;       Function to inquire a netCDF SRF format file to obtain the dimensions,
+;       channel list, sensor IDs, and global attributes.
 ;
 ; CALLING SEQUENCE:
-;       Error_Status = Inquire_SRF_netCDF( NC_Filename,                         $  ! Input
-;                                          n_Channels       = n_Channels,       $  ! Optional output
-;                                          n_Points         = n_Points,         $  ! Optional output
-;                                          Channel_List     = Channel_List,     $  ! Optional output
-;                                          Begin_Frequency  = Begin_Frequency,  $  ! Optional output
-;                                          End_Frequency    = End_Frequency,    $  ! Optional output
-;                                          WMO_Satellite_ID = WMO_Satellite_ID, $  ! Optional output
-;                                          WMO_Sensor_ID    = WMO_Sensor_ID,    $  ! Optional output
-;                                          Title            = Title,            $  ! Optional output
-;                                          History          = History,          $  ! Optional output
-;                                          Sensor_Name      = Sensor_Name,      $  ! Optional output
-;                                          Platform_Name    = Platform_Name,    $  ! Optional output
-;                                          Comment          = Comment           )  ! Optional output
+;       Error_Status = Inquire_SRF_netCDF( NC_Filename                        , $  ; Input
+;                                          n_Channels       = n_Channels      , $  ; Optional output
+;                                          n_Points         = n_Points        , $  ; Optional output
+;                                          n_Bands          = n_Bands         , $  ; Optional output
+;                                          Sensor_Type      = Sensor_Type     , $  ; Optional output
+;                                          Sensor_Channel   = Sensor_Channel  , $  ; Optional output
+;                                          Begin_Frequency  = Begin_Frequency , $  ; Optional output
+;                                          End_Frequency    = End_Frequency   , $  ; Optional output
+;                                          Version          = Version         , $  ; Optional output
+;                                          Sensor_ID        = Sensor_ID       , $  ; Optional output
+;                                          Title            = Title           , $  ; Optional output
+;                                          History          = History         , $  ; Optional output
+;                                          Sensor_Name      = Sensor_Name     , $  ; Optional output
+;                                          Platform_Name    = Platform_Name   , $  ; Optional output
+;                                          Comment          = Comment           )  ; Optional output
 ;
 ; INPUT ARGUMENTS:
-;       NC_Filename:        Character string specifying the name of the netCDF
-;                           format SRF data file to inquire.
+;       NC_Filename:        Character string specifying the name of the
+;                           SRF netCDF format data file to inquire.
 ;                           UNITS:      N/A
-;                           TYPE:       CHARACTER( * )
+;                           TYPE:       CHARACTER(*)
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( IN )
+;                           ATTRIBUTES: INTENT(IN)
 ;
 ; OPTIONAL OUTPUT ARGUMENTS:
 ;       n_Channels:         The number of channels dimension of the
@@ -35,94 +37,95 @@
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       n_Points:           The number of spectral points used to represent the
 ;                           SRF for each channel.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Rank-1, n_Channels
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       Channel_List:       The list of channel numbers present in the netCDF
+;       n_Bands:            The number of bands used to represent the
+;                           SRF for each channel.
+;                           UNITS:      N/A
+;                           TYPE:       INTEGER
+;                           DIMENSION:  Rank-1, n_Channels
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       Sensor_Type:        The flag indicating the type of sensor (IR, MW, etc)
+;                           UNITS:      N/A
+;                           TYPE:       INTEGER
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       Sensor_Channel:     The list of channel numbers present in the netCDF
 ;                           SRF file. The list may not necessarily
 ;                           start at 1 or contain contiguous values.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Rank-1, n_Channels
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Begin_Frequency:    The list of the begin frequency limits for
 ;                           each channel's SRF.
 ;                           UNITS:      Inverse centimetres (cm^-1)
-;                           TYPE:       REAL( fp_kind )
+;                           TYPE:       REAL(fp)
 ;                           DIMENSION:  Rank-1, n_Channels
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       End_Frequency:      The list of the end frequency limits for
 ;                           each channel's SRF.
 ;                           UNITS:      Inverse centimetres (cm^-1)
-;                           TYPE:       REAL( fp_kind )
+;                           TYPE:       REAL(fp)
 ;                           DIMENSION:  Rank-1, n_Channels
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       WMO_Satellite_ID:   The WMO code for identifying satellite
-;                           platforms. Taken from the WMO common
-;                           code tables at:
-;                             http://www.wmo.ch/web/ddbs/Code-tables.html
-;                           The Satellite ID is from Common Code
-;                           table C-5, or code table 0 01 007 in BUFR
+;       Version:            The version number of the netCDF SRF file.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       WMO_Sensor_ID:      The WMO code for identifying a satelite
-;                           sensor. Taken from the WMO common
-;                           code tables at:
-;                             http://www.wmo.ch/web/ddbs/Code-tables.html
-;                           The Sensor ID is from Common Code
-;                           table C-8, or code table 0 02 019 in BUFR
+;       Sensor_ID:          A character string identifying the sensor and
+;                           satellite platform used to contruct filenames.
+;                           UNITS:      N/A
+;                           TYPE:       CHARACTER(*)
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       WMO_Satellite_ID:   The WMO code used to identify satellite platforms.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       WMO_Sensor_ID:      The WMO code used to identify sensors.
+;                           UNITS:      N/A
+;                           TYPE:       INTEGER
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Title:              Character string written into the TITLE global
 ;                           attribute field of the netCDF SRF file.
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER(*)
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       History:            Character string written into the HISTORY global
 ;                           attribute field of the netCDF SRF file.
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER(*)
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
-;
-;       Sensor_Name:        Character string written into the SENSOR_NAME global
-;                           attribute field of the netCDF SRF file.
-;                           UNITS:      N/A
-;                           TYPE:       CHARACTER(*)
-;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
-;
-;       Platform_Name:      Character string written into the PLATFORM_NAME global
-;                           attribute field of the netCDF SRF file.
-;                           UNITS:      N/A
-;                           TYPE:       CHARACTER(*)
-;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Comment:            Character string written into the COMMENT global
 ;                           attribute field of the netCDF SRF file.
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER(*)
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
-;
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ; FUNCTION RESULT:
 ;       Error_Status:       The return value is an integer defining the error status.
@@ -139,142 +142,127 @@
 ;                       paul.vandelst@ssec.wisc.edu
 ;-
 
-FUNCTION Inquire_SRF_netCDF, SRF_Filename,                        $  ; Input
-                             n_Channels       = n_Channels,       $  ; Optional output
-                             n_Points         = n_Points,         $  ; Optional output
-                             Channel_List     = Channel_List,     $  ; Optional output
-                             Begin_Frequency  = Begin_Frequency,  $  ; Optional output
-                             End_Frequency    = End_Frequency,    $  ; Optional output
-                             WMO_Satellite_ID = WMO_Satellite_ID, $  ; Optional output
-                             WMO_Sensor_ID    = WMO_Sensor_ID,    $  ; Optional output
-                             Title            = Title,            $  ; Optional output
-                             History          = History,          $  ; Optional output
-                             Sensor_Name      = Sensor_Name,      $  ; Optional output
-                             Platform_Name    = Platform_Name,    $  ; Optional output
+FUNCTION Inquire_SRF_netCDF, NC_Filename,                         $  ; Input
+                             n_Channels       = n_Channels      , $  ; Optional output
+                             n_Points         = n_Points        , $  ; Optional output
+                             n_Bands          = n_Bands         , $  ; Optional output
+                             Sensor_Type      = Sensor_Type     , $  ; Optional output
+                             Sensor_Channel   = Sensor_Channel  , $  ; Optional output
+                             Begin_Frequency  = Begin_Frequency , $  ; Optional output
+                             End_Frequency    = End_Frequency   , $  ; Optional output
+                             Version          = Version         , $  ; Optional output
+                             Sensor_ID        = Sensor_ID       , $  ; Optional output
+                             WMO_Satellite_Id = WMO_Satellite_Id, $  ; Optional output
+                             WMO_Sensor_Id    = WMO_Sensor_Id   , $  ; Optional output
+                             Title            = Title           , $  ; Optional output
+                             History          = History         , $  ; Optional output
                              Comment          = Comment              ; Optional output
 
-
-  ; Set up error handler
+  ; Set up
+  ; ------
+  ; Error handler
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
-    MESSAGE, !ERROR_STATE.MSG + $
-             '; Error inquiring netCDF SRF file ' + $
-             STRTRIM( SRF_FileNAME, 2 ), $
-             /CONTINUE
+    MESSAGE, !ERROR_STATE.MSG, /CONTINUE
+    IF ( N_ELEMENTS(NC_FileId) GT 0 ) THEN NCDF_CONTROL, NC_FileId, /ABORT
     RETURN, FAILURE
   ENDIF    
-
   ; Include the SRF netCDF parameters
   @srf_netcdf_parameters
 
-  ; Check input
-  n_Arguments = 1
-  IF ( N_PARAMS() LT n_Arguments ) THEN $
-    MESSAGE, 'Invalid number of arguments.', $
-             /NONAME, /NOPRINT
-  IF ( NOT Valid_String( SRF_FileNAME ) ) THEN $
-    MESSAGE, 'Input SRF_Filename argument not defined!', $
-             /NONAME, /NOPRINT
 
   ; Open the netCDF SRF file
-  FileID = NCDF_OPEN( SRF_Filename, /NOWRITE )
+  ; ------------------------
+  NC_FileId = NCDF_OPEN( NC_Filename, /NOWRITE )
+  NCDF_CONTROL, NC_FileId, /VERBOSE
 
 
-  ; Get the dimensional variables
-  ;
-  ; The channel list
-  VarID = NCDF_VARID( FileID, CHANNEL_LIST_VARNAME )
-  NCDF_VARGET, FileID, VarID, Channel_List  
-  ; The frequency limits
-  VarID = NCDF_VARID( FileID, BEGIN_FREQUENCY_VARNAME )
-  NCDF_VARGET, FileID, VarID, Begin_Frequency
-  VarID = NCDF_VARID( FileID, END_FREQUENCY_VARNAME )
-  NCDF_VARGET, FileID, VarID, End_Frequency
-  ; The sensor IDs
-  VarID = NCDF_VARID( FileID, WMO_SATELLITE_ID_VARNAME )
-  NCDF_VARGET, FileID, VarID, WMO_Satellite_ID
-  VarID = NCDF_VARID( FileID, WMO_SENSOR_ID_VARNAME )
-  NCDF_VARGET, FileID, VarID, WMO_Sensor_ID
+  ; Check input
+  ; -----------
+  IF ( NOT Valid_String( NC_Filename ) ) THEN $
+    MESSAGE, 'Input NC_Filename argument not defined!', $
+             /NONAME, /NOPRINT
 
 
-  ; Get the dimensions
-  ;
-  ; The channel dimension
-  DimID = NCDF_DIMID( FileID, CHANNEL_DIMNAME )
-  NCDF_DIMINQ, FileID, DimID, DimName, n_Channels
-  ; The number of points dimension
-  n_Points = LONARR( n_Channels )
-  FOR l = 0, n_Channels-1L DO BEGIN
-    DimName = 'channel_'+STRTRIM(Channel_List[l],2)+'_n_points'
-    DimID = NCDF_DIMID( FileID, DimName )
-    NCDF_DIMINQ, FileID, DimID, Dummy, n
-    n_Points[l] = n
-  ENDFOR
+  ; Get the number of channels dimension
+  ; ------------------------------------
+  DimID = NCDF_DIMID( NC_FileId, CHANNEL_DIMNAME )
+  NCDF_DIMINQ, NC_FileId, DimID, DimName, n_Channels
+  
+  
+  ; Get the sensor type
+  ; -------------------
+  VarID = NCDF_VARID( NC_FileId, SENSOR_TYPE_VARNAME )
+  NCDF_VARGET, NC_FileId, VarID, Sensor_Type
+  
+  
+  ; Get the sensor channel data
+  ; ---------------------------
+  VarID = NCDF_VARID( NC_FileId, SENSOR_CHANNEL_VARNAME )
+  NCDF_VARGET, NC_FileId, VarID, Sensor_Channel
 
-
+  
+  ; Get the channel specific data
+  ; -----------------------------
+  IF ( ARG_PRESENT(n_Points       ) AND $
+       ARG_PRESENT(n_Bands        ) AND $
+       ARG_PRESENT(Begin_Frequency) AND $
+       ARG_PRESENT(End_Frequency  )     ) THEN BEGIN
+    ; Create return arrays
+    n_Points        = LONARR(n_Channels)
+    n_Bands         = LONARR(n_Channels)
+    Begin_Frequency = LONARR(n_Channels)
+    End_Frequency   = LONARR(n_Channels)
+    ; Loop over channels
+    FOR i = 0L, n_Channels-1L DO BEGIN
+      ; Create the various dim and var names for this channel
+      CreateNames_SRF_netCDF, Sensor_Channel[i]              , $
+                              Point_DimName  =Point_DimName  , $
+                              Band_DimName   =Band_DimName   , $
+                              f1_Band_VarName=f1_Band_VarName, $
+                              f2_Band_VarName=f2_Band_VarName   
+      ; Retrieve the number of points dimension value
+      DimID = NCDF_DIMID( NC_FileId, Point_DimName )
+      NCDF_DIMINQ, NC_FileId, DimID, DimName, n
+      n_Points[i] = n
+      ; Retrieve the number of bands dimension value
+      DimID = NCDF_DIMID( NC_FileId, Band_DimName )
+      NCDF_DIMINQ, NC_FileId, DimID, DimName, n
+      n_Bands[i] = n
+      ; Retrieve the begin frequency
+      VarID = NCDF_VARID( NC_FileId, f1_Band_VarName )
+      NCDF_VARGET, NC_FileId, VarID, f_Band
+      Begin_Frequency[i] = f_Band[0]
+      ; Retrieve the end frequency
+      VarID = NCDF_VARID( NC_FileId, f2_Band_VarName )
+      NCDF_VARGET, NC_FileId, VarID, f_Band
+      End_Frequency[i] = f_Band[n_Bands[i]-1]
+    ENDFOR
+  ENDIF
+  
+  
   ; Get the global attributes
-  ;
-  ; The title
-  AttInfo = NCDF_ATTINQ( FileID, /GLOBAL, TITLE_GATTNAME )
-  IF ( AttInfo.DataType EQ 'UNKNOWN' ) THEN BEGIN
-    MESSAGE, 'Global attribute ' + TITLE_GATTNAME + ' not found. Skipping...', $
-             /INFORMATIONAL
-    Title = ''
-  ENDIF ELSE BEGIN
-    NCDF_ATTGET, FileID, /GLOBAL, TITLE_GATTNAME, Title
-    Title = STRING( Title )
-  ENDELSE
-
-  ; The history
-  AttInfo = NCDF_ATTINQ( FileID, /GLOBAL, HISTORY_GATTNAME )
-  IF ( AttInfo.DataType EQ 'UNKNOWN' ) THEN BEGIN
-    MESSAGE, 'Global attribute ' + HISTORY_GATTNAME + ' not found. Skipping...', $
-             /INFORMATIONAL
-    History = ''
-  ENDIF ELSE BEGIN
-    NCDF_ATTGET, FileID, /GLOBAL, HISTORY_GATTNAME, History
-    History = STRING( History )
-  ENDELSE
-
-  ; The sensor name
-  AttInfo = NCDF_ATTINQ( FileID, /GLOBAL, SENSOR_NAME_GATTNAME )
-  IF ( AttInfo.DataType EQ 'UNKNOWN' ) THEN BEGIN
-    MESSAGE, 'Global attribute ' + SENSOR_NAME_GATTNAME + ' not found. Skipping...', $
-             /INFORMATIONAL
-    Sensor_Name = ''
-  ENDIF ELSE BEGIN
-    NCDF_ATTGET, FileID, /GLOBAL, SENSOR_NAME_GATTNAME, Sensor_Name
-    Sensor_Name = STRING( Sensor_Name )
-  ENDELSE
-
-  ; The platform name
-  AttInfo = NCDF_ATTINQ( FileID, /GLOBAL, PLATFORM_NAME_GATTNAME )
-  IF ( AttInfo.DataType EQ 'UNKNOWN' ) THEN BEGIN
-    MESSAGE, 'Global attribute ' + PLATFORM_NAME_GATTNAME + ' not found. Skipping...', $
-             /INFORMATIONAL
-    Platform_Name = ''
-  ENDIF ELSE BEGIN
-    NCDF_ATTGET, FileID, /GLOBAL, PLATFORM_NAME_GATTNAME, Platform_Name
-    Platform_Name = STRING( Platform_Name )
-  ENDELSE
-
-  ; The comment
-  AttInfo = NCDF_ATTINQ( FileID, /GLOBAL, COMMENT_GATTNAME )
-  IF ( AttInfo.DataType EQ 'UNKNOWN' ) THEN BEGIN
-    MESSAGE, 'Global attribute ' + COMMENT_GATTNAME + ' not found. Skipping...', $
-             /INFORMATIONAL
-    Comment = ''
-  ENDIF ELSE BEGIN
-    NCDF_ATTGET, FileID, /GLOBAL, COMMENT_GATTNAME, Comment
-    Comment = STRING( Comment )
-  ENDELSE
-
-  NCDF_CLOSE, FileID
+  ; -------------------------
+  result = ReadGAtts_SRF_netCDF( NC_Filename                      , $  ; Input
+                                 NC_FileId                        , $  ; Input
+                                 Release         =Release         , $  ; Optional output
+                                 Version         =Version         , $  ; Optional output
+                                 Sensor_Id       =Sensor_Id       , $  ; Optional output
+                                 WMO_Satellite_Id=WMO_Satellite_Id, $  ; Optional output
+                                 WMO_Sensor_Id   =WMO_Sensor_Id   , $  ; Optional output
+                                 Title           =Title           , $  ; Optional output
+                                 History         =History         , $  ; Optional output
+                                 Comment         =Comment           )  ; Optional output
+  IF ( result NE SUCCESS ) THEN $
+    MESSAGE, 'Error reading global attributes from '+STRTRIM(NC_Filename,2), $
+             /NONAME, /NOPRINT
 
 
   ; Done
+  ; ----
+  NCDF_CLOSE, NC_FileId
   CATCH, /CANCEL
   RETURN, SUCCESS
 

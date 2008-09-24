@@ -86,7 +86,7 @@ PRO SRF_Viewer_ChannelSlider_Event, Event
   WIDGET_CONTROL, Event.ID, GET_VALUE = Channel
 
   ; Is the selected channel present?
-  Loc = WHERE( *Info.ChannelList EQ Channel, Count )
+  Loc = WHERE( *Info.Sensor_Channel EQ Channel, Count )
   IF ( Count EQ 0 ) THEN BEGIN
     MESSAGE, 'Channel number '+STRTRIM(Channel,2)+' is not present', $
              /INFORMATIONAL
@@ -120,8 +120,7 @@ PRO SRF_Viewer_Display, ID, $
 
   ; Plot the current SRF
   PLOT, *(*Info.SRF).Frequency, *(*Info.SRF).Response, $
-        TITLE='Channel '+STRTRIM((*Info.SRF).Channel,2)+' SRF for '+$
-              (*Info.SRF).Platform_Name+' '+(*Info.SRF).Sensor_Name, $
+        TITLE='Channel '+STRTRIM((*Info.SRF).Channel,2)+' SRF for '+(*Info.SRF).Sensor_Id, $
         XTITLE='Frequency (cm!U-1!N)', $
         YTITLE='Relative response', $
         FONT=Font, $
@@ -154,22 +153,18 @@ PRO SRF_Viewer_Load_File, File, ID
   Info.Filename = FileParts[nParts-1]
 
   ; Inquire the new file
-  Error_Status = Inquire_SRF_netCDF( File, $
-                                     n_Channels = nChannels, $
-                                     Channel_List = *Info.ChannelList, $
-                                     Sensor_Name   = Sensor_Name, $
-                                     Platform_Name = Platform_Name )
+  Error_Status = Inquire_SRF_netCDF( File,Sensor_Channel = *Info.Sensor_Channel )
 
   ; Read the first channel of the new file
   Error_Status = Read_SRF_netCDF( File, $
-                                  (*Info.ChannelList)[0], $
+                                  (*Info.Sensor_Channel)[0], $
                                   *Info.SRF )
 
   ; Activate the slider
   WIDGET_CONTROL, Info.ChannelSlider_ID, $
-                  SET_SLIDER_MIN = MIN(*Info.ChannelList), $
-                  SET_SLIDER_MAX = MAX(*Info.ChannelList), $
-                  SET_VALUE = MIN(*Info.ChannelList), $
+                  SET_SLIDER_MIN = MIN(*Info.Sensor_Channel), $
+                  SET_SLIDER_MAX = MAX(*Info.Sensor_Channel), $
+                  SET_VALUE = MIN(*Info.Sensor_Channel), $
                   SENSITIVE = 1
     
   ; Save top level base info state
@@ -315,7 +310,7 @@ PRO SRF_Viewer, Debug = Debug
            ChannelSlider_ID : ChannelSlider_ID, $
            Full_Filename    : ' ', $
            Filename         : ' ', $
-           ChannelList      : PTR_NEW(/ALLOCATE_HEAP), $
+           Sensor_Channel   : PTR_NEW(/ALLOCATE_HEAP), $
            SRF              : PTR_NEW(/ALLOCATE_HEAP) }
 
   InfoPtr = PTR_NEW( Info )

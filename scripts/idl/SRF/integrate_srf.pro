@@ -1,8 +1,8 @@
 ;+
-; Function to compute the frequency grid
-; for a supplied SRF data structure.
+; Function to integrate the response
+; in a supplied SRF data structure.
 
-FUNCTION Frequency_SRF, SRF  ; Input
+FUNCTION Integrate_SRF, SRF  ; Input
 ;-
 
   ; Generic SRF parameters
@@ -34,34 +34,39 @@ FUNCTION Frequency_SRF, SRF  ; Input
     MESSAGE, 'SRF structure must contain at least 2 points.', $
              /NONAME, /NOPRINT
   ; Check the number of points in each band
-  loc = WHERE(*SRF.npts_Band LT 2, count)
+  loc = WHERE(*SRF.npts_Bands LT 2, count)
   IF ( count NE 0 ) THEN $
     MESSAGE, 'SRF must contain at least 2 points for each band.', $
              /NONAME, /NOPRINT
   ; Check the total points                                                   
-  IF ( TOTAL(*SRF.npts_Band) NE SRF.n_Points ) THEN $
+  IF ( TOTAL(*SRF.npts_Bands) NE SRF.n_Points ) THEN $
     MESSAGE, 'SRF must have consistent data points.', $
              /NONAME, /NOPRINT
              
   ; Compute the SRF frequency grid
   ; ------------------------------
+  ; Intialisation
+  SRF.Integrated_SRF = ZERO
+  SRF.Summation_SRF  = ZERO
   i2 = -1L
   ; Begin band loop
   FOR m = 0L, SRF.n_Bands-1L DO BEGIN
-    ; Current band limits
-    f1 = (*SRF.f1_Band)[m]
-    f2 = (*SRF.f2_Band)[m]
+    ; The point limits for this band
     n  = (*SRF.npts_Band)[m]
-    ; The point limits for this bands
-    i1 = ++i2
+    i1 = i2++
     i2 = i1 + n - 1L
-    ; Construct a frequency grid of 0->1 for this band
-    (*SRF.Frequency)[i1:i2] = DINDGEN(n)/DOUBLE(n-1L)
-    (*SRF.Frequency)[i1:i2] = f1 + (*SRF.Frequency)[i1:i2]*(f2-f1)
+    ; Integrate using Simpson's Rule
+    Int_SRF = Integral((*SRF.Frequency)[i1:i2],(*SRF.Response)[i1:i2])
+    ; Integrate by simply summation
+    df = (*SRF.Frequency)[1] - (*SRF.Frequency)[0] 
+    Sum_SRF = TOTAL((*SRF.Response)[i1:i2],/DOUBLE)*df
+    ; Accumulate the band sums
+    SRF.Integrated_SRF = SRF.Integrated_SRF + Int_SRF
+    SRF.Summation_SRF  = SRF.Summation_SRF  + Sum_SRF
   ENDFOR
 
   ; Done
   CATCH, /CANCEL
   RETURN, SUCCESS
 
-END ; FUNCTION Frequency_SRF
+END ; FUNCTION Integrate_SRF

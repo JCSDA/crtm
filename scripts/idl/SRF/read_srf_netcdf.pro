@@ -7,12 +7,12 @@
 ;       format file.
 ;
 ; CALLING SEQUENCE:
-;       Error_Status = Read_SRF_netCDF( SRF_Filename, $  ! Input  
-;                                       Channel,      $  ! Input  
-;                                       SRF           )  ! Output 
+;       Error_Status = Read_SRF_netCDF( NC_Filename, $  ! Input  
+;                                       Channel    , $  ! Input  
+;                                       SRF          )  ! Output 
 ;
 ; INPUT ARGUMENTS:
-;       SRF_Filename: Character string specifying the name of the netCDF SRF
+;       NC_Filename:  Character string specifying the name of the netCDF SRF
 ;                     format data file to read.
 ;                     UNITS:      N/A
 ;                     TYPE:       CHARACTER(*)
@@ -28,67 +28,53 @@
 ; OUTPUT ARGUMENTS:
 ;       SRF:          Structure containing the requested SRF data.
 ;                     UNITS:      N/A
-;                     TYPE:       SRF_type
+;                     TYPE:       {SRF}
 ;                     DIMENSION:  Scalar
 ;                     ATTRIBUTES: INTENT( OUT )
 ;
 ; FUNCTION RESULT:
 ;       Error_Status: The return value is an integer defining the error
 ;                     status. The error codes are defined in the
-;                     ERROR_HANDLER module.
+;                     error_codes include file.
 ;                     If == SUCCESS the netCDF data read was successful
 ;                        == FAILURE an unrecoverable error occurred
 ;                     UNITS:      N/A
 ;                     TYPE:       INTEGER
 ;                     DIMENSION:  Scalar
 ;
-; COMMENTS:
-;       Note the INTENT on the output SRF argument is IN OUT rather
-;       than just OUT. This is necessary because the argument may be defined on
-;       input. To prevent memory leaks, the IN OUT INTENT is a must.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst; CIMSS/SSEC 02-Sep-2003
-;                       paul.vandelst@ssec.wisc.edu
-;
 ;-
 
-FUNCTION Read_SRF_netCDF, SRF_Filename, $ ; Input
-                          Channel,      $ ; Input
-                          SRF             ; Output
+FUNCTION Read_SRF_netCDF, NC_Filename, $ ; Input
+                          Channel    , $ ; Input
+                          SRF            ; Output
 
+  ; Set up
+  ; ------
   ; Set compilation options
   COMPILE_OPT STRICTARR
-
   ; Compile the SRF methods by
   ; creating a dummy structure
-  x = { SRF }
+  x = {SRF}
   Undefine, x
-
-  ; Set up error handler
+  ; Error handler
   @error_codes
   CATCH, error_status
   IF ( error_status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
     MESSAGE, !ERROR_STATE.MSG, /CONTINUE
+    IF ( N_ELEMENTS(NC_FileId) GT 0 ) THEN NCDF_CONTROL, NC_FileId, /ABORT
     RETURN, FAILURE
   ENDIF    
-
   ; Include the SRF netCDF parameters
   @srf_netcdf_parameters
 
   ; Check input
-  n_arguments = 3
-  IF ( N_PARAMS() LT n_arguments ) THEN $
-    MESSAGE, 'Invalid number of arguments.', $
+  ; -----------
+  IF ( NOT Valid_String( NC_Filename ) ) THEN $
+    MESSAGE, 'Input NC_Filename argument not defined!', $
              /NONAME, /NOPRINT
-  ; Check that required arguments are defined
-  IF ( NOT Valid_String( SRF_Filename ) ) THEN $
-    MESSAGE, 'Input SRF_Filename argument not defined!', $
-             /NONAME, /NOPRINT
-
   ; Destroy the SRF structure if required
-  IF ( N_ELEMENTS( SRF ) GT 0 ) THEN BEGIN
+  IF ( N_ELEMENTS(SRF) GT 0 ) THEN BEGIN
     IF ( Associated_SRF( SRF, /ANY_Test ) ) THEN BEGIN
       Result = Destroy_SRF( SRF )
       IF ( Result NE SUCCESS ) THEN $
@@ -97,71 +83,125 @@ FUNCTION Read_SRF_netCDF, SRF_Filename, $ ; Input
     ENDIF
     Undefine, SRF
   ENDIF
-  SRF = { SRF }
+  SRF = {SRF}
 
 
   ; Check that SRF channel is valid
-  ;
-  ; Read the channel dimension and sensor ID values
-  Result = Inquire_SRF_netCDF( SRF_Filename, $
-                               n_Points         = n_Points        , $
-                               Channel_List     = Channel_List    , $
-                               Sensor_Name      = Sensor_Name     , $
-                               Platform_Name    = Platform_Name   , $
-                               Begin_Frequency  = Begin_Frequency , $
-                               End_Frequency    = End_Frequency   , $
-                               WMO_Satellite_ID = WMO_Satellite_ID, $
-                               WMO_Sensor_ID    = WMO_Sensor_ID     )
+  ; -------------------------------
+  ; Get the sensor channel list
+  Result = Inquire_SRF_netCDF( NC_Filename,Sensor_Channel=Sensor_Channel )
   IF ( Result NE SUCCESS ) THEN $
-    MESSAGE, 'Error inquiring SRF file '+SRF_Filename, $
+    MESSAGE, 'Error inquiring SRF file '+NC_Filename+' for sensor channel list', $
+             /NONAME, /NOPRINT
+  ; Check if the requested channel is in the list at all, or more than once
+  Channel_Idx = (WHERE( Sensor_Channel EQ Channel, n ))[0]
+  IF ( n LT 1 ) THEN $
+    MESSAGE, 'SRF channel '+STRTRIM(Channel,2)+' is not in the sensor channel list for '+NC_Filename, $
+             /NONAME, /NOPRINT
+  IF ( n GT 1 ) THEN $
+    MESSAGE, 'Check '+NC_Filename+' file! SRF channel '+STRTRIM(Channel,2)+$
+             ' occurs multiple times in the sensor channel list', $
              /NONAME, /NOPRINT
 
-  Idx = (WHERE( Channel_List EQ Channel, Count ))[0]
-  IF ( Count EQ 0 ) THEN $
-    MESSAGE, 'SRF channel '+STRTRIM(Channel,2)+' not in channel list for '+SRF_Filename, $
-             /NONAME, /NOPRINT
-
-
-  ; Allocate the SRF structure
-  Result = Allocate_SRF( n_Points[Idx], SRF )
+  ; Read some of the global attributes
+  ; ----------------------------------
+  Result = Inquire_SRF_netCDF( NC_Filename                        , $  ; Input
+                               Version          = Version         , $  ; Optional output
+                               Sensor_ID        = Sensor_ID       , $  ; Optional output
+                               WMO_Satellite_ID = WMO_Satellite_ID, $  ; Optional output
+                               WMO_Sensor_ID    = WMO_Sensor_ID   , $  ; Optional output
+                               Sensor_Type      = Sensor_Type       )  ; Optional output
   IF ( Result NE SUCCESS ) THEN $
-    MESSAGE, 'Error allocating SRF structure.', $
+    MESSAGE, 'Error occurred reading global attributes from '+NC_Filename, $
              /NONAME, /NOPRINT
+  
+  
+  ; Create the SRF dimension and variable names for the current channel
+  ; -------------------------------------------------------------------
+  CreateNames_SRF_netCDF, Channel, $
+                          Point_DimName    =Point_DimName    , $ 
+                          Band_DimName     =Band_DimName     , $ 
+                          Response_VarName =Response_VarName , $ 
+                          f1_Band_VarName  =f1_Band_VarName  , $ 
+                          f2_Band_VarName  =f2_Band_VarName  , $ 
+                          npts_Band_VarName=npts_Band_VarName 
 
 
   ; Open the netCDF SRF file
-  FileID = NCDF_OPEN( SRF_Filename, /NOWRITE )
+  ; ------------------------
+  NC_FileId = NCDF_OPEN( NC_Filename, /NOWRITE )
 
-  ; Read the SRF data
-  VarName = 'channel_'+STRTRIM(Channel,2)+'_response'
-  VarID   = NCDF_VARID( FileID, VarName )
-  NCDF_VARGET, FileID, VarID, *SRF.Response
 
-  ; Read the integrated data
-  VarID = NCDF_VARID( FileID, INTEGRATED_SRF_VARNAME )
-  NCDF_VARGET, FileID, VarID, Integrated_SRF
-  VarID = NCDF_VARID( FileID, SUMMATION_SRF_VARNAME )
-  NCDF_VARGET, FileID, VarID, Summation_SRF
+  ; Retrieve channel dimension values
+  ; ---------------------------------
+  ; Retrieve the number of points dimension value
+  DimID = NCDF_DIMID( NC_FileId, Point_DimName )
+  NCDF_DIMINQ, NC_FileId, DimID, DimName, n_Points
+  ; Retrieve the number of bandss dimension value
+  DimID = NCDF_DIMID( NC_FileId, Band_DimName )
+  NCDF_DIMINQ, NC_FileId, DimID, DimName, n_Bands
+
   
-  ; Assign the SRF structure components
-  SRF.Sensor_Name      = Sensor_Name
-  SRF.Platform_Name    = Platform_Name
-  SRF.WMO_Satellite_ID = WMO_Satellite_ID
-  SRF.WMO_Sensor_ID    = WMO_Sensor_ID
-  SRF.Channel          = Channel
-  SRF.Begin_Frequency  = Begin_Frequency[Idx]
-  SRF.End_Frequency    = End_Frequency[Idx]
-  SRF.Integrated_SRF   = Integrated_SRF[Idx]
-  SRF.Summation_SRF    = Summation_SRF[Idx]
+  ; Allocate the output SRF structure
+  ; ---------------------------------
+  Result = Allocate_SRF( n_Points,SRF,n_Bands=n_Bands )
+  IF ( Result NE SUCCESS ) THEN $
+    MESSAGE, 'Error occurred allocating SRF structure.', $
+             /NONAME, /NOPRINT
 
-  ; Compute the frequency grid
+  ; Set the sensor and channel values
+  ; ---------------------------------
+  SRF.Version          = Version
+  SRF.Sensor_ID        = Sensor_ID 
+  SRF.WMO_Satellite_ID = WMO_Satellite_ID
+  SRF.WMO_Sensor_ID    = WMO_Sensor_ID   
+  SRF.Sensor_Type      = Sensor_Type
+  SRF.Channel          = Channel
+
+
+  ; Read the channel dependent data
+  ; -------------------------------
+  ; The integrated SRF value
+  VarID = NCDF_VARID( NC_FileId, INTEGRATED_SRF_VARNAME )
+  NCDF_VARGET, NC_FileId, VarID, x
+  SRF.Integrated_SRF = x[Channel_Idx]
+  ; The summed SRF value
+  VarID = NCDF_VARID( NC_FileId, SUMMATION_SRF_VARNAME )
+  NCDF_VARGET, NC_FileId, VarID, x
+  SRF.Summation_SRF = x[Channel_Idx]
+
+
+  ; Read the band dependent data
+  ; ----------------------------
+  ; The band begin frequencies
+  VarID = NCDF_VARID( NC_FileId, f1_Band_VarName )
+  NCDF_VARGET, NC_FileId, VarID, *SRF.f1_Band
+  ; The band end frequencies
+  VarID = NCDF_VARID( NC_FileId, f2_Band_VarName )
+  NCDF_VARGET, NC_FileId, VarID, *SRF.f2_Band
+  ; The number of band points
+  VarID = NCDF_VARID( NC_FileId, npts_Band_VarName )
+  NCDF_VARGET, NC_FileId, VarID, *SRF.npts_Band
+
+
+  ; Read the SRF response
+  ; ---------------------
+  VarID = NCDF_VARID( NC_FileId, Response_VarName )
+  NCDF_VARGET, NC_FileId, VarID, *SRF.Response
+
+  
+  ; Compute the SRF frequency grid 
+  ; ------------------------------
   Result = Frequency_SRF( SRF )
   IF ( Result NE SUCCESS ) THEN $
-    MESSAGE, 'Error computing SRF frequency grid.', $
+    MESSAGE, 'Error computing frequency grid for channel '+STRTRIM(Channel,2)+ $
+             ' SRF from '+NC_Filename, $
              /NONAME, /NOPRINT
 
   ; Done
+  ; ----
+  NCDF_CLOSE, NC_FileId
   CATCH, /CANCEL
   RETURN, SUCCESS
 
-END
+END ; FUNCTION Read_SRF_netCDF

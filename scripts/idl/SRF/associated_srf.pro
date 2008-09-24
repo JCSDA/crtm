@@ -23,10 +23,16 @@ FUNCTION Associated_SRF, SRF, $             ; Input
   ; Test association status
   Association_Status = FALSE
   IF ( KEYWORD_SET( ANY_Test ) ) THEN BEGIN
-    IF ( PTR_VALID( SRF.Frequency ) AND $
+    IF ( PTR_VALID( SRF.f1_Band   ) AND $
+         PTR_VALID( SRF.f2_Band   ) AND $
+         PTR_VALID( SRF.npts_Band ) AND $
+         PTR_VALID( SRF.Frequency ) AND $
          PTR_VALID( SRF.Response  )     ) THEN Association_Status = TRUE
   ENDIF ELSE BEGIN
-    IF ( PTR_VALID( SRF.Frequency ) OR $
+    IF ( PTR_VALID( SRF.f1_Band   ) OR $
+         PTR_VALID( SRF.f2_Band   ) OR $
+         PTR_VALID( SRF.npts_Band ) OR $
+         PTR_VALID( SRF.Frequency ) OR $
          PTR_VALID( SRF.Response  )    ) THEN Association_Status = TRUE
   ENDELSE
  

@@ -17,8 +17,14 @@ PRO SRF_Viewer_FreeState, ID  ; Input
   ; Free the SRF data pointer
   IF ( Is_A_SRF_Structure( *(*InfoPtr).SRF ) EQ TRUE ) THEN $
       Error_Status = Destroy_SRF( *(*InfoPtr).SRF )
+  
+  ; Free and nullify the info state pointers
+  PTR_FREE, (*InfoPtr).Sensor_Channel, (*InfoPtr).SRF
+  (*InfoPtr).Sensor_Channel = PTR_NEW()
+  (*InfoPtr).SRF            = PTR_NEW()
 
-  ; Free state information pointer
+  ; Free and nullify state information pointer
   PTR_FREE, InfoPtr
+  InfoPtr = PTR_NEW()
 
 END ; SRF_Viewer_FreeState
