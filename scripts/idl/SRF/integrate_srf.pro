@@ -34,12 +34,12 @@ FUNCTION Integrate_SRF, SRF  ; Input
     MESSAGE, 'SRF structure must contain at least 2 points.', $
              /NONAME, /NOPRINT
   ; Check the number of points in each band
-  loc = WHERE(*SRF.npts_Bands LT 2, count)
+  loc = WHERE(*SRF.npts_Band LT 2, count)
   IF ( count NE 0 ) THEN $
     MESSAGE, 'SRF must contain at least 2 points for each band.', $
              /NONAME, /NOPRINT
   ; Check the total points                                                   
-  IF ( TOTAL(*SRF.npts_Bands) NE SRF.n_Points ) THEN $
+  IF ( TOTAL(*SRF.npts_Band) NE SRF.n_Points ) THEN $
     MESSAGE, 'SRF must have consistent data points.', $
              /NONAME, /NOPRINT
              
@@ -53,7 +53,7 @@ FUNCTION Integrate_SRF, SRF  ; Input
   FOR m = 0L, SRF.n_Bands-1L DO BEGIN
     ; The point limits for this band
     n  = (*SRF.npts_Band)[m]
-    i1 = i2++
+    i1 = i2 + 1L
     i2 = i1 + n - 1L
     ; Integrate using Simpson's Rule
     Int_SRF = Integral((*SRF.Frequency)[i1:i2],(*SRF.Response)[i1:i2])

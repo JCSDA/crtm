@@ -53,7 +53,7 @@ FUNCTION Frequency_SRF, SRF  ; Input
     f2 = (*SRF.f2_Band)[m]
     n  = (*SRF.npts_Band)[m]
     ; The point limits for this bands
-    i1 = ++i2
+    i1 = i2 + 1L
     i2 = i1 + n - 1L
     ; Construct a frequency grid of 0->1 for this band
     (*SRF.Frequency)[i1:i2] = DINDGEN(n)/DOUBLE(n-1L)

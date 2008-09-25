@@ -46,7 +46,7 @@ FUNCTION Allocate_SRF, n_Points       , $  ; Input
   ; Perform the allocations 
   SRF.f1_Band   = PTR_NEW(DBLARR(n_Bands))
   SRF.f2_Band   = PTR_NEW(DBLARR(n_Bands))
-  SRF.npts_Band = PTR_NEW(DBLARR(n_Bands))
+  SRF.npts_Band = PTR_NEW(LONARR(n_Bands))
   SRF.Frequency = PTR_NEW(DBLARR(n_Points))
   SRF.Response  = PTR_NEW(DBLARR(n_Points))
  
