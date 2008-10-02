@@ -1,9 +1,15 @@
 ;+
-; Procedure to GET a SensorInfo node from a SensorInfo linked list
+; Procedure to GET a SensorInfo node from a SensorInfo linked list.
+;
+; - One of the other of the input keywords Node_Number or Sensor_Id
+;   must be passed.
+; - If BOTH the Node_Number and Sensor_Id keyords are passed, the
+;   Sensor_Id value takes precedence.
 
-FUNCTION SensorInfo_List::Get_Node, Node_Number, $  ; Input
-                                    SensorInfo, $   ; Output
-                                    Debug=Debug     ; Input keyword                                    
+FUNCTION SensorInfo_List::Get_Node, SensorInfo             , $  ; Output
+                                    Node_Number=Node_Number, $  ; Input keyword (integer)
+                                    Sensor_Id=Sensor_Id    , $  ; Input keyword (string)
+                                    Debug=Debug                 ; Input keyword                                    
 ;- 
 
   ; Set up error handler
@@ -26,16 +32,12 @@ FUNCTION SensorInfo_List::Get_Node, Node_Number, $  ; Input
     MESSAGE, 'Input SensorInfo_List has not been initialised', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   
-  ; Check the node number
-  IF ( Node_Number LT 1 OR Node_Number GT self.n_Nodes ) THEN $
-    MESSAGE, 'Invalid node number specified', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ; Traverse list to the required node
   ; ----------------------------------
-  self->Get_Node_Pointer,Node_Number,Node_Pointer,Debug=Debug
+  self->Get_Node_Pointer,Node_Pointer,Node_Number=Node_Number,Sensor_Id=Sensor_Id,Debug=Debug
   IF ( NOT PTR_VALID(Node_Pointer) ) THEN $
-    MESSAGE, 'Requested node number '+STRTRIM(Node_Number,2)+' does not exist in list', $
+    MESSAGE, 'Requested node does not exist in list', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   
   ; Copy out the SensorInfo data from the node
