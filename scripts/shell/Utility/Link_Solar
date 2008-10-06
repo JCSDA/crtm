@@ -1,22 +1,21 @@
 #!/bin/sh
-
 #
 #  NAME:
-# 	Link_SensorInfo
+# 	Link_Solar
 #
 #  PURPOSE:
-#       Shell script file to link in the Master SensorInfo file, SensorInfo, from
-#       the SensorInfo subdirectory in a working copy of the CRTM source code
-#       repository.
+#       Shell script file to link in the Solar irradiance netCDF datafile
+#       from the CRTM fixfile repository for creation of the instrument
+#       SpcCoeff datafiles.
 #
 #  CALLING SEQUENCE:
-#       Link_SensorInfo [-h] [-x]
+#       Link_Solar [-h] [-l] [-r] [-x]
 #
 #  ENVIRONMENT VARIABLES:
 #       The following environment variables must be defined to use this script.
 #
-#       CRTM_SOURCE_ROOT:  The directory location of a working copy of the
-#                          CRTM source code repository.
+#       CRTM_FIXFILE_ROOT:  The directory location of a working copy of the
+#                           CRTM fixfile repository.
 #                           
 #
 
@@ -30,32 +29,46 @@ error_message()
   echo; echo "${SCRIPT_NAME}(ERROR): ${MESSAGE}"
 }
 
-
 # --------------
 # Usage function
 # --------------
 usage()
 {
   echo
-  echo "Usage: Link_SensorInfo [-h] [-x]"
+  echo "Usage: Link_Solar [-h] [-l] [-r] [-x]"
   echo
   echo "  -h"
   echo "       Print this message."
+  echo
+  echo "  -l"
+  echo "       Link in the lower resolution datafile with frequency"
+  echo "       interval, dF, of 0.0025cm-1. By default, the datafile with"
+  echo "       dF=0.001cm-1 is linked in."
+  echo
+  echo "  -r"
+  echo "       Link in the datafile using its actual name. By default,"
+  echo "       the solar datafile is linked into the current directory"
+  echo "       with the name:"
+  echo '         "solar.nc"'
   echo
   echo "  -x"
   echo "       Turn on execution tracing"
   echo
 }
 
+
 ########################################################################
 #                           MAIN SCRIPT BEGINS                         #
 ########################################################################
 
+# ------
 # Set up
 # ------
 SUCCESS=0
 FAILURE=1
 
+RES_TAG="0.0010"
+USE_REAL_NAME=0
 
 # Parse the command line options
 # ------------------------------
@@ -67,6 +80,8 @@ while getopts :hlrx OPTVAL; do
   # Parse the valid options
   case ${OPTVAL} in
     h) usage; exit ${SUCCESS};;
+    l) RES_TAG="0.0025";;
+    r) USE_REAL_NAME=1;;
     x) set -x;;
     \?) OPTVAL=${OPTARG}; break;;
   esac
@@ -82,39 +97,47 @@ case ${OPTVAL} in
   ?) usage; error_message " Invalid option '-${OPTARG}'"; exit ${FAILURE};;
 esac
 
-
 # Check that the mandatory envar is defined
 # -----------------------------------------
-if [ -z "${CRTM_SOURCE_ROOT}" ]; then
-  error_message " CRTM_SOURCE_ROOT envar is not defined."
-  exit 1
+if [ -z "${CRTM_FIXFILE_ROOT}" ]; then
+  error_message "CRTM_FIXFILE_ROOT envar is not defined."
+  exit ${FAILURE}
 fi
-
 
 # Check that the file to be linked exists
 # ---------------------------------------
-SENSORINFO_DIR="${CRTM_SOURCE_ROOT}/Utility/InstrumentInfo/SensorInfo"
-SENSORINFO_FILE=SensorInfo
-if [ ! -f ${SENSORINFO_DIR}/${SENSORINFO_FILE} ]; then
-  error_message " Master SensorInfo file, ${SENSORINFO_FILE}, not found in ${SENSORINFO_DIR}"
-  exit 1
+SOLAR_DIR="${CRTM_FIXFILE_ROOT}/TauProd/Solar"
+SOLAR_FILE="dF_${RES_TAG}.Solar.nc"
+if [ ! -f ${SOLAR_DIR}/${SOLAR_FILE} ]; then
+  error_message "Solar Irradiance datafiles, ${SOLAR_FILE}, not found in ${SOLAR_DIR}"
+  exit ${FAILURE}
 fi
 
 
+# ----------------
 # Link in the file
 # ----------------
-if [ ! -f ${SENSORINFO_FILE} ]; then
-  ln -s ${SENSORINFO_DIR}/${SENSORINFO_FILE} .
+# Set the link file name
+if [ ${USE_REAL_NAME} -eq 0 ]; then
+  LINK_FILE="solar.nc"
+else
+  LINK_FILE=${SOLAR_FILE}
+fi
+
+# Link it in
+if [ ! -f ${LINK_FILE} ]; then
+  ln -s ${SOLAR_DIR}/${SOLAR_FILE} ${LINK_FILE}
   if [ $? -ne 0 ]; then
-    error_message " Error occuring linking ${SENSORINFO_FILE} to ${PWD}"
-    exit 1
+    error_message "Error occuring linking ${SOLAR_FILE} to ${PWD}/${LINK_FILE}"
+    exit ${FAILURE}
   fi
 else
-  error_message " ${SENSORINFO_FILE} file already exists in this directory!"
-  exit 1
+  error_message "${LINK_FILE} file already exists in this directory!"
+  exit ${FAILURE}
 fi
 
 
+# --------------------------------
 # Done. Turn off execution tracing
 # --------------------------------
 set +x
