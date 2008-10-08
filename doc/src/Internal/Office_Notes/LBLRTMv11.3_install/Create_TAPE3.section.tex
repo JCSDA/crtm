@@ -1,0 +1,63 @@
+\section{Creation of local TAPE3 file}
+%=====================================
+\label{sec:local_tape3}
+The \texttt{TAPE5} input file used to generate a local \texttt{TAPE3} file from the HITRAN2004 AER v2.1 spectroscopic database is shown in figure \ref{fig:local_tape3_tape5}.
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+(PvD) 19-Jan-2000 LNFL; 7 mol; No rej; 0-20000cm-1
+     0.000 20000.000
+1111111\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{\texttt{TAPE5} input to LNFL v2.5 for the local \texttt{TAPE3} creation.}
+  \label{fig:local_tape3_tape5}
+\end{figure}
+
+Only the first seven HITRAN absorbers were selected (H$_2$O, CO$_2$, O$_3$, N$_2$O, CO, CH$_4$, and O$_2$) and no lines were rejected. As indicated in figure \ref{fig:local_tape3_tape5}, this LNFL input has been used since 2000. No LNFL \texttt{TAPE5} was supplied with the LBLRTM distribution test cases.
+
+The \texttt{TAPE6} output from running LNFL v2.5 with the input of figure \ref{fig:local_tape3_tape5} is shown in figure \ref{fig:local_tape3_tape6}. It should be noted that the \texttt{lnfl.f} version reported, 2.4, differs from the advertised version of 2.5. It is not known whether that is a significant difference.
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+(PvD) 19-Jan-2000 LNFL; 7 mol; No rej; 0-20000cm-1    V:  2.4  I 08/09/25  14:36:57
+                    VMIN =    0.000000 CM-1,      VMAX =20000.000000 CM-1
+                                          H2O  = 1
+                                          CO2  = 1
+                                           O3  = 1
+                                          N2O  = 1
+                                           CO  = 1
+                                          CH4  = 1
+                                           O2  = 1
+         TAPE NO. = 3
+         LOWEST LINE =     0.000010 CM-1,  HIGHEST LINE = 19996.646484 CM-1,
+         TOTAL NUMBER OF LINES = 744590
+                      COUPLED    NLTE   NEGATIVE   RESET    SUM LBLRTM      STRENGTH
+      MOL     LINES    LINES    LINES      EPP      EPP      STRENGTHS      REJECTION
+      H2O  =  63133        0        0     3259        0     9.0575E-19      0.000E+00
+      CO2  =  60823    34114        0        0        0     5.7901E-20      0.000E+00
+       O3  = 311481        0        0        0        0     7.7917E-20      0.000E+00
+      N2O  =  47843        0        0        0        0     4.2666E-20      0.000E+00
+       CO  =   4477        0        0        0        0     7.3883E-21      0.000E+00
+      CH4  = 251440        0        0    43116        0     8.0356E-21      0.000E+00
+       O2  =   5393       41        0        0        0     1.4374E-22      0.000E+00
+                    NUMBER OF BLOCKS =3127
+           TOTAL TIME =    70.416 TIME IN =     0.001 TIME OUT =    70.417
+ Modules and versions used in this calculation:
+               lnfl.f:  $Revision: 2.4 $              util_gfortran.f:  $Revision: 7.1 $\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{\texttt{TAPE6} file produced by LNFL v2.5 for the local \texttt{TAPE3} creation. Blank lines were removed and some linebreaks were inserted to fit the text on the page.}
+  \label{fig:local_tape3_tape6}
+\end{figure}
+
