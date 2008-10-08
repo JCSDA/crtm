@@ -1,9 +1,68 @@
 ;+
-; Function to allocate a SensorInfo structure
+; NAME:
+;       SensorInfo::Allocate
+;
+; PURPOSE:
+;       The SensorInfo::Allocate function method allocates the SensorInfo
+;       object data arrays.
+;
+; CALLING SEQUENCE:
+;       Result = Obj->[SensorInfo::]Allocate( n_Channels, $  ; Input
+;                                             Debug=Debug )  ; Input keyword
+;
+; INPUTS:
+;       n_Channels:  The number of channels to which the SensorInfo
+;                    data arrays are to be allocated.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;                    
+; INPUT KEYWORD PARAMETERS:
+;       Debug:       Set this keyword for debugging. If set then:
+;                    - the error handler for this function is disabled
+;                      so that execution halts where the error occurs,
+;                    - more verbose output is produced.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+; FUNCTION RESULT:
+;       Result:      The return value is an integer defining the error
+;                    status. The error codes are defined in the error_codes
+;                    include file.
+;                    If == SUCCESS the computation was sucessful
+;                       == FAILURE an unrecoverable error occurred
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;
+; INCLUDE FILES:
+;       sensorinfo_parameters: Include file containing SensorInfo specific
+;                              parameter value definitions.
+;
+;       error_codes:           Include file containing error code definitions.
+;
+; EXAMPLE:
+;       After creating a SensorInfo object,
+;
+;         IDL> x = OBJ_NEW('SensorInfo')
+;
+;       it can be allocated to the required number of channels, in this
+;       example 25:
+;
+;         IDL> n_Channels = 25
+;         IDL> Result = Obj->Allocate(n_Channels)
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 01-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 FUNCTION SensorInfo::Allocate, n_Channels, $  ; Input
                                Debug=Debug    ; Input keyword
-;-
 
   ; Set up
   ; ------

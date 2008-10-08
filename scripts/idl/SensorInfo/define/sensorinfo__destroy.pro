@@ -1,10 +1,77 @@
 ;+
-; Procedure to deallocate the pointer
-; components of a SensorInfo structure
+; NAME:
+;       SensorInfo::Destroy
+;
+; PURPOSE:
+;       The SensorInfo::Destroy function method deallocates and frees the
+;       pointer components of a SensorInfo object.
+;
+;       NOTE: This method is called by the Cleanup procedure method, but
+;             this Destroy method *can* be called outside the context of
+;             object creation and destruction. That is, this is *not*
+;             a lifecycle method.
+;
+; CALLING SEQUENCE:
+;       Result = Obj->[SensorInfo::]Destroy( No_Clear=No_Clear, $  ; Input keyword
+;                                            Debug=Debug        )  ; Input keyword
+;
+; INPUT KEYWORD PARAMETERS:
+;       No_Clear:    Set this keyword to NOT reinitialise the scalar
+;                    components to their default values. The default
+;                    is to also clear the scalar values.
+;                    If NOT SET => scalar components are reinitialised (DEFAULT)
+;                       SET,    => scalar components are NOT reinitialised
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Error handler is enabled. (DEFAULT)
+;                       SET     => Error handler is disabled; Routine
+;                                  traceback output is enabled.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+; FUNCTION RESULT:
+;       Result:      The return value is an integer defining the error
+;                    status. The error codes are defined in the error_codes
+;                    include file.
+;                    If == SUCCESS the deallocations were sucessful
+;                       == FAILURE an unrecoverable error occurred
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;
+; INCLUDE FILES:
+;       sensorinfo_parameters: Include file containing SensorInfo specific
+;                              parameter value definitions.
+;
+;       error_codes:           Include file containing error code definitions.
+;
+; EXAMPLE:
+;       After creating a SensorInfo object,
+;
+;         IDL> x = OBJ_NEW('SensorInfo')
+;
+;       and allocating it,
+;
+;         IDL> Result = x->Allocate(10)
+;
+;       the object internals can be reinitialised like so,
+;
+;         IDL> Result = x->Destroy()
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 01-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 FUNCTION SensorInfo::Destroy, No_Clear=No_Clear, $  ; Input keyword
                               Debug=Debug           ; Input keyword
-;-
  
   ; Set up
   ; ------

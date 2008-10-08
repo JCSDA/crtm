@@ -1,9 +1,68 @@
 ;+
-; Function to copy a SensorInfo structure
+; NAME:
+;       SensorInfo::Assign
+;
+; PURPOSE:
+;       The SensorInfo::Assign function method copies a valid SensorInfo
+;       object.
+;
+; CALLING SEQUENCE:
+;       Result = Obj->[SensorInfo::]Assign( new,        $  ; Output
+;                                           Debug=Debug )  ; Input keyword
+;
+; OUTPUT:
+;       new:         A deep copy of the SensorInfo object.
+;                    UNITS:      N/A
+;                    TYPE:       SensorInfo object
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;                    
+; INPUT KEYWORD PARAMETERS:
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Error handler is enabled. (DEFAULT)
+;                       SET     => Error handler is disabled; Routine
+;                                  traceback output is enabled.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;;
+; FUNCTION RESULT:
+;       Result:      The return value is an integer defining the error
+;                    status. The error codes are defined in the error_codes
+;                    include file.
+;                    If == SUCCESS the computation was sucessful
+;                       == FAILURE an unrecoverable error occurred
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;
+; INCLUDE FILES:
+;       sensorinfo_parameters: Include file containing SensorInfo specific
+;                              parameter value definitions.
+;
+;       error_codes:           Include file containing error code definitions.
+;
+; EXAMPLE:
+;       Given an instance of a SensorInfo object,
+;
+;         IDL> HELP, x
+;         X               OBJREF    = <ObjHeapVar8(SENSORINFO)>
+;
+;       a new instance of the data object is created by:
+;
+;         IDL> Result = x->Assign(y)
+;         IDL> help, y
+;         Y               OBJREF    = <ObjHeapVar12(SENSORINFO)>
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 01-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 FUNCTION SensorInfo::Assign, new, $       ; Output
                              Debug=Debug  ; Input keyword
-;-
 
   ; Set up
   ; ------
