@@ -1,10 +1,57 @@
 \chapter{Structure definitions}
 %==============================
 
+\clearpage
 \section{\ChannelInfo{} Structure}
 %=================================
 \label{sec:channelinfo_structure}
 
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  TYPE :: CRTM_ChannelInfo_type
+    ! Dimension values
+    INTEGER :: n_Channels = 0  ! L dimension
+    ! Scalar data
+    CHARACTER(STRLEN) :: Sensor_ID        = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    INTEGER           :: Sensor_Index     = 0
+    ! Array data
+    INTEGER,  POINTER :: Sensor_Channel(:) => NULL()  ! L
+    INTEGER,  POINTER :: Channel_Index(:)  => NULL()  ! L
+  END TYPE CRTM_ChannelInfo_type\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{CRTM \ChannelInfo{} structure definition.}
+  \label{fig:channelinfo_structure}
+\end{figure}
+
+% ChannelInfo component description table
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{8cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Channels}  & Number of sensor channels (\texttt{L}) & N/A & Scalar \\
+    \texttt{Sensor\_Id} & The sensor and platform identifier character string & N/A & Scalar \\
+    \texttt{WMO\_Satellite\_Id} & The WMO satellite identifier & N/A & Scalar \\
+    \texttt{WMO\_Sensor\_Id} & The WMO sensor identifier & N/A & Scalar \\
+    \texttt{Sensor\_Index} & The index of the current structure in an array. Set during CRTM initialisation & N/A & Scalar \\
+    \texttt{Sensor\_Channel} & The channel numbers of the current sensor & N/A & \texttt{L}\\
+    \texttt{Channel\_Index} & The indices of the selected channels for the current sensors. Currently, all channels are indexed. & N/A & \texttt{L}\\
+    \hline
+  \end{tabular}
+  \caption{CRTM \ChannelInfo{} structure component description.}
+  \label{tab:chanelinfo_structure}
+\end{table}
+
+\clearpage
 \section{\Atmosphere{} Structure}
 %================================
 \label{sec:atmosphere_structure}
@@ -48,14 +95,14 @@
 % Atmosphere component description table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|l|p{7cm}|c|c|}
+  \begin{tabular}{l p{7cm} c c}
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
-    \texttt{n\_Layers} & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
+    \texttt{n\_Layers}    & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
     \texttt{n\_Absorbers} & Number of atmospheric absorbers (\texttt{J}) & N/A & Scalar \\
-    \texttt{n\_Clouds} & Number of clouds (\texttt{Nc}) & N/A & Scalar \\
-    \texttt{n\_Aerosols} & Number of aerosols (\texttt{Na}) & N/A & Scalar \\
+    \texttt{n\_Clouds}    & Number of clouds (\texttt{Nc}) & N/A & Scalar \\
+    \texttt{n\_Aerosols}  & Number of aerosols (\texttt{Na}) & N/A & Scalar \\
     \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
     \texttt{Climatology} & Climatology of the profile (see table \ref{tab:climatology}) & N/A & Scalar \\
     \texttt{Absorber\_Id} & Gaseous absorber identifiers (see table \ref{tab:absorber_id}) & N/A & \texttt{J}\\
@@ -75,7 +122,7 @@
 % Climatology table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Climatology Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
@@ -94,26 +141,26 @@
 % Absorber id table
 \begin{table}
   \centering
-  \begin{tabular}{|c|c||c|c|}
+  \begin{tabular}{ c l c c l }
     \hline
-    \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter} & \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter}\\
+    \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter} & \hspace{0.5cm} & \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter}\\
     \hline\hline
-     H\subscript{2}O  & \texttt{H2O\_ID}  &    HI & \texttt{   HI\_ID}\\
-     CO\subscript{2}  & \texttt{CO2\_ID}  &   ClO & \texttt{  ClO\_ID}\\
-     O\subscript{3}   & \texttt{O3\_ID}   &   OCS & \texttt{  OCS\_ID}\\
-     N\subscript{2}O  & \texttt{N2O\_ID}  &  H\subscript{2}CO & \texttt{ H2CO\_ID}\\
-     CO               & \texttt{CO\_ID}   &  HOCl & \texttt{ HOCl\_ID}\\
-     CH\subscript{4}  & \texttt{CH4\_ID}  &    N\subscript{2} & \texttt{   N2\_ID}\\
-     O\subscript{2}   & \texttt{O2\_ID}   &   HCN & \texttt{  HCN\_ID}\\
-     NO               & \texttt{NO\_ID}   &  CH\subscript{3}l & \texttt{ CH3l\_ID}\\
-     SO\subscript{2}  & \texttt{SO2\_ID}  &  H\subscript{2}O\subscript{2} & \texttt{ H2O2\_ID}\\
-     NO\subscript{2}  & \texttt{NO2\_ID}  &  C\subscript{2}H\subscript{2} & \texttt{ C2H2\_ID}\\
-     NH\subscript{3}  & \texttt{NH3\_ID}  &  C\subscript{2}H\subscript{6} & \texttt{ C2H6\_ID}\\
-     HNO\subscript{3} & \texttt{HNO3\_ID} &   PH\subscript{3} & \texttt{  PH3\_ID}\\
-     OH               & \texttt{OH\_ID}   &  COF\subscript{2} & \texttt{ COF2\_ID}\\
-     HF               & \texttt{HF\_ID}   &   SF\subscript{6} & \texttt{  SF6\_ID}\\
-     HCl              & \texttt{HCl\_ID}  &   H\subscript{2}S & \texttt{  H2S\_ID}\\
-     HBr              & \texttt{HBr\_ID}  & HCOOH & \texttt{HCOOH\_ID}\\
+     H\subscript{2}O  & \texttt{H2O\_ID}  & \hspace{0.5cm} & HI                           & \texttt{HI\_ID}    \\
+     CO\subscript{2}  & \texttt{CO2\_ID}  & \hspace{0.5cm} & ClO                          & \texttt{ClO\_ID}   \\
+     O\subscript{3}   & \texttt{O3\_ID}   & \hspace{0.5cm} & OCS                          & \texttt{OCS\_ID}   \\
+     N\subscript{2}O  & \texttt{N2O\_ID}  & \hspace{0.5cm} & H\subscript{2}CO             & \texttt{H2CO\_ID}  \\
+     CO               & \texttt{CO\_ID}   & \hspace{0.5cm} & HOCl                         & \texttt{HOCl\_ID}  \\
+     CH\subscript{4}  & \texttt{CH4\_ID}  & \hspace{0.5cm} & N\subscript{2}               & \texttt{N2\_ID}    \\
+     O\subscript{2}   & \texttt{O2\_ID}   & \hspace{0.5cm} & HCN                          & \texttt{HCN\_ID}   \\
+     NO               & \texttt{NO\_ID}   & \hspace{0.5cm} & CH\subscript{3}l             & \texttt{CH3l\_ID}  \\
+     SO\subscript{2}  & \texttt{SO2\_ID}  & \hspace{0.5cm} & H\subscript{2}O\subscript{2} & \texttt{H2O2\_ID}  \\
+     NO\subscript{2}  & \texttt{NO2\_ID}  & \hspace{0.5cm} & C\subscript{2}H\subscript{2} & \texttt{C2H2\_ID}  \\
+     NH\subscript{3}  & \texttt{NH3\_ID}  & \hspace{0.5cm} & C\subscript{2}H\subscript{6} & \texttt{C2H6\_ID}  \\
+     HNO\subscript{3} & \texttt{HNO3\_ID} & \hspace{0.5cm} & PH\subscript{3}              & \texttt{PH3\_ID}   \\
+     OH               & \texttt{OH\_ID}   & \hspace{0.5cm} & COF\subscript{2}             & \texttt{COF2\_ID}  \\
+     HF               & \texttt{HF\_ID}   & \hspace{0.5cm} & SF\subscript{6}              & \texttt{SF6\_ID}   \\
+     HCl              & \texttt{HCl\_ID}  & \hspace{0.5cm} & H\subscript{2}S              & \texttt{H2S\_ID}   \\
+     HBr              & \texttt{HBr\_ID}  & \hspace{0.5cm} & HCOOH                        & \texttt{HCOOH\_ID} \\
     \hline
   \end{tabular}
   \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_ID} definitions. The same molecule set as defined for HITRAN is used.}
@@ -123,7 +170,7 @@
 % Absorber units table
 \begin{table}
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Units} & \sffamily\textbf{Parameter} \\
     \hline\hline
@@ -143,6 +190,7 @@
   \label{tab:absorber_units}
 \end{table}
 
+\clearpage
 \subsection{\Cloud{} Structure}
 %------------------------------
 \label{sec:cloud_structure}
@@ -175,7 +223,7 @@
 % Cloud component description table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|l|p{7cm}|c|c|}
+  \begin{tabular}{l p{7cm} c c}
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
@@ -194,26 +242,26 @@
 % Cloud type table
 \begin{table}
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{cc l}
     \hline
-    \sffamily\textbf{Cloud Type} & \sffamily\textbf{Parameter} \\
+    \sffamily\textbf{Cloud Type} & \hspace{0.5cm} & \sffamily\textbf{Parameter} \\
     \hline\hline
-     Water   & \texttt{WATER\_CLOUD}\\
-     Ice     & \texttt{ICE\_CLOUD}\\
-     Rain    & \texttt{RAIN\_CLOUD}\\
-     Snow    & \texttt{SNOW\_CLOUD}\\
-     Graupel & \texttt{GRAUPEL\_CLOUD}\\
-     Hail    & \texttt{HAIL\_CLOUD}\\
+     Water   & \hspace{0.5cm} & \texttt{WATER\_CLOUD}\\
+     Ice     & \hspace{0.5cm} & \texttt{ICE\_CLOUD}\\
+     Rain    & \hspace{0.5cm} & \texttt{RAIN\_CLOUD}\\
+     Snow    & \hspace{0.5cm} & \texttt{SNOW\_CLOUD}\\
+     Graupel & \hspace{0.5cm} & \texttt{GRAUPEL\_CLOUD}\\
+     Hail    & \hspace{0.5cm} & \texttt{HAIL\_CLOUD}\\
     \hline
   \end{tabular}
   \caption{CRTM \Cloud{} structure valid \texttt{Type} definitions.}
   \label{tab:cloud_type}
 \end{table}
 
-
+\clearpage
 \subsection{\Aerosol{} Structure}
 %--------------------------------
-\label{aerosol_structdef}
+\label{sec:aerosol_structure}
 
 
 \begin{figure}[htp]
@@ -243,7 +291,7 @@
 % Aerosol component description table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|l|p{7cm}|c|c|}
+  \begin{tabular}{l p{7cm} c c}
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
@@ -261,7 +309,7 @@
 % Aerosol type table
 \begin{table}
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Aerosol Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
@@ -280,10 +328,10 @@
 \end{table}
 
 
-
+\clearpage
 \section{\Surface{} Structure}
 %=============================
-\label{surface_structdef}
+\label{sec:surface_structure}
 
 \begin{figure}[htp]
   \centering
@@ -337,7 +385,7 @@
 
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|l|p{7cm}|c|c|}
+  \begin{tabular}{l p{7cm} c c}
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
@@ -384,45 +432,41 @@
 % Default surface value table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|c|c|}
+  \begin{tabular}{l c c}
     \hline
     \sffamily\textbf{Parameter} & \sffamily\textbf{Value}  & \sffamily\textbf{Units} \\
     \hline\hline
-    \multicolumn{3}{|c|}{Surface type independent data}\\
+    \multicolumn{3}{c}{\textsf{Surface type independent data}}\\
     \hline
     \texttt{DEFAULT\_WIND\_SPEED}             & 5.0        & m.s$^{-1}$\\
-    \texttt{DEFAULT\_WIND\_DIRECTION}         & 0.0        & deg. E from N\\
-    \hline
-    \multicolumn{3}{|c|}{Land surface type data}\\
+    \texttt{DEFAULT\_WIND\_DIRECTION}         & 0.0        & deg. E from N\\[0.2cm]
+    \multicolumn{3}{c}{\textsf{Land surface type data}}\\
     \hline
     \texttt{DEFAULT\_LAND\_TYPE}              & \texttt{GRASS\_SOIL}& N/A \\
     \texttt{DEFAULT\_LAND\_TEMPERATURE}       & 283.0      & K\\
     \texttt{DEFAULT\_SOIL\_MOISTURE\_CONTENT} & 0.05       & g.cm$^{-3}$\\
     \texttt{DEFAULT\_CANOPY\_WATER\_CONTENT}  & 0.05       & g.cm$^{-3}$\\
     \texttt{DEFAULT\_VEGETATION\_FRACTION}    & 0.3        & 30\%\\
-    \texttt{DEFAULT\_SOIL\_TEMPERATURE}       & 283.0      & K\\
-    \hline
-    \multicolumn{3}{|c|}{Water type data}\\
+    \texttt{DEFAULT\_SOIL\_TEMPERATURE}       & 283.0      & K\\[0.2cm]
+    \multicolumn{3}{c}{\textsf{Water type data}}\\
     \hline
     \texttt{DEFAULT\_WATER\_TYPE}             & \texttt{SEA\_WATER} & N/A\\
     \texttt{DEFAULT\_WATER\_TEMPERATURE}      & 283.0      & K\\
-    \texttt{DEFAULT\_SALINITY}                & 33.0       & ppmv\\
-    \hline
-    \multicolumn{3}{|c|}{Snow surface type data}\\
+    \texttt{DEFAULT\_SALINITY}                & 33.0       & ppmv\\[0.2cm]
+    \multicolumn{3}{c}{\textsf{Snow surface type data}}\\
     \hline
     \texttt{DEFAULT\_SNOW\_TYPE}              & \texttt{NEW\_SNOW}  & N/A\\
     \texttt{DEFAULT\_SNOW\_TEMPERATURE}       & 263.0      & K\\
     \texttt{DEFAULT\_SNOW\_DEPTH}             & 50.0       & mm\\
     \texttt{DEFAULT\_SNOW\_DENSITY}           & 0.2        & g.cm$^{-3}$\\
-    \texttt{DEFAULT\_SNOW\_GRAIN\_SIZE}       & 2.0        & mm\\
-    \hline
-    \multicolumn{3}{|c|}{Ice surface type data}\\
+    \texttt{DEFAULT\_SNOW\_GRAIN\_SIZE}       & 2.0        & mm\\[0.2cm]
+    \multicolumn{3}{c}{\textsf{Ice surface type data}}\\
     \hline
     \texttt{DEFAULT\_ICE\_TYPE}               & \texttt{FRESH\_ICE} & N/A\\
     \texttt{DEFAULT\_ICE\_TEMPERATURE}        & 263.0      & K\\
     \texttt{DEFAULT\_ICE\_THICKNESS}          & 10.0       & mm\\
     \texttt{DEFAULT\_ICE\_DENSITY}            & 0.9        & g.cm$^{-3}$\\
-    \texttt{DEFAULT\_ICE\_ROUGHNESS}          & ZERO       & N/A\\
+    \texttt{DEFAULT\_ICE\_ROUGHNESS}          & 0.0        & N/A\\
     \hline
   \end{tabular}
   \caption{CRTM \Surface{} structure default values.}
@@ -432,7 +476,7 @@
 % Land surface type table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Land Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
@@ -465,12 +509,12 @@
 % Water surface type table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{cc l}
     \hline
-    \sffamily\textbf{Water Type} & \sffamily\textbf{Parameter} \\
+    \sffamily\textbf{Water Type} & \hspace{0.5cm} & \sffamily\textbf{Parameter} \\
     \hline\hline
-      Sea water  &  \texttt{SEA\_WATER} \\     
-     Fresh water &  \texttt{FRESH\_WATER} \\   
+      Sea water  & \hspace{0.5cm} &  \texttt{SEA\_WATER} \\     
+     Fresh water & \hspace{0.5cm} &  \texttt{FRESH\_WATER} \\   
     \hline
   \end{tabular}
   \caption{CRTM \Surface{} structure valid \texttt{Water\_Type} definitions.}
@@ -480,7 +524,7 @@
 % Snow surface type table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Snow Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
@@ -509,7 +553,7 @@
 % Ice surface type table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|c|}
+  \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Ice Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
@@ -524,119 +568,227 @@
   \label{tab:surface_ice_type}
 \end{table}
 
-%
-%\subsection{\SensorData{} Structure}
-%%-----------------------------------
-%\label{sensordata_structdef}
-%
-%  TYPE, PUBLIC :: CRTM_SensorData_type
-%    INTEGER :: n_Allocates = 0
-%    ! Dimension values
-%    INTEGER :: n_Channels = 0  ! L
-%    ! The WMO sensor ID of the sensor for which the data is to be used
-%    INTEGER :: Sensor_ID = INVALID_WMO_SENSOR_ID
-%    ! The data sensor IDs and channels
-%    CHARACTER(STRLEN), POINTER :: SensorData_ID(:)    => NULL() ! L
-%    INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
-%    INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
-%    INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
-%    ! The sensor brightness temperatures
-%    REAL(fp),          POINTER :: Tb(:) => NULL() ! L
-%  END TYPE CRTM_SensorData_type
-%
-%
-%\section{\GeometryInfo{} Structure}
-%%==================================
-%\label{geometryinfo_structdef}
-%
-%  TYPE :: CRTM_GeometryInfo_type
-%
-%    ! User Input
-%    ! ----------
-%    ! Earth location
-%    REAL(fp) :: Longitude        = ZERO
-%    REAL(fp) :: Latitude         = ZERO
-%    REAL(fp) :: Surface_Altitude = ZERO
-%    ! Field of view index (1-nFOV)
-%    INTEGER  :: iFOV = 0
-%    ! Sensor angle information
-%    REAL(fp) :: Sensor_Scan_Angle    = ZERO
-%    REAL(fp) :: Sensor_Zenith_Angle  = ZERO
-%    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
-%    ! Source angle information
-%    REAL(fp) :: Source_Zenith_Angle  = ZERO
-%    REAL(fp) :: Source_Azimuth_Angle = ZERO
-%    ! Flux angle information
-%    REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
-%
-%    ! Derived from User Input
-%    ! -----------------------
-%    ! Default distance ratio
-%    REAL(fp) :: Distance_Ratio = EARTH_RADIUS/(EARTH_RADIUS + SATELLITE_HEIGHT)
-%    ! Sensor angle information
-%    REAL(fp) :: Sensor_Scan_Radian    = ZERO
-%    REAL(fp) :: Sensor_Zenith_Radian  = ZERO
-%    REAL(fp) :: Sensor_Azimuth_Radian = ZERO
-%    REAL(fp) :: Secant_Sensor_Zenith  = ZERO
-%    ! Source angle information
-%    REAL(fp) :: Source_Zenith_Radian  = ZERO
-%    REAL(fp) :: Source_Azimuth_Radian = ZERO
-%    REAL(fp) :: Secant_Source_Zenith  = ZERO
-%    ! Flux angle information
-%    REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
-%    REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
-%
-%  END TYPE CRTM_GeometryInfo_type
-%
-%
-%\section{\ChannelInfo{} Structure}
-%%=================================
-%\label{channelinfo_structdef}
-%
-%  TYPE :: CRTM_ChannelInfo_type
-%    INTEGER :: n_Allocates = 0
-%    ! Dimensions
-%    INTEGER :: n_Channels = 0  ! L dimension
-%    INTEGER :: StrLen = SL
-%    ! Scalar data
-%    CHARACTER(SL) :: Sensor_ID        = ' '
-%    INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-%    INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-%    INTEGER       :: Sensor_Index     = 0
-%    ! Array data
-%    INTEGER, POINTER :: Sensor_Channel(:) => NULL()  ! L
-%    INTEGER, POINTER :: Channel_Index(:)  => NULL()  ! L
-%  END TYPE CRTM_ChannelInfo_type
-%
-%\section{\RTSolution{} Structure}
-%%================================
-%\label{rtsolution_structdef}
-%
-%  TYPE :: CRTM_RTSolution_type
-%    INTEGER :: n_Allocates = 0
-%    ! Dimensions
-%    INTEGER :: n_Layers = 0  ! K
-%    ! Forward radiative transfer intermediate results for a single channel
-%    !    These components are not defined when they are used as TL, AD
-%    !    and K variables
-%    REAL(fp) :: Surface_Emissivity      = FP_DEFAULT
-%    REAL(fp) :: Up_Radiance             = FP_DEFAULT
-%    REAL(fp) :: Down_Radiance           = FP_DEFAULT
-%    REAL(fp) :: Down_Solar_Radiance     = FP_DEFAULT
-%    REAL(fp) :: Surface_Planck_Radiance = FP_DEFAULT
-%    REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
-%    ! Internal variables. Users do not need to worry about these.
-%    INTEGER :: n_Full_Streams  = IP_DEFAULT
-%    LOGICAL :: Scattering_Flag = LP_DEFAULT
-%    INTEGER :: n_Stokes        = IP_DEFAULT
-%    ! Radiative transfer results for a single channel/node
-%    REAL(fp) :: Radiance               = FP_DEFAULT
-%    REAL(fp) :: Brightness_Temperature = FP_DEFAULT
-%  END TYPE CRTM_RTSolution_type
+
+\clearpage
+\subsection{\SensorData{} Structure}
+%-----------------------------------
+\label{sec:sensordata_structure}
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  TYPE, PUBLIC :: CRTM_SensorData_type
+    ! Dimension values
+    INTEGER :: n_Channels = 0  ! L
+    ! The WMO sensor ID of the sensor for which the data is to be used
+    INTEGER :: Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
+    ! The data sensor IDs and channels
+    CHARACTER(STRLEN), POINTER :: Sensor_Id(:)        => NULL() ! L
+    INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
+    INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
+    INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
+    ! The sensor brightness temperatures
+    REAL(fp),          POINTER :: Tb(:) => NULL() ! L
+  END TYPE CRTM_SensorData_type\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{CRTM \SensorData{} structure definition.}
+  \label{fig:sensordata_structure}
+\end{figure}
+
+% SensorData component description table
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Channels} & Number of channels to use in SfcOptics emissivty algorithms (\texttt{L}) & N/A & Scalar \\
+    \texttt{Select\_WMO\_Sensor\_Id} & The WMO Sensor Id value of the sensor for which the data is to be used. & N/A & Scalar \\
+    \texttt{Sensor\_Id} & The sensor id character string for each channel of data & N/A & \texttt{L} \\
+    \texttt{WMO\_Satellite\_Id} & The WMO satellite Id for each channel of data & N/A & \texttt{L} \\
+    \texttt{WMO\_Sensor\_Id} & The WMO sensor Id for each channel of data & N/A & \texttt{L} \\
+    \texttt{Sensor\_Channel} & The channel number for each channel of data & N/A & \texttt{L} \\
+    \texttt{Tb} & The brightness temperature measurements for each channel & Kelvin & \texttt{L} \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \SensorData{} structure component description.}
+  \label{tab:sensordata_structure}
+\end{table}
+
+
+
+\clearpage
+\section{\GeometryInfo{} Structure}
+%==================================
+\label{sec:geometryinfo_structure}
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  TYPE :: CRTM_GeometryInfo_type
+    ! User Input
+    ! ----------
+    ! Earth location
+    REAL(fp) :: Longitude        = ZERO
+    REAL(fp) :: Latitude         = ZERO
+    REAL(fp) :: Surface_Altitude = ZERO
+    ! Field of view index (1-nFOV)
+    INTEGER  :: iFOV = 0
+    ! Sensor angle information
+    REAL(fp) :: Sensor_Scan_Angle    = ZERO
+    REAL(fp) :: Sensor_Zenith_Angle  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
+    ! Source angle information
+    REAL(fp) :: Source_Zenith_Angle  = 100.0_fp  ! Below horizon
+    REAL(fp) :: Source_Azimuth_Angle = ZERO
+    ! Flux angle information
+    REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
+    ! Derived from User Input
+    ! -----------------------
+    ! Default distance ratio
+    REAL(fp) :: Distance_Ratio = EARTH_RADIUS/(EARTH_RADIUS + SATELLITE_HEIGHT)
+    ! Sensor angle information
+    REAL(fp) :: Sensor_Scan_Radian    = ZERO
+    REAL(fp) :: Sensor_Zenith_Radian  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Radian = ZERO
+    REAL(fp) :: Secant_Sensor_Zenith  = ZERO
+    ! Source angle information
+    REAL(fp) :: Source_Zenith_Radian  = ZERO
+    REAL(fp) :: Source_Azimuth_Radian = ZERO
+    REAL(fp) :: Secant_Source_Zenith  = ZERO
+    ! Flux angle information
+    REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
+    REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
+  END TYPE CRTM_GeometryInfo_type\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{CRTM \GeometryInfo{} structure definition.}
+  \label{fig:geometryinfo_structure}
+\end{figure}
+
+% GeometryInfo component description table
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{Longitude}               & Earth longitude & degrees East (0$\rightarrow$360) & Scalar \\
+    \texttt{Latitude}                & Earth latitude  & degrees North (-90$\rightarrow$+90) & Scalar \\
+    \texttt{Surface\_Altitude}       & Altitude of the Earth's surface at the specified lon/lat location & metres (m) & Scalar \\
+    \texttt{iFOV}                    & The scan line FOV index & N/A & Scalar \\
+    \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:gInfo_sensor_scan_angle} & degrees & Scalar \\
+    \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:gInfo_sensor_zenith_angle} & degrees & Scalar \\
+    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_sensor_azimuth_angle} & degrees from North & Scalar \\
+    \texttt{Source\_Zenith\_Angle}   & The source zenith angle. The source is typically the Sun (IR/VIS) or Moon (MW/VIS) [only solar source valid in current release] See fig.\ref{fig:gInfo_source_zenith_angle} & degrees & Scalar \\
+    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_source_azimuth_angle} & degrees from North & Scalar \\
+    \texttt{Flux\_Zenith\_Angle}     & The zenith angle used to approximate downwelling flux transmissivity. If not set, the default value is that of the diffusivity approximation, such that $\sec(F) = 5/3$. Maximum allowed value is determined from $\sec(F) = 9/4$ & degres & Scalar \\
+    \hline
+  \end{tabular}
+  \caption{Description of CRTM \GeometryInfo{} structure components defined by the user.}
+  \label{tab:user_defined_geometryinfo_structure}
+\end{table}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{Distance\_Ratio}         & The ratio of the radius of the earth at the FOV location to the sum of the radius of the earth at nadir, and the satellite altitude;
+    
+     \mbox{\hspace{1cm}$r = \displaystyle\frac{R_e(FOV)}{R_e(nadir) + h}$}.
+     
+     Note that this quantity is actually computed using the user input sensor scan and zenith angles; 
+     
+     \mbox{\hspace{1cm}$r = \displaystyle\frac{\sin(\theta_{scan})}{\sin(\theta_{zenith})}$} & N/A & Scalar \\
+    \texttt{Sensor\_Scan\_Radian}    & The sensor scan angle in radians & radians & Scalar \\
+    \texttt{Sensor\_Zenith\_Radian}  & The sensor scan angle in radians & radians & Scalar \\
+    \texttt{Sensor\_Azimuth\_Radian} & The sensor azimuth angle in radians & radians & Scalar \\
+    \texttt{Secant\_Sensor\_Zenith}  & The secant of the sensor zenith angle & N/A & Scalar \\
+    \texttt{Source\_Zenith\_Radian}  & The source zenith angle in radians & radians & Scalar \\
+    \texttt{Source\_Azimuth\_Radian} & The source azimuth angle in radians & radians & Scalar \\
+    \texttt{Secant\_Source\_Zenith}  & The secant of the source zenith angle & N/A & Scalar \\
+    \texttt{Flux\_Zenith\_Radian}    & The flux zenith angle in radians & radians & Scalar \\
+    \texttt{Secant\_Flux\_Zenith}    & The secant of the flux zenith angle & N/A & Scalar \\
+    \hline
+  \end{tabular}
+  \caption{Description of CRTM \GeometryInfo{} structure components derived from user inputs.}
+  \label{tab:derived_geometryinfo_structure}
+\end{table}
+
+
+\clearpage
+\section{\RTSolution{} Structure}
+%==================================
+\label{sec:rtsolution_structure}
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  TYPE :: CRTM_RTSolution_type
+    ! Dimension values
+    INTEGER :: n_Layers = 0  ! K
+    ! Forward radiative transfer intermediate results for a single channel
+    !    These components are not defined when they are used as TL, AD
+    !    and K variables
+    REAL(fp)          :: Surface_Emissivity      = ZERO
+    REAL(fp)          :: Up_Radiance             = ZERO
+    REAL(fp)          :: Down_Radiance           = ZERO
+    REAL(fp)          :: Down_Solar_Radiance     = ZERO
+    REAL(fp)          :: Surface_Planck_Radiance = ZERO
+    REAL(fp), POINTER :: Upwelling_Radiance(:)  => NULL()  ! K
+    ! The layer optical depths
+    REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
+    ! Radiative transfer results for a single channel/node
+    REAL(fp) :: Radiance               = ZERO
+    REAL(fp) :: Brightness_Temperature = ZERO
+  END TYPE CRTM_RTSolution_type\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{CRTM \RTSolution{} structure definition.}
+  \label{fig:rtsolution_structure}
+\end{figure}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Layers}    & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
+    \texttt{Surface\_Emissivity      }  & The computed surface emissivity & N/A & Scalar \\
+    \texttt{Up\_Radiance             }  & The atmospheric portion of the upwelling radiance & \radunit & Scalar \\
+    \texttt{Down\_Radiance           }  & The atmospheric portion of the downwelling radiance & \radunit & Scalar \\
+    \texttt{Down\_Solar\_Radiance    }  & The downwelling direct solar radiance & \radunit & Scalar \\
+    \texttt{Surface\_Planck\_Radiance}  & The surface radiance & \radunit & Scalar \\
+    \texttt{Upwelling\_Radiance      }  & The upwelling radiance profile, including the reflected downwelling and surface contributions. & \radunit & \texttt{K} \\
+    \texttt{Layer\_Optical\_Depth    }  & The layer optical depth profile & N/A & \texttt{K} \\
+    \texttt{Radiance                 }  & The sensor radiance & \radunit & Scalar \\
+    \texttt{Brightness\_Temperature  }  & The sensor brightness temperature & Kelvin & Scalar \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \RTSolution{} structure component description}
+  \label{tab:rtsolution_structure}
+\end{table}
+
 %
 %\section{\Options{} Structure}
 %%=============================
-%\label{options_structdef}
+%\label{sec:options_structure}
 %
 %  TYPE :: CRTM_Options_type
 %    INTEGER :: n_Allocates = 0

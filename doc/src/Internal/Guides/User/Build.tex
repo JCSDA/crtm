@@ -19,19 +19,19 @@ The build system for the CRTM is currently quite unsophisticated. It consists of
 Several targets are available for specific compilers. The compilers and makefile target names are shown in table \ref{tab:predefined_build_targets}. Both ``production'' and debug target names are supplied, with the former using compiler switches to produce fast code and the latter using compiler switches to turn on all the available debugging capabilities. Note that the debug targets will produce executables much slower than the production builds. 
 \begin{table}[htp]
   \centering
-  \begin{tabular}{|c|l|c|c|}
+  \begin{tabular}{clcc}
     \hline
     \sffamily\textbf{Platform} & \sffamily\textbf{Compiler} & \sffamily\textbf{Production Target} & \sffamily\textbf{Debug Target} \\
     \hline\hline
-    &GNU gfortran      & \texttt{gfortran} & \texttt{gfortran\_debug}\\
-    &Lahey lf95        & \texttt{lahey}    & \texttt{lahey\_debug}   \\
-    &Intel ifort       & \texttt{intel}    & \texttt{intel\_debug}   \\
-    &PGI pgf95         & \texttt{pgi}      & \texttt{pgi\_debug}     \\
-    &G95               & \texttt{g95}      & \texttt{g95\_debug}     \\
-    &Absoft            & \texttt{absoft}   & \texttt{absoft\_debug}  \\
-    &IBM AIX xlf95     & \texttt{ibm}      & \texttt{ibm\_debug}     \\
-    &SGI f90$^\dagger$ & \texttt{sgi}      & \texttt{sgi\_debug}     \\
-    &Sun f90$^\dagger$ & \texttt{sun}      & \texttt{sun\_debug}     \\
+    \multirow{6}{*}{Linux}     & GNU gfortran      & \texttt{gfortran} & \texttt{gfortran\_debug}\\
+        &Lahey lf95            & \texttt{lahey}    & \texttt{lahey\_debug}   \\
+        &Intel ifort           & \texttt{intel}    & \texttt{intel\_debug}   \\
+        &PGI pgf95             & \texttt{pgi}      & \texttt{pgi\_debug}     \\
+        &g95                   & \texttt{g95}      & \texttt{g95\_debug}     \\
+        &Absoft$^\dagger$      & \texttt{absoft}   & \texttt{absoft\_debug}  \\[0.2cm]
+    IBM &AIX xlf95             & \texttt{ibm}      & \texttt{ibm\_debug}     \\[0.2cm]
+    SGI &IRIX f90$^\dagger$    & \texttt{sgi}      & \texttt{sgi\_debug}     \\[0.2cm]
+    Sun &Solaris f90$^\dagger$ & \texttt{sun}      & \texttt{sun\_debug}     \\
     \hline
   \end{tabular}
   \caption{Predefined makefile targets for CRTM library build. ($^\dagger$ Untested.)}
