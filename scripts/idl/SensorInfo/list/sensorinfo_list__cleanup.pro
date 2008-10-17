@@ -1,10 +1,64 @@
 ;+
-; Procedure to destroy a SensorInfo Linked List
+; NAME:
+;       SensorInfo_List::Cleanup
+;
+; PURPOSE:
+;       The SensorInfo_List::Cleanup procedure method performs cleanup
+;       on a SensorInfo_List object when it is destroyed.
+;
+;       NOTE: Cleanup methods are special *lifecycle methods* and, as
+;             such, cannot be called outside the context of object
+;             creation and destruction. This means that in most cases
+;             you cannot call the Cleanup method directly. There is one
+;             exception to this rule: if you write your own subclass of
+;             this class, you can call the Cleanup method from within the
+;             Init or Cleanup method of the subclass.
+;
+; CALLING SEQUENCE:
+;       OBJ_DESTROY, Obj
+;
+;         or, in a lifecycle method only,
+;
+;       Obj->[SensorInfo_List::]Cleanup, Quiet=Quiet, $  ; Input keyword
+;                                        Debug=Debug     ; Input keyword
+;
+; INPUT KEYWORD PARAMETERS:
+;       Quiet:       Set this keyword to not print out information on
+;                    number of list nodes deallocated.
+;                    If NOT SET => Information is printed. (DEFAULT)
+;                       SET     => Information is NOT printed.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Error handler is enabled. (DEFAULT)
+;                       SET     => Error handler is disabled; Routine
+;                                  traceback output is enabled.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+; INCLUDE FILES:
+;       error_codes:   Include file containing error code definitions.
+;
+; EXAMPLE:
+;       With a valid SensorInfo_List object, list, the Cleanup method
+;       is invoked when the object is destroyed,
+;
+;         IDL> OBJ_DESTROY, list
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 02-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 PRO SensorInfo_List::Cleanup, Quiet=Quiet, $  ; Input keyword
                               Debug=Debug     ; Input keyword
-;-
- 
+
   ; Set up
   ; ------
   ; error handler
@@ -190,7 +244,7 @@ PRO SensorInfo_List::Cleanup, Quiet=Quiet, $  ; Input keyword
     PTR_FREE, (*Current).SensorInfo
     (*Current).SensorInfo = PTR_NEW()
 
-    ; Deallocate the current node
+    ; Disassociate the current node
     ;
     ;             ----------
     ;  First =>  |X| Hdr  |N|
@@ -227,12 +281,12 @@ PRO SensorInfo_List::Cleanup, Quiet=Quiet, $  ; Input keyword
   ENDFOR ; List traversal loop
 
 
-  ; Deallocate the pointer to the list header
+  ; Disassociate the pointer to the list header
   ;
   ;  First => X
   ;
   ; X == NULL pointer
-  ; -----------------------------------------
+  ; -------------------------------------------
   PTR_FREE, self.First
   self.First = PTR_NEW()
 

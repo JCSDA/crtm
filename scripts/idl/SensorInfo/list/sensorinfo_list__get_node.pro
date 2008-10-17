@@ -1,18 +1,94 @@
 ;+
-; Procedure to GET a SensorInfo node from a SensorInfo linked list.
+; NAME:
+;       SensorInfo_List::Get_Node
 ;
-; - One of the other of the input keywords Node_Number or Sensor_Id
-;   must be passed.
-; - If BOTH the Node_Number and Sensor_Id keyords are passed, the
-;   Sensor_Id value takes precedence.
+; PURPOSE:
+;       The SensorInfo_List::Get_Node function method gets a SensorInfo
+;       node from a SensorInfo linked list
+;
+; CALLING SEQUENCE:
+;       Result = Obj->[SensorInfo_List::]Get_Node( SensorInfo, $               ; Output
+;                                                  Node_Number=Node_Number, $  ; Input keyword
+;                                                  Sensor_Id  =Sensor_Id  , $  ; Input keyword
+;                                                  Debug=Debug              )  ; Input keyword
+;
+; OUTPUT ARGUMENTS:
+;       SensorInfo:  SensorInfo object retrieved from the list
+;                    UNITS:      N/A
+;                    TYPE:       SensorInfo
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(OUT)
+;
+; INPUT KEYWORD PARAMETERS:
+;       Node_Number: The number of the node to be retrieved from the
+;                    list.
+;                    NOTE: Either this keyword or the Sensor_Id keyword
+;                          must be specified. If BOTH are specified the
+;                          Sensor_Id keyword takes precedence.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Sensor_Id:   The sensor id of the node to be retrieved from the
+;                    list.
+;                    NOTE: Either this keyword or the Node_Number keyword
+;                          must be specified. If BOTH are specified the
+;                          Sensor_Id keyword takes precedence.
+;                    UNITS:      N/A
+;                    TYPE:       CHARACTER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Error handler is enabled. (DEFAULT)
+;                       SET     => Error handler is disabled; Routine
+;                                  traceback output is enabled.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;
+; FUNCTION RESULT:
+;       Result:      The return value is an integer defining the error
+;                    status. The error codes are defined in the error_codes
+;                    include file.
+;                    If == SUCCESS the node retrieval was successful
+;                       == FAILURE an unrecoverable error occurred
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;
+; INCLUDE FILES:
+;       error_codes:    Include file containing error code definitions.
+;
+; EXAMPLE:
+;       Given a valid SensorInfo List, list, a particular SensorInfo node
+;       can be retrieved like so,
+;
+;         IDL> Result = list->Get_Node(x, Node_Number=3)
+;
+;       Alternatively, the SensorInfo node for a particular sensor can
+;       be obtained via,
+;
+;         IDL> Result = list->Get_Node(x, Sensor_Id='amsua_metop-a')
+;
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 02-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 FUNCTION SensorInfo_List::Get_Node, SensorInfo             , $  ; Output
                                     Node_Number=Node_Number, $  ; Input keyword (integer)
                                     Sensor_Id=Sensor_Id    , $  ; Input keyword (string)
                                     Debug=Debug                 ; Input keyword                                    
-;- 
 
-  ; Set up error handler
+  ; Set up
+  ; ------
+  ; Error handler
   @error_codes
   IF ( KEYWORD_SET(Debug) ) THEN BEGIN
     MESSAGE, '--> Entered.', /INFORMATIONAL
@@ -39,6 +115,7 @@ FUNCTION SensorInfo_List::Get_Node, SensorInfo             , $  ; Output
   IF ( NOT PTR_VALID(Node_Pointer) ) THEN $
     MESSAGE, 'Requested node does not exist in list', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
   
   ; Copy out the SensorInfo data from the node
   ; ------------------------------------------
@@ -47,6 +124,7 @@ FUNCTION SensorInfo_List::Get_Node, SensorInfo             , $  ; Output
   IF ( Result NE SUCCESS ) THEN $
     MESSAGE, 'Error copying SensorInfo node into output object.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
 
   ; Free the local pointer
   ; ----------------------

@@ -1,17 +1,80 @@
 ;+
-; Procedure to traverse a SensorInfo linked list to a specified
-; node and return a pointer to it.
-
-; - One of the other of the input keywords Node_Number or Sensor_Id
-;   must be passed.
-; - If BOTH the Node_Number and Sensor_Id keyords are passed, the
-;   Sensor_Id value takes precedence.
+; NAME:
+;       SensorInfo_List::Get_Node_Pointer
+;
+; PURPOSE:
+;       The SensorInfo_List::Get_Node_Pointer procedure method traverses
+;       a SensorInfo linked list to a specified node and returns a
+;       pointer to it.
+;
+; CALLING SEQUENCE:
+;       Obj->[SensorInfo_List::]Get_Node_Pointer, Node_Pointer           , $  ; Output
+;                                                 Node_Number=Node_Number, $  ; Input keyword
+;                                                 Sensor_Id  =Sensor_Id  , $  ; Input keyword
+;                                                 Debug=Debug                 ; Input keyword
+;
+; OUTPUT ARGUMENTS:
+;       Node_Pointer:  Pointer to the requested node in the SensorInfo list.
+;                      UNITS:      N/A
+;                      TYPE:       POINTER
+;                      DIMENSION:  Scalar
+;                      ATTRIBUTES: INTENT(OUT)
+;
+; INPUT KEYWORD PARAMETERS:
+;       Node_Number:   The number of the node for which a pointer is
+;                      required.
+;                      NOTE: Either this keyword or the Sensor_Id keyword
+;                            must be specified. If BOTH are specified the
+;                            Sensor_Id keyword takes precedence.
+;                      UNITS:      N/A
+;                      TYPE:       INTEGER
+;                      DIMENSION:  Scalar
+;                      ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Sensor_Id:     The sensor id of the node for which a pointer is
+;                      required.
+;                      NOTE: Either this keyword or the Node_Number keyword
+;                            must be specified. If BOTH are specified the
+;                            Sensor_Id keyword takes precedence.
+;                      UNITS:      N/A
+;                      TYPE:       CHARACTER
+;                      DIMENSION:  Scalar
+;                      ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Debug:         Set this keyword for debugging.
+;                      If NOT SET => Error handler is enabled. (DEFAULT)
+;                         SET     => Error handler is disabled; Routine
+;                                    traceback output is enabled.
+;                      UNITS:      N/A
+;                      TYPE:       INTEGER
+;                      DIMENSION:  Scalar
+;                      ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+; INCLUDE FILES:
+;       error_codes:   Include file containing error code definitions.
+;
+; EXAMPLE:
+;       Given a valid SensorInfo List, list, a pointer to a particular
+;       SensorInfo node can be retrieved like so,
+;
+;         IDL> list->Get_Node_Pointer, ptr, Node_Number=3
+;
+;       Alternatively, the pointer to a SensorInfo node for a particular
+;       sensor can be obtained via,
+;
+;         IDL> list->Get_Node_Pointer, ptr, Sensor_Id='amsua_metop-a'
+;
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 02-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 PRO SensorInfo_List::Get_Node_Pointer, Node_Pointer           , $  ; Output
                                        Node_Number=Node_Number, $  ; Input keyword (integer)
                                        Sensor_Id=Sensor_Id    , $  ; Input keyword (string)
                                        Debug=Debug                 ; Input keyword
-;- 
 
   ; Set up error handler
   @error_codes

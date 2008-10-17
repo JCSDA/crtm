@@ -1,10 +1,76 @@
 ;+
-; Procedure to ADD a SensorInfo node to a SensorInfo linked list
+; NAME:
+;       SensorInfo_List::Add_Node
+;
+; PURPOSE:
+;       The SensorInfo_List::Add_Node function method adds a SensorInfo
+;       node to a SensorInfo linked list
+;
+; CALLING SEQUENCE:
+;       Result = Obj->[SensorInfo_List::]Add_Node( SensorInfo, $               ; Input
+;                                                  Node_Number=Node_Number, $  ; Input keyword
+;                                                  Debug=Debug              )  ; Input keyword
+;
+; INPUT ARGUMENTS:
+;       SensorInfo:  SensorInfo object to add to the list.
+;                    UNITS:      N/A
+;                    TYPE:       SensorInfo
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
+; INPUT KEYWORD PARAMETERS:
+;       Node_Number: The node number at which the SensorInfo object
+;                    is to be inserted. If not specified, the object
+;                    is added to the end of the list.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Error handler is enabled. (DEFAULT)
+;                       SET     => Error handler is disabled; Routine
+;                                  traceback output is enabled.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;
+; FUNCTION RESULT:
+;       Result:      The return value is an integer defining the error
+;                    status. The error codes are defined in the error_codes
+;                    include file.
+;                    If == SUCCESS the node addition was successful
+;                       == FAILURE an unrecoverable error occurred
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;
+; INCLUDE FILES:
+;       error_codes:           Include file containing error code definitions.
+;
+; EXAMPLE:
+;       Given a valid SensorInfo List, list, a valid SensorInfo object, x,
+;       can be added to the end of list like so,
+;
+;         IDL> Result = list->Add_Node(x)
+;
+;       The object can be added at any point in the list by specifying the
+;       node number,
+;
+;         IDL> Result = list->Add_Node(x, Node_Number=3)
+;
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 02-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 FUNCTION SensorInfo_List::Add_Node, SensorInfo, $               ; Input
                                     Node_Number=Node_Number, $  ; Input keyword
                                     Debug=Debug                 ; Input keyword
-;- 
 
   ; Set up
   ; ------

@@ -1,9 +1,46 @@
 ;+
-; Procedure to inspect a SensorInfo_List structure
+; NAME:
+;       SensorInfo_List::Inspect
+;
+; PURPOSE:
+;       The SensorInfo_List::Inspect procedure method outputs information
+;       about the current SensorInfo_List object and its nodes.
+;
+; CALLING SEQUENCE:
+;       Obj->[SensorInfo_List::]Inspect, Verbose=Verbose, &  ; Input keyword
+;                                        Debug  =Debug       ; Input keyword
+;
+; INPUT KEYWORD PARAMETERS:
+;       Verbose:     Set this keyword for more verbose output.Information
+;                    about each node in the list is output if this keyword
+;                    is set.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Regular output. (DEFAULT)
+;                       SET     => Information about all currently compiled
+;                                  routines and their arguments are output.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+; EXAMPLE:
+;       Inspect the contents of a SensorInfo_List object, list:
+;
+;         IDL> list->Inspect, /Verbose
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 02-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 PRO SensorInfo_List::Inspect, Verbose=Verbose, $  ; Input keyword
                               Debug=Debug         ; Input keyword
-;-
 
   IF ( KEYWORD_SET(Debug) ) THEN HELP, /ROUTINES
   ; Dump the object info
