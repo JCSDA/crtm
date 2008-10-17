@@ -157,12 +157,33 @@ PRO TauProfile_PSym_Button_Event, Event
 
 END
 
+;======================================
+PRO TauProfile_WgtFn_Button_Event, Event
+;======================================
+  TauProfile_GetState, Event.Top, Info
+  IF ( Info.Debug EQ 1 ) THEN PRINT, 'TauProfile_WgtFn_Button_Event'
+
+  ; Toggle the weighting function keyword
+  Info.WgtFn = (Info.WgtFn EQ 0) ? 1 : 0
+
+  ; Save top level base info state
+  TauProfile_SetState, Event.Top, Info
+
+  ; Display the result
+  TauProfile_Display, Event.Top
+
+END
+
+
+;==================================
 FUNCTION Molecule_Name, Molecule_ID
+;==================================
   @tauprofile_parameters
   loc = WHERE( MOLECULE_SET_ID EQ Molecule_ID, count )
   IF ( count EQ 0 ) THEN MESSAGE, 'Invalid molecule set id: '+STRTRIM(Molecule_ID,2)
   RETURN, MOLECULE_SET_NAME[loc[0]]
 END 
+
 
 ;=======================================================
 PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
@@ -188,9 +209,14 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
   YTitlePos = 0.96
 
   ; Plot the data
-  p = *Info.Pressure
+  p   = *Info.Pressure
+  lnp = ALOG(p)
   pRange = [ MAX(p), MIN(p)<0.01 ]
-
+  IF ( Info.WgtFn EQ 0 ) THEN $
+    xTitle = 'Transmittance' $
+  ELSE $
+    xTitle = 'dTau/dlnp'
+  
   FOR j = 0L, (*Info.TauProfile).n_Molecule_Sets - 1L DO BEGIN
 
     ; Construct the plot titles
@@ -201,8 +227,10 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
             '; Channel: ' + STRTRIM( (*(*Info.TauProfile).Channel)[l-1], 2 ) 
             
     ; Plot the transmittance profile
-    PLOT, (*(*Info.TauProfile).Tau)[*,l-1,i-1,0,j], p, $
-          XTITLE = 'Transmittance', $
+    x = (*(*Info.TauProfile).Tau)[*,l-1,i-1,0,j]
+    IF ( Info.WgtFn EQ 1 ) THEN x = DERIV(lnp,x)
+    PLOT, x, p, $
+          XTITLE = xTitle, $
           YTITLE = 'Pressure (hPa)', $
           YRANGE = pRange, $
           YSTYLE = 1, $
@@ -213,6 +241,8 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
           FONT = Font, $
           PSYM = Info.PSym, $
           TITLE = Title
+    OPLOT, (Info.WgtFn EQ 0) ? [1,1] : [0,0], (Info.yLog EQ 0) ? !Y.CRANGE : 10^!Y.CRANGE, $
+           LINESTYLE = 2
   ENDFOR
 
   ; Print out the min/max values and locations
@@ -221,28 +251,28 @@ PRO TauProfile_Display, ID, FONT=Font, CHARSIZE=Charsize
   locMin = ARRAY_INDICES(tDim,locMin,/DIMENSIONS)
   locMax = ARRAY_INDICES(tDim,locMax,/DIMENSIONS)
   
-  channel  = (*(*Info.TauProfile).Channel)[locMin[1]]
-  angle    = (*(*Info.TauProfile).Angle)[locMin[2]]
-  molecule = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[locMin[4]])
-  XYOUTS, 0.6, 0.2, $
-          STRING(tMin, channel, angle, molecule, $
-                 FORMAT='("MIN: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
-          ALIGNMENT=0.0, /NORMAL, $
-          FONT=Font, CHARSIZE=Charsize
-          
-  channel  = (*(*Info.TauProfile).Channel)[locMax[1]]
-  angle    = (*(*Info.TauProfile).Angle)[locMax[2]]
-  molecule = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[locMax[4]])
-  XYOUTS, 0.8, 0.2, $
-          STRING(tMax, channel, angle, molecule, $
-                 FORMAT='("MAX: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
-          ALIGNMENT=0.0, /NORMAL, $
-          FONT=Font, CHARSIZE=Charsize
-          
-  XYOUTS, 0.77, 0.23, $
-          (*Info.TauProfile).Sensor_ID+' transmittance extrema for profile '+STRTRIM((*Info.Profile_List)[m-1],2), $
-          ALIGNMENT=0.5, /NORMAL, $
-          FONT=Font, CHARSIZE=Charsize
+;  channel  = (*(*Info.TauProfile).Channel)[locMin[1]]
+;  angle    = (*(*Info.TauProfile).Angle)[locMin[2]]
+;  molecule = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[locMin[4]])
+;  XYOUTS, 0.6, 0.2, $
+;          STRING(tMin, channel, angle, molecule, $
+;                 FORMAT='("MIN: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
+;          ALIGNMENT=0.0, /NORMAL, $
+;          FONT=Font, CHARSIZE=Charsize
+;          
+;  channel  = (*(*Info.TauProfile).Channel)[locMax[1]]
+;  angle    = (*(*Info.TauProfile).Angle)[locMax[2]]
+;  molecule = Molecule_Name((*(*Info.TauProfile).Molecule_Set)[locMax[4]])
+;  XYOUTS, 0.8, 0.2, $
+;          STRING(tMax, channel, angle, molecule, $
+;                 FORMAT='("MAX: ",e13.6,"!CChannel: ",i5,"!CAngle: ",f4.2,"!CMolecule: ",a)'), $
+;          ALIGNMENT=0.0, /NORMAL, $
+;          FONT=Font, CHARSIZE=Charsize
+;          
+;  XYOUTS, 0.77, 0.23, $
+;          (*Info.TauProfile).Sensor_ID+' transmittance extrema for profile '+STRTRIM((*Info.Profile_List)[m-1],2), $
+;          ALIGNMENT=0.5, /NORMAL, $
+;          FONT=Font, CHARSIZE=Charsize
 
 END
 
@@ -353,6 +383,10 @@ PRO TauProfile_Load_File, File, ID
   WIDGET_CONTROL, Info.PSym_Button_ID, $
                   SENSITIVE=1
 
+  ; The weighting fn button
+  WIDGET_CONTROL, Info.WgtFn_Button_ID, $
+                  SENSITIVE=1
+
 
   ; Display the new data
   ; --------------------
@@ -428,8 +462,8 @@ PRO TauProfile_GUI, File, Debug = Debug
   ; Create the draw widget
   ; ----------------------
 
-  xSize = 1200
-  ySize = 800
+  xSize = 1400
+  ySize = 850
   Draw_Widget_ID = WIDGET_DRAW( Top_Level_Base_ID, $
                                 GROUP_LEADER = Top_Level_Base_ID, $
                                 XSIZE = xSize, YSIZE = ySIZE )
@@ -520,6 +554,12 @@ PRO TauProfile_GUI, File, Debug = Debug
                                   VALUE = 'Symbol', $
                                   UVALUE = 'PSym' )
 
+  WgtFn_Button_ID = WIDGET_BUTTON( ButtonControl_Base_ID, $
+                                   EVENT_PRO = 'TauProfile_WgtFn_Button_Event', $
+                                   SENSITIVE = 0, $
+                                   VALUE = 'Tau/WgtFn', $
+                                   UVALUE = 'WgtFn' )
+
 
   ; --------------------------------------------
   ; Map, update and realise the widget heirarchy
@@ -557,6 +597,8 @@ PRO TauProfile_GUI, File, Debug = Debug
            yTickFormat       : 'logticks', $
            PSym_Button_ID    : PSym_Button_ID, $
            pSym              : 0, $
+           WgtFn_Button_ID   : WgtFn_Button_ID, $
+           WgtFn             : 0, $
            Filename          : ' ', $
            Profile_List      : PTR_NEW(), $
            TauProfile        : PTR_NEW() }
