@@ -1,10 +1,68 @@
 ;+
-; Function to read ASCII format SensorInfo file data into
-; a SensorInfo linked list
+; NAME:
+;       SensorInfo_List::Read
+;
+; PURPOSE:
+;       The SensorInfo_List::Read function method reads ASCII format
+;       SensorInfo file data into a SensorInfo linked list
+;
+; CALLING SEQUENCE:
+;       Result = Obj->[SensorInfo_List::]Read( Filename   , $  ; Input
+;                                              Debug=Debug  )  ; Input keyword
+;
+; INPUT ARGUMENTS:
+;       Filename:    The name of the SensorInfo file to read.
+;                    UNITS:      N/A
+;                    TYPE:       CHARACTER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(OUT)
+;
+; INPUT KEYWORD PARAMETERS:
+;       Debug:       Set this keyword for debugging.
+;                    If NOT SET => Error handler is enabled. (DEFAULT)
+;                       SET     => Error handler is disabled; Routine
+;                                  traceback output is enabled.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;
+; FUNCTION RESULT:
+;       Result:      The return value is an integer defining the error
+;                    status. The error codes are defined in the error_codes
+;                    include file.
+;                    If == SUCCESS the file read was successful
+;                       == FAILURE an unrecoverable error occurred
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;
+; INCLUDE FILES:
+;       sensorinfo_parameters: Include file containing SensorInfo specific
+;                              parameter value definitions.
+;
+;       error_codes:           Include file containing error code definitions.
+;
+; EXAMPLE:
+;       After creating a SensorInfo_List object,
+;
+;         IDL> list = OBJ_NEW('SensorInfo_List')
+;
+;       it can be populated with data from a SensorInfo file,
+;       named "si.dat", like so,
+;
+;         IDL> Result = list->Read('si.dat')
+;
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 02-Oct-2008
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 FUNCTION SensorInfo_List::Read, Filename, $  ; Input
                                 Debug=Debug  ; Input keyword
-;- 
 
   ; Set up
   ; ------
@@ -31,6 +89,7 @@ FUNCTION SensorInfo_List::Read, Filename, $  ; Input
   IF ( NOT (FILE_INFO(Filename)).EXISTS ) THEN $
     MESSAGE, 'File '+STRTRIM(Filename,2)+' not found.', NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
+
   ; Initialise variables for reading
   ; --------------------------------
   n_Channels      = 0L
@@ -41,15 +100,18 @@ FUNCTION SensorInfo_List::Read, Filename, $  ; Input
   WMO_Sensor_ID   = 0L
   Microwave_Flag  = 0L
   Sensor_Type     = 0L
+
   
   ; Create a local SensorInfo object
   ; --------------------------------
   si = OBJ_NEW('SensorInfo',Debug=Debug)
+
   
   ; Open the file
   ; -------------
   GET_LUN, File_Id
   OPENR, File_Id, Filename
+
   
   ; Loop over comment lines
   ; -----------------------
@@ -135,15 +197,18 @@ FUNCTION SensorInfo_List::Read, Filename, $  ; Input
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ENDWHILE
+
   
   ; Clean up
   ; --------
   FREE_LUN, File_Id
   OBJ_DESTROY, si, Debug=Debug
+
   
   ; Output an info message
   ; ----------------------
   MESSAGE, 'FILE: '+STRTRIM(Filename,2)+', N_SENSORS='+STRTRIM(n_Sensors,2), /INFORMATIONAL
+
      
   ; Done
   ; ----
