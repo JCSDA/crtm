@@ -49,8 +49,8 @@ PROGRAM FitStats_ASCII2NC
   INTEGER, PARAMETER :: SET = 1
 
   ! The allowed absorber components
-  INTEGER,      PARAMETER :: N_MOL_SETS = 3
-  CHARACTER(*), PARAMETER :: MOL_SET_NAME(N_MOL_SETS) = (/'wet','dry','ozo'/)
+  INTEGER,      PARAMETER :: MAX_N_MOL_SETS = 3
+  CHARACTER(*), PARAMETER :: MOL_SET_NAME(MAX_N_MOL_SETS) = (/'wet','dry','ozo'/)
 
   ! The dependent profile set ID
   CHARACTER(*), PARAMETER :: ID_TAG = 'UMBC'
@@ -71,7 +71,7 @@ PROGRAM FitStats_ASCII2NC
   INTEGER :: Error_Status
   INTEGER :: IO_Status
   INTEGER :: FileID
-  INTEGER :: j, l, n, n_Sensors
+  INTEGER :: j, l, n, n_Sensors, n_Mol_Sets
   TYPE(SensorInfo_type)      :: SensorInfo
   TYPE(SensorInfo_List_type) :: SensorInfo_List
   TYPE(SpcCoeff_type) :: SpcCoeff
@@ -131,14 +131,32 @@ PROGRAM FitStats_ASCII2NC
     END IF
 
 
+    ! Set the number of molecule sets to use
+    ! --------------------------------------
+    n_Mol_Sets = MAX_N_MOL_SETS
+    IF ( SensorInfo%Microwave_Flag == SET ) n_Mol_Sets = 2
+
+    
     ! Only operate on sensors for which ALL data is available
     ! -------------------------------------------------------
     SpcCoeff_Filename = TRIM(SensorInfo%Sensor_ID)//'.SpcCoeff.nc'
-    IF ( .NOT. File_Exists( SpcCoeff_Filename ) ) CYCLE Sensor_Loop
-    DO j = 1, N_MOL_SETS
-      ASCII_Filename = MOL_SET_NAME(j)//'.'//&
-                       TRIM(SensorInfo%Sensor_ID)//'.FitStats'
-      IF ( .NOT. File_Exists( ASCII_Filename ) ) CYCLE Sensor_Loop
+    IF ( .NOT. File_Exists( SpcCoeff_Filename ) ) THEN
+      CALL Display_Message( PROGRAM_NAME, &
+                            TRIM(SpcCoeff_Filename)//' not present. Skipping '//&
+                            TRIM(SensorInfo%Sensor_ID)//'...', &
+                            INFORMATION )
+      CYCLE Sensor_Loop
+    END IF
+    DO j = 1, n_Mol_Sets
+      ASCII_Filename = 'stat.'//TRIM(SensorInfo%Sensor_ID)//'.'//&
+                       MOL_SET_NAME(j)//'.varyingOrder.umbc48101.txt'
+      IF ( .NOT. File_Exists( ASCII_Filename ) ) THEN
+        CALL Display_Message( PROGRAM_NAME, &
+                              TRIM(ASCII_Filename)//' not present. Skipping '//&
+                              TRIM(SensorInfo%Sensor_ID)//'...', &
+                              INFORMATION )
+        CYCLE Sensor_Loop
+      END IF
     END DO
 
 
@@ -156,13 +174,14 @@ PROGRAM FitStats_ASCII2NC
 
     ! Begin the main molecule/absorber set loop
     ! -----------------------------------------
-    Molecule_Loop: DO j = 1, N_MOL_SETS
+    Molecule_Loop: DO j = 1, n_Mol_Sets
     
     
       ! Construct filenames
       ! -------------------
-      ASCII_Filename = MOL_SET_NAME(j)//'.'//TRIM(SensorInfo%Sensor_ID)//'.FitStats'
-      NC_Filename    = TRIM(ASCII_Filename)//'.nc'
+      ASCII_Filename = 'stat.'//TRIM(SensorInfo%Sensor_ID)//'.'//&
+                       MOL_SET_NAME(j)//'.varyingOrder.umbc48101.txt'
+      NC_Filename = MOL_SET_NAME(j)//'.'//TRIM(SensorInfo%Sensor_ID)//'.FitStats.nc'
 
       WRITE( *,'(/5x,"Converting ASCII ",a," FitStats to netCDF format for ",a,"...")' ) &
                MOL_SET_NAME(j), TRIM(SensorInfo%Sensor_ID)

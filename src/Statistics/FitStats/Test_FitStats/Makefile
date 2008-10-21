@@ -18,10 +18,7 @@ SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
-            netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
-            netCDF_Variable_Utility.f90 \
+            String_Utility.f90 \
             FitStats_Define.f90 \
             FitStats_netCDF_IO.f90
 

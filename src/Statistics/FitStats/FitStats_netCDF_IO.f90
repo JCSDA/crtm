@@ -20,15 +20,15 @@ MODULE FitStats_netCDF_IO
   USE Type_Kinds     , ONLY: Long, Double
   USE Message_Handler, ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                              Display_Message
-  USE FitStats_Define, ONLY: FitStats_type, &
+  USE String_Utility,  ONLY: StrClean
+  USE FitStats_Define, ONLY: MAX_PREDICTORS, &
+                             FitStats_type, &
                              Associated_FitStats, &
                              Destroy_FitStats, &
                              Allocate_FitStats, &
                              CheckRelease_FitStats, &
                              Info_FitStats
   USE netcdf
-  USE netCDF_Utility , Open_FitStats_netCDF =>  Open_netCDF, &
-                       Close_FitStats_netCDF => Close_netCDF
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -50,7 +50,7 @@ MODULE FitStats_netCDF_IO
     '$Id$'
   ! Keyword set value
   INTEGER,      PARAMETER :: SET = 1
-  ! Message string length
+  ! msg string length
   INTEGER,      PARAMETER :: ML = 512
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
@@ -114,12 +114,6 @@ MODULE FitStats_netCDF_IO
   CHARACTER(*), PARAMETER :: MAX_PRED_TERM_LONGNAME    = '(Max. Predicted term)/(Max. predictand)'
 
 
-
-  CHARACTER(*), PARAMETER :: A_EARTH_LONGNAME          = 'A(earth)'
-  CHARACTER(*), PARAMETER :: A_SPACE_LONGNAME          = 'A(space)'
-  CHARACTER(*), PARAMETER :: A_PLATFORM_LONGNAME       = 'A(platform)'
-
- 
   ! Variable description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
 
@@ -255,9 +249,9 @@ CONTAINS
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
+!                           msgs will be logged. If not specified, or if an
 !                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
+!                           is to output msgs to standard output.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -384,10 +378,10 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_FitStats_netCDF'
     ! Function variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NC_FileID
-    INTEGER :: Close_Status
-    TYPE(FitStats_type) :: Dummy  
+    INTEGER :: NF90_STATUS
+    INTEGER :: DimId, n
     
     ! Set up
     ! ------
@@ -397,90 +391,81 @@ CONTAINS
 
     ! Open the file
     ! -------------
-    Error_Status = Open_FitStats_netCDF( NC_Filename, &
-                                         NC_FileID, &
-                                         Mode='READ' )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF FitStats data file '//&
-                TRIM(NC_Filename)
+    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Get the dimensions
-    ! ------------------
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         CHANNEL_DIMNAME, &
-                                         Dummy%n_Channels, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//CHANNEL_DIMNAME//&
-                ' dimension from '//TRIM(NC_Filename)
-      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    ! Get the channel dimension
+    ! -------------------------
+    ! Get the dimension id
+    NF90_Status = NF90_INQ_DIMID( NC_FileId,CHANNEL_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//CHANNEL_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    ! Get the dimension value
+    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=n )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//CHANNEL_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
     ! Get the global attributes
     ! -------------------------
-    Error_Status = ReadGAtts( NC_Filename                             , &
-                              NC_FileID                               , &
-                              Release          =Dummy%Release         , &
-                              Version          =Dummy%Version         , &
-                              Sensor_Id        =Dummy%Sensor_Id       , &
-                              WMO_Satellite_Id =Dummy%WMO_Satellite_Id, &
-                              WMO_Sensor_Id    =Dummy%WMO_Sensor_Id   , &
-                              ID_Tag           =ID_Tag                , &
-                              Title            =Title                 , &
-                              History          =History               , &
-                              Comment          =Comment               , &
-                              Message_Log      =Message_Log             )
+    Error_Status = ReadGAtts( NC_Filename                       , &
+                              NC_FileID                         , &
+                              Release          =Release         , &
+                              Version          =Version         , &
+                              Sensor_Id        =Sensor_Id       , &
+                              WMO_Satellite_Id =WMO_Satellite_Id, &
+                              WMO_Sensor_Id    =WMO_Sensor_Id   , &
+                              ID_Tag           =ID_Tag          , &
+                              Title            =Title           , &
+                              History          =History         , &
+                              Comment          =Comment         , &
+                              Message_Log      =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
+      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Close the file
     ! --------------
-    Close_Status = Close_FitStats_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      Message = 'Error closing netCDF FitStats data file '//TRIM(NC_Filename)
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Set the return values
-    ! ---------------------
-    ! Dimensions
-    IF ( PRESENT(n_Channels) ) n_Channels = Dummy%n_Channels  
-    
-    ! Release/Version information
-    IF ( PRESENT(Release) ) Release = Dummy%Release
-    IF ( PRESENT(Version) ) Version = Dummy%Version
-
-    ! Sensor ids
-    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = Dummy%Sensor_Id       
-    IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id = Dummy%WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id    = Dummy%WMO_Sensor_Id   
+    ! Set the dimension return value
+    ! ------------------------------
+    IF ( PRESENT(n_Channels) ) n_Channels = n
     
   CONTAINS
   
     SUBROUTINE Inquire_CleanUp( Close_File )
-      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File == SET ) THEN
-          Close_Status = Close_FitStats_netCDF(NC_FileID)
-          IF ( Close_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
-      ! Set error status and print error message
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_FitStats_netCDF
@@ -521,12 +506,12 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information messages being
-!                     printed to standard output (or the message log file if
-!                     the MESSAGE_LOG optional argument is used.) By default,
-!                     information messages are printed.
-!                     If QUIET = 0, information messages are OUTPUT.
-!                        QUIET = 1, information messages are SUPPRESSED.
+!       Quiet:        Set this keyword to suppress information msgs being
+!                     printed to standard output (or the msg log file if
+!                     the Message_Log optional argument is used.) By default,
+!                     information msgs are printed.
+!                     If QUIET = 0, information msgs are OUTPUT.
+!                        QUIET = 1, information msgs are SUPPRESSED.
 !                     UNITS:      N/A
 !                     TYPE:       Integer
 !                     DIMENSION:  Scalar
@@ -562,9 +547,9 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
+!                     msgs will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
+!                     is to output msgs to standard output.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
@@ -614,17 +599,17 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_FitStats_netCDF'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
     INTEGER :: NC_FileID
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-    ! Output informational messages....
+    ! Output informational msgs....
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
     IF ( PRESENT(Quiet) ) THEN
@@ -633,7 +618,7 @@ CONTAINS
 
     ! Check structure association
     IF ( .NOT. Associated_FitStats( FitStats ) ) THEN
-      Message = 'Some or all INPUT FitStats pointer members are NOT associated.'
+      msg = 'Some or all INPUT FitStats pointer members are NOT associated.'
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -643,7 +628,6 @@ CONTAINS
     Error_Status = CreateFile( NC_Filename                                , &  ! Input
                                FitStats%n_Channels                        , &  ! Input
                                NC_FileID                                  , &  ! Output
-                               Release          =FitStats%Release         , &  ! Optional input
                                Version          =FitStats%Version         , &  ! Optional input
                                Sensor_Id        =FitStats%Sensor_Id       , &  ! Optional input
                                WMO_Satellite_Id =FitStats%WMO_Satellite_Id, &  ! Optional input
@@ -654,7 +638,7 @@ CONTAINS
                                Comment          =Comment                  , &  ! Optional input
                                Message_Log      =Message_Log                )  ! Error messaging
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error creating output file '//TRIM(NC_Filename)
+      msg = 'Error creating output file '//TRIM(NC_Filename)
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -666,51 +650,46 @@ CONTAINS
                              FitStats               , &
                              Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing FitStats variables to output file '//TRIM(NC_Filename)
-      CALL Write_Cleanup( Close_File=SET ); RETURN
+      msg = 'Error writing FitStats variables to output file '//TRIM(NC_Filename)
+      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
     END IF
     
 
     ! Close the file
     ! --------------
-    Close_Status = Close_FitStats_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF FitStats data file '// &
-                            TRIM(NC_Filename), &
-                            WARNING, &
-                            Message_Log = Message_Log )
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
-    ! Output an info message
+    ! Output an info msg
     ! ----------------------
     IF ( Noisy ) THEN
-      CALL Info_FitStats( FitStats, Message )
+      CALL Info_FitStats( FitStats, msg )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
                             INFORMATION, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
   CONTAINS
   
     SUBROUTINE Write_CleanUp( Close_File )
-      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File == SET ) THEN
-          Close_Status = Close_FitStats_netCDF(NC_FileID)
-          IF ( Close_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
-      ! Set error status and print error message
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_FitStats_netCDF
@@ -752,21 +731,21 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information messages being
-!                     printed to standard output (or the message log file if
-!                     the MESSAGE_LOG optional argument is used.) By default,
-!                     information messages are printed.
-!                     If QUIET = 0, information messages are OUTPUT.
-!                        QUIET = 1, information messages are SUPPRESSED.
+!       Quiet:        Set this keyword to suppress information msgs being
+!                     printed to standard output (or the msg log file if
+!                     the Message_Log optional argument is used.) By default,
+!                     information msgs are printed.
+!                     If QUIET = 0, information msgs are OUTPUT.
+!                        QUIET = 1, information msgs are SUPPRESSED.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
+!                     msgs will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
+!                     is to output msgs to standard output.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
@@ -853,11 +832,10 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_FitStats_netCDF'
     ! Function variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
     INTEGER :: NC_FileID
-    INTEGER :: Destroy_Status
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
     INTEGER :: n_Channels  
 
     
@@ -866,7 +844,7 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-    ! Output informational messages....
+    ! Output informational msgs....
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
     IF ( PRESENT( Quiet ) ) THEN
@@ -877,32 +855,28 @@ CONTAINS
     ! Allocate the structure for the netCDF read
     ! ------------------------------------------
     ! Read the dimension values
-    Error_Status = Inquire_FitStats_netCDF( NC_Filename              , &
-                                            n_Channels  =n_Channels  , &
-                                            Message_Log =Message_Log   ) 
+    Error_Status = Inquire_FitStats_netCDF( NC_Filename, &
+                                            n_Channels=n_Channels, &
+                                            Message_Log=Message_Log) 
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining FitStats dimensions from '//TRIM(NC_Filename)
+      msg = 'Error obtaining FitStats dimensions from '//TRIM(NC_Filename)
       CALL Read_Cleanup(); RETURN
     END IF
-
     ! Allocate the structure
-    Error_Status = Allocate_FitStats( n_Channels, &
-                                      FitStats  , &
-                                      Message_Log=Message_Log )
+    Error_Status = Allocate_FitStats( n_Channels,FitStats,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error occurred allocating FitStats structure.'
+      msg = 'Error occurred allocating FitStats structure.'
       CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Open the netCDF file for reading
     ! --------------------------------
-    Error_Status = Open_FitStats_netCDF( NC_Filename, &
-                                         NC_FileID, &
-                                         Mode='READ' )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF FitStats data file '//TRIM(NC_Filename)
-      CALL Read_Cleanup( Destroy_Structure=SET ); RETURN
+    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
@@ -921,16 +895,15 @@ CONTAINS
                               Comment         =Comment                  , &
                               Message_Log     =Message_Log                )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
+      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
     END IF
 
     ! Check the release
-    Error_Status = CheckRelease_FitStats( FitStats, &
-                                           Message_Log=Message_Log )
+    Error_Status = CheckRelease_FitStats( FitStats,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'FitStats Release check failed for '//TRIM(NC_Filename)
-      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
+      msg = 'FitStats Release check failed for '//TRIM(NC_Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
     END IF
     
 
@@ -941,60 +914,55 @@ CONTAINS
                             FitStats               , &
                             Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading FitStats variables from '//TRIM(NC_Filename)
-      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
+      msg = 'Error reading FitStats variables from '//TRIM(NC_Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
     ! Close the file
     ! --------------
-    Close_Status = Close_FitStats_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF FitStats data file '// &
-                            TRIM(NC_Filename), &
-                            WARNING, &
-                            Message_Log = Message_Log )
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
-    ! Output an info message
+    ! Output an info msg
     ! ----------------------
     IF ( Noisy ) THEN
-      CALL Info_FitStats( FitStats, Message )
+      CALL Info_FitStats( FitStats, msg )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
                             INFORMATION, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
 
   CONTAINS
   
     SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
-      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
-      INTEGER, OPTIONAL, INTENT(IN) :: Destroy_Structure
+       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File == SET ) THEN
-          Close_Status = Close_FitStats_netCDF(NC_FileID)
-          IF ( Close_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
       ! Destroy the structure if necessary
       IF ( PRESENT(Destroy_Structure) ) THEN
-        IF ( Destroy_Structure == SET ) THEN
-          Destroy_Status = Destroy_FitStats(FitStats, Message_Log=Message_Log)
-          IF ( Destroy_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error destroying FitStats during error cleanup.'
+        IF ( Destroy_Structure ) THEN
+          Error_Status = Destroy_FitStats(FitStats, Message_Log=Message_Log)
+          IF ( Error_Status /= SUCCESS ) &
+            msg = TRIM(msg)//'; Error destroying FitStats during error cleanup.'
         END IF
       END IF
-      ! Set error status and print error message
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_FitStats_netCDF
@@ -1020,7 +988,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = WriteGAtts( NC_Filename                      , &  ! Input
 !                                  NC_FileID                        , &  ! Input
-!                                  Release         =Release         , &  ! Optional input
 !                                  Version         =Version         , &  ! Optional input
 !                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
 !                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
@@ -1048,12 +1015,6 @@ CONTAINS
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Release:          The release number of the netCDF FitStats file.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 !       Version:          The version number of the netCDF FitStats file.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
@@ -1111,9 +1072,9 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:      Character string specifying a filename in which
-!                         any messages will be logged. If not specified,
+!                         any msgs will be logged. If not specified,
 !                         or if an error occurs opening the log file, the
-!                         default action is to output messages to standard
+!                         default action is to output msgs to standard
 !                         output.
 !                         UNITS:      N/A
 !                         TYPE:       CHARACTER(*)
@@ -1133,7 +1094,6 @@ CONTAINS
 
   FUNCTION WriteGAtts( NC_Filename     , &  ! Input
                        NC_FileID       , &  ! Input
-                       Release         , &  ! Optional input
                        Version         , &  ! Optional input
                        Sensor_Id       , &  ! Optional input
                        WMO_Satellite_Id, &  ! Optional input
@@ -1147,7 +1107,6 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: NC_Filename
     INTEGER     ,           INTENT(IN) :: NC_FileID
-    INTEGER     , OPTIONAL, INTENT(IN) :: Release         
     INTEGER     , OPTIONAL, INTENT(IN) :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Sensor_Id       
     INTEGER     , OPTIONAL, INTENT(IN) :: WMO_Satellite_Id
@@ -1164,17 +1123,23 @@ CONTAINS
     CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
     CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
     ! Local variables
-    CHARACTER(ML) :: Message
-    CHARACTER(256) :: GAttName
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: GAttName
     CHARACTER(8)  :: cdate
     CHARACTER(10) :: ctime
     CHARACTER(5)  :: czone
+    INTEGER :: Ver
     INTEGER :: NF90_Status
+    TYPE(FitStats_type) :: FitStats_Default
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
-    Message = ' '
+    msg = ' '
 
+
+    ! Mandatory global attributes
+    ! ---------------------------
     ! Software ID
     GAttName = WRITE_MODULE_HISTORY_GATTNAME
     NF90_Status = NF90_PUT_ATT( NC_FileID, &
@@ -1185,7 +1150,6 @@ CONTAINS
       CALL WriteGAtts_Cleanup(); RETURN
     END IF
     
-
     ! Creation date
     CALL DATE_AND_TIME( cdate, ctime, czone )
     GAttName = CREATION_DATE_AND_TIME_GATTNAME
@@ -1200,27 +1164,31 @@ CONTAINS
     END IF
 
     ! The Release
-    IF ( PRESENT(Release) ) THEN
-      GAttName = RELEASE_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  TRIM(GAttName), &
-                                  Release )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL WriteGAtts_Cleanup(); RETURN
-      END IF
+    GAttName = RELEASE_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileId, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                FitStats_Default%Release )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
     END IF
 
+
+    ! Optional global attributes
+    ! --------------------------
     ! The Version
     IF ( PRESENT(Version) ) THEN
-      GAttName = VERSION_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  TRIM(GAttName), &
-                                  Version )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL WriteGAtts_Cleanup(); RETURN
-      END IF
+      Ver = Version
+    ELSE
+      Ver = FitStats_Default%Version
+    END IF
+    GAttName = VERSION_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileId, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                Ver )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
     END IF
 
     ! The Sensor_Id
@@ -1313,14 +1281,14 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = '; Error closing input file during error cleanup - '//&
+        msg = '; Error closing input file during error cleanup - '//&
                   TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error message
+      ! Set error status and print error msg
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error writing '//TRIM(GAttName)//' attribute to '//&
                             TRIM(NC_Filename)//' - '// &
-                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(Message), &
+                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(msg), &
                             Error_Status, &
                             Message_Log=Message_Log )
     END SUBROUTINE WriteGAtts_CleanUp
@@ -1368,9 +1336,9 @@ CONTAINS
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:      Character string specifying a filename in which
-!                         any messages will be logged. If not specified,
+!                         any msgs will be logged. If not specified,
 !                         or if an error occurs opening the log file, the
-!                         default action is to output messages to standard
+!                         default action is to output msgs to standard
 !                         output.
 !                         UNITS:      N/A
 !                         TYPE:       CHARACTER(*)
@@ -1484,23 +1452,31 @@ CONTAINS
     ! Local variables
     CHARACTER(256)  :: GAttName
     CHARACTER(5000) :: GAttString
+    INTEGER :: Rel
     INTEGER :: NF90_Status
+    TYPE(FitStats_type) :: FitStats_Default
 
     ! Set up
+    ! ------
     Error_Status = SUCCESS
 
-    ! The Release
-    IF ( PRESENT(Release) ) THEN
-      GAttName = RELEASE_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  TRIM(GAttName), &
-                                  Release )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-    END IF
 
+    ! The mandatory GAtts for checking
+    ! --------------------------------
+    ! The Release
+    GAttName = RELEASE_GATTNAME
+    NF90_Status = NF90_GET_ATT( NC_FileId, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                Rel )
+    IF ( NF90_Status /= NF90_NOERR .OR. Rel /= FitStats_Default%Release) THEN
+      CALL ReadGAtts_Cleanup(); RETURN
+    END IF
+    IF ( PRESENT(Release) ) Release = FitStats_Default%Release
+
+
+    ! The optional GAtts
+    ! ------------------
     ! The Version
     IF ( PRESENT(Version) ) THEN
       GAttName = VERSION_GATTNAME
@@ -1524,7 +1500,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       Sensor_Id = GAttString(1:MIN( LEN(Sensor_Id), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1563,7 +1539,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       ID_Tag = GAttString(1:MIN( LEN(ID_Tag), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1578,7 +1554,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       Title = GAttString(1:MIN( LEN(Title), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1593,7 +1569,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       History = GAttString(1:MIN( LEN(History), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1608,7 +1584,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       Comment = GAttString(1:MIN( LEN(Comment), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1675,9 +1651,9 @@ CONTAINS
 !
 ! OPTIONAL INPUT ARGUMENTS
 !       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
+!                           msgs will be logged. If not specified, or if an
 !                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
+!                           is to output msgs to standard output.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -1713,10 +1689,9 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'DefineVar'
     ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: NF90_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: NF90_Status(4)
     INTEGER :: varID
-    INTEGER :: Put_Status(4)
                                
     ! Set up
     ! ------
@@ -1726,580 +1701,291 @@ CONTAINS
 
     ! Begin all the variable definitions
     ! ----------------------------------
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                SENSOR_CHANNEL_VARNAME, &
-                                SENSOR_CHANNEL_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,SENSOR_CHANNEL_VARNAME,SENSOR_CHANNEL_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  SENSOR_CHANNEL_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  SENSOR_CHANNEL_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  SENSOR_CHANNEL_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  SENSOR_CHANNEL_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//SENSOR_CHANNEL_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,SENSOR_CHANNEL_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,SENSOR_CHANNEL_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,SENSOR_CHANNEL_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,SENSOR_CHANNEL_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                ORDER_VARNAME, &
-                                ORDER_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//ORDER_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,ORDER_VARNAME,ORDER_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//ORDER_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  ORDER_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  ORDER_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  ORDER_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  ORDER_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//ORDER_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,ORDER_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,ORDER_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,ORDER_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,ORDER_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//ORDER_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                N_PREDICTORS_VARNAME, &
-                                N_PREDICTORS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//N_PREDICTORS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,N_PREDICTORS_VARNAME,N_PREDICTORS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  N_PREDICTORS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  N_PREDICTORS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  N_PREDICTORS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  N_PREDICTORS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//N_PREDICTORS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,N_PREDICTORS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,N_PREDICTORS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,N_PREDICTORS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,N_PREDICTORS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//N_PREDICTORS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                PREDICTOR_IDX_VARNAME, &
-                                PREDICTOR_IDX_TYPE, &
-                                dimIDs=(/n_Predictors_DimID, &
-                                         n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//PREDICTOR_IDX_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,PREDICTOR_IDX_VARNAME,PREDICTOR_IDX_TYPE, &
+                                   dimIDs=(/n_Predictors_DimID,n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PREDICTOR_IDX_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  PREDICTOR_IDX_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  PREDICTOR_IDX_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  PREDICTOR_IDX_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  PREDICTOR_IDX_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//PREDICTOR_IDX_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,PREDICTOR_IDX_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,PREDICTOR_IDX_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,PREDICTOR_IDX_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,PREDICTOR_IDX_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//PREDICTOR_IDX_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                FREQUENCY_VARNAME, &
-                                FREQUENCY_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//FREQUENCY_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,FREQUENCY_VARNAME,FREQUENCY_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//FREQUENCY_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  FREQUENCY_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  FREQUENCY_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  FREQUENCY_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  FREQUENCY_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//FREQUENCY_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,FREQUENCY_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,FREQUENCY_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,FREQUENCY_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,FREQUENCY_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//FREQUENCY_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                FIT_RESIDUAL_VARNAME, &
-                                FIT_RESIDUAL_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//FIT_RESIDUAL_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,FIT_RESIDUAL_VARNAME,FIT_RESIDUAL_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//FIT_RESIDUAL_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  FIT_RESIDUAL_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  FIT_RESIDUAL_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  FIT_RESIDUAL_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  FIT_RESIDUAL_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//FIT_RESIDUAL_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,FIT_RESIDUAL_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,FIT_RESIDUAL_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,FIT_RESIDUAL_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,FIT_RESIDUAL_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//FIT_RESIDUAL_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TB_BIAS_VARNAME, &
-                                TB_BIAS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TB_BIAS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TB_BIAS_VARNAME,TB_BIAS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TB_BIAS_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TB_BIAS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TB_BIAS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TB_BIAS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TB_BIAS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TB_BIAS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TB_BIAS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TB_BIAS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TB_BIAS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TB_BIAS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TB_BIAS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TB_SDEV_VARNAME, &
-                                TB_SDEV_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TB_SDEV_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TB_SDEV_VARNAME,TB_SDEV_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TB_SDEV_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TB_SDEV_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TB_SDEV_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TB_SDEV_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TB_SDEV_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TB_SDEV_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TB_SDEV_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TB_SDEV_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TB_SDEV_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TB_SDEV_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TB_SDEV_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TB_RMS_VARNAME, &
-                                TB_RMS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TB_RMS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TB_RMS_VARNAME,TB_RMS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TB_RMS_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TB_RMS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TB_RMS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TB_RMS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TB_RMS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TB_RMS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TB_RMS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TB_RMS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TB_RMS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TB_RMS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TB_RMS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TB_MAX_VARNAME, &
-                                TB_MAX_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TB_MAX_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TB_MAX_VARNAME,TB_MAX_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TB_MAX_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TB_MAX_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TB_MAX_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TB_MAX_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TB_MAX_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TB_MAX_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TB_MAX_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TB_MAX_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TB_MAX_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TB_MAX_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TB_MAX_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_BIAS_VARNAME, &
-                                TAU_BIAS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_BIAS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_BIAS_VARNAME,TAU_BIAS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_BIAS_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_BIAS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_BIAS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_BIAS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_BIAS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_BIAS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_BIAS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_BIAS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_BIAS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_BIAS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_BIAS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_SDEV_VARNAME, &
-                                TAU_SDEV_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_SDEV_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_SDEV_VARNAME,TAU_SDEV_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_SDEV_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_SDEV_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_SDEV_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_SDEV_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_SDEV_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_SDEV_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_SDEV_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_SDEV_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_SDEV_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_SDEV_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_SDEV_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_RMS_VARNAME, &
-                                TAU_RMS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_RMS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_RMS_VARNAME,TAU_RMS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_RMS_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_RMS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_RMS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_RMS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_RMS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_RMS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_RMS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_RMS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_RMS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_RMS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_RMS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_MAX_VARNAME, &
-                                TAU_MAX_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_MAX_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_MAX_VARNAME,TAU_MAX_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_MAX_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_MAX_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_MAX_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_MAX_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_MAX_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_MAX_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_MAX_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_MAX_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_MAX_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_MAX_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_MAX_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_MAX_BIAS_VARNAME, &
-                                TAU_MAX_BIAS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_MAX_BIAS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_MAX_BIAS_VARNAME,TAU_MAX_BIAS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_MAX_BIAS_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_MAX_BIAS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_MAX_BIAS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_MAX_BIAS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_MAX_BIAS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_MAX_BIAS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_MAX_BIAS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_MAX_BIAS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_MAX_BIAS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_MAX_BIAS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_MAX_BIAS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_MAX_SDEV_VARNAME, &
-                                TAU_MAX_SDEV_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_MAX_SDEV_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_MAX_SDEV_VARNAME,TAU_MAX_SDEV_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_MAX_SDEV_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_MAX_SDEV_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_MAX_SDEV_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_MAX_SDEV_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_MAX_SDEV_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_MAX_SDEV_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_MAX_SDEV_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_MAX_SDEV_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_MAX_SDEV_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_MAX_SDEV_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_MAX_SDEV_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_MAX_RMS_VARNAME, &
-                                TAU_MAX_RMS_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_MAX_RMS_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,TAU_MAX_RMS_VARNAME,TAU_MAX_RMS_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TAU_MAX_RMS_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  TAU_MAX_RMS_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  TAU_MAX_RMS_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  TAU_MAX_RMS_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  TAU_MAX_RMS_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_MAX_RMS_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,TAU_MAX_RMS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,TAU_MAX_RMS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,TAU_MAX_RMS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,TAU_MAX_RMS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//TAU_MAX_RMS_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                MAX_PRED_TERM_VARNAME, &
-                                MAX_PRED_TERM_TYPE, &
-                                dimIDs=(/n_Channels_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//MAX_PRED_TERM_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,MAX_PRED_TERM_VARNAME,MAX_PRED_TERM_TYPE, &
+                                   dimIDs=(/n_Channels_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//MAX_PRED_TERM_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  MAX_PRED_TERM_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  MAX_PRED_TERM_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  MAX_PRED_TERM_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  MAX_PRED_TERM_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//MAX_PRED_TERM_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,MAX_PRED_TERM_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,MAX_PRED_TERM_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,MAX_PRED_TERM_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,MAX_PRED_TERM_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//MAX_PRED_TERM_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
@@ -2307,16 +1993,13 @@ CONTAINS
   
     SUBROUTINE DefineVar_CleanUp()
       ! Close file
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      IF ( NF90_Status /= NF90_NOERR ) &
-        Message = '; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error message
+      NF90_Status(1) = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status(1) /= NF90_NOERR ) &
+        msg = '; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status(1) ) )
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE DefineVar_CleanUp
 
   END FUNCTION DefineVar
@@ -2361,9 +2044,9 @@ CONTAINS
 !
 ! OPTIONAL INPUT ARGUMENTS
 !       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
+!                           msgs will be logged. If not specified, or if an
 !                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
+!                           is to output msgs to standard output.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -2400,8 +2083,9 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
+    INTEGER :: VarId
                                
     ! Set up
     ! ------
@@ -2411,147 +2095,238 @@ CONTAINS
 
     ! Write the variable data
     ! -----------------------
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        SENSOR_CHANNEL_VARNAME, &
-                                        FitStats%Sensor_Channel )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Sensor_Channel
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        ORDER_VARNAME, &
-                                        FitStats%Order )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//ORDER_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Sensor_Channel )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        N_PREDICTORS_VARNAME, &
-                                        FitStats%n_Predictors )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//N_PREDICTORS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Order
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ORDER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ORDER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        PREDICTOR_IDX_VARNAME, &
-                                        FitStats%Predictor_Idx )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//PREDICTOR_IDX_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Order )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//ORDER_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        FREQUENCY_VARNAME, &
-                                        FitStats%Frequency )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//FREQUENCY_VARNAME//' to '//TRIM(NC_Filename)
+    ! The n_Predictors
+    NF90_Status = NF90_INQ_VARID( NC_FileId,N_PREDICTORS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//N_PREDICTORS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        FIT_RESIDUAL_VARNAME, &
-                                        FitStats%Fit_Residual )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//FIT_RESIDUAL_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%n_Predictors )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//N_PREDICTORS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TB_BIAS_VARNAME, &
-                                        FitStats%Tb_BIAS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TB_BIAS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Predictor_Idx
+    NF90_Status = NF90_INQ_VARID( NC_FileId,PREDICTOR_IDX_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//PREDICTOR_IDX_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TB_SDEV_VARNAME, &
-                                        FitStats%Tb_SDEV )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TB_SDEV_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Predictor_Idx )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//PREDICTOR_IDX_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TB_RMS_VARNAME, &
-                                        FitStats%Tb_RMS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TB_RMS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Frequency
+    NF90_Status = NF90_INQ_VARID( NC_FileId,FREQUENCY_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//FREQUENCY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TB_MAX_VARNAME, &
-                                        FitStats%Tb_MAX )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TB_MAX_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Frequency )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//FREQUENCY_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_BIAS_VARNAME, &
-                                        FitStats%Tau_BIAS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_BIAS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Fit_Residual
+    NF90_Status = NF90_INQ_VARID( NC_FileId,FIT_RESIDUAL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//FIT_RESIDUAL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_SDEV_VARNAME, &
-                                        FitStats%Tau_SDEV )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_SDEV_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Fit_Residual )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//FIT_RESIDUAL_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_RMS_VARNAME, &
-                                        FitStats%Tau_RMS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_RMS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Tb_BIAS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_BIAS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_BIAS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_VARNAME, &
-                                        FitStats%Tau_MAX )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_MAX_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tb_BIAS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TB_BIAS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_BIAS_VARNAME, &
-                                        FitStats%Tau_Max_BIAS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_MAX_BIAS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Tb_SDEV
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_SDEV_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_SDEV_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_SDEV_VARNAME, &
-                                        FitStats%Tau_Max_SDEV )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_MAX_SDEV_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tb_SDEV )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TB_SDEV_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_RMS_VARNAME, &
-                                        FitStats%Tau_Max_RMS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_MAX_RMS_VARNAME//' to '//TRIM(NC_Filename)
+    ! The Tb_RMS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_RMS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_RMS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        MAX_PRED_TERM_VARNAME, &
-                                        FitStats%Max_Pred_Term )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//MAX_PRED_TERM_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tb_RMS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TB_RMS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tb_MAX
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_MAX_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_MAX_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tb_MAX )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TB_MAX_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_BIAS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_BIAS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_BIAS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_BIAS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_BIAS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_SDEV
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_SDEV_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_SDEV_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_SDEV )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_SDEV_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_RMS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_RMS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_RMS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_RMS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_RMS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_MAX
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_MAX )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_MAX_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_Max_BIAS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_BIAS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_BIAS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_Max_BIAS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_MAX_BIAS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_Max_SDEV
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_SDEV_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_SDEV_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_Max_SDEV )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_MAX_SDEV_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_Max_RMS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_RMS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_RMS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Tau_Max_RMS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TAU_MAX_RMS_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Max_Pred_Term
+    NF90_Status = NF90_INQ_VARID( NC_FileId,MAX_PRED_TERM_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//MAX_PRED_TERM_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,FitStats%Max_Pred_Term )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//MAX_PRED_TERM_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
     
@@ -2561,14 +2336,11 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = '; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error message
+        msg = '; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE WriteVar_CleanUp
 
   END FUNCTION WriteVar
@@ -2615,9 +2387,9 @@ CONTAINS
 !
 ! OPTIONAL INPUT ARGUMENTS
 !       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
+!                           msgs will be logged. If not specified, or if an
 !                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
+!                           is to output msgs to standard output.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -2659,8 +2431,9 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
+    INTEGER :: VarId
                                
     ! Set up
     ! ------
@@ -2670,164 +2443,252 @@ CONTAINS
 
     ! Read the variable data
     ! ----------------------
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        SENSOR_CHANNEL_VARNAME, &
-                                        FitStats%Sensor_Channel )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//SENSOR_CHANNEL_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Sensor_Channel
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        ORDER_VARNAME, &
-                                        FitStats%Order )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//ORDER_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Sensor_Channel )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        N_PREDICTORS_VARNAME, &
-                                        FitStats%n_Predictors )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//N_PREDICTORS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Order
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ORDER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ORDER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        PREDICTOR_IDX_VARNAME, &
-                                        FitStats%Predictor_Idx )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//PREDICTOR_IDX_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Order )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//ORDER_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        FREQUENCY_VARNAME, &
-                                        FitStats%Frequency )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//FREQUENCY_VARNAME//' from '//TRIM(NC_Filename)
+    ! The n_Predictors
+    NF90_Status = NF90_INQ_VARID( NC_FileId,N_PREDICTORS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//N_PREDICTORS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        FIT_RESIDUAL_VARNAME, &
-                                        FitStats%Fit_Residual )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//FIT_RESIDUAL_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%n_Predictors )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//N_PREDICTORS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TB_BIAS_VARNAME, &
-                                        FitStats%Tb_BIAS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TB_BIAS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Predictor_Idx
+    NF90_Status = NF90_INQ_VARID( NC_FileId,PREDICTOR_IDX_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//PREDICTOR_IDX_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TB_SDEV_VARNAME, &
-                                        FitStats%Tb_SDEV )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TB_SDEV_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Predictor_Idx )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//PREDICTOR_IDX_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TB_RMS_VARNAME, &
-                                        FitStats%Tb_RMS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TB_RMS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Frequency
+    NF90_Status = NF90_INQ_VARID( NC_FileId,FREQUENCY_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//FREQUENCY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TB_MAX_VARNAME, &
-                                        FitStats%Tb_MAX )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TB_MAX_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Frequency )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//FREQUENCY_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_BIAS_VARNAME, &
-                                        FitStats%Tau_BIAS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_BIAS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Fit_Residual
+    NF90_Status = NF90_INQ_VARID( NC_FileId,FIT_RESIDUAL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//FIT_RESIDUAL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_SDEV_VARNAME, &
-                                        FitStats%Tau_SDEV )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_SDEV_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Fit_Residual )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//FIT_RESIDUAL_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_RMS_VARNAME, &
-                                        FitStats%Tau_RMS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_RMS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Tb_BIAS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_BIAS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_BIAS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_VARNAME, &
-                                        FitStats%Tau_MAX )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_MAX_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tb_BIAS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TB_BIAS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_BIAS_VARNAME, &
-                                        FitStats%Tau_Max_BIAS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_MAX_BIAS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Tb_SDEV
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_SDEV_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_SDEV_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_SDEV_VARNAME, &
-                                        FitStats%Tau_Max_SDEV )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_MAX_SDEV_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tb_SDEV )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TB_SDEV_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_MAX_RMS_VARNAME, &
-                                        FitStats%Tau_Max_RMS )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_MAX_RMS_VARNAME//' from '//TRIM(NC_Filename)
+    ! The Tb_RMS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_RMS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_RMS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-  
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        MAX_PRED_TERM_VARNAME, &
-                                        FitStats%Max_Pred_Term )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//MAX_PRED_TERM_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tb_RMS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TB_RMS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-
+    ! The Tb_MAX
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TB_MAX_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TB_MAX_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tb_MAX )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TB_MAX_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_BIAS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_BIAS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_BIAS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_BIAS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_BIAS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_SDEV
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_SDEV_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_SDEV_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_SDEV )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_SDEV_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_RMS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_RMS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_RMS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_RMS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_RMS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_MAX
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_MAX )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_MAX_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_Max_BIAS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_BIAS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_BIAS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_Max_BIAS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_MAX_BIAS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_Max_SDEV
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_SDEV_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_SDEV_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_Max_SDEV )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_MAX_SDEV_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Tau_Max_RMS
+    NF90_Status = NF90_INQ_VARID( NC_FileId,TAU_MAX_RMS_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//TAU_MAX_RMS_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Tau_Max_RMS )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TAU_MAX_RMS_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Max_Pred_Term
+    NF90_Status = NF90_INQ_VARID( NC_FileId,MAX_PRED_TERM_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//MAX_PRED_TERM_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,FitStats%Max_Pred_Term )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//MAX_PRED_TERM_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    
   CONTAINS
   
     SUBROUTINE ReadVar_CleanUp()
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = '; Error closing input file during error cleanup - '//&
+        msg = '; Error closing input file during error cleanup - '//&
                   TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error message
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE ReadVar_CleanUp
 
   END FUNCTION ReadVar
@@ -2845,7 +2706,6 @@ CONTAINS
 !       Error_Status = CreateFile( NC_Filename                      , &  ! Input
 !                                  n_Channels                       , &  ! Input
 !                                  NC_FileID                        , &  ! Output
-!                                  Release         =Release         , &  ! Optional input
 !                                  Version         =Version         , &  ! Optional input
 !                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
 !                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
@@ -2880,12 +2740,6 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Release:            The release number of the netCDF FitStats file.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 !       Version:            The version number of the netCDF FitStats file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
@@ -2943,9 +2797,9 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:        Character string specifying a filename in which
-!                           any messages will be logged. If not specified,
+!                           any msgs will be logged. If not specified,
 !                           or if an error occurs opening the log file, the
-!                           default action is to output messages to standard
+!                           default action is to output msgs to standard
 !                           output.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
@@ -2969,7 +2823,6 @@ CONTAINS
   FUNCTION CreateFile( NC_Filename     , &  ! Input
                        n_Channels      , &  ! Input
                        NC_FileID       , &  ! Output
-                       Release         , &  ! Optional input
                        Version         , &  ! Optional input
                        Sensor_Id       , &  ! Optional input
                        WMO_Satellite_Id, &  ! Optional input
@@ -2984,7 +2837,6 @@ CONTAINS
     CHARACTER(*)          , INTENT(IN)  :: NC_Filename
     INTEGER               , INTENT(IN)  :: n_Channels  
     INTEGER               , INTENT(OUT) :: NC_FileID
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Release         
     INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Id       
     INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Satellite_Id
@@ -2999,7 +2851,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CreateFile'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
     INTEGER :: n_Predictors_DimID
     INTEGER :: n_Channels_DimID
@@ -3013,18 +2865,16 @@ CONTAINS
 
     ! Check input
     IF ( n_Channels < 1 ) THEN
-      Message = 'Invalid dimension input detected.'
+      msg = 'Invalid dimension input detected.'
       CALL Create_Cleanup(); RETURN
     END IF
 
 
     ! Create the data file
     ! --------------------
-    NF90_Status = NF90_CREATE( NC_Filename, &
-                               NF90_CLOBBER, &
-                               NC_FileID )
+    NF90_Status = NF90_CREATE( NC_Filename,NF90_CLOBBER,NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error creating '//TRIM(NC_Filename)//' - '//&
+      msg = 'Error creating '//TRIM(NC_Filename)//' - '//&
                 TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
@@ -3033,25 +2883,19 @@ CONTAINS
     ! Define the dimensions
     ! ---------------------
     ! The number of predictors
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                PREDICTOR_DIMNAME, &
-                                Dummy%Max_n_Predictors, &
-                                n_Predictors_DimID )
+    NF90_Status = NF90_DEF_DIM( NC_FileID,PREDICTOR_DIMNAME,MAX_PREDICTORS,n_Predictors_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//PREDICTOR_DIMNAME//' dimension in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=SET); RETURN
+      msg = 'Error defining '//PREDICTOR_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
     ! The number of spectral channels
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                CHANNEL_DIMNAME, & 
-                                n_Channels, & 
-                                n_Channels_DimID )
+    NF90_Status = NF90_DEF_DIM( NC_FileID,CHANNEL_DIMNAME,n_Channels,n_Channels_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=SET); RETURN
+      msg = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
@@ -3059,7 +2903,6 @@ CONTAINS
     ! ---------------------------
     Error_Status = WriteGAtts( NC_Filename                      , &
                                NC_FileID                        , &
-                               Release         =Release         , &
                                Version         =Version         , &
                                Sensor_Id       =Sensor_Id       , &
                                WMO_Satellite_Id=WMO_Satellite_Id, &
@@ -3070,7 +2913,7 @@ CONTAINS
                                Comment         =Comment         , &
                                Message_Log     =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing global attributes to '//TRIM(NC_Filename)
+      msg = 'Error writing global attributes to '//TRIM(NC_Filename)
       CALL Create_Cleanup(); RETURN
     END IF
 
@@ -3083,7 +2926,7 @@ CONTAINS
                               n_Channels_DimID       , &
                               Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error defining variables in '//TRIM(NC_Filename)
+      msg = 'Error defining variables in '//TRIM(NC_Filename)
       CALL Create_Cleanup(); RETURN
     END IF
                                              
@@ -3092,29 +2935,26 @@ CONTAINS
     ! -----------------------------------
     NF90_Status = NF90_ENDDEF( NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
-      CALL Create_Cleanup(Close_File=SET); RETURN
+      msg = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
   CONTAINS
   
     SUBROUTINE Create_CleanUp( Close_File )
-      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File == SET ) THEN
+        IF ( Close_File ) THEN
           NF90_Status = NF90_CLOSE( NC_FileID )
           IF ( NF90_Status /= NF90_NOERR ) &
-            Message = '; Error closing input file during error cleanup - '//&
+            msg = '; Error closing input file during error cleanup - '//&
                       TRIM(NF90_STRERROR( NF90_Status ) )
         END IF
       END IF
-      ! Set error status and print error message
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Create_CleanUp
 
   END FUNCTION CreateFile

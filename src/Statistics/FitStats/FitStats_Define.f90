@@ -27,6 +27,8 @@ MODULE FitStats_Define
   ! ------------
   ! Everything private by default
   PRIVATE
+  ! Parameters
+  PUBLIC :: MAX_PREDICTORS
   ! Data structure definition
   PUBLIC :: FitStats_type
   ! Structure procedures
