@@ -785,23 +785,65 @@
   \label{tab:rtsolution_structure}
 \end{table}
 
-%
-%\section{\Options{} Structure}
-%%=============================
-%\label{sec:options_structure}
-%
-%  TYPE :: CRTM_Options_type
-%    INTEGER :: n_Allocates = 0
-%    ! Dimensions
-%    INTEGER :: n_Channels = 0  ! L dimension
-%    ! Index into channel-specific components
-%    INTEGER :: Channel = 0
-%    ! Emissivity optional arguments
-%    INTEGER           :: Emissivity_Switch =  NOT_SET
-%    REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
-%    ! Direct reflectivity optional arguments
-%    INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
-%    REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
-%    ! Antenna correction application
-%    INTEGER :: Antenna_Correction = NOT_SET
-%  END TYPE CRTM_Options_type
+
+\clearpage
+\section{\Options{} Structure}
+%=============================
+\label{sec:options_structure}
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  TYPE :: CRTM_Options_type
+    ! Dimension values
+    INTEGER :: n_Channels = 0  ! L dimension
+    ! Index into channel-specific components
+    INTEGER :: Channel = 0
+    ! Emissivity optional arguments
+    INTEGER           :: Emissivity_Switch =  NOT_SET
+    REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
+    ! Direct reflectivity optional arguments
+    INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
+    REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
+    ! Antenna correction application
+    INTEGER :: Antenna_Correction = NOT_SET
+  END TYPE CRTM_Options_type\end{verbatim}
+    \end{ttfamily}
+  \end{minipage}
+  }
+  \caption{CRTM \Options{} structure definition.}
+  \label{fig:options_structure}
+\end{figure}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{n\_Channels}                  & Number of sensor channels (\texttt{L}). & N/A & Scalar \\
+    \texttt{Channel}                      & Index into channel-specifi components. & N/A & Scalar \\
+    \texttt{Emissivity\_Switch}           & Switch to apply user-defined surface emissivity. Valid values:
+
+    \parbox{7cm}{\hspace{0.5cm}\texttt{NOT\_SET}: Calculate emissivity (default).
+    
+                 \hspace{0.5cm}\texttt{SET}: Use user-defined emissivity}
+     & N/A & Scalar \\
+    \texttt{Emissivity}                   & User-defined surface emissivity for each sensor channel. & N/A & \texttt{L} \\
+    \texttt{Direct\_Reflectivity\_Switch} & Switch to apply user-defined reflectivity for downwelling source (e.g. solar). This switch is ignored unless the \texttt{Emissivity\_Switch} is also set. Valid values:
+
+    \parbox{7cm}{\hspace{0.5cm}\texttt{NOT\_SET}: Calculate reflectivity (default).
+    
+                 \hspace{0.5cm}\texttt{SET}: Use user-defined reflectivity}
+     & N/A & Scalar \\
+    \texttt{Direct\_Reflectivity}         & User-defined direct reflectivity for downwelling source for each sensor channel. & N/A & \texttt{L} \\
+    \texttt{Antenna\_Correction}          & Switch to apply antenna correction for select microwave instruments. & N/A & Scalar \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \Options{} structure component description}
+  \label{tab:options_structure}
+\end{table}
+

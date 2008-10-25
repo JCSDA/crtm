@@ -8,6 +8,85 @@ Overview of CRTM; nomenclature (AtmAbsorption, SfcOptics, CloudScatter, RTSoluti
 Flowcharts
 
 
+
+\section{Conventions}
+%====================
+\label{sec:conventions}
+The following are conventions that have been adhered to in the current release of the CRTM framework. They are guidelines intended to make understanding the code at a glance easier, to provide a recognisable ``look and feel'', and to minimise name space clashes.
+
+\subsection{Naming of Structure Types and Instances of Structures}
+%-----------------------------------------------------------------
+The derived data type, or structure\footnote{The terms ``derived type'' and ``structure'' are used interchangably in this document.} type, naming convention adopted for use in the CRTM is, 
+
+\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_type} 
+
+where \textit{name} is an identifier that indicates for what a structure is to be used. All structure type names are suffixed with ``\f{\_type}'' and CRTM-specific structure types are prefixed with ``\f{CRTM\_}''. Some examples are,
+\begin{ttfamily}
+  \begin{verbatim}
+  SpcCoeff_type
+  CRTM_Atmosphere_type
+  CRTM_RTSolution_type\end{verbatim}
+\end{ttfamily}
+An instance of a structure is then referred to via its \textit{name}, or some sort of derivate of its \textit{name}. Some structure declarations examples are,
+\begin{ttfamily}
+  \begin{verbatim}
+  TYPE(SpcCoeff_type)        :: SpcCoeff
+  TYPE(CRTM_Atmosphere_type) :: atm, atm_K
+  TYPE(CRTM_RTSolution_type) :: rts, rts_K\end{verbatim}
+\end{ttfamily}
+where the K-matrix structure variables are identified with a ``\f{\_K}'' suffix. Similarly, tangent-linear and adjoint variables are suffixed with ``\f{\_TL}'' or ``\f{\_AD}'' respectively.
+
+\subsection{Naming of Definition Modules}
+%----------------------------------------
+Modules containing structure type definitions are termed \textit{definition modules}. These modules contain the actual structure definitions as well as various utility procedures to allocate, destroy, copy etc. structures of the designated type. The naming convention adopted for definition modules in the CRTM is, 
+
+\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_Define} 
+
+where, as with the structure type names, all definition module names are suffixed with ``\f{\_Define}'' and CRTM-specific definition modules are prefixed with ``\f{CRTM\_}''. Some examples are,
+\begin{ttfamily}
+  \begin{verbatim}
+  SpcCoeff_Define
+  CRTM_Atmosphere_Define
+  CRTM_RTSolution_Define\end{verbatim}
+\end{ttfamily}
+The actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
+
+\subsection{Naming of I/O Modules}
+%---------------------------------
+Modules containing the routines that read and write data from and to files are, naturally, termed \textit{I/O modules}. The naming convention adopted for application modules in the CRTM is, 
+
+\hspace{0.5cm}\f{CRTM\_}\textit{name}
+
+Some examples are,
+\begin{ttfamily}
+  \begin{verbatim}
+  CRTM_AtmAbsorption
+  CRTM_SfcOptics
+  CRTM_RTSolution\end{verbatim}
+\end{ttfamily}
+However, in this case, \textit{name} does not necessarilty refer just to a structure type. Separate application modules are used as required to split up tasks in manageable (and easily maintained) chunks. For example, separate modules have been provided to contain the cloud and aerosol optical property retrieval; similarly separate modules handle different surface types for different instrument types in computing surface optics.
+
+\subsection{Naming of Application Modules}
+%-----------------------------------------
+Modules containing the routines that perform the calculations for the various components of the CRTM are termed \textit{application modules}. The naming convention adopted for application modules in the CRTM is, 
+
+\hspace{0.5cm}\f{CRTM\_}\textit{name}
+
+Some examples are,
+\begin{ttfamily}
+  \begin{verbatim}
+  CRTM_AtmAbsorption
+  CRTM_SfcOptics
+  CRTM_RTSolution\end{verbatim}
+\end{ttfamily}
+However, in this case, \textit{name} does not necessarilty refer just to a structure type. Separate application modules are used as required to split up tasks in manageable (and easily maintained) chunks. For example, separate modules have been provided to contain the cloud and aerosol optical property retrieval; similarly separate modules handle different surface types for different instrument types in computing surface optics.
+
+Again, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix. Note that not all definition modules have a corresponding application module since some structures (e.g. SpcCoeff structures) are simply data containers.
+
+
+
+
+
 \section{Components}
 %===================
 The radiative transfer problem is divided into three broad categories: atmospheric optics, surface optics and radiative transfer.
