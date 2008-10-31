@@ -1,0 +1,36 @@
+\section{Anomalous Test Case Result with the gfortran Compiler}
+%==============================================================
+\label{app:busted_gfortran_compiler_results}
+This section briefly details the results for the LBLRTM v11.3 built-in atmosphere test case when the gfortran v4.4.0(20081021) compiler is used with either the \texttt{-O2} or \texttt{-O3} optimisation switch. The anomalous LBLRTM v11.3 results occur for this compiler version in both the single and double precision builds, but the anomalous residuals in the single precision case are masked by the larger signal.
+
+The double precision results for the linux/gfortran system with the optimisation switch set for the built-in atmosphere test case are shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_-O3}. Residuals for LBLRTM runs using the local, LNFL, and AER \texttt{TAPE3} spectroscopic input files are shown.
+ 
+\begin{figure}[htp]
+  \centering
+  \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran(\texttt{-O3}); double precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{Local} \texttt{TAPE3} run}\\
+  \includegraphics[bb=85 490 534 648,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_-O3.eps}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}\\
+  \includegraphics[bb=85 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_-O3.eps}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{AER} \texttt{TAPE3} run}\\
+  \includegraphics[bb=85 138 534 296,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_-O3.eps}
+  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{double precision} version of LBLRTM v11.3 running on a Red Hat linux system using the gfortran compiler with an optimisation level of \texttt{-O3}. \mbox{\textbf{(a)} Using} the little-endian \texttt{TAPE3} spectroscopic datafile generated from the local input shown in figure \ref{fig:local_tape3_tape5}. \mbox{\textbf{(b)} Using} the little-endian \texttt{TAPE3} spectroscopic datafile generated from the LNFL v2.5 distribution input shown in figure \ref{fig:lnfl_ex_tape3_tape5}. \mbox{\textbf{(c)} Using} the AER-supplied little-endian \texttt{TAPE3} spectroscopic datafile.}
+  \label{fig:run_example_built_in_atm_upwelling-dbl_gfortran_-O3}
+\end{figure}
+
+The most obvious feature in the brightness temperature differences of figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_-O3} is the ``linear ramp'' from 1000 to approximately 1025\invcm. A magnification of this spectral region is shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_-O3_1000-1025}. It is present regardless of which input spectroscopic \texttt{TAPE3} file is used. Additionally, after repeating the computations several times, it seems that the magnitude of this feature varies according to the compute load of the test platform. For example, the peak value of this feature at 1000\invcm{} \textit{for any of the \texttt{TAPE3} test runs} varied from -0.005 to -0.03K. 
+
+\begin{figure}[htp]
+  \centering
+  \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran(\texttt{-O3}); double precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{Local} \texttt{TAPE3} run}\\
+  \includegraphics[bb=85 490 534 648,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_-O3_1000-1025.eps}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}\\
+  \includegraphics[bb=85 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_-O3_1000-1025.eps}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{AER} \texttt{TAPE3} run}\\
+  \includegraphics[bb=85 138 534 296,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_-O3_1000-1025.eps}
+  \caption{Built-in Atmosphere Test: A magnification of the 1000-1025\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_-O3}. \mbox{\textbf{(a)} Using} the little-endian \texttt{TAPE3} spectroscopic datafile generated from the local input shown in figure \ref{fig:local_tape3_tape5}. \mbox{\textbf{(b)} Using} the little-endian \texttt{TAPE3} spectroscopic datafile generated from the LNFL v2.5 distribution input shown in figure \ref{fig:lnfl_ex_tape3_tape5}. \mbox{\textbf{(c)} Using} the AER-supplied little-endian \texttt{TAPE3} spectroscopic datafile.}
+  \label{fig:run_example_built_in_atm_upwelling-dbl_gfortran_-O3_1000-1025}
+\end{figure}

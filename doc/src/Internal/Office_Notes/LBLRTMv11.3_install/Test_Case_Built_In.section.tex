@@ -3,56 +3,44 @@
 
 \subsection{Double precision linux results}
 %------------------------------------------
-The double precision results for the linux system for the built-in atmosphere test case are shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl}.
+The double precision results for the linux/gfortran system for the built-in atmosphere test case are shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}. Residuals for LBLRTM runs using the local and LNFL \texttt{TAPE3} spectroscopic input files are shown. Results using the AER \texttt{TAPE3} file were identical to the LNFL results.
 
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{Red Hat linux platform; double precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using a locally generated TAPE3}\\
-  \includegraphics[bb=85 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl.eps}
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}\\
-  \includegraphics[bb=85 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl.eps}
-  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{double precision} version of LBLRTM v11.3 running on a Red Hat linux system. \mbox{\textbf{(a)} Using} a locally generated little-endian \texttt{TAPE3} spectroscopic datafile. \mbox{\textbf{(b)} Using} the AER-supplied little-endian \texttt{TAPE3} spectroscopic datafile.}
-  \label{fig:run_example_built_in_atm_upwelling-dbl}
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran; double precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{Local} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 490 534 648,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl.eps}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl.eps}
+  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{double precision} version of LBLRTM v11.3 running on a Red Hat linux system using the gfortran compiler. \mbox{\textbf{(a)} Using} the little-endian \texttt{TAPE3} spectroscopic datafile generated from the local input shown in figure \ref{fig:local_tape3_tape5}. \mbox{\textbf{(b)} Using} the little-endian \texttt{TAPE3} spectroscopic datafile generated from the LNFL v2.5 distribution input shown in figure \ref{fig:lnfl_ex_tape3_tape5}. This result is identical to the same using the \textbf{AER} little-endian \texttt{TAPE3} spectroscopic datafile.}
+  \label{fig:run_example_built_in_atm_upwelling-dbl_gfortran}
 \end{figure}
 
-The most obvious feature in the brightness temperature difference of figure \ref{fig:run_example_built_in_atm_upwelling-dbl} is the ``linear ramp'' from 1000 to approximately 1025\invcm. It is present regardless of which input spectroscopic \texttt{TAPE3} file is used, although for the AER \texttt{TAPE3} the magnitudes are slightly smaller: e.g. at 1000\invcm{} the $\Delta T_B$ for figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(a) is about 25\% larger than that for figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(b). A magnification of this spectral region is shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_1000-1025}.
+The anomaly seen in the optimised linux/gfortran results (see appendix \ref{app:busted_gfortran_compiler_results}) was the main reason an additional compiler, the PGI one, was used. The double precision results for the linux/PGI system are effectively identical to the gfortran results shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}.
+
+The main residuals in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}(a) are due to the differences in how the  \texttt{TAPE3} files were generated; that is, fewer molecular species. A magnification of these individual line differences for the locally generated TAPE3 case is shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_1035.8-1035.9}. The character of the differences suggest a line width difference. This type of difference could be explained by to a differnt number of absorption lines (due to the different number of included absorbers in the \texttt{TAPE3} files) being included in a line summation over a particular range of frequencies. That, however, is a speculative hypothesis and, since using similarly generated \texttt{TAPE3} data makes those differences go away, not worthy of further investigation here.
 
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{Red Hat linux platform; double precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using a locally generated TAPE3}\\
-  \includegraphics[bb=85 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl_1000-1025.eps}
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}\\
-  \includegraphics[bb=85 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl_1000-1025.eps}
-  \caption{Built-in Atmosphere Test: A magnification of the 1000-1025\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-dbl}, here using the same y-axis range for both plots. Use of the AER-supplied \texttt{TAPE3} datafile results in smaller residuals. \mbox{\textbf{(a)} Using} a locally generated little-endian \texttt{TAPE3} spectroscopic datafile. \mbox{\textbf{(b)} Using} the AER-supplied little-endian \texttt{TAPE3} spectroscopic datafile.}
-  \label{fig:run_example_built_in_atm_upwelling-dbl_1000-1025}
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran; double precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{Local} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 490 534 648,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_1035.8-1035.9.eps}
+  \caption{Built-in Atmosphere Test: A magnification of the 1035.8-1035.9\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}(a) showing the typical residuals seen for the individual ``lines'' when \texttt{TAPE3} inputs files containing different numbers of absorbers are used. The PGI compiler also produced the same result.}
+  \label{fig:run_example_built_in_atm_upwelling-dbl_gfortran_1035.8-1035.9}
 \end{figure}
 
-The other features present in figure \ref{fig:run_example_built_in_atm_upwelling-dbl}, for example the cluster of line residuals around 1040\invcm{}, were thought to be due to differences in how the \texttt{TAPE3} files were generated; such as line strength rejections in the AER-supplied \texttt{TAPE3}. A magnification of these individual lines differences for the locally generated TAPE3 case is shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_1035.8-1035.9}. The character of the differences suggest a line width, rather than strength, difference and it is not yet understood how generation of the \texttt{TAPE3} file can influence line width. As no LNFL v2.5 input \texttt{TAPE5} was supplied with the LBLRTM v11.3 distribution, these assumptions need to be confirmed -- or rejected; the different \texttt{TAPE3} file may not be causal.
+A feature of figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}(b) is not visible at the y-axis scaling shown; a magnification of figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}(b) is shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_noyshare}. The periodicity of the residuals is quite evident -- as is the residual line structure seen superimposed on the periodic differences -- although it must be pointed out that the magnitudes of the residuals are very small.
 
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{Red Hat linux platform; double precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using a locally generated TAPE3}\\
-  \includegraphics[bb=85 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl_1035.8-1035.9.eps}
-  \caption{Built-in Atmosphere Test: A magnification of the 1035.8-1035.9\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(a) showing the typical residuals seen for the individual ``lines''. The character of the residuals suggests a line width difference.}
-  \label{fig:run_example_built_in_atm_upwelling-dbl_1035.8-1035.9}
-\end{figure}
-
-An additional feature of figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(b) is barely visible: from 1040 to 1200\invcm{} there appears to be a periodic deviation away from the dashed red zero line. It's difficult to see due to the large y-axis range. A magnification of figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(b) for 1025-1200\invcm{} is shown in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_1025-1200}. The periodicity of the residuals is quite evident -- as is the residual line structure seen superimposed on the periodic differences -- although it must be pointed out that the magnitudes of the residuals are very small.
-
-\begin{figure}[htp]
-  \centering
-  \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{Red Hat linux platform; double precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}
-  \includegraphics[bb=80 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl_1025-1200.eps}
-  \caption{Built-in Atmosphere Test: A magnification of the 1025-1200\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(b) showing the periodic residuals.}
-  \label{fig:run_example_built_in_atm_upwelling-dbl_1025-1200}
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran; double precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}
+  \includegraphics[bb=75 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/dbl_noyshare.eps}
+  \caption{Built-in Atmosphere Test: A magnification of figure \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran}(b) showing the periodic residuals. This result is identical to the same using the \textbf{AER} little-endian \texttt{TAPE3} spectroscopic datafile. The PGI compiler also produced the same result.}
+  \label{fig:run_example_built_in_atm_upwelling-dbl_gfortran_noyshare}
 \end{figure}
 
 
@@ -64,58 +52,54 @@ The double precision results for the AIX system for the built-in atmosphere test
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
   \qquad\sffamily\textbf{IBM AIX platform; double precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using a locally generated TAPE3}\\
-  \includegraphics[bb=85 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl_ibm.eps}
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}\\
-  \includegraphics[bb=85 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl_ibm.eps}
-  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{double precision} version of LBLRTM v11.3 running on an IBM AIX system. \mbox{\textbf{(a)} Using} a locally generated big-endian \texttt{TAPE3} spectroscopic datafile. \mbox{\textbf{(b)} Using} the AER-supplied big-endian \texttt{TAPE3} spectroscopic datafile.}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{Local} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 490 534 648,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/ibm/dbl.eps}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/ibm/dbl.eps}
+  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{double precision} version of LBLRTM v11.3 running on an IBM AIX system. \mbox{\textbf{(a)} Using} the big-endian \texttt{TAPE3} spectroscopic datafile generated from the local input shown in figure \ref{fig:local_tape3_tape5}. \mbox{\textbf{(b)} Using} the big-endian \texttt{TAPE3} spectroscopic datafile generated from the LNFL v2.5 distribution input shown in figure \ref{fig:lnfl_ex_tape3_tape5}. This result is identical to the same using the \textbf{AER} big-endian \texttt{TAPE3} spectroscopic datafile.}
   \label{fig:run_example_built_in_atm_upwelling-dbl_ibm}
 \end{figure}
 
-Comparison with the same results for the linux system (figure \ref{fig:run_example_built_in_atm_upwelling-dbl}) shows no ``linear ramp'' residual feature. For the locally generated \texttt{TAPE3} case of figure \ref{fig:run_example_built_in_atm_upwelling-dbl_ibm}(a), the scattered ``line'' differences are almost the same as those seen on in the linux system results of figure \ref{fig:run_example_built_in_atm_upwelling-dbl}(a), and the periodic residuals in \ref{fig:run_example_built_in_atm_upwelling-dbl_ibm}(b) are similar to those highlighted in figure \ref{fig:run_example_built_in_atm_upwelling-dbl_1025-1200} for the linux case.
+Similar magnifications of figure \ref{fig:run_example_built_in_atm_upwelling-dbl_ibm} as seen in figures \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_1035.8-1035.9} and \ref{fig:run_example_built_in_atm_upwelling-dbl_gfortran_noyshare} show the IBM system produces the same residuals as the linux system.
 
 
 \subsection{Single precision results}
 %------------------------------------
 \label{sec:built_in_sgl}
-The single precision results for both the linux and AIX systems for the built-in atmosphere test case are shown in figures \ref{fig:run_example_built_in_atm_upwelling-sgl} and \ref{fig:run_example_built_in_atm_upwelling-sgl_ibm} respectively. The two sets of results are effectively identical.
+The single precision results for both the linux and AIX systems for the built-in atmosphere test case are shown in figures \ref{fig:run_example_built_in_atm_upwelling-sgl_gfortran} and \ref{fig:run_example_built_in_atm_upwelling-sgl_ibm} respectively. The two sets of results are effectively identical.
 
 The size of the residuals are, however, slightly disconcerting. These residuals are determined from comparison between the AER-supplied double precision \texttt{TAPE27\_ex} result and the locally generated \texttt{TAPE27} result using a single precision build of LBLRTM v11.3.
 
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{Red Hat linux platform; single precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using a locally generated TAPE3}\\
-  \includegraphics[bb=85 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/sgl.eps}
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}\\
-  \includegraphics[bb=85 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/sgl.eps}
-  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{single precision} version of LBLRTM v11.3 running on a Red Hat linux system. \mbox{\textbf{(a)} Using} a locally generated little-endian \texttt{TAPE3} spectroscopic datafile. \mbox{\textbf{(b)} Using} the AER-supplied little-endian \texttt{TAPE3} spectroscopic datafile.}
-  \label{fig:run_example_built_in_atm_upwelling-sgl}
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran; single precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/sgl.eps}
+  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{single precision} version of LBLRTM v11.3 running on a Red Hat linux system using the gfortran compiler. The little-endian \texttt{TAPE3} spectroscopic datafile generated from the LNFL v2.5 distribution input shown in figure \ref{fig:lnfl_ex_tape3_tape5} was used. This result is the same as those produced using either the \textbf{Local} or \textbf{AER} little-endian \texttt{TAPE3} spectroscopic datafile.}
+  \label{fig:run_example_built_in_atm_upwelling-sgl_gfortran}
 \end{figure}
 
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
   \qquad\sffamily\textbf{IBM AIX platform; single precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using a locally generated TAPE3}\\
-  \includegraphics[bb=85 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/sgl_ibm.eps}
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}\\
-  \includegraphics[bb=85 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/sgl_ibm.eps}
-  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{single precision} version of LBLRTM v11.3 running on an IBM AIX system. \mbox{\textbf{(a)} Using} a locally generated big-endian \texttt{TAPE3} spectroscopic datafile. \mbox{\textbf{(b)} Using} the AER-supplied big-endian \texttt{TAPE3} spectroscopic datafile.}
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}\\
+  \includegraphics[bb=82 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/ibm/sgl.eps}
+  \caption{Built-in Atmosphere Test: Comparison of the AER-supplied \texttt{TAPE27\_ex} output to the locally generated \texttt{TAPE27} output for the \textsl{single precision} version of LBLRTM v11.3 running on an IBM AIX system. The big-endian \texttt{TAPE3} spectroscopic datafile generated from the LNFL v2.5 distribution input shown in figure \ref{fig:lnfl_ex_tape3_tape5} was used.This result is the same as those produced using either the \textbf{Local} or \textbf{AER} big-endian \texttt{TAPE3} spectroscopic datafile.}
   \label{fig:run_example_built_in_atm_upwelling-sgl_ibm}
 \end{figure}
 
-So, what is the cause of the relatively large residuals when comparing double and single precision calculations? Magnification of any of the panels of figures \ref{fig:run_example_built_in_atm_upwelling-sgl} or \ref{fig:run_example_built_in_atm_upwelling-sgl_ibm}, as shown in figure \ref{fig:run_example_built_in_atm_upwelling-sgl_1125-1127}, reveals the answer: a frequency shift.
+So, what is the cause of the relatively large residuals when comparing the single precision calculations? Magnification of any of the panels of figures \ref{fig:run_example_built_in_atm_upwelling-sgl_gfortran} or \ref{fig:run_example_built_in_atm_upwelling-sgl_ibm}, as shown in figure \ref{fig:run_example_built_in_atm_upwelling-sgl_gfortran_1125-1127}, reveals the answer: a frequency shift.
 
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{Red Hat linux platform; single precision}\\
-  \qquad\textsf{LBLRTM v11.3 brightness temperature difference using AER TAPE3}
-  \includegraphics[bb=80 226 534 381,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/sgl_1125-1127.eps}
-  \caption{Built-in Atmosphere Test: A magnification of the 1125-1127\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-sgl}(b) showing residuals with the characteristic shape due to a frequency shift.}
-  \label{fig:run_example_built_in_atm_upwelling-sgl_1125-1127}
+  \qquad\sffamily\textbf{Red Hat linux platform; gfortran; single precision}\\
+  \qquad\textsf{LBLRTM v11.3 brightness temperature difference for \textbf{LNFL} \texttt{TAPE3} run}
+  \includegraphics[bb=75 313 534 472,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/gfortran/sgl_1125-1127.eps}
+  \caption{Built-in Atmosphere Test: A magnification of the 1125-1127\invcm{} spectral region from figure \ref{fig:run_example_built_in_atm_upwelling-sgl_gfortran}(b) showing residuals with the characteristic shape due to a frequency shift. The PGI compiler also produced the same result, as did the IBM AIX tests.}
+  \label{fig:run_example_built_in_atm_upwelling-sgl_gfortran_1125-1127}
 \end{figure}
 
 Inspection of the \texttt{TAPE27} (radiance output) and \texttt{TAPE28} (temperature output) datafiles themselves reveals that the frequency shift is in the computed frequencies. Table \ref{tab:tape28_frequency_comparison-sgl} shows sections of computed frequency output from the AER-supplied \texttt{TAPE28\_ex} file and that from the linux system single-precision calculation \texttt{TAPE28} output file. As can be seen, the frequency grids are not the same so differenceing the two values highlights the frequency shift. The magnitude differences seen in the brightness temperatures may be quite reasonable for the frequency shift.
@@ -127,7 +111,7 @@ Inspection of the \texttt{TAPE27} (radiance output) and \texttt{TAPE28} (tempera
     \multicolumn{4}{c}{\sffamily\textbf{AER }\texttt{TAPE28\_ex}} & \hspace{1.0cm} & \multicolumn{4}{c}{\sffamily\textbf{Local }\texttt{TAPE28}}\\
     \multicolumn{4}{c}{\sffamily\textbf{(double precision)}} & \hspace{1.0cm} & \multicolumn{4}{c}{\sffamily\textbf{(single precision)}}\\
     \hline
-    \multicolumn{2}{c}{\sffamily\textbf{Frequency}} & \multicolumn{2}{c}{\sffamily\textbf{$T_B$}} & \hspace{1.0cm} & \multicolumn{2}{c}{\sffamily\textbf{Frequency}} & \multicolumn{2}{c}{\sffamily\textbf{$T_B$}}\\
+    \multicolumn{2}{c}{\sffamily\textbf{Frequency}} & \multicolumn{2}{c}{\textbfm{T_B}} & \hspace{1.0cm} & \multicolumn{2}{c}{\sffamily\textbf{Frequency}} & \multicolumn{2}{c}{\textbfm{T_B}}\\
     \multicolumn{2}{c}{\sffamily\textbf{(\invcm)}} & \multicolumn{2}{c}{\sffamily\textbf{(K)}} & \hspace{1.0cm} & \multicolumn{2}{c}{\sffamily\textbf{(\invcm)}} & \multicolumn{2}{c}{\sffamily\textbf{(K)}}\\     \hline\hline
      1000&00000000 & 285&17976 & \hspace{1.0cm} & 1000&00000000 & 285&18686 \\
      1000&00024972 & 285&37625 & \hspace{1.0cm} & 1000&00024971 & 285&38333 \\
@@ -154,7 +138,6 @@ This frequency shift was unexpected  since the frequency variables in the LBLRTM
 \begin{figure}[htp]
   \centering
   \qquad\sffamily\textbf{Verification Example: Built-in Atmosphere Upwelling}\\
-  \qquad\sffamily\textbf{IBM AIX platform; single precision}\\
   \qquad\textsf{LBLRTM v11.3 double-single precision run frequency difference using AER TAPE3}\\
   \includegraphics[bb=80 403 534 558,clip,scale=1.0]{graphics/run_example_built_in_atm_upwelling/dbl-sgl_df.eps}
   \caption{Built-in Atmosphere Test: The difference in the output \texttt{TAPE27} and \texttt{TAPE28} frequencies between a double- and single-precision LBLRTM v11.3 executable.}
