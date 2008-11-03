@@ -15,7 +15,9 @@ EXE_FILE = Effective_TauProfile
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
+            Endian_Utility.f90 \
             File_Utility.f90 \
+            Binary_File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             SensorInfo_Define.f90 \
@@ -23,6 +25,8 @@ SRC_FILES = Type_Kinds.f90 \
             SensorInfo_IO.f90 \
             LBLRTM_Parameters.f90 \
             LBLRTM_netCDF_IO.f90 \
+            AntCorr_Define.f90 \
+            AntCorr_netCDF_IO.f90 \
             Tau_Production_Parameters.f90 \
             Tau_Production_Utility.f90 \
             TauProfile_Define.f90 \
