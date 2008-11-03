@@ -85,13 +85,14 @@ MODULE CRTM_Predictor
   ! -------------------------------------------------
   ! Structure definition to hold integrated predictor
   ! forward variables across FWD, TL, and AD calls
+  ! NOTE: The structure component are NOT initialised
   ! -------------------------------------------------
   TYPE :: CRTM_APVariables_type
     PRIVATE
-    REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2 = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1 = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2 = ZERO
-    REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s = ZERO
+    REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2
+    REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s
   END TYPE CRTM_APVariables_type
 
 

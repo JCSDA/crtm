@@ -75,10 +75,6 @@ MODULE CRTM_RTSolution_Define
   '$Id$'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 256
-  ! Scalar initialisaiton values
-  REAL(fp), PARAMETER :: FP_DEFAULT = ZERO
-  INTEGER,  PARAMETER :: IP_DEFAULT = 0
-  LOGICAL,  PARAMETER :: LP_DEFAULT = .TRUE.
 
 
   ! -------------------------------
@@ -89,23 +85,23 @@ MODULE CRTM_RTSolution_Define
     ! Dimensions
     INTEGER :: n_Layers = 0  ! K
     ! Internal variables. Users do not need to worry about these.
-    INTEGER :: n_Full_Streams  = IP_DEFAULT
-    LOGICAL :: Scattering_Flag = LP_DEFAULT
-    INTEGER :: n_Stokes        = IP_DEFAULT
+    LOGICAL :: Scattering_Flag = .TRUE.
+    INTEGER :: n_Full_Streams  = 0
+    INTEGER :: n_Stokes        = 0
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
-    REAL(fp) :: Surface_Emissivity      = FP_DEFAULT
-    REAL(fp) :: Up_Radiance             = FP_DEFAULT
-    REAL(fp) :: Down_Radiance           = FP_DEFAULT
-    REAL(fp) :: Down_Solar_Radiance     = FP_DEFAULT
-    REAL(fp) :: Surface_Planck_Radiance = FP_DEFAULT
+    REAL(fp) :: Surface_Emissivity      = ZERO
+    REAL(fp) :: Up_Radiance             = ZERO
+    REAL(fp) :: Down_Radiance           = ZERO
+    REAL(fp) :: Down_Solar_Radiance     = ZERO
+    REAL(fp) :: Surface_Planck_Radiance = ZERO
     REAL(fp), POINTER :: Upwelling_Radiance(:)  => NULL()  ! K
     ! The layer optical depths
     REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
     ! Radiative transfer results for a single channel/node
-    REAL(fp) :: Radiance               = FP_DEFAULT
-    REAL(fp) :: Brightness_Temperature = FP_DEFAULT
+    REAL(fp) :: Radiance               = ZERO
+    REAL(fp) :: Brightness_Temperature = ZERO
   END TYPE CRTM_RTSolution_type
 
 
@@ -1498,16 +1494,16 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_RTSolution( RTSolution )
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
-    RTSolution%Surface_Emissivity      = FP_DEFAULT
-    RTSolution%Up_Radiance             = FP_DEFAULT
-    RTSolution%Down_Radiance           = FP_DEFAULT
-    RTSolution%Down_Solar_Radiance     = FP_DEFAULT
-    RTSolution%Surface_Planck_Radiance = FP_DEFAULT
-    RTSolution%n_Full_Streams          = IP_DEFAULT
-    RTSolution%Scattering_Flag         = LP_DEFAULT
-    RTSolution%n_Stokes                = IP_DEFAULT
-    RTSolution%Radiance                = FP_DEFAULT
-    RTSolution%Brightness_Temperature  = FP_DEFAULT
+    RTSolution%Surface_Emissivity      = ZERO
+    RTSolution%Up_Radiance             = ZERO
+    RTSolution%Down_Radiance           = ZERO
+    RTSolution%Down_Solar_Radiance     = ZERO
+    RTSolution%Surface_Planck_Radiance = ZERO
+    RTSolution%n_Full_Streams          = 0
+    RTSolution%Scattering_Flag         = .TRUE.
+    RTSolution%n_Stokes                = 0
+    RTSolution%Radiance                = ZERO
+    RTSolution%Brightness_Temperature  = ZERO
   END SUBROUTINE CRTM_Clear_RTSolution
 
 END MODULE CRTM_RTSolution_Define

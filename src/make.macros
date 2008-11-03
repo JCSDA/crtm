@@ -297,8 +297,8 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
                             "ENDIAN=Little_Endian"
                             
 # Here set the DEFAULT gfortran compiler flags
-#LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
-LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_PROD)
+LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
+#LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_PROD)
 
 
 # -------------------------------------

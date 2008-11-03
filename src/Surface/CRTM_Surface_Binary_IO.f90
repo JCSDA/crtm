@@ -301,11 +301,11 @@ CONTAINS
       END IF
 
       ! Read the Sensor data
-      READ( FileID, IOSTAT=IO_Status ) Surface%SensorData%Sensor_ID       , &  
-                                       Surface%SensorData%SensorData_ID   , &  
-                                       Surface%SensorData%WMO_Satellite_ID, &
-                                       Surface%SensorData%WMO_Sensor_ID   , &   
-                                       Surface%SensorData%Sensor_Channel  , &
+      READ( FileID, IOSTAT=IO_Status ) Surface%SensorData%Select_WMO_Sensor_ID, &  
+                                       Surface%SensorData%Sensor_ID           , &  
+                                       Surface%SensorData%WMO_Satellite_ID    , &
+                                       Surface%SensorData%WMO_Sensor_ID       , &
+                                       Surface%SensorData%Sensor_Channel      , &
                                        Surface%SensorData%Tb
       IF ( IO_Status /= 0 ) THEN
         WRITE( Message, '( "Error reading SensorData. IOSTAT = ", i0 )' ) IO_Status
@@ -456,11 +456,11 @@ CONTAINS
     ! Write the SensorData
     ! --------------------
     IF ( Surface%SensorData%n_Channels > 0 ) THEN
-      WRITE( FileID, IOSTAT=IO_Status ) Surface%SensorData%Sensor_ID       , &
-                                        Surface%SensorData%SensorData_ID   , &
-                                        Surface%SensorData%WMO_Satellite_ID, &
-                                        Surface%SensorData%WMO_Sensor_ID   , &
-                                        Surface%SensorData%Sensor_Channel  , &
+      WRITE( FileID, IOSTAT=IO_Status ) Surface%SensorData%Select_WMO_Sensor_ID, &
+                                        Surface%SensorData%Sensor_ID           , &
+                                        Surface%SensorData%WMO_Satellite_ID    , &
+                                        Surface%SensorData%WMO_Sensor_ID       , &
+                                        Surface%SensorData%Sensor_Channel      , &
                                         Surface%SensorData%Tb
       IF ( IO_Status /= 0 ) THEN
         WRITE( Message, '( "Error writing SensorData. IOSTAT = ", i0 )' ) IO_Status

@@ -20,7 +20,7 @@ MODULE CRTM_ChannelInfo_Define
   USE Message_Handler
   USE CRTM_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                              INVALID_WMO_SENSOR_ID   , &
-                             SET, SL=>STRLEN
+                             SET, STRLEN
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -64,12 +64,11 @@ MODULE CRTM_ChannelInfo_Define
     INTEGER :: n_Allocates = 0
     ! Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
-    INTEGER :: StrLen = SL
     ! Scalar data
-    CHARACTER(SL) :: Sensor_ID        = ' '
-    INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    INTEGER       :: Sensor_Index     = 0
+    CHARACTER(STRLEN) :: Sensor_ID        = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    INTEGER           :: Sensor_Index     = 0
     ! Array data
     INTEGER, POINTER :: Sensor_Channel(:) => NULL()  ! L
     INTEGER, POINTER :: Channel_Index(:)  => NULL()  ! L
@@ -119,7 +118,6 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_ChannelInfo( ChannelInfo )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo
-    ChannelInfo%StrLen = SL
     ChannelInfo%Sensor_ID        = ' '
     ChannelInfo%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     ChannelInfo%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID

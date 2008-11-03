@@ -56,9 +56,9 @@ MODULE CRTM_SensorData_Define
     ! Dimension values
     INTEGER :: n_Channels = 0  ! L
     ! The WMO sensor ID of the sensor for which the data is to be used
-    INTEGER :: Sensor_ID = INVALID_WMO_SENSOR_ID
+    INTEGER :: Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
     ! The data sensor IDs and channels
-    CHARACTER(STRLEN), POINTER :: SensorData_ID(:)    => NULL() ! L
+    CHARACTER(STRLEN), POINTER :: Sensor_Id(:)        => NULL() ! L
     INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
     INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
     INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
@@ -106,7 +106,7 @@ CONTAINS
 
   SUBROUTINE CRTM_Clear_SensorData( SensorData )
     TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
-    SensorData%Sensor_ID = INVALID_WMO_SENSOR_ID
+    SensorData%Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
   END SUBROUTINE CRTM_Clear_SensorData
 
 
@@ -191,7 +191,7 @@ CONTAINS
     ! ---------------------------------------------
     Association_Status = .FALSE.
     IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( SensorData%SensorData_ID    ) .AND. &
+      IF ( ASSOCIATED( SensorData%Sensor_Id        ) .AND. &
            ASSOCIATED( SensorData%WMO_Satellite_ID ) .AND. &
            ASSOCIATED( SensorData%WMO_Sensor_ID    ) .AND. &
            ASSOCIATED( SensorData%Sensor_Channel   ) .AND. &
@@ -199,7 +199,7 @@ CONTAINS
         Association_Status = .TRUE.
       END IF
     ELSE
-      IF ( ASSOCIATED( SensorData%SensorData_ID    ) .OR. &
+      IF ( ASSOCIATED( SensorData%Sensor_Id        ) .OR. &
            ASSOCIATED( SensorData%WMO_Satellite_ID ) .OR. &
            ASSOCIATED( SensorData%WMO_Sensor_ID    ) .OR. &
            ASSOCIATED( SensorData%Sensor_Channel   ) .OR. &
@@ -313,7 +313,7 @@ CONTAINS
 
     ! Deallocate the pointer members
     ! ------------------------------
-    DEALLOCATE( SensorData%SensorData_ID   , &
+    DEALLOCATE( SensorData%Sensor_Id       , &
                 SensorData%WMO_Satellite_ID, &
                 SensorData%WMO_Sensor_ID   , &
                 SensorData%Sensor_Channel  , &
@@ -470,7 +470,7 @@ CONTAINS
 
     ! Perform the allocation
     ! ----------------------
-    ALLOCATE( SensorData%SensorData_ID( n_Channels ), &
+    ALLOCATE( SensorData%Sensor_Id( n_Channels ), &
               SensorData%WMO_Satellite_ID( n_Channels ), &
               SensorData%WMO_Sensor_ID( n_Channels ), &
               SensorData%Sensor_Channel( n_Channels ), &
@@ -491,8 +491,8 @@ CONTAINS
     ! Assign the dimensions and data
     ! ------------------------------------------
     SensorData%n_Channels = n_Channels
-    SensorData%Sensor_ID  = INVALID_WMO_SENSOR_ID
-    SensorData%SensorData_ID    = ' '
+    SensorData%Select_WMO_Sensor_Id  = INVALID_WMO_SENSOR_ID
+    SensorData%Sensor_Id        = ' '
     SensorData%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     SensorData%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     SensorData%Sensor_Channel   = -1
@@ -630,12 +630,12 @@ CONTAINS
 
     ! Assign data
     ! -----------
-    SensorData_out%Sensor_ID = SensorData_in%Sensor_ID
-    SensorData_out%SensorData_ID    = SensorData_in%SensorData_ID
-    SensorData_out%WMO_Sensor_ID    = SensorData_in%WMO_Sensor_ID
-    SensorData_out%WMO_Satellite_ID = SensorData_in%WMO_Satellite_ID
-    SensorData_out%Sensor_Channel   = SensorData_in%Sensor_Channel
-    SensorData_out%Tb               = SensorData_in%Tb
+    SensorData_out%Select_WMO_Sensor_Id = SensorData_in%Select_WMO_Sensor_Id
+    SensorData_out%Sensor_Id            = SensorData_in%Sensor_Id
+    SensorData_out%WMO_Sensor_ID        = SensorData_in%WMO_Sensor_ID
+    SensorData_out%WMO_Satellite_ID     = SensorData_in%WMO_Satellite_ID
+    SensorData_out%Sensor_Channel       = SensorData_in%Sensor_Channel
+    SensorData_out%Tb                   = SensorData_in%Tb
 
   END FUNCTION CRTM_Assign_SensorData
 
@@ -809,19 +809,19 @@ CONTAINS
 
     ! Compare the values
     ! ------------------
-    IF ( SensorData_LHS%Sensor_ID /= SensorData_RHS%Sensor_ID ) THEN
+    IF ( SensorData_LHS%Select_WMO_Sensor_Id /= SensorData_RHS%Select_WMO_Sensor_Id ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Sensor_ID values are different', &
+                            'Select_WMO_Sensor_Id values are different', &
                             Error_Status, &
                             Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
 
     DO l = 1, SensorData_LHS%n_Channels
-      IF ( SensorData_LHS%SensorData_ID(l) /= SensorData_RHS%SensorData_ID(l) ) THEN
+      IF ( SensorData_LHS%Sensor_Id(l) /= SensorData_RHS%Sensor_Id(l) ) THEN
         Error_Status = FAILURE
-        WRITE( Message,'("SensorData_ID values are different for channel index ",i0)' ) l
+        WRITE( Message,'("Sensor_Id values are different for channel index ",i0)' ) l
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &

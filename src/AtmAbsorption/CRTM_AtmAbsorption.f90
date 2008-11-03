@@ -67,17 +67,18 @@ MODULE CRTM_AtmAbsorption
   '$Id$'
 
 
-  ! ------------------------------------------
+  ! -------------------------------------------------
   ! Structure definition to hold forward model
   ! variables across FWD, TL, and AD calls
-  ! ------------------------------------------
+  ! NOTE: The structure component are NOT initialised
+  ! -------------------------------------------------
   TYPE :: CRTM_AAVariables_type
     PRIVATE
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_Level = ZERO
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_Level
     REAL(fp), DIMENSION(0:MAX_N_ORDERS,0:MAX_N_PREDICTORS_USED,&
-                        MAX_N_LAYERS,MAX_N_ABSORBERS) :: b = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: LN_Chi = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Chi    = ZERO
+                        MAX_N_LAYERS,MAX_N_ABSORBERS) :: b
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: LN_Chi
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Chi
   END TYPE CRTM_AAVariables_type
 
 

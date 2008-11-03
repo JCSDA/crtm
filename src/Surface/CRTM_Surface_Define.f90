@@ -409,6 +409,7 @@ MODULE CRTM_Surface_Define
   ! ------------------------
   ! Surface type independent data
   REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED = 5.0_fp  ! m/s
+  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! North
   ! Land surface type data
   INTEGER,  PARAMETER :: DEFAULT_LAND_TYPE             = GRASS_SOIL
   REAL(fp), PARAMETER :: DEFAULT_LAND_TEMPERATURE      = 283.0_fp  ! K
@@ -419,7 +420,6 @@ MODULE CRTM_Surface_Define
   ! Water type data
   INTEGER,  PARAMETER :: DEFAULT_WATER_TYPE        = SEA_WATER
   REAL(fp), PARAMETER :: DEFAULT_WATER_TEMPERATURE = 283.0_fp   ! K
-  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! North
   REAL(fp), PARAMETER :: DEFAULT_SALINITY          = 33.0_fp    ! ppmv
   ! Snow surface type data
   INTEGER,  PARAMETER :: DEFAULT_SNOW_TYPE        = NEW_SNOW
@@ -449,7 +449,8 @@ MODULE CRTM_Surface_Define
     REAL(fp) :: Snow_Coverage  = ZERO
     REAL(fp) :: Ice_Coverage   = ZERO
     ! Surface type independent data
-    REAL(fp) :: Wind_Speed = DEFAULT_WIND_SPEED
+    REAL(fp) :: Wind_Speed     = DEFAULT_WIND_SPEED
+    REAL(fp) :: Wind_Direction = DEFAULT_WIND_DIRECTION
     ! Land surface type data
     INTEGER  :: Land_Type             = DEFAULT_LAND_TYPE
     REAL(fp) :: Land_Temperature      = DEFAULT_LAND_TEMPERATURE
@@ -460,7 +461,6 @@ MODULE CRTM_Surface_Define
     ! Water type data
     INTEGER  :: Water_Type        = DEFAULT_WATER_TYPE
     REAL(fp) :: Water_Temperature = DEFAULT_WATER_TEMPERATURE
-    REAL(fp) :: Wind_Direction    = DEFAULT_WIND_DIRECTION
     REAL(fp) :: Salinity          = DEFAULT_SALINITY
     ! Snow surface type data
     INTEGER  :: Snow_Type        = DEFAULT_SNOW_TYPE
@@ -525,7 +525,8 @@ CONTAINS
     Surface%Snow_Coverage  = ZERO
     Surface%Ice_Coverage   = ZERO
     ! Surface type independent data
-    Surface%Wind_Speed = DEFAULT_WIND_SPEED
+    Surface%Wind_Speed     = DEFAULT_WIND_SPEED
+    Surface%Wind_Direction = DEFAULT_WIND_DIRECTION
     ! Land surface type data
     Surface%Land_Type             = DEFAULT_LAND_TYPE
     Surface%Land_Temperature      = DEFAULT_LAND_TEMPERATURE
@@ -536,7 +537,6 @@ CONTAINS
     ! Water surface type data
     Surface%Water_Type        = DEFAULT_WATER_TYPE
     Surface%Water_Temperature = DEFAULT_WATER_TEMPERATURE
-    Surface%Wind_Direction    = DEFAULT_WIND_DIRECTION
     Surface%Salinity          = DEFAULT_SALINITY
     ! Snow surface type data
     Surface%Snow_Type        = DEFAULT_SNOW_TYPE
@@ -1099,22 +1099,27 @@ CONTAINS
     Surface_out%Water_Coverage        = Surface_in%Water_Coverage
     Surface_out%Snow_Coverage         = Surface_in%Snow_Coverage
     Surface_out%Ice_Coverage          = Surface_in%Ice_Coverage
+
     Surface_out%Wind_Speed            = Surface_in%Wind_Speed
+    Surface_out%Wind_Direction        = Surface_in%Wind_Direction
+
     Surface_out%Land_Type             = Surface_in%Land_Type
     Surface_out%Land_Temperature      = Surface_in%Land_Temperature
     Surface_out%Soil_Moisture_Content = Surface_in%Soil_Moisture_Content
     Surface_out%Canopy_Water_Content  = Surface_in%Canopy_Water_Content
     Surface_out%Vegetation_Fraction   = Surface_in%Vegetation_Fraction
     Surface_out%Soil_Temperature      = Surface_in%Soil_Temperature
+
     Surface_out%Water_Type            = Surface_in%Water_Type
     Surface_out%Water_Temperature     = Surface_in%Water_Temperature
-    Surface_out%Wind_Direction        = Surface_in%Wind_Direction
     Surface_out%Salinity              = Surface_in%Salinity
+
     Surface_out%Snow_Type             = Surface_in%Snow_Type
     Surface_out%Snow_Temperature      = Surface_in%Snow_Temperature
     Surface_out%Snow_Depth            = Surface_in%Snow_Depth
     Surface_out%Snow_Density          = Surface_in%Snow_Density
     Surface_out%Snow_Grain_Size       = Surface_in%Snow_Grain_Size
+
     Surface_out%Ice_Type              = Surface_in%Ice_Type
     Surface_out%Ice_Temperature       = Surface_in%Ice_Temperature
     Surface_out%Ice_Thickness         = Surface_in%Ice_Thickness
@@ -1485,15 +1490,32 @@ CONTAINS
                             Message_Log=Message_Log )
       IF ( Check_Once ) RETURN
     END IF
+    
+    ! Surface type independent components
     IF ( .NOT. Compare_Float( Surface_LHS%Wind_Speed, &
                               Surface_RHS%Wind_Speed, &
                               ULP    =ULP_Scale, &
                               Percent=Percent_Difference ) ) THEN
       Error_Status = FAILURE
-      WRITE( Message,'("Wind_Spped values are different:",3(1x,es13.6))') &
+      WRITE( Message,'("Wind_Speed values are different:",3(1x,es13.6))') &
                      Surface_LHS%Wind_Speed, &
                      Surface_RHS%Wind_Speed, &
                      Surface_LHS%Wind_Speed-Surface_RHS%Wind_Speed
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    IF ( .NOT. Compare_Float( Surface_LHS%Wind_Direction, &
+                              Surface_RHS%Wind_Direction, &
+                              ULP    =ULP_Scale, &
+                              Percent=Percent_Difference ) ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Wind_Direction values are different:",3(1x,es13.6))') &
+                     Surface_LHS%Wind_Direction, &
+                     Surface_RHS%Wind_Direction, &
+                     Surface_LHS%Wind_Direction-Surface_RHS%Wind_Direction
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
@@ -1610,21 +1632,6 @@ CONTAINS
                      Surface_LHS%Water_Temperature, &
                      Surface_RHS%Water_Temperature, &
                      Surface_LHS%Water_Temperature-Surface_RHS%Water_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Wind_Direction, &
-                              Surface_RHS%Wind_Direction, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Wind_Direction values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Wind_Direction, &
-                     Surface_RHS%Wind_Direction, &
-                     Surface_LHS%Wind_Direction-Surface_RHS%Wind_Direction
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
@@ -2090,7 +2097,8 @@ CONTAINS
     ! ------------------------
     ! Perform the weighted sum
     ! ------------------------
-    A%Wind_Speed = A%Wind_Speed + (w1*B%Wind_Speed) + w2_Local
+    A%Wind_Speed     = A%Wind_Speed     + (w1*B%Wind_Speed    ) + w2_Local
+    A%Wind_Direction = A%Wind_Direction + (w1*B%Wind_Direction) + w2_Local
     
     A%Land_Temperature      = A%Land_Temperature      + (w1*B%Land_Temperature     ) + w2_Local
     A%Soil_Moisture_Content = A%Soil_Moisture_Content + (w1*B%Soil_Moisture_Content) + w2_Local
@@ -2099,7 +2107,6 @@ CONTAINS
     A%Soil_Temperature      = A%Soil_Temperature      + (w1*B%Soil_Temperature     ) + w2_Local
     
     A%Water_Temperature = A%Water_Temperature + (w1*B%Water_Temperature) + w2_Local
-    A%Wind_Direction    = A%Wind_Direction    + (w1*B%Wind_Direction   ) + w2_Local
     A%Salinity          = A%Salinity          + (w1*B%Salinity         ) + w2_Local
     
     A%Snow_Temperature = A%Snow_Temperature + (w1*B%Snow_Temperature) + w2_Local
@@ -2267,11 +2274,6 @@ CONTAINS
 ! COMMENTS:
 !       - No checking of the input structure is performed.
 !
-!       - The Surface coverage members are *NOT* set to zero.
-!
-!       - The Surface type components (land, water, snow, and ice) are *NOT*
-!         reset.
-!
 !       - The SensorData dimension and structure components are *NOT*
 !         reset.
 !
@@ -2283,23 +2285,37 @@ CONTAINS
 
   SUBROUTINE Zero_Scalar( Surface )  ! Output
     TYPE(CRTM_Surface_type),  INTENT(IN OUT) :: Surface
-    Surface%Wind_Speed            = ZERO
+    
+    Surface%Land_Coverage  = ZERO
+    Surface%Water_Coverage = ZERO
+    Surface%Snow_Coverage  = ZERO
+    Surface%Ice_Coverage   = ZERO
+    
+    Surface%Wind_Speed     = ZERO
+    Surface%Wind_Direction = ZERO
+    
+    Surface%Land_Type = INVALID_LAND
     Surface%Land_Temperature      = ZERO
     Surface%Soil_Moisture_Content = ZERO
     Surface%Canopy_Water_Content  = ZERO
     Surface%Vegetation_Fraction   = ZERO
     Surface%Soil_Temperature      = ZERO
-    Surface%Water_Temperature     = ZERO
-    Surface%Wind_Direction        = ZERO
-    Surface%Salinity              = ZERO
-    Surface%Snow_Temperature      = ZERO
-    Surface%Snow_Depth            = ZERO
-    Surface%Snow_Density          = ZERO
-    Surface%Snow_Grain_Size       = ZERO
-    Surface%Ice_Temperature       = ZERO
-    Surface%Ice_Thickness         = ZERO
-    Surface%Ice_Density           = ZERO
-    Surface%Ice_Roughness         = ZERO
+    
+    Surface%Water_Type = INVALID_WATER
+    Surface%Water_Temperature = ZERO
+    Surface%Salinity          = ZERO
+    
+    Surface%Snow_Type = INVALID_SNOW
+    Surface%Snow_Temperature = ZERO
+    Surface%Snow_Depth       = ZERO
+    Surface%Snow_Density     = ZERO
+    Surface%Snow_Grain_Size  = ZERO
+    
+    Surface%Ice_Type = INVALID_ICE
+    Surface%Ice_Temperature = ZERO
+    Surface%Ice_Thickness   = ZERO
+    Surface%Ice_Density     = ZERO
+    Surface%Ice_Roughness   = ZERO
   END SUBROUTINE Zero_Scalar
 
 

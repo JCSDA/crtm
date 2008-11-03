@@ -223,7 +223,7 @@ CONTAINS
     ! --------------------------------
     ! Compute the surface emissivities
     ! --------------------------------
-    Sensor_Type: SELECT CASE( Surface%SensorData%Sensor_ID )
+    Sensor_Type: SELECT CASE( Surface%SensorData%Select_WMO_Sensor_ID )
 
       ! AMSU-A emissivity model
       CASE( WMO_AMSUA )                                                                                 
