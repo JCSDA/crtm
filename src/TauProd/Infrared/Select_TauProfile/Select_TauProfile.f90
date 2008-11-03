@@ -484,31 +484,31 @@ PROGRAM Select_TauProfile
                 CASE (WVO_DERIVED)
                   Tau_EffDRY = Compute_EffTau( Tau_ALL, Tau_WVO )
                   IF ( j2 == 1 ) THEN
-                    Tau_EffWET = Tau_WET
+                    Tau_EffWET = Tau_WET; CALL Correct_EffTau(Tau_EffWET)
                     Tau_EffOZO = Compute_EffTau( Tau_WVO, Tau_WET )
                   ELSE
                     Tau_EffWET = Compute_EffTau( Tau_WVO, Tau_OZO )
-                    Tau_EffOZO = Tau_OZO
+                    Tau_EffOZO = Tau_OZO; CALL Correct_EffTau(Tau_EffOZO)
                   END IF
                 ! DOZ-derived
                 CASE (DOZ_DERIVED)
                   Tau_EffWET = Compute_EffTau( Tau_ALL, Tau_DOZ )
                   IF ( j2 == 1 ) THEN
-                    Tau_EffDRY = Tau_DRY
+                    Tau_EffDRY = Tau_DRY; CALL Correct_EffTau(Tau_EffDRY)
                     Tau_EffOZO = Compute_EffTau( Tau_DOZ, Tau_DRY )
                   ELSE
                     Tau_EffDRY = Compute_EffTau( Tau_DOZ, Tau_OZO )
-                    Tau_EffOZO = Tau_OZO
+                    Tau_EffOZO = Tau_OZO; CALL Correct_EffTau(Tau_EffOZO)
                   END IF
                 ! WVD-derived
                 CASE (WVD_DERIVED)
                   Tau_EffOZO = Compute_EffTau( Tau_ALL, Tau_WVD )
                   IF ( j2 == 1 ) THEN
-                    Tau_EffWET = Tau_WET
+                    Tau_EffWET = Tau_WET; CALL Correct_EffTau(Tau_EffWET)
                     Tau_EffDRY = Compute_EffTau( Tau_WVD, Tau_WET )
                   ELSE
                     Tau_EffWET = Compute_EffTau( Tau_WVD, Tau_DRY )
-                    Tau_EffDRY = Tau_DRY
+                    Tau_EffDRY = Tau_DRY; CALL Correct_EffTau(Tau_EffDRY)
                   END IF
               END SELECT
 
