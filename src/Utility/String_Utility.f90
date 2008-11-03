@@ -1,110 +1,65 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       String_Utility
 !
-! PURPOSE:
-!       Module containing string utility routines
+! String_Utility
 !
-! CATEGORY:
-!       Utility
+! Module containing string utility routines
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE String_Utility
-!
-! MODULES:
-!       None.
-!
-! CONTAINS:
-!       StrUpCase:    Function to convert an input string to upper case.
-!
-!       StrLowCase:   Function to convert an input string to lower case.
-!
-!       StrCompress:  Function to return a copy of an input string
-!                     with all internal whitespace (spaces and tabs)
-!                     removed.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None known.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 18-Oct-1999
 !                       paul.vandelst@ssec.wisc.edu
 !
-!  Copyright (C) 1999, 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE String_Utility
 
-
-  ! ---------------------------
-  ! Disable all implicit typing
-  ! ---------------------------
-
+  ! -----------------
+  ! Environment setup
+  ! -----------------
+  ! Disable implicit typing
   IMPLICIT NONE
 
 
   ! ----------
   ! Visibility
   ! ----------
-
+  ! Everything private by default
   PRIVATE
+  ! Public procedures
   PUBLIC :: StrUpCase
   PUBLIC :: StrLowCase
   PUBLIC :: StrCompress
+  PUBLIC :: StrClean
+
+
+  ! ---------------------
+  ! Procedure overloading
+  ! ---------------------
+  INTERFACE StrClean
+    MODULE PROCEDURE StrClean_scalar
+    MODULE PROCEDURE StrClean_rank1
+  END INTERFACE StrClean
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  CHARACTER( * ), PRIVATE, PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
-  CHARACTER( * ), PRIVATE, PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+    '$Id$'
+  ! List of character for case conversion
+  CHARACTER(*), PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
+  CHARACTER(*), PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       StrUpCase
 !
 ! PURPOSE:
 !       Function to convert an input string to upper case.
-!
-! CATEGORY:
-!       Utility
-!
-! LANGUAGE:
-!       Fortran-95
 !
 ! CALLING SEQUENCE:
 !       Result = StrUpCase( String )
@@ -112,33 +67,15 @@ CONTAINS
 ! INPUT ARGUMENTS:
 !       String:  Character string to be converted to upper case.
 !                UNITS:      N/A
-!                TYPE:       CHARACTER( * )
+!                TYPE:       CHARACTER(*)
 !                DIMENSION:  Scalar
-!                ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Result:  The input character string converted to upper case.
 !                UNITS:      N/A
-!                TYPE:       CHARACTER( LEN(String) )
+!                TYPE:       CHARACTER(LEN(String))
 !                DIMENSION:  Scalar
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! EXAMPLE:
 !       string = 'this is a string'
@@ -152,50 +89,37 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 18-Oct-1999
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION StrUpCase ( Input_String ) RESULT ( Output_String )
-
-    ! -- Argument and result
-    CHARACTER( * ), INTENT( IN )     :: Input_String
-    CHARACTER( LEN( Input_String ) ) :: Output_String
-
-    ! -- Local variables
+  FUNCTION StrUpCase( Input_String ) RESULT( Output_String )
+    ! Arguments
+    CHARACTER(*), INTENT(IN)     :: Input_String
+    ! Function result
+    CHARACTER(LEN(Input_String)) :: Output_String
+    ! Local variables
     INTEGER :: i, n
 
-
-    ! -- Copy input string
+    ! Copy input string
     Output_String = Input_String
 
-    ! -- Loop over string elements
-    DO i = 1, LEN( Output_String )
-
-      ! -- Find location of letter in lower case constant string
-      n = INDEX( LOWER_CASE, Output_String( i:i ) )
-
-      ! -- If current substring is a lower case letter, make it upper case
-      IF ( n /= 0 ) Output_String( i:i ) = UPPER_CASE( n:n )
-
+    ! Convert case character by character
+    DO i = 1, LEN(Output_String)
+      n = INDEX(LOWER_CASE, Output_String(i:i))
+      IF ( n /= 0 ) Output_String(i:i) = UPPER_CASE(n:n)
     END DO
-
   END FUNCTION StrUpCase
 
 
-
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       StrLowCase
 !
 ! PURPOSE:
 !       Function to convert an input string to lower case.
-!
-! CATEGORY:
-!       Utility
-!
-! LANGUAGE:
-!       Fortran-95
 !
 ! CALLING SEQUENCE:
 !       Result = StrLowCase( String )
@@ -203,33 +127,15 @@ CONTAINS
 ! INPUT ARGUMENTS:
 !       String: Character string to be converted to lower case.
 !               UNITS:      N/A
-!               TYPE:       CHARACTER( * )
+!               TYPE:       CHARACTER(*)
 !               DIMENSION:  Scalar
-!               ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!               ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Result:  The input character string converted to lower case.
 !                UNITS:      N/A
 !                TYPE:       CHARACTER( LEN(String) )
 !                DIMENSION:  Scalar
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! EXAMPLE:
 !       string = 'THIS IS A STRING'
@@ -243,51 +149,38 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 18-Oct-1999
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION StrLowCase ( Input_String ) RESULT ( Output_String )
-
-    ! -- Argument and result
-    CHARACTER( * ), INTENT( IN )     :: Input_String
-    CHARACTER( LEN( Input_String ) ) :: Output_String
-
-    ! -- Local variables
+  FUNCTION StrLowCase( Input_String ) RESULT( Output_String )
+    ! Argument
+    CHARACTER(*), INTENT(IN)     :: Input_String
+    ! Function result
+    CHARACTER(LEN(Input_String)) :: Output_String
+    ! Local variables
     INTEGER :: i, n
 
-
-    ! -- Copy input string
+    ! Copy input string
     Output_String = Input_String
 
-    ! -- Loop over string elements
-    DO i = 1, LEN( Output_String )
-
-      ! -- Find location of letter in upper case constant string
-      n = INDEX( UPPER_CASE, Output_String( i:i ) )
-
-      ! -- If current substring is an upper case letter, make it lower case
-      IF ( n /= 0 ) Output_String( i:i ) = LOWER_CASE( n:n )
-
+    ! Convert case character by character
+    DO i = 1, LEN(Output_String)
+      n = INDEX(UPPER_CASE, Output_String(i:i))
+      IF ( n /= 0 ) Output_String(i:i) = LOWER_CASE(n:n)
     END DO
-
   END FUNCTION StrLowCase
 
 
-
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       StrCompress
 !
 ! PURPOSE:
 !       Subroutine to return a copy of an input string with all whitespace
 !       (spaces and tabs) removed.
-!
-! CATEGORY:
-!       Utility
-!
-! LANGUAGE:
-!       Fortran-95
 !
 ! CALLING SEQUENCE:
 !       Result = StrCompress( String,  &  ! Input
@@ -296,41 +189,26 @@ CONTAINS
 ! INPUT ARGUMENTS:
 !       String:         Character string to be compressed.
 !                       UNITS:      N/A
-!                       TYPE:       CHARACTER( * )
+!                       TYPE:       CHARACTER(*)
 !                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       None.
+!                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       n:              Number of useful characters in output string
-!                       after compression. From character n+1 -> LEN( Input_String )
+!                       after compression. From character n+1 -> LEN(Input_String)
 !                       the output is padded with blanks.
 !                       UNITS:      N/A
 !                       TYPE:       INTEGER
 !                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Result:         Input string with all whitespace removed before the
 !                       first non-whitespace character, and from in-between 
 !                       non-whitespace characters.
 !                       UNITS:      N/A
-!                       TYPE:       CHARACTER( LEN(String) )
+!                       TYPE:       CHARACTER(LEN(String))
 !                       DIMENSION:  Scalar
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! EXAMPLE:
 !       Input_String = '  This is a string with spaces in it.'
@@ -357,87 +235,123 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 18-Oct-1999
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION StrCompress( Input_String, n ) RESULT ( Output_String )
-
-    ! -- Arguments
-    CHARACTER( * ),    INTENT( IN )  :: Input_String
-    INTEGER, OPTIONAL, INTENT( OUT ) :: n
-
-    ! -- Function result
-    CHARACTER( LEN( Input_String ) ) :: Output_String
-
-    ! -- Local parameters
+  FUNCTION StrCompress( Input_String, n ) RESULT( Output_String )
+    ! Arguments
+    CHARACTER(*),      INTENT(IN)  :: Input_String
+    INTEGER, OPTIONAL, INTENT(OUT) :: n
+    ! Function result
+    CHARACTER(LEN(Input_String)) :: Output_String
+    ! Local parameters
     INTEGER, PARAMETER :: IACHAR_SPACE = 32
     INTEGER, PARAMETER :: IACHAR_TAB   = 9
-
-    ! -- Local variables
+    ! Local variables
     INTEGER :: i, j
     INTEGER :: IACHAR_Character
 
-    ! -- Initialise output string
+    ! Setup
+    ! -----
+    ! Initialise output string
     Output_String = ' '
-
-    ! -- Initialise output string "useful" length counter
+    ! Initialise output string "useful" length counter
     j = 0
 
-    ! -- Loop over string elements
-    DO i = 1, LEN( Input_String )
+    ! Loop over string contents character by character
+    ! ------------------------------------------------
+    DO i = 1, LEN(Input_String)
 
-      ! -- Convert the current character to its position
-      ! -- in the ASCII collating sequence
-      IACHAR_Character = IACHAR( Input_String( i:i ) )
+      ! Convert the current character to its position
+      ! in the ASCII collating sequence
+      IACHAR_Character = IACHAR(Input_String(i:i))
 
-      ! -- If the character is NOT a space ' ' or a tab '->|'
-      ! -- copy it to the output string.
+      ! If the character is NOT a space ' ' or a tab '->|'
+      ! copy it to the output string.
       IF ( IACHAR_Character /= IACHAR_SPACE .AND. &
            IACHAR_Character /= IACHAR_TAB         ) THEN
         j = j + 1
-        Output_String( j:j ) = Input_String( i:i )
+        Output_String(j:j) = Input_String(i:i)
       END IF
 
     END DO
 
-    ! -- Save the non-whitespace count
-    IF ( PRESENT( n ) ) n = j
+    ! Save the non-whitespace count
+    ! -----------------------------
+    IF ( PRESENT(n) ) n = j
 
   END FUNCTION StrCompress
 
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       StrClean
+!
+! PURPOSE:
+!       Subroutine to replace terminating NULL characters (ASCII 0, \0 in C)
+!       in an input string with whitespace.
+!
+! CALLING SEQUENCE:
+!       CALL StrClean( String )
+!
+! INPUT ARGUMENTS:
+!       String:  On input, this argument contains the character string or
+!                string array from which NULL characters are to be
+!                removed.
+!                UNITS:      N/A
+!                TYPE:       CHARACTER(*)
+!                DIMENSION:  Scalar or Rank-1
+!                ATTRIBUTES: INTENT(IN OUT)
+!
+! OUTPUT ARGUMENTS:
+!       String:  On output, this argument contains the character string or
+!                string array from which the NULL characters have been
+!                converted to whitespace.
+!                UNITS:      N/A
+!                TYPE:       CHARACTER(*)
+!                DIMENSION:  Scalar or Rank-1
+!                ATTRIBUTES: INTENT(IN OUT)
+!
+! SIDE EFFECTS:
+!       The String argument has INTENT(IN OUT) and its contents are modified
+!       as required to remove NULL Characters.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 07-Jul-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  SUBROUTINE StrClean_scalar( String )
+    ! Arguments
+    CHARACTER(*), INTENT(IN OUT) :: String
+    ! Local parameters
+    INTEGER, PARAMETER :: IACHAR_NULL = 0
+    ! Local variables
+    INTEGER :: i
+    
+    ! Search for null character
+    Character_Loop: DO i = 1, LEN(String)
+      IF ( IACHAR(String(i:i)) == IACHAR_NULL ) THEN
+        String(i:LEN(String) ) = ' '
+        EXIT Character_Loop
+      END IF
+    END DO Character_Loop
+  END SUBROUTINE StrClean_scalar
+
+  SUBROUTINE StrClean_rank1( String )
+    ! Arguments
+    CHARACTER(*), INTENT(IN OUT) :: String(:)
+    ! Local variables
+    INTEGER :: n
+    DO n = 1, SIZE(String)
+      CALL StrClean_scalar( String(n) )
+    END DO
+  END SUBROUTINE StrClean_rank1
+
 END MODULE String_Utility
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id$
-!
-! $Date: 2004/08/11 23:21:23 $
-!
-! $Revision$
-!
-! $State: Exp $
-!
-! $Log: String_Utility.f90,v $
-! Revision 1.6  2004/08/11 23:21:23  paulv
-! - Updated header documentation
-! - Made "n" argument to StrCompress function optional.
-!
-! Revision 1.5  2002/09/06 21:58:01  paulv
-! - Simplified output string initialisation in STRCOMPRESS().
-!
-! Revision 1.4  2001/12/19 22:23:56  paulv
-! - Simplified the STRUPCASE and STRLOWCASE functions. Removed some extraneous
-!   variables.
-! - Converted STRCOMPRESS to a function. It was too klunky as a subroutine.
-!   Also removed variables that were not really required.
-!
-! Revision 1.3  2000/12/08 21:48:14  paulv
-! - Added header documentation.
-! - Using ACHAR and IACHAR in STRCOMPRESS to enable tab characters to be
-!   removed.
-!
-!
-!
