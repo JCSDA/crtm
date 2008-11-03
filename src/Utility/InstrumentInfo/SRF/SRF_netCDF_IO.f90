@@ -722,14 +722,14 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
     INTEGER,                INTENT(IN)  :: NC_FileId
-    INTEGER     , INTENT(OUT), OPTIONAL :: Release         
-    INTEGER     , INTENT(OUT), OPTIONAL :: Version         
-    CHARACTER(*), INTENT(OUT), OPTIONAL :: Sensor_Id       
-    INTEGER     , INTENT(OUT), OPTIONAL :: WMO_Satellite_Id
-    INTEGER     , INTENT(OUT), OPTIONAL :: WMO_Sensor_Id   
-    CHARACTER(*), INTENT(OUT), OPTIONAL :: Title
-    CHARACTER(*), INTENT(OUT), OPTIONAL :: History
-    CHARACTER(*), INTENT(OUT), OPTIONAL :: Comment
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
+    INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
+    INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id   
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1193,9 +1193,7 @@ CONTAINS
 
     ! Create the data file
     ! --------------------
-    NF90_Status(1) = NF90_CREATE( NC_Filename, &
-                                  NF90_CLOBBER, &
-                                  NC_FileId )
+    NF90_Status(1) = NF90_CREATE( NC_Filename,NF90_CLOBBER,NC_FileId )
     IF ( NF90_Status(1) /= NF90_NOERR ) THEN
       msg = 'Error creating '//TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL Create_Cleanup(); RETURN
@@ -2072,7 +2070,7 @@ CONTAINS
     ! Read the sensor channel list
     Error_Status = Inquire_SRF_netCDF( NC_Filename,Sensor_Channel=Sensor_Channel,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error reading '//CHANNEL_DIMNAME//' dimension from '//TRIM(NC_Filename)
+      msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' data from '//TRIM(NC_Filename)
       CALL Write_CleanUp(Dealloc_Arrays=.TRUE.); RETURN
     END IF
     ! Check if the SRF channel is in the list at all, or more than once
