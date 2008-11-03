@@ -265,7 +265,7 @@ CONTAINS
                                     VarID, &
                                     FILLVALUE_ATTNAME, &
                                     SENSOR_CHANNEL_FILLVALUE )
-      IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
         Message = 'Error writing '//SENSOR_CHANNEL_VARNAME//&
                   ' variable attributes to '//TRIM(NC_Filename)
         CALL DefineVar_Cleanup(); RETURN
@@ -303,7 +303,7 @@ CONTAINS
                                   VarID, &
                                   FILLVALUE_ATTNAME, &
                                   A_EARTH_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
       Message = 'Error writing '//A_EARTH_VARNAME//&
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
@@ -337,7 +337,7 @@ CONTAINS
                                   VarID, &
                                   FILLVALUE_ATTNAME, &
                                   A_SPACE_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
       Message = 'Error writing '//A_SPACE_VARNAME//&
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
@@ -371,7 +371,7 @@ CONTAINS
                                   VarID, &
                                   FILLVALUE_ATTNAME, &
                                   A_PLATFORM_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
       Message = 'Error writing '//A_PLATFORM_VARNAME//&
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
