@@ -1,8 +1,7 @@
 \documentclass[10pt,letterpaper,fleqn,titlepage]{article}
-\pagestyle{empty}
 
 % Define packages to use
-\usepackage{cite}
+\usepackage{natbib}
 \usepackage[dvips]{graphicx,color}
 \usepackage{amsmath,amssymb}
 \usepackage{bm}
@@ -53,6 +52,8 @@
 
 \newcommand{\textbfm}[1]{\boldmath\ensuremath{#1}\unboldmath}
 
+\newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
+
 % Define how equations are numbered
 \numberwithin{equation}{section}
 \numberwithin{figure}{section}
@@ -82,6 +83,7 @@
 \def\docnumber#1{\def\@docnumber{#1}}
 \renewcommand{\maketitle}
 {%
+  \thispagestyle{empty}
   \vspace*{1in}
   \begin{center}%
      \sffamily
@@ -122,3 +124,5 @@
     }
   }
 }
+
+
