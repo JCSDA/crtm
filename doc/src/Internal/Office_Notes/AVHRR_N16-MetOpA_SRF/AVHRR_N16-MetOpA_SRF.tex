@@ -19,6 +19,30 @@
 
 %\draftwatermark
 
+% The front matter
+%=================
+\thispagestyle{empty}
+\vspace*{10cm}
+\begin{center}
+  {\sffamily\Large\bfseries Change History}
+  \begin{table}[htp]
+    \centering
+    \begin{tabular}{|p{2cm}|p{3cm}|p{8cm}|}
+      \hline
+      \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
+      \hline\hline
+      2008-11-01 & P.van Delst & Initial release.\\
+      \hline
+      2008-11-04 & P.van Delst & Minor corrections from review.\\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
 
 \section{Introduction}
 %=====================
@@ -110,7 +134,7 @@ The current SRF data used for MetOp-A AVHRR/3 clearly suffers from quantisation 
 
 \section{Radiometric impact of SRF interpolation}
 %================================================
-To determine the radiometric impact of the various forms of the SRF (due to different data sources or different interpolation methods), effective temperatures for each sensor channel were computed for a temperature of 285K\footnote{...a typical sea surface temperature value?}. The result for the spline interpolated SRF with a tension of 5.0 (spline5) was chosen as the reference. Comparisons were then made with results for a linearly interpolated SRF (linear), a spline interpolated SRF with tension of 0.1 (spline0.1), a spline interpolated SRF with tension of 20 (spline20), the original uninterpolated SRF itself (original), and the current SRF used in CRTM processing (current). The temperature residuals for an SRF type, ``x'', are defined as,
+To determine the radiometric impact of the various forms of the SRF (due to different data sources or different interpolation methods), effective temperatures\footnote{See appendix \ref{app:band_correction_coefficients} for a definition of effective temperature.} for each sensor channel were computed for a blackbody temperature of 285K. The result for the spline interpolated SRF with a tension of 5.0 (spline5) was chosen as the reference. Comparisons were then made with results for a linearly interpolated SRF (linear), a spline interpolated SRF with tension of 0.1 (spline0.1), a spline interpolated SRF with tension of 20 (spline20), the original uninterpolated SRF itself (original), and the current SRF used in CRTM processing (current). The temperature residuals for an SRF type, ``x'', are defined as,
 \begin{equation}
   \Delta T(\textrm{x}) = T_{eff}(\textrm{spline5}) - T_{eff}(\textrm{x})
 \end{equation}
@@ -140,7 +164,7 @@ The computed central frequencies and band correction coefficients for the NOAA-1
             &  5  &               284&98 &  1&17e-05 & -4&24e-06 &  7&43e-06 & -7&09e-06 & -5&24e-06 \\ 
     \hline
   \end{tabular}
-  \caption{Effective temperature residuals for $T$ = 285K between the reference AVHRR SRFs (derived from the NESDIS/STAR AVHRR SRFs \citep{NESDIS_AVHRR_SRFs} via spline interpolation with tension 5.0), different interpolation methods (including none at all), and the current SRF used in CRTM processing.}
+  \caption{Effective temperature residuals for a blackbody temperature of 285K between the reference AVHRR SRFs (derived from the NESDIS/STAR AVHRR SRFs \citep{NESDIS_AVHRR_SRFs} via spline interpolation with tension 5.0), different interpolation methods (including none at all), and the current SRF used in CRTM processing.}
   \label{tab:teff_comparison}
 \end{table}
 
