@@ -1,7 +1,7 @@
 \documentclass[10pt,letterpaper,fleqn,titlepage]{report}
 
 % Define packages to use
-\usepackage{cite}
+\usepackage{natbib}
 \usepackage[dvips]{graphicx,color}
 \usepackage{amsmath,amssymb}
 \usepackage{bm}
@@ -87,6 +87,7 @@
 \makeatletter
 \renewcommand{\maketitle}
 {%
+  \thispagestyle{empty}
   \vspace*{1in}
   \begin{center}%
      \sffamily
