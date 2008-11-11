@@ -18,21 +18,39 @@ PROGRAM Create_AtmProfile
   ! Environment set up
   ! ------------------
   ! Module usage
-  USE Type_Kinds, ONLY: fp
-  USE File_Utility
-  USE Message_Handler
-  USE Interpolate_Utility
-  USE AtmProfile_Parameters
-  USE AtmProfile_Define
-  USE AtmProfile_netCDF_IO
-  USE UMBC_Profile_Set
-  USE CIMSS_Profile_Set
-  USE ECMWF52_Profile_Set
-!  USE ECMWF83_Profile_Set
-  USE Model_Profile_Set
-  USE Profile_Utility_Parameters
-  USE Units_Conversion
-  USE Geopotential
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                                   Display_Message, Program_Message
+  USE Interpolate_Utility  , ONLY: Polynomial_Interpolate
+  USE Profile_Utility      , ONLY: ID_H2O, &
+                                   MR_to_PP, &
+                                   Geopotential_Height
+  USE UMBC_Profile_Set     , ONLY: N_UMBC_PROFILES, &
+                                   N_UMBC_ABSORBERS, &
+                                   Load_UMBC_Profile
+  USE CIMSS_Profile_Set    , ONLY: N_CIMSS_PROFILES, &
+                                   N_CIMSS_ABSORBERS, &
+                                   Load_CIMSS_Profile
+  USE ECMWF52_Profile_Set  , ONLY: N_ECMWF52_PROFILES, &
+                                   N_ECMWF52_ABSORBERS, &
+                                   Load_ECMWF52_Profile
+  USE ECMWF83_Profile_Set  , ONLY: N_ECMWF83_PROFILES, &
+                                   N_ECMWF83_ABSORBERS, &
+                                   Load_ECMWF83_Profile
+  USE Model_Profile_Set    , ONLY: N_MODEL_PROFILES, &
+                                   N_MODEL_ABSORBERS, &
+                                   Load_Model_Profile
+  USE AtmProfile_Parameters, ONLY: N_ATMPROFILE_SETS, &
+                                   ATMPROFILE_SET_ID_TAG, &
+                                   N_ATMPROFILES, & 
+                                   N_ATMPROFILE_LEVELS, &
+                                   N_ATMPROFILE_LAYERS, &
+                                   ATMPROFILE_LEVEL_PRESSURE
+  USE AtmProfile_Define    , ONLY: AtmProfile_type, &
+                                   Destroy_AtmProfile, &
+                                   Allocate_AtmProfile
+  USE AtmProfile_netCDF_IO , ONLY: Write_AtmProfile_netCDF, &
+                                   Read_AtmProfile_netCDF
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -44,6 +62,7 @@ PROGRAM Create_AtmProfile
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
   ! Literal constants
+  REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ZEROpointFIVE = 0.5_fp
 
 
@@ -116,12 +135,12 @@ PROGRAM Create_AtmProfile
       n_Absorbers = N_ECMWF52_ABSORBERS
       n_Profiles  = N_ECMWF52_PROFILES
       Profile_Interpolate = .FALSE.  ! Already at 101 levels
-!    CASE ( 'ECMWF83' )
-!      n_Layers    = N_ATMPROFILE_LAYERS
-!      n_Levels    = n_Layers + 1
-!      n_Absorbers = N_ECMWF83_ABSORBERS
-!      n_Profiles  = N_ECMWF83_PROFILES
-!      Profile_Interpolate = .FALSE.  ! Already at 101 levels
+    CASE ( 'ECMWF83' )
+      n_Layers    = N_ATMPROFILE_LAYERS
+      n_Levels    = n_Layers + 1
+      n_Absorbers = N_ECMWF83_ABSORBERS
+      n_Profiles  = N_ECMWF83_PROFILES
+      Profile_Interpolate = .FALSE.  ! Already at 101 levels
     CASE ( 'Model6' )
       n_Layers    = N_ATMPROFILE_LAYERS
       n_Levels    = n_Layers + 1
@@ -179,12 +198,6 @@ PROGRAM Create_AtmProfile
                                           Longitude         = AtmProfile%Location(m)%Longitude, &
                                           Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
                                           RCS_Id = Profile_Set_RCS_Id )
-        AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
-        AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-       !                                 -------------------------------------------------
-                                         LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-                                              ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
       CASE ( 'CIMSS32' )
         Error_Status = Load_CIMSS_Profile( m, &
                                            Pressure, &
@@ -202,12 +215,6 @@ PROGRAM Create_AtmProfile
                                            Longitude         = AtmProfile%Location(m)%Longitude, &
                                            Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
                                            RCS_Id = Profile_Set_RCS_Id )
-        AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
-        AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-       !                                 -------------------------------------------------
-                                         LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-                                              ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
       CASE ( 'ECMWF52' )
         Error_Status = Load_ECMWF52_Profile( m, &
                                              Pressure, &
@@ -225,35 +232,23 @@ PROGRAM Create_AtmProfile
                                              Longitude         = AtmProfile%Location(m)%Longitude, &
                                              Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
                                              RCS_Id = Profile_Set_RCS_Id )
-        AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
-        AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-       !                                 -------------------------------------------------
-                                         LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-                                              ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
-!      CASE ( 'ECMWF83' )
-!        Error_Status = Load_ECMWF83_Profile( m, &
-!                                             Pressure, &
-!                                             Temperature, &
-!                                             Absorber, &
-!                                             Absorber_ID       = AtmProfile%Absorber_ID, &
-!                                             Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
-!                                             Description       = AtmProfile%Description(m), &
-!                                             Climatology_Model = AtmProfile%Climatology_Model(m), &
-!                                             Year              = AtmProfile%DateTime(m)%Year, &
-!                                             Month             = AtmProfile%DateTime(m)%Month, &
-!                                             Day               = AtmProfile%DateTime(m)%Day, &
-!                                             Hour              = AtmProfile%DateTime(m)%Hour, &
-!                                             Latitude          = AtmProfile%Location(m)%Latitude, &
-!                                             Longitude         = AtmProfile%Location(m)%Longitude, &
-!                                             Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
-!                                             RCS_Id = Profile_Set_RCS_Id )
-!        AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
-!        AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-!                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-!       !                                 -------------------------------------------------
-!                                         LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-!                                              ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
+      CASE ( 'ECMWF83' )
+        Error_Status = Load_ECMWF83_Profile( m, &
+                                             Pressure, &
+                                             Temperature, &
+                                             Absorber, &
+                                             Absorber_ID       = AtmProfile%Absorber_ID, &
+                                             Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
+                                             Description       = AtmProfile%Description(m), &
+                                             Climatology_Model = AtmProfile%Climatology_Model(m), &
+                                             Year              = AtmProfile%DateTime(m)%Year, &
+                                             Month             = AtmProfile%DateTime(m)%Month, &
+                                             Day               = AtmProfile%DateTime(m)%Day, &
+                                             Hour              = AtmProfile%DateTime(m)%Hour, &
+                                             Latitude          = AtmProfile%Location(m)%Latitude, &
+                                             Longitude         = AtmProfile%Location(m)%Longitude, &
+                                             Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
+                                             RCS_Id = Profile_Set_RCS_Id )
       CASE ( 'Model6' )
         Error_Status = Load_Model_Profile( m, &
                                            Pressure, &
@@ -271,12 +266,6 @@ PROGRAM Create_AtmProfile
                                            Longitude         = AtmProfile%Location(m)%Longitude, &
                                            Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
                                            RCS_Id = Profile_Set_RCS_Id )
-        AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
-        AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-       !                                 -------------------------------------------------
-                                         LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-                                              ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
       CASE DEFAULT
         CALL Display_Message( PROGRAM_NAME,'Invalid option.',FAILURE )
         STOP
@@ -288,6 +277,14 @@ PROGRAM Create_AtmProfile
                       TRIM(ATMPROFILE_SET_ID_TAG( Profile_Set )), m
       CALL Display_Message( PROGRAM_NAME,TRIM(Message),FAILURE ); STOP
     END IF
+
+    ! Fill the pressure array with the required pressure levels/layers
+    AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
+    AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
+                                       ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
+    !                                 -------------------------------------------------
+                                      LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
+                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
 
 
     ! Interpolate the profile as necessary
@@ -506,16 +503,16 @@ PROGRAM Create_AtmProfile
 
   ! Print out some data
   m = MIN(23,AtmProfile%n_Profiles)
-  WRITE( *,'(5x,"Description for profile#",i0," read:")' ) m
-  WRITE( *,'(a)' ) TRIM(AtmProfile%Description(m))
+  WRITE( *,'(/5x,"Description for profile#",i0," read:")' ) m
+  WRITE( *,'(7x,a)' ) TRIM(AtmProfile%Description(m))
   WRITE( *,'(5x, "Date/Time for profile#",i0," read:")' ) m
-  WRITE( *,'(i2.2,"/",i2.2,"/",i4.4," at ",i2.2,"00UTC")' ) &
+  WRITE( *,'(7x,i2.2,"/",i2.2,"/",i4.4," at ",i2.2,"00UTC")' ) &
            AtmProfile%DateTime(m)%Day, &
            AtmProfile%DateTime(m)%Month, &
            AtmProfile%DateTime(m)%Year, &
            AtmProfile%DateTime(m)%Hour
   WRITE( *,'(5x,"Location for profile#",i0," read:")' ) m
-  WRITE( *,'("Lat: ",f8.3,", Lon: ",f8.3)' ) &
+  WRITE( *,'(7x,"Lat: ",f8.3,", Lon: ",f8.3)' ) &
            AtmProfile%Location(m)%Latitude, &
            AtmProfile%Location(m)%Longitude
 
