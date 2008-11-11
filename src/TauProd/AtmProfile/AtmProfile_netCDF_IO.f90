@@ -49,7 +49,7 @@ MODULE AtmProfile_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AtmProfile_netCDF_IO.f90,v 4.3 2006/06/30 16:47:16 dgroff Exp $'
+    '$Id$'
   ! Keyword set value
   INTEGER,      PARAMETER :: SET = 1
   ! msg string length

@@ -52,10 +52,9 @@ MODULE AtmProfile_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AtmProfile_Define.f90,v 4.2 2006/06/30 16:47:16 dgroff Exp $'
+    '$Id$'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double

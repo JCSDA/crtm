@@ -38,6 +38,10 @@ MODULE AtmProfile_Parameters
   ! -----------------
   ! Module parameters
   ! -----------------
+  ! Module RCS Id string
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+    '$Id$'
+
   ! The current number of profile sets and their ID tag
   INTEGER,      PARAMETER :: N_ATMPROFILE_SETS = 5
   CHARACTER(*), PARAMETER :: ATMPROFILE_SET_ID_TAG( N_ATMPROFILE_SETS ) = (/ 'UMBC48 ', &

@@ -118,7 +118,7 @@ MODULE AtmProfile_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AtmProfile_Binary_IO.f90,v 4.1 2006/06/30 16:47:16 dgroff Exp $'
+    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1232,11 +1232,11 @@ END MODULE AtmProfile_Binary_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AtmProfile_Binary_IO.f90,v 4.1 2006/06/30 16:47:16 dgroff Exp $
+! $Id$
 !
 ! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 4.1 $
+! $Revision$
 !
 ! $Name:  $
 !
