@@ -54,7 +54,7 @@ MODULE ECMWF52_Profile_Set
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   REAL(fp), PARAMETER :: THOUSAND = 1000.0_fp
   ! The ECMWF data file name
-  CHARACTER(*), PARAMETER :: ECMWF_DATA_FILE = './ECMWF_Profile_Set/diverse_52profiles_101L.dat'
+  CHARACTER(*), PARAMETER :: ECMWF_DATA_FILE = './ECMWF52_Profile_Set/diverse_52profiles_101L.dat'
   ! The number of levels, layers, absorbers, and profiles
   INTEGER, PARAMETER :: N_ECMWF52_LEVELS    = 101
   INTEGER, PARAMETER :: N_ECMWF52_LAYERS    = N_ECMWF52_LEVELS - 1
