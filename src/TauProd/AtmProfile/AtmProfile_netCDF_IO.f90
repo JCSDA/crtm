@@ -1,115 +1,43 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       AtmProfile_netCDF_IO
 !
-! PURPOSE:
-!       Module containing routines to read and write AtmProfile netCDF 
-!       format files.
-!       
-! CATEGORY:
-!       AtmProfile
+! AtmProfile_netCDF_IO
 !
-! LANGUAGE:
-!       Fortran-95
+! Module containing routines to read and write AtmProfile netCDF 
+! format files.
 !
-! CALLING SEQUENCE:
-!       USE AtmProfile_netCDF_IO
-!
-! MODULES:
-!       Type_Kinds:            Module containing definitions for kinds
-!                              of variable types.
-!
-!       Message_Handler:         Module to define simple error codes and
-!                              handle error conditions
-!                              USEs: FILE_UTILITY module
-!
-!       AtmProfile_Define:     Module defining the AtmProfile data structure and
-!                              containing routines to manipulate it.
-!                              USEs: TYPE_KINDS module
-!                                    ERROR_HANDLER module
-!
-!       netcdf:                Module supplied with the Fortran 90 version 
-!                              of the netCDF libraries (at least v3.5.0).
-!                              See http://www.unidata.ucar.edu/packages/netcdf
-!
-!       netCDF_Utility:        Module containing utility routines for
-!                              netCDF file access.
-!                              USEs: NETCDF_DIMENSION_UTILITY module
-!                                    NETCDF_VARIABLE_UTILITY module
-!                                    NETCDF_ATTRIBUTE_UTILITY module
-!                                    
-!
-! CONTAINS:
-!       Inquire_AtmProfile_netCDF:  Function to inquire a netCDF format 
-!                                   AtmProfile file to obtain information
-!                                   about the data dimensions and attributes.
-!
-!       Write_AtmProfile_netCDF:    Function to write AtmProfile data to a
-!                                   netCDF format AtmProfile file.
-!
-!       Read_AtmProfile_netCDF:     Function to read AtmProfile data from a
-!                                   netCDF format AtmProfile file.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 08-Jul-2002
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
-!  Copyright (C) 2002, 2003 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE AtmProfile_netCDF_IO
 
-
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-  USE Message_Handler
-
-  USE AtmProfile_Define
-
+  USE Type_Kinds     ,   ONLY: Long, Double
+  USE Message_Handler,   ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                               Display_Message
+  USE String_Utility,    ONLY: StrClean
+  USE AtmProfile_Define, ONLY: ATMPROFILE_ABSORBER_UNITS_NAME, &
+                               ATMPROFILE_ABSORBER_UNITS_CHAR, &
+                               ATMPROFILE_FP_INVALID, &
+                               AtmProfileDateTime_type, &
+                               AtmProfile_type, &
+                               Associated_AtmProfile, &
+                               Destroy_AtmProfile, &
+                               Allocate_AtmProfile, &
+                               CheckRelease_AtmProfile, &
+                               Info_AtmProfile
   USE netcdf
-  USE netCDF_Utility,  Open_AtmProfile_netCDF =>  Open_netCDF, &
-                      Close_AtmProfile_netCDF => Close_netCDF
-
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
   PRIVATE
   PUBLIC :: Inquire_AtmProfile_netCDF
   PUBLIC :: Write_AtmProfile_netCDF
@@ -119,2243 +47,150 @@ MODULE AtmProfile_netCDF_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! -- Module RCS Id string
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  ! Module RCS Id string
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
     '$Id: AtmProfile_netCDF_IO.f90,v 4.3 2006/06/30 16:47:16 dgroff Exp $'
+  ! Keyword set value
+  INTEGER,      PARAMETER :: SET = 1
+  ! msg string length
+  INTEGER,      PARAMETER :: ML = 512
+  ! Literal constants
+  REAL(Double), PARAMETER :: ZERO = 0.0_Double
+  REAL(Double), PARAMETER :: ONE  = 1.0_Double
 
-  ! -- Keyword set value
-  INTEGER,        PRIVATE, PARAMETER :: UNSET = 0
-  INTEGER,        PRIVATE, PARAMETER ::   SET = 1
+  ! Global attribute names. Case sensitive
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME   = 'title' 
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME = 'history' 
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME = 'comment' 
+  CHARACTER(*), PARAMETER :: ID_TAG_GATTNAME  = 'id_tag' 
+  CHARACTER(*), PARAMETER :: RELEASE_GATTNAME = 'Release'
+  CHARACTER(*), PARAMETER :: VERSION_GATTNAME = 'Version'
 
-  ! -- Global attribute names. Case sensitive
-  CHARACTER( * ), PRIVATE, PARAMETER :: TITLE_GATTNAME   = 'title' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: HISTORY_GATTNAME = 'history' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: COMMENT_GATTNAME = 'comment' 
-  CHARACTER( * ), PRIVATE, PARAMETER :: ID_TAG_GATTNAME  = 'id_tag' 
+  ! Dimension names
+  CHARACTER(*), PARAMETER :: LEVEL_DIMNAME       = 'n_levels'
+  CHARACTER(*), PARAMETER :: LAYER_DIMNAME       = 'n_layers'
+  CHARACTER(*), PARAMETER :: ABSORBER_DIMNAME    = 'n_absorbers'
+  CHARACTER(*), PARAMETER :: PROFILE_DIMNAME     = 'n_profiles'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_DIMNAME = 'pdsl'
 
-  ! -- Dimension names
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_DIMNAME       = 'n_levels'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_DIMNAME       = 'n_layers'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_DIMNAME    = 'n_absorbers'
-  CHARACTER( * ), PRIVATE, PARAMETER :: PROFILE_DIMNAME     = 'n_profiles'
-  CHARACTER( * ), PRIVATE, PARAMETER :: DESCRIPTION_DIMNAME = 'pdsl'
+  ! Variable names
+  CHARACTER(*), PARAMETER :: DESCRIPTION_VARNAME        = 'profile_description'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_VARNAME  = 'climatology_model'
+  CHARACTER(*), PARAMETER :: DATETIME_VARNAME           = 'date_time'
+  CHARACTER(*), PARAMETER :: LATITUDE_VARNAME           = 'latitude'
+  CHARACTER(*), PARAMETER :: LONGITUDE_VARNAME          = 'longitude'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_VARNAME   = 'surface_altitude'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_VARNAME        = 'absorber_id'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_VARNAME  = 'absorber_units_id'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_VARNAME     = 'level_pressure'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_VARNAME  = 'level_temperature'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_VARNAME     = 'level_absorber'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_VARNAME     = 'level_altitude'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_VARNAME     = 'layer_pressure'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_VARNAME  = 'layer_temperature'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_VARNAME     = 'layer_absorber'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_VARNAME      = 'layer_delta_z'
 
-  ! -- Variable names
-  CHARACTER( * ), PRIVATE, PARAMETER :: DESCRIPTION_VARNAME        = 'profile_description'
-  CHARACTER( * ), PRIVATE, PARAMETER :: CLIMATOLOGY_MODEL_VARNAME  = 'climatology_model'
-  CHARACTER( * ), PRIVATE, PARAMETER :: DATETIME_VARNAME           = 'date_time'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LATITUDE_VARNAME           = 'latitude'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LONGITUDE_VARNAME          = 'longitude'
-  CHARACTER( * ), PRIVATE, PARAMETER :: SURFACE_ALTITUDE_VARNAME   = 'surface_altitude'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_ID_VARNAME        = 'absorber_id'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_UNITS_ID_VARNAME  = 'absorber_units_id'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_PRESSURE_VARNAME     = 'level_pressure'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_TEMPERATURE_VARNAME  = 'level_temperature'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_ABSORBER_VARNAME     = 'level_absorber'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_ALTITUDE_VARNAME     = 'level_altitude'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_PRESSURE_VARNAME     = 'layer_pressure'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_TEMPERATURE_VARNAME  = 'layer_temperature'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_ABSORBER_VARNAME     = 'layer_absorber'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_DELTA_Z_VARNAME      = 'layer_delta_z'
+  ! Variable long name attribute.
+  CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
-  ! -- Variable long name attribute.
-  CHARACTER( * ), PRIVATE, PARAMETER :: LONGNAME_ATTNAME = 'long_name'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_LONGNAME       = 'Profile Description'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_LONGNAME = 'Climatology Model'
+  CHARACTER(*), PARAMETER :: DATETIME_LONGNAME          = 'Date/Time'
+  CHARACTER(*), PARAMETER :: LATITUDE_LONGNAME          = 'Latitude'
+  CHARACTER(*), PARAMETER :: LONGITUDE_LONGNAME         = 'Longitude'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_LONGNAME  = 'Surface Altitude'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_LONGNAME       = 'Absorber ID'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_LONGNAME = 'Absorber Units ID'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_LONGNAME    = 'Level pressure'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_LONGNAME = 'Level temperature'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_LONGNAME    = 'Level absorber'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_LONGNAME    = 'Level altitude'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_LONGNAME    = 'Layer pressure'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_LONGNAME = 'Layer temperature'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_LONGNAME    = 'Layer absorber'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_LONGNAME     = 'Layer thickness'
 
-  CHARACTER( * ), PRIVATE, PARAMETER :: DESCRIPTION_LONGNAME       = 'Description of profile'
-  CHARACTER( * ), PRIVATE, PARAMETER :: CLIMATOLOGY_MODEL_LONGNAME = &
-  'Climatology model associated with profile date/time/location.'
-  CHARACTER( * ), PRIVATE, PARAMETER :: DATETIME_LONGNAME          = &
-  'Date and Time in which profile was recorded(sonde) or for which it was generated(model)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LATITUDE_LONGNAME          = 'Latitude of profile location'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LONGITUDE_LONGNAME         = 'Longitude of profile location'
-  CHARACTER( * ), PRIVATE, PARAMETER :: SURFACE_ALTITUDE_LONGNAME  = 'Surface altitude of profile'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_ID_LONGNAME       = &
-  'HITRAN/LBLRTM absorber ID number for atmospheric profile constituents'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_UNITS_ID_LONGNAME = 'LBLRTM absorber units ID number'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_PRESSURE_LONGNAME    = 'Level pressure'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_TEMPERATURE_LONGNAME = 'Level temperature'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_ABSORBER_LONGNAME    = 'Level absorber'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_ALTITUDE_LONGNAME    = 'Level altitude'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_PRESSURE_LONGNAME    = 'Layer pressure'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_TEMPERATURE_LONGNAME = 'Layer temperature'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_ABSORBER_LONGNAME    = 'Layer absorber'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_DELTA_Z_LONGNAME     = 'Layer thickness'
+  ! Variable description attribute.
+  CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
 
-  ! -- Variable units attribute.
-  CHARACTER( * ), PRIVATE, PARAMETER :: UNITS_ATTNAME = 'units'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_DESCRIPTION       = 'Description of atmospheric profile and modification'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_DESCRIPTION = 'Climatology model associated with profile date/time/location.'
+  CHARACTER(*), PARAMETER :: DATETIME_DESCRIPTION          = 'Date/Time at which profile was measured(sonde) or generated(model)'
+  CHARACTER(*), PARAMETER :: LATITUDE_DESCRIPTION          = 'Latitude of profile location'
+  CHARACTER(*), PARAMETER :: LONGITUDE_DESCRIPTION         = 'Longitude of profile location'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_DESCRIPTION  = 'Surface altitude of profile'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_DESCRIPTION       = 'HITRAN/LBLRTM absorber ID number for atmospheric absorbers'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_DESCRIPTION = 'LBLRTM absorber units ID number'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_DESCRIPTION    = 'Level pressure'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_DESCRIPTION = 'Level temperature'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_DESCRIPTION    = 'Level absorber amount'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_DESCRIPTION    = 'Level geopotential altitude'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_DESCRIPTION    = 'Average layer pressure'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_DESCRIPTION = 'Average layer temperature'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_DESCRIPTION    = 'Average layer absorber amount'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_DESCRIPTION     = 'Layer thickness'
 
-  CHARACTER( * ), PRIVATE, PARAMETER :: DATETIME_UNITS          = 'YYYYMMDD.HH'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LATITUDE_UNITS          = 'degress North (-90->+90)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LONGITUDE_UNITS         = 'degress East (0->360)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: SURFACE_ALTITUDE_UNITS  = 'metres (m)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_ID_UNITS       = 'N/A'
-  CHARACTER( * ), PRIVATE, PARAMETER :: ABSORBER_UNITS_ID_UNITS = 'N/A'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_PRESSURE_UNITS    = 'hectoPascals (hPa)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_TEMPERATURE_UNITS = 'Kelvin (K)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_ABSORBER_UNITS    = 'Variable (see Absorber_Units_ID)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LEVEL_ALTITUDE_UNITS    = 'metres (m)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_PRESSURE_UNITS    = 'hectoPascals (hPa)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_TEMPERATURE_UNITS = 'Kelvin (K)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_ABSORBER_UNITS    = 'Variable (see Absorber_Units_ID)'
-  CHARACTER( * ), PRIVATE, PARAMETER :: LAYER_DELTA_Z_UNITS     = 'metres (m)'
+  ! Variable units attribute.
+  CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
 
+  CHARACTER(*), PARAMETER :: DESCRIPTION_UNITS       = 'N/A'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_UNITS = 'N/A'
+  CHARACTER(*), PARAMETER :: DATETIME_UNITS          = 'YYYYMMDD.HH'
+  CHARACTER(*), PARAMETER :: LATITUDE_UNITS          = 'degress North (-90->+90)'
+  CHARACTER(*), PARAMETER :: LONGITUDE_UNITS         = 'degress East (0->360)'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_UNITS  = 'metres (m)'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_UNITS       = 'N/A'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_UNITS = 'N/A'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_UNITS    = 'hectoPascals (hPa)'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_UNITS = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_UNITS    = 'Variable (see Absorber_Units_ID)'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_UNITS    = 'metres (m)'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_UNITS    = 'hectoPascals (hPa)'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_UNITS = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_UNITS    = 'Variable (see Absorber_Units_ID)'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_UNITS     = 'metres (m)'
 
-  ! -- Variable netCDF datatypes
-  INTEGER,        PRIVATE, PARAMETER :: DESCRIPTION_TYPE        = NF90_CHAR
-  INTEGER,        PRIVATE, PARAMETER :: CLIMATOLOGY_MODEL_TYPE  = NF90_INT
-  INTEGER,        PRIVATE, PARAMETER :: DATETIME_TYPE           = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LATITUDE_TYPE           = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LONGITUDE_TYPE          = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: SURFACE_ALTITUDE_TYPE   = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: ABSORBER_ID_TYPE        = NF90_INT
-  INTEGER,        PRIVATE, PARAMETER :: ABSORBER_UNITS_ID_TYPE  = NF90_INT
-  INTEGER,        PRIVATE, PARAMETER :: LEVEL_PRESSURE_TYPE     = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LEVEL_TEMPERATURE_TYPE  = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LEVEL_ABSORBER_TYPE     = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LEVEL_ALTITUDE_TYPE     = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LAYER_PRESSURE_TYPE     = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LAYER_TEMPERATURE_TYPE  = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LAYER_ABSORBER_TYPE     = NF90_DOUBLE
-  INTEGER,        PRIVATE, PARAMETER :: LAYER_DELTA_Z_TYPE      = NF90_DOUBLE
+  ! Variable fill value attribute
+  CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
 
-  ! -- Variable fill value attribute
-  CHARACTER( * ), PRIVATE, PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
+  CHARACTER(*) , PARAMETER :: DESCRIPTION_FILLVALUE        = NF90_FILL_CHAR
+  INTEGER(Long), PARAMETER :: CLIMATOLOGY_MODEL_FILLVALUE  = 0
+  REAL(Double) , PARAMETER :: DATETIME_FILLVALUE           = ZERO
+  REAL(Double) , PARAMETER :: LATITUDE_FILLVALUE           = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LONGITUDE_FILLVALUE          = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: SURFACE_ALTITUDE_FILLVALUE   = ATMPROFILE_FP_INVALID
+  INTEGER(Long), PARAMETER :: ABSORBER_ID_FILLVALUE        = 0
+  INTEGER(Long), PARAMETER :: ABSORBER_UNITS_ID_FILLVALUE  = 0
+  REAL(Double) , PARAMETER :: LEVEL_PRESSURE_FILLVALUE     = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LEVEL_TEMPERATURE_FILLVALUE  = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LEVEL_ABSORBER_FILLVALUE     = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LEVEL_ALTITUDE_FILLVALUE     = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_PRESSURE_FILLVALUE     = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_TEMPERATURE_FILLVALUE  = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_ABSORBER_FILLVALUE     = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_DELTA_Z_FILLVALUE      = ATMPROFILE_FP_INVALID
+
+  ! Variable  datatypes
+  INTEGER, PARAMETER :: DESCRIPTION_TYPE        = NF90_CHAR
+  INTEGER, PARAMETER :: CLIMATOLOGY_MODEL_TYPE  = NF90_INT
+  INTEGER, PARAMETER :: DATETIME_TYPE           = NF90_DOUBLE
+  INTEGER, PARAMETER :: LATITUDE_TYPE           = NF90_DOUBLE
+  INTEGER, PARAMETER :: LONGITUDE_TYPE          = NF90_DOUBLE
+  INTEGER, PARAMETER :: SURFACE_ALTITUDE_TYPE   = NF90_DOUBLE
+  INTEGER, PARAMETER :: ABSORBER_ID_TYPE        = NF90_INT
+  INTEGER, PARAMETER :: ABSORBER_UNITS_ID_TYPE  = NF90_INT
+  INTEGER, PARAMETER :: LEVEL_PRESSURE_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: LEVEL_TEMPERATURE_TYPE  = NF90_DOUBLE
+  INTEGER, PARAMETER :: LEVEL_ABSORBER_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: LEVEL_ALTITUDE_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_PRESSURE_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_TEMPERATURE_TYPE  = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_ABSORBER_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_DELTA_Z_TYPE      = NF90_DOUBLE
 
 
 CONTAINS
-
-
-
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-
-
-  ! --------------------------------------------------
-  ! PRIVATE utility routine to convert the data in the
-  ! AtmProfileDateTime structure to a double precision
-  ! value of YYYYMMDD.HH
-  !   where YYYY = year
-  !         MM   = month
-  !         DD   = day of month
-  !         HH   = hour of day (0-23)
-  ! The result is what is stored in the netCDF dataset
-  ! --------------------------------------------------
-
-  SUBROUTINE Convert_DateTime_to_Double( DateTime_DT, DateTime )
-
-
-    ! -----------------
-    ! Type declarations
-    ! -----------------
-
-    TYPE( AtmProfileDateTime_type ), DIMENSION(:), INTENT( IN )  :: DateTime_DT
-    REAL( Double ),                  DIMENSION(:), INTENT( OUT ) :: DateTime
-
-    INTEGER :: n
-
-
-    ! ---------------------
-    ! Convert the data type
-    ! ---------------------
-
-    DO n = 1, SIZE( DateTime_DT )
-      DateTime(n) = REAL( ( DateTime_DT(n)%Year  * 10000 ) + &
-                          ( DateTime_DT(n)%Month * 100   ) + &
-                          ( DateTime_DT(n)%Day           ), Double ) + &
-                    ( REAL( DateTime_DT(n)%Hour, Double ) / 100.0_Double )
-    END DO
-               
-  END SUBROUTINE Convert_DateTime_to_Double
-
-
-
-  ! ---------------------------------------------------
-  ! PRIVATE utility routine to convert the data in the
-  ! double precision netCDF data set date/time variable
-  ! to a AtmProfileDateTime data type.
-  ! ---------------------------------------------------
-
-  SUBROUTINE Convert_DateTime_to_Type( DateTime, DateTime_DT )
-
-
-    ! -----------------
-    ! Type declarations
-    ! -----------------
-
-    REAL( Double ),                  DIMENSION(:), INTENT( IN )  :: DateTime
-    TYPE( AtmProfileDateTime_type ), DIMENSION(:), INTENT( OUT ) :: DateTime_DT
-
-    INTEGER( Long ) :: x
-    INTEGER :: n
-
-
-    ! ---------------------
-    ! Convert the data type
-    ! ---------------------
-
-    DO n = 1, SIZE( DateTime )
-
-      ! -- The year
-      x = INT( DateTime(n), Long )
-      DateTime_DT(n)%Year = ( x - MOD( x, 10000_Long ) ) / 10000_Long
-
-      ! -- The month
-      x = MOD( x, 10000_Long )
-      DateTime_DT(n)%Month = ( x - MOD( x, 100_Long ) ) / 100_Long
-
-      ! -- The day of the month
-      DateTime_DT(n)%Day = MOD( x, 100_Long )
-
-      ! -- The hour of the day
-      DateTime_DT(n)%Hour = NINT( MOD( DateTime(n), 1.0_Double ) * 100.0_Double )
-
-    END DO
-               
-  END SUBROUTINE Convert_DateTime_to_Type
-
-
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Write_AtmProfile_GAtts
-!
-! PURPOSE:
-!       Function to write the global attributes to a netCDF AtmProfile data file.
-!
-! CATEGORY:
-!       AtmProfile
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Write_AtmProfile_GAtts( NC_Filename,              &  ! Input
-!                                              NC_FileID,                &  ! Input
-!                                              Title       = Title,      &  ! Optional input
-!                                              History     = History,    &  ! Optional input
-!                                              Comment     = Comment,    &  ! Optional input
-!                                              ID_Tag      = ID_Tag,     &  ! Optional input
-!                                              Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:      Character string specifying the name of the
-!                         netCDF AtmProfile format data file to create.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
-!
-!       NC_FileID:        NetCDF file ID number returned from the
-!                         Open_ or Create_AtmProfile_netCDF() function.
-!                         UNITS:      N/A
-!                         TYPE:       Integer
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Title:            Character string written into the TITLE global
-!                         attribute field of the netCDF AtmProfile file.
-!                         Should contain a succinct description of what
-!                         is in the netCDF datafile.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       History:          Character string written into the HISTORY global
-!                         attribute field of the netCDF AtmProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       Comment:          Character string written into the COMMENT global
-!                         attribute field of the netCDF AtmProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       ID_Tag:           Character string written into the ID_TAG global
-!                         attribute field of the netCDF AtmProfile file.
-!                         Should contain a short tag used to identify the
-!                         profile set.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       Message_Log:      Character string specifying a filename in which
-!                         any Messages will be logged. If not specified,
-!                         or if an error occurs opening the log file, the
-!                         default action is to output Messages to standard
-!                         output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the global attribute write was successful.
-!                        == WARNING an error occurred writing the supplied
-!                           global attributes.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       NF90_PUT_ATT:       Function to write attribute data to a netCDF 
-!                           data file.
-!                           SOURCE: netCDF library
-!
-!       Display_Message:    Subroutine to output Messages
-!                           SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION Write_AtmProfile_GAtts( NC_Filename,   &  ! Input
-                                   NC_FileID,     &  ! Input
-                                   Title,         &  ! Optional input
-                                   History,       &  ! Optional input
-                                   Comment,       &  ! Optional input
-                                   ID_Tag,        &  ! Optional input
-                                   Message_Log )  &  ! Error messaging
-                                 RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN ) :: NC_Filename
-    INTEGER,                  INTENT( IN ) :: NC_FileID
-
-    ! -- Optional input
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: History
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: ID_Tag
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Write_AtmProfile_GAtts'
-
-    ! -- "Internal" global attributes
-    CHARACTER( * ), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
-    CHARACTER( * ), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    INTEGER :: NF90_Status
-
-    CHARACTER(  8 ) :: cdate
-    CHARACTER( 10 ) :: ctime
-    CHARACTER(  5 ) :: czone
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#              -- WRITE THE "INTERNAL" GLOBAL ATTRIBUTES --                #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------
-    ! Software ID
-    ! -----------
-
-    NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                NF90_GLOBAL, &
-                                WRITE_MODULE_HISTORY_GATTNAME, &
-                                MODULE_RCS_ID )
-
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//WRITE_MODULE_HISTORY_GATTNAME//&
-                            ' attribute to '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! -------------
-    ! Creation date
-    ! -------------
-
-    CALL DATE_AND_TIME( cdate, ctime, czone )
-
-    NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                NF90_GLOBAL, &
-                                CREATION_DATE_AND_TIME_GATTNAME, &
-                                cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
-                                ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
-                                czone//'UTC' )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//CREATION_DATE_AND_TIME_GATTNAME//&
-                            ' attribute to '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#            -- DEFINE THE USER ACCESSIBLE GLOBAL ATTRIBUTES --            #
-    !#--------------------------------------------------------------------------#
-
-    ! -----
-    ! Title
-    ! -----
-
-    IF ( PRESENT( Title ) ) THEN
-
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  TITLE_GATTNAME, &
-                                  TRIM( Title ) )
-
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//TITLE_GATTNAME//' attribute to '// &
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-    ! -------
-    ! History
-    ! -------
-
-    IF ( PRESENT( History ) ) THEN
-
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  HISTORY_GATTNAME, &
-                                  TRIM( History ) )
-
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//HISTORY_GATTNAME//' attribute to '//&
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-    ! -------
-    ! Comment
-    ! -------
-
-    IF ( PRESENT( Comment ) ) THEN
-
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  COMMENT_GATTNAME, &
-                                  TRIM( Comment ) )
-
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//COMMENT_GATTNAME//' attribute to '//&
-                              TRIM( NC_FileNAME )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-
-    ! ----------------------------
-    ! Dependent profile set ID tag
-    ! ----------------------------
-
-    IF ( PRESENT( ID_Tag ) ) THEN
-
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  ID_TAG_GATTNAME, &
-                                  TRIM( ID_Tag ) )
-
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//ID_TAG_GATTNAME//' attribute to '//&
-                              TRIM( NC_FileNAME )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-    END IF
-
-  END FUNCTION Write_AtmProfile_GAtts
-
-
-
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Read_AtmProfile_GAtts
-!
-! PURPOSE:
-!       Function to read the global attributes from a netCDF AtmProfile data file.
-!
-! CATEGORY:
-!       AtmProfile
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Read_AtmProfile_GAtts( NC_Filename,            &  ! Input
-!                                             NC_FileID,              &  ! Input
-!                                             Title       = Title,    &  ! Optional output
-!                                             History     = History,  &  ! Optional output
-!                                             Comment     = Comment,  &  ! Optional output
-!                                             ID_Tag      = ID_Tag,   &  ! Optional output
-!                                             Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:      Character string specifying the name of the
-!                         netCDF AtmProfile format data file to create.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
-!
-!       NC_FileID:        NetCDF file ID number returned from the
-!                         Open_ or Create_AtmProfile_netCDF() function.
-!                         UNITS:      N/A
-!                         TYPE:       Integer
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT( IN )
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:      Character string specifying a filename in which
-!                         any Messages will be logged. If not specified,
-!                         or if an error occurs opening the log file, the
-!                         default action is to output Messages to standard
-!                         output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       Title:            Character string written into the TITLE global
-!                         attribute field of the netCDF AtmProfile file.
-!                         Should contain a succinct description of what
-!                         is in the netCDF datafile.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-!       History:          Character string written into the HISTORY global
-!                         attribute field of the netCDF AtmProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-!       Comment:          Character string written into the COMMENT global
-!                         attribute field of the netCDF AtmProfile file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-!       ID_Tag:           Character string written into the ID_TAG global
-!                         attribute field of the netCDF AtmProfile file.
-!                         Should contain a short tag used to identify the
-!                         profile set.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER( * )
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the global attribute read was successful.
-!                        == WARNING an error occurred reading the requested
-!                           global attributes.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       Get_netCDF_Attribute: Function to read attribute data from a netCDF 
-!                             data file.
-!                             SOURCE: NETCDF_ATTRIBUTE module
-!
-!       Display_Message:      Subroutine to output Messages
-!                             SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION Read_AtmProfile_GAtts( NC_Filename,  &  ! Input
-                                  NC_FileID,    &  ! Input
-                                  Title,        &  ! Optional output
-                                  History,      &  ! Optional output
-                                  Comment,      &  ! Optional output
-                                  ID_Tag,       &  ! Optional output
-                                  Message_Log ) &  ! Error messaging
-                                RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-    INTEGER,                  INTENT( IN )  :: NC_FileID
-
-    ! -- Optional output
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: History
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: ID_Tag
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Read_AtmProfile_GAtts'
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    CHARACTER( 10000 ) :: Long_String
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- READ THE GLOBAL ATTRIBUTES --                     #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! The TITLE
-    ! ---------
-
-    IF ( PRESENT( Title ) ) THEN
-
-      Title = ' '
-      Long_String = ' '
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           TITLE_GATTNAME, &
-                                           Long_String, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//TITLE_GATTNAME//&
-                              ' attribute from '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Long_String )
-
-      Title = Long_String(1:MIN( LEN( Title ), LEN_TRIM( Long_String ) ))
-
-    END IF
-
-
-    ! -----------
-    ! The HISTORY
-    ! -----------
-
-    IF ( PRESENT( History ) ) THEN
-
-      History = ' '
-      Long_String = ' '
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           HISTORY_GATTNAME, &
-                                           Long_String, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//HISTORY_GATTNAME//&
-                              ' attribute from '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Long_String )
-
-      History = Long_String(1:MIN( LEN( History ), LEN_TRIM( Long_String ) ))
-
-    END IF
-
-
-    ! -----------
-    ! The COMMENT
-    ! -----------
-
-    IF ( PRESENT( Comment ) ) THEN
-
-      Comment = ' '
-      Long_String = ' '
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           COMMENT_GATTNAME, &
-                                           Long_String, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//COMMENT_GATTNAME//&
-                              ' attribute from '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Long_String )
-
-      Comment = Long_String(1:MIN( LEN( Comment ), LEN_TRIM( Long_String ) ))
-
-    END IF
-
-
-    ! -----------
-    ! The ID_TAG
-    ! -----------
-
-    IF ( PRESENT( ID_Tag ) ) THEN
-
-      ID_Tag = ' '
-      Long_String = ' '
-
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           ID_TAG_GATTNAME, &
-                                           Long_String, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//ID_TAG_GATTNAME//&
-                              ' attribute from '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-
-      CALL Remove_NULL_Characters( Long_String )
-
-      ID_Tag = Long_String(1:MIN( LEN( ID_Tag ), LEN_TRIM( Long_String ) ))
-
-    END IF
-
-  END FUNCTION Read_AtmProfile_GAtts
-
-
-
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Create_AtmProfile_netCDF
-!
-! PURPOSE:
-!       Function to create a netCDF AtmProfile data file for writing.
-!
-! CATEGORY:
-!       AtmProfile
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Create_AtmProfile_netCDF( NC_Filename,              &  ! Input
-!                                                n_Layers,                 &  ! Input
-!                                                n_Absorbers,              &  ! Input
-!                                                n_Profiles,               &  ! Input
-!                                                NC_FileID,                &  ! Output
-!                                                ID_Tag      = ID_Tag,     &  ! Optional input
-!                                                Title       = Title,      &  ! Optional input
-!                                                History     = History,    &  ! Optional input
-!                                                Comment     = Comment,    &  ! Optional input
-!                                                RCS_Id      = RCS_Id,     &  ! Revision control
-!                                                Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:        Character string specifying the name of the
-!                           netCDF AtmProfile format data file to create.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       n_Layers:           The number of atmospheric layers dimension of the
-!                           atmospheric profile data.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       n_Absorbers:        The number of molecular absorbers dimension of the
-!                           atmospheric profile data.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       n_Profiles:         The number of profiles contained in the netCDF
-!                           dataset.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ID_Tag:             Character string written into the ID_TAG global
-!                           attribute field of the netCDF AtmProfile file.
-!                           Should contain a short tag used to identify the
-!                           profile set.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Title:              Character string written into the TITLE global
-!                           attribute field of the netCDF AtmProfile file.
-!                           Should contain a succinct description of what
-!                           is in the netCDF datafile.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       History:            Character string written into the HISTORY global
-!                           attribute field of the netCDF AtmProfile file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Comment:            Character string written into the COMMENT global
-!                           attribute field of the netCDF AtmProfile file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which
-!                           any Messages will be logged. If not specified,
-!                           or if an error occurs opening the log file, the
-!                           default action is to output Messages to standard
-!                           output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       NC_FileID:          NetCDF file ID number to be used for subsequent
-!                           writing to the output file.
-!                           UNITS:      N/A
-!                           TYPE:       Integer
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the netCDF file creation was successful.
-!                        == FAILURE an unrecoverable error occurred.
-!                        == WARNING an error occurred writing any of the
-!                                   supplied global attributes.
-!
-! CALLS:
-!       NF90_CREATE:             Function to create a netCDF data file and
-!                                place it in DEFINE mode.
-!                                SOURCE: netCDF library
-!
-!       NF90_DEF_DIM:            Function to define a dimension in a netCDF
-!                                data file.
-!                                SOURCE: netCDF library
-!
-!       NF90_PUT_ATT:            Function to write attribute data to a netCDF
-!                                data file.
-!                                SOURCE: netCDF library
-!
-!       NF90_DEF_VAR:            Function to define a variable in a netCDF
-!                                data file.
-!                                SOURCE: netCDF library
-!
-!       NF90_PUT_VAR:            Function to write variable data to a netCDF
-!                                data file.
-!                                SOURCE: netCDF library
-!
-!       NF90_ENDDEF:             Function to take a netCDF file out of DEFINE
-!                                mode and put it in DATA mode.
-!                                SOURCE: netCDF library
-!
-!       NF90_REDEF:              Function to put a netCDF file in DEFINE mode.
-!                                SOURCE: netCDF library
-!
-!       NF90_CLOSE:              Function to close a netCDF file.
-!                                SOURCE: netCDF library
-!
-!       Display_Message:         Subroutine to output messages
-!                                SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       - If the file already exists, it is overwritten.
-!       - If a FAILURE error occurs, the netCDF file is closed.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Jul-2002
-!                       paul.vandelst@ssec.wisc.edu
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Create_AtmProfile_netCDF( NC_Filename,  &  ! Input
-                                     n_Layers,     &  ! Input
-                                     n_Absorbers,  &  ! Input
-                                     n_Profiles,   &  ! Input
-                                     NC_FileID,    &  ! Output
-                                     ID_Tag,       &  ! Optional input
-                                     Title,        &  ! Optional input
-                                     History,      &  ! Optional input
-                                     Comment,      &  ! Optional input
-                                     RCS_Id,       &  ! Revision control
-                                     Message_Log ) &  ! Error messaging
-                                   RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-    INTEGER,                  INTENT( IN )  :: n_Layers
-    INTEGER,                  INTENT( IN )  :: n_Absorbers
-    INTEGER,                  INTENT( IN )  :: n_Profiles
-
-    ! -- Output
-    INTEGER,                  INTENT( OUT ) :: NC_FileID
-
-    ! -- Optional input
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: ID_Tag
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: History
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Comment
-
-    ! -- Revision control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: RCS_Id
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Create_AtmProfile_netCDF'
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: Message
-
-    INTEGER :: NF90_Status
-    INTEGER :: NF90_Status1, NF90_Status2, NF90_Status3
-
-    INTEGER :: n_Levels
-
-    INTEGER :: Level_DimID
-    INTEGER :: Layer_DimID
-    INTEGER :: Absorber_DimID
-    INTEGER :: Profile_DimID
-    INTEGER :: PD_StrLen_DimID    
-
-    INTEGER :: VarID
-    INTEGER :: Absorber_ID_VarID
-    INTEGER :: Absorber_Units_ID_VarID
-
-    ! -- Used only to determine the profile description string length
-    TYPE( AtmProfile_type ) :: APdummy
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                            -- CHECK INPUT --                             #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------------
-    ! Set the RCS Id argument if supplied
-    ! -----------------------------------
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-    ! -----------------
-    ! n_Layer dimension
-    ! -----------------
-
-    IF ( n_Layers < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'N_LAYERS dimension must be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    n_Levels = n_Layers + 1
-
-
-    ! ---------------------
-    ! n_Absorbers dimension
-    ! ---------------------
-
-    ! -- Invalid?
-    IF ( n_Absorbers < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'N_ABSORBERS dimension must be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! -- Too many?
-    IF ( n_Absorbers > ATMPROFILE_N_ABSORBERS ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Input number of absorbers, ", i5, &
-                        &", is greater than the maximum allowed, ", i5, "." )' ) &
-                      n_Absorbers, ATMPROFILE_N_ABSORBERS
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! --------------------
-    ! n_Profiles dimension
-    ! --------------------
-
-    IF ( n_Profiles < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'N_PROFILES dimension must be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- CREATE THE NETCDF DATA FILE --                     #
-    !#--------------------------------------------------------------------------#
-
-    NF90_Status = NF90_CREATE( NC_Filename,  &
-                               NF90_CLOBBER, &
-                               NC_FileID     )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error creating '//TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- DEFINE THE DIMENSIONS --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------
-    ! The number of levels
-    ! --------------------
-
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                LEVEL_DIMNAME, &
-                                n_Levels, &
-                                Level_DimID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//LEVEL_DIMNAME//' dimension in '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------------
-    ! The number of layers
-    ! --------------------
-
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                LAYER_DIMNAME, &
-                                n_Layers, &
-                                Layer_DimID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//LAYER_DIMNAME//' dimension in '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------------
-    ! The number of absorbers
-    ! -----------------------
-
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                ABSORBER_DIMNAME, &
-                                n_Absorbers, &
-                                Absorber_DimID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//ABSORBER_DIMNAME//' dimension in '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ----------------------
-    ! The number of profiles
-    ! ----------------------
-
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                PROFILE_DIMNAME, &
-                                n_Profiles, &
-                                Profile_DimID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//PROFILE_DIMNAME//' dimension in '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -------------------------------------
-    ! The profile description string length
-    ! -------------------------------------
-
-    NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                DESCRIPTION_DIMNAME, &
-                                APdummy%PD_StrLen, &
-                                PD_StrLen_DimID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//DESCRIPTION_DIMNAME//' dimension in '// &
-                            TRIM( NC_FileNAME )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- WRITE THE GLOBAL ATTRIBUTES --                    #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Write_AtmProfile_GAtts( TRIM( NC_Filename ), &
-                                           NC_FileID, &
-                                           Title   = Title, &
-                                           History = History, &
-                                           Comment = Comment, &
-                                           ID_Tag  = ID_Tag, &
-                                           Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing global attributes to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- DEFINE THE VARIABLES --                       #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------
-    ! Profile description
-    ! -------------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                DESCRIPTION_VARNAME, &
-                                DESCRIPTION_TYPE, &
-                                DimIDs = (/ PD_StrLen_DimID, Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//DESCRIPTION_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write some attributes
-    NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                VarID, &
-                                LONGNAME_ATTNAME, &
-                                DESCRIPTION_LONGNAME )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//DESCRIPTION_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Climatology model
-    ! -----------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                CLIMATOLOGY_MODEL_VARNAME, &
-                                CLIMATOLOGY_MODEL_TYPE, &
-                                DimIDs = Profile_DimID, &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//CLIMATOLOGY_MODEL_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                VarID, &
-                                LONGNAME_ATTNAME, &
-                                CLIMATOLOGY_MODEL_LONGNAME )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -------------
-    ! Date and time
-    ! -------------
-
-    ! -- Define the variables
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                DATETIME_VARNAME, &
-                                DATETIME_TYPE, &
-                                DimIDs = Profile_DimID, &
-                                VarID = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining the '//DATETIME_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write the attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 DATETIME_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 DATETIME_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. &
-         NF90_Status2 /= NF90_NOERR .AND. &
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//DATETIME_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------
-    ! Latitude
-    ! --------
-
-    ! -- Define the variables
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LATITUDE_VARNAME, &
-                                LATITUDE_TYPE, &
-                                DimIDs = Profile_DimID, &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LATITUDE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LATITUDE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LATITUDE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LATITUDE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------
-    ! Longitude
-    ! ---------
-
-    ! -- Define the variables
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LONGITUDE_VARNAME, &
-                                LONGITUDE_TYPE, &
-                                DimIDs = Profile_DimID, &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LONGITUDE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LONGITUDE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LONGITUDE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LONGITUDE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ----------------
-    ! Surface Altitude
-    ! ----------------
-
-    ! -- Define the variables
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                SURFACE_ALTITUDE_VARNAME, &
-                                SURFACE_ALTITUDE_TYPE, &
-                                DimIDs = Profile_DimID, &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//SURFACE_ALTITUDE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 SURFACE_ALTITUDE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 SURFACE_ALTITUDE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//SURFACE_ALTITUDE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------
-    ! Absorber ID
-    ! -----------
-
-    ! -- Define the variables
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                ABSORBER_ID_VARNAME, &
-                                ABSORBER_ID_TYPE, &
-                                DimIDs = Absorber_DimID, &
-                                VarID  = Absorber_ID_VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//ABSORBER_ID_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 Absorber_ID_VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 ABSORBER_ID_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 Absorber_ID_VarID, &
-                                 UNITS_ATTNAME, &
-                                 ABSORBER_ID_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 Absorber_ID_VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_IP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//ABSORBER_ID_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Absorber Units ID
-    ! -----------------
-
-    ! -- Define the variables
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                ABSORBER_UNITS_ID_VARNAME, &
-                                ABSORBER_UNITS_ID_TYPE, &
-                                DimIDs = Absorber_DimID, &
-                                VarID  = Absorber_Units_ID_VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//ABSORBER_UNITS_ID_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 Absorber_Units_ID_VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 ABSORBER_UNITS_ID_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 Absorber_Units_ID_VarID, &
-                                 UNITS_ATTNAME, &
-                                 ABSORBER_UNITS_ID_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 Absorber_Units_ID_VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_IP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//ABSORBER_UNITS_ID_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level Pressure
-    ! --------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LEVEL_PRESSURE_VARNAME, &
-                                LEVEL_PRESSURE_TYPE, &
-                                DimIDs = (/ Level_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LEVEL_PRESSURE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LEVEL_PRESSURE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LEVEL_PRESSURE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_PRESSURE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Level Temperature
-    ! -----------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LEVEL_TEMPERATURE_VARNAME, &
-                                LEVEL_TEMPERATURE_TYPE, &
-                                DimIDs = (/ Level_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LEVEL_TEMPERATURE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LEVEL_TEMPERATURE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LEVEL_TEMPERATURE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_TEMPERATURE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level Absorber
-    ! --------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LEVEL_ABSORBER_VARNAME, &
-                                LEVEL_ABSORBER_TYPE, &
-                                DimIDs = (/ Level_DimID, &
-                                            Absorber_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LEVEL_ABSORBER_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LEVEL_ABSORBER_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LEVEL_ABSORBER_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_ABSORBER_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level Altitude
-    ! --------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LEVEL_ALTITUDE_VARNAME, &
-                                LEVEL_ALTITUDE_TYPE, &
-                                DimIDs = (/ Level_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LEVEL_ALTITUDE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LEVEL_ALTITUDE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LEVEL_ALTITUDE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_ALTITUDE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Layer Pressure
-    ! --------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LAYER_PRESSURE_VARNAME, &
-                                LAYER_PRESSURE_TYPE, &
-                                DimIDs = (/ Layer_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LAYER_PRESSURE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LAYER_PRESSURE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LAYER_PRESSURE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_PRESSURE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Layer Temperature
-    ! -----------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LAYER_TEMPERATURE_VARNAME, &
-                                LAYER_TEMPERATURE_TYPE, &
-                                DimIDs = (/ Layer_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LAYER_TEMPERATURE_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LAYER_TEMPERATURE_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LAYER_TEMPERATURE_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_TEMPERATURE_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Layer Absorber
-    ! --------------
-
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LAYER_ABSORBER_VARNAME, &
-                                LAYER_ABSORBER_TYPE, &
-                                DimIDs = (/ Layer_DimID, &
-                                            Absorber_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LAYER_ABSORBER_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LAYER_ABSORBER_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LAYER_ABSORBER_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_ABSORBER_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-
-    ! ---------------
-    ! Layer thickness
-    ! ---------------
-
-    ! -- Define the variable
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                LAYER_DELTA_Z_VARNAME, &
-                                LAYER_DELTA_Z_TYPE, &
-                                DimIDs = (/ Layer_DimID, &
-                                            Profile_DimID /), &
-                                VarID  = VarID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//LAYER_DELTA_Z_VARNAME//' variable in '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Write attributes
-    NF90_Status1 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 LONGNAME_ATTNAME, &
-                                 LAYER_DELTA_Z_LONGNAME )
-
-    NF90_Status2 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 UNITS_ATTNAME, &
-                                 LAYER_DELTA_Z_UNITS )
-
-    NF90_Status3 = NF90_PUT_ATT( NC_FileID, &
-                                 VarID, &
-                                 FILLVALUE_ATTNAME, &
-                                 ATMPROFILE_FP_INVALID )
-
-    IF ( NF90_Status1 /= NF90_NOERR .AND. & 
-         NF90_Status2 /= NF90_NOERR .AND. & 
-         NF90_Status3 /= NF90_NOERR       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_DELTA_Z_VARNAME//' attributes to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#  -- WRITE THE ABSORBER ID AND UNITS ID DATA AND LEVEL/LAYER PRESSURES -- #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------------
-    ! Take netCDF file out of define mode
-    ! -----------------------------------
-
-    NF90_Status = NF90_ENDDEF( NC_FileID )
-
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error taking file '//TRIM( NC_Filename )// &
-                            ' out of define mode - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-  END FUNCTION Create_AtmProfile_netCDF
-
-
-
 
 
 !##################################################################################
@@ -2368,7 +203,8 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       Inquire_AtmProfile_netCDF
 !
@@ -2376,31 +212,27 @@ CONTAINS
 !       Function to inquire a netCDF AtmProfile format file to obtain the
 !       dimensions and global attributes.
 !
-! CATEGORY:
-!       AtmProfile
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_AtmProfile_netCDF( NC_Filename,               &  ! Input
-!                                                 n_Layers    = n_Layers,    &  ! Optional output
-!                                                 n_Absorbers = n_Absorbers, &  ! Optional output
-!                                                 n_Profiles  = n_Profiles,  &  ! Optional output
-!                                                 ID_Tag      = ID_Tag,      &  ! Optional output
-!                                                 Title       = Title,       &  ! Optional output
-!                                                 History     = History,     &  ! Optional output
-!                                                 Comment     = Comment,     &  ! Optional output
-!                                                 RCS_Id      = RCS_Id,      &  ! Revision control
-!                                                 Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Inquire_AtmProfile_netCDF( NC_Filename            , &  ! Input
+!                                                 n_Layers   =n_Layers   , &  ! Optional output
+!                                                 n_Absorbers=n_Absorbers, &  ! Optional output
+!                                                 n_Profiles =n_Profiles , &  ! Optional output
+!                                                 Release    =Release    , &  ! Optional output
+!                                                 Version    =Version    , &  ! Optional output
+!                                                 ID_Tag     =ID_Tag     , &  ! Optional output
+!                                                 Title      =Title      , &  ! Optional output
+!                                                 History    =History    , &  ! Optional output
+!                                                 Comment    =Comment    , &  ! Optional output
+!                                                 RCS_Id     =RCS_Id     , &  ! Revision control
+!                                                 Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the netCDF
 !                           format AtmProfile data file to inquire.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
+!                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:        Character string specifying a filename in which any
@@ -2408,12 +240,9 @@ CONTAINS
 !                           error occurs opening the log file, the default action
 !                           is to output Messages to standard output.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !       n_Layers:           The number of atmospheric layers dimension of the
@@ -2421,56 +250,68 @@ CONTAINS
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Absorbers:        The number of molecular absorbers dimension of the
 !                           atmospheric profile data.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Profiles:         The number of profiles contained in the netCDF
 !                           dataset.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Release:            The release number of the netCDF FitStats file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Version:            The version number of the netCDF FitStats file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       ID_Tag:             Character string written into the ID_TAG global
 !                           attribute field of the netCDF AtmProfile file.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Title:              Character string written into the TITLE global
 !                           attribute field of the netCDF AtmProfile file.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:            Character string written into the HISTORY global
 !                           attribute field of the netCDF AtmProfile file.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Comment:            Character string written into the COMMENT global
 !                           attribute field of the netCDF AtmProfile file.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( OUT ), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       RCS_Id:             Character string containing the Revision Control
 !                           System Id field for the module.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER( * )
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!                           ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -2486,1111 +327,498 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
-! CALLS:
-!       Open_AtmProfile_netCDF:  Function to open an AtmProfile netCDF file.
-!
-!       Close_AtmProfile_netCDF: Function to close an AtmProfile netCDF file.
-!
-!       Read_AtmProfile_GATTs:   Function to retrieve the global attributes
-!                                from the AtmProfile netCDF file.
-!
-!       Get_netCDF_Dimension:    Function to return a dimension value from
-!                                a netCDF file given the dimension name.
-!                                SOURCE: NETCDF_UTILITY module
-!                                
-!       Get_netCDF_Variable:     Function to return a variable from a
-!                                netCDF file given the variable name.
-!                                SOURCE: NETCDF_UTILITY module
-!
-!       NF90_CLOSE:              Function to close a netCDF file.
-!                                SOURCE: netCDF library
-!
-!       Display_Message:         Subroutine to output Messages
-!                                SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Jul-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_AtmProfile_netCDF( NC_Filename,  &  ! Input
-                                      n_Layers,     &  ! Optional output
-                                      n_Absorbers,  &  ! Optional output
-                                      n_Profiles,   &  ! Optional output
-                                      ID_Tag,       &  ! Optional output
-                                      Title,        &  ! Optional output
-                                      History,      &  ! Optional output
-                                      Comment,      &  ! Optional output
-                                      RCS_Id,       &  ! Revision control
-                                      Message_Log ) &  ! Error messaging
-                                    RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- TYPE DECLARATIONS --                         #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  FUNCTION Inquire_AtmProfile_netCDF( NC_Filename, &  ! Input
+                                      n_Layers   , &  ! Optional output
+                                      n_Absorbers, &  ! Optional output
+                                      n_Profiles , &  ! Optional output
+                                      Release    , &  ! Optional output
+                                      Version    , &  ! Optional output
+                                      ID_Tag     , &  ! Optional output
+                                      Title      , &  ! Optional output
+                                      History    , &  ! Optional output
+                                      Comment    , &  ! Optional output
+                                      RCS_Id     , &  ! Revision control
+                                      Message_Log) &  ! Error messaging
+                                    RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-
-    ! -- Optional output
-    INTEGER,        OPTIONAL, INTENT( OUT ) :: n_Layers
-    INTEGER,        OPTIONAL, INTENT( OUT ) :: n_Absorbers
-    INTEGER,        OPTIONAL, INTENT( OUT ) :: n_Profiles
-
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: ID_Tag
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: History
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: Comment
-
-    ! -- Revision control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: RCS_Id
-
-    ! -- Error messaging
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Layers
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Absorbers
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Profiles
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! -------------------
     ! Function parameters
-    ! -------------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Inquire_AtmProfile_netCDF'
-
-
-    ! ------------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_AtmProfile_netCDF'
     ! Function variables
-    ! ------------------
-
+    CHARACTER(ML) :: msg
     INTEGER :: NC_FileID
-    INTEGER :: NF90_Status
-    INTEGER :: Close_Status
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                  -- DEFINE A SUCCESSFUL EXIT STATUS --                   #
-    !#--------------------------------------------------------------------------#
-
+    INTEGER :: NF90_STATUS
+    INTEGER :: DimId, n
+    
+    ! Set up
+    ! ------
     Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
+    ! Open the file
+    ! -------------
+    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- OPEN THE netCDF FILE --                       #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Open_AtmProfile_netCDF( TRIM( NC_FileNAME ), &
-                                           NC_FileID, &
-                                           Mode = 'READ' )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening netCDF AtmProfile data file '//&
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- GET THE DIMENSIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------
-    ! The number of layers
-    ! --------------------
-
-    IF ( PRESENT( n_Layers ) ) THEN
-      Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                           LAYER_DIMNAME, &
-                                           n_Layers, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error obtaining '//LAYER_DIMNAME//' dimension from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-    END IF
-
-
+    ! Get the layer dimension
     ! -----------------------
-    ! The number of absorbers
-    ! -----------------------
-
-    IF ( PRESENT( n_Absorbers ) ) THEN
-      Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                           ABSORBER_DIMNAME, &
-                                           n_Absorbers, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error obtaining '//ABSORBER_DIMNAME//' dimension from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
+    ! Get the dimension id
+    NF90_Status = NF90_INQ_DIMID( NC_FileId,LAYER_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//LAYER_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
-
-
-    ! ----------------------
-    ! The number of profiles
-    ! ----------------------
-
-    IF ( PRESENT( n_Profiles ) ) THEN
-      Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                           PROFILE_DIMNAME, &
-                                           n_Profiles, &
-                                           Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error obtaining '//PROFILE_DIMNAME//' dimension from '//&
-                              TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
+    ! Get the dimension value
+    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=n )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//LAYER_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
+    ! Keep it if necessary
+    IF ( PRESENT(n_Layers) ) n_Layers = n
+
+    ! Get the absorber dimension
+    ! --------------------------
+    ! Get the dimension id
+    NF90_Status = NF90_INQ_DIMID( NC_FileId,ABSORBER_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//ABSORBER_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    ! Get the dimension value
+    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=n )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//ABSORBER_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    ! Keep it if necessary
+    IF ( PRESENT(n_Absorbers) ) n_Absorbers = n
+
+    ! Get the profile dimension
+    ! -------------------------
+    ! Get the dimension id
+    NF90_Status = NF90_INQ_DIMID( NC_FileId,PROFILE_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//PROFILE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    ! Get the dimension value
+    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=n )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//PROFILE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    ! Keep it if necessary
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- GET THE GLOBAL ATTRIBUTES --                      #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Read_AtmProfile_GAtts( TRIM( NC_Filename ), &
-                                          NC_FileID, &
-                                          Title         = Title, &
-                                          History       = History, &
-                                          Comment       = Comment, &
-                                          ID_Tag        = ID_Tag, &
-                                          Message_Log = Message_Log )
-
+    ! Get the global attributes
+    ! -------------------------
+    Error_Status = ReadGAtts( NC_Filename            , &
+                              NC_FileID              , &
+                              Release    =Release    , &
+                              Version    =Version    , &
+                              ID_Tag     =ID_Tag     , &
+                              Title      =Title      , &
+                              History    =History    , &
+                              Comment    =Comment    , &
+                              Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading global attribute from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+      msg = 'Error reading global attributes from '//TRIM(NC_Filename)
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CLOSE THE netCDF FILE --                         #
-    !#--------------------------------------------------------------------------#
-
-    Close_Status = Close_AtmProfile_netCDF( NC_FileID )
-
-    IF ( Close_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF AtmProfile data file '// &
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+    ! Close the file
+    ! --------------
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
+    
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
+        END IF
+      END IF
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_AtmProfile_netCDF
 
 
-
-
-
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       Write_AtmProfile_netCDF
 !
 ! PURPOSE:
-!       Function to write AtmProfile structures to a netCDF format
-!       AtmProfile file.
-!
-! CATEGORY:
-!       AtmProfile
-!
-! LANGUAGE:
-!       Fortran-95
+!       Function to write AtmProfile data to a netCDF format AtmProfile file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_AtmProfile_netCDF( NC_Filename,              &  ! Input
-!                                               AtmProfile,               &  ! Input
-!                                               Quiet       = Quiet,      &  ! Optional Input
-!                                               Title       = Title,      &  ! Optional input
-!                                               History     = History,    &  ! Optional input
-!                                               Comment     = Comment,    &  ! Optional input
-!                                               ID_Tag      = ID_Tag,     &  ! Optional input
-!                                               RCS_Id      = RCS_Id,     &  ! Revision control
-!                                               Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Write_AtmProfile_netCDF( NC_Filename            , &  ! Input
+!                                               AtmProfile             , &  ! Input
+!                                               Quiet      =Quiet      , &  ! Optional input
+!                                               ID_Tag     =ID_Tag     , &  ! Optional input
+!                                               Title      =Title      , &  ! Optional input
+!                                               History    =History    , &  ! Optional input
+!                                               Comment    =Comment    , &  ! Optional input
+!                                               RCS_Id     =RCS_Id     , &  ! Revision control
+!                                               Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       NC_Filename:     Character string specifying the name of the netCDF
-!                        AtmProfile format data file to write to. It must
-!                        have been previously created via the Create() function.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
+!       NC_Filename:  Character string specifying the name of the netCDF
+!                     format AtmProfile data file to write data into.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
 !
-!       AtmProfile:      Structure containing the atmospheric profile data
-!                        to be written to the netCDF dataset.
-!                        UNITS:      N/A
-!                        TYPE:       AtmProfile_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
+!       AtmProfile:   Structure containing the AtmProfile data
+!                     to write to file.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(AtmProfile_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:           Set this keyword to suppress information messages being
-!                        printed to standard output (or the message log file if
-!                        the MESSAGE_LOG optional argument is used.) By default,
-!                        information messages are printed.
-!                        If QUIET = 0, information messages are OUTPUT.
-!                           QUIET = 1, information messages are SUPPRESSED.
-!                        UNITS:      N/A
-!                        TYPE:       Integer
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!       Quiet:        Set this keyword to suppress information msgs being
+!                     printed to standard output (or the msg log file if
+!                     the Message_Log optional argument is used.) By default,
+!                     information msgs are printed.
+!                     If QUIET = 0, information msgs are OUTPUT.
+!                        QUIET = 1, information msgs are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       Integer
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       ID_Tag:          Character string written into the ID_TAG global
-!                        attribute field of the netCDF AtmProfile file.
-!                        Should contain a short tag used to identify the
-!                        profile set.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!       ID_Tag:       Character string written into the ID_TAG global
+!                     attribute field of the netCDF AtmProfile file.
+!                     Identifies the dependent profile set.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Title:           Character string written into the TITLE global
-!                        attribute field of the netCDF AtmProfile file.
-!                        Should contain a succinct description of what
-!                        is in the netCDF datafile.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!       Title:        Character string written into the TITLE global
+!                     attribute field of the netCDF AtmProfile file.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       History:         Character string written into the HISTORY global
-!                        attribute field of the netCDF AtmProfile file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!       History:      Character string written into the HISTORY global
+!                     attribute field of the netCDF AtmProfile file.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Comment:         Character string written into the COMMENT global
-!                        attribute field of the netCDF AtmProfile file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!       Comment:      Character string written into the COMMENT global
+!                     attribute field of the netCDF AtmProfile file.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:     Character string specifying a filename in which any
-!                        Messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output Messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
+!       Message_Log:  Character string specifying a filename in which any
+!                     msgs will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output msgs to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!       RCS_Id:       Character string containing the Revision Control
+!                     System Id field for the module.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF data write was successful
 !                        == FAILURE an unrecoverable error occurred.
-!                        == WARNING an error occurred closing the netCDF
-!                                   output file after a successful write.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
-! CALLS:
-!       Create_AtmProfile_netCDF:   Function to create a netCDF format 
-!                                   AtmProfile file for writing.
-!
-!       Close_AtmProfile_netCDF:    Function to close an AtmProfile netCDF file.
-!
-!       Put_netCDF_Variable:        Function to write a variable to a
-!                                   netCDF file given the variable name.
-!                                   SOURCE: NETCDF_UTILITY module
-!
-!       NF90_CLOSE:                 Function to close a netCDF file.
-!                                   SOURCE: netCDF library
-!
-!       Display_Message:            Subroutine to output Messages
-!                                   SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       If the output file already exists, it is overwritten.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 09-Jul-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_AtmProfile_netCDF( NC_Filename,  &  ! Input
-                                    AtmProfile,   &  ! Input
-                                    Quiet,        &  ! Optional input
-                                    Title,        &  ! Optional input
-                                    History,      &  ! Optional input
-                                    Comment,      &  ! Optional input
-                                    ID_Tag,       &  ! Optional input
-                                    RCS_Id,       &  ! Revision control
+  FUNCTION Write_AtmProfile_netCDF( NC_Filename , &  ! Input
+                                    AtmProfile  , &  ! Input
+                                    Quiet       , &  ! Optional input
+                                    ID_Tag      , &  ! Optional input
+                                    Title       , &  ! Optional input
+                                    History     , &  ! Optional input
+                                    Comment     , &  ! Optional input
+                                    RCS_Id      , &  ! Revision control
                                     Message_Log ) &  ! Error messaging
-                                  RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+                                  RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )  :: NC_Filename
-    TYPE( AtmProfile_type ),  INTENT( IN )  :: AtmProfile
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN )  :: Quiet
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: History
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: ID_Tag
-
-    ! -- Revision control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT ) :: RCS_Id
-
-    ! -- Error handler Message log
-    CHARACTER( * ), OPTIONAL, INTENT( IN )  :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title  
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! ----------------
     ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Write_AtmProfile_netCDF'
-
-
-    ! ---------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_AtmProfile_netCDF'
     ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: Message
-
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
     INTEGER :: NC_FileID
-    INTEGER :: Close_Status
     INTEGER :: NF90_Status
-    INTEGER :: j
-    REAL( Double ), DIMENSION( SIZE( AtmProfile%DateTime ) ) :: DateTime
 
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- CHECK/SET OPTIONAL KEYWORD ARGUMENTS --                #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------
-    ! Info message output
-    ! -------------------
-
-    ! -- Output informational messages....
+    ! Output informational msgs....
     Noisy = .TRUE.
-
-    ! -- ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#             -- CHECK STRUCTURE POINTER ASSOCIATION STATUS --             #
-    !#                                                                          #
-    !#                ALL structure pointers must be associated                 #
-    !#--------------------------------------------------------------------------#
-
+    ! Check structure association
     IF ( .NOT. Associated_AtmProfile( AtmProfile ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT AtmProfile pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Some or all INPUT AtmProfile pointer members are NOT associated.'
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- CHECK INPUT --                               #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------------------------------
-    ! Check for invalid Absorber info values
-    ! --------------------------------------
-
-    ! -- Absorber ID
-    IF ( ANY( AtmProfile%Absorber_ID < 1 ) .OR. &
-         ANY( AtmProfile%Absorber_ID > ATMPROFILE_N_ABSORBERS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid value found in input Absorber_ID array.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! -- Absorber Units ID
-    IF ( ANY( AtmProfile%Absorber_Units_ID < 1 ) .OR. &
-         ANY( AtmProfile%Absorber_Units_ID > ATMPROFILE_N_ABSORBER_UNITS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid value found in input Absorber_Units_ID array.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+    ! Create the output data file
+    ! ---------------------------
+    Error_Status = CreateFile( NC_Filename                   , &  ! Input
+                               AtmProfile%n_Layers           , &  ! Input
+                               AtmProfile%n_Absorbers        , &  ! Input
+                               AtmProfile%n_Profiles         , &  ! Input
+                               NC_FileID                     , &  ! Output
+                               Version    =AtmProfile%Version, &  ! Optional input
+                               ID_Tag     =ID_Tag            , &  ! Optional input
+                               Title      =Title             , &  ! Optional input
+                               History    =History           , &  ! Optional input
+                               Comment    =Comment           , &  ! Optional input
+                               Message_Log=Message_Log         )  ! Error messaging
+    IF ( Error_Status /= SUCCESS ) THEN
+      msg = 'Error creating output file '//TRIM(NC_Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
-    ! -------------------------------------
-    ! Check for repeated Absorber_ID values
-    ! -------------------------------------
+    ! Write the AtmProfile data
+    ! -------------------------
+    Error_Status = WriteVar( NC_Filename            , &
+                             NC_FileID              , &
+                             AtmProfile             , &
+                             Message_Log=Message_Log  )
+    IF ( Error_Status /= SUCCESS ) THEN
+      msg = 'Error writing AtmProfile variables to output file '//TRIM(NC_Filename)
+      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    
 
-    DO j = 1, AtmProfile%n_Absorbers
-      IF ( COUNT( AtmProfile%Absorber_ID == AtmProfile%Absorber_ID( j ) ) > 1 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "More than one Absorber ID value of ", i2, " found." )' ) &
-                        AtmProfile%Absorber_ID( j ) 
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-    END DO
+    ! Close the file
+    ! --------------
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
 
 
-    ! --------------------------------------
-    ! Check for Absorber Units ID value for
-    ! non-H2O dewpoint and relative humidity
-    ! --------------------------------------
+    ! Output an info msg
+    ! ----------------------
+    IF ( Noisy ) THEN
+      CALL Info_AtmProfile( AtmProfile, msg )
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
+                            INFORMATION, &
+                            Message_Log=Message_Log )
+    END IF
 
-    DO j = 1, AtmProfile%n_Absorbers
-      IF ( AtmProfile%Absorber_ID( j ) /= 1 ) THEN  ! If not H2O
-        IF ( AtmProfile%Absorber_Units_ID( j ) > 5 ) THEN  ! Cannot have units of dewpoint or RH%
-          Error_Status = FAILURE
-          WRITE( Message, '( "Absorber #", i2, " (ID# = ", i2, ") cannot have units of ", a )' ) &
-                          j, AtmProfile%Absorber_ID( j ), &
-                          TRIM( ATMPROFILE_ABSORBER_UNITS_NAME( AtmProfile%Absorber_Units_ID( j ) ) )
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
-                                Error_Status, &
-                                Message_Log = Message_Log )
-          RETURN
+  CONTAINS
+  
+    SUBROUTINE Write_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
-    END DO
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                   -- CREATE THE OUTPUT DATA FILE --                      #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Create_AtmProfile_netCDF( TRIM( NC_Filename ), &
-                                             AtmProfile%n_Layers, &
-                                             AtmProfile%n_Absorbers, &
-                                             AtmProfile%n_Profiles, &
-                                             NC_FileID, &
-                                             Title   = Title, &
-                                             History = History, &
-                                             Comment = Comment, &
-                                             ID_Tag  = ID_Tag, &
-                                             Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error creating output netCDF AtmProfile file '//&
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- WRITE THE ABSORBER INFO DATA --                    #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------------------
-    ! Write the Absorber ID
-    ! ---------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        ABSORBER_ID_VARNAME, &
-                                        AtmProfile%Absorber_ID )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//ABSORBER_ID_VARNAME//' to '//&
-                            TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------------------------
-    ! Write the Absorber Units ID
-    ! ---------------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        ABSORBER_UNITS_ID_VARNAME, &
-                                        AtmProfile%Absorber_Units_ID )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//ABSORBER_UNITS_ID_VARNAME//' to '//&
-                            TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- WRITE THE PROFILE "INFO" DATA --                   #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------
-    ! The profile description
-    ! -----------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        DESCRIPTION_VARNAME, &
-                                        AtmProfile%Description )
-
-    IF ( Error_Status /= SUCCESS ) THEN
+      ! Set error status and print error msg
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//DESCRIPTION_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------------------
-    ! The climatology model
-    ! ---------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        CLIMATOLOGY_MODEL_VARNAME, &
-                                        AtmProfile%Climatology_Model )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! The Date and time
-    ! -----------------
-
-    ! -- Convert the Dates and Times to double precision variables
-    CALL Convert_DateTime_to_Double( AtmProfile%DateTime, DateTime )
-
-    ! -- Write the data
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        DATETIME_VARNAME, &
-                                        DateTime )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//DATETIME_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------
-    ! Latitude
-    ! --------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LATITUDE_VARNAME, &
-                                        AtmProfile%Location%Latitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LATITUDE_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------
-    ! Longitude
-    ! ---------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LONGITUDE_VARNAME, &
-                                        AtmProfile%Location%Longitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LONGITUDE_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ----------------
-    ! Surface Altitude
-    ! ----------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        SURFACE_ALTITUDE_VARNAME, &
-                                        AtmProfile%Location%Surface_Altitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//SURFACE_ALTITUDE_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- WRITE THE PROFILE LEVEL DATA --                    #
-    !#--------------------------------------------------------------------------#
-
-    ! ------------------------
-    ! Write the Level Pressure
-    ! ------------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LEVEL_PRESSURE_VARNAME, &
-                                        AtmProfile%Level_Pressure )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_PRESSURE_VARNAME//' to '//&
-                            TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Level temperature
-    ! -----------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LEVEL_TEMPERATURE_VARNAME, &
-                                        AtmProfile%Level_Temperature )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_TEMPERATURE_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level absorber
-    ! --------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LEVEL_ABSORBER_VARNAME, &
-                                        AtmProfile%Level_Absorber )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_ABSORBER_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level Altitude
-    ! --------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LEVEL_ALTITUDE_VARNAME, &
-                                        AtmProfile%Level_Altitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LEVEL_ALTITUDE_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- WRITE THE PROFILE LAYER DATA --                    #
-    !#--------------------------------------------------------------------------#
-
-    ! ------------------------
-    ! Write the Layer Pressure
-    ! ------------------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LAYER_PRESSURE_VARNAME, &
-                                        AtmProfile%Layer_Pressure )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_PRESSURE_VARNAME//' to '//&
-                            TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Layer temperature
-    ! -----------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LAYER_TEMPERATURE_VARNAME, &
-                                        AtmProfile%Layer_Temperature )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_TEMPERATURE_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Layer absorber
-    ! --------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LAYER_ABSORBER_VARNAME, &
-                                        AtmProfile%Layer_Absorber )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_ABSORBER_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------------
-    ! Layer thickness
-    ! ---------------
-
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        LAYER_DELTA_Z_VARNAME, &
-                                        AtmProfile%Layer_Delta_Z )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//LAYER_DELTA_Z_VARNAME//' to '// &
-                            TRIM( NC_Filename )//'- '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CLOSE THE netCDF FILE --                         #
-    !#--------------------------------------------------------------------------#
-
-    Close_Status = Close_AtmProfile_netCDF( NC_FileID )
-
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF AtmProfile data file '// &
-                            TRIM( NC_FileNAME ), &
-                            WARNING, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- OUTPUT AN INFO MESSAGE --                        #
-    !#--------------------------------------------------------------------------#
-
-    IF ( Noisy ) THEN
-      CALL Information_AtmProfile( AtmProfile, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_FileNAME )//'; '//TRIM( Message ), &
-                            INFORMATION, &
-                            Message_Log = Message_Log )
-    END IF
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_AtmProfile_netCDF
 
 
-
-
-
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       Read_AtmProfile_netCDF
 !
 ! PURPOSE:
 !       Function to read data from a netCDF format AtmProfile file.
 !
-! CATEGORY:
-!       AtmProfile
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       Error_Status = Read_AtmProfile_netCDF( NC_Filename,              &  ! Input
-!                                              AtmProfile,               &  ! Output
-!                                              Quiet       = Quiet,      &  ! Optional Input
-!                                              Reverse     = Reverse,    &  ! Optional Input
-!                                              Title       = Title,      &  ! Optional output
-!                                              History     = History,    &  ! Optional output
-!                                              Comment     = Comment,    &  ! Optional output
-!                                              ID_Tag      = ID_Tag,     &  ! Optional output
-!                                              RCS_Id      = RCS_Id,     &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
+!     Error_Status = Read_AtmProfile_netCDF( NC_Filename            , &  ! Input
+!                                            AtmProfile             , &  ! Output
+!                                            Quiet      =Quiet      , &  ! Optional input
+!                                            Reverse    =Reverse    , &  ! Optional input
+!                                            ID_Tag     =ID_Tag     , &  ! Optional output
+!                                            Title      =Title      , &  ! Optional output
+!                                            History    =History    , &  ! Optional output
+!                                            Comment    =Comment    , &  ! Optional output
+!                                            RCS_Id     =RCS_Id     , &  ! Revision control
+!                                            Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       NC_Filename:     Character string specifying the name of the netCDF AtmProfile
-!                        format data file to read.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:           Set this keyword to suppress information messages being
-!                        printed to standard output (or the message log file if
-!                        the MESSAGE_LOG optional argument is used.) By default,
-!                        information messages are printed.
-!                        If QUIET = 0, information messages are OUTPUT.
-!                           QUIET = 1, information messages are SUPPRESSED.
-!                        UNITS:      N/A
-!                        TYPE:       Integer
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Reverse:         Set this keyword to reverse the order of the profile data
-!                        arrays in the K index (vertical) dimension.
-!                        If REVERSE = 0, arrays are returned as they are stored in
-!                                        the netCDF input file (DEFAULT)
-!                           REVERSE = 1, arrays are returned in reverse order to how
-!                                        they are stored in the netCDF input file.
-!                        UNITS:      N/A
-!                        TYPE:       Integer
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Message_Log:     Character string specifying a filename in which any
-!                        Messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output Messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
+!       NC_Filename:  Character string specifying the name of the
+!                     netCDF format AtmProfile data file to read.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       AtmProfile:      Structure containing the atmospheric profile data.
-!                        UNITS:      N/A
-!                        TYPE:       AtmProfile_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN OUT )
+!       AtmProfile:   Structure to contain the AtmProfile data
+!                     read from file.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(AtmProfile_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
 !
+! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this keyword to suppress information messages being
+!                     printed to standard output (or the msg log file if
+!                     the Message_Log optional argument is used.) By default,
+!                     information messages are printed.
+!                     If QUIET = 0, information messages are OUTPUT.
+!                        QUIET = 1, information messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Reverse:      Set this keyword to reverse the order of the profile data
+!                     arrays in the K index (vertical) dimension.
+!                     If REVERSE = 0, arrays are returned as they are stored in
+!                                     the netCDF input file (DEFAULT)
+!                        REVERSE = 1, arrays are returned in reverse order to how
+!                                     they are stored in the netCDF input file.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:  Character string specifying a filename in which any
+!                     msgs will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output msgs to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       Title:           Character string written into the TITLE global
-!                        attribute field of the netCDF AtmProfile file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!       ID_Tag:       Character string written into the ID_TAG global
+!                     attribute field of the netCDF AtmProfile file.
+!                     Identifies the dependent profile set.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       History:         Character string written into the HISTORY global
-!                        attribute field of the netCDF AtmProfile file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!       Title:        Character string written into the TITLE global
+!                     attribute field of the netCDF AtmProfile file.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Comment:         Character string written into the COMMENT global
-!                        attribute field of the netCDF AtmProfile file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!       History:      Character string written into the HISTORY global
+!                     attribute field of the netCDF AtmProfile file.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       ID_Tag:          Character string written into the ID_TAG global
-!                        attribute field of the netCDF AtmProfile file.
-!                        Should contain a short tag used to identify the
-!                        profile set.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!       Comment:      Character string written into the COMMENT global
+!                     attribute field of the netCDF AtmProfile file.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER( * )
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!       RCS_Id:       Character string containing the Revision Control
+!                     System Id field for the module.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
+!                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF data read was successful.
 !                        == FAILURE an unrecoverable error occurred.
 !                        == WARNING an error occurred closing the netCDF
@@ -3599,755 +827,2126 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
-! CALLS:
-!       Open_AtmProfile_netCDF:     Function to open an AtmProfile netCDF file.
-!
-!       Inquire_AtmProfile_netCDF:  Function to inquire a netCDF format 
-!                                   AtmProfile file to obtain information
-!                                   about the data dimensions and attributes.
-!
-!       Allocate_AtmProfile:        Function to allocate the pointer members
-!                                   of an AtmProfile structure.
-!                                   SOURCE: ATMPROFILE_DEFINE module
-!
-!       Get_netCDF_Variable:        Function to read variable data from a
-!                                   netCDF data file.
-!                                   SOURCE: NETCDF_VARIABLE_UTILITY module
-!
-!       Close_AtmProfile_netCDF:    Function to close an AtmProfile netCDF file.
-!
-!       NF90_CLOSE:                 Function to close a netCDF file.
-!                                   SOURCE: netCDF library
-!
-!       Display_Message:            Subroutine to output Messages
-!                                   SOURCE: ERROR_HANDLER module
-!
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
 ! COMMENTS:
-!       Note the INTENT on the output AtmProfile argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined on
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       If specified as the output data type, the INTENT on the output AtmProfile
+!       structure argument is IN OUT rather than just OUT. This is necessary
+!       because the argument may be defined on input. To prevent memory leaks,
+!       the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 10-Jul-2002
-!                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_AtmProfile_netCDF( NC_Filename,  &  ! Input
-                                   AtmProfile,   &  ! Output
-                                   Quiet,        &  ! Optional input
-                                   Reverse,      &  ! Optional input
-                                   Title,        &  ! Optional output
-                                   History,      &  ! Optional output
-                                   Comment,      &  ! Optional output
-                                   ID_Tag,       &  ! Optional output
-                                   RCS_Id,       &  ! Revision control
-                                   Message_Log ) &  ! Error messaging
-                                 RESULT ( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- TYPE DECLARATIONS --                         #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  FUNCTION Read_AtmProfile_netCDF( NC_Filename, &  ! Input
+                                   AtmProfile , &  ! Output
+                                   Quiet      , &  ! Optional input
+                                   Reverse    , &  ! Optional input
+                                   ID_Tag     , &  ! Optional output
+                                   Title      , &  ! Optional output
+                                   History    , &  ! Optional output
+                                   Comment    , &  ! Optional output
+                                   RCS_Id     , &  ! Revision control
+                                   Message_Log) &  ! Error messaging
+                                 RESULT( Error_Status )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    CHARACTER( * ),           INTENT( IN )     :: NC_Filename
-
-    ! -- Output
-    TYPE( AtmProfile_type ),  INTENT( IN OUT ) :: AtmProfile
-
-    ! -- Optional input
-    INTEGER,        OPTIONAL, INTENT( IN )     :: Quiet
-    INTEGER,        OPTIONAL, INTENT( IN )     :: Reverse
-
-    ! -- Optional output
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: Title
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: History
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: Comment
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: ID_Tag
-
-    ! -- Revision control
-    CHARACTER( * ), OPTIONAL, INTENT( OUT )    :: RCS_Id
-
-    ! -- Error Message log file
-    CHARACTER( * ), OPTIONAL, INTENT( IN )     :: Message_Log
-
-
-    ! ---------------
+    CHARACTER(*),           INTENT(IN)     :: NC_Filename
+    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Reverse
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
-    ! ---------------
-
     INTEGER :: Error_Status
-
-
-    ! -------------------
     ! Function parameters
-    ! -------------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'Read_AtmProfile_netCDF'
-
-
-    ! ------------------
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AtmProfile_netCDF'
     ! Function variables
-    ! ------------------
-
-    CHARACTER( 512 ) :: Message
-
-    LOGICAL :: Noisy
-    LOGICAL :: ProfileFlip
-
+    CHARACTER(ML) :: msg
+    LOGICAL :: Noisy, ReverseProfile
     INTEGER :: NC_FileID
-
-    INTEGER :: Allocate_Status
     INTEGER :: NF90_Status
-    INTEGER :: Close_Status
+    INTEGER :: n_Layers   , k
+    INTEGER :: n_Absorbers, j
+    INTEGER :: n_Profiles 
 
-    INTEGER :: n_Layers
-    INTEGER :: n_Absorbers
-    INTEGER :: n_Profiles
+    
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-    INTEGER :: j, k
-
-    REAL( Double ), DIMENSION(:), ALLOCATABLE :: DateTime
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- CHECK/SET OPTIONAL KEYWORD ARGUMENTS --                #
-    !#--------------------------------------------------------------------------#
-
-    ! -------------------
-    ! Info message output
-    ! -------------------
-
-    ! -- Output informational messages....
+    ! Output informational msgs....
     Noisy = .TRUE.
-
-    ! -- ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
-
-    ! ----------------
-    ! Profile reversal
-    ! ----------------
-
-    ! -- Do not reverse the input profile arrays....
-    ProfileFlip = .FALSE.
-
-    ! -- ....unless the REVERSE keyword is set.
-    IF ( PRESENT( Reverse ) ) THEN
-      IF ( Reverse == SET ) ProfileFlip = .TRUE.
+    ! Do NOT reverse profile....
+    ReverseProfile = .FALSE.
+    ! ....unless the REVERSE keyword is set.
+    IF ( PRESENT(Reverse) ) THEN
+      IF ( Reverse == SET ) ReverseProfile = .TRUE.
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                 -- READ THE DIMENSION/ATTRIBUTE VALUES --                #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Inquire_AtmProfile_netCDF( TRIM( NC_Filename ), &
-                                              n_Layers    = n_Layers, &
-                                              n_Absorbers = n_Absorbers, &
-                                              n_Profiles  = n_Profiles, &
-                                              Title   = Title, &
-                                              History = History, &
-                                              Comment = Comment, &
-                                              ID_Tag  = ID_Tag, &
-                                              Message_Log = Message_Log )
-
+    
+    ! Allocate the structure for the netCDF read
+    ! ------------------------------------------
+    ! Read the dimension values
+    Error_Status = Inquire_AtmProfile_netCDF( NC_Filename            , &
+                                              n_Layers   =n_Layers   , &
+                                              n_Absorbers=n_Absorbers, &
+                                              n_Profiles =n_Profiles , &
+                                              Message_Log=Message_Log  ) 
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error obtaining AtmProfile dimensions/attributes from '//&
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Error obtaining AtmProfile dimensions from '//TRIM(NC_Filename)
+      CALL Read_Cleanup(); RETURN
     END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- ALLOCATE THE DATA STRUCTURE --                   #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = Allocate_AtmProfile( n_Layers, &
-                                        n_Absorbers, &
-                                        n_Profiles, &
-                                        AtmProfile, &
-                                        Message_Log = Message_Log )
-                                        
+    ! Allocate the structure
+    Error_Status = Allocate_AtmProfile( n_Layers,n_Absorbers,n_Profiles, &
+                                        AtmProfile,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error occurred allocating AtmProfile structure.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Error occurred allocating AtmProfile structure.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
+    ! Open the netCDF file for reading
+    ! --------------------------------
+    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+    END IF
 
-    !#--------------------------------------------------------------------------#
-    !#                 -- OPEN THE netCDF FILE FOR READING --                   #
-    !#--------------------------------------------------------------------------#
 
-    Error_Status = Open_AtmProfile_netCDF( TRIM( NC_FileNAME ), &
-                                           NC_FileID, &
-                                           Mode = 'READ' )
-
+    ! Read the global attributes
+    ! --------------------------
+    Error_Status = ReadGAtts( NC_Filename                   , &
+                              NC_FileID                     , &
+!                              Release    =AtmProfile%Release, &
+!                              Version    =AtmProfile%Version, &
+                              ID_Tag     =ID_Tag            , &
+                              Title      =Title             , &
+                              History    =History           , &
+                              Comment    =Comment           , &
+                              Message_Log=Message_Log         )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error opening netCDF AtmProfile data file '//&
-                            TRIM( NC_FileNAME ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
     END IF
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- READ THE PROFILE "INFO" DATA --                   #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------
-    ! The profile description
-    ! -----------------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        DESCRIPTION_VARNAME, &
-                                        AtmProfile%Description )
-
+    ! Check the release
+    Error_Status = CheckRelease_AtmProfile( AtmProfile,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//DESCRIPTION_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      msg = 'AtmProfile Release check failed for '//TRIM(NC_Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
     END IF
+    
 
-    CALL Remove_NULL_Characters( AtmProfile%Description )
-
-
-    ! ---------------------
-    ! The climatology model
-    ! ---------------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        CLIMATOLOGY_MODEL_VARNAME, &
-                                        AtmProfile%Climatology_Model )
-
+    ! Read the AtmProfile data
+    ! ------------------------
+    Error_Status = ReadVar( NC_Filename            , &
+                            NC_FileID              , &
+                            AtmProfile             , &
+                            Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//CLIMATOLOGY_MODEL_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
+      msg = 'Error reading AtmProfile variables from '//TRIM(NC_Filename)
+      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
-    ! -----------------
-    ! The Date and time
-    ! -----------------
-
-    ! -- Allocate the DateTime array
-    ALLOCATE( DateTime( n_Profiles ), STAT = Allocate_Status )
-
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating temporary DateTime array. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Read the data
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        DATETIME_VARNAME, &
-                                        DateTime )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//DATETIME_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-    ! -- Convert the Date and Time into the derived type
-    CALL Convert_DateTime_to_Type( DateTime, AtmProfile%DateTime )
-
-    ! -- deallocate the DateTime array
-    DEALLOCATE( DateTime, STAT = Allocate_Status )
-
-    IF ( Allocate_Status /= 0 ) THEN
-      WRITE( Message, '( "Error deallocating temporary DateTime array. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            WARNING, &
-                            Message_Log = Message_Log )
+    ! Close the file
+    ! --------------
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
-    ! --------
-    ! Latitude
-    ! --------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LATITUDE_VARNAME, &
-                                        AtmProfile%Location%Latitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LATITUDE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------
-    ! Longitude
-    ! ---------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LONGITUDE_VARNAME, &
-                                        AtmProfile%Location%Longitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LONGITUDE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ----------------
-    ! Surface Altitude
-    ! ----------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        SURFACE_ALTITUDE_VARNAME, &
-                                        AtmProfile%Location%Surface_Altitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//SURFACE_ALTITUDE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------
-    ! Absorber ID
-    ! -----------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        ABSORBER_ID_VARNAME, &
-                                        AtmProfile%Absorber_ID )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//ABSORBER_ID_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Absorber Units ID
-    ! -----------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        ABSORBER_UNITS_ID_VARNAME, &
-                                        AtmProfile%Absorber_Units_ID )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//ABSORBER_UNITS_ID_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------------------------------------
+    ! Finish up with the data structure
+    ! ---------------------------------
     ! Fill the other Absorber_Units structure members
-    ! -----------------------------------------------
-
     DO j = 1, AtmProfile%n_Absorbers
-      AtmProfile%Absorber_Units_Name( j )   = ATMPROFILE_ABSORBER_UNITS_NAME( AtmProfile%Absorber_Units_ID( j ) )
-      AtmProfile%Absorber_Units_LBLRTM( j ) = ATMPROFILE_ABSORBER_UNITS_CHAR( AtmProfile%Absorber_Units_ID( j ) )
+      AtmProfile%Absorber_Units_Name(j)   = ATMPROFILE_ABSORBER_UNITS_NAME(AtmProfile%Absorber_Units_ID(j))
+      AtmProfile%Absorber_Units_LBLRTM(j) = ATMPROFILE_ABSORBER_UNITS_CHAR(AtmProfile%Absorber_Units_ID(j))
     END DO
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- READ THE PROFILE LEVEL DATA --                    #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------
-    ! Level pressure
-    ! --------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LEVEL_PRESSURE_VARNAME, &
-                                        AtmProfile%Level_Pressure )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LEVEL_PRESSURE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Level temperature
-    ! -----------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LEVEL_TEMPERATURE_VARNAME, &
-                                        AtmProfile%Level_Temperature )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LEVEL_TEMPERATURE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level absorber
-    ! --------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LEVEL_ABSORBER_VARNAME, &
-                                        AtmProfile%Level_Absorber )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LEVEL_ABSORBER_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Level Altitude
-    ! --------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LEVEL_ALTITUDE_VARNAME, &
-                                        AtmProfile%Level_Altitude )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LEVEL_ALTITUDE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                     -- READ THE PROFILE LAYER DATA --                    #
-    !#--------------------------------------------------------------------------#
-
-    ! --------------
-    ! Layer pressure
-    ! --------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LAYER_PRESSURE_VARNAME, &
-                                        AtmProfile%Layer_Pressure )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LAYER_PRESSURE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! -----------------
-    ! Layer temperature
-    ! -----------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LAYER_TEMPERATURE_VARNAME, &
-                                        AtmProfile%Layer_Temperature )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LAYER_TEMPERATURE_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! --------------
-    ! Layer absorber
-    ! --------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LAYER_ABSORBER_VARNAME, &
-                                        AtmProfile%Layer_Absorber )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LAYER_ABSORBER_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-    ! ---------------
-    ! Layer Thickness
-    ! ---------------
-
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        LAYER_DELTA_Z_VARNAME, &
-                                        AtmProfile%Layer_Delta_Z )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//LAYER_DELTA_Z_VARNAME//' from '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#          -- REVERSE THE PROFILE DATA DIRECTION IF REQUIRED --            #
-    !#--------------------------------------------------------------------------#
-
-    IF ( ProfileFlip ) THEN
-
-
-      ! ----------
+    ! Reverse the profile data direction if required
+    IF ( ReverseProfile ) THEN
       ! Level data
-      ! ----------
-
       k = AtmProfile%n_Levels
-      AtmProfile%Level_Pressure    = AtmProfile%Level_Pressure(    k:1:-1, : )
-      AtmProfile%Level_Temperature = AtmProfile%Level_Temperature( k:1:-1, : )
-      AtmProfile%Level_Absorber    = AtmProfile%Level_Absorber(    k:1:-1, :, : )
-      AtmProfile%Level_Altitude    = AtmProfile%Level_Altitude(    k:1:-1, : )
-
-
-      ! ----------
+      AtmProfile%Level_Pressure(1:k,:)    = AtmProfile%Level_Pressure(k:1:-1,:)
+      AtmProfile%Level_Temperature(1:k,:) = AtmProfile%Level_Temperature(k:1:-1,:)
+      AtmProfile%Level_Absorber(1:k,:,:)  = AtmProfile%Level_Absorber(k:1:-1,:,:)
+      AtmProfile%Level_Altitude(1:k,:)    = AtmProfile%Level_Altitude(k:1:-1,:)
       ! Layer data
-      ! ----------
-
       k = AtmProfile%n_Layers
-      AtmProfile%Layer_Pressure    = AtmProfile%Layer_Pressure(    k:1:-1, : )
-      AtmProfile%Layer_Temperature = AtmProfile%Layer_Temperature( k:1:-1, : )
-      AtmProfile%Layer_Absorber    = AtmProfile%Layer_Absorber(    k:1:-1, :, : )
-      AtmProfile%Layer_Delta_Z     = AtmProfile%Layer_Delta_Z(     k:1:-1, : )
-
+      AtmProfile%Layer_Pressure(1:k,:)    = AtmProfile%Layer_Pressure(k:1:-1,:)
+      AtmProfile%Layer_Temperature(1:k,:) = AtmProfile%Layer_Temperature(k:1:-1,:)
+      AtmProfile%Layer_Absorber(1:k,:,:)  = AtmProfile%Layer_Absorber(k:1:-1,:,:)
+      AtmProfile%Layer_Delta_Z(1:k,:)     = AtmProfile%Layer_Delta_Z(k:1:-1,:)
     END IF
 
 
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CLOSE THE netCDF FILE --                         #
-    !#--------------------------------------------------------------------------#
-
-    Close_Status = Close_AtmProfile_netCDF( NC_FileID )
-
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF AtmProfile data file '// &
-                            TRIM( NC_FileNAME ), &
-                            WARNING, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- OUTPUT AN INFO MESSAGE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! Output an info message
+    ! ----------------------
     IF ( Noisy ) THEN
-      CALL Information_AtmProfile( AtmProfile, Message )
+      CALL Info_AtmProfile( AtmProfile, msg )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_FileNAME )//'; '//TRIM( Message ), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
                             INFORMATION, &
-                            Message_Log = Message_Log )
+                            Message_Log=Message_Log )
     END IF
+
+  CONTAINS
+  
+    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
+       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
+        END IF
+      END IF
+      ! Destroy the structure if necessary
+      IF ( PRESENT(Destroy_Structure) ) THEN
+        IF ( Destroy_Structure ) THEN
+          Error_Status = Destroy_AtmProfile(AtmProfile, Message_Log=Message_Log)
+          IF ( Error_Status /= SUCCESS ) &
+            msg = TRIM(msg)//'; Error destroying AtmProfile during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_AtmProfile_netCDF
 
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Convert_DateTime_to_Double
+!
+! PURPOSE:
+!       Subroutine to convert the data in the AtmProfileDateTime structure
+!       to a double precision value of YYYYMMDD.HH
+!
+! CALLING SEQUENCE:
+!       CALL Convert_DateTime_to_Double( AtmProfileDateTime, &  ! Input
+!                                        DoubleDateTime      )  ! Output
+!
+! INPUT ARGUMENTS:
+!       AtmProfileDateTime:   Structure containing data and time information.
+!                             UNITS:      N/A
+!                             TYPE:       AtmPRofileDateTime_type
+!                             DIMENSION:  Rank-1
+!                             ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       DoubleDateTime:       Double precision floating point array holding
+!                             the converted time in the format YYYYMMDD.HH
+!                             where YYYY = year
+!                                   MM   = month
+!                                   DD   = day of month
+!                                   HH   = hour of day (0-23)
+!                             UNITS:      N/A
+!                             TYPE:       REAL(Double)
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(OUT)
+!
+!------------------------------------------------------------------------------
+
+  SUBROUTINE Convert_DateTime_to_Double( aDT, dDT )
+    TYPE(AtmProfileDateTime_type), INTENT(IN)  :: aDT(:)
+    REAL(Double),                  INTENT(OUT) :: dDT(:)
+    INTEGER :: n
+    DO n = 1, SIZE(aDT)
+      dDT(n) = REAL((aDT(n)%Year*10000) + (aDT(n)%Month*100) + aDT(n)%Day, Double ) + &
+               REAL(aDT(n)%Hour,Double) / 100.0_Double
+    END DO
+  END SUBROUTINE Convert_DateTime_to_Double
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Convert_DateTime_to_Type
+!
+! PURPOSE:
+!       Sub routine to convert a double precision date/time to an
+!       AtmProfileDateTime data type
+!
+! CALLING SEQUENCE:
+!       CALL Convert_DateTime_to_Type( DoubleDateTime    , &  ! Input
+!                                      AtmProfileDateTime  )  ! Output
+!
+! INPUT ARGUMENTS:
+!       DoubleDateTime:       Double precision floating point array holding
+!                             the data and time time in the format YYYYMMDD.HH
+!                             where YYYY = year
+!                                   MM   = month
+!                                   DD   = day of month
+!                                   HH   = hour of day (0-23)
+!                             UNITS:      N/A
+!                             TYPE:       REAL(Double)
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(IN)
+! OUTPUT ARGUMENTS:
+!       AtmProfileDateTime:   Structure containing data and time information.
+!                             UNITS:      N/A
+!                             TYPE:       AtmPRofileDateTime_type
+!                             DIMENSION:  Rank-1
+!                             ATTRIBUTES: INTENT(OUT)
+!
+!
+!------------------------------------------------------------------------------
+
+  SUBROUTINE Convert_DateTime_to_Type( dDT, aDT )
+    REAL(Double),                  INTENT(IN)  :: dDT(:)
+    TYPE(AtmProfileDateTime_type), INTENT(OUT) :: aDT(:)
+    INTEGER(Long) :: x
+    INTEGER :: n
+    DO n = 1, SIZE( dDT )
+      ! The year
+      x = INT(dDT(n),Long)
+      aDT(n)%Year = ( x - MOD(x,10000_Long) ) / 10000_Long
+      ! The month
+      x = MOD(x,10000_Long)
+      aDT(n)%Month = ( x - MOD(x,100_Long) ) / 100_Long
+      ! The day of the month
+      aDT(n)%Day = MOD(x,100_Long)
+      ! The hour of the day
+      aDT(n)%Hour = NINT(MOD(dDT(n),ONE) * 100.0_Double )
+    END DO
+  END SUBROUTINE Convert_DateTime_to_Type
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       WriteGAtts
+!
+! PURPOSE:
+!       Function to write the global attributes to a netCDF AtmProfile
+!       data file.
+!
+! CALLING SEQUENCE:
+!       Error_Status = WriteGAtts( NC_Filename            , &  ! Input
+!                                  NC_FileID              , &  ! Input
+!                                  Version    =Version    , &  ! Optional input
+!                                  Title      =Title      , &  ! Optional input
+!                                  History    =History    , &  ! Optional input
+!                                  Comment    =Comment    , &  ! Optional input
+!                                  ID_Tag     =ID_Tag     , &  ! Optional input
+!                                  Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       NC_Filename:      Character string specifying the name of the
+!                         netCDF AtmProfile format data file to create.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:        NetCDF file ID number returned from the
+!                         Open_ or Create_AtmProfile_netCDF() function.
+!                         UNITS:      N/A
+!                         TYPE:       Integer
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN)
+!
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Version:          The version number of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+
+!       Title:            Character string written into the TITLE global
+!                         attribute field of the netCDF AtmProfile file.
+!                         Should contain a succinct description of what
+!                         is in the netCDF datafile.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       History:          Character string written into the HISTORY global
+!                         attribute field of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Comment:          Character string written into the COMMENT global
+!                         attribute field of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       ID_Tag:           Character string written into the ID_TAG global
+!                         attribute field of the netCDF AtmProfile file.
+!                         Should contain a short tag used to identify the
+!                         profile set.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:      Character string specifying a filename in which
+!                         any Messages will be logged. If not specified,
+!                         or if an error occurs opening the log file, the
+!                         default action is to output Messages to standard
+!                         output.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the ERROR_HANDLER module.
+!                     If == SUCCESS the global attribute write was successful.
+!                        == WARNING an error occurred writing the supplied
+!                           global attributes.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION WriteGAtts( NC_Filename, &  ! Input
+                       NC_FileID  , &  ! Input
+                       Version    , &  ! Optional input
+                       Title      , &  ! Optional input
+                       History    , &  ! Optional input
+                       Comment    , &  ! Optional input
+                       ID_Tag     , &  ! Optional input
+                       Message_Log) &  ! Error messaging
+                     RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN) :: NC_Filename
+    INTEGER     ,           INTENT(IN) :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(IN) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_AtmProfile_GAtts'
+    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
+    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
+    ! Local variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: GAttName
+    CHARACTER(8)  :: cdate
+    CHARACTER(10) :: ctime
+    CHARACTER(5)  :: czone
+    INTEGER :: Ver
+    INTEGER :: NF90_Status
+    TYPE(AtmProfile_type) :: AtmProfile_Default
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    msg = ' '
+
+    ! Mandatory global attributes
+    ! ---------------------------
+    ! Software ID
+    GAttName = WRITE_MODULE_HISTORY_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                MODULE_RCS_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+    
+    ! Creation date
+    CALL DATE_AND_TIME( cdate, ctime, czone )
+    GAttName = CREATION_DATE_AND_TIME_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
+                                ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
+                                czone//'UTC' )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+
+    ! The Release
+    GAttName = RELEASE_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileId, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                AtmProfile_Default%Release )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+
+
+    ! Optional global attributes
+    ! --------------------------
+    ! The Version
+    IF ( PRESENT(Version) ) THEN
+      Ver = Version
+    ELSE
+      Ver = AtmProfile_Default%Version
+    END IF
+    GAttName = VERSION_GATTNAME
+    NF90_Status = NF90_PUT_ATT( NC_FileId, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                Ver )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+
+    ! The ID_Tag
+    IF ( PRESENT(ID_Tag) ) THEN
+      GAttName = ID_TAG_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  ID_Tag )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Title
+    IF ( PRESENT(Title) ) THEN
+      GAttName = TITLE_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Title )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The History
+    IF ( PRESENT(History) ) THEN
+      GAttName = HISTORY_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  History )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The Comment
+    IF ( PRESENT(Comment) ) THEN
+      GAttName = COMMENT_GATTNAME
+      NF90_Status = NF90_PUT_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Comment )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE WriteGAtts_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        msg = '; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//TRIM(GAttName)//' attribute to '//&
+                            TRIM(NC_Filename)//' - '// &
+                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(msg), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE WriteGAtts_CleanUp
+    
+  END FUNCTION WriteGAtts
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       ReadGAtts
+!
+! PURPOSE:
+!       Function to read the global attributes from a netCDF AtmProfile
+!       data file.
+!
+! CALLING SEQUENCE:
+!       Error_Status = ReadGAtts( NC_Filename                 , &  ! Input
+!                                 NC_FileID                   , &  ! Input
+!                                 Release    =Release         , &  ! Optional output
+!                                 Version    =Version         , &  ! Optional output
+!                                 ID_Tag     =ID_Tag          , &  ! Optional output
+!                                 Title      =Title           , &  ! Optional output
+!                                 History    =History         , &  ! Optional output
+!                                 Comment    =Comment         , &  ! Optional output
+!                                 Message_Log=Message_Log       )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       NC_Filename:      Character string specifying the name of the
+!                         netCDF AtmProfile format data file to read from.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:        NetCDF file ID number.
+!                         function.
+!                         UNITS:      N/A
+!                         TYPE:       Integer
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:      Character string specifying a filename in which
+!                         any msgs will be logged. If not specified,
+!                         or if an error occurs opening the log file, the
+!                         default action is to output msgs to standard
+!                         output.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       Release:          The release number of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:          The version number of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       ID_Tag:           Character string written into the ID_TAG global
+!                         attribute field of the netCDF AtmProfile file.
+!                         Should contain a short tag used to identify the
+!                         dependent profile set.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+!       Title:            Character string written into the TITLE global
+!                         attribute field of the netCDF AtmProfile file.
+!                         Should contain a succinct description of what
+!                         is in the netCDF datafile.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+!       History:          Character string written into the HISTORY global
+!                         attribute field of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+!       Comment:          Character string written into the COMMENT global
+!                         attribute field of the netCDF AtmProfile file.
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:     The return value is an integer defining the error status.
+!                         The error codes are defined in the Message_Handler module.
+!                         If == SUCCESS the global attribute read was successful.
+!                            == FAILURE an error occurred.
+!                         UNITS:      N/A
+!                         TYPE:       INTEGER
+!                         DIMENSION:  Scalar
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION ReadGAtts( NC_Filename     , &  ! Input
+                      NC_FileID       , &  ! Input
+                      Release         , &  ! Optional output
+                      Version         , &  ! Optional output
+                      ID_Tag          , &  ! Optional output
+                      Title           , &  ! Optional output
+                      History         , &  ! Optional output
+                      Comment         , &  ! Optional output
+                      Message_Log     ) &  ! Error messaging
+                    RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER,                INTENT(IN)  :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadGAtts'
+    ! Local variables
+    CHARACTER(256)  :: GAttName
+    CHARACTER(5000) :: GAttString
+    INTEGER :: Rel
+    INTEGER :: NF90_Status
+    TYPE(AtmProfile_type) :: AtmProfile_Default
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+
+
+    ! The mandatory GAtts for checking
+    ! --------------------------------
+    ! The Release
+    IF ( PRESENT(Release) ) THEN
+      GAttName = RELEASE_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileId, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Rel )
+      IF ( NF90_Status /= NF90_NOERR .OR. Rel /= AtmProfile_Default%Release) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      Release = AtmProfile_Default%Release
+    END IF
+
+    ! The optional GAtts
+    ! ------------------
+    ! The Version
+    IF ( PRESENT(Version) ) THEN
+      GAttName = VERSION_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  Version )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+
+    ! The ID_Tag
+    IF ( PRESENT(ID_Tag) ) THEN
+      GAttString = ' '; ID_Tag = ' '
+      GAttName = ID_TAG_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL StrClean( GAttString )
+      ID_Tag = GAttString(1:MIN( LEN(ID_Tag), LEN_TRIM(GAttString) ))
+    END IF
+
+    ! The Title
+    IF ( PRESENT(Title) ) THEN
+      GAttString = ' '; Title = ' '
+      GAttName = TITLE_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL StrClean( GAttString )
+      Title = GAttString(1:MIN( LEN(Title), LEN_TRIM(GAttString) ))
+    END IF
+
+    ! The History
+    IF ( PRESENT(History) ) THEN
+      GAttString = ' '; History = ' '
+      GAttName = HISTORY_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL StrClean( GAttString )
+      History = GAttString(1:MIN( LEN(History), LEN_TRIM(GAttString) ))
+    END IF
+
+    ! The Comment
+    IF ( PRESENT(Comment) ) THEN
+      GAttString = ' '; Comment = ' '
+      GAttName = COMMENT_GATTNAME
+      NF90_Status = NF90_GET_ATT( NC_FileID, &
+                                  NF90_GLOBAL, &
+                                  TRIM(GAttName), &
+                                  GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+      CALL StrClean( GAttString )
+      Comment = GAttString(1:MIN( LEN(Comment), LEN_TRIM(GAttString) ))
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE ReadGAtts_CleanUp()
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error reading '//TRIM(GAttName)//&
+                            ' attribute from '//TRIM(NC_Filename)//' - '// &
+                            TRIM(NF90_STRERROR( NF90_Status ) ), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE ReadGAtts_CleanUp
+
+  END FUNCTION ReadGAtts
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       DefineVar
+!
+! PURPOSE:
+!       Function to define the AtmProfile variables in an output
+!       netCDF file.
+!
+! CALLING SEQUENCE:
+!       Error_Status = DefineVar( NC_Filename            , &  ! Input
+!                                 NC_FileID              , &  ! Input
+!                                 Level_DimID            , &  ! Input
+!                                 Layer_DimID            , &  ! Input
+!                                 Absorber_DimID         , &  ! Input
+!                                 Profile_DimID          , &  ! Input
+!                                 PL_DimID               , &  ! Input
+!                                 Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS
+!       NC_Filename:        Character string specifying the name of the
+!                           already created netCDF AtmProfile format file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:          NetCDF file ID number of the file in which
+!                           the variables are to be defned.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Level_DimID:        NetCDF dimension ID of the number of levels
+!                           (n_Levels).
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Layer_DimID:        NetCDF dimension ID of the number of layers
+!                           (n_Layers).
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Absorber_DimID:     NetCDF dimension ID of the number of absorbers
+!                           (n_Absorbers).
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Profile_DimID:      NetCDF dimension ID of the number of profiles
+!                           (n_Profiles).
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       PL_DimID:           NetCDF dimension ID for the string length of
+!                           the profile description.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION DefineVar( NC_Filename   , &  ! Input
+                      NC_FileID     , &  ! Input
+                      Level_DimID   , &  ! Input
+                      Layer_DimID   , &  ! Input
+                      Absorber_DimID, &  ! Input
+                      Profile_DimID , &  ! Input
+                      PL_DimID      , &  ! Input
+                      Message_Log   ) &  ! Error messaging
+                    RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    INTEGER     ,           INTENT(IN)  :: NC_FileID
+    INTEGER     ,           INTENT(IN)  :: Level_DimID   
+    INTEGER     ,           INTENT(IN)  :: Layer_DimID   
+    INTEGER     ,           INTENT(IN)  :: Absorber_DimID
+    INTEGER     ,           INTENT(IN)  :: Profile_DimID 
+    INTEGER     ,           INTENT(IN)  :: PL_DimID 
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'DefineVar'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: NF90_Status(4)
+    INTEGER :: varID
+                               
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS                                      
+
+
+    ! Begin all the variable definitions
+    ! ----------------------------------
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,DESCRIPTION_VARNAME,DESCRIPTION_TYPE, &
+                                   dimIDs=(/PL_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//DESCRIPTION_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,DESCRIPTION_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,DESCRIPTION_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,DESCRIPTION_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,DESCRIPTION_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//DESCRIPTION_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,CLIMATOLOGY_MODEL_VARNAME,CLIMATOLOGY_MODEL_TYPE, &
+                                   dimIDs=(/Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//CLIMATOLOGY_MODEL_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,CLIMATOLOGY_MODEL_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,CLIMATOLOGY_MODEL_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,CLIMATOLOGY_MODEL_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,CLIMATOLOGY_MODEL_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,DATETIME_VARNAME,DATETIME_TYPE, &
+                                   dimIDs=(/Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//DATETIME_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,DATETIME_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,DATETIME_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,DATETIME_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,DATETIME_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//DATETIME_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LATITUDE_VARNAME,LATITUDE_TYPE, &
+                                   dimIDs=(/Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LATITUDE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LATITUDE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LATITUDE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LATITUDE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LATITUDE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LATITUDE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LONGITUDE_VARNAME,LONGITUDE_TYPE, &
+                                   dimIDs=(/Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LONGITUDE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LONGITUDE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LONGITUDE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LONGITUDE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LONGITUDE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LONGITUDE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,SURFACE_ALTITUDE_VARNAME,SURFACE_ALTITUDE_TYPE, &
+                                   dimIDs=(/Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//SURFACE_ALTITUDE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,SURFACE_ALTITUDE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,SURFACE_ALTITUDE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,SURFACE_ALTITUDE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,SURFACE_ALTITUDE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//SURFACE_ALTITUDE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,ABSORBER_ID_VARNAME,ABSORBER_ID_TYPE, &
+                                   dimIDs=(/Absorber_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//ABSORBER_ID_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,ABSORBER_ID_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,ABSORBER_ID_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,ABSORBER_ID_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,ABSORBER_ID_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//ABSORBER_ID_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,ABSORBER_UNITS_ID_VARNAME,ABSORBER_UNITS_ID_TYPE, &
+                                   dimIDs=(/Absorber_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//ABSORBER_UNITS_ID_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,ABSORBER_UNITS_ID_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,ABSORBER_UNITS_ID_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,ABSORBER_UNITS_ID_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,ABSORBER_UNITS_ID_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//ABSORBER_UNITS_ID_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LEVEL_PRESSURE_VARNAME,LEVEL_PRESSURE_TYPE, &
+                                   dimIDs=(/Level_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LEVEL_PRESSURE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LEVEL_PRESSURE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LEVEL_PRESSURE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LEVEL_PRESSURE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LEVEL_PRESSURE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LEVEL_PRESSURE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LEVEL_TEMPERATURE_VARNAME,LEVEL_TEMPERATURE_TYPE, &
+                                   dimIDs=(/Level_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LEVEL_TEMPERATURE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LEVEL_TEMPERATURE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LEVEL_TEMPERATURE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LEVEL_TEMPERATURE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LEVEL_TEMPERATURE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LEVEL_TEMPERATURE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LEVEL_ABSORBER_VARNAME,LEVEL_ABSORBER_TYPE, &
+                                   dimIDs=(/Level_DimID,Absorber_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LEVEL_ABSORBER_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LEVEL_ABSORBER_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LEVEL_ABSORBER_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LEVEL_ABSORBER_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LEVEL_ABSORBER_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LEVEL_ABSORBER_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LEVEL_ALTITUDE_VARNAME,LEVEL_ALTITUDE_TYPE, &
+                                   dimIDs=(/Level_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LEVEL_ALTITUDE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LEVEL_ALTITUDE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LEVEL_ALTITUDE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LEVEL_ALTITUDE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LEVEL_ALTITUDE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LEVEL_ALTITUDE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LAYER_PRESSURE_VARNAME,LAYER_PRESSURE_TYPE, &
+                                   dimIDs=(/Layer_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LAYER_PRESSURE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LAYER_PRESSURE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LAYER_PRESSURE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LAYER_PRESSURE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LAYER_PRESSURE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LAYER_PRESSURE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LAYER_TEMPERATURE_VARNAME,LAYER_TEMPERATURE_TYPE, &
+                                   dimIDs=(/Layer_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LAYER_TEMPERATURE_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LAYER_TEMPERATURE_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LAYER_TEMPERATURE_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LAYER_TEMPERATURE_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LAYER_TEMPERATURE_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LAYER_TEMPERATURE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LAYER_ABSORBER_VARNAME,LAYER_ABSORBER_TYPE, &
+                                   dimIDs=(/Layer_DimID,Absorber_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LAYER_ABSORBER_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LAYER_ABSORBER_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LAYER_ABSORBER_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LAYER_ABSORBER_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LAYER_ABSORBER_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LAYER_ABSORBER_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,LAYER_DELTA_Z_VARNAME,LAYER_DELTA_Z_TYPE, &
+                                   dimIDs=(/Layer_DimID,Profile_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LAYER_DELTA_Z_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,LAYER_DELTA_Z_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,LAYER_DELTA_Z_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,LAYER_DELTA_Z_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,LAYER_DELTA_Z_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//LAYER_DELTA_Z_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE DefineVar_CleanUp()
+      ! Close file
+      NF90_Status(1) = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status(1) /= NF90_NOERR ) &
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status(1) ) )
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE DefineVar_CleanUp
+
+  END FUNCTION DefineVar
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       WriteVar
+!
+! PURPOSE:
+!       Function to write the AtmProfile variables in an output
+!       netCDF file in which they have been defined.
+!
+! CALLING SEQUENCE:
+!       Error_Status = WriteVar( NC_Filename            , &  ! Input
+!                                NC_FileID              , &  ! Input
+!                                AtmProfile             , &  ! Input
+!                                RCS_Id     =RCS_Id     , &  ! Revision control
+!                                Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS
+!       NC_Filename:        Character string specifying the name of the
+!                           already created netCDF AtmProfile format file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:          NetCDF file ID number of the file in which
+!                           the variables are to be written.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       AtmProfile:         Structure containing the data to write to file.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE(AtmProfile_type)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS
+!       Message_Log:        Character string specifying a filename in which any
+!                           msgs will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output msgs to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! SIDE EFFECTS:
+!       If an error occurs, the netCDF file is closed.
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION WriteVar( NC_Filename, &  ! Input
+                     NC_FileID  , &  ! Input
+                     AtmProfile , &  ! Input
+                     RCS_Id     , &  ! Revision control
+                     Message_Log) &  ! Error messaging
+                   RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
+    INTEGER               , INTENT(IN)  :: NC_FileID
+    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: NF90_Status
+    INTEGER :: VarId
+    REAL(Double) :: DateTime(AtmProfile%n_Profiles)
+                               
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS                                      
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+
+
+    ! Write the variable data
+    ! -----------------------
+    ! The Absorber_ID
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_ID_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_ID_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//ABSORBER_ID_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Absorber_Units_ID
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_ID_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_ID_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//ABSORBER_UNITS_ID_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Description
+    NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Description )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//DESCRIPTION_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Climatology_Model
+    NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CLIMATOLOGY_MODEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The DateTime
+    NF90_Status = NF90_INQ_VARID( NC_FileId,DATETIME_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DATETIME_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    CALL Convert_DateTime_to_Double( AtmProfile%DateTime, DateTime )
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,DateTime )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//DATETIME_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Latitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LATITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LATITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Latitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LATITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Longitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LONGITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LONGITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Longitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LONGITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Surface_Altitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SURFACE_ALTITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SURFACE_ALTITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Surface_Altitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//SURFACE_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Pressure
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_PRESSURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_PRESSURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LEVEL_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Temperature
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_TEMPERATURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_TEMPERATURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LEVEL_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Absorber
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ABSORBER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ABSORBER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LEVEL_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Altitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ALTITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ALTITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LEVEL_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Pressure
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_PRESSURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_PRESSURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LAYER_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Temperature
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_TEMPERATURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_TEMPERATURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LAYER_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Absorber
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_ABSORBER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_ABSORBER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LAYER_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Delta_Z
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_DELTA_Z_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_DELTA_Z_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//LAYER_DELTA_Z_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    
+  CONTAINS
+  
+    SUBROUTINE WriteVar_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE WriteVar_CleanUp
+
+  END FUNCTION WriteVar
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       ReadVar
+!
+! PURPOSE:
+!       Function to read the AtmProfile variables from any input
+!       netCDF file in which they have been defined.
+!
+! CALLING SEQUENCE:
+!       Error_Status = ReadVar( NC_Filename            , &  ! Input
+!                               NC_FileID              , &  ! Input
+!                               AtmProfile             , &  ! Output
+!                               RCS_Id     =RCS_Id     , &  ! Revision control
+!                               Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS
+!       NC_Filename:        Character string specifying the name of the
+!                           already created netCDF AtmProfile format file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       NC_FileID:          NetCDF file ID number of the file in which
+!                           the variables are to be written.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       AtmProfile:         Structure containing the data that was read
+!                           from file.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE(AtmProfile_type)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS
+!       Message_Log:        Character string specifying a filename in which any
+!                           msgs will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output msgs to standard output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       RCS_Id:             Character string containing the Revision Control
+!                           System Id field for the module.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! SIDE EFFECTS:
+!       If an error occurs, the netCDF file is closed.
+!
+! COMMENTS:
+!       The INTENT on the output AtmProfile argument is IN OUT rather
+!       than just OUT. This is necessary because the argument may be defined
+!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION ReadVar( NC_Filename, &  ! Input
+                    NC_FileID  , &  ! Input
+                    AtmProfile , &  ! Output
+                    RCS_Id     , &  ! Revision control
+                    Message_Log) &  ! Error messaging
+                  RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)     :: NC_Filename
+    INTEGER               , INTENT(IN)     :: NC_FileID
+    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: NF90_Status
+    INTEGER :: VarId
+    REAL(Double) :: DateTime(AtmProfile%n_Profiles)
+                                   
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS                                      
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+
+
+    ! Read the variable data
+    ! ----------------------
+    ! The Absorber_ID
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_ID_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_ID_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//ABSORBER_ID_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Absorber_Units_ID
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_ID_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_ID_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//ABSORBER_UNITS_ID_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Description
+    NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Description )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//DESCRIPTION_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Climatology_Model
+    NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CLIMATOLOGY_MODEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//CLIMATOLOGY_MODEL_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The DateTime
+    NF90_Status = NF90_INQ_VARID( NC_FileId,DATETIME_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DATETIME_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,DateTime )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//DATETIME_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    CALL Convert_DateTime_to_Type( DateTime, AtmProfile%DateTime )
+    ! The Latitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LATITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LATITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Latitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LATITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Longitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LONGITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LONGITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Longitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LONGITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Surface_Altitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SURFACE_ALTITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SURFACE_ALTITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Surface_Altitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//SURFACE_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Pressure
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_PRESSURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_PRESSURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LEVEL_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Temperature
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_TEMPERATURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_TEMPERATURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LEVEL_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Absorber
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ABSORBER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ABSORBER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LEVEL_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Level_Altitude
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ALTITUDE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ALTITUDE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LEVEL_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Pressure
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_PRESSURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_PRESSURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LAYER_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Temperature
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_TEMPERATURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_TEMPERATURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LAYER_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Absorber
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_ABSORBER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_ABSORBER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LAYER_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    ! The Layer_Delta_Z
+    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_DELTA_Z_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_DELTA_Z_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//LAYER_DELTA_Z_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE ReadVar_CleanUp()
+      ! Close file
+      NF90_Status = NF90_CLOSE( NC_FileID )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status ) )
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE ReadVar_CleanUp
+
+  END FUNCTION ReadVar
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       CreateFile
+!
+! PURPOSE:
+!       Function to create a netCDF AtmProfile data file for writing.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CreateFile( NC_Filename            , &  ! Input
+!                                  n_Layers               , &  ! Input
+!                                  n_Absorbers            , &  ! Input
+!                                  n_Profiles             , &  ! Input
+!                                  NC_FileID              , &  ! Output
+!                                  Version    =Version    , &  ! Optional input
+!                                  ID_Tag     =ID_Tag     , &  ! Optional input
+!                                  Title      =Title      , &  ! Optional input
+!                                  History    =History    , &  ! Optional input
+!                                  Comment    =Comment    , &  ! Optional input
+!                                  Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!       NC_Filename:        Character string specifying the name of the
+!                           netCDF AtmProfile format data file to create.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Layers:           Number of profile layers.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Absorbers:        Number of profile absorbers.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Profiles:         Number of profiles.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       NC_FileID:          NetCDF file ID number to be used for subsequent
+!                           writing to the output file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Version:            The version number of the netCDF AtmProfile file.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       ID_Tag:             Character string written into the ID_TAG global
+!                           attribute field of the netCDF AtmProfile file.
+!                           Should contain a short tag used to identify the
+!                           dependent profile set.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Title:              Character string written into the TITLE global
+!                           attribute field of the netCDF AtmProfile file.
+!                           Should contain a succinct description of what
+!                           is in the netCDF datafile.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       History:            Character string written into the HISTORY global
+!                           attribute field of the netCDF AtmProfile file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Comment:            Character string written into the COMMENT global
+!                           attribute field of the netCDF AtmProfile file.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:        Character string specifying a filename in which
+!                           any msgs will be logged. If not specified,
+!                           or if an error occurs opening the log file, the
+!                           default action is to output msgs to standard
+!                           output.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:       The return value is an integer defining the error status.  
+!                           The error codes are defined in the Message_Handler module. 
+!                           If == SUCCESS the netCDF file creation was successful.     
+!                              == FAILURE an unrecoverable error occurred.             
+!                              == WARNING - an error occurred writing any of the       
+!                                           supplied global attributes.                
+!                                         - an error occurred closing the netCDF file. 
+!                           UNITS:      N/A                                            
+!                           TYPE:       INTEGER                                        
+!                           DIMENSION:  Scalar                                         
+!
+!------------------------------------------------------------------------------
+
+  FUNCTION CreateFile( NC_Filename, &  ! Input
+                       n_Layers   , &  ! Input
+                       n_Absorbers, &  ! Input
+                       n_Profiles , &  ! Input
+                       NC_FileID  , &  ! Output
+                       Version    , &  ! Optional input
+                       ID_Tag     , &  ! Optional input
+                       Title      , &  ! Optional input
+                       History    , &  ! Optional input
+                       Comment    , &  ! Optional input
+                       Message_Log) &  ! Error messaging
+                     RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
+    INTEGER               , INTENT(IN)  :: n_Layers     
+    INTEGER               , INTENT(IN)  :: n_Absorbers  
+    INTEGER               , INTENT(IN)  :: n_Profiles   
+    INTEGER               , INTENT(OUT) :: NC_FileID
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CreateFile'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: NF90_Status
+    INTEGER :: n_Levels
+    INTEGER :: Level_DimID
+    INTEGER :: Layer_DimID
+    INTEGER :: Absorber_DimID
+    INTEGER :: Profile_DimID
+    INTEGER :: PL_DimID
+    TYPE(AtmProfile_type) :: Dummy
+    
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+
+    ! Check input
+    IF ( n_Layers    < 1 .OR. &
+         n_Absorbers < 1 .OR. &
+         n_Profiles  < 1      ) THEN
+      msg = 'Invalid dimension input detected.'
+      CALL Create_Cleanup(); RETURN
+    END IF
+    n_Levels = n_Layers+1
+
+
+    ! Create the data file
+    ! --------------------
+    NF90_Status = NF90_CREATE( NC_Filename,NF90_CLOBBER,NC_FileID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error creating '//TRIM(NC_Filename)//' - '//&
+                TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+
+    ! Define the dimensions
+    ! ---------------------
+    NF90_Status = NF90_DEF_DIM( NC_FileID,LEVEL_DIMNAME,n_Levels,Level_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LEVEL_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    
+    NF90_Status = NF90_DEF_DIM( NC_FileID,LAYER_DIMNAME,n_Layers,Layer_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LAYER_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    
+    NF90_Status = NF90_DEF_DIM( NC_FileID,ABSORBER_DIMNAME,n_Absorbers,Absorber_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//ABSORBER_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    
+    NF90_Status = NF90_DEF_DIM( NC_FileID,PROFILE_DIMNAME,n_Profiles,Profile_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PROFILE_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    
+    NF90_Status = NF90_DEF_DIM( NC_FileID,DESCRIPTION_DIMNAME,LEN(Dummy%Description),PL_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//DESCRIPTION_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+
+
+    ! Write the global attributes
+    ! ---------------------------
+    Error_Status = WriteGAtts( NC_Filename                      , &
+                               NC_FileID                        , &
+                               Version         =Version         , &
+                               ID_Tag          =ID_Tag          , &
+                               Title           =Title           , &
+                               History         =History         , &
+                               Comment         =Comment         , &
+                               Message_Log     =Message_Log       )
+    IF ( Error_Status /= SUCCESS ) THEN
+      msg = 'Error writing global attributes to '//TRIM(NC_Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+
+    ! Define the AtmProfile variables
+    ! -------------------------------
+    Error_Status = DefineVar( NC_Filename            , &  ! Input
+                              NC_FileID              , &  ! Input
+                              Level_DimID            , &  ! Input
+                              Layer_DimID            , &  ! Input
+                              Absorber_DimID         , &  ! Input
+                              Profile_DimID          , &  ! Input
+                              PL_DimID               , &  ! Input
+                              Message_Log=Message_Log  )  ! Error messaging
+    IF ( Error_Status /= SUCCESS ) THEN
+      msg = 'Error defining variables in '//TRIM(NC_Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+                                             
+
+    ! Take netCDF file out of define mode
+    ! -----------------------------------
+    NF90_Status = NF90_ENDDEF( NC_FileID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE Create_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          NF90_Status = NF90_CLOSE( NC_FileID )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ) )
+        END IF
+      END IF
+      ! Set error status and print error msg
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE Create_CleanUp
+
+  END FUNCTION CreateFile
+
 END MODULE AtmProfile_netCDF_IO
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: AtmProfile_netCDF_IO.f90,v 4.3 2006/06/30 16:47:16 dgroff Exp $
-!
-! $Date: 2006/06/30 16:47:16 $
-!
-! $Revision: 4.3 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: AtmProfile_netCDF_IO.f90,v $
-! Revision 4.3  2006/06/30 16:47:16  dgroff
-! Changed "Error_Handler" references to "Message_Handler"
-!
-! Revision 4.2  2005/01/03 14:39:09  paulv
-! - Removed header documentation delimiters from PRIVATE routines.
-!
-! Revision 4.1  2004/12/13 20:41:27  paulv
-! - Removed declarations of unused variables.
-!
-! Revision 4.0  2004/11/02 20:13:02  paulv
-! - New versions for modified AtmProfile structure.
-!
-! Revision 3.0  2004/08/27 14:32:41  paulv
-! - Updated to Fortran95
-! - New versions to handle derived type initialisation.
-!
-! Revision 2.3  2003/12/01 19:17:30  paulv
-! - Updated header documentation.
-!
-! Revision 2.2  2003/11/17 19:49:58  paulv
-! - Added QUIET optional argument to the Read() and Write() function. Setting
-!   this optional argument suppresses output of information messages.
-! - Added REVERSE optional argument to the Read() function. Setting this
-!   optional argument reverses the order of the AtmProfile profile arrays in
-!   the vertical.
-!
-! Revision 2.1  2003/07/21 20:03:12  paulv
-! - Fixed bug in definition of the number of levels in the Create() routine.
-!
-! Revision 2.0  2003/05/23 20:59:25  paulv
-! - New version. Entire database is now read/written rather than a profile
-!   at a time.
-! - Standardised the variable/attribute/dimension naming with parameters.
-!
-! Revision 1.6  2003/02/25 17:54:01  paulv
-! - Updated documentation.
-!
-! Revision 1.5  2002/07/29 15:29:33  paulv
-! - Removed parameters for:
-!   o Maximum number of absorbers
-!   o Maximum number of absorber units
-!   o The list of absorber unit IDs
-!   o The list of absorber unit names
-!   o The list of corresponding absorber units LBLRTM specification
-!   and placed them in the AtmProfile_Define module.
-!
-! Revision 1.4  2002/07/17 14:37:31  paulv
-! - Added ID_TAG optional argument to the Create() and Inquire() functions.
-!
-! Revision 1.3  2002/07/12 19:02:19  paulv
-! - Added Level_Pressure input argument and Layer_Pressure optional input
-!   argument to the Create_AtmProfile_netCDF() function. Previously, the
-!   pressure profiles were written in the Write_AtmProfile_netCDF() function
-!   but since this dataset is designed for same-level profiles, writing the
-!   same pressures for every profile is unnecessary. Note that if the
-!   Layer_Pressure argument is not supplied, it is calculated from the input
-!   Level_Pressure argument.
-! - Added Level_Pressure and Layer_Pressure optional output arguments to the
-!   Inquire_AtmProfile_netCDF() function.
-! - Added RCS_Id optional output arguments to public functions.
-! - Replaced NF90_INQ_VarID() and NF90_GET_VAR() function calls in the
-!   Read_AtmProfile_netCDF() function with calls to the Get_NetCDF_Variable()
-!   function...EXCEPT for the profile description as the Get() function is
-!   not overloaded for character arguments.
-! - Removed AtmProfile dimension check in Read_AtmProfile_netCDF(). The
-!   AtmProfile structure should be empty on entry so the check will always
-!   fail.
-! - Corrected bug in referencing the Location and DateTime sub-structures
-!   of the AtmProfile structure.
-!
-! Revision 1.2  2002/07/11 15:05:33  paulv
-! - Finished modifying - all routines completed but untested.
-!
-! Revision 1.1  2002/07/09 21:08:16  paulv
-! Initial checkin. Incomplete.
-!
-!
-!
-!

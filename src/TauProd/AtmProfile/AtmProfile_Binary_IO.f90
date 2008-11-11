@@ -805,7 +805,7 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     IF ( Noisy ) THEN
-      CALL Information_AtmProfile( AtmProfile, Message )
+      CALL Info_AtmProfile( AtmProfile, Message )
       CALL Display_Message( ROUTINE_NAME, &
                             'FILE: '//TRIM( Filename )//'; '//TRIM( Message ), &
                             INFORMATION, &
@@ -1216,7 +1216,7 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     IF ( Noisy ) THEN
-      CALL Information_AtmProfile( AtmProfile, Message )
+      CALL Info_AtmProfile( AtmProfile, Message )
       CALL Display_Message( ROUTINE_NAME, &
                             'FILE: '//TRIM( Filename )//'; '//TRIM( Message ), &
                             INFORMATION, &
