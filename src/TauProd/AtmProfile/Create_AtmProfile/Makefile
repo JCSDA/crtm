@@ -21,15 +21,12 @@ SRC_FILES = Type_Kinds.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Fundamental_Constants.f90 \
+            String_Utility.f90 \
             Search_Utility.f90 \
             Interpolate_Utility.f90 \
               Linear_Interpolation.f90 \
               Polynomial_Interpolation.f90 \
               Spline_Interpolation.f90 \
-            netCDF_Utility.f90 \
-              netCDF_Dimension_Utility.f90 \
-              netCDF_Attribute_Utility.f90 \
-              netCDF_Variable_Utility.f90 \
             AtmProfile_Parameters.f90 \
             AtmProfile_Define.f90 \
             AtmProfile_netCDF_IO.f90 \
@@ -39,7 +36,7 @@ SRC_FILES = Type_Kinds.f90 \
             Geopotential.f90 \
             UMBC_Profile_Set.f90 \
             CIMSS_Profile_Set.f90 \
-            ECMWF_Profile_Set.f90 \
+            ECMWF52_Profile_Set.f90 \
             Model_Profile_Set.f90
 
 # Obj files used in link phase
@@ -51,23 +48,21 @@ INCLUDES = -I$(HOME)/local/netcdf/include
 LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 
 
-# ------------------
-# Define dependecies
-# ------------------
+# Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
-# Create and remove source links
+# Source link creation and removal
 create_links:
 	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
-                   
+
 remove_links:
 	@unlinkfiles $(SRC_FILES)
 
-# Source dependencies
+# Squeaky clean target
+realclean: clean remove_links
+
+# Source dependency lists
 include make.dependencies
 
-
-# --------------------
 # Define default rules
-# --------------------
 include $(CRTM_SOURCE_ROOT)/make.rules
