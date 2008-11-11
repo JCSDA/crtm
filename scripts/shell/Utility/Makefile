@@ -16,7 +16,8 @@ SRC_FILES = linkfiles \
             unlinkfiles \
             Link_SensorInfo \
             Link_Solar \
-            Link_SRF
+            Link_SRF \
+            Link_AtmProfile
 
 # ------------
 # Install them
