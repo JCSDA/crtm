@@ -94,7 +94,7 @@ MODULE CIMSS_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CIMSS_Profile_Set.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
+    '$Id$'
 
   ! -- Private dimensions.
   ! -- Note the difference between N_PROFILE_MODEL_LEVELS and N_MODEL_LEVELS.
@@ -2432,11 +2432,11 @@ END MODULE CIMSS_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CIMSS_Profile_Set.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $
+! $Id$
 !
 ! $Date: 2006/06/30 16:47:16 $
 !
-! $Revision: 2.3 $
+! $Revision$
 !
 ! $Name:  $
 !
