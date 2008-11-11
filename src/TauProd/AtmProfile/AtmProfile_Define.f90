@@ -75,15 +75,15 @@ MODULE AtmProfile_Define
   INTEGER, PARAMETER :: ATMPROFILE_ABSORBER_UNITS_ID(0:ATMPROFILE_N_ABSORBER_UNITS) = &
     (/(i,i=0,ATMPROFILE_N_ABSORBER_UNITS)/)
   CHARACTER(*), PARAMETER :: ATMPROFILE_ABSORBER_UNITS_NAME(0:ATMPROFILE_N_ABSORBER_UNITS) = &
-    (/ 'Invalid             ', &
-       'ppmv                ', &
-       'cm^-3               ', &
-       'g/kg                ', &
-       'g.m^-3              ', &
-       'hPa                 ', &
-       'Dew point, K        ', &  ! [H2O only]
-       'Dew point, deg.C    ', &  ! [H2O only]
-       'Relative humidity, %' /)  ! [H2O only]
+    (/ 'Invalid', &
+       'ppmv   ', &
+       'cm^-3  ', &
+       'g/kg   ', &
+       'g.m^-3 ', &
+       'hPa    ', &
+       'DP, K  ', &  ! [H2O only]
+       'DP, C  ', &  ! [H2O only]
+       'RH, %  ' /)  ! [H2O only]
   CHARACTER(*), PARAMETER :: ATMPROFILE_ABSORBER_UNITS_CHAR(0:ATMPROFILE_N_ABSORBER_UNITS) = &
     (/ 'X', &  ! Invalid
        'A', &  ! Volume mixing ratio (ppmv)
@@ -1365,32 +1365,26 @@ CONTAINS
 
     ! Create the format string
     ! ------------------------
-    WRITE( FmtString,'("(a,",''" AtmProfile RELEASE.VERSION: "'',",", &
+    WRITE( FmtString,'("(a,",''" AtmProfile RELEASE.VERSION: "'',",i2,",''"."'',",i2.2,2x,", &
                       &''"N_LAYERS="'',",i0,2x,", &
                       &''"N_ABSORBERS="'',",i0,2x,",&
                       &''"N_PROFILES="'',",i0, ",&
-                      &"a,",''"             ABSORBER_IDs:   "'', ", ", i0, "i0,", &
-                      &"a,",''"             ABSORBER_UNITS: "'', ", ", i0, "a)")' ) &
+                      &"a,",''"     ABSORBER_IDs:   "'', ", ", i0, "i3,", &
+                      &"a,",''"     ABSORBER_UNITS: "'', ", ", i0, "a8)")' ) &
                       AtmProfile%n_Absorbers, AtmProfile%n_Absorbers
+
 
     ! Write the required data to the local string
     ! -------------------------------------------
     WRITE( LongString,FMT=FmtString ) ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                                       AtmProfile%n_Layers, &
-                                       AtmProfile%n_Absorbers, &
-                                       AtmProfile%n_Profiles, &
-                                       ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                                       AtmProfile%Absorber_ID, &
-                                       ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                                       AtmProfile%Absorber_Units_Name
-
-!    FmtString='(a,1x,a,1x,"AtmProfile RELEASE.VERSION: ",i2,".",i2.2,2x,&
-!               &"N_CHANNELS=",i0)'
-!    WRITE(LongString, FMT=FmtString) &
-!          ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-!          TRIM(AtmProfile%Sensor_ID), &
-!          AtmProfile%Release, AtmProfile%Version, &
-!          AtmProfile%n_Channels
+                                      AtmProfile%Release, AtmProfile%Version, &
+                                      AtmProfile%n_Layers, &
+                                      AtmProfile%n_Absorbers, &
+                                      AtmProfile%n_Profiles, &
+                                      ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                                      AtmProfile%Absorber_ID, &
+                                      ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                                      AtmProfile%Absorber_Units_Name
 
     ! Trim the output based on the
     ! dummy argument string length
