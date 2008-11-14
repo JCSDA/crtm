@@ -138,9 +138,10 @@ FUNCTION Read_RTSolution_Record, FileID, $
   
 END
 
-
-FUNCTION CRTM_Read_RTSolution_Binary, Filename, $
-                                      Rts
+;+
+FUNCTION CRTM_Read_RTSolution_Binary, Filename, $  ; Input
+                                      Rts          ; Output
+;-
 
   ; Set up error handler
   ; --------------------
