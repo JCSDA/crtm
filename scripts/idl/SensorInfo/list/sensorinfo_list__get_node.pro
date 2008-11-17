@@ -129,5 +129,11 @@ FUNCTION SensorInfo_List::Get_Node, SensorInfo             , $  ; Output
   ; Free the local pointer
   ; ----------------------
   Node_Pointer = PTR_NEW()
+
     
+  ; Done
+  ; ----
+  CATCH, /CANCEL
+  RETURN, SUCCESS
+
 END ; FUNCTION SensorInfo_List::Get_Node
