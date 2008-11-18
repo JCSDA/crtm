@@ -1,0 +1,36 @@
+\section{Radiometric impact of SRF interpolation}
+%================================================
+To determine the radiometric impact of the various forms of the SRF (due to different data sources or different interpolation methods), effective temperatures\footnote{See appendix \ref{app:band_correction_coefficients} for a definition of effective temperature.} for each sensor channel were computed for a blackbody temperature of 285K. The result for the spline interpolated SRF with a tension of 5.0 (spline5) was chosen as the reference. Comparisons were then made with results for a linearly interpolated SRF (linear), a spline interpolated SRF with tension of 0.1 (spline0.1), a spline interpolated SRF with tension of 20 (spline20), the original uninterpolated SRF itself (original), and the current SRF used in CRTM processing (current). The temperature residuals for an SRF type, ``x'', are defined as,
+\begin{equation}
+  \Delta T(\textrm{x}) = T_{eff}(\textrm{spline5}) - T_{eff}(\textrm{x})
+\end{equation}
+and are shown in table \ref{tab:teff_comparison}. It is apparent that the type of interpolation used on the SRFs has minimal radiometric impact.
+
+The computed central frequencies and band correction coefficients for the NOAA-16, -17, -18, and MetOp-A AVHRR sensors are shown in appendix \ref{app:band_correction_coefficients}.
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l c *{6}{r@{.}l}}
+    \hline
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{T_{eff}}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} \\
+    \textbf{Platform} & \textbf{Channel} & \multicolumn{2}{c}{spline5} & \multicolumn{2}{c}{linear} & \multicolumn{2}{c}{spline0.1} & \multicolumn{2}{c}{spline20} & \multicolumn{2}{c}{original} & \multicolumn{2}{c}{current}\\
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)}  & \multicolumn{2}{c}{(K)} \\
+    \hline\hline
+            &  3B & \hspace{0.2em}286&12 & -4&72e-04 &  2&04e-04 & -3&05e-04 &  1&51e-04 &  2&92e-02 \\ 
+    NOAA-16 &  4  &               285&01 & -3&43e-06 &  1&73e-06 & -2&28e-06 &  1&76e-06 &  1&26e-05 \\   
+            &  5  &               284&98 &  8&93e-06 & -3&44e-06 &  5&68e-06 & -4&33e-06 & -8&88e-05 \vspace{0.75em}\\ 
+            &  3B &               286&07 & -4&73e-04 &  1&75e-04 & -2&99e-04 &  1&74e-04 &  1&35e-04 \\   
+    NOAA-17 &  4  &               285&01 & -4&91e-06 &  2&18e-06 & -3&19e-06 &  2&17e-06 & -2&03e-05 \\   
+            &  5  &               284&98 &  9&74e-06 & -3&51e-06 &  6&16e-06 & -3&42e-06 & -1&07e-05 \vspace{0.75em}\\ 
+            &  3B &               286&10 & -4&71e-04 &  1&72e-04 & -2&97e-04 &  1&72e-04 & -8&32e-05 \\   
+    NOAA-18 &  4  &               285&01 & -4&95e-06 &  2&20e-06 & -3&22e-06 &  2&22e-06 & -4&60e-06 \\   
+            &  5  &               284&98 &  1&04e-05 & -3&68e-06 &  6&56e-06 & -3&51e-06 & -2&06e-06 \vspace{0.75em}\\ 
+            &  3B &               286&33 & -4&80e-04 &  1&80e-04 & -3&03e-04 &  1&81e-04 & -1&39e-03 \\   
+    MetOp-A &  4  &               285&01 & -4&74e-06 &  2&13e-06 & -3&09e-06 &  2&13e-06 &  1&43e-06 \\   
+            &  5  &               284&98 &  9&45e-06 & -3&41e-06 &  5&98e-06 & -3&63e-06 & -2&34e-06 \\ 
+    \hline
+  \end{tabular}
+  \caption{Effective temperature residuals for a blackbody temperature of 285K between the reference AVHRR SRFs (derived from the NESDIS/STAR AVHRR SRFs \citep{NESDIS_AVHRR_SRFs} via spline interpolation with tension 5.0), different interpolation methods (including none at all), and the current SRF used in CRTM processing.}
+  \label{tab:teff_comparison}
+\end{table}
+

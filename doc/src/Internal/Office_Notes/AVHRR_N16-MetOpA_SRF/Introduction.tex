@@ -1,0 +1,9 @@
+\section{Introduction}
+%=====================
+The CRTM project is preparing to recompute all of the instrument resolution transmittances (used in the transmittance model regression fitting) to take advantage of improved spectroscopy in line-by-line (LBL) models. Additionally, we are endeavouring to use only the spectral response function (SRF) data from ``official'' sources directly related to instrument development/calibration etc.
+
+The AVHRR SRF data used to generate the \textit{current} CRTM spectral (SpcCoeff) and transmittance model (TauCoeff) coefficients came from two sources: NOAA-15 to NOAA-17 AVHRR SRFs came from CIMSS/SSEC\footnote{Cooperative Institute for Meteorological Satellite Studies/Space Science and Engineering Center, University of Wisconsin-Madison} \citep{CIMSS_SRFs}; NOAA-18 and MetOp-A AVHRR SRFs came from \citet{Sullivan_avhrr3_n18_srf} and \citet{Sullivan_avhrr3_metop-a_srf} respectively. 
+The official source of the AVHRR SRF data we wish to use for future TauCoeff generation is the  \href{http://www.star.nesdis.noaa.gov/smcd/spb/fwu/solar_cal/spec_resp_func}{NOAA AVHRR Spectral Response Function} website \citep{NESDIS_AVHRR_SRFs}.
+
+This document describes the pre-processing during this transition period with respect to the AVHRR instrument infrared channels on the polar orbiter platforms NOAA-16, NOAA-17, NOAA-18, and MetOp-A. This lead us to question our pre-processing practices and to verify that SRF interpolation is not introducing any artifacts, such as a bias, in CRTM calculations.
+

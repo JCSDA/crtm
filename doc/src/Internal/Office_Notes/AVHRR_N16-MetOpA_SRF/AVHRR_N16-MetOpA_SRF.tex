@@ -2,7 +2,7 @@
 \input{preamble}
 
 
-\includeonly{srf.app,bc.app,n16.app}
+\includeonly{Introduction,Infrared_Channel_SRFs,Radiometric_Impact_of_Interpolation,Impact_of_Wide_Wings,srf.app,bc.app}
 % Title info
 \title{AVHRR Infrared Spectral Response Function Comparison}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}, David Groff\email{david.groff@noaa.gov}\\JCSDA/EMC/SAIC}
@@ -35,7 +35,9 @@
       \hline
       2008-11-04 & P.van Delst & Minor corrections from review.\\
       \hline
-      2008-11-14 & D. Groff & Added appendice for NOAA-16 cutoff issue.\\
+      2008-11-14 & D.Groff & Added appendice for NOAA-16 cutoff issue.\\
+      \hline
+      2008-11-18 & P.van Delst & Corrected all references to NOAA-17 SRF difference that were resolved when the correct datafiles were used. Moved NOAA-16 appendix into main document and added additional SRF wing plots.\\
       \hline
     \end{tabular}
   \end{table}
@@ -45,140 +47,14 @@
 \setcounter{page}{1}
 
 
+% The main matter
+%================
+\include{Introduction}
+\include{Infrared_Channel_SRFs}
+\include{Radiometric_Impact_of_Interpolation}
+\include{Impact_of_Wide_Wings}
+\include{Conclusions}
 
-\section{Introduction}
-%=====================
-The CRTM project is preparing to recompute all of the instrument resolution transmittances (used in the transmittance model regression fitting) to take advantage of improved spectroscopy in line-by-line (LBL) models. Additionally, we are endeavouring to use only the spectral response function (SRF) data from ``official'' sources directly related to instrument development/calibration etc.
-
-The AVHRR SRF data used to generate the \textit{current} CRTM spectral (SpcCoeff) and transmittance model (TauCoeff) coefficients came from two sources: NOAA-15 to NOAA-17 AVHRR SRFs came from CIMSS/SSEC\footnote{Cooperative Institute for Meteorological Satellite Studies/Space Science and Engineering Center, University of Wisconsin-Madison} \citep{CIMSS_SRFs}; NOAA-18 and MetOp-A AVHRR SRFs came from \citet{Sullivan_avhrr3_n18_srf} and \citet{Sullivan_avhrr3_metop-a_srf} respectively. 
-The official source of the AVHRR SRF data we wish to use for future TauCoeff generation is the  \href{http://www.star.nesdis.noaa.gov/smcd/spb/fwu/solar_cal/spec_resp_func}{NOAA AVHRR Spectral Response Function} website \citep{NESDIS_AVHRR_SRFs}.
-
-This document describes some discrepancies we have observed during this transition period with respect to the AVHRR instrument infrared channels on the polar orbiter platforms NOAA-16, NOAA-17, NOAA-18, and MetOp-A. This lead us to question our pre-processing practices and to verify that SRF interpolation is not introducing any artifacts, such as a bias, in CRTM calculations.
-
-
-\section{AVHRR infrared channel SRFs}
-%====================================
-
-\subsection{Gross SRF comparison}
-%--------------------------------
-Plots of the SRF data for AVHRR channels 3B, 4, and 5 for the NOAA-16 to MetOp-A platforms are shown in appendix \ref{app:srf}. SRF plots for NOAA-16 are shown in figure \ref{fig:avhrr3_n16}, NOAA-17 in figure \ref{fig:avhrr3_n17}, NOAA-18 in figure \ref{fig:avhrr3_n18}, and MetOp-A in figure \ref{fig:avhrr3_metop-a}.
-
-In general, the SRFs shown in appendix \ref{app:srf} agree quite well. The one stand-out exception is for NOAA-17. The NESDIS/STAR and CIMSS/SSEC SRFs are completely different. It remains to be determined which set of NOAA-17 AVHRR/3 SRFs is correct.
-
-
-\subsection{Interpolation differences}
-%-------------------------------------
-The main source of differences between the SRFs is due to interpolation. For the AVHRR instruments, the channels responses are typically reported as a function of wavelength (\micron). For the CRTM transmittance production process, we require the SRFs to be,
-\begin{itemize}
-  \item A function of frequency (\invcm).
-  \item At a fixed frequency interval. For broadband infrared instruments, the frequency interval used is 0.1\invcm.
-  \item Begun on a 0.1\invcm{} boundary such as 840.0, 900.6, etc.
-\end{itemize}
-As such, interpolation of the original data is required.
-
-Our regular processing takes the original channel responses and interpolates the data using the IDL\footnote{Interactive Data Language; a scripting language that provides various functionalities for data processing and visualisation} \texttt{SPLINE} function with a tension value of 5.0, selected qualitatively. From the online IDL help\footnote{\href{http://www.ittvis.com/portals/0/pdfs/idl/refguide.pdf}{IDL Reference Guide}; for IDL Version 7.0, November 2007 Edition, see pp2346-2347; Note the download file is quite large.}:
-
-\begin{quote}
-If [the tension value] is close to 0, (e.g., .01), then effectively there is a cubic spline fit. If [the tension value] is large, (e.g., greater than 10), then the fit will be like a polynomial interpolation.
-\end{quote}
-
-The impacts of the interpolation scheme are shown visually in figures \ref{fig:avhrr3_n16.ch3.srf.zoom} and \ref{fig:avhrr3_n16.ch5.srf.zoom} for NOAA-16 AVHRR/3 channels 3 and 5; figures \ref{fig:avhrr3_n18.ch3.srf.zoom} and \ref{fig:avhrr3_n18.ch4.srf.zoom} for NOAA-18 AVHRR/3 channels 3 and 4; and in figures \ref{fig:avhrr3_metop-a.ch3.srf.zoom} and \ref{fig:avhrr3_metop-a.ch5.srf.zoom} for MetOp-A AVHRR/3 channels 3 and 5. Only two channels from each instrument are shown with the understanding that the third channel exhinbits the same sort of differences.
-
-For NOAA-16 AVHRR/3, the current SRF data was linearly interpolated from a much lower resolution dataset, and subsequent spline interpolations have little effect. The impact of the spline interpolation on the lower resolution official SRF data is clearly evident. Note also that there is a slight vertical extent difference between the current and official SRF data that is not consistent with any type of normalisation. Closer examination of figure \ref{fig:avhrr3_n16.ch5.srf.zoom}(b) and (c) indicates that a spectral shift may describe the small differences.
-
-In the NOAA-18 AVHRR/3 case, the SRF datasets coincide almost exactly. The differences that do remain can be attributed to the number of decimal places to which the original and intermediate data was reported in ASCII datafiles.
-
-The current SRF data used for MetOp-A AVHRR/3 clearly suffers from quantisation of the data in the original ASCII datafile (reported to only three decimal places). This data was supplied directly by ITT \citep{Sullivan_avhrr3_metop-a_srf} and, at the time, was the only data available. The offical SRF data from \citet{NESDIS_AVHRR_SRFs} is listed as being modified on 04/21/2008, but it is not yet known if those modifications addressed the quantisation problem.
-
-\begin{figure}[htp]
-  \centering
-  \includegraphics[scale=1]{graphics/zoom/avhrr3_n16.ch3.srf.zoom.eps}
-  \caption{Zoom of NOAA-16 AVHRR/3 channel 3B SRF comparison. \textbf{(a)} Complete SRFs showing zoom region 1. \textbf{(b)} Magnification of SRF section from (a) showing zoom region 2.  \textbf{(c)} Magnification of SRF section from (b).}
-  \label{fig:avhrr3_n16.ch3.srf.zoom}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \includegraphics[scale=1]{graphics/zoom/avhrr3_n16.ch5.srf.zoom.eps}
-  \caption{Zoom of NOAA-16 AVHRR/3 channel 5 SRF comparison. \textbf{(a)} Complete SRFs showing zoom region 1. \textbf{(b)} Magnification of SRF section from (a) showing zoom region 2.  \textbf{(c)} Magnification of SRF section from (b).}
-  \label{fig:avhrr3_n16.ch5.srf.zoom}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \includegraphics[scale=1]{graphics/zoom/avhrr3_n18.ch3.srf.zoom.eps}
-  \caption{Zoom of NOAA-18 AVHRR/3 channel 3B SRF comparison. \textbf{(a)} Complete SRFs showing zoom region 1. \textbf{(b)} Magnification of SRF section from (a) showing zoom region 2.  \textbf{(c)} Magnification of SRF section from (b).}
-  \label{fig:avhrr3_n18.ch3.srf.zoom}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \includegraphics[scale=1]{graphics/zoom/avhrr3_n18.ch4.srf.zoom.eps}
-  \caption{Zoom of NOAA-18 AVHRR/3 channel 4 SRF comparison. \textbf{(a)} Complete SRFs showing zoom region 1. \textbf{(b)} Magnification of SRF section from (a) showing zoom region 2.  \textbf{(c)} Magnification of SRF section from (b).}
-  \label{fig:avhrr3_n18.ch4.srf.zoom}
-\end{figure}
-
-
-\begin{figure}[htp]
-  \centering
-  \includegraphics[scale=1]{graphics/zoom/avhrr3_metop-a.ch3.srf.zoom.eps}
-  \caption{Zoom of MetOp-A AVHRR/3 channel 3B SRF comparison. \textbf{(a)} Complete SRFs showing zoom region 1. \textbf{(b)} Magnification of SRF section from (a) showing zoom region 2.  \textbf{(c)} Magnification of SRF section from (b).}
-  \label{fig:avhrr3_metop-a.ch3.srf.zoom}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \includegraphics[scale=1]{graphics/zoom/avhrr3_metop-a.ch5.srf.zoom.eps}
-  \caption{Zoom of MetOp-A AVHRR/3 channel 5 SRF comparison. \textbf{(a)} Complete SRFs showing zoom region 1. \textbf{(b)} Magnification of SRF section from (a) showing zoom region 2.  \textbf{(c)} Magnification of SRF section from (b).}
-  \label{fig:avhrr3_metop-a.ch5.srf.zoom}
-\end{figure}
-
-
-\section{Radiometric impact of SRF interpolation}
-%================================================
-To determine the radiometric impact of the various forms of the SRF (due to different data sources or different interpolation methods), effective temperatures\footnote{See appendix \ref{app:band_correction_coefficients} for a definition of effective temperature.} for each sensor channel were computed for a blackbody temperature of 285K. The result for the spline interpolated SRF with a tension of 5.0 (spline5) was chosen as the reference. Comparisons were then made with results for a linearly interpolated SRF (linear), a spline interpolated SRF with tension of 0.1 (spline0.1), a spline interpolated SRF with tension of 20 (spline20), the original uninterpolated SRF itself (original), and the current SRF used in CRTM processing (current). The temperature residuals for an SRF type, ``x'', are defined as,
-\begin{equation}
-  \Delta T(\textrm{x}) = T_{eff}(\textrm{spline5}) - T_{eff}(\textrm{x})
-\end{equation}
-and are shown in table \ref{tab:teff_comparison}. It is apparent that the type of interpolation used on the SRFs has minimal radiometric impact. Also note that the NOAA-17 $\Delta T$(current) differences in table \ref{tab:teff_comparison} indicate that, despite the very significant differences in the actual SRFs themselves (see figure \ref{fig:avhrr3_n17}), the radiometric impact of the different SRFs is still relatively low.
-
-The computed central frequencies and band correction coefficients for the NOAA-16, -17, -18, and MetOp-A AVHRR sensors are shown in appendix \ref{app:band_correction_coefficients}.
-
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l c *{6}{r@{.}l}}
-    \hline
-    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{T_{eff}}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} & \multicolumn{2}{c}{\textbfm{\Delta T}} \\
-    \textbf{Platform} & \textbf{Channel} & \multicolumn{2}{c}{spline5} & \multicolumn{2}{c}{linear} & \multicolumn{2}{c}{spline0.1} & \multicolumn{2}{c}{spline20} & \multicolumn{2}{c}{original} & \multicolumn{2}{c}{current}\\
-    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K)}  & \multicolumn{2}{c}{(K)} \\
-    \hline\hline
-            &  3B & \hspace{0.2em}286&12 & -4&72e-04 &  2&04e-04 & -3&05e-04 &  1&51e-04 &  2&92e-02 \\ 
-    NOAA-16 &  4  &               285&01 & -3&43e-06 &  1&73e-06 & -2&28e-06 &  1&76e-06 &  1&26e-05 \\   
-            &  5  &               284&98 &  1&08e-05 & -4&00e-06 &  6&84e-06 & -3&62e-06 & -8&87e-05 \vspace{0.75em}\\ 
-            &  3B &               286&13 & -4&55e-04 &  1&85e-04 & -2&91e-04 & -1&86e-03 &  6&35e-02 \\   
-    NOAA-17 &  4  &               285&01 & -6&02e-06 &  2&70e-06 & -3&92e-06 & -7&89e-05 &  1&35e-03 \\   
-            &  5  &               284&98 &  8&72e-06 & -3&24e-06 &  5&52e-06 &  1&60e-04 & -9&14e-04 \vspace{0.75em}\\ 
-            &  3B &               286&10 & -4&45e-04 &  1&79e-04 & -2&84e-04 & -3&66e-03 & -3&91e-03 \\   
-    NOAA-18 &  4  &               285&01 & -5&17e-06 &  2&29e-06 & -3&36e-06 &  1&15e-05 &  4&70e-06 \\   
-            &  5  &               284&98 &  1&09e-05 & -3&91e-06 &  6&89e-06 &  6&55e-06 &  8&00e-06 \vspace{0.75em}\\ 
-            &  3B &               286&33 & -4&28e-04 &  1&82e-04 & -2&75e-04 & -6&51e-03 & -8&11e-03 \\   
-    MetOp-A &  4  &               285&01 & -4&68e-06 &  2&15e-06 & -3&06e-06 &  2&98e-06 &  9&08e-07 \\   
-            &  5  &               284&98 &  1&17e-05 & -4&24e-06 &  7&43e-06 & -7&09e-06 & -5&24e-06 \\ 
-    \hline
-  \end{tabular}
-  \caption{Effective temperature residuals for a blackbody temperature of 285K between the reference AVHRR SRFs (derived from the NESDIS/STAR AVHRR SRFs \citep{NESDIS_AVHRR_SRFs} via spline interpolation with tension 5.0), different interpolation methods (including none at all), and the current SRF used in CRTM processing.}
-  \label{tab:teff_comparison}
-\end{table}
-
-
-\section{Conclusions}
-%====================
-This quick look at the AVHRR infrared channel SRFs can be summarised as follows:
-\begin{itemize}
-  \item Despite their radiometric similarity, we need to reconcile the differences between the two sets of NOAA-17 SRFs to determine which is representative of the actual instrument,
-  \item The radiometric differences between the SRFs used to generate the current CRTM SpcCoeff and TauCoeff data and the official interpolated SRF are minimal, and
-  \item Given any sufficiently well defined SRF, the method of interpolation used to put the SRF on a regular frequency grid has minimal radiometric impact.
-\end{itemize}
 
 % The references section
 %=======================
@@ -187,12 +63,11 @@ This quick look at the AVHRR infrared channel SRFs can be summarised as follows:
 \bibliography{bibliography}
 
 
-% Begin appendices of SRF plots
-%==============================
+% The appendices section
+%=======================
 \begin{appendix}
   \include{srf.app}
   \include{bc.app}
-  \include{n16.app}
 \end{appendix}
 
 \end{document}
