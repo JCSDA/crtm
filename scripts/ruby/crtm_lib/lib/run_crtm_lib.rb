@@ -34,7 +34,7 @@
 #    Skip the library generic link phase.
 #
 #
-# Written by:: Paul van Delst, CIMSS/SSEC 21-Nov-2008 (paul.vandelst@noaa.gov)
+# Written by:: Paul van Delst, 21-Nov-2008 (paul.vandelst@noaa.gov)
 #
 
 require 'crtm_lib'
