@@ -52,7 +52,7 @@ module CRTM_Lib
       @lib_file    = LIB_FILE
     end
 
-    def process_arguments(arguments)
+    def process_arguments
       # Process the command line options
       begin
         OPTIONS.each do |opt, arg|
@@ -79,8 +79,8 @@ module CRTM_Lib
         exit 1
       end
       # Process the command line arguments
-      if !arguments.empty?
-        targets = arguments.uniq.collect {|t| t.downcase}
+      if !ARGV.empty?
+        targets = ARGV.uniq.collect {|t| t.downcase}
         @targets = TARGETS & targets
         invalid_targets = targets - TARGETS
         puts("\nIgnoring invalid target(s): #{invalid_targets.join(",")}") unless invalid_targets.empty? 
