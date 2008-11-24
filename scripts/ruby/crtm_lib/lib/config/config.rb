@@ -20,7 +20,22 @@ module CRTM_Lib
     LIB_FILE = "libCRTM.a"
         
     # Build targets
-    PROD_TARGETS  = ["lahey","pgi","gfortran"]
+    PROD_TARGETS = case `uname -s`.chomp
+                   when "AIX"
+                     ["ibm"]
+                   when "Linux"
+                     ["lahey","pgi","gfortran","intel","g95"]
+                   when "Darwin"
+                     ["gfortran"]
+                   when "HP-UX"
+                     ["hpux"]
+                   when "SunOS"
+                     ["sun"]
+                   when "IRIX64"
+                     ["sgi"]
+                   else
+                     []
+                   end
     DEBUG_TARGETS = PROD_TARGETS.collect {|t| t+"_debug"}
     TARGETS = PROD_TARGETS + DEBUG_TARGETS
     
@@ -59,7 +74,8 @@ module CRTM_Lib
           case opt
             when "--help"
               puts("\nTargets\n-------\n")
-              KNOWN_TARGETS.each {|t| puts("#{t}")}
+              puts(PROD_TARGETS.join(", "))
+              puts(DEBUG_TARGETS.join(", "))
               RDoc::usage(0)
             when "--debug"
               @debug = true
