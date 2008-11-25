@@ -14,9 +14,14 @@
 # --help  (-h):
 #    you're looking at it.
 #
-# --debug (-g):
-#    Set this switch to output debug information.
+# --build  (-b):
+#    Build the library(ies) for the specified target(s). The default is to NOT
+#    build anything.
 #
+# --link  (-l):
+#    Create a generic link for the specified target. If multiple targets are
+#    specified, the last one is linked. The default is to NOT link anything.
+#    
 # --install-dir <dir> (-i <dir>)
 #    Use this option to specify a different directory in which to install the
 #    generated CRTM libraries and include files. If not specified, the default
@@ -27,11 +32,8 @@
 #    specified, the default CRTM directory is that defined by the environment
 #    variable CRTM_SOURCE_ROOT.
 #
-# --no-build  (-b):
-#    Skip the library build phase.
-#
-# --no-link  (-l):
-#    Skip the library generic link phase.
+# --debug (-g):
+#    Set this switch to output debug information.
 #
 #
 # Written by:: Paul van Delst, 21-Nov-2008 (paul.vandelst@noaa.gov)
