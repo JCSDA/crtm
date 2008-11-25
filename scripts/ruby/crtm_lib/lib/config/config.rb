@@ -43,8 +43,8 @@ module CRTM_Lib
     OPTIONS = GetoptLong.new(
       [ "--help"       , "-h", GetoptLong::NO_ARGUMENT       ],
       [ "--debug"      , "-g", GetoptLong::NO_ARGUMENT       ],
-      [ "--no-build"   , "-b", GetoptLong::NO_ARGUMENT       ],
-      [ "--no-link"    , "-l", GetoptLong::NO_ARGUMENT       ],
+      [ "--build"      , "-b", GetoptLong::NO_ARGUMENT       ],
+      [ "--link"       , "-l", GetoptLong::NO_ARGUMENT       ],
       [ "--install-dir", "-i", GetoptLong::REQUIRED_ARGUMENT ],
       [ "--crtm-dir"   , "-c", GetoptLong::REQUIRED_ARGUMENT ] )
       
@@ -58,8 +58,8 @@ module CRTM_Lib
     def initialize(debug = false)
       @targets     = TARGETS           # Process everything
       @install_dir = INSTALL_DIR       # Default install directory
-      @build       = true              # Build everything
-      @link        = true              # Link everything
+      @build       = false             # Build nothing
+      @link        = false             # Link nothing
       @crtm_dir    = CRTM_SOURCE_ROOT  # CRTM source root directory
       @debug       = debug
       @lib_dir     = ""
@@ -74,15 +74,15 @@ module CRTM_Lib
           case opt
             when "--help"
               puts("\nTargets\n-------\n")
-              puts(PROD_TARGETS.join(", "))
-              puts(DEBUG_TARGETS.join(", "))
+              puts(PROD_TARGETS.join(" "))
+              puts(DEBUG_TARGETS.join(" "))
               RDoc::usage(0)
             when "--debug"
               @debug = true
-            when "--no-build"
-              @build = false
-            when "--no-link"
-              @link = false
+            when "--build"
+              @build = true
+            when "--link"
+              @link = true
             when "--install-dir"
               @install_dir = File.expand_path(arg)
             when "--crtm-dir"
@@ -99,7 +99,7 @@ module CRTM_Lib
         targets = ARGV.uniq.collect {|t| t.downcase}
         @targets = TARGETS & targets
         invalid_targets = targets - TARGETS
-        puts("\nIgnoring invalid target(s): #{invalid_targets.join(",")}") unless invalid_targets.empty? 
+        puts("\nIgnoring invalid target(s): #{invalid_targets.join(" ")}") unless invalid_targets.empty? 
       end
       # Create the lib and include directory names
       @lib_dir     = @install_dir + "/lib"
@@ -108,7 +108,7 @@ module CRTM_Lib
 
     def display
       puts("\nCRTM_Lib config values:")
-      puts("targets     : #{@targets.join(",")}")
+      puts("targets     : #{@targets.join(" ")}")
       puts("crtm_dir    : #{@crtm_dir}")
       puts("install_dir : #{@install_dir}")
       puts("build       : #{@build}")
