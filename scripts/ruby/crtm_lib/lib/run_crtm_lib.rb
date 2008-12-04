@@ -28,12 +28,13 @@
 #    install directory is ${HOME}/local/CRTM.
 #
 # --crtm-dir <dir> (-c <dir>)
-#    Use this option to specify a different CRTM source code directory. If not
-#    specified, the default CRTM directory is that defined by the environment
-#    variable CRTM_SOURCE_ROOT.
+#    Use this option to specify a different CRTM source code repository working
+#    copy directory. If not specified, the default CRTM repository working copy
+#    is that defined by the environment variable CRTM_SOURCE_ROOT.
 #
 # --debug (-g):
-#    Set this switch to output debug information.
+#    Set this switch to output debug information. Setting this displays the commands
+#    to be executed without invoking them.
 #
 #
 # Written by:: Paul van Delst, 21-Nov-2008 (paul.vandelst@noaa.gov)

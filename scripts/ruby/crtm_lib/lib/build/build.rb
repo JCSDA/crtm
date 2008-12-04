@@ -20,7 +20,7 @@ module CRTM_Lib
         
         # Build the bits
         FileUtils.chdir(@config.crtm_dir,:verbose=>@config.debug) do
-          run("make create_links")
+          run("make create_links CRTM_SOURCE_ROOT=#{@config.crtm_dir}")
           FileUtils.chdir("Build",:verbose=>@config.debug) do
             @config.targets.each do |t|
               # Create the include dir
