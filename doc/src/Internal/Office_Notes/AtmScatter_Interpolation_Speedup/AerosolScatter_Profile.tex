@@ -1,0 +1,47 @@
+\section{AerosolScatter Forward Model Profile Results}
+%=====================================================
+Aerosol optical properties are only used in the infrared spectral region, so only one routine is profiled here -- the generic \texttt{get\_aerosol\_opt}. As with the CloudScatter forward model results, no significant timing differences are seen since the number of calculations is essentially the same.
+
+\subsection{Linux test}
+%----------------------
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt}} & 39&52 & 230&06   & &   34&28 & 245&13 \vspace{0.5em}\\
+    &\texttt{interp\_2d}                           & 40&73 &  91&91   & &   37&85 & 103&73 \\
+    &\texttt{find\_random\_index}                  & 49&10 &   0&00   & &   53&28 &   0&00 \\
+    &\texttt{lpoly}                                &  8&01 &  40&15   & &    9&09 &  40&75 \\
+    &\texttt{aerosol\_type\_index}                 &  0&18 &   0&00   & &    0&44 &   0&00 \\
+    \hline
+  \end{tabular}
+  \caption{gfortran AerosolScatter Forward model profile results for the \texttt{Get\_Aerosol\_Opt} subroutine. All times in seconds.}
+  \label{tab:fwd_as_test_get_aerosol_opt_gfortran}
+\end{table}
+
+
+\subsection{IBM test}
+%--------------------
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt}} & 267&45 & 1855&09   & &   234&69 & 1889&82 \vspace{0.5em}\\
+    &\texttt{interp\_2d}                           & 579&35 &  817&80   & &   583&05 &  795&91 \\
+    &\texttt{lpoly}                                &  74&27 &  260&30   & &    73&78 &  263&76 \\
+    &\texttt{find\_random\_index}                  & 122&63 &    0&00   & &   172&29 &    0&00 \\
+    &\texttt{aerosol\_type\_index}                 &   0&74 &    0&00   & &     1&03 &    0&00 \\
+    \hline
+  \end{tabular}
+  \caption{IBM AerosolScatter Forward model profile results for the \texttt{Get\_Aerosol\_Opt} subroutine. All times in seconds.}
+  \label{tab:fwd_as_test_get_aerosol_opt_ibm}
+\end{table}
+
