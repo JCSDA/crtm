@@ -1,0 +1,1162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>CRTM User Interface</title>
+  <meta http-equiv="Content-Style-Type" content="text/css">
+
+
+  <!-- ============================== -->
+  <!-- Script to load CSS strylesheet -->
+  <!-- ============================== -->
+
+  <script type="text/javascript">
+    <!-- Hide script from old browsers
+    var BName = navigator.appName;
+    if (BName != "Microsoft Internet Explorer")  {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/style.css\">")
+    }
+    else {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/IEstyle.css\">")
+    }
+    ; // -->
+  </script>
+
+
+  <!-- ================================ -->
+  <!-- Script to open the table windows -->
+  <!-- ================================ -->
+
+  <script language="JavaScript" type="text/javascript">
+    <!-- Hide script from old browsers
+    function Open_Table_Window( Type ) {
+      switch( Type ) {
+        case "ChannelInfo": 
+          ChannelInfoWindow = window.open("Tables/ChannelInfo_Valid_Values_Table.html", 
+                                          "ChannelInfoWin", 
+                                          "width=600,height=750,scrollbars=yes")
+          break
+
+        case "YesNo":
+          YesNoWindow = window.open("Tables/YesNo_Flag_Table.html", 
+                                    "YesNoWin", 
+                                    "width=600,height=250,scrollbars=yes")
+          break
+
+        case "Climatology":
+          ClimatologyWindow = window.open("Tables/Climatology_Model_Values_Table.html", 
+                                          "ClimatologyWin", 
+                                          "width=600,height=400,scrollbars=yes")
+          break
+
+        case "AbsorberID":
+          AbsorberIDWindow = window.open("Tables/Absorber_ID_Values_Table.html", 
+                                         "AbsorberIDWin", 
+                                         "width=600,height=675,scrollbars=yes")
+          break
+
+        case "AbsorberUnits": 
+          AbsorberUnitsWindow = window.open("Tables/Absorber_Units_Values_Table.html", 
+                                            "AbsorberUnitsWin", 
+                                            "width=600,height=500,scrollbars=yes")
+          break
+
+        case "CloudType": 
+          CloudTypeWindow = window.open("Tables/Cloud_Type_Values_Table.html", 
+                                        "CloudTypeWin", 
+                                        "width=600,height=400,scrollbars=yes")
+          break
+
+        case "AerosolType": 
+          AerosolTypeWindow = window.open("Tables/Aerosol_Type_Values_Table.html", 
+                                          "AerosolTypeWin", 
+                                          "width=600,height=400,scrollbars=yes")
+          break
+
+        case "LandType": 
+          LandTypeWindow = window.open("Tables/Land_Type_Values_Table.html", 
+                                       "LandTypeWin", 
+                                       "width=600,height=775,scrollbars=yes")
+          break
+
+        case "WaterType": 
+          WaterTypeWindow = window.open("Tables/Water_Type_Values_Table.html", 
+                                        "WaterTypeWin", 
+                                        "width=600,height=250,scrollbars=yes")
+          break
+
+        case "SnowType": 
+          SnowTypeWindow = window.open("Tables/Snow_Type_Values_Table.html", 
+                                       "SnowTypeWin", 
+                                       "width=600,height=650,scrollbars=yes")
+          break
+
+        case "IceType": 
+          IceTypeWindow = window.open("Tables/Ice_Type_Values_Table.html", 
+                                      "IceTypeWin", 
+                                      "width=600,height=350,scrollbars=yes")
+          break
+
+        default: alert("NO VALID SELECTIONS")
+      }
+    }
+    ; // -->
+  </script>
+
+</head>
+<body>
+<h1 class="main"><a name="TOP"></a>CRTM User Interface</h1>
+<hr width="100%">
+
+<p>All of the CRTM modules required by a user have been collected into the module
+<tt>CRTM_Module.f90</tt>. Thus, apart from the <tt>Type_Kinds.f90</tt> and <tt>Error_Handler.f90</tt>
+utility modules, all a user is required to do to obtain access to the CRTM structure definitions and
+routines is to insert the line of code,
+
+<pre>
+  USE CRTM_Module
+</pre>
+
+<p>in their calling routine/program. This section describes the User Interface in more detail.
+
+
+
+<!-- ================================================ -->
+<h2><a name="INITIALIZATION"></a>CRTM Initialization</h2>
+<!-- ================================================ -->
+
+<p style="color: red">Feb.25, 2005: The initialization interface is currently under review.
+Currently, it is rather unwieldy and we are investigating other alternatives to the specification
+of the data files and channel information. Stay tuned.
+
+<p>This step is crucial as it initializes the model by loading the various model coefficients
+from datafile into memory. The CRTM initialization function calling sequence is,
+
+<pre>
+  Error_Status = <a href="CRTM_LifeCycle.f90.html#CRTM_INIT">CRTM_Init</a>( <a href="#CHANNELINFO">ChannelInfo</a>,                           &  ! Output
+                            SpcCoeff_File     = SpcCoeff_File,     &  ! Optional input
+                            TauCoeff_File     = TauCoeff_File,     &  ! Optional input
+                            AerosolCoeff_File = AerosolCoeff_File, &  ! Optional input
+                            ScatterCoeff_File = ScatterCoeff_File, &  ! Optional input
+                            Sensor_Descriptor = Sensor_Descriptor, &  ! Optional input
+                            NCEP_Sensor_ID    = NCEP_Sensor_ID,    &  ! Optional input
+                            Sensor_Channel    = Sensor_Channel,    &  ! Optional input
+                            File_Path         = File_Path,         &  ! Optional input
+                            Quiet             = Quiet,             &  ! Optional input
+                            Process_ID        = Process_ID,        &  ! Optional input
+                            Output_Process_ID = Output_Process_ID, &  ! Optional input
+                            RCS_Id            = RCS_Id,            &  ! Revision control
+                            Message_Log       = Message_Log        )  ! Error messaging
+</pre>
+
+<p>The coefficient datafile names are all optional parameters since, as more features
+are added, more datafiles will presumably need to be read in. Because the datafile names
+are optional, they all have default values in case the user passes no names. The default 
+coefficient file naming convention is
+<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;<em>Structure name</em>&gt;<tt>.bin</tt><br><br>
+
+such as <tt>SpcCoeff.bin</tt>, <tt>ScatterCoeff.bin</tt>, etc.
+
+
+<!-- ======================================== -->
+<h2><a name="COMPONENTS"></a>CRTM Components</h2>
+<!-- ======================================== -->
+
+<h3><a name="FORWARD_MODEL"></a>Forward Model</h3>
+<!-- ========================================= -->
+
+<p>The CRTM forward model calling sequence is,
+
+<pre>
+  Error_Status = <a href="CRTM_Forward_Module.f90.html#CRTM_FORWARD">CRTM_Forward</a>( <a href="#ATMOSPHERE">Atmosphere</a>,                &  ! Input    
+                               <a href="#SURFACE">Surface</a>,                   &  ! Input    
+                               <a href="#GEOMETRYINFO">GeometryInfo</a>,              &  ! Input    
+                               <a href="#CHANNELINFO">ChannelInfo</a>,               &  ! Input    
+                               <a href="#RTSOLUTION">RTSolution</a>,                &  ! Output   
+                               RCS_Id       = RCS_Id,     &  ! Revision control
+                               Message_Log  = Message_Log )  ! Error messaging
+</pre>
+
+<p>The table below shows the allowed dimensionalities of the input
+and output arguments for the forward model. The <tt>ChannelInfo</tt>
+argument is always scalar.
+
+<p><a name="CRTM_FORWARD_DIMENSIONALITY_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>Allowable dimensionality combinations for <tt>CRTM_Forward</tt>
+           <br><tt>L</tt> = number of channels.
+           <br><tt>M</tt> = number of atmospheric profiles.</caption>
+  <tbody>
+    <tr align="center"><th colspan=3>INPUTS</th><th>OUTPUTS</th></tr>
+    <tr align="center"><th>Atmosphere</th><th>Surface</th><th>GeometryInfo</th><th>RTSolution</th></tr>
+    <tr align="center"><td>Scalar</td><td>Scalar</td><td>Scalar</td><td><tt>L</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td><tt>M</tt></td><td><tt>M</tt></td><td><tt>L x M</tt></td></tr>
+  </tbody>
+</table>
+
+
+<h3><a name="TANGENT_LINEAR_MODEL"></a>Tangent-Linear Model</h3>
+<!-- ======================================================= -->
+
+<p>The CRTM tangent-linear model calling sequence is,
+
+<pre>
+  Error_Status = <a href="CRTM_Tangent_Linear_Module.f90.html#CRTM_TANGENT_LINEAR">CRTM_Tangent_Linear</a>( <a href="#ATMOSPHERE">Atmosphere</a>,                &  ! Input    
+                                      <a href="#SURFACE">Surface</a>,                   &  ! Input    
+                                      <a href="#ATMOSPHERE">Atmosphere_TL</a>,             &  ! Input    
+                                      <a href="#SURFACE">Surface_TL</a>,                &  ! Input    
+                                      <a href="#GEOMETRYINFO">GeometryInfo</a>,              &  ! Input    
+                                      <a href="#CHANNELINFO">ChannelInfo</a>,               &  ! Input    
+                                      <a href="#RTSOLUTION">RTSolution</a>,                &  ! Output   
+                                      <a href="#RTSOLUTION">RTSolution_TL</a>,             &  ! Output   
+                                      RCS_Id       = RCS_Id,     &  ! Revision control
+                                      Message_Log  = Message_Log )  ! Error messaging
+</pre>
+
+<p>The same structure definitions are used for both the forward and
+tangent-linear structures.
+
+<p>The table below shows the allowed dimensionalities of the input
+and output arguments for the tangent-linear model. The <tt>ChannelInfo</tt>
+argument is always scalar.
+
+<p><a name="CRTM_TANGENT_LINEAR_DIMENSIONALITY_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>Allowable dimensionality combinations for <tt>CRTM_Tangent_Linear</tt>
+           <br><tt>L</tt> = number of channels.
+           <br><tt>M</tt> = number of atmospheric profiles.</caption>
+  <tbody>
+    <tr align="center"><th colspan=3>INPUTS</th><th>OUTPUTS</th></tr>
+    <tr align="center"><th>Atmosphere<br>Atmosphere_TL</th><th>Surface<br>Surface_TL</th><th>GeometryInfo</th><th>RTSolution<br>RTSolution_TL</th></tr>
+    <tr align="center"><td>Scalar</td><td>Scalar</td><td>Scalar</td><td><tt>L</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td><tt>M</tt></td><td><tt>M</tt></td><td><tt>L x M</tt></td></tr>
+  </tbody>
+</table>
+
+
+<h3><a name="ADJOINT_MODEL"></a>Adjoint Model</h3>
+<!-- ========================================= -->
+
+<p>The CRTM adjoint model calling sequence is,
+
+<pre>
+  Error_Status = <a href="CRTM_Adjoint_Module.f90.html#CRTM_ADJOINT">CRTM_Adjoint</a>( <a href="#ATMOSPHERE">Atmosphere</a>,                &  ! Input
+                               <a href="#SURFACE">Surface</a>,                   &  ! Input
+                               <a href="#RTSOLUTION">RTSolution_AD</a>,             &  ! Input
+                               <a href="#GEOMETRYINFO">GeometryInfo</a>,              &  ! Input
+                               <a href="#CHANNELINFO">ChannelInfo</a>,               &  ! Input
+                               <a href="#ATMOSPHERE">Atmosphere_AD</a>,             &  ! Output
+                               <a href="#SURFACE">Surface_AD</a>,                &  ! Output
+                               <a href="#RTSOLUTION">RTSolution</a>,                &  ! Output
+                               RCS_Id       = RCS_Id,     &  ! Revision control
+                               Message_Log  = Message_Log )  ! Error messaging
+</pre>
+
+<p>The same structure definitions are used for both the forward and
+adjoint structures.
+
+<p>The table below shows the allowed dimensionalities of the input
+and output arguments for the adjoint model. The <tt>ChannelInfo</tt>
+argument is always scalar.
+
+<p><a name="CRTM_ADJOINT_DIMENSIONALITY_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>Allowable dimensionality combinations for <tt>CRTM_Adjoint</tt>
+           <br><tt>L</tt> = number of channels.
+           <br><tt>M</tt> = number of atmospheric profiles.</caption>
+  <tbody>
+    <tr align="center"><th colspan=3>INPUTS</th><th colspan=2>OUTPUTS</th></tr>
+    <tr align="center"><th>Atmosphere<br>Surface</th><th>RTSolution_AD</th><th>GeometryInfo</th><th>RTSolution</th><th>Atmosphere_AD<br>Surface_AD</th></tr>
+    <tr align="center"><td>Scalar</td><td><tt>L</tt></td><td>Scalar</td><td><tt>L</tt></td><td>Scalar</td></tr>
+    <tr align="center"><td><tt>M</tt></td><td><tt>L x M</tt></td><td><tt>M</tt></td><td><tt>L x M</tt></td><td><tt>M</tt></td></tr>
+  </tbody>
+</table>
+
+
+<h3><a name="K_MATRIX_MODEL"></a>K-matrix Model</h3>
+<!-- =========================================== -->
+
+<p>The CRTM K-matrix model calling sequence is,
+
+<pre>
+  Error_Status = <a href="CRTM_K_Matrix_Module.f90.html#CRTM_K_MATRIX">CRTM_K_Matrix</a>( <a href="#ATMOSPHERE">Atmosphere</a>,                &  ! Input
+                                <a href="#SURFACE">Surface</a>,                   &  ! Input
+                                <a href="#RTSOLUTION">RTSolution_K</a>,              &  ! Input
+                                <a href="#GEOMETRYINFO">GeometryInfo</a>,              &  ! Input
+                                <a href="#CHANNELINFO">ChannelInfo</a>,               &  ! Input
+                                <a href="#ATMOSPHERE">Atmosphere_K</a>,              &  ! Output
+                                <a href="#SURFACE">Surface_K</a>,                 &  ! Output
+                                <a href="#RTSOLUTION">RTSolution</a>,                &  ! Output
+                                RCS_Id       = RCS_Id,     &  ! Revision control
+                                Message_Log  = Message_Log )  ! Error messaging
+</pre>
+
+<p>The same structure definitions are used for both the forward and
+K-matrix structures.
+
+<p>The table below shows the allowed dimensionalities of the input
+and output arguments for the K-matrix model. The <tt>ChannelInfo</tt>
+argument is always scalar. The only difference between the adjoint and K-matrix
+models is that the K-matrix model returns the atmosphere and surface adjoints
+as a function of channel.
+
+<p><a name="CRTM_K_MATRIX_DIMENSIONALITY_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>Allowable dimensionality combinations for <tt>CRTM_K_Mareix</tt>
+           <br><tt>L</tt> = number of channels.
+           <br><tt>M</tt> = number of atmospheric profiles.</caption>
+  <tbody>
+    <tr align="center"><th colspan=3>INPUTS</th><th colspan=2>OUTPUTS</th></tr>
+    <tr align="center"><th>Atmosphere<br>Surface</th><th>RTSolution_K</th><th>GeometryInfo</th><th>RTSolution</th><th>Atmosphere_K<br>Surface_K</th></tr>
+    <tr align="center"><td>Scalar</td><td><tt>L</tt></td><td>Scalar</td><td><tt>L</tt></td><td><tt>L</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td><tt>L x M</tt></td><td><tt>M</tt></td><td><tt>L x M</tt></td><td><tt>L x M</tt></td></tr>
+  </tbody>
+</table>
+
+
+
+<!-- ========================================== -->
+<h2><a name="DESTRUCTION"></a>CRTM Destruction</h2>
+<!-- ========================================== -->
+
+During the model initialization, the <tt>ChannelInfo</tt> input structure and the coefficient
+shared data structures are allocated to the required size, determined by dimensions in the
+coefficient datafiles. To release this memory, the model destruction routine should be called,
+
+<pre>
+  Error_Status = <a href="CRTM_LifeCycle.f90.html#CRTM_DESTROY">CRTM_Destroy</a>( <a href="#CHANNELINFO">ChannelInfo</a>,              &  ! Output
+                               Process_ID  = Process_ID, &  ! Optional input
+                               RCS_Id      = RCS_Id,     &  ! Revision control
+                               Message_Log = Message_Log )  ! Error messaging
+</pre>
+
+<p>Note also that any allocated CRTM input and output structures may also need to be destroyed.
+This is achieved via the <tt>CRTM_Destroy_</tt>&lt;<em>Structure name</em>&gt;. These are discussed
+further below.
+
+
+
+
+<!-- ====================================================== -->
+<h2><a name="PUBLIC_STRUCTURES"></a>CRTM Public Structures</h2>
+<!-- ====================================================== -->
+
+<p>Where possible, data passed into and within the CRTM are encapsulated
+within structures. This allows for changes to be made (data components added or removed as
+necessary) with minimal impact to the various CRTM interfaces.
+
+<p>This section describes the public structure types used in the CRTM. Structures of these
+types are arguments in the CRTM user interfaces. The table below is an overview of all the
+public CRTM structure types.
+
+<p><a name="PUBLIC_STRUCTURES_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>List of the Public CRTM structure types</caption>
+  <tbody>
+    <tr>
+      <th>Type Name</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#CHANNELINFO">CRTM_ChannelInfo_type</a></tt></td>
+      <td>Structure containing sensor channel information for correct indexing of
+          the CRTM coefficient data. This structure is filled during the CRTM
+          initialization phase. Defined in the <tt>CRTM_ChannelInfo_Define</tt>
+          module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#ATMOSPHERE">CRTM_Atmosphere_type</a></tt></td>
+      <td>Structure containing atmospheric state variable profile data, including profiles
+          of cloud parameters. Defined in the <tt>CRTM_Atmosphere_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt>CRTM_Cloud_type</tt></td>
+      <td>Structure containing cloud state variable profile data. Defined in the
+          <tt>CRTM_Cloud_Define</tt> module. This structure is contained within
+          the <tt><a href="#ATMOSPHERE">Atmosphere</a></tt> structure.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt>CRTM_Aerosol_type</tt></td>
+      <td>Structure containing aerosol state variable profile data. Defined in the
+          <tt>CRTM_Aerosol_Define</tt> module. This structure is contained within
+          the <tt><a href="#ATMOSPHERE">Atmosphere</a></tt> structure.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#SURFACE">CRTM_Surface_type</a></tt></td>
+      <td>Structure containing surface type and state information. Defined in the
+          <tt>CRTM_Surface_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt>CRTM_SensorData_type</tt></td>
+      <td>Structure containing satellite instrument brightness temperature data used as input
+          for some surface emissivity algorithms. Defined in the
+          <tt>CRTM_SensorData_Define</tt> module. This structure is contained within
+          the <tt><a href="#SURFACE">Surface</a></tt> structure.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#GEOMETRYINFO">CRTM_GeometryInfo_type</a></tt></td>
+      <td>Structure containing geometry information such as Earth location, satellite
+          view angle, etc. Defined in the <tt>CRTM_GeometryInfo_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#RTSOLUTION">CRTM_RTSolution_type</a></tt></td>
+      <td>Structure containing results of the radiative transfer calculation such as
+          radiance and brightness temperature, etc. Defined in the <tt>CRTM_RTSolution_Define</tt>
+          module.</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<!-- ======================================================== -->
+<h3><a name="CHANNELINFO"></a><tt>ChannelInfo</tt> Structure</h3>
+<!-- ======================================================== -->
+
+[ <a HREF="#CHANNELINFO_DEFINITION">Definition</a> | 
+  <a HREF="#CHANNELINFO_ALLOCATION">Allocation</a> | 
+  <a HREF="#CHANNELINFO_ASSIGNMENT">Assignment</a> |
+  <a HREF="#CHANNELINFO_DESTRUCTION">Destruction</a> ]
+
+<p>The <tt>ChannelInfo</tt> structure is used to specify channel specific information related to the
+sensor, satellite and channel numbers used in the CRTM. This structure is used to access the
+data loaded during the initialization, phase as will be shown later. The <tt>ChannelInfo</tt> structure
+is always declared as a scalar,
+
+<pre>
+  TYPE( CRTM_ChannelInfo_type ) :: ChannelInfo
+</pre>
+
+<p>It should be noted here that the <tt>ChannelInfo</tt> structure is allocated and populated during the 
+CRTM initialization via the <a href="CRTM_LifeCycle.f90.html#CRTM_INIT"><tt>CRTM_Init</tt></a>
+function -- users should not explicitly allocate and fill the <tt>ChannelInfo</tt> structure
+as it is used to coordinate amongst the different types of data loaded during initialization
+and used in the computation of the various CRTM algorithms (e.g. atmospheric absorption,
+hydrometeor scattering, surface optical properties etc). Similarly for destruction of the 
+<tt>ChannelInfo</tt> structure -- this is handled during the CRTM space destruction when all the
+relevant data structures are deallocated via the
+<a href="CRTM_LifeCycle.f90.html#CRTM_DESTROY"><tt>CRTM_Destroy</tt></a> function.
+
+<p>The <tt>ChannelInfo</tt> structure allocation, assignment, and destruction calling sequences are
+presented here as a matter of record only.
+
+
+<h4><a name="CHANNELINFO_DEFINITION"></a>
+<a href="#CHANNELINFO_ALLOCATION"><tt>ChannelInfo</tt> Definition</a></h4>
+<!-- ================================================================= -->
+
+<p>The <tt>ChannelInfo</tt> structure definition is shown below. The embedded links for the various 
+components will display values for currently supported instruments. As more satellite sensors
+are implemented in the CRTM, this list will expand.
+
+<pre>
+  TYPE, PUBLIC :: CRTM_ChannelInfo_type
+    INTEGER :: n_Channels = 0  ! L dimension
+    CHARACTER( SL ), DIMENSION( : ), POINTER :: <a href="javascript:Open_Table_Window('ChannelInfo')">Sensor_Descriptor</a> => NULL()  ! L
+    INTEGER,         DIMENSION( : ), POINTER :: <a HREF="javascript:Open_Table_Window('ChannelInfo')">NCEP_Sensor_ID</a>    => NULL()  ! L
+    INTEGER,         DIMENSION( : ), POINTER :: <a HREF="javascript:Open_Table_Window('ChannelInfo')">WMO_Satellite_ID</a>  => NULL()  ! L
+    INTEGER,         DIMENSION( : ), POINTER :: <a HREF="javascript:Open_Table_Window('ChannelInfo')">WMO_Sensor_ID</a>     => NULL()  ! L
+    INTEGER,         DIMENSION( : ), POINTER :: Sensor_Channel    => NULL()  ! L
+    INTEGER,         DIMENSION( : ), POINTER :: Channel_Index     => NULL()  ! L
+  END TYPE CRTM_ChannelInfo_type
+</pre>
+
+
+<h4><a name="CHANNELINFO_ALLOCATION"></a>
+<a href="#CHANNELINFO_ASSIGNMENT"><tt>ChannelInfo</tt> Allocation</a></h4>
+<!-- ================================================================= -->
+
+<p>The <tt>ChannelInfo</tt> structure allocation calling sequence is,
+
+<pre>
+  Error_Status = <a href="ChannelInfo/CRTM_ChannelInfo_Define.f90.html#CRTM_ALLOCATE_CHANNELINFO">CRTM_Allocate_ChannelInfo</a>( n_Channels, &
+                                            ChannelInfo, &
+                                            RCS_Id = RCS_Id, &
+                                            Message_Log = Message_Log )
+</pre>
+
+<p>Again, at the risk of sounding too repetitive, users should not explicitly allocate
+the <tt>ChannelInfo</tt> structure. It is allocated and populated as required during the CRTM
+initialization via the <a href="CRTM_LifeCycle.f90.html#CRTM_INIT"><tt>CRTM_Init</tt></a>
+function.
+
+
+<h4><a name="CHANNELINFO_ASSIGNMENT"></a>
+<a href="#CHANNELINFO_DESTRUCTION"><tt>ChannelInfo</tt> Assignment</a></h4>
+<!-- ================================================================== -->
+
+<p>A specific assign function is provided to ensure that when an <tt>ChannelInfo</tt> structure needs to be
+copied, the pointer components are explicitly allocated and copied (deep copy). This means that the
+original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>ChannelInfo</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = <a href="ChannelInfo/CRTM_ChannelInfo_Define.f90.html#CRTM_ASSIGN_CHANNELINFO">CRTM_Assign_ChannelInfo</a>( ChannelInfo_In, &
+                                          ChannelInfo_Out, &
+                                          RCS_Id = RCS_Id, &
+                                          Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  ChannelInfo_Out = ChannelInfo_In
+</pre>
+
+
+<h4><a name="CHANNELINFO_DESTRUCTION"></a>
+<a href="#CHANNELINFO"><tt>ChannelInfo</tt> Destruction</a></h4>
+<!-- ======================================================= -->
+
+<p>The <tt>ChannelInfo</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="ChannelInfo/CRTM_ChannelInfo_Define.f90.html#CRTM_DESTROY_CHANNELINFO">CRTM_Destroy_ChannelInfo</a>( ChannelInfo, &
+                                           RCS_Id = RCS_Id, &
+                                           Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components.
+
+<p>Again, it is noted here that this step should not be explictly performed by users -- the
+deallocation of the <tt>ChannelInfo</tt> structure occurs at the end of the CRTM lifecycle, via the
+<a href="CRTM_LifeCycle.f90.html#CRTM_DESTROY"><tt>CRTM_Destroy</tt></a> function.
+
+
+
+
+<!-- ====================================================== -->
+<h3><a name="ATMOSPHERE"></a><tt>Atmosphere</tt> Structure</h3>
+<!-- ====================================================== -->
+
+[ <a HREF="#ATMOSPHERE_DEFINITION">Definition</a> | 
+  <a HREF="#ATMOSPHERE_ALLOCATION">Allocation</a> | 
+  <a HREF="#ATMOSPHERE_ASSIGNMENT">Assignment</a> |
+  <a HREF="#ATMOSPHERE_DESTRUCTION">Destruction</a> ]
+
+
+<p>The <tt>Atmosphere</tt> data structure is used to pass information about the atmospheric state into
+the CRTM. It can be declared as either a scalar,
+
+<pre>
+  TYPE( CRTM_Atmosphere_type ) :: Atmosphere
+</pre>
+
+<p>or a rank-1 structure array where each element corresponds to a separate atmospheric
+profile,
+
+<pre>
+  INTEGER, PARAMETER :: n_Profiles = 52
+  TYPE( CRTM_Atmopsphere_type ), DIMENSION( n_Profiles ) :: Atmosphere
+</pre>
+
+The <tt>Atmosphere</tt> structure allocation, assignment, and destruction routines have been overloaded
+to accept either a scalar structure or a rank-1 structure array as arguments.
+
+
+<h4><a name="ATMOSPHERE_DEFINITION"></a>
+<a href="#ATMOSPHERE_ALLOCATION"><tt>Atmosphere</tt> Definition</a></h4>
+<!-- =============================================================== -->
+
+<p>The definition of the <tt>Atmosphere</tt> structure is shown below. The embedded links for the
+climatology model and absorber information will display the valid values for these
+components.
+
+<pre>
+  TYPE, PUBLIC :: CRTM_Atmosphere_type
+    ! -- Dimension values
+    INTEGER :: Max_Layers   = 0  ! K dimension
+    INTEGER :: n_Layers     = 0  ! Kuse dimension
+    INTEGER :: n_Absorbers  = 0  ! J dimension
+    INTEGER :: Max_Clouds   = 0  ! Nc dimension
+    INTEGER :: n_Clouds     = 0  ! NcUse dimension
+    INTEGER :: Max_Aerosols = 0  ! Na dimension
+    INTEGER :: n_Aerosols   = 0  ! NaUse dimension
+    ! -- Flag to determine if level temperatures have been supplied.
+    ! -- Default is to assume that they HAVE been supplied.
+    INTEGER :: Level_Temperature_Input = <a href="javascript:Open_Table_Window('YesNo')">YES</a>
+    ! -- Climatology model associated with the profile
+    INTEGER :: <a HREF="javascript:Open_Table_Window('Climatology')">Climatology</a> = INVALID_MODEL
+    ! -- Absorber ID and units
+    INTEGER, DIMENSION( : ), POINTER :: <a HREF="javascript:Open_Table_Window('AbsorberID')">Absorber_ID</a>    => NULL() ! J
+    INTEGER, DIMENSION( : ), POINTER :: <a HREF="javascript:Open_Table_Window('AbsorberUnits')">Absorber_Units</a> => NULL() ! J
+    ! -- Profile LEVEL pressure and LAYER quantities
+    REAL( fp_kind ), DIMENSION( : ),    POINTER :: Level_Pressure    => NULL()  ! 0:K
+    REAL( fp_kind ), DIMENSION( : ),    POINTER :: Level_Temperature => NULL()  ! 0:K
+    REAL( fp_kind ), DIMENSION( : ),    POINTER :: Pressure          => NULL()  ! K
+    REAL( fp_kind ), DIMENSION( : ),    POINTER :: Temperature       => NULL()  ! K
+    REAL( fp_kind ), DIMENSION( :, : ), POINTER :: Absorber          => NULL()  ! K x J
+    ! -- Clouds associated with each profile
+    TYPE( CRTM_Cloud_type ),   DIMENSION( : ), POINTER :: Cloud      => NULL()  ! Nc
+    ! -- Aerosols associated with each profile
+    TYPE( CRTM_Aerosol_type ), DIMENSION( : ), POINTER :: Aerosol    => NULL()  ! Na
+  END TYPE CRTM_Atmosphere_type
+</pre>
+
+<p>The <tt>Level_Temperature_Input</tt> component is a flag used to allow the user to inform the
+code whether or not the level temperature profile (required for accurate radiative transfer) has
+been supplied (the default is that it <em>is</em> present). If the user has not supplied the
+level temperature profile, then it should be deselected, 
+<pre>
+  Atmosphere%Level_Temperature_Input = NO
+</pre>
+<p>In this case, the level temperature profile is estimated from the layer temperature profile.
+
+<p>The <tt>Atmosphere</tt> structure has <tt>Cloud</tt> and <tt>Aerosol</tt> structure components
+which are used to contain information about clouds and aerosols which is passed into the CRTM
+scattering routines. The <tt>Cloud</tt> structure definition is,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_Cloud_type
+    ! -- Dimension values
+    INTEGER :: n_Layers = 0  ! K dimension.
+    ! -- Cloud type
+    INTEGER :: <a href="javascript:Open_Table_Window('CloudType')">Type</a> = NO_CLOUD
+    ! -- Particle size distribution parameters
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Effective_Radius   => NULL() ! K
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Effective_Variance => NULL() ! K
+    ! -- Cloud state variables
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Water_Content => NULL()      ! K
+  END TYPE CRTM_Cloud_type
+</pre>
+
+<p>and the <tt>Aerosol</tt> definition is,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_Aerosol_type
+    ! -- Dimensions
+    INTEGER :: n_Layers  = 0  ! K dimension
+    INTEGER :: Max_Modes = 0  ! Nm dimension
+    INTEGER :: n_Modes   = 0  ! NmUse dimension
+    ! -- Aerosol type
+    INTEGER :: <a href="javascript:Open_Table_Window('AerosolType')">Type</a> = NO_AEROSOL
+    ! -- Particle size distribution parameters
+    REAL( fp_kind ), DIMENSION( :, : ), POINTER :: Effective_Radius   => NULL() ! K x Nm
+    REAL( fp_kind ), DIMENSION( :, : ), POINTER :: Effective_Variance => NULL() ! K x Nm
+    ! -- Aerosol state variables
+    REAL( fp_kind ), DIMENSION( :, : ), POINTER :: Concentration => NULL()      ! K x Nm
+  END TYPE CRTM_Aerosol_type
+</pre>
+
+<p>Note that each <tt>Cloud</tt> and <tt>Aerosol</tt> structure describe a <em>single</em> type
+of cloud or aerosol. Multiple cloud and aerosol types associated with a single <tt>Atmosphere</tt>
+structure are handled by the <tt>Cloud</tt> and <tt>Aerosol</tt> components being allocatable to
+the required number of clouds/aerosol types.
+
+<p>For the <tt>Aerosol</tt> structure, the number of modes dimension defines the number of size
+distribution modes. Currently the default maximum number of modes allowed is set to 4 (the value of
+<tt>Max_Modes</tt>). The user can change the number of modes <em>used</em> in the scattering
+routines by setting the <tt>n_Modes</tt> component to the required value. 
+
+<p>The allocation, assignment, and destruction of <tt>Cloud</tt> and <tt>Aerosol</tt> structures
+are handled by the corresponding <tt>Atmosphere</tt> manipulation routines and will not be
+covered separately here.
+
+
+<h4><a name="ATMOSPHERE_ALLOCATION"></a>
+<a href="#ATMOSPHERE_ASSIGNMENT"><tt>Atmosphere</tt> Allocation</a></h4>
+<!-- =============================================================== -->
+
+Before populating the <tt>Atmosphere</tt> structure it must first be allocated. The <tt>Atmosphere</tt> structure
+allocation calling sequence is,
+
+<pre>
+  Error_Status = <a href="Atmosphere/CRTM_Atmosphere_Define.f90.html#CRTM_ALLOCATE_ATMOSPHERE">CRTM_Allocate_Atmosphere</a>( n_Layers, &
+                                           n_Absorbers, &
+                                           n_Clouds, &
+                                           n_Aerosols, &
+                                           Atmosphere, &
+                                           RCS_Id = RCS_Id, &
+                                           Message_Log = Message_Log )
+</pre>
+
+<p>The dimensionality of the output <tt>Atmosphere</tt> structure is determined by the
+dimensionality of the input arguments in the <tt>CRTM_Allocate_Atmosphere</tt> function.
+The allowed input/output argument dimension combinations are shown in the
+<a href="#CRTM_ALLOCATE_ATMOSPHERE_DIMENSIONALITY_TABLE">table</a>
+below. These multiple interfaces are supplied purely for ease of use depending on what data is
+available but some things should be noted:
+<ul>
+  <li>Currently, the number of absorbers cannot vary with the profile
+  <li>The <tt>Cloud</tt> and <tt>Aerosol</tt> structures are allocated to the same number of layers as the
+      parent <tt>Atmosphere</tt> structure.
+  <li>The maximum number of aerosol size distribution modes for the <tt>Aerosol</tt> structure is currently
+      fixed at 2..
+</ul>
+
+<p><a name="CRTM_ALLOCATE_ATMOSPHERE_DIMENSIONALITY_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>Allowable dimensionality combinations for <tt>CRTM_Allocate_Atmosphere</tt>
+           <br><tt>M</tt> = number of atmospheric profiles.</caption>
+  <tbody>
+    <tr align="center">
+      <th>Input <tt>n_Layers</tt> dimension</th>
+      <th>Input <tt>n_Absorbers</tt> dimension</th>
+      <th>Input <tt>n_Clouds</tt> dimension</th>
+      <th>Input <tt>n_Aerosols</tt> dimension</th>
+      <th>Output <tt>Atmosphere</tt> dimension</th>
+    </tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar</td><td>Scalar    </td><td>Scalar    </td><td>Scalar    </td></tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar</td><td>Scalar    </td><td>Scalar    </td><td><tt>M</tt></td></tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar</td><td>Scalar    </td><td><tt>M</tt></td><td><tt>M</tt></td></tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar</td><td><tt>M</tt></td><td>Scalar    </td><td><tt>M</tt></td></tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar</td><td><tt>M</tt></td><td><tt>M</tt></td><td><tt>M</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td>Scalar</td><td>Scalar    </td><td>Scalar    </td><td><tt>M</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td>Scalar</td><td>Scalar    </td><td><tt>M</tt></td><td><tt>M</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td>Scalar</td><td><tt>M</tt></td><td>Scalar    </td><td><tt>M</tt></td></tr>
+    <tr align="center"><td><tt>M</tt></td><td>Scalar</td><td><tt>M</tt></td><td><tt>M</tt></td><td><tt>M</tt></td></tr>
+  </tbody>
+</table>
+
+
+<h4><a name="ATMOSPHERE_ASSIGNMENT"></a>
+<a href="#ATMOSPHERE_DESTRUCTION"><tt>Atmosphere</tt> Assignment</a></h4>
+<!-- ================================================================ -->
+
+<p>A specific assign function is provided to ensure that when an <tt>Atmosphere</tt> structure needs to be
+copied, the pointer components are explicitly allocated and copied (deep copy). This means that the
+original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>Atmosphere</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = <a href="Atmosphere/CRTM_Atmosphere_Define.f90.html#CRTM_ASSIGN_ATMOSPHERE">CRTM_Assign_Atmosphere</a>( Atmosphere_In, &
+                                         Atmosphere_Out, &
+                                         RCS_Id = RCS_Id, &
+                                         Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  Atmosphere_Out = Atmosphere_In
+</pre>
+
+
+<h4><a name="ATMOSPHERE_DESTRUCTION"></a>
+<a href="#ATMOSPHERE"><tt>Atmosphere</tt> Destruction</a></h4>
+<!-- ===================================================== -->
+
+<p>The <tt>Atmosphere</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="Atmosphere/CRTM_Atmosphere_Define.f90.html#CRTM_DESTROY_ATMOSPHERE">CRTM_Destroy_Atmosphere</a>( Atmosphere, &
+                                          RCS_Id = RCS_Id, &
+                                          Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components. Note that
+the <tt>CRTM_Destroy_Atmosphere</tt> function accepts up to 10 structures to destroy so that
+multiple structures/structure arrays can be easily deallocated.
+
+
+
+
+
+<!-- ================================================ -->
+<h3><a name="SURFACE"></a><tt>Surface</tt> Structure</h3>
+<!-- ================================================ -->
+
+[ <a HREF="#SURFACE_DEFINITION">Definition</a> | 
+  <a HREF="#SURFACE_ALLOCATION">Allocation</a> | 
+  <a HREF="#SURFACE_ASSIGNMENT">Assignment</a> |
+  <a HREF="#SURFACE_DESTRUCTION">Destruction</a> ]
+
+<p>Similarly to the <tt>Atmosphere</tt> structure, the <tt>Surface</tt> data structure is used to pass information
+about the surface state into the CRTM. It can be declared as either a scalar,
+
+<pre>
+  TYPE( CRTM_Surface_type ) :: Surface
+</pre>
+
+<p>or a rank-1 structure array where each element corresponds to the surface data for a separate
+atmospheric profile,
+
+<pre>
+  INTEGER, PARAMETER :: n_Profiles = 52
+  TYPE( CRTM_Surface_type ), DIMENSION( n_Profiles ) :: Surface
+</pre>
+
+<p>All of the <tt>Surface</tt> structure routines have been overloaded to accept either a scalar structure
+or a rank-1 structure array as arguments.
+
+
+
+<h4><a name="SURFACE_DEFINITION"></a>
+<a href="#SURFACE_ALLOCATION"><tt>Surface</tt> Definition</a></h4>
+<!-- ========================================================= -->
+
+<p>The definition of the <tt>Surface</tt> structure is shown below. The embedded links for the various
+surface types will display the valid values for these components.
+
+<pre>
+  TYPE, PUBLIC :: CRTM_Surface_type
+    ! -- Gross surface type coverage fractions
+    REAL( fp_kind ) :: Land_Coverage  = ZERO
+    REAL( fp_kind ) :: Water_Coverage = ZERO
+    REAL( fp_kind ) :: Snow_Coverage  = ZERO
+    REAL( fp_kind ) :: Ice_Coverage   = ZERO
+    ! -- Surface type independent data
+    REAL( fp_kind ) :: Wind_Speed = ZERO
+    ! -- Land surface type data
+    INTEGER         :: <a href="javascript:Open_Table_Window('LandType')">Land_Type</a>             = INVALID_LAND             
+    REAL( fp_kind ) :: Land_Temperature      = ZERO
+    REAL( fp_kind ) :: Soil_Moisture_Content = ZERO !Volumetric_Water_Content
+    REAL( fp_kind ) :: Canopy_Water_Content  = ZERO !Gravimetric_Water_Content
+    REAL( fp_kind ) :: Vegetation_Fraction   = ZERO
+    REAL( fp_kind ) :: Soil_Temperature      = ZERO
+    ! -- Water type data
+    INTEGER         :: <a href="javascript:Open_Table_Window('WaterType')">Water_Type</a>        = INVALID_WATER
+    REAL( fp_kind ) :: Water_Temperature = ZERO
+    REAL( fp_kind ) :: Wind_Direction    = ZERO
+    REAL( fp_kind ) :: Salinity          = ZERO
+    ! -- Snow surface type data
+    INTEGER         :: <a href="javascript:Open_Table_Window('SnowType')">Snow_Type</a>        = INVALID_SNOW
+    REAL( fp_kind ) :: Snow_Temperature = ZERO
+    REAL( fp_kind ) :: Snow_Depth       = ZERO
+    REAL( fp_kind ) :: Snow_Density     = ZERO
+    REAL( fp_kind ) :: Snow_Grain_Size  = ZERO
+    ! -- Ice surface type data
+    INTEGER         :: <a href="javascript:Open_Table_Window('IceType')">Ice_Type</a>        = INVALID_ICE
+    REAL( fp_kind ) :: Ice_Temperature = ZERO
+    REAL( fp_kind ) :: Ice_Thickness   = ZERO
+    REAL( fp_kind ) :: Ice_Density     = ZERO
+    REAL( fp_kind ) :: Ice_Roughness   = ZERO
+    ! -- SensorData containing channel brightness temperatures
+    TYPE( CRTM_SensorData_Type ) :: SensorData
+  END TYPE CRTM_Surface_type
+</pre>
+
+<p>Combinations of all the valid surfaces are supported (even if unlikely to occur in practice.)
+The ratio of the different surfaces for a mixed surface type is specified by the various
+coverage components. Note that the total coverage (the sum of the land, water, snow, and ice
+coverage fractions) should always equal 1.0.
+
+<p>An additional structure, <tt>SensorData</tt>, is used to hold satellite sensor data in the
+<tt>Surface</tt> structure for those algorithms that may use the data (e.g. some surface emissivity codes)
+to improve their results. The <tt>CRTM_SensorData_type</tt> structure definition is,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_SensorData_type
+    ! -- Dimension values
+    INTEGER :: n_Channels = 0 ! L dimension
+    ! -- The sensor ID and channels
+    INTEGER, DIMENSION( : ), POINTER :: NCEP_Sensor_ID   => NULL() ! L
+    INTEGER, DIMENSION( : ), POINTER :: WMO_Satellite_ID => NULL() ! L
+    INTEGER, DIMENSION( : ), POINTER :: WMO_Sensor_ID    => NULL() ! L
+    INTEGER, DIMENSION( : ), POINTER :: Sensor_Channel   => NULL() ! L
+    ! -- The sensor brightness temperatures
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Tb => NULL() ! L
+  END TYPE CRTM_SensorData_type
+</pre>
+
+<p>where the data from various instruments (e.g. AMSU-A, AMSU-B, SSM/I, etc) is combined into
+a single array, <tt>Tb</tt> and the associated instrument ID and channel arrays are used to 
+identify the data from which channels and what instrument are present. The sensor and satellite
+ID values are available in the <tt><a href="javascript:Open_Table_Window('ChannelInfo')">ChannelInfo</a></tt> structure
+after model initialization.
+
+<p>The only dimension value in the <tt>Surface</tt> structure is contained within the <tt>SensorData</tt>
+component. If no sensor data is required or available, the <tt>Surface</tt> structure contains only scalar
+components.
+
+
+
+<h4><a name="SURFACE_ALLOCATION"></a>
+<a href="#SURFACE_ASSIGNMENT"><tt>Surface</tt> Allocation</a></h4>
+<!-- ========================================================= -->
+
+<p>The <tt>Surface</tt> structure is slightly peculiar due to some of the algorithms used in the CRTM.
+As mentioned above, some of the surface emissivity algorithms require satellite observations
+to produce accurate results. Rather than pass this data separately, it was decided to incorporate
+this information into the <tt>Surface</tt> structure via the <tt>SensorData</tt> structure. Users need only
+allocate and use the <tt>SensorData</tt> component if it is required, or if the data itself is
+available.
+
+<p>Because the <tt>SensorData</tt> component of the <tt>Surface</tt> structure contains the only non-scalar
+data elements, the <tt>Surface</tt> structure allocation is effectively a wrapper for the
+<tt>CRTM_Allocate_SensorData</tt> function, but overloaded to provide similar functionality for
+allocating scalar and rank-1 arrays of <tt>Surface</tt> structures. The <tt>Surface</tt> structure allocation calling
+sequence is,
+
+<pre>
+  Error_Status = <a href="Surface/CRTM_Surface_Define.f90.html#CRTM_ALLOCATE_SURFACE">CRTM_Allocate_Surface</a>( n_Channels, &
+                                      Surface, &
+                                      RCS_Id = RCS_Id, &
+                                      Message_Log = Message_Log )
+</pre>
+
+<p>If no satellite data is needed for surface algorithms, or if none is available, then a user can
+either a) simply not call the <tt>Surface</tt> allocation function, or b) call the function, but with the
+<tt>n_Channels</tt> argument set to 0.
+
+
+
+<h4><a name="SURFACE_ASSIGNMENT"></a>
+<a href="#SURFACE_DESTRUCTION"><tt>Surface</tt> Assignment</a></h4>
+<!-- ========================================================== -->
+
+<p>A specific assign function is provided to ensure that when a <tt>Surface</tt> structure needs to be
+copied, the pointer components are explicitly allocated and copied (deep copy). This means that the
+original structure can be destroyed without affecting the copied structure. As with the allocation
+of <tt>Surface</tt> structures, this only applies to the <tt>SensorData</tt> component, but the interface is
+provided for convenience.
+
+<p>The <tt>Surface</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = <a href="Surface/CRTM_Surface_Define.f90.html#CRTM_ASSIGN_SURFACE">CRTM_Assign_Surface</a>( Surface_In, &
+                                      Surface_Out, &
+                                      RCS_Id = RCS_Id, &
+                                      Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  Surface_Out = Surface_In
+</pre>
+
+
+
+<h4><a name="SURFACE_DESTRUCTION"></a>
+<a href="#SURFACE"><tt>Surface</tt> Destruction</a></h4>
+<!-- =============================================== -->
+
+<p>The <tt>Surface</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="Surface/CRTM_Surface_Define.f90.html#CRTM_DESTROY_SURFACE">CRTM_Destroy_Surface</a>( Surface, &
+                                       RCS_Id = RCS_Id, &
+                                       Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components. Note that
+the <tt>CRTM_Destroy_Surface</tt> function accepts up to 10 structures to destroy so that
+multiple structures/structure arrays can be easily deallocated.
+
+
+
+
+
+<!-- ========================================================== -->
+<h3><a name="GEOMETRYINFO"></a><tt>GeometryInfo</tt> Structure</h3>
+<!-- ========================================================== -->
+
+<p>The <tt>GeometryInfo</tt> data structure is used to pass information about the sensor view location
+and geometry into the CRTM. It can be declared as either a scalar,
+
+<pre>
+  TYPE( CRTM_GeometryInfo_type ) :: GeometryInfo
+</pre>
+
+<p>or a rank-1 structure array where each element corresponds to a separate atmospheric
+profile,
+
+<pre>
+  INTEGER, PARAMETER :: n_Profiles = 52
+  TYPE( CRTM_GeometryInfo_type ), DIMENSION( n_Profiles ) :: GeometryInfo
+</pre>
+
+The <tt>GeometryInfo</tt> structure definition is shown below,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_GeometryInfo_type
+
+    ! ----------
+    ! User Input
+    ! ----------
+    ! -- Earth radius and satellite height
+    REAL( fp_kind ) :: Earth_Radius     = FP_INVALID
+    REAL( fp_kind ) :: Satellite_Height = FP_INVALID
+    ! -- Earth location
+    REAL( fp_kind ) :: Longitude        = FP_INVALID
+    REAL( fp_kind ) :: Latitude         = FP_INVALID
+    REAL( fp_kind ) :: Surface_Altitude = FP_INVALID
+    ! -- Sensor angle information
+    REAL( fp_kind ) :: Sensor_Scan_Angle    = FP_INVALID
+    REAL( fp_kind ) :: Sensor_Zenith_Angle  = FP_INVALID
+    REAL( fp_kind ) :: Sensor_Azimuth_Angle = ZERO
+    ! -- Source angle information
+    REAL( fp_kind ) :: Source_Zenith_Angle  = FP_INVALID
+    REAL( fp_kind ) :: Source_Azimuth_Angle = ZERO
+    ! -- Flux angle information
+    REAL( fp_kind ) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
+
+    ! -----------------------
+    ! Derived from User Input
+    ! -----------------------
+    ! -- Sensor angle information
+    REAL( fp_kind ) :: Sensor_Scan_Radian    = FP_INVALID
+    REAL( fp_kind ) :: Sensor_Zenith_Radian  = FP_INVALID
+    REAL( fp_kind ) :: Sensor_Azimuth_Radian = ZERO
+    REAL( fp_kind ) :: Secant_Sensor_Zenith  = FP_INVALID
+    ! -- Source angle information
+    REAL( fp_kind ) :: Source_Zenith_Radian  = FP_INVALID
+    REAL( fp_kind ) :: Source_Azimuth_Radian = ZERO
+    REAL( fp_kind ) :: Secant_Source_Zenith  = FP_INVALID
+    ! -- Flux angle information
+    REAL( fp_kind ) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
+    REAL( fp_kind ) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
+  END TYPE CRTM_GeometryInfo_type
+</pre>
+
+<p>where the <tt>FP_INVALID</tt> parameter is set to a value of -999.0 in the
+<tt>CRTM_GeometryInfo_Define</tt> module, and the other parameter initialisation
+values are defined in the <tt>CRTM_Parameters</tt> module.
+
+<p>The <tt>GeometryInfo</tt> components listed as "User Input" are those that
+<em>must</em> be set by the user before calling the CRTM functions. The components
+listed as "Derived" are computed from the inputs via the 
+<tt><a href="GeometryInfo/CRTM_GeometryInfo_Define.f90.html#CRTM_COMPUTE_GEOMETRYINFO">CRTM_Compute_GeometryInfo</a></tt>
+function.
+
+<p>Note that all of the <tt>GeometryInfo</tt> components are scalar and thus there are no allocation,
+assignment, or destruction functions required.
+
+
+
+
+
+<!-- ====================================================== -->
+<h3><a name="RTSOLUTION"></a><tt>RTSolution</tt> Structure</h3>
+<!-- ====================================================== -->
+
+[ <a HREF="#RTSOLUTION_DEFINITION">Definition</a> | 
+  <a HREF="#RTSOLUTION_ALLOCATION">Allocation</a> | 
+  <a HREF="#RTSOLUTION_ASSIGNMENT">Assignment</a> |
+  <a HREF="#RTSOLUTION_DESTRUCTION">Destruction</a> ]
+
+<p>The <tt>RTSolution</tt> structure contains the CRTM model results. The <tt>RTSolution</tt>
+structure is defined for a single sensor channel. Depending on how the user chooses to
+run the CRTM, the <tt>RTSolution</tt> data structure can be declared as a rank-1 array, where each
+element corresponds to a different channel for a single profile,
+
+<pre>
+  INTEGER, PARAMETER :: n_Channels = 100
+  TYPE( CRTM_RTSolution_type ), DIMENSION( n_Channels ) :: RTSolution
+</pre>
+
+<p>or a rank-2 structure array with both channel and profile dimensions,
+
+<pre>
+  INTEGER, PARAMETER :: n_Channels = 100
+  INTEGER, PARAMETER :: n_Profiles = 52
+  TYPE( CRTM_RTSolution_type ), DIMENSION( n_Channels, n_Profiles ) :: RTSolution
+</pre>
+
+<p>The channel dimension must be the first dimension in the rank-2 case.
+All of the <tt>RTSolution</tt> structure routines have been overloaded to accept either a
+rank-1 or rank-2 structure array as arguments. Scalar structure arguments are also
+accepted but these are not used in the CRTM model components.
+
+
+
+<h4><a name="RTSOLUTION_DEFINITION"></a>
+<a href="#RTSOLUTION_ALLOCATION"><tt>RTSolution</tt> Definition</a></h4>
+<!-- =============================================================== -->
+
+<p>The definition of the <tt>RTSolution</tt> structure is shown below,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_RTSolution_type
+    ! -- Dimensions
+    INTEGER :: n_Stokes = 0 ! Ls
+    ! -- Radiative transfer results
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Radiance               => NULL() ! Ls
+    REAL( fp_kind ), DIMENSION( : ), POINTER :: Brightness_Temperature => NULL() ! Ls
+  END TYPE CRTM_RTSolution_type
+</pre>
+
+
+<h4><a name="RTSOLUTION_ALLOCATION"></a>
+<a href="#RTSOLUTION_ASSIGNMENT"><tt>RTSolution</tt> Allocation</a></h4>
+<!-- =============================================================== -->
+
+The <tt>RTSolution</tt> allocation calling sequence is,
+
+<pre>
+  Error_Status = <a href="RTSolution/CRTM_RTSolution_Define.f90.html#CRTM_ALLOCATE_RTSOLUTION">CRTM_Allocate_RTSolution</a>( n_Stokes, &
+                                           RTSolution, &
+                                           RCS_Id = RCS_Id, &
+                                           Message_Log = Message_Log )
+</pre>
+
+<p>The allowed input/output argument dimension combinations are shown in the
+<a href="#CRTM_ALLOCATE_RTSOLUTION_DIMENSIONALITY_TABLE">table</a>
+below. The multiple interface is supplied purely for ease of use depending on what data is
+available and whether the user wants to process a single profile or multiple profiles. Note 
+that, as mentioned above, although a scalar <tt>RTSolution</tt> output is possible, the CRTM
+itself only accepts rank-1 (<tt>L</tt>) or rank-2 (<tt>L x M</tt>) <tt>RTSolution</tt>
+structure arrays as arguments.
+
+<p><a name="CRTM_ALLOCATE_RTSOLUTION_DIMENSIONALITY_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>Allowable dimensionality combinations for <tt>CRTM_Allocate_RTSolution</tt>
+           <br>
+           <tt>L</tt> = number of channels.<br>
+           <tt>M</tt> = number of atmospheric profiles.</caption>
+  <tbody>
+    <tr align="center"><th>Input <tt>n_Stokes</tt> dimension</th><th>Output <tt>RTSolution</tt> dimension</th></tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar        </td></tr>
+    <tr align="center"><td>Scalar    </td><td><tt>L</tt>    </td></tr>
+    <tr align="center"><td>Scalar    </td><td><tt>L x M</tt></td></tr>
+    <tr align="center"><td><tt>L</tt></td><td><tt>L</tt>    </td></tr>
+    <tr align="center"><td><tt>L</tt></td><td><tt>L x M</tt></td></tr>
+  </tbody>
+</table>
+
+
+<h4><a name="RTSOLUTION_ASSIGNMENT"></a>
+<a href="#RTSOLUTION_DESTRUCTION"><tt>RTSolution</tt> Assignment</a></h4>
+<!-- ================================================================ -->
+
+<p>As with all the other structures that contain allocatable pointer components, a specific
+assign function is provided to ensure that when a <tt>RTSolution</tt> structure needs to be
+copied, the pointer components are explicitly allocated and copied (deep copy). This means that the
+original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>RTSolution</tt> structure assign calling sequence is,
+
+
+<pre>
+  Error_Status = <a href="RTSolution/CRTM_RTSolution_Define.f90.html#CRTM_ASSIGN_RTSOLUTION">CRTM_Assign_RTSolution</a>( RTSolution_in, &
+                                         RTSolution_out, &
+                                         RCS_Id = RCS_Id, &
+                                         Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  RTSolution_Out = RTSolution_In
+</pre>
+
+
+
+<h4><a name="RTSOLUTION_DESTRUCTION"></a>
+<a href="#RTSOLUTION"><tt>RTSolution</tt> Destruction</a></h4>
+<!-- ===================================================== -->
+
+<p>The <tt>RTSolution</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="RTSolution/CRTM_RTSolution_Define.f90.html#CRTM_DESTROY_RTSOLUTION">CRTM_Destroy_RTSolution</a>( RTSolution, &
+                                          RCS_Id = RCS_Id, &
+                                          Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components.
+
+
+<hr width="100%">
+<address>This page maintained by <a href="mailto:paul.vandelst@ssec.wisc.edu?subject=CRTM Public Structures">Paul van Delst</a></address>
+<br>
+Last updated $Date: 2005/06/29 16:51:43 $
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+</body>
+</html>

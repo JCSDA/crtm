@@ -1,0 +1,52 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html><!-- InstanceBegin template="/Templates/crtm.dwt" codeOutsideHTMLIsLocked="false" -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<!-- InstanceBeginEditable name="doctitle" -->
+<title>Community Radiative Transfer Model (CRTM)</title>
+<!-- InstanceEndEditable -->
+<meta http-equiv="expires" content="0">
+<link href="/CRTM/shared_assets/stylesheets/style.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="/stylesheets/style.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
+<script language="javascript" type="text/javascript" src="/CRTM/shared_assets/javascript/eventutil.js"></script>
+<script language="javascript" type="text/javascript" src="/CRTM/main/javascript/javascript.js"></script>
+<!-- InstanceBeginEditable name="head" --><!-- InstanceEndEditable -->
+</head>
+<body>
+<div id="header">
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/CRTM/shared_assets/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <div id="mainnav">
+    <!--#include virtual="/CRTM/main/ssi/mainnav.ssi.html" -->
+  </div>
+</div>
+<table cellspacing="0" cellpadding="0" id="pageLayoutTable">
+  <tr>
+    <td id="secondarynav"><div><!-- InstanceBeginEditable name="secondarynav" -->
+        <!--#include virtual="/main/ssi/ui.ssi.html"-->
+        <!-- InstanceEndEditable --> </div></td>
+    <td id="content"><!-- InstanceBeginEditable name="content" -->
+
+<p>All of the CRTM modules required by a user have been collected into the module
+<tt>CRTM_Module.f90</tt>. Thus, all a user is required to do to obtain access to
+the CRTM structure definitions and routines is to insert the following <code>USE</code>
+statement in your calling procedure,
+
+<pre>
+  USE CRTM_Module
+</pre>
+
+<p>This provides access to all the various CRTM structure definitions and procedures. 
+This section describes the User Interface in more detail.
+      <input type="hidden" name="category" id="category" value="ui">
+      <!-- InstanceEndEditable -->
+      <div id="footer"> Last updated
+        <!-- #BeginDate format:En2 -->19-Dec-2008<!-- #EndDate -->
+        by <a href="mailto:paul.vandelst@noaa.gov?subject=CRTM Webpage">Paul van Delst</a></div></td>
+  </tr>
+</table>
+</body>
+<!-- InstanceEnd --></html>

@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>CRTM Update Archive</title>
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <script type="text/javascript">
+    <!-- Hide script from old browsers
+    var BName = navigator.appName;
+    if (BName != "Microsoft Internet Explorer")  {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/style.css\">")
+    }
+    else {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/IEstyle.css\">")
+    }
+    ; // -->
+  </script>
+</head>
+<body>
+<h1 class="main"><a name="TOP"></a>CRTM Update Archive</h1>
+
+
+<!-- ==================== -->
+<!-- Jun. 29, 2005 Update -->
+<!-- ==================== -->
+<hr width="100%">
+<p style="color: red" align="center">Jun. 29, 2005 Update
+<p style="color: red" align="center">Note: This is an incremental update. Not all dependent codes have been updated.
+<p>
+<ul>
+  <li><strong>User Interface:</strong> <a href="CRTM_User_Interface.html#SURFACE"><tt>Surface</tt></a> structure update.
+  <ul>
+    <li>Removed the <tt>Type</tt> component. The coverage fractions are now used in
+        application code to determine the gross surface type.
+    <li>The Binary I/O module has been modified according to the <tt>Surface</tt>
+        structure change, but the file format remains the same.
+  </ul>
+  <li><strong>User Interface:</strong> <a href="CRTM_User_Interface.html#GEOMETRYINFO"><tt>GeometryInfo</tt></a> structure update.
+  <ul>
+    <li>Added more angle components as well as components that are derived (e.g. degrees to
+        radiances conversion, secant calculation) from the user specified angle components.
+    <li>The function
+        <tt><a href="GeometryInfo/CRTM_GeometryInfo_Define.f90.html#CRTM_COMPUTE_GEOMETRYINFO">CRTM_Compute_GeometryInfo</a></tt>
+        has been added to the <tt>CRTM_GeometryInfo_Define</tt> module to compute the
+        angle-derived components.
+  </ul>
+  <li>The <tt>CRTM_Parameters</tt> module was updated to reflect changes in the 
+      <tt>GeometryInfo</tt> structure.
+  <li><strong>Developer Interface:</strong> <a href="CRTM_Developer_Interface.html#SFCOPTICS"><tt>SfcOptics</tt></a> structure
+      and application module update.
+  <ul>
+    <li>Added the <tt>Surface_Temperature</tt> component to the <tt>SfcOptics</tt> structure.
+    <li>Added subroutines to the <tt>CRTM_SfcOptics</tt> module to compute the weighted average
+        surface temperature from the various surface types and their coverage fraction.
+    <li>Updated the <tt>SfcOptics</tt> application functions with calls to wrapper functions
+        for sensor (microwave and infrared) and surface type (land, water, snow, and ice) 
+        specific algorithms. Each set of functions (forward, tangent-linear, and adjoint)
+        is containined within its own module.
+  </ul>
+</ul>
+
+
+<!-- ==================== -->
+<!-- Apr. 25, 2005 Update -->
+<!-- ==================== -->
+<hr width="100%">
+<p style="color: red" align="center">Apr. 25, 2005 Update
+<p>
+<ul>
+  <li>Added "Test Data Files" section. Simple data files provided to test the CRTM.
+</ul>
+
+
+<!-- ==================== -->
+<!-- Apr. 05, 2005 Update -->
+<!-- ==================== -->
+<hr width="100%">
+<p style="color: red" align="center">Apr. 05, 2005 Update
+<p>
+<ul>
+  <li>Updated test code tarballs to include updates to SpcCoeff structure definition and
+      I/O modules.
+  <li>SpcCoeff datafiles have all been updated to Release5.
+</ul>
+
+
+<!-- ==================== -->
+<!-- Mar. 28, 2005 Update -->
+<!-- ==================== -->
+<hr width="100%">
+<p style="color: red" align="center">Mar. 28, 2005 Update
+<p>
+<ul>
+  <li><a href="CRTM_User_Interface.html#ATMOSPHERE"><tt>Atmosphere</tt></a> structure update.
+  <ul>
+    <li>Extended level pressure array to include the "top" level. Previously the array was
+        dimensioned (1:n_Layers); now it is dimension (0:n_Layers).
+    <li>Added level temperature entries to the structure.
+  </ul>
+  <li>Fixed problem with out-of-date software links.
+  <li>Updated <tt>Atmosphere</tt> I/O software. The <tt>Cloud</tt> and <tt>Aerosol</tt> data
+      are now read/written using their own module functions to make it easier to splice in
+      cloud and aerosol data for test data sets.
+</ul>
+
+
+<!-- ==================== -->
+<!-- Mar. 22, 2005 Update -->
+<!-- ==================== -->
+<hr width="100%">
+<p style="color: red" align="center">Mar. 22, 2005 Update
+<p>We have noticed an inconsistency between the web page text and the posted software in the 
+Source Code page. The text information on this webpage is current, but the test software
+tarballs were not updated. Until this problem is rectified, you download the software at
+your own risk. The problem should be fixed by Mar. 25, 2005.
+
+<hr width="100%">
+<p style="color: red" align="center">Feb. 28, 2005 Update
+<ul>
+  <li>User Interface
+  <ul>
+    <li><tt>Aerosol</tt> structure definition routines created for user input of aerosol
+        profile data, with the <tt>Aerosol</tt> structure component added to the
+        <tt>Atmosphere</tt> structure definition and manipulation routines.
+    <li>Aerosol data I/O added to <tt>CRTM_Atmosphere_Binary_IO</tt> module functions.
+  </ul>
+  <li>Developer Interface
+  <ul>
+    <li>Replaced separate definition of aerosol scattering structure with the <tt>AtmScatter</tt>
+        structure. Aerosol scattering code now uses the same structure as cloud scattering code.
+    <li>Updated all calls to <tt>RTSolution</tt> functions to reflect use of <tt>AtmScatter</tt>
+        structure for both aerosol and cloud scatterng.
+    <li>Added <tt>Delta_Truncation</tt> component to the <tt>AtmScatter</tt> structure definition.
+  </ul>
+</ul>
+
+<hr width="100%">
+<address>This page maintained by <a href="mailto:paul.vandelst@ssec.wisc.edu?subject=CRTM Update Archive">Paul van Delst</a></address>
+<br>
+Last updated $Date: 2005/06/29 16:52:37 $
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+</body>
+</html>

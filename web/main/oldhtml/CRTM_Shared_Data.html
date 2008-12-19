@@ -1,0 +1,305 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>CRTM Shared Data</title>
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <script type="text/javascript">
+    <!-- Hide script from old browsers
+    var BName = navigator.appName;
+    if (BName != "Microsoft Internet Explorer")  {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/style.css\">")
+    }
+    else {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/IEstyle.css\">")
+    }
+    ; // -->
+  </script>
+</head>
+<body>
+<h1 class="main"><a name="TOP"></a>CRTM Shared Data</h1>
+
+<hr width="100%">
+
+<p>This section describes the various shared data structure types that are loaded 
+with precomputed data during the CRTM initialization phase. They are <em>not</em>
+visible via the CRTM user interface.
+
+<p>Both the shared data structures and their I/O routines will need to be modified to
+accomodate the various group's algorithms that will be used in the CRTM. Different 
+approaches will require different datafiles to be read in. 
+
+
+<p><a name="SHARED_DATA_STRUCTURES_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>List of the Shared Data CRTM structure types</caption>
+  <tbody>
+    <tr>
+      <th>Type Name</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td align="center"><tt>SpcCoeff_type</tt></td>
+      <td>Structure containing precomputed instrument channel spectral coefficient data
+          such as frequency, polarization, Planck function coefficients, etc., loaded
+          during initialization. Defined in the <tt>SpcCoeff_Define</tt> module. Data
+          shared in the CRTM via the <tt>CRTM_SpcCoeff</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt>TauCoeff_type</tt></td>
+      <td>Structure containing precomputed coefficient data used in the <tt>AtmAbsorption</tt>
+          algorithm to compute the optical depths due to gaseous absorption. Defined
+          in the <tt>TauCoeff_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt>AerosolCoeff_type</tt></td>
+      <td>Structure containing precomputed coefficient data, loaded during initialization,
+          required for the aerosol absorption and scattering computations. Defined in the
+          <tt>AerosolCoeff_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt>ScatterCoeff_type</tt></td>
+      <td>Structure containing precomputed coefficient data, loaded
+          during initialization, required for the scattering computations.
+          Defined in the <tt>ScatterCoeff_Define</tt> module.</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<!-- ================================================== -->
+<h2><a name="SPCCOEFF_DATA"></a><tt>SpcCoeff</tt> Data</h2>
+<!-- ================================================== -->
+
+The <tt>SpcCoeff</tt> data is used to make instrument specific spectral data available 
+within the CRTM. The structure definition and the data itself is not specific to the 
+CRTM. More information about the structure definition, data files and utilities can be
+found on the
+<a href="http://cimss.ssec.wisc.edu/~paulv/Fortran90/Instrument_Information/SpcCoeff" target="_blank">main SpcCoeff page</a>.
+
+
+
+<h3><a name="CRTM_SPCCOEFF"></a>The <tt>CRTM_SpcCoeff</tt> Module</h3>
+<!-- ============================================================= -->
+
+<p>For use in the CRTM, the initialization phase loads the <tt>SpcCoeff</tt> data into a public
+data structure that resides in the
+<tt><a href="Coefficients/Modules.html#CRTM_SPCCOEFF">CRTM_SpcCoeff</a></tt>
+module. To gain access to the <tt>SpcCoeff</tt> data, one simply uses it in their CRTM
+application module,
+
+<pre>
+  USE <a href="Coefficients/Modules.html#CRTM_SPCCOEFF">CRTM_SpcCoeff</a>
+</pre>
+
+<p>In the 
+<tt><a href="Coefficients/Modules.html#CRTM_SPCCOEFF">CRTM_SpcCoeff</a></tt>
+module, the <tt>SpcCoeff</tt> data structure is declared as a publicly visible,
+
+<pre>
+  TYPE( SpcCoeff_type ), SAVE, PUBLIC :: SC
+</pre>
+
+<p>so once the module is <tt>USE</tt>d, the application module can access all the
+<tt>SC</tt> structure contents loaded during initialization.
+
+
+
+
+
+<!-- ================================================== -->
+<h2><a name="TAUCOEFF_DATA"></a><tt>TauCoeff</tt> Data</h2>
+<!-- ================================================== -->
+
+The <tt>TauCoeff</tt> data is used in the
+<a href="CRTM_Developer_Interface.html#ATMABSORPTION_APPLICATION">AtmAbsorption application code</a>
+to compute optical depths due to gaseous absorption. Currently, the <tt>TauCoeff</tt> data
+is crafted for the Compact OPTRAN algorithm, but future changes to the <tt>TauCoeff</tt> 
+structure definition and datafile I/O functions are planned to prepare the CRTM to use
+the OPTRAN v7 and the OSS algorithms for testing and comparison. As such, the <tt>TauCoeff</tt>
+structure definition and datafile formats are considered <em>specific to the AtmAbsorption algorithm
+used in the CRTM</em>. It is expected that various groups will alter the structure definition
+and I/O functions accordingly. More information about the current structure definition, data
+files and utilities can be found on the
+<a href="http://cimss.ssec.wisc.edu/~paulv/Fortran90/CRTM/Coefficients/TauCoeff" target="_blank">main TauCoeff page</a>.
+
+
+
+<h3><a name="CRTM_TAUCOEFF"></a>The <tt>CRTM_TauCoeff</tt> Module</h3>
+<!-- ============================================================= -->
+
+<p>For use in the CRTM, the initialization phase loads the <tt>TauCoeff</tt> data into a public
+data structure that resides in the
+<tt><a href="Coefficients/Modules.html#CRTM_TAUCOEFF">CRTM_TauCoeff</a></tt>
+module. To gain access to the <tt>TauCoeff</tt> data, the following,
+
+<pre>
+  USE <a href="Coefficients/Modules.html#CRTM_TAUCOEFF">CRTM_TauCoeff</a>
+</pre>
+
+<p>is required in the <a href="AtmAbsorption/Modules.html#CRTM_ATMABSORPTION">AtmAbsorption application module</a>.
+
+<p>In the 
+<tt><a href="Coefficients/Modules.html#CRTM_TAUCOEFF">CRTM_TauCoeff</a></tt>
+module, the <tt>TauCoeff</tt> data structure is declared as publicly visible,
+
+<pre>
+  TYPE( TauCoeff_type ), SAVE, PUBLIC :: TC
+</pre>
+
+<p>so once the module is <tt>USE</tt>d, the application module can access all the
+<tt>TC</tt> structure contents loaded during initialization.
+
+
+
+<h3><a name="TAUCOEFF_MODIFICATION"></a><tt>TauCoeff</tt> Structure and I/O Function Modifications</h3>
+<!-- ============================================================================================== -->
+
+<p>In preparing the CRTM to use a different AtmAbsorption algorithm, the <tt>TauCoeff</tt>
+structure definition and manipulation routines (in the
+<tt><a href="Coefficients/TauCoeff/TauCoeff_Define.f90.html">TauCoeff_Define</a></tt>
+module) and the data file I/O functions (in the 
+<tt><a href="Coefficients/TauCoeff/TauCoeff_Binary_IO.f90.html">TauCoeff_Binary_IO</a></tt>
+module) will all need to be modified.
+
+<p>Note that all of these <tt>TauCoeff</tt> modules are considered effectively separate from
+the CRTM. Of course, there is still a dependency since the
+<tt><a href="Coefficients/TauCoeff/TauCoeff_Binary_IO.f90.html">TauCoeff_Binary_IO</a></tt>
+functions are called from within the
+<tt><a href="Coefficients/Modules.html#CRTM_TAUCOEFF">CRTM_TauCoeff</a></tt>
+module during the CRTM initialization.
+
+
+
+
+
+<!-- ========================================================== -->
+<h2><a name="AEROSOLCOEFF_DATA"></a><tt>AerosolCoeff</tt> Data</h2>
+<!-- ========================================================== -->
+
+<p>The <tt>AerosolCoeff</tt> data will be used in the
+<a href="CRTM_Developer_Interface.html#ATMSCATTER_APPLICATION">aerosol scattering code</a>
+to compute optical depths due to aerosol absorption and scattering. Currently they are
+simply dummy definitions with no physical meaning.
+
+
+<h3><a name="CRTM_AEROSOLCOEFF"></a>The <tt>CRTM_AerosolCoeff</tt> Module</h3>
+<!-- ===================================================================== -->
+
+<p>For use in the CRTM, the initialization phase loads the <tt>AerosolCoeff</tt> data into a
+public data structure that resides in the
+<tt><a href="Coefficients/Modules.html#CRTM_AEROSOLCOEFF">CRTM_AerosolCoeff</a></tt>
+module. To gain access to the <tt>AerosolCoeff</tt> data, the following,
+
+<pre>
+  USE <a href="Coefficients/Modules.html#CRTM_AEROSOLCOEFF">CRTM_AerosolCoeff</a>
+</pre>
+
+<p>is required in the
+<a href="AtmScatter/Modules.html#CRTM_AEROSOLSCATTER">AerosolScatter application module</a>.
+
+<p>In the 
+<tt><a href="Coefficients/Modules.html#CRTM_AEROSOLCOEFF">CRTM_AerosolCoeff</a></tt>
+module, the <tt>AerosolCoeff</tt> data structure is declared as publicly visible,
+
+<pre>
+  TYPE( AerosolCoeff_type ), SAVE, PUBLIC :: AeroC
+</pre>
+
+<p>so once the module is <tt>USE</tt>d, the application module can access all the
+<tt>AeroC</tt> structure contents loaded during initialization.
+
+
+<h3><a name="AEROSOLCOEFF_MODIFICATION"></a><tt>AerosolCoeff</tt> Structure and I/O Function Modifications</h3>
+<!-- ====================================================================================================== -->
+
+<p>In preparing the CRTM to use an aerosol absorption/scattering algorithm, the <tt>AerosolCoeff</tt>
+structure definition and manipulation routines (in the
+<tt><a href="Coefficients/AerosolCoeff/AerosolCoeff_Define.f90.html">AerosolCoeff_Define</a></tt>
+module) and the data file I/O functions (in the 
+<tt><a href="Coefficients/AerosolCoeff/AerosolCoeff_Binary_IO.f90.html">AerosolCoeff_Binary_IO</a></tt>
+module) will all need to be modified.
+
+<p>Note that all of these <tt>AerosolCoeff</tt> modules are considered effectively separate from
+the CRTM. Of course, there is still a dependency since the
+<tt><a href="Coefficients/AerosolCoeff/AerosolCoeff_Binary_IO.f90.html">AerosolCoeff_Binary_IO</a></tt>
+functions are called from within the
+<tt><a href="Coefficients/Modules.html#CRTM_AEROSOLCOEFF">CRTM_AerosolCoeff</a></tt>
+module during the CRTM initialization.
+
+
+
+
+
+
+<!-- ========================================================== -->
+<h2><a name="SCATTERCOEFF_DATA"></a><tt>ScatterCoeff</tt> Data</h2>
+<!-- ========================================================== -->
+
+<p>The <tt>ScatterCoeff</tt> data will be used in the
+<a href="CRTM_Developer_Interface.html#ATMSCATTER_APPLICATION">cloud scattering code</a>
+to compute optical depths due to hydrometeor scattering. Currently they are
+simply dummy definitions with no physical meaning.
+
+
+<h3><a name="CRTM_SCATTERCOEFF"></a>The <tt>CRTM_ScatterCoeff</tt> Module</h3>
+<!-- ============================================================= -->
+
+<p>For use in the CRTM, the initialization phase loads the <tt>ScatterCoeff</tt> data into a public
+data structure that resides in the
+<tt><a href="Coefficients/Modules.html#CRTM_SCATTERCOEFF">CRTM_ScatterCoeff</a></tt>
+module. To gain access to the <tt>ScatterCoeff</tt> data, the following,
+
+<pre>
+  USE <a href="Coefficients/Modules.html#CRTM_SCATTERCOEFF">CRTM_ScatterCoeff</a>
+</pre>
+
+<p>is required in the <a href="AtmScatter/Modules.html#CRTM_CLOUDSCATTER">CloudScatter application module</a>.
+
+<p>In the 
+<tt><a href="Coefficients/Modules.html#CRTM_SCATTERCOEFF">CRTM_ScatterCoeff</a></tt>
+module, the <tt>ScatterCoeff</tt> data structure is declared as publicly visible,
+
+<pre>
+  TYPE( ScatterCoeff_type ), SAVE, PUBLIC :: ScatC
+</pre>
+
+<p>so once the module is <tt>USE</tt>d, the application module can access all the
+<tt>ScatC</tt> structure contents loaded during initialization.
+
+
+<h3><a name="SCATTERCOEFF_MODIFICATION"></a><tt>ScatterCoeff</tt> Structure and I/O Function Modifications</h3>
+<!-- ============================================================================================== -->
+
+<p>In preparing the CRTM to use a different cloud scattering algorithm, the <tt>ScatterCoeff</tt>
+structure definition and manipulation routines (in the
+<tt><a href="Coefficients/ScatterCoeff/ScatterCoeff_Define.f90.html">ScatterCoeff_Define</a></tt>
+module) and the data file I/O functions (in the 
+<tt><a href="Coefficients/ScatterCoeff/ScatterCoeff_Binary_IO.f90.html">ScatterCoeff_Binary_IO</a></tt>
+module) will all need to be modified. Currently they are simply dummy definitions with no 
+physical meaning.
+
+<p>Note that all of these <tt>ScatterCoeff</tt> modules are considered effectively separate from
+the CRTM. Of course, there is still a dependency since the
+<tt><a href="Coefficients/ScatterCoeff/ScatterCoeff_Binary_IO.f90.html">ScatterCoeff_Binary_IO</a></tt>
+functions are called from within the
+<tt><a href="Coefficients/Modules.html#CRTM_SCATTERCOEFF">CRTM_ScatterCoeff</a></tt>
+module during the CRTM initialization.
+
+
+
+
+
+
+
+<hr width="100%">
+<address>This page maintained by <a href="mailto:paul.vandelst@ssec.wisc.edu?subject=CRTM Shared Data">Paul van Delst</a></address>
+<br>
+Last updated $Date: 2005/04/25 21:45:08 $
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html><!-- InstanceBegin template="/templates/crtm.dwt" codeOutsideHTMLIsLocked="false" -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<!-- InstanceBeginEditable name="doctitle" -->
+<title>Community Radiative Transfer Model (CRTM)</title>
+<!-- InstanceEndEditable -->
+<meta http-equiv="expires" content="0">
+<link href="/CRTM/shared_assets/stylesheets/style.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="/stylesheets/style.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
+<script language="javascript" type="text/javascript" src="/CRTM/shared_assets/javascript/eventutil.js"></script>
+<script language="javascript" type="text/javascript" src="/CRTM/main/javascript/javascript.js"></script>
+<!-- InstanceBeginEditable name="head" --><!-- InstanceEndEditable -->
+</head>
+<body>
+<div id="header">
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/CRTM/shared_assets/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <div id="mainnav">
+    <!--#include virtual="/CRTM/main/ssi/mainnav.ssi.html" -->
+  </div>
+</div>
+<table cellspacing="0" cellpadding="0" id="pageLayoutTable">
+  <tr>
+    <td id="secondarynav"><div><!-- InstanceBeginEditable name="secondarynav" -->
+        <!--#include virtual="/main/ssi/ui.ssi.html"-->
+        <!-- InstanceEndEditable --> </div></td>
+    <td id="content"><!-- InstanceBeginEditable name="content" -->
+<h2> <code>GeometryInfo</code> Structure</h2>
+<!-- =================================== -->
+<p>The <tt>GeometryInfo</tt> data structure is used to contain information about the sensor field-of-view (FOV)
+location and geometry. Some example declarations,
+
+<pre>
+  <strong>! Example declaration for a scalar structure</strong>
+  TYPE(CRTM_GeometryInfo_type) :: GeoInfo
+
+  <strong>! Example declaration for a single location/profile</strong>
+  TYPE(CRTM_GeometryInfo_type) :: GeoInfo(1)
+
+  <strong>! Example declaration for a fixed number of locations/profiles</strong>
+  INTEGER, PARAMETER :: N_PROFILES = 10
+  TYPE(CRTM_GeometryInfo_type) :: GeoInfo(N_PROFILES)
+
+  <strong>! Example declaration as an allocatable</strong>
+  TYPE(CRTM_GeometryInfo_type), ALLOCATABLE :: GeoInfo(:)
+</pre>
+
+<p>For use with the CRTM functions - <tt>CRTM_Forward()</tt>, <tt>CRTM_Tangent_Linear()</tt>, <tt>CRTM_Adjoint()</tt>,
+or <tt>CRTM_K_Matrix()</tt>) - the <tt>GeometryInfo</tt> structure should <em>always</em> be declared as a rank-1 array with each
+element corresponding to a different FOV location/atmospheric profile.
+
+<h3> <code>GeometryInfo</code> Definition</h3>
+<!-- ==================================== -->
+The <tt>GeometryInfo</tt> structure definition is shown below,
+
+<pre>
+  TYPE :: CRTM_GeometryInfo_type
+    <strong>! User Input
+    ! ----------
+    ! Earth radius and satellite height</strong>
+    REAL(fp) :: Earth_Radius     = EARTH_RADIUS
+    REAL(fp) :: Satellite_Height = SATELLITE_HEIGHT
+    REAL(fp) :: Distance_Ratio   = EARTH_RADIUS / (EARTH_RADIUS + SATELLITE_HEIGHT)
+    <strong>! Earth location</strong>
+    REAL(fp) :: Longitude        = ZERO
+    REAL(fp) :: Latitude         = ZERO
+    REAL(fp) :: Surface_Altitude = ZERO
+    <strong>! Sensor angle information</strong>
+    REAL(fp) :: Sensor_Zenith_Angle  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
+    <strong>! Source angle information</strong>
+    REAL(fp) :: Source_Zenith_Angle  = ZERO
+    REAL(fp) :: Source_Azimuth_Angle = ZERO
+    <strong>! Flux angle information</strong>
+    REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
+
+    <strong>! Derived from User Input
+    ! -----------------------
+    ! Sensor angle information</strong>
+    REAL(fp) :: Sensor_Scan_Angle     = ZERO
+    REAL(fp) :: Sensor_Scan_Radian    = ZERO
+    REAL(fp) :: Sensor_Zenith_Radian  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Radian = ZERO
+    REAL(fp) :: Secant_Sensor_Zenith  = ZERO
+    <strong>! Source angle information</strong>
+    REAL(fp) :: Source_Zenith_Radian  = ZERO
+    REAL(fp) :: Source_Azimuth_Radian = ZERO
+    REAL(fp) :: Secant_Source_Zenith  = ZERO
+    <strong>! Flux angle information</strong>
+    REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
+    REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
+  END TYPE CRTM_GeometryInfo_type
+</pre>
+
+<p>where the <tt>SATELLITE_HEIGHT</tt> parameter is a nominal value for low-earth orbit satellites; and 
+the <tt>DIFFUSIVITY_ANGLE</tt> parameter is cos<sup>-1</sup>(3/5), used to approximate downwelling flux
+in the infrared.
+
+<p>The <tt>GeometryInfo</tt> components listed as "User Input" are those that
+<em>must</em> be set by the user before calling the CRTM functions. The components
+listed as "Derived" are computed from the inputs via the <tt>CRTM_Compute_GeometryInfo()</tt>
+function which is called within the CRTM.
+
+<p>Note that all of the <tt>GeometryInfo</tt> components are scalar and thus there are no allocation,
+assignment, or destruction functions required.
+
+      <input type="hidden" name="category" id="category" value="ui">
+      <!-- InstanceEndEditable -->
+      <div id="footer"> Last updated
+        <!-- #BeginDate format:En2 -->19-Dec-2008<!-- #EndDate -->
+        by <a href="mailto:paul.vandelst@noaa.gov?subject=CRTM Webpage">Paul van Delst</a></div></td>
+  </tr>
+</table>
+</body>
+<!-- InstanceEnd --></html>
