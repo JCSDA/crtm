@@ -1,0 +1,32 @@
+h1 {color: #000099; font-size: 22px; margin: 25px 0px 0px 0px;}
+h2 {font-size: 18px; color: #333333; margin-bottom: 0px; margin-top: 0px;}
+#footer {border-top: solid 1px #333333; padding-bottom: 1em;}
+#header td {vertical-align: top; text-align: left;}
+#header td img {margin: 0px 10px 0px -2px;}
+.notes, .required {font-size: 14px; font-weight: normal; color: red;}
+.required {font-size: 10px;}
+.field {font-weight: bold; color: #333333;}
+td.field {padding-right: 10px;}
+#registerTable, #loginTable {border: solid 1px #cccccc; padding: 5px; background-color: #FFFFFF;}
+#registerTable td, #loginTable td {padding-bottom: 20px; vertical-align: top;}
+
+#loginTable {margin-top: 0px;}
+#breadcrumb {margin-bottom: 10px; font-size: 12px; border: solid 1px #cccccc; border-right: none; border-left: none;
+             padding-top: 2px; padding-bottom: 2px;}
+
+#breadcrumb2 {margin-bottom: 10px; font-size: 12px; border: solid 1px #cccccc; border-right: none; border-left: none;
+             padding-top: 2px; padding-bottom: 2px; margin-top: -5px; border-top: none; margin-left: -20px; padding-left: 10px;
+             background-color: #ffffdd; }
+#breadcrumb2 span {font-weight: bold; font-size: 16px;}
+#breadcrumb2 a {text-decoration: none;}
+#breadcrumb2 a:visited {color: blue;}
+
+.title {margin-top: 15px; background-color: #FFFFdd; border-top: solid 1px #dddddd;}
+a:hover {color: red !important;}
+#inlineContent {width: 800px; height: 500px; border: solid 1px #333333;}
+#inlineNote {font-size: 12px;}
+
+#datatable, #datatable2 {border: none; color: #666666; margin-top: 20px; border-top: solid 1px #DBEAF5; border-right: solid 1px #DBEAF5; margin-left: 20px; margin-right: 20px; width: 95%;}  
+#datatable th, #datatable2 th {background-color: #666666; color: white; border-bottom: solid 2px #DBEAF5; border-left: solid 1px #DBEAF5;}
+#datatable td, #datatable2 td {border-left: solid 1px #DBEAF5; border-bottom: solid 1px #DBEAF5; background-color: #FFFFFF; padding: 2px;}
+.altrow td {background-color: #FFFFDD !important;}
