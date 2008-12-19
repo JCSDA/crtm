@@ -1,0 +1,1802 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>CRTM Developer Interface</title>
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <script type="text/javascript">
+    <!-- Hide script from old browsers
+    var BName = navigator.appName;
+    if (BName != "Microsoft Internet Explorer")  {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/style.css\">")
+    }
+    else {
+      document.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://cimss.ssec.wisc.edu/~paulv/StyleSheets/IEstyle.css\">")
+    }
+    ; // -->
+  </script>
+</head>
+<body>
+<h1 class="main"><a name="TOP"></a>CRTM Developer Interface</h1>
+
+<hr width="100%">
+
+<p>This section describes the interfaces to the various internal modules of the CRTM that are not
+visible via the User Interface. It is these interfaces that will be altered or redesigned by the
+developers to the CRTM. In some cases, the code modules provided here are just empty shells, with
+<em>only</em> the interface defined.
+
+<p>Note that all of the structure and interface definitions below are considered fluid -- it is
+expected that developers will modify both the structure contents (with some constraints) and the
+various application function interfaces to suit the needs of their algorithms. The descriptions
+below, in particular that for the <tt>AtmAbsorption</tt> component, are a snapshot of what is currently
+available.
+
+<p><a name="INTERNAL_STRUCTURES_TABLE"></a>
+<table border="1" width="500" cellpadding="5" align="center">
+  <caption>List of the Internal CRTM structure types</caption>
+  <tbody>
+    <tr>
+      <th>Type Name</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#ATMABSORPTION">CRTM_AtmAbsorption_type</a></tt></td>
+      <td>Structure containing gas absorption optical depths and related parameters.
+          Defined in the <tt>CRTM_AtmAbsorption_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#ATMSCATTER">CRTM_AtmScatter_type</tt></td>
+      <td>Structure containing scattering parameters such as single scatter
+          albedo, asymmetry factor, phase coefficients, scattering optical
+          depth, etc. Defined in the <tt>CRTM_AtmScatter_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="#SFCOPTICS">CRTM_SfcOptics_type</tt></td>
+      <td>Structure containing surface optical properties such as surface
+          emissivity, reflectivity, etc. Defined in the <tt>CRTM_SfcOptics_Define</tt>
+          module.</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+
+<!-- ============================================== -->
+<h2><a name="ATMABSORPTION"></a>CRTM AtmAbsorption</h2>
+<!-- ============================================== -->
+
+<p>The CRTM AtmAbsorption modules contain the code to compute gaseous absorption in the
+atmosphere. The AtmAbsorption structure definition and application modules are
+<tt><a href="AtmAbsorption/Modules.html#CRTM_ATMABSORPTION_DEFINE">CRTM_AtmAbsorption_Define</a></tt>
+and
+<tt>CRTM_AtmAbsorption</tt> respectively. The structure
+definition and its manipulation routines are visible via the application module, so only the
+latter need be used in any application code, e.g.
+<pre>
+  USE CRTM_AtmAbsorption
+</pre>
+
+
+<h3><a name="ATMABSORPTION_STRUCTURE"></a><tt>AtmAbsorption</tt> Structure</h3>
+<!-- ====================================================================== -->
+
+[ <a href="#ATMABSORPTION_DEFINITION">Definition</a> | 
+  <a href="#ATMABSORPTION_ALLOCATION">Allocation</a> | 
+  <a href="#ATMABSORPTION_ASSIGNMENT">Assignment</a> |
+  <a href="#ATMABSORPTION_DESTRUCTION">Destruction</a> ]
+
+<p>The <tt>AtmAbsorption</tt> structure is declared as a local scalar variable in the CRTM
+user functions (Forward, Tangent-Linear, Adjoint, and K_Matrix),
+
+<pre>
+  TYPE( CRTM_AtmAbsorption_type ) :: AtmAbsorption
+</pre>
+
+<p>and is "re-filled" as each input <tt>Atmosphere</tt> structure is processed.
+
+
+<h4><a name="ATMABSORPTION_DEFINITION"></a>
+<a href="#ATMABSORPTION_ALLOCATION"><tt>AtmAbsorption</tt> Definition</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The current definition of the <tt>AtmAbsorption</tt> structure is specific to the gaseous
+absorption algorithm currently being used -- a compact variant of the OPTRAN algorithm. The
+structure definition is,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_AtmAbsorption_type
+    ! -- Dimensions
+    INTEGER :: n_Layers     = 0  ! K dimension
+    INTEGER :: n_Predictors = 0  ! I dimension
+    INTEGER :: n_Absorbers  = 0  ! J dimension
+    ! -- <strong>Algorithm specific members</strong>
+    REAL( fp_kind ), DIMENSION( :, : ), POINTER :: IntAbsorber => NULL()   ! 0:K x J
+    REAL( fp_kind ), DIMENSION( :, : ), POINTER :: Predictor   => NULL()   ! I x K
+    ! -- <strong>Mandatory members</strong>
+    REAL( fp_kind ), DIMENSION( : ),    POINTER :: Optical_Depth => NULL() ! K
+  END TYPE CRTM_AtmAbsorption_type
+</pre>
+
+<p>Note that there are "algorithm specific" and "mandatory" structure members. The algorithm
+specific members are those required by the current gaseous absorption algorithm, Compact
+OPTRAN. If the algorithm is changed (e.g. OSS is used), then these members may be modified
+or replaced. The mandatory members are those required by other components of the CRTM and
+thus must be present and populated with meaningful data. That is, no matter what gaseous
+absorption algorithm is used, the <tt>AtmAbsorption</tt> structure <em>must always</em> contain an
+array member with the name <tt>Optical_Depth</tt> that other code components, in particular
+the <tt>RTSolution</tt> functions, can access.
+
+
+<h4><a name="ATMABSORPTION_ALLOCATION"></a>
+<a href="#ATMABSORPTION_ASSIGNMENT"><tt>AtmAbsorption</tt> Allocation</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmAbsorption</tt> structure allocation calling sequence is,
+
+<pre>
+  Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption_Define.f90.html#CRTM_ALLOCATE_ATMABSORPTION">CRTM_Allocate_AtmAbsorption</a>( n_Layers, &
+                                              n_Predictors, &
+                                              n_Absorbers, &
+                                              AtmAbsorption, &
+                                              RCS_Id = RCS_Id, &
+                                              Message_Log = Message_Log )
+</pre>
+
+
+<h4><a name="ATMABSORPTION_ASSIGNMENT"></a>
+<a href="#ATMABSORPTION_DESTRUCTION"><tt>AtmAbsorption</tt> Assignment</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>A specific assign function is provided to ensure that when an <tt>AtmAbsorption</tt> structure
+needs to be copied, the pointer components are explicitly allocated and copied (deep copy). This
+means that the original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>AtmAbsorption</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption_Define.f90.html#CRTM_ASSIGN_ATMABSORPTION">CRTM_Assign_AtmAbsorption</a>( AtmAbsorption_In, &
+                                            AtmAbsorption_Out, &
+                                            RCS_Id = RCS_Id, &
+                                            Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  AtmAbsorption_Out = AtmAbsorption_In
+</pre>
+
+
+<h4><a name="ATMABSORPTION_DESTRUCTION"></a>
+<a href="#ATMABSORPTION_STRUCTURE"><tt>AtmAbsorption</tt> Destruction</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmAbsorption</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption_Define.f90.html#CRTM_DESTROY_ATMABSORPTION">CRTM_Destroy_AtmAbsorption</a>( AtmAbsorption, &
+                                             RCS_Id = RCS_Id, &
+                                             Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components.
+
+
+
+<h3><a name="ATMABSORPTION_APPLICATION"></a><tt>AtmAbsorption</tt> Application</h3>
+<!-- ========================================================================== -->
+
+[ <a href="#ATMABSORPTION_FWD">Forward</a> | 
+  <a href="#ATMABSORPTION_TL">Tangent-Linear</a> | 
+  <a href="#ATMABSORPTION_AD">Adjoint</a> |
+  <a href="#ATMABSORPTION_K">K-Matrix</a> ]
+
+<p>The computation of the atmospheric gaseous absorption using the current algorithm (Compact OPTRAN)
+is achieved using two routines. One function populates the channel independent members of the
+<tt>AtmAbsorption</tt> data structure with the required atmospheric profile information. The
+other uses this information to compute optical depths for the given channel.
+
+<p>For all the interface descriptions shown below, a structure with the <tt>_TL</tt> and
+<tt>_AD</tt> suffixes are the tangent-linear and adjoint structures respectively. Similarly
+for the function calls. No suffix indicates a regular forward model structure or function.
+
+
+
+<h4><a name="ATMABSORPTION_FWD"></a>
+<a href="#ATMABSORPTION_TL"><tt>AtmAbsorption</tt> Forward Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmAbsorption</tt> application code is, currently, a little different from the other
+application codes in that there is a channel/frequency <em>independent</em> step. The optical depth
+profiles for each requested channel/frequency are computed thusly,
+
+<pre>
+  ! -- Setup the AtmAbsorption structure
+  <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION">CRTM_SetUp_AtmAbsorption</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,               &  ! Input
+                                           <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,             &  ! Input
+                                           <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,            &  ! Output
+                                           Message_Log = Message_Log )  ! Error messaging</strong>
+
+  Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+    ! -- Compute the AtmAbsorption
+    <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION">CRTM_Compute_AtmAbsorption</a>( <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                               <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! In/Output
+                                               Message_Log = Message_Log     )  ! Error messaging</strong>
+    ....
+
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+    .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+    .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+  END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION">CRTM_Compute_AtmAbsorption</a></tt>
+function.
+
+<p>The resulting <tt>AtmAbsorption</tt> structure is then passed into the
+<tt><a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a></tt> function
+
+
+
+<h4><a name="ATMABSORPTION_TL"></a>
+<a href="#ATMABSORPTION_AD"><tt>AtmAbsorption</tt> Tangent-Linear Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmAbsorption</tt> application code is, currently, a little different from the other
+application codes in that there is a channel/frequency <em>independent</em> step. The tangent-linear
+optical depth profiles for each requested channel/frequency are computed thusly,
+
+<pre>
+  ! -- Setup the AtmAbsorption structures
+  .... Call to <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION">CRTM_SetUp_AtmAbsorption</a> ....
+
+  <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION_TL">CRTM_SetUp_AtmAbsorption_TL</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,               &  ! Input
+                                              <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,            &  ! Input
+                                              <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_TL</a>,            &  ! Input
+                                              <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,             &  ! Input
+                                              <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_TL</a>,         &  ! Output
+                                              Message_Log = Message_Log )  ! Error messaging</strong>
+
+  Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+    ! --------------------------
+    ! Forward model computations
+    ! --------------------------
+
+    .... Call to <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION">CRTM_Compute_AtmAbsorption</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+    .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+    .... Call to <a href="#RTSOLUTION">CRTM_Compute_RTSolution</a> ....
+
+    ! ---------------------------------
+    ! Tangent-linear model computations
+    ! ---------------------------------
+
+    <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_TL">CRTM_Compute_AtmAbsorption_TL</a>( <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                  <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! Input
+                                                  <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_TL</a>,             &  ! In/Output
+                                                  Message_Log = Message_Log     )  ! Error messaging</strong>
+
+    .... Call to <a href="#ATMSCATTER_TL">CRTM_Compute_AerosolScatter_TL</a> ....
+    .... Call to <a href="#ATMSCATTER_TL">CRTM_Compute_CloudScatter_TL</a> ....
+    .... Call to <a href="#SFCOPTICS_TL">CRTM_Compute_SfcOptics_TL</a> ....
+    .... Call to <a href="#RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a> ....
+
+  END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_TL">CRTM_Compute_AtmAbsorption_TL</a></tt>
+function.
+
+
+<p>Note that the structure output from the forward model components, <tt>AtmAbsorption</tt> is an
+input to the tangent-linear model ones.
+
+<p>Both the <tt>AtmAbsorption</tt> and <tt>AtmAbsorption_TL</tt> structures are then passed
+into the <tt><a href="#RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a></tt> function
+
+
+
+<h4><a name="ATMABSORPTION_AD"></a>
+<a href="#ATMABSORPTION_K"><tt>AtmAbsorption</tt> Adjoint Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmAbsorption</tt> application code is, currently, a little different from the other
+application codes in that there is a channel/frequency <em>independent</em> step. The adjoint
+optical depth profiles for each requested channel/frequency are computed basically by reversing
+the calling sequence as shown in the tangent-linear model, but calling the adjoint routines. Note that
+the call to the adjoint <tt>AtmAbsorption</tt> set-up function is outside, and after, the channel/frequency
+loop,
+
+<pre>
+  ! -- Setup the AtmAbsorption structures
+  .... Call to <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION">CRTM_SetUp_AtmAbsorption</a> ....
+
+  Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+    ! --------------------------
+    ! Forward model computations
+    ! --------------------------
+
+    .... Call to <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION">CRTM_Compute_AtmAbsorption</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+    .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+    .... Call to <a href="#RTSOLUTION">CRTM_Compute_RTSolution</a> ....
+
+    ! --------------------------
+    ! Adjoint model computations
+    ! --------------------------
+
+    .... Call to <a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a> ....
+    .... Call to <a href="#SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a> ....
+    .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_CloudScatter_AD</a> ....
+    .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a> ....
+
+    <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a>( <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                  <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! Input
+                                                  <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_AD</a>,             &  ! In/Output
+                                                  Message_Log = Message_Log     )  ! Error messaging</strong>
+    ....
+  END DO Channel_Loop
+
+  ! -- Adjoint of the SetUp function
+  <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,               &  ! Input
+                                              <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,            &  ! Input
+                                              <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_AD</a>,         &  ! Input
+                                              <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,             &  ! Input
+                                              <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_AD</a>,            &  ! Output
+                                              Message_Log = Message_Log )  ! Error messaging</strong>
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a></tt>
+function.
+
+<p>Note that the adjoint structure, <tt>AtmAbsorption_AD</tt>, is listed as "In/Output" for
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a></tt>.
+This is because the <tt><a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt> function returns the
+<tt>AtmAbsorption_AD</tt> structure that is then used as input above.
+
+
+
+<h4><a name="ATMABSORPTION_K"></a>
+<a href="#ATMABSORPTION_APPLICATION"><tt>AtmAbsorption</tt> K-matrix Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>There is no separate K-matrix function for the <tt>AtmAbsorption</tt> component. This section is
+here to show how the K-matrix computation differs from the adjoint computation since, currently, the
+<tt>AtmAbsorption</tt> computation is the only one that has an element <em>outside</em> the channel/frequency
+loop. For the K-matrix computation, the <tt>CRTM_SetUp_AtmAbsorption_AD</tt> adjoint function is then moved
+<em>inside</em> the channel/frequency loop.
+
+<p>So, within a channel/frequency loop, the K-matrix of the optical depth profiles for each requested
+channel/frequency are computed like so,
+
+<pre>
+  ! -- Setup the AtmAbsorption structures
+  .... Call to <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION">CRTM_SetUp_AtmAbsorption</a> ....
+
+  Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+    ! --------------------------
+    ! Forward model computations
+    ! --------------------------
+
+    .... Call to <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION">CRTM_Compute_AtmAbsorption</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+    .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+    .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+    .... Call to <a href="#RTSOLUTION">CRTM_Compute_RTSolution</a> ....
+
+    ! --------------------------
+    ! Adjoint model computations
+    ! --------------------------
+
+    .... Call to <a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a> ....
+    .... Call to <a href="#SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a> ....
+    .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_CloudScatter_AD</a> ....
+    .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a> ....
+
+    ! -- Adjoint of the AtmAbsorption computation
+    <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a>( <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                  <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! Input
+                                                  <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_K</a>,              &  ! In/Output
+                                                  Message_Log = Message_Log     )  ! Error messaging</strong>
+    ! -- K-Matrix of the SetUp function
+    <strong>Error_Status = <a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,               &  ! Input
+                                                <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,            &  ! Input
+                                                <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_K</a>,          &  ! Input
+                                                <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,             &  ! Input
+                                                <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_K(l)</a>,          &  ! Output
+                                                Message_Log = Message_Log )  ! Error messaging</strong>
+
+  END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a></tt>
+function.
+
+<p>Note that the adjoint structure, <tt>AtmAbsorption_K</tt>, is listed as "In/Output" for the
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_COMPUTE_ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a></tt>
+function. This is because the <tt><a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt>
+function returns the <tt>AtmAbsorption_K</tt> structure that is then used as input to the
+<tt><a href="AtmAbsorption/CRTM_AtmAbsorption.f90.html#CRTM_SETUP_ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a></tt>
+function.
+
+<p>Also note that the <tt>Atmosphere_K</tt> K-matrix structure is now channel dependent -- as you expect to
+provide Jacobians for each channel. See the 
+<a href="CRTM_User_Interface.html#K_MATRIX_MODEL">CRTM K-Matrix Model</a> interface for more details on the
+dimensionality requirements.
+
+
+
+
+
+<!-- ======================================== -->
+<h2><a name="ATMSCATTER"></a>CRTM AtmScatter</h2>
+<!-- ======================================== -->
+
+The CRTM AtmScatter modules contain the code to compute the scattering properties of the
+atmosphere due to clouds and aerosols. This component of the Developer Interface is
+necessarily vaguely defined since several groups are working on this problem. What follows
+below is a description of the <tt>AtmScatter</tt> framework which is mostly empty. This
+section will require future updates -- possibly a separate section for each group working
+on this problem.
+
+<p>The <tt>AtmScatter</tt> structure definition module is <tt>CRTM_AtmScatter_Define</tt>. The
+cloud and aerosol absorption/scattering application modules are <tt>CRTM_CloudScatter</tt> and
+<tt>CRTM_AerosolScatter</tt> respectively. Note that this format deviates from the naming 
+conventions used in the other CRTM components. Since the requirements for computing cloud
+and aerosol absorption/scattering parameters are effectively the same, the same structure
+definition can be used for both types of scattering application codes. The <tt>AtmScatter</tt>
+structure definition and its manipulation routines are visible via the application modules,
+so only the latter need be used in any application code, e.g.
+<pre>
+  USE CRTM_AerosolScatter
+</pre>
+
+<p>or
+
+<pre>
+  USE CRTM_CloudScatter
+</pre>
+
+
+
+<h3><a name="ATMSCATTER_STRUCTURE"></a><tt>AtmScatter</tt> Structure</h3>
+<!-- ================================================================ -->
+
+[ <a href="#ATMSCATTER_DEFINITION">Definition</a> | 
+  <a href="#ATMSCATTER_ALLOCATION">Allocation</a> | 
+  <a href="#ATMSCATTER_ASSIGNMENT">Assignment</a> |
+  <a href="#ATMSCATTER_DESTRUCTION">Destruction</a> ]
+
+<p>The cloud and aerosol <tt>AtmScatter</tt> structures are declared as local scalar variables
+in the CRTM user functions (Forward, Tangent-Linear, Adjoint, and K_Matrix),
+
+<pre>
+  TYPE( CRTM_AtmScatter_type ) :: AerosolScatter
+  TYPE( CRTM_AtmScatter_type ) :: CloudScatter
+</pre>
+
+<p>and are "re-filled" as each input <tt>Atmosphere</tt> structure is processed.
+
+
+<h4><a name="ATMSCATTER_DEFINITION"></a>
+<a href="#ATMSCATTER_ALLOCATION"><tt>AtmScatter</tt> Definition</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The current definition of the <tt>AtmScatter</tt> structure contains what most developers
+should need to solve the scattering problem, but additions/channges are inevitable depending
+on choice of algorithm. The structure definition is,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_AtmScatter_type
+    ! -- Dimensions
+    INTEGER :: n_Layers           = 0  ! K dimension
+    INTEGER :: Max_Legendre_Terms = 0  ! Ic dimension
+    INTEGER :: n_Legendre_Terms   = 0  ! IcUse dimension
+    INTEGER :: Max_Phase_Elements = 0  ! Ip dimension
+    INTEGER :: n_Phase_Elements   = 0  ! IpUse dimension
+    ! -- <strong>Algorithm specific members</strong>
+    REAL( fp_kind ), DIMENSION( : ,:, :), POINTER :: Phase_Coefficient => NULL()  ! K x Ic x Ip
+    ! -- <strong>Mandatory members</strong>
+    REAL( fp_kind ), DIMENSION( : ),      POINTER :: Optical_Depth         => NULL() ! K
+    REAL( fp_kind ), DIMENSION( : ),      POINTER :: Single_Scatter_Albedo => NULL() ! K
+    REAL( fp_kind ), DIMENSION( : ),      POINTER :: Asymmetry_Factor      => NULL() ! K
+    REAL( fp_kind ), DIMENSION( : ),      POINTER :: Delta_Truncation      => NULL() ! K
+  END TYPE CRTM_AtmScatter_type
+</pre>
+
+<p>Again note the "algorithm specific" and "mandatory" structure members. The latter are
+required for use in the <tt>RTSolution</tt> functions.
+
+
+<h4><a name="ATMSCATTER_ALLOCATION"></a>
+<a href="#ATMSCATTER_ASSIGNMENT"><tt>AtmScatter</tt> Allocation</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmScatter</tt> structure allocation calling sequence is,
+
+<pre>
+  Error_Status = <a href="AtmScatter/CRTM_AtmScatter_Define.f90.html#CRTM_ALLOCATE_ATMSCATTER">CRTM_Allocate_AtmScatter</a>( n_Layers, &
+                                           n_Legendre_Terms, &
+                                           n_Phase_Elements, &
+                                           AerosolScatter, &
+                                           RCS_Id = RCS_Id, &
+                                           Message_Log = Message_Log )
+</pre>
+
+
+<h4><a name="ATMSCATTER_ASSIGNMENT"></a>
+<a href="#ATMSCATTER_DESTRUCTION"><tt>AtmScatter</tt> Assignment</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>A specific assign function is provided to ensure that when an <tt>AtmScatter</tt> structure
+needs to be copied, the pointer components are explicitly allocated and copied (deep copy). This
+means that the original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>AtmScatter</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = <a href="AtmScatter/CRTM_AtmScatter_Define.f90.html#CRTM_ASSIGN_ATMSCATTER">CRTM_Assign_AtmScatter</a>( CloudScatter_In, &
+                                         CloudScatter_Out, &
+                                         RCS_Id = RCS_Id, &
+                                         Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  CloudScatter_Out = CloudScatter_In
+</pre>
+
+
+<h4><a name="ATMSCATTER_DESTRUCTION"></a>
+<a href="#ATMSCATTER_STRUCTURE"><tt>AtmScatter</tt> Destruction</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>AtmScatter</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="AtmScatter/CRTM_AtmScatter_Define.f90.html#CRTM_DESTROY_ATMSCATTER">CRTM_Destroy_AtmScatter</a>( AerosolScatter, &
+                                          RCS_Id = RCS_Id, &
+                                          Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components.
+
+
+
+<h3><a name="ATMSCATTER_APPLICATION"></a><tt>AtmScatter</tt> Applications</h3>
+<!-- ===================================================================== -->
+
+[ <a href="#ATMSCATTER_FWD">Forward</a> | 
+  <a href="#ATMSCATTER_TL">Tangent-Linear</a> | 
+  <a href="#ATMSCATTER_AD">Adjoint</a> ]
+
+<p>The computation of the cloud and aerosol absorption and scattering parameters is one
+of the major objectives of the various groups developing code for the CRTM. What is provided
+in the CRTM are "empty shell" routines for cloud <em>and</em> aerosol scattering computations
+that the various groups can modify. It is hoped that the interfaces of these shell routines do
+not require modification, i.e. the current structure arguments are sufficient and any additional
+data is added to the requisite structure definition, but this may not be sufficient and additional
+arguments may need to be added to these internal interfaces.
+
+<p>For all the interface descriptions shown below, a structure with the <tt>_TL</tt> and
+<tt>_AD</tt> suffixes are the tangent-linear and adjoint structures respectively. Similarly
+for the function calls. No suffix indicates a regular forward model structure or function.
+
+
+
+<h4><a name="ATMSCATTER_FWD"></a>
+<a href="#ATMSCATTER_TL"><tt>AtmScatter</tt> Forward Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The cloud and aerosol absorption/scattering structures are defined with the same type in the
+forward model,
+
+<pre>
+  TYPE( CRTM_AtmScatter_type ) :: AerosolScatter
+  TYPE( CRTM_AtmScatter_type ) :: CloudScatter
+</pre>
+
+<p>The forward model cloud and aerosol absorption/scattering parameters for each requested
+channel/frequency are computed <em>separately</em> within a channel/frequency loop,
+
+<pre>
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a>  ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a>  ....
+
+      ! -- Compute the aerosol scattering properties
+      <strong>Error_Status = <a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER">CRTM_Compute_AerosolScatter</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                  <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                  <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                  <a href="#ATMSCATTER_STRUCTURE">AerosolScatter</a>,               &  ! Output
+                                                  Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      ! -- Compute the cloud scattering properties
+      <strong>Error_Status = <a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER">CRTM_Compute_CloudScatter</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                 &  ! Output
+                                                Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a>  ....
+      .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER">CRTM_Compute_AerosolScatter</a></tt>
+and
+<tt><a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER">CRTM_Compute_CloudScatter</a></tt>
+functions.
+
+<p>The resulting <tt>AtmScatter</tt> structure is then passed into the
+<tt><a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a></tt> function
+
+
+
+<h4><a name="ATMSCATTER_TL"></a>
+<a href="#ATMSCATTER_AD"><tt>AtmScatter</tt> Tangent-Linear Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The cloud and aerosol absorption/scattering structures are defined with the same type in the
+tangent-linear model,
+
+<pre>
+  TYPE( CRTM_AtmScatter_type ) :: AerosolScatter, AerosolScatter_TL
+  TYPE( CRTM_AtmScatter_type ) :: CloudScatter,   CloudScatter_TL
+</pre>
+
+<p>The tangent-linear model cloud and aerosol absorption/scattering parameters for each requested
+channel/frequency are computed <em>separately</em> within a channel/frequency loop,
+
+<pre>
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a>  ....
+    .... Call to <a href="#ATMABSORPTION_TL">CRTM_SetUp_AtmAbsorption_TL</a>  ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! --------------------------
+      ! Forward model computations
+      ! --------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a>  ....
+      .... Call to <a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER">CRTM_Compute_AerosolScatter</a>  ....
+      .... Call to <a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER">CRTM_Compute_CloudScatter</a>  ....
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a>  ....
+      .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+      ! ---------------------------------
+      ! Tangent-linear model computations
+      ! ---------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_TL">CRTM_Compute_AtmAbsorption_TL</a>  ....
+
+      ! -- Compute the aerosol scattering properties
+      <strong>Error_Status = <a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER_TL">CRTM_Compute_AerosolScatter_TL</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                     <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                   &  ! Input
+                                                     <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_TL</a>,                &  ! Input
+                                                     <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                     <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                     <a href="#ATMSCATTER_STRUCTURE">AerosolScatter_TL</a>,            &  ! Output
+                                                     Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      ! -- Compute the cloud scattering properties
+      <strong>Error_Status = <a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER_TL">CRTM_Compute_CloudScatter_TL</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                   <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                   &  ! Input
+                                                   <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_TL</a>,                &  ! Input
+                                                   <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                   <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                   <a href="#ATMSCATTER_STRUCTURE">CloudScatter_TL</a>,              &  ! Output
+                                                   Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#SFCOPTICS_TL">CRTM_Compute_SfcOptics_TL</a>  ....
+      .... Call to <a href="#RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a> ....
+
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER_TL">CRTM_Compute_AerosolScatter_TL</a></tt>
+and
+<tt><a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER_TL">CRTM_Compute_CloudScatter_TL</a></tt>
+functions.
+
+<p>Note that the structures output from the forward models, <tt>AerosolScatter</tt> and <tt>CloudScatter</tt> are
+inputs to the tangent-linear model.
+
+<p>Both the forward and tangent-linear scattering structures are then passed
+into the <tt><a href="#RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a></tt> function
+
+
+
+<h4><a name="ATMSCATTER_AD"></a>
+<a href="#ATMSCATTER_APPLICATION"><tt>AtmScatter</tt> Adjoint Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The cloud and aerosol absorption/scattering structures are defined with the same type in the
+adjoint model,
+
+<pre>
+  TYPE( CRTM_AtmScatter_type ) :: AerosolScatter, AerosolScatter_AD
+  TYPE( CRTM_AtmScatter_type ) :: CloudScatter,   CloudScatter_AD
+</pre>
+
+
+<p>Within a channel/frequency loop the adjoints of the various scattering parameters for each requested
+channel/frequency are then computed basically by reversing the calling sequence as shown in the tangent-linear
+model calling the adjoint routines,
+
+<pre>
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a>  ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! --------------------------
+      ! Forward model computations
+      ! --------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a>  ....
+      .... Call to <a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER">CRTM_Compute_AerosolScatter</a>  ....
+      .... Call to <a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER">CRTM_Compute_CloudScatter</a>  ....
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a>  ....
+      .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+      ! --------------------------
+      ! Adjoint model computations
+      ! --------------------------
+
+      .... Call to <a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a> ....
+      .... Call to <a href="#SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a>  ....
+
+      ! -- Compute the adjoint of the cloud scattering properties
+      <strong>Error_Status = <a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER_AD">CRTM_Compute_CloudScatter_AD</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                   <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                 &  ! Input
+                                                   <a href="#ATMSCATTER_STRUCTURE">CloudScatter_AD</a>,              &  ! Input
+                                                   <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                   <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                   <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_AD</a>,                &  ! Output
+                                                   Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      ! -- Compute the adjoint of the aerosol scattering properties
+      <strong>Error_Status = <a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                     <a href="#ATMSCATTER_STRUCTURE">AerosolScatter</a>,               &  ! Input
+                                                     <a href="#ATMSCATTER_STRUCTURE">AerosolScatter_AD</a>,            &  ! Input
+                                                     <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                     <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                     <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_AD</a>,                &  ! Output
+                                                     Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a>  ....
+
+    END DO Channel_Loop
+
+    .... Call to <a href="#ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a>  ....
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="AtmScatter/CRTM_AerosolScatter.f90.html#CRTM_COMPUTE_AEROSOLSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a></tt>
+and
+<tt><a href="AtmScatter/CRTM_CloudScatter.f90.html#CRTM_COMPUTE_CLOUDSCATTER_AD">CRTM_Compute_CloudScatter_AD</a></tt>
+functions.
+
+<p>Note that the adjoint structures, <tt>CloudScatter_AD</tt> and <tt>AerosolScatter_AD</tt>, used as inputs above
+are returned from the previous <tt><a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt> function call.
+
+
+
+
+
+
+
+<!-- ======================================== -->
+<h2><a name="SFCOPTICS"></a>CRTM SfcOptics</h2>
+<!-- ======================================== -->
+
+The CRTM SfcOptics modules contain the code to compute the optical properties of the surface
+boundary for the radiative transfer problem. Like the AtmScatter code this component of the
+Developer Interface is necessarily vaguely defined since several groups are working on this
+problem. What follows below is a description of the <tt>SfcOptics</tt> framework which is
+mostly empty. This section will require future updates -- possibly a separate section for
+each group working on this problem.
+
+<p>The <tt>SfcOptics</tt> structure definition and application modules are
+<tt>CRTM_SfcOptics_Define</tt> and <tt>CRTM_SfcOptics</tt> respectively. The structure
+definition and its manipulation routines are visible via the application module, so only
+the latter need be used in any application code, e.g.
+<pre>
+  USE CRTM_SfcOptics
+</pre>
+
+
+
+<h3><a name="SFCOPTICS_STRUCTURE"></a><tt>SfcOptics</tt> Structure</h3>
+<!-- ============================================================== -->
+
+[ <a href="#SFCOPTICS_DEFINITION">Definition</a> | 
+  <a href="#SFCOPTICS_ALLOCATION">Allocation</a> | 
+  <a href="#SFCOPTICS_ASSIGNMENT">Assignment</a> |
+  <a href="#SFCOPTICS_DESTRUCTION">Destruction</a> ]
+
+<p>The <tt>SfcOptics</tt> structure is declared as a local scalar variable in the CRTM
+user functions (Forward, Tangent-Linear, Adjoint, and K_Matrix),
+
+<pre>
+  TYPE( CRTM_SfcOptics_type ) :: SfcOptics
+</pre>
+
+<p>and is "re-filled" as each input <tt>Atmosphere</tt> and/or <tt>Surface</tt> structure
+is processed.
+
+
+
+<h4><a name="SFCOPTICS_DEFINITION"></a>
+<a href="#SFCOPTICS_ALLOCATION"><tt>SfcOptics</tt> Definition</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>Again, as with the <tt>AtmScatter</tt> structure, the current definition of the <tt>SfcOptics</tt>
+structure contains what most developers should need to solve the scattering problem, but
+additions/channges are inevitable depending on choice of algorithm. The structure definition is,
+
+<pre>
+  TYPE, PUBLIC :: CRTM_SfcOptics_type
+    ! -- Dimensions
+    INTEGER :: n_Angles = 0 ! I
+    INTEGER :: n_Stokes = 0 ! Ls
+    ! -- <strong>Mandatory members</strong>
+    REAL( fp_kind ) :: Surface_Temperature = ZERO
+    REAL( fp_kind ), DIMENSION( : ),          POINTER :: Angle               => NULL() ! I
+    REAL( fp_kind ), DIMENSION( :, : ),       POINTER :: Emissivity          => NULL() ! I x Ls
+    REAL( fp_kind ), DIMENSION( :, :, :, : ), POINTER :: Reflectivity        => NULL() ! I x Ls x I x Ls
+    REAL( fp_kind ), DIMENSION( :, : ),       POINTER :: Direct_Reflectivity => NULL() ! I x Ls
+  END TYPE CRTM_SfcOptics_type
+</pre>
+
+<p>While there are no algorithm specific structure members listed above, note the "mandatory"
+members required for use in the <tt>RTSolution</tt> functions.
+
+
+
+<h4><a name="SFCOPTICS_ALLOCATION"></a>
+<a href="#SFCOPTICS_ASSIGNMENT"><tt>SfcOptics</tt> Allocation</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>SfcOptics</tt> structure allocation calling sequence is,
+
+<pre>
+  Error_Status = <a href="SfcOptics/CRTM_SfcOptics_Define.f90.html#CRTM_ALLOCATE_SFCOPTICS">CRTM_Allocate_SfcOptics</a>( n_Angles,                 &  ! Input
+                                          n_Stokes,                 &  ! Input
+                                          SfcOptics,                &  ! Output
+                                          RCS_Id = RCS_Id,          &  ! Revision control
+                                          Message_Log = Message_Log )  ! Error messaging
+</pre>
+
+
+<h4><a name="SFCOPTICS_ASSIGNMENT"></a>
+<a href="#SFCOPTICS_DESTRUCTION"><tt>SfcOptics</tt> Assignment</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>A specific assign function is provided to ensure that when an <tt>SfcOptics</tt> structure
+needs to be copied, the pointer components are explicitly allocated and copied (deep copy). This
+means that the original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>SfcOptics</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = <a href="SfcOptics/CRTM_SfcOptics_Define.f90.html#CRTM_ASSIGN_SFCOPTICS">CRTM_Assign_SfcOptics</a>( SfcOptics_In, &
+                                        SfcOptics_Out, &
+                                        RCS_Id = RCS_Id, &
+                                        Message_Log = Message_Log )
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  SfcOptics_Out = SfcOptics_In
+</pre>
+
+
+<h4><a name="SFCOPTICS_DESTRUCTION"></a>
+<a href="#SFCOPTICS_STRUCTURE"><tt>SfcOptics</tt> Destruction</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The <tt>SfcOptics</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = <a href="SfcOptics/CRTM_SfcOptics_Define.f90.html#CRTM_DESTROY_SFCOPTICS">CRTM_Destroy_SfcOptics</a>( SfcOptics, &
+                                         RCS_Id = RCS_Id, &
+                                         Message_Log = Message_Log )
+</pre>
+
+<p>which deallocates all the pointer components and clears the scalar components.
+
+
+
+<h3><a name="SFCOPTICS_APPLICATION"></a><tt>SfcOptics</tt> Application</h3>
+<!-- ==================================================================== -->
+
+[ <a href="#SFCOPTICS_FWD">Forward</a> | 
+  <a href="#SFCOPTICS_TL">Tangent-Linear</a> | 
+  <a href="#SFCOPTICS_AD">Adjoint</a> ]
+
+<p>The computation of the surface optical properties is another one of the major
+objectives of the various groups developing code for the CRTM. What is provided in
+the CRTM are "empty shell" routines that the various groups can modify. It is hoped
+that the interfaces of these shell routines do not require modification, i.e. the
+current structure arguments are sufficient and any additional data is added to the
+requisite structure definition, but this may not be sufficient and additional arguments
+may need to be added to these internal interfaces.
+
+<p>For all the interface descriptions shown below, a structure with the <tt>_TL</tt> and
+<tt>_AD</tt> suffixes are the tangent-linear and adjoint structures respectively. Similarly
+for the function calls. No suffix indicates a regular forward model structure or function.
+
+<br>
+<a name="SFCOPTICS_NOTE"></a>
+<p style="width: auto; border: solid black; padding: 10px">
+<strong>Note:</strong> The descriptions below assume that the surface optical properties are
+computed prior to calling the radiative transfer solution function, or, in the adjoint case,
+afterwards. However, some proposed radiative transfer algorithms do not necessarily know the
+angles <em>a priori</em> at which the various optical properties need to be computed. These
+angles, and thus the subsequent surface optical properties, are determined within the
+<tt><a href="#RTSOLUTION_APPLICATION">RTSolution</a></tt> functions. To accomodate both possibilities
+the <tt>SfcOptics</tt> structure is an optional argument to the 
+<tt><a href="#RTSOLUTION_APPLICATION">RTSolution</a></tt> functions. If the <tt>SfcOptics</tt>
+argument is present, the supplied surface optical parameters are used in the radiative transfer
+solution. If the <tt>SfcOptics</tt> argument is <em>not</em> present, the
+<tt><a href="#RTSOLUTION_APPLICATION">RTSolution</a></tt> functions must compute the required
+data. In the latter case the interfaces below can still be used, but they would be called from <em>within</em>
+the <tt><a href="#RTSOLUTION_APPLICATION">RTSolution</a></tt> functions.
+
+
+<h4><a name="SFCOPTICS_FWD"></a>
+<a href="#SFCOPTICS_TL"><tt>SfcOptics</tt> Forward Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The forward model surface optical properties computation begins with
+the calculation of the average surface temperature based upon the surface
+temperatures of the gross surface types weighted by their coverage fractions
+defined in the surface structure. The weighted average surface temperature is used
+to compute the Planck radiance of the mixed coverage surface in the satellite
+field-of-view (FOV). This quantity is frequency independent and so occurs
+outside the channel/frequency loop.
+
+<p>The computation of the emissivity and reflectivity surface optical properties
+is performed for each requested channel/frequency within a channel/frequency loop.
+
+<pre>
+
+    <strong>CALL <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SURFACET">CRTM_Compute_SurfaceT</a>( <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,  &  ! Input
+                                <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a> )  ! Output</strong>
+
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a>  ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a>  ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a>  ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a>  ....
+
+      <strong>Error_Status = <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS">CRTM_Compute_SfcOptics</a>( <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,                      &  ! Input
+                                             <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                             <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                             <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>,                    &  ! Output
+                                             Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS">CRTM_Compute_SfcOptics</a></tt>
+function.
+
+<p>The resulting <tt>SfcOptics</tt> structure is then passed into the
+<tt><a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a></tt> function.
+<span class="small">[<a href="#SFCOPTICS_NOTE">See Note</a>]</span>
+
+<p>Within the
+<tt><a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS">CRTM_Compute_SfcOptics</a></tt>
+function, calls are made to separate functions that compute the surface optical
+properties for microwave (MW) and infrared (IR) sensors, and for the four gross
+surface types (Land, Water, Snow, and Ice). The table below lists the forward
+model SfcOptics application functions.
+
+<br>
+<a name="SFCOPTICS_FWD_COMPUTATION_NOTE"></a>
+<p style="width: auto; border: solid black; padding: 10px">
+<strong>Developers Note:</strong> Each of the SfcOptics application functions serve as
+wrappers for third-party codes.
+Thus, developers need only modify the internals of the SfcOptics wrapper functions --
+<em>not</em> the interfaces. This code structure was introduced to minimise the changes
+that would be needed to be made to the core <tt>CRTM_SfcOptics</tt> application module
+to include code from the many groups that are developing surface optics algorithms for
+satellite radiative transfer and data assimilation.
+
+<p><a name="SFCOPTICS_FWD_FUNCTIONS_TABLE"></a>
+<table border="1" width="100%" cellpadding="5" align="center">
+  <caption>List of the forward model SfcOptics wrapper functions and modules</caption>
+  <tbody>
+    <tr>
+      <th>Function</th>
+      <th>Description</th>
+      <th>Module</th>
+    </tr>
+    <tr><th colspan="3">Microwave sensor functions</th></tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Land_SfcOptics.f90.html#COMPUTE_MW_LAND_SFCOPTICS">Compute_MW_Land_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at microwave
+          frequencies over a land surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Land_SfcOptics.f90.html">CRTM_MW_Land_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Water_SfcOptics.f90.html#COMPUTE_MW_WATER_SFCOPTICS">Compute_MW_Water_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at microwave
+          frequencies over a water surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Water_SfcOptics.f90.html">CRTM_MW_Water_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Snow_SfcOptics.f90.html#COMPUTE_MW_SNOW_SFCOPTICS">Compute_MW_Snow_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at microwave
+          frequencies over a snow surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Snow_SfcOptics.f90.html">CRTM_MW_Snow_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Ice_SfcOptics.f90.html#COMPUTE_MW_ICE_SFCOPTICS">Compute_MW_Ice_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at microwave
+          frequencies over an ice surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Ice_SfcOptics.f90.html">CRTM_MW_Ice_SfcOptics</a></tt></td>
+    </tr>
+    <tr><th colspan="3">Infrared sensor functions</th></tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Land_SfcOptics.f90.html#COMPUTE_IR_LAND_SFCOPTICS">Compute_IR_Land_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at infrared
+          frequencies over a land surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Land_SfcOptics.f90.html">CRTM_IR_Land_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Water_SfcOptics.f90.html#COMPUTE_IR_WATER_SFCOPTICS">Compute_IR_Water_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at infrared
+          frequencies over a water surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Water_SfcOptics.f90.html">CRTM_IR_Water_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Snow_SfcOptics.f90.html#COMPUTE_IR_SNOW_SFCOPTICS">Compute_IR_Snow_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at infrared
+          frequencies over a snow surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Snow_SfcOptics.f90.html">CRTM_IR_Snow_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Ice_SfcOptics.f90.html#COMPUTE_IR_ICE_SFCOPTICS">Compute_IR_Ice_SfcOptics</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity at infrared
+          frequencies over an ice surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Ice_SfcOptics.f90.html">CRTM_IR_Ice_SfcOptics</a></tt></td>
+    </tr>
+  </tbody>
+</table>
+<br>
+
+
+
+<h4><a name="SFCOPTICS_TL"></a>
+<a href="#SFCOPTICS_AD"><tt>SfcOptics</tt> Tangent-Linear Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>As with the forward model, the tangent-linear surface optical properties
+computation begins with the calculation of the weighted average surface
+temperature. Then the surface optics are computed within a channel/frequency loop,
+
+<pre>
+    .... Call to <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SURFACET">CRTM_Compute_SurfaceT</a>
+
+    <strong>CALL <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SURFACET_TL">CRTM_Compute_SurfaceT_TL</a>( <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,    &  ! Input
+                                   <a href="CRTM_User_Interface.html#SURFACE">Surface_TL</a>, &  ! Input
+                                   <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>   )  ! Output</strong>
+
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a>  ....
+    .... Call to <a href="#ATMABSORPTION_TL">CRTM_SetUp_AtmAbsorption_TL</a>  ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! --------------------------
+      ! Forward model computations
+      ! --------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a>  ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a>  ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a>  ....
+      .... Call to <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS">CRTM_Compute_SfcOptics</a>  ....
+      .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+      ! ---------------------------------
+      ! Tangent-linear model computations
+      ! ---------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_TL">CRTM_Compute_AtmAbsorption_TL</a>  ....
+      .... Call to <a href="#ATMSCATTER_TL">CRTM_Compute_AerosolScatter_TL</a>  ....
+      .... Call to <a href="#ATMSCATTER_TL">CRTM_Compute_CloudScatter_TL</a>  ....
+
+      <strong>Error_Status = <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS_TL">CRTM_Compute_SfcOptics_TL</a>( <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,                      &  ! Input
+                                                <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>,                    &  ! Input
+                                                <a href="CRTM_User_Interface.html#SURFACE">Surface_TL</a>,                   &  ! Input
+                                                <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                <a href="#SFCOPTICS_STRUCTURE">SfcOptics_TL</a>,                 &  ! Output
+                                                Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a> ....
+
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS_TL">CRTM_Compute_SfcOptics_TL</a></tt>
+function.
+
+<p>Note that the structure output from the forward model, <tt>SfcOptics</tt>, is
+an input to the tangent-linear model.
+
+<p>Both the <tt>SfcOptics</tt> and <tt>SfcOptics_TL</tt> structures are then passed
+into the <tt><a href="#RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a></tt> function.
+<span class="small">[<a href="#SFCOPTICS_NOTE">See Note</a>]</span>
+
+<p>Within the
+<tt><a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS_TL">CRTM_Compute_SfcOptics_TL</a></tt>
+function, calls are made to separate functions that compute the tangent-linear surface optical
+properties for microwave (MW) and infrared (IR) sensors, and for the four gross
+surface types (Land, Water, Snow, and Ice). The table below lists the tangent-linear
+model SfcOptics application functions.
+
+<br>
+<a name="SFCOPTICS_TL_COMPUTATION_NOTE"></a>
+<p style="width: auto; border: solid black; padding: 10px">
+<strong>Developers Note:</strong> As with the forward model, each of the tangent-linear
+SfcOptics application functions serve as wrappers for third-party codes.
+Thus, developers need only modify the internals of the SfcOptics wrapper functions --
+<em>not</em> the interfaces. This code structure was introduced to minimise the changes
+that would be needed to be made to the core <tt>CRTM_SfcOptics</tt> application module
+to include code from the many groups that are developing surface optics algorithms for
+satellite radiative transfer and data assimilation.
+
+<p><a name="SFCOPTICS_TL_FUNCTIONS_TABLE"></a>
+<table border="1" width="100%" cellpadding="5" align="center">
+  <caption>List of the tangent-linear SfcOptics wrapper functions and modules</caption>
+  <tbody>
+    <tr>
+      <th>Function</th>
+      <th>Description</th>
+      <th>Module</th>
+    </tr>
+    <tr><th colspan="3">Microwave sensor functions</th></tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Land_SfcOptics.f90.html#COMPUTE_MW_LAND_SFCOPTICS_TL">Compute_MW_Land_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at microwave
+          frequencies over a land surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Land_SfcOptics.f90.html">CRTM_MW_Land_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Water_SfcOptics.f90.html#COMPUTE_MW_WATER_SFCOPTICS_TL">Compute_MW_Water_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at microwave
+          frequencies over a water surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Water_SfcOptics.f90.html">CRTM_MW_Water_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Snow_SfcOptics.f90.html#COMPUTE_MW_SNOW_SFCOPTICS_TL">Compute_MW_Snow_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at microwave
+          frequencies over a snow surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Snow_SfcOptics.f90.html">CRTM_MW_Snow_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Ice_SfcOptics.f90.html#COMPUTE_MW_ICE_SFCOPTICS_TL">Compute_MW_Ice_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at microwave
+          frequencies over an ice surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Ice_SfcOptics.f90.html">CRTM_MW_Ice_SfcOptics</a></tt></td>
+    </tr>
+    <tr><th colspan="3">Infrared sensor functions</th></tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Land_SfcOptics.f90.html#COMPUTE_IR_LAND_SFCOPTICS_TL">Compute_IR_Land_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at infrared
+          frequencies over a land surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Land_SfcOptics.f90.html">CRTM_IR_Land_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Water_SfcOptics.f90.html#COMPUTE_IR_WATER_SFCOPTICS_TL">Compute_IR_Water_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at infrared
+          frequencies over a water surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Water_SfcOptics.f90.html">CRTM_IR_Water_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Snow_SfcOptics.f90.html#COMPUTE_IR_SNOW_SFCOPTICS_TL">Compute_IR_Snow_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at infrared
+          frequencies over a snow surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Snow_SfcOptics.f90.html">CRTM_IR_Snow_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Ice_SfcOptics.f90.html#COMPUTE_IR_ICE_SFCOPTICS_TL">Compute_IR_Ice_SfcOptics_TL</a></tt></td>
+      <td>Function to compute the tangent-linear surface emissivity and reflectivity at infrared
+          frequencies over an ice surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Ice_SfcOptics.f90.html">CRTM_IR_Ice_SfcOptics</a></tt></td>
+    </tr>
+  </tbody>
+</table>
+<br>
+
+
+
+<h4><a name="SFCOPTICS_AD"></a>
+<a href="#SFCOPTICS_APPLICATION"><tt>SfcOptics</tt> Adjoint Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>Again, as with the forward and tangent-linear models, the weighted average
+surface temperature is computed . Then, within a channel/frequency loop, after calling the
+<tt><a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt> function, the adjoints of the
+various surface optical properties for each requested channel/frequency are computed. At 
+the conclusion of the channel/frequency loop, the adjoint of the weighted surface temperature
+is computed,
+
+<pre>
+    .... Call to <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SURFACET">CRTM_Compute_SurfaceT</a>
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a>  ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! --------------------------
+      ! Forward model computations
+      ! --------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a>  ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a>  ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a>  ....
+      .... Call to <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS">CRTM_Compute_SfcOptics</a>  ....
+      .... Call to <a href="#RTSOLUTION_FWD">CRTM_Compute_RTSolution</a> ....
+
+      ! --------------------------
+      ! Adjoint model computations
+      ! --------------------------
+
+      .... Call to <a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a> ....
+
+      <strong>Error_Status = <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a>( <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,                      &  ! Input
+                                                <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>,                    &  ! Input
+                                                <a href="#SFCOPTICS_STRUCTURE">SfcOptics_AD</a>,                 &  ! Input
+                                                <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                <a href="CRTM_User_Interface.html#SURFACE">Surface_AD</a>,                   &  ! Output
+                                                Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_CloudScatter_AD</a> ....
+      .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a> ....
+      .... Call to <a href="#ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a> ....
+
+    END DO Channel_Loop
+
+    .... Call to <a href="#ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a>  ....
+
+    <strong>CALL <a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SURFACET_AD">CRTM_Compute_SurfaceT_AD</a>( <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,      &  ! Input
+                                   <a href="#SFCOPTICS_STRUCTURE">SfcOptics_AD</a>, &  ! Input
+                                   <a href="CRTM_User_Interface.html#SURFACE">Surface_AD</a>    )  ! Output</strong>
+
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a></tt>
+function.
+
+<p>Note that the adjoint structure, <tt>SfcOptics_AD</tt>, used as input above is returned
+from the previous <tt><a href="#RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt> function call.
+<span class="small">[<a href="#SFCOPTICS_NOTE">See Note</a>]</span>
+
+<p>Within the
+<tt><a href="SfcOptics/CRTM_SfcOptics.f90.html#CRTM_COMPUTE_SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a></tt>
+function, calls are made to separate functions that compute the adjoint surface optical
+properties for microwave (MW) and infrared (IR) sensors, and for the four gross
+surface types (Land, Water, Snow, and Ice). The table below lists the adjoint
+model SfcOptics application functions.
+
+<br>
+<a name="SFCOPTICS_AD_COMPUTATION_NOTE"></a>
+<p style="width: auto; border: solid black; padding: 10px">
+<strong>Developers Note:</strong> As with the other models, each of the adjoint
+SfcOptics application functions serve as wrappers for third-party codes.
+Thus, developers need only modify the internals of the SfcOptics wrapper functions --
+<em>not</em> the interfaces. This code structure was introduced to minimise the changes
+that would be needed to be made to the core <tt>CRTM_SfcOptics</tt> application module
+to include code from the many groups that are developing surface optics algorithms for
+satellite radiative transfer and data assimilation.
+
+<p><a name="SFCOPTICS_AD_FUNCTIONS_TABLE"></a>
+<table border="1" width="100%" cellpadding="5" align="center">
+  <caption>List of the adjoint SfcOptics wrapper functions and modules</caption>
+  <tbody>
+    <tr>
+      <th>Function</th>
+      <th>Description</th>
+      <th>Module</th>
+    </tr>
+    <tr><th colspan="3">Microwave sensor functions</th></tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Land_SfcOptics.f90.html#COMPUTE_MW_LAND_SFCOPTICS_AD">Compute_MW_Land_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at microwave
+          frequencies over a land surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Land_SfcOptics.f90.html">CRTM_MW_Land_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Water_SfcOptics.f90.html#COMPUTE_MW_WATER_SFCOPTICS_AD">Compute_MW_Water_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at microwave
+          frequencies over a water surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Water_SfcOptics.f90.html">CRTM_MW_Water_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Snow_SfcOptics.f90.html#COMPUTE_MW_SNOW_SFCOPTICS_AD">Compute_MW_Snow_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at microwave
+          frequencies over a snow surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Snow_SfcOptics.f90.html">CRTM_MW_Snow_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Ice_SfcOptics.f90.html#COMPUTE_MW_ICE_SFCOPTICS_AD">Compute_MW_Ice_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at microwave
+          frequencies over an ice surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_MW_Ice_SfcOptics.f90.html">CRTM_MW_Ice_SfcOptics</a></tt></td>
+    </tr>
+    <tr><th colspan="3">Infrared sensor functions</th></tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Land_SfcOptics.f90.html#COMPUTE_IR_LAND_SFCOPTICS_AD">Compute_IR_Land_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at infrared
+          frequencies over a land surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Land_SfcOptics.f90.html">CRTM_IR_Land_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Water_SfcOptics.f90.html#COMPUTE_IR_WATER_SFCOPTICS_AD">Compute_IR_Water_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at infrared
+          frequencies over a water surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Water_SfcOptics.f90.html">CRTM_IR_Water_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Snow_SfcOptics.f90.html#COMPUTE_IR_SNOW_SFCOPTICS_AD">Compute_IR_Snow_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at infrared
+          frequencies over a snow surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Snow_SfcOptics.f90.html">CRTM_IR_Snow_SfcOptics</a></tt></td>
+    </tr>
+    <tr>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Ice_SfcOptics.f90.html#COMPUTE_IR_ICE_SFCOPTICS_AD">Compute_IR_Ice_SfcOptics_AD</a></tt></td>
+      <td>Function to compute the surface emissivity and reflectivity adjoints at infrared
+          frequencies over an ice surface.</td>
+      <td align="center"><tt><a href="SfcOptics/CRTM_IR_Ice_SfcOptics.f90.html">CRTM_IR_Ice_SfcOptics</a></tt></td>
+    </tr>
+  </tbody>
+</table>
+<br>
+
+
+
+<!-- ======================================== -->
+<h2><a name="RTSOLUTION"></a>CRTM RTSolution</h2>
+<!-- ======================================== -->
+
+The CRTM RTSolution modules contain the code to solve the radiative transfer problem for
+particular sensors in the prescense of both atmospheric and surface scattering. As with the
+AErosol, AtmScatter, and SfcOptics code, this component of the Developer Interface is also
+vaguely defined and this section will require future updates -- possibly a separate section for
+each group working on this problem.
+
+The <tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure definition
+and application modules are <tt>CRTM_RTSolution_Define</tt> and <tt>CRTM_RTSolution</tt> respectively.
+The structure definition and its manipulation routines are visible via the application module, so
+only the latter need be used in any application code, e.g.
+
+<pre>
+  USE CRTM_RTSolution
+</pre>
+
+<p>The <tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure is
+different from the other Developer Interface structures in that it is visible via the
+<a href="CRTM_User_Interface.html#RTSOLUTION">User Interface</a> as an output from the CRTM
+user functions. As such, the structure contents and its manipulation functions are not
+discussed again here.
+
+<p>Since the solution of the radiative transfer problem including aersol absorption, and hydrometeor
+and surface scattering effects is <em>the</em> main goal of the CRTM effort, the software is incomplete.
+As with the other Developer Interface application modules, only empty shell routines have been provided
+so far.
+
+<h3><a name="RTSOLUTION_APPLICATION"></a><tt>RTSolution</tt> Application</h3>
+<!-- ==================================================================== -->
+
+[ <a href="#RTSOLUTION_FWD">Forward</a> | 
+  <a href="#RTSOLUTION_TL">Tangent-Linear</a> | 
+  <a href="#RTSOLUTION_AD">Adjoint</a> |
+  <a href="#RTSOLUTION_K">K-Matrix</a> ]
+
+<p>For all the interface descriptions shown below, a structure with the <tt>_TL</tt> and
+<tt>_AD</tt> suffixes are the tangent-linear and adjoint structures respectively. Similarly
+for the function calls. No suffix indicates a regular forward model structure or function.
+
+
+<h4><a name="RTSOLUTION_FWD"></a>
+<a href="#RTSOLUTION_TL"><tt>RTSolution</tt> Forward Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The forward model radiative transfer solution for each requested
+channel/frequency is computed within a channel/frequency loop,
+
+<pre>
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a> ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+
+      <strong>Error_Status = <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION">CRTM_Compute_RTSolution</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                              <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,                      &  ! Input
+                                              <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! Input
+                                              <a href="#ATMSCATTER_STRUCTURE">AerosolScatter</a>,               &  ! Input
+                                              <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                 &  ! Input
+                                              <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                              <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                              <a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a>(l),                &  ! Output
+                                              <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>   = SfcOptics,      &  ! Optional Input
+                                              Message_Log = Message_Log     )  ! Error messaging</strong>
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION">CRTM_Compute_RTSolution</a></tt>
+function.
+
+<p>The <tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> argument is passed
+channel by channel (the <tt>l</tt> subscript) since an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure is only defined
+for a single channel. Multiple channels are handled via an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure array. The profile
+dependency is handled in the same way and by overloading the User Interface function. See the
+<a href="CRTM_User_Interface.html#FORWARD_MODEL">CRTM Forward Model</a> interface for details.
+
+<p style="width: auto; border: solid black; padding: 10px">
+Note that the input <tt>SfcOptics</tt> structure argument is supplied as an optional input.
+This was done for those developers that wish to perform the angle dependent surface optical properties
+computations inside their raditive transfer solver for those case where the computation angles are
+not known in advance. In this case, the <tt>SfcOptics</tt> structure should not be passed in. For cases
+where the surface properties are computed prior to invoking the radiative transfer solver, the
+structure is passed in as an optional argument as shown above.
+
+
+
+<h4><a name="RTSOLUTION_TL"></a>
+<a href="#RTSOLUTION_AD"><tt>RTSolution</tt> Tangent-Linear Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The tangent-linear model radiative transfer solution for each requested
+channel/frequency is computed within a channel/frequency loop,
+
+<pre>
+    ! --------------------------------------
+    ! The non-channel dependent computations
+    ! --------------------------------------
+
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a> ....
+    .... Call to <a href="#ATMABSORPTION_TL">CRTM_SetUp_AtmAbsorption_TL</a> ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! ------------------------------
+      ! The forward model computations
+      ! ------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+      .... Call to <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION">CRTM_Compute_RTSolution</a> ....
+
+      ! -------------------------------------
+      ! The tangent-linear model computations
+      ! -------------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_TL">CRTM_Compute_AtmAbsorption_TL</a> ....
+      .... Call to <a href="#ATMSCATTER_TL">CRTM_Compute_AerosolScatter_TL</a> ....
+      .... Call to <a href="#ATMSCATTER_TL">CRTM_Compute_CloudScatter_TL</a> ....
+      .... Call to <a href="#SFCOPTICS_TL">CRTM_Compute_SfcOptics_TL</a> ....
+
+      <strong>Error_Status = <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                 <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,                      &  ! Input
+                                                 <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! Input
+                                                 <a href="#ATMSCATTER_STRUCTURE">AerosolScatter</a>,               &  ! Input
+                                                 <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                 &  ! Input
+                                                 <a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a>(l),                &  ! Input
+                                                 <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_TL</a>,                &  ! Input
+                                                 <a href="CRTM_User_Interface.html#SURFACE">Surface_TL</a>,                   &  ! Input
+                                                 <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_TL</a>,             &  ! Input
+                                                 <a href="#ATMSCATTER_STRUCTURE">AerosolScatter_TL</a>,            &  ! Input
+                                                 <a href="#ATMSCATTER_STRUCTURE">CloudScatter_TL</a>,              &  ! Input
+                                                 <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                 <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                 <a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution_TL</a>(l),             &  ! Output
+                                                 <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>    = SfcOptics,     &  ! Optional input
+                                                 <a href="#SFCOPTICS_STRUCTURE">SfcOptics_TL</a> = SfcOptics_TL,  &  ! Optional input
+                                                 Message_Log = Message_Log     )  ! Error messaging</strong>
+
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION_TL">CRTM_Compute_RTSolution_TL</a></tt>
+function.
+
+<p>The <tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> arguments are passed
+channel by channel (the <tt>l</tt> subscript) since an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure is only defined
+for a single channel. Multiple channels are handled via an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure array. The profile
+dependency is handled in the same way and by overloading the User Interface function. See the
+<a href="CRTM_User_Interface.html#TANGENT_LINEAR_MODEL">CRTM Tangent Linear Model</a> interface for details.
+
+<p style="width: auto; border: solid black; padding: 10px">
+Note that the input <tt>SfcOptics</tt> structure arguments are supplied as optional inputs.
+This was done for those developers that wish to perform the angle dependent surface optical properties
+computations inside their raditive transfer solver for those case where the computation angles are
+not known in advance. In this case, the <tt>SfcOptics</tt> structures should not be passed in. For cases
+where the surface properties are computed prior to invoking the radiative transfer solver, the
+structures are passed in as optional arguments as shown above.
+
+
+
+<h4><a name="RTSOLUTION_AD"></a>
+<a href="#RTSOLUTION_K"><tt>RTSolution</tt> Adjoint Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>The adjoint model radiative transfer solution for each requested
+channel/frequency is computed within a channel/frequency loop,
+
+<pre>
+    ! ---------------------------------------------------------------
+    ! The forward model, non-channel/frequency dependent computations
+    ! ---------------------------------------------------------------
+
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a> ....
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! ------------------------------
+      ! The forward model computations
+      ! ------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+      .... Call to <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION">CRTM_Compute_RTSolution</a> ....
+
+      ! ------------------------------
+      ! The adjoint model computations
+      ! ------------------------------
+
+      <strong>Error_Status = <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a>( <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere</a>,                   &  ! Input
+                                                 <a href="CRTM_User_Interface.html#SURFACE">Surface</a>,                      &  ! Input
+                                                 <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption</a>,                &  ! Input
+                                                 <a href="#ATMSCATTER_STRUCTURE">AerosolScatter</a>,               &  ! Input
+                                                 <a href="#ATMSCATTER_STRUCTURE">CloudScatter</a>,                 &  ! Input
+                                                 <a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a>(l),                &  ! Input
+                                                 <a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution_AD</a>(l),             &  ! Input
+                                                 <a href="CRTM_User_Interface.html#GEOMETRYINFO">GeometryInfo</a>,                 &  ! Input
+                                                 <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l), &  ! Input
+                                                 <a href="CRTM_User_Interface.html#ATMOSPHERE">Atmosphere_AD</a>,                &  ! Output
+                                                 <a href="CRTM_User_Interface.html#SURFACE">Surface_AD</a>,                   &  ! Output
+                                                 <a href="#ATMABSORPTION_STRUCTURE">AtmAbsorption_AD</a>,             &  ! Output
+                                                 <a href="#ATMSCATTER_STRUCTURE">AerosolScatter_AD</a>,            &  ! Output
+                                                 <a href="#ATMSCATTER_STRUCTURE">CloudScatter_AD</a>,              &  ! Output
+                                                 <a href="#SFCOPTICS_STRUCTURE">SfcOptics</a>    = SfcOptics,     &  ! Optional input
+                                                 <a href="#SFCOPTICS_STRUCTURE">SfcOptics_AD</a> = SfcOptics_AD,  &  ! Optional output
+                                                 Message_Log = Message_Log     )  ! Error messaging</strong>
+
+      .... Call to <a href="#SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a> ....
+      .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_CloudScatter_AD</a> ....
+      .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a> ....
+      .... Call to <a href="#ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a> ....
+
+    END DO Channel_Loop
+
+    ! ---------------------------------------------------------------
+    ! The adjoint model, non-channel/frequency dependent computations
+    ! ---------------------------------------------------------------
+
+    .... Call to <a href="#ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a> ....
+
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt>
+function.
+
+<p>The <tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> arguments are passed
+channel by channel (the <tt>l</tt> subscript) since an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure is only defined
+for a single channel. Multiple channels are handled via an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure array. The profile
+dependency is handled in the same way and by overloading the User Interface function. See the
+<a href="CRTM_User_Interface.html#ADJOINT_MODEL">CRTM Adjoint Model</a> interface for details.
+
+<p style="width: auto; border: solid black; padding: 10px">
+Note that the input <tt>SfcOptics</tt> structure arguments are supplied as optional input and output
+(for the forward and adjoint components respectively). This was done for those developers that wish to
+perform the angle dependent surface optical properties computations inside their raditive transfer
+solver for those case where the computation angles are not known in advance. In this case, the
+<tt>SfcOptics</tt> structures should not be included in the argument list. For cases
+where the surface properties are computed prior to invoking the radiative transfer solver, the
+structures are passed as optional arguments as shown above.
+
+
+
+<h4><a name="RTSOLUTION_K"></a>
+<a href="#RTSOLUTION_APPLICATION"><tt>RTSolution</tt> K-Matrix Model</a></h4>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<p>As with the <a href="#ATMABSORPTION_K"><tt>AtmAbsorption</tt> K-matrix computation</a>, there is no
+separate <tt>RTSolution</tt> K-matrix function. This section is here for completeness' sake to show how
+the K-matrix computation differs from the adjoint computation since, currently, the <tt>AtmAbsorption</tt>
+computation is the only one that has an element <em>outside</em> the channel/frequency loop. The only
+difference between adjoint and K-matrix is that those function calls outside the channel/frequency loop
+are brought inside, along with appropriate dimensioning of the arguments in question.
+
+<p>The K-matrix model radiative transfer solution for each requested channel/frequency is computed
+as shown below,
+
+<pre>
+    ! -----------------------------------------------------
+    ! The forward model, non-channel dependent computations
+    ! -----------------------------------------------------
+
+    .... Call to <a href="#ATMABSORPTION_FWD">CRTM_SetUp_AtmAbsorption</a> ....
+
+
+    Channel_Loop: DO l = 1, <a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%n_Channels
+
+      ! ------------------------------
+      ! The forward model computations
+      ! ------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_FWD">CRTM_Compute_AtmAbsorption</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_AerosolScatter</a> ....
+      .... Call to <a href="#ATMSCATTER_FWD">CRTM_Compute_CloudScatter</a> ....
+      .... Call to <a href="#SFCOPTICS_FWD">CRTM_Compute_SfcOptics</a> ....
+      .... Call to <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION">CRTM_Compute_RTSolution</a> ....
+
+
+      ! -------------------------------
+      ! The K-matrix model computations
+      ! -------------------------------
+
+      .... Call to <a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a> ....
+      .... Call to <a href="#SFCOPTICS_AD">CRTM_Compute_SfcOptics_AD</a> ....
+      .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_CloudScatter_AD</a> ....
+      .... Call to <a href="#ATMSCATTER_AD">CRTM_Compute_AerosolScatter_AD</a> ....
+      .... Call to <a href="#ATMABSORPTION_AD">CRTM_Compute_AtmAbsorption_AD</a> ....
+<strong>
+      ! -----------------------------------------------------------
+      ! The previously non-channel/frequency dependent computations
+      ! are here brought <em>inside</em> the channel/frequency loop
+      ! -----------------------------------------------------------
+
+      .... Call to <a href="#ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a> ....
+</strong>
+    END DO Channel_Loop
+</pre>
+
+<p>The
+<tt><a href="CRTM_User_Interface.html#CHANNELINFO">ChannelInfo</a>%Channel_Index(l)</tt> argument
+provides an index into the shared
+<tt><a href="CRTM_Shared_Data.html#CRTM_SPCCOEFF">SpcCoeff</a></tt> data structure <tt>SC</tt>
+for the channel in question inside the
+<tt><a href="RTSolution/CRTM_RTSolution.f90.html#CRTM_COMPUTE_RTSOLUTION_AD">CRTM_Compute_RTSolution_AD</a></tt>
+function.
+
+<p>The <tt><a href="#ATMABSORPTION_AD">CRTM_SetUp_AtmAbsorption_AD</a></tt> call is
+now <em>inside</em> the channel loop, and both the <tt>Atmosphere_K</tt> and <tt>Surface_K</tt>
+structures have a channel dimension (indicated via the <tt>l</tt> subscript). See the
+<a href="CRTM_User_Interface.html#K_MATRIX_MODEL">CRTM K-Matrix Model</a> interface for details.
+
+<p>The <tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> arguments are passed
+channel by channel (the <tt>l</tt> subscript) since an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure is only defined
+for a single channel. Multiple channels are handled via an
+<tt><a href="CRTM_User_Interface.html#RTSOLUTION">RTSolution</a></tt> structure array. The profile
+dependency is handled in the same way and by overloading the User Interface function. Again, see the
+<a href="CRTM_User_Interface.html#K_MATRIX_MODEL">CRTM K-Matrix Model</a> interface for details.
+
+<p style="width: auto; border: solid black; padding: 10px">
+Note that the input <tt>SfcOptics</tt> structure arguments are supplied as optional input and output
+(for the forward and adjoint components respectively). This was done for those developers that wish to
+perform the angle dependent surface optical properties computations inside their raditive transfer
+solver for those case where the computation angles are not known in advance. In this case, the
+<tt>SfcOptics</tt> structures should not be included in the argument list. For cases
+where the surface properties are computed prior to invoking the radiative transfer solver, the
+structures are passed as optional arguments as shown above.
+
+
+
+
+
+
+
+<hr width="100%">
+<address>This page maintained by <a href="mailto:paul.vandelst@ssec.wisc.edu?subject=CRTM Developer Interface">Paul van Delst</a></address>
+<br>
+Last updated $Date: 2005/06/29 01:22:28 $
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br>
+</body>
+</html>

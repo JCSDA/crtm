@@ -1,0 +1,147 @@
+/* ENTIRE PAGE LAYOUT AND FORMATTING */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+body {
+    background-color: #f9f9f9;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #000000;
+}
+
+#header h1, #pageLayoutTable {
+	width: 850px;
+}
+           
+#pageLayoutTable {
+    height: 100%;
+    clear: both;
+}
+
+/* HEADER */
+#header {
+    background-color: #568898;	
+    border-bottom: double 3px #fff;
+}
+#header h1 {
+    font-size: 18px;
+    margin: 0;
+    padding: 1px 0 1px 0;
+    color: #FFFFFF;
+    background-color: #568898;	
+    width: 100%;
+    padding-left: 163px;
+    height: 1.3em;
+}
+#header h1 a {
+    text-decoration: none;
+    color: #FFFFFF;
+}
+#header h3 {
+    font-weight:normal;
+	font-style:italic;
+	text-decoration:underline;
+}
+#header acronym {
+    border: none;
+}
+
+/* MAIN NAVIGATION */
+#mainnav {background-color: #ccc; 
+          margin: 0; 
+          padding: 0; 
+          height: 1.4em;
+          font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+          font-weight: bold;
+          font-size: 13px;
+          border-top: solid 1px #666;
+          border-bottom: solid 1px #999;
+          padding-left: 13px;}
+#mainnav ul {margin: 0; 
+             padding: 0;}
+#mainnav li {display: block; 
+             float: left;
+             margin-right: 2em;
+             border: solid 1px #aaa; 
+             border-top-color: #ddd; 
+             border-bottom-color: #ddd;
+             padding: 0 5px 0 5px; 
+             background-color: #ddd; 
+             position: relative; 
+             top: 0px;}
+#mainnav li:hover {background-color: #FFFFFF;}
+#mainnav a {text-decoration: none;}
+.current_category {background-color: #666 !important; 
+                   border-bottom-color: #666 !important; 
+                   border-top-color: #666 !important;}
+.current_category a {color: #FFFFFF !important;}
+
+/* LEFT NAVIGATION COLUMN */
+#secondarynav {
+    background-color: #997E57;
+    width: 160px;
+    vertical-align: top;
+    border-right: double 3px #fff;
+    font-size: 14px;
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+#secondarynav a {
+    text-decoration: none; 
+    margin-left: 0px;
+}
+#navLinks {
+    background-color: #ddd;
+    width: 135px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 1em !important;}
+#secondarynav li {
+    list-style-type: none;
+    position: relative;
+}
+#secondarynav ul, #secondarynav li { /*remove default margins/paddings*/
+    margin: 0; 
+    padding: 0;} 
+#secondarynav ul ul {
+/*    display: none;*/
+}
+.nav1 {
+    padding-left: 5px;
+}
+.nav2 {
+    padding-left: 15px;
+    font-size: 12px;
+}
+.nav3 {
+    padding-left: 25px;
+    font-size: 10px;
+}
+.nav1, .nav2, .nav3 {
+    display: block;
+}
+.nav1:hover, .nav2:hover, .nav3:hover {
+    background-color: #FFFFFF;
+}
+a:hover {
+    color: red;
+}
+#secondarynav li {
+    border-top: solid 1px #aaa;
+}
+
+/* CONTENT AREA ON RIGHT */
+#content {
+    padding-left: 15px;
+    padding-top: 15px;
+    vertical-align: top;
+}
+
+/* FOOTER */
+#footer {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    border-top: solid 1px #ccc;
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html><!-- InstanceBegin template="/templates/crtm.dwt" codeOutsideHTMLIsLocked="false" -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<!-- InstanceBeginEditable name="doctitle" -->
+<title>Community Radiative Transfer Model (CRTM)</title>
+<!-- InstanceEndEditable -->
+<meta http-equiv="expires" content="0">
+<link href="/stylesheets/style.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="/stylesheets/style.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
+<script language="javascript" type="text/javascript" src="/javascript/eventutil.js"></script>
+<script language="javascript" type="text/javascript" src="/crtm/javascript/javascript.js"></script>
+<!-- InstanceBeginEditable name="head" --><!-- InstanceEndEditable -->
+</head>
+<body>
+<div id="header">
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <div id="mainnav">
+    <!--#include virtual="/crtm/ssi/mainnav.ssi.html" -->
+  </div>
+</div>
+<table cellspacing="0" cellpadding="0" id="pageLayoutTable">
+  <tr>
+    <td id="secondarynav"><div><!-- InstanceBeginEditable name="secondarynav" -->
+        <!--#include virtual="/crtm/ssi/ui.ssi.html"-->
+        <!-- InstanceEndEditable --> </div></td>
+    <td id="content"><!-- InstanceBeginEditable name="content" -->
+<h3> Forward Model </h3>
+<!-- =============== -->
+<p>The CRTM forward model calling sequence is,
+<pre>
+  Error_Status = CRTM_Forward( Atmosphere             , &  ! Input    
+                               Surface                , &  ! Input    
+                               GeometryInfo           , &  ! Input    
+                               ChannelInfo            , &  ! Input    
+                               RTSolution             , &  ! Output   
+                               Options    =Options    , &  ! Optional input
+                               RCS_Id     =RCS_Id     , &  ! Revision control
+                               Message_Log=Message_Log  )  ! Error messaging
+</pre>
+<p>The table below shows the dimensionalities of the input and output
+arguments for the forward model in terms of the number of satellite
+sensors, <code>nSensors</code>, the number of atmospheric profiles, <code>nProfiles</code>,
+and the total number of sensor channels, <code>nChannels</code>.
+
+<div class="tablecontent2">
+  <table cellspacing="0" cellpadding="0" border="0">
+	<caption align="bottom">
+	Dimensionality for <code>CRTM_Forward</code> function arguments
+	</caption>
+	<tr>
+	  <th colspan="2">INPUTS</th>
+	  <th>OPTIONAL INPUT</th>
+	  <th>OUTPUTS</th>
+	</tr>
+	<tr>
+	  <th scope="col">Atmosphere,<br>Surface,<br>GeometryInfo</th>
+	  <th scope="col">ChannelInfo</th>
+	  <th scope="col">Options</th>
+	  <th scope="col">RTSolution</th>
+	</tr>
+	<tr>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nSensors</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nChannels<br>
+                    x<br>
+                nProfiles</code></td>
+	</tr>
+  </table>
+</div>
+      <input type="hidden" name="category" id="category" value="ui">
+      <!-- InstanceEndEditable -->
+      <div id="footer"> Last updated
+        <!-- #BeginDate format:En2 -->19-Dec-2008<!-- #EndDate -->
+        by <a href="mailto:paul.vandelst@noaa.gov?subject=CRTM Webpage">Paul van Delst</a></div></td>
+  </tr>
+</table>
+</body>
+<!-- InstanceEnd --></html>

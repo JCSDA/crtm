@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html><!-- InstanceBegin template="/templates/crtm.dwt" codeOutsideHTMLIsLocked="false" -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<!-- InstanceBeginEditable name="doctitle" -->
+<title>Community Radiative Transfer Model (CRTM)</title>
+<!-- InstanceEndEditable -->
+<meta http-equiv="expires" content="0">
+<link href="/stylesheets/style.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="/stylesheets/style.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
+<script language="javascript" type="text/javascript" src="/javascript/eventutil.js"></script>
+<script language="javascript" type="text/javascript" src="/crtm/javascript/javascript.js"></script>
+<!-- InstanceBeginEditable name="head" --><!-- InstanceEndEditable -->
+</head>
+<body>
+<div id="header">
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <div id="mainnav">
+    <!--#include virtual="/crtm/ssi/mainnav.ssi.html" -->
+  </div>
+</div>
+<table cellspacing="0" cellpadding="0" id="pageLayoutTable">
+  <tr>
+    <td id="secondarynav"><div><!-- InstanceBeginEditable name="secondarynav" -->
+        <!--#include virtual="/crtm/ssi/ui.ssi.html"-->
+        <!-- InstanceEndEditable --> </div></td>
+    <td id="content"><!-- InstanceBeginEditable name="content" -->
+<h2> <code>Options</code> Structure</h2>
+<!-- ================================= -->
+
+<p>The optional <tt>Options</tt> structure is how optional inputs are specified to the CRTM. The
+<tt>Options</tt> structure should be dimensioned for the number of input profiles. Some example declarations,
+<pre>
+  <strong>! Example declaration for a known number of profiles</strong>
+  INTEGER, PARAMETER :: N_PROFILES = 10
+  TYPE(CRTM_Options_type) :: Options(N_PROFILES)
+  
+  <strong>! Example declaration as an allocatable</strong>
+  TYPE(CRTM_Options_type), ALLOCATABLE :: Options(:)
+</pre>
+<p>For use with the CRTM functions <a href="/crtm/user_interface/components/forward.shtml"><tt>CRTM_Forward()</tt></a>,
+<a href="/crtm/user_interface/components/tangent_linear.shtml"><tt>CRTM_Tangent_Linear()</tt></a>,
+<a href="/crtm/user_interface/components/adjoint.shtml"><tt>CRTM_Adjoint()</tt></a>, or 
+<a href="/crtm/user_interface/components/k_matrix.shtml"><tt>CRTM_K_Matrix()</tt></a>, the <tt>Options</tt> structure
+(if specified as an actual argument) <em>must</em> be declared as a rank-1 array with the dimension corresponding
+to the number of atmospheric profiles to be processed.
+
+
+<h3><a name="optdefine"></a><code>Options</code> Definition</h3>
+
+<p>The <tt>Options</tt> structure definition is shown below,
+
+<pre>
+  TYPE :: CRTM_Options_type
+    <strong>! Dimensions</strong>
+    INTEGER :: n_Channels = 0  ! L dimension
+    <strong>! Index into channel-specific components</strong>
+    INTEGER :: Channel = 0
+    <strong>! Emissivity optional arguments</strong>
+    INTEGER                         :: Emissivity_Switch =  NOT_SET
+    REAL(fp), DIMENSION(:), POINTER :: Emissivity        => NULL() ! L
+    <strong>! Direct reflectivity optional arguments</strong>
+    INTEGER                         :: Direct_Reflectivity_Switch =  NOT_SET
+    REAL(fp), DIMENSION(:), POINTER :: Direct_Reflectivity        => NULL() ! L
+  END TYPE CRTM_Options_type
+</pre>
+
+<p>The only optional inputs currently defined are spectral emissivity and direct reflectivity. As more optional
+inputs are required, they can be added to the <tt>Options</tt> structure without changing the CRTM function
+interfaces.
+
+<p>An important point to note is that the options structure is only used as a <em>forward</em> variable
+regardless of which CRTM function is being called. Because the <tt>Options</tt> structure is only used
+as a forward variable, the channel dimension can be internal to the structure - unlike, for example, the
+<a href="/crtm/user_interface/public_structures/rtsolution.shtml"><tt>RTSolution</tt> structure</a>
+in general, or the
+<a href="/crtm/user_interface/public_structures/atmosphere.shtml"><tt>Atmosphere</tt> structure</a>
+when it is used as a K-matrix variable. In these cases, the channel dimension is one of the ranks of the structure array.
+
+
+
+<h3><a name="optalloc"></a>Allocation of <code>Options</code> structures</h3>
+
+<p>The current calling sequence for the <tt>Options</tt> structure allocation function is,
+
+<pre>
+  Error_Status = CRTM_Allocate_Options( n_Channels             , &  ! Input
+                                        Options                , &  ! Output
+                                        RCS_Id     =RCS_Id     , &  ! Revision control
+                                        Message_Log=Message_Log  )  ! Error messaging
+</pre>
+
+<p>Because the contents of the <tt>Options</tt> structure may change in the future as additional optional inputs
+are added, the dimensionality of those contents may require the above interface to be altered by adding the required
+dimension arguments.
+
+<p>The <tt>Options</tt> allocation function has been overloaded such that the <tt>Options</tt> argument can be
+scalar or rank-1. The allowed input argument dimensioality for the <code>CRTM_Allocate_Options()</code>
+function is shown below,
+
+<div class="tablecontent2">
+  <table cellspacing="0" cellpadding="0" border="0">
+	 <caption>Allowable dimensionality combinations for the <tt>CRTM_Allocate_Options()</tt> function
+           <br><tt>M</tt> = number of atmospheric profiles.
+  </caption>
+  <tbody>
+    <tr align="center">
+      <th>Input<br><tt>n_Channels</tt><br>dimension</th>
+      <th>Output<br><tt>Options</tt><br>dimension</th>
+    </tr>
+    <tr align="center"><td>Scalar    </td><td>Scalar    </td></tr>
+    <tr align="center"><td>Scalar    </td><td><tt>M</tt></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>As stated above, the rank-1 dimensionality of the <tt>Options</tt> structure array is what is required
+for all the CRTM functions.
+
+<p>Depending on how the CRTM is used, the <tt>RTSolution</tt> structure array itself may need to be allocated. In general, 
+the number of sensor channels to be processed is either a predetermined quantity, or it is not known until run time. In the latter
+case the <tt>RTSolution</tt> structure array must be allocated prior to calling the <code>CRTM_Allocate_RTSolution()</code> function, in the former it is simply declared to be the required size in the calling procedure. Both of these situations are shown in the examples
+below.
+
+<p><u>Example 1: The number of channels is known</u>
+
+<p>Here we assume the same sensors (in this case from NOAA-18) and, thus, the same number of channels,
+will <em>always</em> be processed,
+
+<pre>
+  <strong>! Example parameter definitions</strong>
+  INTEGER, PARAMETER :: N_SENSORS  = 3   ! # of sensors to process,  N dimension
+  INTEGER, PARAMETER :: N_LAYERS   = 60  ! # of atmospheric layers,  K dimension
+  INTEGER, PARAMETER :: N_CHANNELS = 39  ! # of sensor channels,     L dimension
+  INTEGER, PARAMETER :: N_PROFILES = 50  ! # of profiles to process, M dimension
+  CHARACTER(STRLEN), PARAMETER :: &      ! Note: STRLEN is defined via CRTM_Module
+    SENSORID(N_SENSORS) = (/'hirs4_n18', &  ! 19 channels
+                            'amsua_n18', &  ! 15 channels
+                            'mhs_n18  ' /)  !  5 channels
+
+  <strong>! Type declarations</strong>
+  TYPE(CRTM_ChannelInfo_type) :: ChInfo(N_SENSORS)
+  TYPE(CRTM_RTSolution_type) :: RTSolution(N_CHANNELS,N_PROFILES)
+		
+  <strong>! Allocate the RTSolution components for each array element</strong>
+  Error_Status = CRTM_Allocate_RTSolution( N_LAYERS, RTSolution )
+  IF ( Error_Status /= SUCCESS ) THEN
+    ! Handle error
+    ....
+  END IF
+</pre>
+
+<p><u>Example 2: The number of channels is NOT known</u>
+
+<p>Here we assume a known numbers of sensors, but not a known number of channels; that is, a different set of sensors
+may be processed each time. In this case, we need to determine the number of channels the CRTM "knows" about after the
+CRTM has been <a href="/crtm/user_interface/initialize.shtml">initialised</a> by getting the value from the
+<a href="/crtm/user_interface/public_structures/channelinfo.shtml">ChannelInfo</a> structure,
+
+<pre>
+  <strong>! Example parameter definitions</strong>
+  INTEGER :: N_SENSORS  = 4   ! # of sensors to process,  N dimension
+  INTEGER :: N_LAYERS   = 60  ! # of atmospheric layers,  K dimension
+  INTEGER :: N_PROFILES = 50  ! # of profiles to process, M dimension
+		
+  <strong>! Type declarations</strong>
+  CHARACTER(STRLEN) :: SensorID(N_SENSORS)
+  INTEGER :: n_Channels       ! # of channels to process, L dimension
+  TYPE(CRTM_ChannelInfo_type) :: ChInfo(N_SENSORS)
+  TYPE(CRTM_RTSolution_type), ALLOCATABLE :: RTSolution(:,:) ! L x M allocatable
+		
+  <strong>! Ask user to specify the sensor IDs for any four sensors</strong>
+  WRITE(*,'(/5x,"Specify ",i0," sensors to process,")') N_SENSORS
+  DO i = 1, N_SENSORS
+    WRITE(*,'(7x,"Sensor #",i0," : ")',ADVANCE='NO') i
+    READ(*,'(a)') SensorID(i)
+  END DO
+
+  <strong>! Initialise the CRTM for the four arbitrary sensors</strong>
+  Error_Status = CRTM_Init(ChInfo,SensorID=SensorID)
+  IF ( Error_Status /= SUCCESS ) THEN
+    ! Handle error
+    ....
+  END IF
+
+  <strong>! Determine the total number of channels for
+  ! which the CRTM was initialised</strong>
+  n_Channels = SUM(ChInfo%n_Channels)
+		
+  <strong>! STEP 1: Allocate the RTSolution structure array</strong>
+  ALLOCATE( RTSolution(n_Channels, N_PROFILES), STAT=Allocate_Status)
+  IF ( Allocate_Status /= 0 ) THEN
+    ! Handle error
+    ....
+  END IF
+
+  <strong>! STEP 2: Allocate the RTSolution components for each array element</strong>
+  Error_Status = CRTM_Allocate_RTSolution( N_LAYERS, RTSolution )
+  IF ( Error_Status /= SUCCESS ) THEN
+    ! Handle error
+    ....
+  END IF
+</pre>
+
+
+<h3><a name="rtsassign"></a>Assignment (copying) of <code>RTSolution</code> Structures</h3>
+
+<p>As with all the other structures that contain allocatable pointer components, a specific
+assign function is provided to ensure that when a <tt>RTSolution</tt> structure needs to be
+copied, the pointer components are explicitly allocated and copied (deep copy). This means that the
+original structure can be destroyed without affecting the copied structure.
+
+<p>The <tt>RTSolution</tt> structure assign calling sequence is,
+
+<pre>
+  Error_Status = CRTM_Assign_RTSolution( RTSolution_in          , &  ! Input
+                                         RTSolution_out         , &  ! Output
+                                         RCS_Id     =RCS_Id     , &  ! Revision control
+                                         Message_Log=Message_Log  )  ! Error messaging
+</pre>
+
+<p>which is semantically equivalent to
+
+<pre>
+  RTSolution_Out = RTSolution_In
+</pre>
+
+
+<h3><a name="rtsdestroy"></a>Destruction (deallocation) of <code>RTSolution</code> Structures</h3>
+
+<p>The <tt>RTSolution</tt> structure destruction calling sequence is,
+
+<pre>
+  Error_Status = CRTM_Destroy_RTSolution( RTSolution             , &  ! Output
+                                          RCS_Id     =RCS_Id     , &  ! Revision control
+                                          Message_Log=Message_Log  )  ! Error messaging
+</pre>
+<p>which deallocates all the pointer components and clears the scalar components.
+
+<p>Note that the destruction function deallocates the <tt>RTSolution</tt> components, it does not
+deallocate the actual structure array (assuming it was allocated.) To do that, a regular Fortran95
+deallocate statement is used,
+<pre>
+  <strong>! Dellocate the RTSolution structure array</strong>
+  DEALLOCATE( RTSolution, STAT=Allocate_Status)
+  IF ( Allocate_Status /= 0 ) THEN
+    ! Handle error
+    ....
+  END IF
+</pre>
+      <input type="hidden" name="category" id="category" value="ui">
+      <!-- InstanceEndEditable -->
+      <div id="footer"> Last updated
+        <!-- #BeginDate format:En2 -->19-Dec-2008<!-- #EndDate -->
+        by <a href="mailto:paul.vandelst@noaa.gov?subject=CRTM Webpage">Paul van Delst</a></div></td>
+  </tr>
+</table>
+</body>
+<!-- InstanceEnd --></html>

@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html><!-- InstanceBegin template="/templates/crtm.dwt" codeOutsideHTMLIsLocked="false" -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<!-- InstanceBeginEditable name="doctitle" -->
+<title>Community Radiative Transfer Model (CRTM)</title>
+<!-- InstanceEndEditable -->
+<meta http-equiv="expires" content="0">
+<link href="/stylesheets/style.css" type="text/css" rel="stylesheet">
+<!-- DO NOT DELETE -->
+<!--[if IE]>
+  <link href="/stylesheets/style.ie.css" type="text/css" rel="stylesheet">
+<![endif]-->
+<script language="javascript" type="text/javascript" src="/javascript/eventutil.js"></script>
+<script language="javascript" type="text/javascript" src="/crtm/javascript/javascript.js"></script>
+<!-- InstanceBeginEditable name="head" --><!-- InstanceEndEditable -->
+</head>
+<body>
+<div id="header">
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <div id="mainnav">
+    <!--#include virtual="/crtm/ssi/mainnav.ssi.html" -->
+  </div>
+</div>
+<table cellspacing="0" cellpadding="0" id="pageLayoutTable">
+  <tr>
+    <td id="secondarynav"><div><!-- InstanceBeginEditable name="secondarynav" -->
+        <!--#include virtual="/crtm/ssi/ui.ssi.html"-->
+        <!-- InstanceEndEditable --> </div></td>
+    <td id="content"><!-- InstanceBeginEditable name="content" -->
+
+<p>All of the CRTM modules required by a user have been collected into the module
+<tt>CRTM_Module.f90</tt>. Thus, all a user is required to do to obtain access to
+the CRTM structure definitions and routines is to insert the line of code,
+
+<pre>
+  USE CRTM_Module
+</pre>
+
+<p>in their calling routine/program. This section describes the User Interface in more detail.
+
+
+
+<!-- ====================================== -->
+<a name="init"></a><h2>CRTM Initialization</h2>
+<!-- ====================================== -->
+<p>This step is crucial as it initializes the model by loading the various model coefficients
+from datafile into memory. The CRTM initialization function calling sequence is,
+
+<pre>
+  Error_Status = CRTM_Init( ChannelInfo,                           &  ! Output
+                            SensorID          = SensorID,          &  ! Optional input
+                            CloudCoeff_File   = CloudCoeff_File,   &  ! Optional input
+                            AerosolCoeff_File = AerosolCoeff_File, &  ! Optional input
+                            EmisCoeff_File    = EmisCoeff_File,    &  ! Optional input
+                            File_Path         = File_Path,         &  ! Optional input
+                            Quiet             = Quiet,             &  ! Optional input
+                            Process_ID        = Process_ID,        &  ! Optional input
+                            Output_Process_ID = Output_Process_ID, &  ! Optional input
+                            RCS_Id            = RCS_Id,            &  ! Revision control
+                            Message_Log       = Message_Log        )  ! Error messaging
+</pre>
+
+<p>The cloud, aerosol, and emissivity LUT coefficient datafile arguments are all optional
+since additional coefficient files may be added to the list of input arguments as required.
+If no filenames are passed, the default coefficient file naming convention is
+<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;<em>Structure name</em>&gt;<tt>.bin</tt><br><br>
+
+such as <tt>CloudCoeff.bin</tt>, <tt>AerosolCoeff.bin</tt>, etc.
+
+
+<!-- ================================== -->
+<a name="comp"></a><h2>CRTM Components</h2>
+<!-- ================================== -->
+
+- description of different models
+- flowcharts?
+- add list similar to secondary nav list?
+
+
+<a name="comp_fwd"></a><h3>Forward Model</h3>
+<!-- ==================================== -->
+<p>The CRTM forward model calling sequence is,
+<pre>
+  Error_Status = CRTM_Forward( Atmosphere             , &  ! Input    
+                               Surface                , &  ! Input    
+                               GeometryInfo           , &  ! Input    
+                               ChannelInfo            , &  ! Input    
+                               RTSolution             , &  ! Output   
+                               Options    =Options    , &  ! Optional input
+                               RCS_Id     =RCS_Id     , &  ! Revision control
+                               Message_Log=Message_Log  )  ! Error messaging
+</pre>
+<p>The table below shows the dimensionalities of the input and output
+arguments for the forward model in terms of the number of satellite
+sensors, <code>nSensors</code>, the number of atmospheric profiles, <code>nProfiles</code>,
+and the total number of sensor channels, <code>nChannels</code>.
+
+<div class="tablecontent2">
+  <table cellspacing="0" cellpadding="0" border="0">
+	<caption align="bottom">
+	Dimensionality for <code>CRTM_Forward</code> function arguments
+	</caption>
+	<tr>
+	  <th colspan="4">INPUTS</th>
+	  <th>OPTIONAL INPUT</th>
+	  <th>OUTPUTS</th>
+	</tr>
+	<tr>
+	  <th scope="col">Atmosphere</th>
+	  <th scope="col">Surface</th>
+	  <th scope="col">GeometryInfo</th>
+	  <th scope="col">ChannelInfo</th>
+	  <th scope="col">Options</th>
+	  <th scope="col">RTSolution</th>
+	</tr>
+	<tr>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nSensors</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nChannels<br>
+		x<br>
+		nProfiles</code></td>
+	</tr>
+  </table>
+</div>
+
+
+<a name="comp_ad"></a><h3>Adjoint Model</h3>
+<!-- =================================== -->
+<p>The CRTM adjoint model calling sequence is,
+
+<pre>
+  Error_Status = CRTM_Adjoint( Atmosphere             , &  ! FWD Input
+                               Surface                , &  ! FWD Input
+                               RTSolution_AD          , &  ! AD  Input
+                               GeometryInfo           , &  ! Input
+                               ChannelInfo            , &  ! Input
+                               Atmosphere_AD          , &  ! AD  Output
+                               Surface_AD             , &  ! AD  Output
+                               RTSolution             , &  ! FWD Output
+                               Options    =Options    , &  ! Optional FWD input
+                               RCS_Id     =RCS_Id     , &  ! Revision control
+                               Message_Log=Message_Log  )  ! Error messaging
+</pre>
+
+<p>The same structure definitions are used for both the forward and
+adjoint structures.
+
+<p>The table below shows the dimensionalities of the input and output
+arguments for the adjoint model in terms of the number of satellite
+sensors, <code>nSensors</code>, the number of atmospheric profiles, <code>nProfiles</code>,
+and the total number of sensor channels, <code>nChannels</code>.
+
+<div class="tablecontent2">
+  <table cellspacing="0" cellpadding="0" border="0">
+	<caption align="bottom">
+	Dimensionality for <code>CRTM_Adjoint</code> function arguments
+	</caption>
+	<tr>
+	  <th colspan="4">INPUTS</th>
+	  <th>OPTIONAL INPUT</th>
+	  <th colspan="2">OUTPUTS</th>
+	</tr>
+	<tr>
+	  <th scope="col">Atmosphere<br>Surface</th>
+	  <th scope="col">RTSolution_AD</th>
+	  <th scope="col">GeometryInfo</th>
+	  <th scope="col">ChannelInfo</th>
+	  <th scope="col">Options</th>
+	  <th scope="col">RTSolution</th>
+	  <th scope="col">Atmosphere_AD<br>Surface_AD</th>
+	</tr>
+	<tr>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nChannels<br>
+					x<br>
+				nProfiles</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nSensors</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nChannels<br>
+				   x<br>
+				nProfiles</code></td>
+	  <td><code>nProfiles</code></td>
+	</tr>
+  </table>
+</div>
+
+
+<a name="comp_km"></a><h3>K-Matrix Model</h3>
+<!-- ==================================== -->
+<p>The CRTM adjoint model calling sequence is,
+
+<pre>
+  Error_Status = CRTM_K_Matrix( Atmosphere             , &  ! FWD Input
+                                Surface                , &  ! FWD Input
+                                RTSolution_K           , &  ! K   Input
+                                GeometryInfo           , &  ! Input
+                                ChannelInfo            , &  ! Input
+                                Atmosphere_K           , &  ! K   Output
+                                Surface_K              , &  ! K   Output
+                                RTSolution             , &  ! FWD Output
+                                Options    =Options    , &  ! Optional FWD input
+                                RCS_Id     =RCS_Id     , &  ! Revision control
+                                Message_Log=Message_Log  )  ! Error messaging
+</pre>
+
+<p>The same structure definitions are used for both the forward and
+K-matrix structures.
+
+<p>The table below shows the dimensionalities of the input and output
+arguments for the K-matrix model in terms of the number of satellite
+sensors, <code>nSensors</code>, the number of atmospheric profiles, <code>nProfiles</code>,
+and the total number of sensor channels, <code>nChannels</code>.
+
+<div class="tablecontent2">
+  <table cellspacing="0" cellpadding="0" border="0">
+	<caption align="bottom">
+	Dimensionality for <code>CRTM_K_Matrix</code> function arguments
+	</caption>
+	<tr>
+	  <th colspan="4">INPUTS</th>
+	  <th>OPTIONAL INPUT</th>
+	  <th colspan="2">OUTPUTS</th>
+	</tr>
+	<tr>
+	  <th scope="col">Atmosphere<br>Surface</th>
+	  <th scope="col">RTSolution_K</th>
+	  <th scope="col">GeometryInfo</th>
+	  <th scope="col">ChannelInfo</th>
+	  <th scope="col">Options</th>
+	  <th scope="col">RTSolution</th>
+	  <th scope="col">Atmosphere_K<br>Surface_K</th>
+	</tr>
+	<tr>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nChannels<br>
+					x<br>
+				nProfiles</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nSensors</code></td>
+	  <td><code>nProfiles</code></td>
+	  <td><code>nChannels<br>
+				   x<br>
+				nProfiles</code></td>
+	  <td><code>nChannels<br>
+				   x<br>
+				nProfiles</code></td>
+	</tr>
+  </table>
+</div>
+
+
+<!-- =================================== -->
+<a name="dest"></a><h2>CRTM Destruction</h2>
+<!-- =================================== -->
+During the model initialization, the <tt>ChannelInfo</tt> input structure and the coefficient
+shared data structures are allocated to the required size, determined by dimensions in the
+coefficient datafiles. To release this memory, the model destruction routine should be called,
+
+<pre>
+  Error_Status = CRTM_Destroy( ChannelInfo            , &  ! Output
+                               Process_ID =Process_ID , &  ! Optional input
+                               RCS_Id     =RCS_Id     , &  ! Revision control
+                               Message_Log=Message_Log  )  ! Error messaging
+</pre>
+
+<p>Note also that any allocated CRTM input and output structures may also need to be destroyed.
+This is achieved via the <tt>CRTM_Destroy_</tt>&lt;<em>Structure name</em>&gt;. These are discussed
+further below.
+
+
+
+<!-- =========================================== -->
+<a name="struct"></a><h2>CRTM Public Structures</h2>
+<!-- =========================================== -->
+
+<p>Where possible, data passed into and within the CRTM are encapsulated
+within structures. This allows for changes to be made (data components added or removed as
+necessary) with minimal impact to the various CRTM interfaces.
+
+<p>This section describes the public structure types used in the CRTM. Structures of these
+types are arguments in the CRTM user interfaces. The table below is an overview of all the
+public CRTM structure types.
+
+<p><a name="struct_table"></a>
+<div class="tablecontent2">
+  <table cellspacing="0" cellpadding="0" border="0">
+	<caption align="top">
+	List of the Public CRTM structure types
+	</caption>
+    <tr>
+      <th scope="col">TYPE NAME</th>
+      <th scope="col">DESCRIPTION</th>
+    </tr>
+    <tr>
+      <td><tt>CRTM_ChannelInfo_type</tt></td>
+      <td align="left">Structure containing sensor channel information for correct indexing of
+          the CRTM coefficient data. This structure is filled during the CRTM
+          initialization phase. Defined in the <tt>CRTM_ChannelInfo_Define</tt>
+          module.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_Atmosphere_type</tt></td>
+      <td>Structure containing atmospheric state variable profile data, including profiles
+          of cloud parameters. Defined in the <tt>CRTM_Atmosphere_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_Cloud_type</tt></td>
+      <td>Structure containing cloud state variable profile data. Defined in the
+          <tt>CRTM_Cloud_Define</tt> module. This structure is contained within
+          the <tt>Atmosphere</tt> structure.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_Aerosol_type</tt></td>
+      <td>Structure containing aerosol state variable profile data. Defined in the
+          <tt>CRTM_Aerosol_Define</tt> module. This structure is contained within
+          the <tt>Atmosphere</tt> structure.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_Surface_type</tt></td>
+      <td>Structure containing surface type and state information. Defined in the
+          <tt>CRTM_Surface_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_SensorData_type</tt></td>
+      <td>Structure containing satellite instrument brightness temperature data used as input
+          for some surface emissivity algorithms. Defined in the
+          <tt>CRTM_SensorData_Define</tt> module. This structure is contained within
+          the <tt>Surface</tt> structure.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_GeometryInfo_type</tt></td>
+      <td>Structure containing geometry information such as Earth location, satellite
+          view angle, etc. Defined in the <tt>CRTM_GeometryInfo_Define</tt> module.</td>
+    </tr>
+    <tr>
+      <td><tt>CRTM_RTSolution_type</tt></td>
+      <td>Structure containing results of the radiative transfer calculation such as
+          radiance and brightness temperature, etc. Defined in the <tt>CRTM_RTSolution_Define</tt>
+          module.</td>
+    </tr>
+  </table>
+</div>
+
+
+<a name="struct_cinfo"></a><h3><code>ChannelInfo</code> Structure</h3>
+<!-- ============================================================= -->
+
+
+<a name="struct_atm"></a><h3><code>Atmosphere</code> Structure</h3>
+<!-- ========================================================== -->
+blah blah blah
+
+<a name="struct_sfc"></a><h3><code>Surface</code> Structure</h3>
+<!-- ======================================================= -->
+blah blah blah
+
+<a name="struct_ginfo"></a><h3><code>GeometryInfo</code> Structure</h3>
+<!-- ============================================================== -->
+blah blah blah
+
+<a name="struct_rtsol"></a><h3><code>RTSolution</code> Structure</h3>
+<!-- ============================================================ -->
+blah blah blah
+
+
+      <input type="hidden" name="category" id="category" value="ui">
+      <!-- InstanceEndEditable -->
+      <div id="footer"> Last updated
+        <!-- #BeginDate format:En2 -->19-Dec-2008<!-- #EndDate -->
+        by <a href="mailto:paul.vandelst@noaa.gov?subject=CRTM Webpage">Paul van Delst</a></div></td>
+  </tr>
+</table>
+</body>
+<!-- InstanceEnd --></html>

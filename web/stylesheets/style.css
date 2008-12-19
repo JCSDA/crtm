@@ -1,0 +1,353 @@
+/* ENTIRE PAGE LAYOUT AND FORMATTING */
+html, body {
+ margin: 0;
+ padding: 0;
+ width: 100%;
+ height: 100%;
+	font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+}
+body {
+ background-color: white;
+ font-size: 14px;
+ color: #000000;
+}
+
+a {
+	text-decoration:none;
+ color: #06c;
+}
+a:visited {
+ color: #96c;
+}
+
+h1,h2,h3 {
+/*	margin: 1.5em 0 0 0;*/
+	font: normal 1.7em Arial, Helvetica, sans-serif;
+ color: #8b2;
+	clear: left;
+}
+h1 {
+ font: normal 3em Arial, Helvetica, sans-serif;
+	margin:0;
+ padding-top:0.5em;
+ color: #1b6fc0;
+}
+h2 {
+	   font: normal 1.7em Arial, Helvetica, sans-serif;
+}
+h3 {
+	font: italic 1.2em Arial, Helvetica, sans-serif;
+}
+
+#header h1, #pageLayoutTable {
+	width: 850px;
+}
+           
+#pageLayoutTable {
+ height: 100%;
+ clear: both;
+}
+
+
+/* ==========
+   CODE BOXES
+   ========== */
+/* Just fancy up the <pre> tag for this */
+pre {
+	font-family:"Courier New", Courier, monospace;
+	color:#900;
+	padding:10px;
+	background:#fff;
+	border:3px solid #eef;
+	overflow:auto;
+	width: 630px; /* Needed in Safari to force the overflow to work */
+/*	width:auto; /* This doesn't work in Safari */
+}
+pre a {
+	border-bottom:1px dotted #900 !important;
+	color:#900 !important;
+}
+pre a:hover {
+	border-bottom-style:solid !important;
+}
+
+
+/* ======================
+   IN-CONTENT TABLE STUFF
+   ====================== */
+
+.tablecontent table {
+	background-color:#f6f6db;
+/*	border:thin;*/
+	border-color:#06c;
+	padding: 5px;
+}
+.tablecontent th {
+/*	border:thin;*/
+	border-color:#06c;
+	font: normal 1.0em Arial, Helvetica, sans-serif;
+	color:#06c;
+}
+.tablecontent td {
+/*	border:thin;*/
+	border-color:#06c;
+	text-align:center;
+}
+
+/* NEW STUFF.....*/
+
+.tablecontent2 table {
+    margin: 0 auto 0 auto;
+}
+.tablecontent2 th, .tablecontent2 td {
+    padding: 10px;
+}
+.tablecontent2 table {
+	background-color:#f6f6db;
+}
+.tablecontent2 table th {
+	font: normal 1.0em Arial, Helvetica, sans-serif;
+	color:#06c;
+    background-color: #dfdfdf !important;
+}
+.tablecontent2 td {
+	text-align:center;
+}
+
+/* BORDERS */
+.tablecontent2 table, .tablecontent2 th, .tablecontent2 td {
+    border: 1px solid;
+    border-right: none;
+    border-top: none;
+}
+.tablecontent2 table {
+    border-top: 1px solid;
+    border-right: 1px solid;
+    border-left: none;
+    border-bottom: none;
+}
+
+/* + select the next sibling of the listed element - i.e., 
+        p + p {}  
+   will select all paragraphs that follow another paragraph (and
+   are at the same level in the DOM hirearchy */
+/*.tablecontent2 table tr:first-child th:first-child,
+.tablecontent2 table tr:first-child th:first-child + th,
+.tablecontent2 table tr:first-child + tr th:first-child + th + th + th,
+.tablecontent2 table tr:first-child + tr th:first-child + th + th + th + th, 
+.tablecontent2 table tr:first-child + tr + tr td:first-child + td + td + td,
+.tablecontent2 table tr:first-child + tr + tr td:first-child + td + td + td + td {
+    border-right: solid 3px; 
+}*/
+
+.tablecontent2 table, .tablecontent2 th, .tablecontent2 td {
+    border-color: #666 !important;
+}
+
+/* ======
+   HEADER
+   ====== */
+   
+#header {
+    background-color:white;	
+    border-bottom: double 3px #fff;
+}
+#header h1 {
+    font: normal 1.7em Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 1px 0 1px 0;
+    color: #1b6fc0;
+    background-color:white;	
+    width: 100%;
+    padding-left: 50px;
+    height: 125px;
+}
+#header h1 a {
+    text-decoration: none;
+    color: #FFFFFF;
+}
+#header h3 {
+    font-weight:normal;
+	font-style:italic;
+	text-decoration:underline;
+}
+#header acronym {
+    border: none;
+}
+
+/* =================== 
+   MAIN NAVIGATION ROW
+   =================== */
+
+#mainnav {
+	background-color: white; 
+	margin: 0; 
+	padding: 5px; 
+	height: 1.2em; /* Height of nav table*/
+	font: normal 1.2em Arial, Helvetica, sans-serif;
+	border-top: solid 1px #fff;
+	border-bottom: solid 1px #fff;
+	padding-left: 13px;
+}
+#mainnav ul {
+	list-style-type:none;
+	margin: 0; 
+    padding: 0;
+}
+#mainnav li {
+	display:block; 
+    float: left;
+    margin-right: 2em;
+    padding: 0 5px 0 5px; 
+    background-color: white; 
+    position: relative; 
+    top: 0px;
+}
+#mainnav a {
+    text-decoration: none;
+    background-color: white;
+}
+#mainnav a:hover {
+	text-decoration:underline;
+}
+.current_category a {
+	color:#999999 !important;
+}
+.current_category a:hover {
+	text-decoration:none !important;
+}
+/*
+    background-color: #666 !important; 
+    border-bottom-color: #666 !important; 
+    border-top-color: #666 !important;
+}
+.current_category a {
+    color: #FFFFFF !important;
+}
+*/
+
+/* ====================== 
+   LEFT NAVIGATION COLUMN
+   ====================== */
+
+/*
+secondarynav used in template
+*/
+#secondarynav .spacer {width: 160px;}
+#secondarynav div:first-child {position: fixed;}
+#secondarynav {
+    background-color: white;
+    width: 160px;
+    vertical-align: top;
+/*    border-right: double 3px #fff;*/
+    font-size: 14px;
+}
+#secondarynav a {
+    background-color: white;
+    text-decoration: none; 
+    margin-left: 0px;
+}
+#secondarynav a:hover {
+    background-color: #f7f7ff; /* Should be same as ".nav1:hover, .nav2:hover, .nav3:hover" background-color */
+}
+#secondarynav li {
+    list-style-type: none;
+    position: relative;
+}
+#secondarynav ul, #secondarynav li {
+	/*remove default margins/paddings*/
+    margin: 0; 
+    padding: 0;
+} 
+#secondarynav ul ul {
+/*    display: none;*/
+}
+/*
+#secondarynav li {
+    border-top: solid 1px #aaa;
+}
+*/
+
+/*
+navLinks id used in "category".ssi.html files
+*/
+#navLinks {
+    background-color: white;
+    width: 150px;
+	border-top:3px solid #eef;
+	border-left:3px solid #eef;
+	border-bottom:3px solid #eef;
+	margin-left:7px !important;
+	margin-right:0 !important;
+	margin-top:1em !important;
+}
+
+/*    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 1em !important;}
+*/
+/*
+nav1,nav2,etc classes are also used
+in "category".ssi.html files for
+sublink display
+*/
+
+.nav1 {
+    border-top: solid 1px #aaa;
+    color: #1b6fc0;
+    padding-left: 5px;
+}
+.nav2 {
+    color: #06c;
+    padding-left: 15px;
+    font-size: 12px;
+}
+.nav3 {
+    padding-left: 25px;
+    font-size: 10px;
+}
+.nav1, .nav2, .nav3 {
+    display: block;
+}
+.nav1:hover, .nav2:hover, .nav3:hover {
+    background-color: #f7f7ff; /* Should be same as "#secondarynav a:hover" background-color */
+}
+
+
+/* ============
+   CONTENT AREA
+   ============ */
+
+#content {
+	background-color:#f7f7ff; /* Should be same as "#secondarynav a:hover" background-color */
+	border:3px solid #eef;
+    padding-left: 15px;
+    padding-right: 15px;
+    padding-top: 5px;
+    vertical-align: top;
+}
+
+/*
+Link appearance
+*/
+#content a{
+	border-bottom:1px solid #ccc;
+	color:#06c;
+}
+#content a:hover{
+	border-color:#06c;
+}
+#content a:visited{
+	border-color:#ccc;
+	color:#96c;
+}
+#content a:visited:hover{
+	border-color:#96c;
+}
+
+/* FOOTER */
+#footer {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    border-top: solid 1px #ccc;
+}
