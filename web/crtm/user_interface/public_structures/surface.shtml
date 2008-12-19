@@ -20,7 +20,7 @@
 </head>
 <body>
 <div id="header">
-  <h1><a href="http://www.jcsda.noaa.gov"><img src="/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/CRTM/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
   <div id="mainnav">
     <!--#include virtual="/crtm/ssi/mainnav.ssi.html" -->
   </div>
