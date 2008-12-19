@@ -26,7 +26,7 @@
 <table cellspacing="0" cellpadding="0" id="pageLayoutTable">
   <tr>
     <td id="secondarynav"><div><!-- InstanceBeginEditable name="secondarynav" -->
-        <!--#include virtual="/ssi/home.ssi.html" -->
+        <!--#include virtual="/CRTM/main/ssi/home.ssi.html" -->
         <!-- InstanceEndEditable --> </div></td>
     <td id="content"><!-- InstanceBeginEditable name="content" -->
 <p>The Community Radiative Transfer Model (CRTM) under development at the
