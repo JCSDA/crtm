@@ -7,5 +7,5 @@ PRO Update_netCDF_Comment, NCfile, $  ; Input. File to modify.
 ;-
   Update_netCDF_String_GAtt, NCfile   , $
                              'comment', $
-                             Update
+                             Update[0]
 END
