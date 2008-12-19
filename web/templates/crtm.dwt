@@ -7,26 +7,26 @@
 <title>Community Radiative Transfer Model (CRTM)</title>
 <!-- TemplateEndEditable -->
 <meta http-equiv="expires" content="0">
-<link href="/stylesheets/style.css" type="text/css" rel="stylesheet">
+<link href="/CRTM/shared_assets/stylesheets/style.css" type="text/css" rel="stylesheet">
 <!-- DO NOT DELETE -->
 <!--[if IE]>
   <link href="/stylesheets/style.ie.css" type="text/css" rel="stylesheet">
 <![endif]-->
-<script language="javascript" type="text/javascript" src="/javascript/eventutil.js"></script>
-<script language="javascript" type="text/javascript" src="/crtm/javascript/javascript.js"></script>
+<script language="javascript" type="text/javascript" src="/CRTM/shared_assets/javascript/eventutil.js"></script>
+<script language="javascript" type="text/javascript" src="/CRTM/main/javascript/javascript.js"></script>
 <!-- TemplateBeginEditable name="head" --><!-- TemplateEndEditable -->
 </head>
 <body>
 <div id="header">
-  <h1><a href="http://www.jcsda.noaa.gov"><img src="/CRTM/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
+  <h1><a href="http://www.jcsda.noaa.gov"><img src="/CRTM/shared_assets/images/jcsda_logo_small.png" alt="" name="jcsda_logo" width="125" height="125" border="0" align="middle"></a>Community Radiative Transfer Model (CRTM)</h1>
   <div id="mainnav">
-    <!--#include virtual="/crtm/ssi/mainnav.ssi.html" -->
+    <!--#include virtual="/CRTM/main/ssi/mainnav.ssi.html" -->
   </div>
 </div>
 <table cellspacing="0" cellpadding="0" id="pageLayoutTable">
   <tr>
     <td id="secondarynav"><div><!-- TemplateBeginEditable name="secondarynav" -->
-        <!--#include virtual="/crtm/ssi/link_a.ssi.html" -->
+        <!--#include virtual="/CRTM/main/ssi/link_a.ssi.html" -->
         <!-- TemplateEndEditable --> </div></td>
     <td id="content"><!-- TemplateBeginEditable name="content" -->CONTENT
         CONTENT CONTENT CONTENT
