@@ -129,8 +129,6 @@ PROGRAM Create_IR_SpcCoeff
   INTEGER :: SpcCoeff_File_Version
   CHARACTER( 256) :: Title
   CHARACTER(2000) :: SRF_History, Solar_History
-  CHARACTER( 256) :: Sensor_Name
-  CHARACTER( 256) :: Platform_Name
   CHARACTER(2000) :: Comment
   REAL(fp) :: dFrequency
   REAL(fp) :: SRF_Integral
@@ -313,8 +311,6 @@ PROGRAM Create_IR_SpcCoeff
     Error_Status = Inquire_SRF_netCDF( TRIM(SRF_Filename), &  ! Input
                                        Title         = Title,         & ! Optional output
                                        History       = SRF_History,   & ! Optional output
-                                       Sensor_Name   = Sensor_Name,   & ! Optional output
-                                       Platform_Name = Platform_Name, & ! Optional output
                                        Comment       = Comment        ) ! Optional output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
@@ -400,7 +396,8 @@ PROGRAM Create_IR_SpcCoeff
       ! -------------------------
       Error_Status = Read_SRF_netCDF( SRF_Filename              , &  ! Input
                                       SpcCoeff%Sensor_Channel(l), &  ! Input
-                                      SRF                         )  ! Output
+                                      SRF                       , &  ! Output
+                                      Quiet=SET                   )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message,'("Error reading channel #",i0," SRF from ",a)' ) &
                        SpcCoeff%Sensor_Channel(l), TRIM(SRF_Filename)
