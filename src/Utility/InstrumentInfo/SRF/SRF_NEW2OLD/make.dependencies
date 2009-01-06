@@ -1,0 +1,24 @@
+Type_Kinds.o : Type_Kinds.f90 
+String_Utility.o : String_Utility.f90 
+SRF_Utility.o : SRF_Utility.f90 Type_Kinds.o Message_Handler.o Interpolate_Utility.o Integrate_Utility.o SRF_Define.o 
+SRF_NEW2OLD.o : SRF_NEW2OLD.f90 Type_Kinds.o File_Utility.o Message_Handler.o CRTM_Parameters.o SRF_Define.o SRF_Define_old.o SRF_netCDF_IO.o SRF_netCDF_IO_old.o 
+SRF_netCDF_IO_old.o : SRF_netCDF_IO_old.f90 Type_Kinds.o Message_Handler.o SRF_Define_old.o netCDF_Utility.o 
+SRF_netCDF_IO.o : SRF_netCDF_IO.f90 Type_Kinds.o Message_Handler.o String_Utility.o SRF_Define.o 
+SRF_Define_old.o : SRF_Define_old.f90 Type_Kinds.o Message_Handler.o Integrate_Utility.o 
+SRF_Define.o : SRF_Define.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o Integrate_Utility.o 
+SRF_ASCII_IO.o : SRF_ASCII_IO.f90 Type_Kinds.o File_Utility.o Message_Handler.o String_Utility.o SRF_Define.o 
+Spline_Interpolation.o : Spline_Interpolation.f90 Type_Kinds.o Message_Handler.o Search_Utility.o 
+Search_Utility.o : Search_Utility.f90 Type_Kinds.o Message_Handler.o 
+Polynomial_Interpolation.o : Polynomial_Interpolation.f90 Type_Kinds.o Message_Handler.o Search_Utility.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Linear_Interpolation.o : Linear_Interpolation.f90 Type_Kinds.o Message_Handler.o Search_Utility.o 
+Interpolate_Utility.o : Interpolate_Utility.f90 Linear_Interpolation.o Polynomial_Interpolation.o Spline_Interpolation.o 
+Integrate_Utility.o : Integrate_Utility.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o Interpolate_Utility.o 
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
