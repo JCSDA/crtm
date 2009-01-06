@@ -113,7 +113,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 48
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 52
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -127,7 +127,8 @@ MODULE MW_SensorData_Define
     'amsua_n19           ','mhs_n19             ','amsua_metop-a       ','mhs_metop-a         ',&
     'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         ',&
     'ssmi_f08            ','ssmi_f10            ','ssmi_f11            ','mwri_fy3a           ',&
-    'mwhs_fy3a           ','mwts_fy3a           ','tmi_trmm            ','gmi_gpm             '/)
+    'mwhs_fy3a           ','mwts_fy3a           ','tmi_trmm            ','gmi_gpm             ',&
+    'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -144,7 +145,9 @@ MODULE MW_SensorData_Define
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWRI
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWHS
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWTS
-     282, INVALID_WMO_SATELLITE_ID /)                       ! TRMM TMI; GPM GMI
+     282, INVALID_WMO_SATELLITE_ID, &                       ! TRMM TMI; GPM GMI
+     285, 286, &                                            ! DMSP-17,18
+     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID /)  ! DMSP-19,20
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -153,14 +156,16 @@ MODULE MW_SensorData_Define
      908, &                                          ! DMSP-16 SSMIS
      570, 246, 479, &                                ! AQUA AMSU-A, HSB, and AMSR-E
      570, 203, &                                     ! NOAA-18 AMSU-A and MHS
-     INVALID_WMO_SENSOR_ID, &                        ! Coriolis WindSat (MISSING VALUE)
+     283, &                                          ! Coriolis WindSat
      621, &                                          ! NPOESS-C1 ATMS
      570, 203, &                                     ! NOAA-N' AMSU-A and MHS
      570, 203, 570, 203, 570, 203, &                 ! MetOp-A - C AMSU-A; MHS
      905, 905, 905, &                                ! DMSP-08,-10,-11 SSM/I
      938, 936, &                                     ! Fengyun-3A MWRI; MWHS
      INVALID_WMO_SENSOR_ID, &                        ! Fengyun-3A MWTS
-     365, INVALID_WMO_SENSOR_ID /)                   ! TRMM TMI; GPM GMI
+     365, INVALID_WMO_SENSOR_ID, &                   ! TRMM TMI; GPM GMI
+     908, 908, &                                     ! DMSP-17,18 SSMIS
+     908, 908 /)                                     ! DMSP-19,20 SSMIS
 
 
   !#----------------------------------------------------------------------------#
@@ -207,7 +212,9 @@ MODULE MW_SensorData_Define
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
        N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS, &            ! DMSP-08,-10,-11 SSM/I
        N_MWRI_CHANNELS, N_MWHS_CHANNELS, N_MWTS_CHANNELS, &              ! Fengyun-3A MWRI; MWHS; MWTS
-       N_TMI_CHANNELS, N_GMI_CHANNELS /)                                 ! TRMM TMI; GPM GMI
+       N_TMI_CHANNELS, N_GMI_CHANNELS, &                                 ! TRMM TMI; GPM GMI
+       N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-17,18 SSMIS
+       N_SSMIS_CHANNELS, N_SSMIS_CHANNELS /)                             ! DMSP-19,20 SSMIS
 
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/(i,i=1,N_MSU_CHANNELS    )/)
@@ -527,7 +534,15 @@ MODULE MW_SensorData_Define
 
 
   ! DMSP-16 SSMIS
-  ! -------------
+  !
+  ! Derived from SN02 measured parameters in
+  !   SSMIS Passband Characterizations for Forward Modeling
+  !   CDRL No.A007
+  !   Aerojet Report 11892
+  !   January, 2001
+  !
+  ! Average bandpass values used for I/F limits
+  ! -------------------------------------------------------
   ! Central frequency
   REAL(fp), PARAMETER :: SSMIS_F16_F0( N_SSMIS_CHANNELS ) = &
     (/ 50.300000_fp,  52.800000_fp,  53.596000_fp,  54.400000_fp, &
@@ -538,61 +553,224 @@ MODULE MW_SensorData_Define
        60.792668_fp,  60.792668_fp,  60.792668_fp,  60.792668_fp /)
 
   ! SSMIS I/F band limits in GHz.
-  ! F16 parameters
   REAL(fp), PARAMETER :: SSMIS_F16_IF_BAND( 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS ) = &
-    RESHAPE( (/ 0.000000_fp,  0.190000_fp,  ZERO,         ZERO,        &     ! SSMIS ch1
-                0.000000_fp,  0.194400_fp,  ZERO,         ZERO,        &     ! SSMIS ch2
-                0.000000_fp,  0.190000_fp,  ZERO,         ZERO,        &     ! SSMIS ch3
-                0.000000_fp,  0.191250_fp,  ZERO,         ZERO,        &     ! SSMIS ch4
-                0.000000_fp,  0.195650_fp,  ZERO,         ZERO,        &     ! SSMIS ch5
-                0.000000_fp,  0.165000_fp,  ZERO,         ZERO,        &     ! SSMIS ch6
-                0.000000_fp,  0.119400_fp,  ZERO,         ZERO,        &     ! SSMIS ch7
-                0.429000_fp,  2.071000_fp,  ZERO,         ZERO,        &     ! SSMIS ch8
-                5.837000_fp,  7.363000_fp,  ZERO,         ZERO,        &     ! SSMIS ch9
-                2.490500_fp,  3.509500_fp,  ZERO,         ZERO,        &     ! SSMIS ch10
-                0.743750_fp,  1.256250_fp,  ZERO,         ZERO,        &     ! SSMIS ch11
-                0.000000_fp,  0.177500_fp,  ZERO,         ZERO,        &     ! SSMIS ch12
-                0.000000_fp,  0.178350_fp,  ZERO,         ZERO,        &     ! SSMIS ch13
-                0.000000_fp,  0.203750_fp,  ZERO,         ZERO,        &     ! SSMIS ch14
-                0.000000_fp,  0.807500_fp,  ZERO,         ZERO,        &     ! SSMIS ch15
-                0.000000_fp,  0.772500_fp,  ZERO,         ZERO,        &     ! SSMIS ch16
-                0.191000_fp,  1.609000_fp,  ZERO,         ZERO,        &     ! SSMIS ch17
-                0.194500_fp,  1.605500_fp,  ZERO,         ZERO,        &     ! SSMIS ch18
-                0.284591_fp,  0.285951_fp,  ZERO,         ZERO,        &     ! SSMIS ch19
-                0.357217_fp,  0.358567_fp,  ZERO,         ZERO,        &     ! SSMIS ch20
-                0.355247_fp,  0.356537_fp,  0.359247_fp,  0.360537_fp, &     ! SSMIS ch21
-                0.351082_fp,  0.353702_fp,  0.362082_fp,  0.364702_fp, &     ! SSMIS ch22
-                0.338232_fp,  0.345552_fp,  0.370232_fp,  0.377552_fp, &     ! SSMIS ch23
-                0.294642_fp,  0.321142_fp,  0.394642_fp,  0.421142_fp /), &  ! SSMIS ch24
+    RESHAPE( (/ 0.00000000_fp,  0.19315000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 1
+                0.00000000_fp,  0.19280000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 2
+                0.00000000_fp,  0.18565000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 3
+                0.00000000_fp,  0.18780000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 4
+                0.00000000_fp,  0.19155000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 5
+                0.00000000_fp,  0.16655000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 6
+                0.00000000_fp,  0.11970000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 7
+                0.42600000_fp,  2.07400000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 8
+                5.83500000_fp,  7.36500000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 9
+                2.49150000_fp,  3.50850000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.10
+                0.74125000_fp,  1.25875000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.11
+                0.00000000_fp,  0.17815000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.12
+                0.00000000_fp,  0.17940000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.13
+                0.00000000_fp,  0.21030000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.14
+                0.00000000_fp,  0.78900000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.15
+                0.00000000_fp,  0.77100000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.16
+                0.18400000_fp,  1.61600000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.17
+                0.19950000_fp,  1.60050000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.18
+                0.28459660_fp,  0.28594540_fp,  ZERO         ,  ZERO         ,  &   ! Ch.19
+                0.35721302_fp,  0.35857098_fp,  ZERO         ,  ZERO         ,  &   ! Ch.20
+                0.35524737_fp,  0.35653662_fp,  0.35924737_fp,  0.36053662_fp,  &   ! Ch.21
+                0.35107315_fp,  0.35371085_fp,  0.36207315_fp,  0.36471085_fp,  &   ! Ch.22
+                0.33826547_fp,  0.34551852_fp,  0.37026548_fp,  0.37751852_fp,  &   ! Ch.23
+                0.29465795_fp,  0.32112605_fp,  0.39465795_fp,  0.42112605_fp /), & ! Ch.24
              (/ 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS /) )
 
-!!  ! Nominal instrument parameters
-!!  REAL(fp), PARAMETER :: SSMIS_F16_IF_BAND( 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS ) = &
-!!    RESHAPE( (/ 0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch1
-!!                0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch2
-!!                0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch3
-!!                0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch4
-!!                0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch5
-!!                0.000000_fp,  0.175000_fp,  ZERO,         ZERO,        &     ! SSMIS ch6
-!!                0.000000_fp,  0.125000_fp,  ZERO,         ZERO,        &     ! SSMIS ch7
-!!                0.500000_fp,  2.000000_fp,  ZERO,         ZERO,        &     ! SSMIS ch8
-!!                5.850000_fp,  7.350000_fp,  ZERO,         ZERO,        &     ! SSMIS ch9
-!!                2.500000_fp,  3.500000_fp,  ZERO,         ZERO,        &     ! SSMIS ch10
-!!                0.750000_fp,  1.250000_fp,  ZERO,         ZERO,        &     ! SSMIS ch11
-!!                0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch12
-!!                0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &     ! SSMIS ch13
-!!                0.000000_fp,  0.225000_fp,  ZERO,         ZERO,        &     ! SSMIS ch14
-!!                0.000000_fp,  0.750000_fp,  ZERO,         ZERO,        &     ! SSMIS ch15
-!!                0.000000_fp,  0.750000_fp,  ZERO,         ZERO,        &     ! SSMIS ch16
-!!                0.150000_fp,  1.650000_fp,  ZERO,         ZERO,        &     ! SSMIS ch17
-!!                0.150000_fp,  1.650000_fp,  ZERO,         ZERO,        &     ! SSMIS ch18
-!!                0.284521_fp,  0.286021_fp,  ZERO,         ZERO,        &     ! SSMIS ch19
-!!                0.357142_fp,  0.358642_fp,  ZERO,         ZERO,        &     ! SSMIS ch20
-!!                0.355142_fp,  0.356642_fp,  0.359142_fp,  0.360642_fp, &     ! SSMIS ch21
-!!                0.350892_fp,  0.353892_fp,  0.361892_fp,  0.364892_fp, &     ! SSMIS ch22
-!!                0.337892_fp,  0.345892_fp,  0.369892_fp,  0.377892_fp, &     ! SSMIS ch23
-!!                0.292892_fp,  0.322892_fp,  0.392892_fp,  0.422892_fp /), &  ! SSMIS ch24
-!!             (/ 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS /) )
+
+  ! DMSP-17 SSMIS
+  !
+  ! Derived from SN04 measured parameters in
+  !   SSMIS Passband Characterizations for Forward Modeling
+  !   CDRL No.A007
+  !   Aerojet Report 11892
+  !   January, 2001
+  !
+  ! Average bandpass values used for I/F limits
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: SSMIS_F17_F0( N_SSMIS_CHANNELS ) = &
+    (/ 50.300000_fp,  52.800000_fp,  53.596000_fp,  54.400000_fp, &
+       55.500000_fp,  57.290000_fp,  59.400000_fp, 150.000000_fp, &
+      183.310000_fp, 183.310000_fp, 183.310000_fp,  19.350000_fp, &
+       19.350000_fp,  22.235000_fp,  37.000000_fp,  37.000000_fp, &
+       91.655000_fp,  91.655000_fp,  63.283248_fp,  60.792668_fp, &
+       60.792668_fp,  60.792668_fp,  60.792668_fp,  60.792668_fp /)
+
+  ! SSMIS I/F band limits in GHz.
+  REAL(fp), PARAMETER :: SSMIS_F17_IF_BAND( 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS ) = &
+    RESHAPE( (/ 0.00000000_fp,  0.19095000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 1
+                0.00000000_fp,  0.19780000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 2
+                0.00000000_fp,  0.18595000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 3
+                0.00000000_fp,  0.18815000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 4
+                0.00000000_fp,  0.19625000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 5
+                0.00000000_fp,  0.17000000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 6
+                0.00000000_fp,  0.11750000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 7
+                0.41800000_fp,  2.08200000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 8
+                5.83500000_fp,  7.36500000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 9
+                2.49250000_fp,  3.50750000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.10
+                0.74075000_fp,  1.25925000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.11
+                0.00000000_fp,  0.18970000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.12
+                0.00000000_fp,  0.17815000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.13
+                0.00000000_fp,  0.21865000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.14
+                0.00000000_fp,  0.76150000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.15
+                0.00000000_fp,  0.77400000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.16
+                0.17750000_fp,  1.62250000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.17
+                0.19500000_fp,  1.60500000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.18
+                0.28459600_fp,  0.28594600_fp,  ZERO         ,  ZERO         ,  &   ! Ch.19
+                0.35720200_fp,  0.35858200_fp,  ZERO         ,  ZERO         ,  &   ! Ch.20
+                0.35526075_fp,  0.35652325_fp,  0.35926075_fp,  0.36052325_fp,  &   ! Ch.21
+                0.35107700_fp,  0.35370700_fp,  0.36207700_fp,  0.36470700_fp,  &   ! Ch.22
+                0.33819575_fp,  0.34558825_fp,  0.37019575_fp,  0.37758825_fp,  &   ! Ch.23
+                0.29460325_fp,  0.32118075_fp,  0.39460325_fp,  0.42118075_fp /), & ! Ch.24
+             (/ 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS /) )
+
+
+  ! DMSP-18 SSMIS
+  !
+  ! Derived from SN03 measured parameters in
+  !   SSMIS Passband Characterizations for Forward Modeling
+  !   CDRL No.A007
+  !   Aerojet Report 11892
+  !   January, 2001
+  !
+  ! Average bandpass values used for I/F limits
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: SSMIS_F18_F0( N_SSMIS_CHANNELS ) = &
+    (/ 50.300000_fp,  52.800000_fp,  53.596000_fp,  54.400000_fp, &
+       55.500000_fp,  57.290000_fp,  59.400000_fp, 150.000000_fp, &
+      183.310000_fp, 183.310000_fp, 183.310000_fp,  19.350000_fp, &
+       19.350000_fp,  22.235000_fp,  37.000000_fp,  37.000000_fp, &
+       91.655000_fp,  91.655000_fp,  63.283248_fp,  60.792668_fp, &
+       60.792668_fp,  60.792668_fp,  60.792668_fp,  60.792668_fp /)
+
+  ! SSMIS I/F band limits in GHz.
+  REAL(fp), PARAMETER :: SSMIS_F18_IF_BAND( 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS ) = &
+    RESHAPE( (/ 0.00000000_fp,  0.19730000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 1
+                0.00000000_fp,  0.19380000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 2
+                0.00000000_fp,  0.18655000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 3
+                0.00000000_fp,  0.18905000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 4
+                0.00000000_fp,  0.19005000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 5
+                0.00000000_fp,  0.16485000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 6
+                0.00000000_fp,  0.11915000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 7
+                0.42700000_fp,  2.07300000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 8
+                5.83400000_fp,  7.36600000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 9
+                2.48950000_fp,  3.51050000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.10
+                0.74475000_fp,  1.25525000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.11
+                0.00000000_fp,  0.19125000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.12
+                0.00000000_fp,  0.19825000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.13
+                0.00000000_fp,  0.22725000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.14
+                0.00000000_fp,  0.78350000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.15
+                0.00000000_fp,  0.77350000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.16
+                0.17900000_fp,  1.62100000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.17
+                0.18350000_fp,  1.61650000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.18
+                0.28459775_fp,  0.28594425_fp,  ZERO         ,  ZERO         ,  &   ! Ch.19
+                0.35720535_fp,  0.35857865_fp,  ZERO         ,  ZERO         ,  &   ! Ch.20
+                0.35525507_fp,  0.35652892_fp,  0.35925507_fp,  0.36052893_fp,  &   ! Ch.21
+                0.35106789_fp,  0.35371611_fp,  0.36206789_fp,  0.36471611_fp,  &   ! Ch.22
+                0.33823812_fp,  0.34554587_fp,  0.37023812_fp,  0.37754587_fp,  &   ! Ch.23
+                0.29457251_fp,  0.32121149_fp,  0.39457251_fp,  0.42121149_fp /), & ! Ch.24
+             (/ 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS /) )
+
+
+  ! DMSP-19 SSMIS
+  !
+  ! Derived from SN05 measured parameters in
+  !   SSMIS Passband Characterizations for Forward Modeling
+  !   CDRL No.A007
+  !   Aerojet Report 11892
+  !   January, 2001
+  !
+  ! Average bandpass values used for I/F limits
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: SSMIS_F19_F0( N_SSMIS_CHANNELS ) = &
+    (/ 50.300000_fp,  52.800000_fp,  53.596000_fp,  54.400000_fp, &
+       55.500000_fp,  57.290000_fp,  59.400000_fp, 150.000000_fp, &
+      183.310000_fp, 183.310000_fp, 183.310000_fp,  19.350000_fp, &
+       19.350000_fp,  22.235000_fp,  37.000000_fp,  37.000000_fp, &
+       91.655000_fp,  91.655000_fp,  63.283248_fp,  60.792668_fp, &
+       60.792668_fp,  60.792668_fp,  60.792668_fp,  60.792668_fp /)
+
+  ! SSMIS I/F band limits in GHz.
+  REAL(fp), PARAMETER :: SSMIS_F19_IF_BAND( 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS ) = &
+    RESHAPE( (/ 0.00000000_fp,  0.19155000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 1
+                0.00000000_fp,  0.19780000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 2
+                0.00000000_fp,  0.18780000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 3
+                0.00000000_fp,  0.19125000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 4
+                0.00000000_fp,  0.19655000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 5
+                0.00000000_fp,  0.16780000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 6
+                0.00000000_fp,  0.11940000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 7
+                0.42100000_fp,  2.07900000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 8
+                5.83000000_fp,  7.37000000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 9
+                2.48850000_fp,  3.51150000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.10
+                0.74100000_fp,  1.25900000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.11
+                0.00000000_fp,  0.17805000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.12
+                0.00000000_fp,  0.17780000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.13
+                0.00000000_fp,  0.20190000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.14
+                0.00000000_fp,  0.79900000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.15
+                0.00000000_fp,  0.80000000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.16
+                0.18300000_fp,  1.61700000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.17
+                0.18600000_fp,  1.61400000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.18
+                0.28459930_fp,  0.28594270_fp,  ZERO         ,  ZERO         ,  &   ! Ch.19
+                0.35722100_fp,  0.35856300_fp,  ZERO         ,  ZERO         ,  &   ! Ch.20
+                0.35524753_fp,  0.35653648_fp,  0.35924753_fp,  0.36053648_fp,  &   ! Ch.21
+                0.35108279_fp,  0.35370121_fp,  0.36208279_fp,  0.36470121_fp,  &   ! Ch.22
+                0.33824149_fp,  0.34554251_fp,  0.37024149_fp,  0.37754251_fp,  &   ! Ch.23
+                0.29463834_fp,  0.32114566_fp,  0.39463834_fp,  0.42114566_fp /), & ! Ch.24
+             (/ 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS /) )
+
+
+  ! DMSP-20 SSMIS
+  !
+  ! Derived from SN01 measured parameters in
+  !   SSMIS Passband Characterizations for Forward Modeling
+  !   CDRL No.A007
+  !   Aerojet Report 11892
+  !   January, 2001
+  !
+  ! Average bandpass values used for I/F limits
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: SSMIS_F20_F0( N_SSMIS_CHANNELS ) = &
+    (/ 50.300000_fp,  52.800000_fp,  53.596000_fp,  54.400000_fp, &
+       55.500000_fp,  57.290000_fp,  59.400000_fp, 150.000000_fp, &
+      183.310000_fp, 183.310000_fp, 183.310000_fp,  19.350000_fp, &
+       19.350000_fp,  22.235000_fp,  37.000000_fp,  37.000000_fp, &
+       91.655000_fp,  91.655000_fp,  63.283248_fp,  60.792668_fp, &
+       60.792668_fp,  60.792668_fp,  60.792668_fp,  60.792668_fp /)
+
+  ! SSMIS I/F band limits in GHz.
+  REAL(fp), PARAMETER :: SSMIS_F20_IF_BAND( 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS ) = &
+    RESHAPE( (/ 0.00000000_fp,  0.19000000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 1
+                0.00000000_fp,  0.19440000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 2
+                0.00000000_fp,  0.19000000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 3
+                0.00000000_fp,  0.19125000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 4
+                0.00000000_fp,  0.19565000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 5
+                0.00000000_fp,  0.16500000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 6
+                0.00000000_fp,  0.11940000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 7
+                0.42900000_fp,  2.07100000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 8
+                5.83700000_fp,  7.36300000_fp,  ZERO         ,  ZERO         ,  &   ! Ch. 9
+                2.49050000_fp,  3.50950000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.10
+                0.74375000_fp,  1.25625000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.11
+                0.00000000_fp,  0.17750000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.12
+                0.00000000_fp,  0.17835000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.13
+                0.00000000_fp,  0.20375000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.14
+                0.00000000_fp,  0.80750000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.15
+                0.00000000_fp,  0.77250000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.16
+                0.19100000_fp,  1.60900000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.17
+                0.19450000_fp,  1.60550000_fp,  ZERO         ,  ZERO         ,  &   ! Ch.18
+                0.28459183_fp,  0.28595017_fp,  ZERO         ,  ZERO         ,  &   ! Ch.19
+                0.35721420_fp,  0.35856980_fp,  ZERO         ,  ZERO         ,  &   ! Ch.20
+                0.35524784_fp,  0.35653616_fp,  0.35924784_fp,  0.36053616_fp,  &   ! Ch.21
+                0.35108007_fp,  0.35370392_fp,  0.36208008_fp,  0.36470393_fp,  &   ! Ch.22
+                0.33823439_fp,  0.34554961_fp,  0.37023439_fp,  0.37754961_fp,  &   ! Ch.23
+                0.29465119_fp,  0.32113281_fp,  0.39465119_fp,  0.42113281_fp /), & ! Ch.24
+             (/ 2, MAX_N_SIDEBANDS, N_SSMIS_CHANNELS /) )
 
 
   ! Aqua AMSU-A (spec values)
@@ -2083,7 +2261,6 @@ CONTAINS
     CHARACTER(256) :: Message
     CHARACTER(SL) :: Local_Sensor_Id
     LOGICAL :: No_Sensor_Id, No_WMO_Ids
-    INTEGER :: n_Channels
     INTEGER :: i, n
     INTEGER, DIMENSION( 1 ) :: idx
     INTEGER, DIMENSION( 2 ) :: n_Points
@@ -2271,6 +2448,38 @@ CONTAINS
         MW_SensorData%Polarization      = SSMIS_POLARIZATION
         MW_SensorData%n_Sidebands       = SSMIS_N_SIDEBANDS
         MW_SensorData%IF_Band           = SSMIS_F16_IF_BAND
+
+      CASE ('ssmis_f17')
+        MW_SensorData%Sensor_Channel    = SSMIS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = SSMIS_F17_F0
+        MW_SensorData%Zeeman            = SSMIS_ZEEMAN
+        MW_SensorData%Polarization      = SSMIS_POLARIZATION
+        MW_SensorData%n_Sidebands       = SSMIS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = SSMIS_F17_IF_BAND
+
+      CASE ('ssmis_f18')
+        MW_SensorData%Sensor_Channel    = SSMIS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = SSMIS_F18_F0
+        MW_SensorData%Zeeman            = SSMIS_ZEEMAN
+        MW_SensorData%Polarization      = SSMIS_POLARIZATION
+        MW_SensorData%n_Sidebands       = SSMIS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = SSMIS_F18_IF_BAND
+
+      CASE ('ssmis_f19')
+        MW_SensorData%Sensor_Channel    = SSMIS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = SSMIS_F19_F0
+        MW_SensorData%Zeeman            = SSMIS_ZEEMAN
+        MW_SensorData%Polarization      = SSMIS_POLARIZATION
+        MW_SensorData%n_Sidebands       = SSMIS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = SSMIS_F19_IF_BAND
+
+      CASE ('ssmis_f20')
+        MW_SensorData%Sensor_Channel    = SSMIS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = SSMIS_F20_F0
+        MW_SensorData%Zeeman            = SSMIS_ZEEMAN
+        MW_SensorData%Polarization      = SSMIS_POLARIZATION
+        MW_SensorData%n_Sidebands       = SSMIS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = SSMIS_F20_IF_BAND
 
       CASE ('amsua_aqua')
         MW_SensorData%Sensor_Channel    = AMSUA_SENSOR_CHANNEL

@@ -37,8 +37,7 @@ PROGRAM Display_MW_SensorData
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER(256) :: Message
-  CHARACTER(80)  :: Sensor_ID
+  CHARACTER(80) :: Sensor_ID
   INTEGER :: Error_Status
   TYPE(MW_SensorData_type) :: MW_SensorData
 
