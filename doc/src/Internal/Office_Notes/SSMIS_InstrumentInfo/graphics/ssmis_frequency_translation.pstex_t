@@ -1,0 +1,65 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/ssmis_frequency_translation.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3158sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(7276,9639)(847,-11533)
+\put(4876,-2086){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textbf{Frequency translation in heterodyne}}%
+}}}}
+\put(4876,-2386){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textbf{reception for a broadband signal}}%
+}}}}
+\put(7051,-9211){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}RF}%
+}}}}
+\put(1201,-8911){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Power}%
+}}}}
+\put(2401,-8461){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}IF}%
+}}}}
+\put(6451,-10486){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_0$}%
+}}}}
+\put(5851,-9211){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}RF}%
+}}}}
+\put(7051,-4561){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}RF}%
+}}}}
+\put(1201,-4261){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Power}%
+}}}}
+\put(2401,-3811){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}IF}%
+}}}}
+\put(2101,-5761){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_1$}%
+}}}}
+\put(2701,-5761){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_2$}%
+}}}}
+\put(6451,-5836){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_0$}%
+}}}}
+\put(5851,-3361){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\Delta f$}%
+}}}}
+\put(5851,-4561){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}RF}%
+}}}}
+\put(6751,-6811){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$df_1$}%
+}}}}
+\put(4576,-2911){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(a) Double sideband channel}%
+}}}}
+\put(4576,-7561){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}(b) Quadruple sideband channel}%
+}}}}
+\put(4726,-10636){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Frequency}%
+}}}}
+\put(7501,-11161){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$df_2$}%
+}}}}
+\put(6751,-11461){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$df_1$}%
+}}}}
+\put(5551,-7936){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\Delta f$}%
+}}}}
+\put(2551,-10636){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_3$}%
+}}}}
+\put(1951,-10636){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_1$}%
+}}}}
+\put(2851,-10936){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_4$}%
+}}}}
+\put(2251,-10936){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$f_2$}%
+}}}}
+\end{picture}%
