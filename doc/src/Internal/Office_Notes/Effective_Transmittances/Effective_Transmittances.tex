@@ -13,7 +13,7 @@
         Yong Chen\email{yong.chen@noaa.gov}\\JCSDA/CIRA/STAR\\[0.25in]
         Yong Han\email{yong.han@noaa.gov}\\JCSDA/NESDIS/STAR}
 \date{December, 2007}
-\docnumber{3}
+\docnumber{(unassigned)}
 \docseries{CRTM}
 
 
@@ -33,7 +33,7 @@ The transmittances used to generate the CompactOPTRAN model coefficients in the 
 
 \section{Introduction}
 %=====================
-In section \ref{x1-sec:correct_efftau} of \cite{ref:crtm_idoc1} the need to ``correct'' the instrument resolution effective transmittances is explained. Here the problem is briefly restated.
+In section \ref{x1-sec:correct_efftau} of \cite{CRTM_IASI_Transmittance} the need to ``correct'' the instrument resolution effective transmittances is explained. Here the problem is briefly restated.
 
 In using the CompactOPTRAN atmospheric absorption algorithm in the CRTM, we fit, and then predict, the transmittances due to water vapour, ozone, and the ``dry'' gases separately. This is done at instrument resolution, so the polychromaticity of sensor channels becomes important (even for high spectral resolution instruments like AIRS and IASI). Completely non-physical effective transmittances are computed so that the product of the components give the same result as the line-by-line (LBL) computed total transmittance since it is the total transmittance that is used in the radiative transfer. But, the effective transmittances behave in some spectacularly bizarre ways and need to be corrected. This correction involves modifying the effective transmittance profiles using the following rules,
 \begin{equation}
@@ -44,7 +44,7 @@ In using the CompactOPTRAN atmospheric absorption algorithm in the CRTM, we fit,
             \end{cases}
   \label{eqn:fix_efftau}
 \end{equation}
-In addition, section \ref{x1-sec:absorber_combos} of \cite{ref:crtm_idoc1} showed a single example of how different combinations of absorbers can be used to minimise the need to correct the effective transmittances. This document details how to minimise the occurrence of grossly anomalous effective transmittances by selecting different combinations of the LBL-generated component transmittances that produce well-behaved effective transmittances (in a radiometric sense). 
+In addition, section \ref{x1-sec:absorber_combos} of \cite{CRTM_IASI_Transmittance} showed a single example of how different combinations of absorbers can be used to minimise the need to correct the effective transmittances. This document details how to minimise the occurrence of grossly anomalous effective transmittances by selecting different combinations of the LBL-generated component transmittances that produce well-behaved effective transmittances (in a radiometric sense). 
 
 
 \section{Absorber combinations}
@@ -225,10 +225,8 @@ The original brightness temperature residual bias and RMS statistics for IASI ba
 
 % The references section
 %=======================
-\begin{thebibliography}{99}
-  \bibitem{ref:crtm_idoc1} van Delst, P., ``Generating IASI resolution transmittances for regression fitting'', CRTM Series, JCSDA Office Note 1, November, 2007.
-\end{thebibliography}
-
+\bibliographystyle{plain}
+\bibliography{bibliography}	
 
 
 % The appendices section
