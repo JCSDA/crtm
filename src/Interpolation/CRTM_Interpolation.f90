@@ -555,56 +555,70 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       For regularly spaced x-data:
 !         CALL Find_Index( x, dx, x_int, &  ! Input
-!                          i1, i2        )  ! Output
+!                          i1, i2,       &  ! Output
+!                          out_of_bounds )  ! Output
 !
 !       For irregularly spaced x-data:
-!         CALL Find_Index( x, x_int, &  ! Input
-!                          i1, i2    )  ! Output
+!         CALL Find_Index( x, x_int,     &  ! Input
+!                          i1, i2,       &  ! Output
+!                          out_of_bounds )  ! Output
 !
 ! INPUT ARGUMENTS:
-!       x:                       Abscissa data.
-!                                UNITS:      Variable
-!                                TYPE:       REAL(fp)
-!                                DIMENSION:  Rank-1 (N)
-!                                ATTRIBUTES: INTENT(IN)
+!       x:             Abscissa data.
+!                      UNITS:      Variable
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Rank-1 (N)
+!                      ATTRIBUTES: INTENT(IN)
 !
-!       dx:                      Abscissa data spacing for the regularly spaced case.
-!                                UNITS:      Same as x.
-!                                TYPE:       REAL(fp)
-!                                DIMENSION:  Sclaar
-!                                ATTRIBUTES: INTENT(IN)
+!       dx:            Abscissa data spacing for the regularly spaced case.
+!                      UNITS:      Same as x.
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Sclaar
+!                      ATTRIBUTES: INTENT(IN)
 !
-!       x_int:                   Abscissa value at which an interpolate is desired.
-!                                Assumption is that x(1) <= xInt <= x(N)
-!                                UNITS:      Same as x.
-!                                TYPE:       REAL(fp)
-!                                DIMENSION:  Scalar
-!                                ATTRIBUTES: INTENT(IN)
+!       x_int:         Abscissa value at which an interpolate is desired.
+!                      Assumption is that x(1) <= xInt <= x(N)
+!                      UNITS:      Same as x.
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS
-!       i1, i2:                  Begin and end indices in the input x-array to
-!                                use for the 4-pt interpolation at the value x_int.
-!                                Three cases are possible for a x array of length N:
-!                                  Normal    : x(i1) < x(i1+1) <= x_int <= x(i1+2) < x(i1+3)
-!                                  Left edge : x_int < x(2);   then i1=1,   i2=4
-!                                  Right edge: x_int > x(N-1); then i1=N-3, i2=N
-!                                UNITS:      N/A
-!                                TYPE:       INTEGER
-!                                DIMENSION:  Scalar
-!                                ATTRIBUTES: INTENT(IN OUT)
+!       i1, i2:        Begin and end indices in the input x-array to
+!                      use for the 4-pt interpolation at the value x_int.
+!                      Three cases are possible for a x array of length N:
+!                        Normal    : x(i1) < x(i1+1) <= x_int <= x(i1+2) < x(i1+3)
+!                        Left edge : x_int < x(2);   then i1=1,   i2=4
+!                        Right edge: x_int > x(N-1); then i1=N-3, i2=N
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!       out_of_bounds: Logical variable that identifies if the interpolate point,
+!                      x_int, is within the bounds of the search array, x.
+!                      If    x(1) <= x_int <= x(n), out_of_bounds == .FALSE.
+!                      Else                         out_of_bounds == .TRUE.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
-!      Output i1,i2 arguments have INTENT(IN OUT) to prevent default
+!      Output arguments have INTENT(IN OUT) to prevent default
 !      reinitialisation purely for computational speed.
 !
 !--------------------------------------------------------------------------------
   ! Find indices for regular spacing
-  SUBROUTINE Find_Regular_Index(x, dx, x_int, i1, i2)
+  SUBROUTINE Find_Regular_Index(x, dx, x_int, i1, i2, out_of_bounds)
     REAL(fp), INTENT(IN)     :: x(:)
     REAL(fp), INTENT(IN)     :: dx, x_int
     INTEGER , INTENT(IN OUT) :: i1, i2
+    LOGICAL , INTENT(IN OUT) :: out_of_bounds
     INTEGER :: n
     n = SIZE(x)
+    out_of_bounds = .FALSE.
+    IF ( x_int < x(1) .OR. x_int > x(n) ) out_of_bounds = .TRUE.
     i1 = FLOOR((x_int-x(1))/dx)+1-(NPOLY_PTS/2)
     i1 = MIN(MAX(i1,1),n-NPOLY_PTS)
     i2 = i1 + NPOLY_PTS
@@ -613,12 +627,15 @@ CONTAINS
   ! Find indices for random spacing.
   ! Assumption is that x(1) <= xInt <= x(n)
   ! (despite the MIN/MAX test)
-  SUBROUTINE Find_Random_Index(x, x_int, i1, i2)
+  SUBROUTINE Find_Random_Index(x, x_int, i1, i2, out_of_bounds)
     REAL(fp), INTENT(IN)     :: x(:)
     REAL(fp), INTENT(IN)     :: x_int
     INTEGER , INTENT(IN OUT) :: i1, i2
+    LOGICAL , INTENT(IN OUT) :: out_of_bounds
     INTEGER :: k, n
     n = SIZE(x)
+    out_of_bounds = .FALSE.
+    IF ( x_int < x(1) .OR. x_int > x(n) ) out_of_bounds = .TRUE.
     DO k=1,n
       IF (x_int <= x(k) ) EXIT
     END DO

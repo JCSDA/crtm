@@ -367,7 +367,6 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: Debug_Quiet
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: n_File_Channels, n_File_Profiles
@@ -384,11 +383,10 @@ CONTAINS
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
-    ! Default action is to NOT output debug messages...
-    Debug_Quiet = SET
-    ! ...unless the Debug optional argument is set.
+    ! The Quiet optional argument is overridden
+    ! if the Debug optional argument is set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+      IF ( Debug == SET ) Noisy = .TRUE.
     END IF
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -435,7 +433,10 @@ CONTAINS
     ! Loop over all the profiles
     ! --------------------------
     Profile_Loop: DO m = 1, n_Input_Profiles
-      err_stat = Read_Record( fid, Atmosphere(m), Message_Log=Message_Log, Debug=Debug_Quiet )
+      err_stat = Read_Record( fid, Atmosphere(m), &
+                              Quiet      =Quiet, &
+                              Message_Log=Message_Log, &
+                              Debug      =Debug  )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error reading Atmosphere element (",i0,") from ",a)' ) &
                    m, TRIM(Filename)
@@ -514,7 +515,6 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: Debug_Quiet
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: l, n_File_Channels, n_Input_Channels
@@ -531,11 +531,10 @@ CONTAINS
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
-    ! Default action is to NOT output debug messages...
-    Debug_Quiet = SET
-    ! ...unless the Debug optional argument is set.
+    ! The Quiet optional argument is overridden
+    ! if the Debug optional argument is set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+      IF ( Debug == SET ) Noisy = .TRUE.
     END IF
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -587,7 +586,10 @@ CONTAINS
     ! ---------------------------------------
     Profile_Loop: DO m = 1, n_Input_Profiles
       Channel_Loop: DO l = 1, n_Input_Channels
-        err_stat = Read_Record( fid, Atmosphere(l,m), Message_Log=Message_Log, Debug=Debug )
+        err_stat = Read_Record( fid, Atmosphere(l,m), &
+                                Quiet      =Quiet, &
+                                Message_Log=Message_Log, &
+                                Debug      =Debug )
         IF ( err_stat /= SUCCESS ) THEN
           WRITE( msg,'("Error reading Atmosphere element (",i0,",",i0,") from ",a)' ) &
                      l, m, TRIM(Filename)
@@ -756,7 +758,6 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: Debug_Quiet
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: m, n_Output_Profiles
@@ -771,11 +772,10 @@ CONTAINS
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
-    ! Default action is to NOT output debug messages...
-    Debug_Quiet = SET
-    ! ...unless the Debug optional argument is set.
+    ! The Quiet optional argument is overridden
+    ! if the Debug optional argument is set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+      IF ( Debug == SET ) Noisy = .TRUE.
     END IF
     ! Any invalid profiles?
     IF ( ANY(Atmosphere%n_Layers    == 0 .OR. &
@@ -808,7 +808,10 @@ CONTAINS
     ! Write the data
     ! --------------
     Profile_Loop: DO m = 1, n_Output_Profiles
-      err_stat = Write_Record( fid, Atmosphere(m), Message_Log=Message_Log, Debug=Debug_Quiet )
+      err_stat = Write_Record( fid, Atmosphere(m), &
+                               Quiet      =Quiet, &
+                               Message_Log=Message_Log, & 
+                               Debug      =Debug )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error writing Atmosphere element (",i0,") to ",a)' ) m, TRIM(Filename)
         CALL Write_Cleanup(Close_File=.TRUE.); RETURN
@@ -874,7 +877,6 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: Debug_Quiet
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: l, n_Output_Channels
@@ -890,11 +892,10 @@ CONTAINS
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
-    ! Default action is to NOT output debug messages...
-    Debug_Quiet = SET
-    ! ...unless the Debug optional argument is set.
+    ! The Quiet optional argument is overridden
+    ! if the Debug optional argument is set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug == SET ) Debug_Quiet = NOT_SET
+      IF ( Debug == SET ) Noisy = .TRUE.
     END IF
     ! Any invalid profiles?
     IF ( ANY(Atmosphere%n_Layers    == 0 .OR. &
@@ -932,7 +933,10 @@ CONTAINS
     ! --------------
     Profile_Loop: DO m = 1, n_Output_Profiles
       Channel_Loop: DO l = 1, n_Output_Channels
-        err_stat = Write_Record( fid, Atmosphere(l,m), Message_Log=Message_Log, Debug=Debug_Quiet )
+        err_stat = Write_Record( fid, Atmosphere(l,m), &
+                                 Quiet      =Quiet, &
+                                 Message_Log=Message_Log, &
+                                 Debug      =Debug )
         IF ( err_stat /= SUCCESS ) THEN
           WRITE( msg,'("Error writing Atmosphere element (",i0,",",i0,") to ",a)' ) &
                      l, m, TRIM(Filename)
@@ -1001,6 +1005,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Read_Record( FileID                 , &  ! Input
 !                                   Atmosphere             , &  ! Output
+!                                   Quiet      =Quiet      , &  ! Optional input
 !                                   Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -1018,6 +1023,17 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this argument to suppress INFORMATION messages
+!                     being printed to standard output (or the message
+!                     log file if the Message_Log optional argument is
+!                     used.) By default, INFORMATION messages are printed.
+!                     If QUIET = 0, INFORMATION messages are OUTPUT.
+!                        QUIET = 1, INFORMATION messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Message_Log:  Character string specifying a filename in which any
 !                     messages will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
@@ -1040,12 +1056,14 @@ CONTAINS
 
   FUNCTION Read_Record( fid        , &  ! Input
                         atm        , &  ! Output
+                        Quiet      , &  ! Optional input
                         Message_Log, &  ! Error messaging
                         Debug      ) &  ! Debug output control
                       RESULT( err_stat )
     ! Arguments
     INTEGER,                    INTENT(IN)     :: fid
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: atm
+    INTEGER,          OPTIONAL, INTENT(IN)     :: Quiet
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     INTEGER,          OPTIONAL, INTENT(IN)     :: Debug
     ! Function result
@@ -1123,10 +1141,11 @@ CONTAINS
       ! Read the cloud data
       err_stat = CRTM_Read_Cloud_Binary( fname, &
                                          atm%Cloud, &
-                                         Quiet        =Debug, &
+                                         Quiet        =Quiet, &
                                          No_File_Close=SET, &
                                          No_Allocate  =SET, &
-                                         Message_Log  =Message_Log )
+                                         Message_Log  =Message_Log, &
+                                         Debug        =Debug )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading atm Cloud(s)'
         CALL Read_Record_Cleanup(); RETURN
@@ -1142,10 +1161,11 @@ CONTAINS
       ! Read the aerosol data
       err_stat = CRTM_Read_Aerosol_Binary( fname, &
                                            atm%Aerosol, &
-                                           Quiet        =Debug, &
+                                           Quiet        =Quiet, &
                                            No_File_Close=SET, &
                                            No_Allocate  =SET, &
-                                           Message_Log  =Message_Log )
+                                           Message_Log  =Message_Log, &
+                                           Debug        =Debug )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading atm Aerosol(s)'
         CALL Read_Record_Cleanup(); RETURN
@@ -1182,6 +1202,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Write_Record( FileID                 , &  ! Input
 !                                    Atmosphere             , &  ! Input
+!                                    Quiet      =Quiet      , &  ! Optional input
 !                                    Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -1198,6 +1219,17 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
+!       Quiet:        Set this argument to suppress INFORMATION messages
+!                     being printed to standard output (or the message
+!                     log file if the Message_Log optional argument is
+!                     used.) By default, INFORMATION messages are printed.
+!                     If QUIET = 0, INFORMATION messages are OUTPUT.
+!                        QUIET = 1, INFORMATION messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Message_Log:  Character string specifying a filename in which any
 !                     messages will be logged. If not specified, or if an
 !                     error occurs opening the log file, the default action
@@ -1220,12 +1252,14 @@ CONTAINS
 
   FUNCTION Write_Record( fid        , &  ! Input
                          atm        , &  ! Input
+                         Quiet      , &  ! Optional input
                          Message_Log, &  ! Error messaging
                          Debug      ) &  ! Debug output control
                        RESULT( err_stat )
     ! Arguments
     INTEGER,                    INTENT(IN)  :: fid
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: atm
+    INTEGER,          OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     INTEGER,          OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
@@ -1290,9 +1324,10 @@ CONTAINS
       ! Write the cloud data
       err_stat = CRTM_Write_Cloud_Binary( fname, &
                                           atm%Cloud, &
-                                          Quiet        =Debug, &
+                                          Quiet        =Quiet, &
                                           No_File_Close=SET, &
-                                          Message_Log  =Message_Log )
+                                          Message_Log  =Message_Log, &
+                                          Debug        =Debug )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error writing Atmosphere Cloud(s)'
         CALL Write_Record_Cleanup(); RETURN
@@ -1308,9 +1343,10 @@ CONTAINS
       ! Write the aerosol data
       err_stat = CRTM_Write_Aerosol_Binary( fname, &
                                             atm%Aerosol, &
-                                            Quiet        =Debug, &
+                                            Quiet        =Quiet, &
                                             No_File_Close=SET, &
-                                            Message_Log  =Message_Log )
+                                            Message_Log  =Message_Log, &
+                                            Debug        =Debug )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error writing Atmosphere Aerosol(s)'
         CALL Write_Record_Cleanup(); RETURN

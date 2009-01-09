@@ -16,6 +16,23 @@ include make.macros
 # -----------
 all: link build run
 
+# Model targets
+forward: link_test_forward \
+         build_test_forward \
+         run_test_forward
+
+tangent_linear: link_test_tangent_linear \
+                build_test_tangent_linear \
+                run_test_tangent_linear
+
+adjoint: link_test_adjoint \
+         build_test_adjoint \
+         run_test_adjoint
+
+k_matrix: link_test_k_matrix \
+          build_test_k_matrix \
+          run_test_k_matrix
+
 # Link targets
 link: link_test_forward \
       link_test_tangent_linear \
@@ -42,16 +59,16 @@ build: build_test_forward \
        build_test_k_matrix
 
 build_test_forward: link_test_forward
-	cd Forward; make; cd ..
+	cd Forward; make $(TARGET); cd ..
 
 build_test_tangent_linear: link_test_tangent_linear
-	cd Tangent_Linear; make; cd ..
+	cd Tangent_Linear; make $(TARGET); cd ..
 
 build_test_adjoint: link_test_adjoint
-	cd Adjoint; make; cd ..
+	cd Adjoint; make $(TARGET); cd ..
 
 build_test_k_matrix: link_test_k_matrix
-	cd K_Matrix; make; cd ..
+	cd K_Matrix; make $(TARGET); cd ..
 
 
 # run targets

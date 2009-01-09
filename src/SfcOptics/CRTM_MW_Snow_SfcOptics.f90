@@ -36,12 +36,14 @@ MODULE CRTM_MW_Snow_SfcOptics
                                         WMO_AMSRE, &
                                         WMO_SSMI , &
                                         WMO_MSU  , &
-                                        WMO_MHS
+                                        WMO_MHS  , &
+                                        WMO_SSMIS
   USE NESDIS_AMSU_SNOWEM_Module,  ONLY: NESDIS_AMSU_SNOWEM
   USE NESDIS_SSMI_SNOWEM_Module,  ONLY: NESDIS_SSMI_SnowEM
   USE NESDIS_AMSRE_SNOWEM_Module, ONLY: NESDIS_AMSRE_SNOW
   USE NESDIS_MHS_SNOWEM_Module,   ONLY: NESDIS_SNOWEM_MHS
   USE NESDIS_LandEM_Module,       ONLY: NESDIS_LandEM
+  USE NESDIS_SSMIS_SnowEM_Module, ONLY: NESDIS_SSMIS_SnowEM
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -209,6 +211,7 @@ CONTAINS
     INTEGER,  PARAMETER :: AMSRE_V_INDEX(6) = (/1, 3, 5, 7, 9, 11/)  ! AMSRE channels with V pol.
     INTEGER,  PARAMETER :: AMSRE_H_INDEX(6) = (/2, 4, 6, 8, 10, 12/) ! AMSRE channels with H pol.
     INTEGER,  PARAMETER :: AMSUA_INDEX(4)   = (/1, 2, 3, 15/)
+    INTEGER,  PARAMETER :: SSMIS_INDEX(8)   = (/13,12,14,16,15,17,18,8/)  ! With swapped polarisations
     ! Local variables
     INTEGER :: i
     REAL(fp) :: Alpha
@@ -288,6 +291,18 @@ CONTAINS
                                   Surface%Snow_Depth,                      &  ! Input, mm               
                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component      
                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component     
+        END DO                                                                                           
+
+      ! SSMIS emissivity model
+      CASE( WMO_SSMIS )                                                                                 
+        DO i = 1, SfcOptics%n_Angles                                                                    
+          CALL NESDIS_SSMIS_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz                  
+                                   SfcOptics%Angle(i),                      &  ! Input, Degree           
+                                   Surface%Snow_Temperature,                &  ! Input, K                
+                                   Surface%SensorData%Tb(SSMIS_INDEX),      &  ! Input, K                
+                                   Surface%Snow_Depth,                      &  ! Input, mm               
+                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component      
+                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component     
         END DO                                                                                           
 
       ! MSU emissivity model

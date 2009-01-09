@@ -96,7 +96,7 @@ ARCHIVER_FLAGS = crvs
 NAME_AIX = xlf95
 
 # Compiler settings for DEBUG builds
-AIX_COMMON_FLAGS_DEBUG = 
+AIX_COMMON_FLAGS_DEBUG = -pg
 AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
 	          "FL=${NAME_AIX}" \
 	          "FC_FLAGS= -c \
@@ -140,7 +140,7 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "ENDIAN=Big_Endian"
 
 # Here set the DEFAULT AIX compiler flags
-AIX_FLAGS = $(AIX_FLAGS_PROD)
+AIX_FLAGS = $(AIX_FLAGS_DEBUG)
 
 
 
@@ -239,7 +239,7 @@ HPUX_FLAGS_PROD = "FC=${NAME_HPUX}" \
 
 
 # Here set the DEFAULT HPUX compiler flags
-HPUX_FLAGS = $(HPUX_FLAGS_PROD)
+HPUX_FLAGS = $(HPUX_FLAGS_DEBUG)
 
 
 
@@ -255,7 +255,7 @@ HPUX_FLAGS = $(HPUX_FLAGS_PROD)
 NAME_GFORTRAN = gfortran
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_GFORTRAN_DEBUG =
+LINUX_COMMON_FLAGS_GFORTRAN_DEBUG = -pg
 LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
 	                     "FL=${NAME_GFORTRAN}" \
 	                     "FC_FLAGS= -c \
@@ -287,6 +287,7 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
                                        -fno-second-underscore \
                                        -frecord-marker=4 \
                                        -funroll-loops \
+                                       -ggdb \
 	                               -static \
                                        -Wall \
                                        ${INCLUDES} \
@@ -298,7 +299,6 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
                             
 # Here set the DEFAULT gfortran compiler flags
 LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
-#LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_PROD)
 
 
 # -------------------------------------
@@ -309,7 +309,7 @@ LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
 NAME_PGI = pgf95
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee
+LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee -pg
 LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                         "FL=${NAME_PGI}" \
                         "FC_FLAGS= -c \
@@ -321,6 +321,7 @@ LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                                    -Mdclchk \
                                    -Minform,inform \
                                    -Mnosave \
+                                   -Mstandard \
                                    -Mref_externals \
                                    ${INCLUDES} \
                                    ${LINUX_COMMON_FLAGS_PGI_DEBUG}" \
@@ -338,8 +339,10 @@ LINUX_COMMON_FLAGS_PGI_PROD =
 LINUX_FLAGS_PGI_PROD = "FC=${NAME_PGI}" \
                        "FL=${NAME_PGI}" \
                        "FC_FLAGS= -c \
+                                  -g \
                                   -fast \
                                   -byteswapio \
+                                  -Mstandard \
                                   ${INCLUDES} \
                                   ${LINUX_COMMON_FLAGS_PGI_PROD}" \
                        "FL_FLAGS= ${LINUX_COMMON_FLAGS_PGI_PROD} \
@@ -360,7 +363,7 @@ LINUX_FLAGS_PGI = $(LINUX_FLAGS_PGI_DEBUG)
 NAME_INTEL = ifort
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_INTEL_DEBUG =
+LINUX_COMMON_FLAGS_INTEL_DEBUG = -pg
 LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                           "FL=${NAME_INTEL}" \
                           "FC_FLAGS= -c \
@@ -448,8 +451,7 @@ LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
                          "ENDIAN=Little_Endian"
 
 # Here set the DEFAULT Lahey compiler flags
-#LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
-LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_PROD)
+LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
 
 
 # ----------------------
@@ -460,7 +462,7 @@ LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_PROD)
 NAME_G95 = g95
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_G95_DEBUG =
+LINUX_COMMON_FLAGS_G95_DEBUG = -pg
 LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
 	                "FL=${NAME_G95}" \
 	                "FC_FLAGS= -c \
@@ -470,7 +472,6 @@ LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
                                    -fno-second-underscore \
                                    -ftrace=frame \
                                    -malign-double \
-                                   -std=f95 \
 	                           -Wall \
                                    ${INCLUDES} \
                                    ${LINUX_COMMON_FLAGS_G95_DEBUG}" \
@@ -491,7 +492,6 @@ LINUX_FLAGS_G95_PROD = "FC=${NAME_G95}" \
 		                  -fno-second-underscore \
                                   -funroll-loops \
                                   -malign-double \
-                                  -std=f95 \
                                   ${INCLUDES} \
                                   ${LINUX_COMMON_FLAGS_G95_PROD}" \
                        "FL_FLAGS= ${LINUX_COMMON_FLAGS_G95_PROD} \

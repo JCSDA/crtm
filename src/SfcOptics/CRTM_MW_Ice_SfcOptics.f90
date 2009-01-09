@@ -24,24 +24,26 @@ MODULE CRTM_MW_Ice_SfcOptics
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,                 ONLY: fp
-  USE Message_Handler,            ONLY: SUCCESS
-  USE CRTM_Parameters,            ONLY: ZERO, ONE
-  USE CRTM_SpcCoeff,              ONLY: SC
-  USE CRTM_Surface_Define,        ONLY: CRTM_Surface_type
-  USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type
-  USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type
-  USE CRTM_SensorInfo,            ONLY: WMO_AMSUA, &
-                                        WMO_AMSUB, &
-                                        WMO_AMSRE, &
-                                        WMO_SSMI , &
-                                        WMO_MSU  , &
-                                        WMO_MHS
-  USE NESDIS_AMSU_SICEEM_Module,  ONLY: NESDIS_ICEEM_AMSU
-  USE NESDIS_AMSRE_SICEEM_Module, ONLY: NESDIS_AMSRE_SSICEEM
-  USE NESDIS_SSMI_SICEEM_Module,  ONLY: NESDIS_SSMI_SIceEM
-  USE NESDIS_SEAICE_PHYEM_Module, ONLY: NESDIS_SIce_Phy_EM
-  USE NESDIS_MHS_SICEEM_Module,   ONLY: NESDIS_ICEEM_MHS
+  USE Type_Kinds,                   ONLY: fp
+  USE Message_Handler,              ONLY: SUCCESS
+  USE CRTM_Parameters,              ONLY: ZERO, ONE
+  USE CRTM_SpcCoeff,                ONLY: SC
+  USE CRTM_Surface_Define,          ONLY: CRTM_Surface_type
+  USE CRTM_GeometryInfo_Define,     ONLY: CRTM_GeometryInfo_type
+  USE CRTM_SfcOptics_Define,        ONLY: CRTM_SfcOptics_type
+  USE CRTM_SensorInfo,              ONLY: WMO_AMSUA, &
+                                          WMO_AMSUB, &
+                                          WMO_AMSRE, &
+                                          WMO_SSMI , &
+                                          WMO_MSU  , &
+                                          WMO_MHS  , &
+                                          WMO_SSMIS
+  USE NESDIS_AMSU_SICEEM_Module,    ONLY: NESDIS_ICEEM_AMSU
+  USE NESDIS_AMSRE_SICEEM_Module,   ONLY: NESDIS_AMSRE_SSICEEM
+  USE NESDIS_SSMI_SICEEM_Module,    ONLY: NESDIS_SSMI_SIceEM
+  USE NESDIS_SEAICE_PHYEM_Module,   ONLY: NESDIS_SIce_Phy_EM
+  USE NESDIS_MHS_SICEEM_Module,     ONLY: NESDIS_ICEEM_MHS
+  USE NESDIS_SSMIS_SeaIceEM_Module, ONLY: NESDIS_SSMIS_IceEM
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -203,6 +205,7 @@ CONTAINS
     INTEGER,      PARAMETER :: AMSRE_V_INDEX(6) = (/1, 3, 5, 7,  9, 11/) ! AMSRE channels with V pol.
     INTEGER,      PARAMETER :: AMSRE_H_INDEX(6) = (/2, 4, 6, 8, 10, 12/) ! AMSRE channels with H pol.
     INTEGER,      PARAMETER :: AMSUA_INDEX(4)   = (/1, 2, 3, 15/)
+    INTEGER,      PARAMETER :: SSMIS_INDEX(8)   = (/13,12,14,16,15,17,18,8/)  ! With swapped polarisations
     ! Local variables
     INTEGER :: i
     TYPE(CRTM_Surface_type) :: Surface_Dummy  ! For access to default initial values
@@ -277,6 +280,18 @@ CONTAINS
                                    SfcOptics%Angle(i),                      &  ! Input, Degree
                                    Surface%Ice_Temperature,                 &  ! Input, K
                                    Surface%SensorData%Tb,                   &  ! Input, K
+                                   Surface%Ice_Thickness,                   &  ! Input, mm
+                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component
+                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component
+        END DO                                                                                         
+
+      ! SSMIS emissivity model
+      CASE( WMO_SSMIS )                                                                               
+        DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_SSMIS_IceEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+                                   SfcOptics%Angle(i),                      &  ! Input, Degree
+                                   Surface%Ice_Temperature,                 &  ! Input, K
+                                   Surface%SensorData%Tb(SSMIS_INDEX),      &  ! Input, K
                                    Surface%Ice_Thickness,                   &  ! Input, mm
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component

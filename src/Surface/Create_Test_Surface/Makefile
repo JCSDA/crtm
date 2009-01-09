@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Test_NESDIS_Emissivity program
+# Makefile for Create_Test_Surface program
 #
 #==============================================================================
 
@@ -11,18 +11,20 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Test_NESDIS_Emissivity
+EXE_FILE = Create_Test_Surface
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
-            NESDIS_SnowEM_Parameters.f90 \
-            NESDIS_LandEM_Module.f90 \
-            NESDIS_MHS_SICEEM_Module.f90 \
-            NESDIS_MHS_SnowEM_Module.f90
-            
+            Endian_Utility.f90 \
+            Binary_File_Utility.f90 \
+            CRTM_Parameters.f90 \
+            CRTM_Surface_Define.f90 \
+              CRTM_SensorData_Define.f90 \
+            CRTM_Surface_Binary_IO.f90
+
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o

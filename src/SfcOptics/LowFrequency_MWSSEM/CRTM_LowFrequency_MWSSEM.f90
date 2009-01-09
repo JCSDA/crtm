@@ -468,6 +468,7 @@ CONTAINS
     REAL(fp),        INTENT(OUT)    :: Emissivity(:)
     TYPE(iVar_type), INTENT(IN OUT) :: iVar
     ! Local variables
+    LOGICAL  :: f_outbound, w_outbound
     REAL(fp) :: Rv_Large, Rh_Large
 
 
@@ -475,10 +476,10 @@ CONTAINS
     ! indices for interpolation
     ! ---------------------------------
     iVar%f_int = MAX(MIN(FREQUENCY_SDD(N_FREQUENCIES),Frequency),FREQUENCY_SDD(1))
-    CALL Find_Index(FREQUENCY_SDD, D_FREQUENCY, iVar%f_int, iVar%i1, iVar%i2)
+    CALL Find_Index(FREQUENCY_SDD, D_FREQUENCY, iVar%f_int, iVar%i1, iVar%i2, f_outbound)
 
     iVar%w_int = MAX(MIN(WIND_SPEED_SDD(N_WIND_SPEEDS),Wind_Speed),WIND_SPEED_SDD(1))
-    CALL Find_Index(WIND_SPEED_SDD, D_WIND_SPEED, iVar%w_int, iVar%j1, iVar%j2)
+    CALL Find_Index(WIND_SPEED_SDD, D_WIND_SPEED, iVar%w_int, iVar%j1, iVar%j2, w_outbound)
 
     ! Calculate the interpolating polynomials
     ! ---------------------------------------

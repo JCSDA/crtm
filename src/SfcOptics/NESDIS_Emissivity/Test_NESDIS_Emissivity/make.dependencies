@@ -1,9 +1,0 @@
-Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
-File_Utility.o : File_Utility.f90 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-NESDIS_LandEM_Module.o : NESDIS_LandEM_Module.f90 NESDIS_SnowEM_Parameters.o Type_Kinds.o 
-NESDIS_MHS_SICEEM_Module.o : NESDIS_MHS_SICEEM_Module.f90 NESDIS_LandEM_Module.o Type_Kinds.o 
-NESDIS_MHS_SnowEM_Module.o : NESDIS_MHS_SnowEM_Module.f90 NESDIS_LandEM_Module.o Type_Kinds.o 
-NESDIS_SnowEM_Parameters.o : NESDIS_SnowEM_Parameters.f90 Type_Kinds.o 
-Test_NESDIS_Emissivity.o : Test_NESDIS_Emissivity.f90 NESDIS_MHS_SnowEM_Module.o NESDIS_MHS_SICEEM_Module.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-Type_Kinds.o : Type_Kinds.f90 

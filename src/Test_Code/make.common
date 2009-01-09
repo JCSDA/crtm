@@ -94,7 +94,6 @@ build: $(OBJ_FILES)
 
 
 # Run target
-RUN_OPTS = "-Wl,-T"
 run:
 	$(REMOVE) $(EXE_FILE).signal
 	$(EXE_FILE) $(RUN_OPTS) < ../Test.Default_Input

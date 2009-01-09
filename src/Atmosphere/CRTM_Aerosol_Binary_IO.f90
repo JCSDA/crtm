@@ -329,7 +329,8 @@ CONTAINS
                                      No_Allocate  , &  ! Optional input
                                      n_Aerosols   , &  ! Optional output
                                      RCS_Id       , &  ! Revision control
-                                     Message_Log  ) &  ! Error messaging
+                                     Message_Log  , &  ! Error messaging
+                                     Debug        ) &  ! Debug output control
                                    RESULT( err_stat )
     ! Arguments
     CHARACTER(*),            INTENT(IN)     :: Filename
@@ -340,6 +341,7 @@ CONTAINS
     INTEGER,       OPTIONAL, INTENT(OUT)    :: n_Aerosols
     CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,       OPTIONAL, INTENT(IN)     :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -361,6 +363,11 @@ CONTAINS
     ! ...unless the Quiet optional argument is set.
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+    ! The Quiet optional argument is overridden
+    ! if the Debug optional argument is set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug == SET ) Noisy = .TRUE.
     END IF
     ! Default action is to close the file on exit....
     Yes_File_Close = .TRUE.
@@ -572,7 +579,8 @@ CONTAINS
                                       Quiet        , &  ! Optional input
                                       No_File_Close, &  ! Optional input
                                       RCS_Id       , &  ! Revision control
-                                      Message_Log  ) &  ! Error messaging
+                                      Message_Log  , &  ! Error messaging
+                                      Debug        ) &  ! Debug output control
                                     RESULT( err_stat )
     ! Arguments
     CHARACTER(*),            INTENT(IN)  :: Filename
@@ -581,6 +589,7 @@ CONTAINS
     INTEGER,       OPTIONAL, INTENT(IN)  :: No_File_Close
     CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER,       OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -603,6 +612,11 @@ CONTAINS
     ! ...unless the Quiet optional argument is set.
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+    ! The Quiet optional argument is overridden
+    ! if the Debug optional argument is set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug == SET ) Noisy = .TRUE.
     END IF
     ! Default action is to close the file on exit....
     Yes_File_Close = .TRUE.
