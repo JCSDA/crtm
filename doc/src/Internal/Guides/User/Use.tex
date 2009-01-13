@@ -51,8 +51,7 @@ To compute satellite radiances you need to declare structures for the following 
 \refstepcounter{example}
 \label{sec:declare_ex_fpsks}
 Here let's assume you want to process, say, 50 profiles for the NOAA-18 AMSU-A sensor. That's a total of 15 channels. 
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   ! Processing parameters
   INTEGER, PARAMETER :: N_SENSORS  =  1
   INTEGER, PARAMETER :: N_CHANNELS = 15
@@ -63,8 +62,8 @@ Here let's assume you want to process, say, 50 profiles for the NOAA-18 AMSU-A s
   TYPE(CRTM_Surface_type)      :: sfc(N_PROFILES)
   TYPE(CRTM_GeometryInfo_type) :: gInfo(N_PROFILES)  
   TYPE(CRTM_ChannelInfo_type)  :: chInfo(N_SENSORS)  
-  TYPE(CRTM_RTSolution_type)   :: rts(N_CHANNELS,N_PROFILES)\end{verbatim}
-\end{ttfamily}
+  TYPE(CRTM_RTSolution_type)   :: rts(N_CHANNELS,N_PROFILES)\end{alltt}
+
 The point we want to make here is that if you know how many channels you will be processing ahead of time, you can explicitly declare the sizes of the various structure arrays.
 
 \subsubsection{Example 2: Variable number of profiles; single known sensor}
@@ -72,8 +71,7 @@ The point we want to make here is that if you know how many channels you will be
 \refstepcounter{example}
 \label{sec:declare_ex_vpsks}
 Say you want to process the same instrument as the previous example, but you don't know ahead of time how many profiles you will be processing. In this case you will need to declare any profile-dependent arguments with the \f{ALLOCATABLE} attribute,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   ! Processing parameters
   INTEGER, PARAMETER :: N_SENSORS  =  1
   INTEGER, PARAMETER :: N_CHANNELS = 15
@@ -83,16 +81,15 @@ Say you want to process the same instrument as the previous example, but you don
   TYPE(CRTM_Surface_type)     , ALLOCATABLE :: sfc(:)
   TYPE(CRTM_GeometryInfo_type), ALLOCATABLE :: gInfo(:)  
   TYPE(CRTM_ChannelInfo_type)               :: chInfo(N_SENSORS)
-  TYPE(CRTM_RTSolution_type)  , ALLOCATABLE :: rts(:,:)\end{verbatim}
-\end{ttfamily}
+  TYPE(CRTM_RTSolution_type)  , ALLOCATABLE :: rts(:,:)\end{alltt}
+
 
 \subsubsection{Example 3: Fixed number of profiles; single unknown sensor}
 %.........................................................................
 \refstepcounter{example}
 \label{sec:declare_ex_fpsus}
 Let's assume you'll be serially processing multiple sensors for a fixed number of profiles. What this means is that you don't necessarily know the number of channels since they are typically different for different sensors. This means that the RTSolution argument, \f{rts}, has an unknown dimension (the number of channels) and must be declared with the \f{ALLOCATABLE} attribute,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   ! Processing parameters
   INTEGER, PARAMETER :: N_SENSORS  =  1
   INTEGER, PARAMETER :: N_PROFILES = 50
@@ -102,8 +99,8 @@ Let's assume you'll be serially processing multiple sensors for a fixed number o
   TYPE(CRTM_Surface_type)                 :: sfc(N_PROFILES)
   TYPE(CRTM_GeometryInfo_type)            :: gInfo(N_PROFILES)
   TYPE(CRTM_ChannelInfo_type)             :: chInfo(N_SENSORS)
-  TYPE(CRTM_RTSolution_type), ALLOCATABLE :: rts(:,:)\end{verbatim}
-\end{ttfamily}
+  TYPE(CRTM_RTSolution_type), ALLOCATABLE :: rts(:,:)\end{alltt}
+
 Note the use of the parameter \f{STRLEN} in the declaration of the Sensor Id argument, \f{sId}. This character length definition is inherited from the \f{CRTM\_Module} and is used throughout the CRTM as the length of the Sensor Id string. Currently it's value is 20, but that could change in the future; suffice it to say you should use the \f{STRLEN} parameter for Sensor Id character string declarations. 
 
 \subsubsection{Example 4: Variable number of profiles; multiple unknown sensors}
@@ -112,28 +109,31 @@ Note the use of the parameter \f{STRLEN} in the declaration of the Sensor Id arg
 \label{sec:declare_ex_vpmus}
 This is a bit of a ``cover all your bases'' example, where we'll assume you'll be processing a variable number of profiles for an unknown number of sensors \textit{in parallel}\footnote{It doesn't make sense to process multiple sensors simultaneously in the same CRTM function call since each sensor will have more than likely have different viewing geometries even if their fields-of-view (FOVs) correspond geographically.}. This simply means everything is declared with the \f{ALLOCATABLE} attribute,
 \begin{ttfamily}
-  \begin{verbatim}
+  \begin{alltt}
   ! Declarations
   CHARACTER(STRLEN)           , ALLOCATABLE :: sId(:)
   TYPE(CRTM_Atmosphere_type)  , ALLOCATABLE :: atm(:)
   TYPE(CRTM_Surface_type)     , ALLOCATABLE :: sfc(:)
   TYPE(CRTM_GeometryInfo_type), ALLOCATABLE :: gInfo(:)  
   TYPE(CRTM_ChannelInfo_type) , ALLOCATABLE :: chInfo(:)
-  TYPE(CRTM_RTSolution_type)  , ALLOCATABLE :: rts(:,:)\end{verbatim}
+  TYPE(CRTM_RTSolution_type)  , ALLOCATABLE :: rts(:,:)\end{alltt}
 \end{ttfamily}
+
+
 
 
 \subsection{Step 3: Initialise the CRTM}
 %---------------------------------------
 \stepcounter{step}
+\label{sec:init_step}
 The CRTM is initialised by calling the \f{CRTM\_Init()} function in the \f{CRTM\_LifeCycle.f90} module. This loads all the various coefficient data used by CRTM components into memory for later use. We'll assume that all the required datafiles reside in the subdirectory \f{./coeff\_data} and follow on from the examples of Step \ref{sec:declare_step}. The CRTM initialisation is profile independent, so we're only dealing with sensor variability here.
 
 \subsubsection{Example 1: Fixed number of sensors}
 %.................................................
 \refstepcounter{example}
+\label{sec:init_ex_fns}
 Here you're using the ChannelInfo and Sensor Id arrays as declared in examples \ref{sec:declare_ex_fpsks} through \ref{sec:declare_ex_fpsus} of Step \ref{sec:declare_step},
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   CHARACTER(*), PARAMETER :: PROGRAM_NAME='My Program Name'
   INTEGER :: errStatus
   ....
@@ -141,16 +141,16 @@ Here you're using the ChannelInfo and Sensor Id arrays as declared in examples \
   IF ( errStatus /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME,'Error initializing CRTM',errStatus )
     STOP
-  END IF\end{verbatim}
-\end{ttfamily}
+  END IF\end{alltt}
+
 Here we see for the first time how the CRTM functions let you know if they were successful. As you can see the \f{CRTM\_Init()} function result is an error status that is checked against a parameterised error code, \f{SUCCESS}. Other available error code parameters are \f{FAILURE}, \f{WARNING}, and \f{INFORMATION} -- although the latter is never used as a function result. Note that you don't \textit{have} to call the error message handler subroutine \f{Display\_Message}, it just outputs messages in a standard way (see appendix \ref{sec:utility_message_handler}) and is used throughout the CRTM code.
 
 \subsubsection{Example 2: Variable number of sensors}
 %....................................................
 \refstepcounter{example}
+\label{sec:init_ex_vns}
 This example follows on from example \ref{sec:declare_ex_vpmus} of Step \ref{sec:declare_step}. For this sort of usage you will need to allocate the ChannelInfo and Sensor Id arguments to the number of sensors you wish to process as well as fill it. For illustrative purposes only, let's assume your calling program requires you to simply type in the number and list of sensors,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   CHARACTER(256) :: Message
   INTEGER :: n, n_Sensors
   ....
@@ -173,8 +173,8 @@ This example follows on from example \ref{sec:declare_ex_vpmus} of Step \ref{sec
   IF ( errStatus /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME,'Error initializing CRTM',errStatus )
     STOP
-  END IF\end{verbatim}
-\end{ttfamily}
+  END IF\end{alltt}
+
 This is, of course, a rather contrived example since it is guaranteed that typing in sensor identifiers by hand will get quite annoying very quickly.
 
 One thing to note in the above example is the use of the error status variable \f{errStatus} for both standard errors (e.g. the allocation \f{STAT} result) and CRTM errors. In the former case, \f{errStatus} doesn't have any meaning for the \f{Display\_Message} subroutine\footnote{Indeed, the actual values of standard error codes can vary widely not only with the cause of the error, but also with compiler, operating system, and combinations thereof.}, hence the use of the actual fail parameter \f{FAILURE} in the call.
@@ -183,14 +183,15 @@ One thing to note in the above example is the use of the error status variable \
 \subsection{Step 4: Allocate the CRTM structure arrays}
 %------------------------------------------------------
 \stepcounter{step}
+\label{sec:alloc_arr_step}
 If you've declared everything for a fixed number of profiles and sensors/channels (e.g. as shown in example \ref{sec:declare_ex_fpsks} of Step \ref{sec:declare_step}), then you can skip to the next step. Here we will allocate the various CRTM structure \textit{arrays} (not the structures themselves -- the distinction is important) to the required size.
 
 \subsubsection{Example 1: Variable number of profiles; single known sensor}
 %..........................................................................
 \refstepcounter{example}
+\label{sec:alloc_arr_ex_vpsks}
 The following allocations apply to the declarations shown in example \ref{sec:declare_ex_vpsks} of step \ref{sec:declare_step}, where the \f{N\_CHANNELS} parameter is declared. For simplicity, we'll assume the number of profiles to process is entered by a user, but it would more likely be read from a file or passed as an argument, etc.
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   INTEGER :: n_Profiles
   ....
   ! Determine the number of profiles to process
@@ -206,19 +207,19 @@ The following allocations apply to the declarations shown in example \ref{sec:de
     WRITE( Message,'("Error allocating the structure arrays. STAT=",i0)' ) errStatus
     CALL Display_Message( PROGRAM_NAME,TRIM(Message),FAILURE )
     STOP
-  END IF\end{verbatim}
-\end{ttfamily}
+  END IF\end{alltt}
+
 
 \subsubsection{Example 2: Fixed number of profiles; single unknown sensor}
 %.........................................................................
 \refstepcounter{example}
+\label{sec:alloc_arr_ex_fpsus}
 Here the only unknown is the number of channels since the sensor is ``unknown'' at compile time, as shown in example \ref{sec:declare_ex_fpsus} of Step \ref{sec:declare_step}. Thus only the RTSolution argument needs allocating, but using the number of channels determined from the initialisation step,
-\begin{ttfamily}
-  \begin{verbatim}
-  INTEGER :: n_Channels
+\begin{alltt}
+  INTEGER :: n_Profiles
   ....
   ! Allocate the structure arrays
-  ALLOCATE( rts(chInfo(1)%n_Channels, n_Profiles), &
+  ALLOCATE( \textcolor{blue}{rts(chInfo(1)%n_Channels}, n_Profiles), &
             STAT=errStatus )
   IF ( errStatus /= 0 ) THEN 
     WRITE( Message,'("Error allocating the structure arrays. STAT=",i0)' ) errStatus
@@ -226,21 +227,21 @@ Here the only unknown is the number of channels since the sensor is ``unknown'' 
                           TRIM(Message), & 
                           FAILURE )
     STOP
-  END IF\end{verbatim}
-\end{ttfamily}
+  END IF\end{alltt}
+
 The ChannelInfo structure contains the number of sensor channels (see appendix \ref{sec:channelinfo_structure} for its full definition). The only thing to point out here is that even though we are only processing a single sensor, we still have to indicate the \f{chInfo} element for that sensor, \f{chInfo(1)}, when accessing the number of channel component.
 
 
 \subsubsection{Example 3: Variable number of profiles; multiple unknown sensors}
 %...............................................................................
 \refstepcounter{example}
+\label{sec:alloc_arr_ex_vpmus}
 Here everything is unknown. Note how the total number of channels is obtained in the example source code,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   INTEGER :: n_Channels
   ....
   ! Determine the total number of channels for all the sensors
-  n_Channels = SUM(chInfo%n_Channels)
+  \textcolor{blue}{n_Channels = SUM(chInfo%n_Channels)}
   
   ! Determine the number of profiles to process
   READ( *,'(/2x,"Enter the number of profiles to process: ")', ADVANCE="NO" ) n_Profiles
@@ -257,20 +258,42 @@ Here everything is unknown. Note how the total number of channels is obtained in
                           TRIM(Message), & 
                           FAILURE )
     STOP
-  END IF\end{verbatim}
-\end{ttfamily}
+  END IF\end{alltt}
 
 
 \subsection{Step 5: Allocate the CRTM structures}
 %------------------------------------------------
 \stepcounter{step}
-Wait a minute -- didn't the previous section explain the allocation? Well, yes, but that was for allocating the arrays (via the Fortran95 \f{ALLOCATE} statement). This section is about allocating the components of the various structures to hold the input or output data. In this case, functions are used to perform these ``internal'' allocations. The function naming convention is \f{CRTM\_Allocate\_}\textit{name} where, for typical usage, the CRTM structures that need to be allocated are the Atmosphere, RTSolution and, if used, Options structures.
+The previous step involved allocating the structure arrays for the required number of profiles, channels, and/or sensors. This step involves the allocation of the \emph{internal} structure components where necessary to hold the input or output data. In this case, functions are used to perform these ``internal'' allocations. The function naming convention is \f{CRTM\_Allocate\_}\textit{name} where, for typical usage, the CRTM structures that need to be allocated are the Atmosphere, RTSolution and, if used, Options structures. 
 
-\subsubsection{Example 1: Fixed number of profiles; single known sensor}
-%.......................................................................
+\subsubsection{Example 1: Variable number of profiles; single known sensor}
+%..........................................................................
+\refstepcounter{example}
+The following structure allocations follow the array allocations of example \ref{sec:alloc_arr_ex_vpsks} in step \ref{sec:alloc_arr_step}, where the \f{N\_CHANNELS} parameter is declared and the number of profiles is user-specified. The following assumes you'll want to allocate all the structures. First, we'll allocate the atmosphere structure to the required dimensions, like so:
+\begin{alltt}
+  ! Allocate the atmosphere structure
+  errStatus = CRTM_Allocate_Atmosphere( n_Layers   , &  ! Input
+                                        N_ABSORBERS, &  ! Input (always 2)
+                                        n_Clouds   , &  ! Input
+                                        n_Aerosols , &  ! Input
+                                        atm          )  ! Output
+  IF ( errStatus /= SUCCESS ) THEN 
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error allocating the atmosphere structure', & 
+                          FAILURE )
+    STOP
+  END IF\end{alltt}
+Note that the number of absorbers is in all capitals. In the CRTM, this style convention indicates a parameter. A parameter is used for the number of absorbers in the current CRTM release because the number of absorbers is fixed at two: water vapour and ozone. Future CRTM releases will allow more flexibility in selecting the number of absorbers, but currently the number must be set to two.
 
-\subsubsection{Example 1: Fixed number of profiles; single known sensor}
-%.......................................................................
+If 
+
+
+
+
+
+
+
+
 
 
 \subsection{Step 6: Fill the CRTM input structures with data}
@@ -299,8 +322,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
   \centering
   \doublebox{
   \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
+    \begin{alltt}
   FUNCTION CRTM_Init( ChannelInfo      , &
                       Sensor_ID        , &
                       CloudCoeff_File  , &
@@ -313,7 +335,6 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
                       RCS_Id           , &
                       Message_Log      ) &
                     RESULT( Error_Status )
-
     ! Arguments
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)
@@ -328,8 +349,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
-      \end{verbatim}
-    \end{ttfamily}
+    \end{alltt}
     \centering
     \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
       \hline
@@ -360,8 +380,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
   \centering
   \doublebox{
   \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
+    \begin{alltt}
   FUNCTION CRTM_Forward( Atmosphere  , &
                          Surface     , &
                          GeometryInfo, &
@@ -382,8 +401,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
     CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
-      \end{verbatim}
-    \end{ttfamily}
+    \end{alltt}
     \centering
     \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
       \hline
@@ -412,8 +430,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
   \centering
   \doublebox{
   \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
+    \begin{alltt}
   FUNCTION CRTM_K_Matrix( Atmosphere  , &
                           Surface     , &
                           RTSolution_K, &
@@ -440,8 +457,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
     CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
-      \end{verbatim}
-    \end{ttfamily}
+    \end{alltt}
     \centering
     \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
       \hline
@@ -473,8 +489,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
   \centering
   \doublebox{
   \begin{minipage}[b]{16.5cm}
-    \begin{ttfamily}
-      \begin{verbatim}
+    \begin{alltt}
   FUNCTION CRTM_Destroy( ChannelInfo , &  ! Output
                          Process_ID  , &  ! Optional input
                          RCS_Id      , &  ! Revision control
@@ -487,8 +502,7 @@ Wait a minute -- didn't the previous section explain the allocation? Well, yes, 
     CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
-      \end{verbatim}
-    \end{ttfamily}
+    \end{alltt}
     \centering
     \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
       \hline

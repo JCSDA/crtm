@@ -682,16 +682,16 @@
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
-    \texttt{Longitude}               & Earth longitude & degrees East (0$\rightarrow$360) & Scalar \\
-    \texttt{Latitude}                & Earth latitude  & degrees North (-90$\rightarrow$+90) & Scalar \\
+    \texttt{Longitude}               & Earth longitude & deg. E (0$\rightarrow$360) & Scalar \\
+    \texttt{Latitude}                & Earth latitude  & deg. N (-90$\rightarrow$+90) & Scalar \\
     \texttt{Surface\_Altitude}       & Altitude of the Earth's surface at the specified lon/lat location & metres (m) & Scalar \\
     \texttt{iFOV}                    & The scan line FOV index & N/A & Scalar \\
     \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:gInfo_sensor_scan_angle} & degrees & Scalar \\
     \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:gInfo_sensor_zenith_angle} & degrees & Scalar \\
-    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_sensor_azimuth_angle} & degrees from North & Scalar \\
+    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_sensor_azimuth_angle} & deg. from N & Scalar \\
     \texttt{Source\_Zenith\_Angle}   & The source zenith angle. The source is typically the Sun (IR/VIS) or Moon (MW/VIS) [only solar source valid in current release] See fig.\ref{fig:gInfo_source_zenith_angle} & degrees & Scalar \\
-    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_source_azimuth_angle} & degrees from North & Scalar \\
-    \texttt{Flux\_Zenith\_Angle}     & The zenith angle used to approximate downwelling flux transmissivity. If not set, the default value is that of the diffusivity approximation, such that $\sec(F) = 5/3$. Maximum allowed value is determined from $\sec(F) = 9/4$ & degres & Scalar \\
+    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_source_azimuth_angle} & deg. from N & Scalar \\
+    \texttt{Flux\_Zenith\_Angle}     & The zenith angle used to approximate downwelling flux transmissivity. If not set, the default value is that of the diffusivity approximation, such that $\sec(F) = 5/3$. Maximum allowed value is determined from $\sec(F) = 9/4$ & degrees & Scalar \\
     \hline
   \end{tabular}
   \caption{Description of CRTM \GeometryInfo{} structure components defined by the user.}
