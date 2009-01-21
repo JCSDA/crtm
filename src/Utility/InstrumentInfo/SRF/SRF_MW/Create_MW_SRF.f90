@@ -10,34 +10,45 @@ PROGRAM Create_MW_SRF
   USE MW_SensorData_Define
   USE SRF_Define
   USE SRF_netCDF_IO
+  USE SensorInfo_Define
   
+  ! Parameters
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id:$'
-  CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_MW_SRF'
-  
+  CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_MW_SRF'  
   CHARACTER( * ), PARAMETER :: SENSORINFO_FILENAME = 'SensorInfo'
   INTEGER, PARAMETER :: VERSION = 1
   
   ! Variables
+  
+  ! Structures
   TYPE( MW_SensorData_type ) :: MW_SensorData
   TYPE( SensorInfo_List_type ) :: SensorInfo_List
-  TYPE( SRF ) :: SRF_type
+  TYPE( SRF_type ) :: SRF
   TYPE( SensorInfo_type ) :: SensorInfo
   
   ! Sensor channel array
   INTEGER , DIMENSION(:), ALLOCATABLE :: Sensor_Channel
   
   ! Sensor Id
-  CHARACTER(256) :: Sensor_Id
-  CHARACTER(256) :: NC_Filename
-  CHARACTER(256) :: Title, Comment
+  CHARACTER(500) :: Sensor_Id
   
+  ! Variables for nc file creation
+  CHARACTER(500) :: NC_Filename
+  CHARACTER(500) :: Title, Comment
   INTEGER :: WMO_Satellite_Id, WMO_Sensor_Id  
   
   ! number of sensors
   INTEGER :: n_Sensors
-  INTEGER :: Sensor_Type
+  
+  ! number of data points
+  ! This is actually set
+  ! in MW_SensorData
   INTEGER :: n_Points
+  
+  ! Type of Sensor 
+  INTEGER :: Sensor_Type
+  
   ! number of nchannels
   INTEGER :: n_Channels
   
@@ -46,6 +57,12 @@ PROGRAM Create_MW_SRF
   
   ! Error/IO status
   INTEGER :: Error_Status, IO_Status
+  
+  ! number of side band points
+  INTEGER, DIMENSION(:), ALLOCATABLE :: n_SBPoints
+  
+  ! frequency spacing
+  REAL(fp) :: df
   
   ! Read SensorInfo file
   Error_Status = Read_SensorInfo( SENSORINFO_FILENAME,  & ! Input
@@ -74,30 +91,32 @@ PROGRAM Create_MW_SRF
     END IF 
   
     ! Cycle if its not a microwave sensor
-    IF (NOT SensorInfo%Microwave_Flag) THEN CYCLE
+    IF ( .NOT. (SensorInfo%Microwave_Flag==1) ) CYCLE Sensor_Loop
     
-    ! Cycle if it is ssmis_f16
-    IF ( SensorInfo%Sensor_Id = 'ssmis_f16') THEN CYCLE
+    ! Cycle if it is an ssmis sensor
+    IF ( SensorInfo%Sensor_Name == 'SSMIS') CYCLE Sensor_Loop
     
-     ! Name of file to write to for sensor
+    ! Name of file to write to for sensor
     Sensor_Id=ADJUSTL(SensorInfo%Sensor_Id)
     Sensor_Id=TRIM(SensorInfo%Sensor_Id)
-    NC_Filename= Sensor_Id // '.srf.nc'
+    NC_Filename= TRIM(Sensor_Id) // '.srf.nc'
     
     ! Allocate for Sensor_Channel allocatable array
-    Error_Status = Allocate( Sensor_Channel(SIZE(SensorInfo%Sensor_Channel)))
+    ALLOCATE( Sensor_Channel(SIZE(SensorInfo%Sensor_Channel)),  &
+                             STAT = Error_Status                )
     IF ( Error_Status /= SUCCESS ) THEN
-       CALL Display_Message( PROGRAM_NAME,                  &
-                             'Error allocating for array',  &
-                             Error_Status                   )
+       CALL Display_Message( PROGRAM_NAME,                                 &
+                             'Error allocating for Sensor_Channel array',  &
+                             Error_Status                                  )
     END IF
-        
+     
+    ! Set variables used to create the nc files    
     Sensor_Channel = SensorInfo%Sensor_Channel
     WMO_Satellite_Id = SensorInfo%WMO_Satellite_ID
     WMO_Sensor_Id = SensorInfo%WMO_Sensor_ID
-    Title = 'Microwave channel ' // Sensor_Id // ' Spectral Response Functions'
-    Comment = 'The SRF data for this sensor is assumed to be a box car shape' // &
-              'This is a temporary state until real data becomes available.'
+    Title = TRIM('Microwave channel ' // Sensor_Id // ' Spectral Response Functions')
+    Comment = 'The SRF data for this sensor is assumed to be a box car shape.' // &
+              ' This is a temporary state until real data becomes available.'
     Sensor_Type = SensorInfo%Microwave_Flag
     n_Channels = SensorInfo%n_Channels
 
@@ -111,8 +130,7 @@ PROGRAM Create_MW_SRF
                                       WMO_Sensor_Id = WMO_Sensor_Id       ,  & ! Optional Input
                                       Title = Title                       ,  & ! Optional Input
                                       History = PROGRAM_RCS_ID            ,  & ! Optional Input
-                                      Comment = Comment                   ,  & ! Optional Input
-                                      RCS_Id  = PROGRAM_RCS_ID               ) ! Optional Input
+                                      Comment = Comment                      ) ! Optional Input
      
     ! Allocate for MW_SensorData structure
     Error_Status = Allocate_MW_SensorData( n_Channels     ,  &  ! Input
@@ -135,19 +153,29 @@ PROGRAM Create_MW_SRF
     ! Loop over channels                                     
     Channel_Loop: DO l = 1, n_Channels
       
-      n_Points = SIZE(MW_SensorData%Frequency(*,l))
-      IF(MW_SensorData%n_Sidebands(l)=0) THEN
+      ! Allocate Sideband points array
+      ALLOCATE( n_SBPoints(MW_SensorData%n_Sidebands(l)),  &
+                    STAT = Error_Status                    )
+      IF ( Error_Status /= SUCCESS ) THEN
+         CALL Display_Message( PROGRAM_NAME,                             &
+                               'Error allocating for n_SBPoints array',  &
+                               Error_Status                              )
+      END IF
+      
+      ! Set the number of points for the channel
+      n_Points = SIZE(MW_SensorData%Frequency(:,l))
+      
+      ! Set the number of bands for the channel
+      IF(MW_SensorData%n_Sidebands(l)==0) THEN
         n_Bands=1
-      ENDIF
       ELSE  
         n_Bands = MW_SensorData%n_Sidebands(l)*2
-      END ELSE
+      END IF
       
       ! Allocate for SRF structure
       Error_Status = Allocate_SRF( n_Points              ,  &  ! Input
                                    SRF                   ,  &  ! Output
-                                   n_Bands               ,  &  ! Optional Output
-                                   RCS_Id=PROGRAM_RCS_Id    )   
+                                   n_Bands                  )  ! Optional Output                                   
       IF ( Error_Status /= SUCCESS ) THEN
          CALL Display_Message( PROGRAM_NAME,                &
                                'Error Allocating for SRF',  &
@@ -155,37 +183,37 @@ PROGRAM Create_MW_SRF
       END IF               
       
       ! Fill the SRF structure                                  
-      SRF%Release = RELEASE  
-      SRF%Version = VERSION
-      SRF%Sensor_Id = Sensor_Id
+      SRF%Release          = RELEASE  
+      SRF%Version          = VERSION
+      SRF%Sensor_Id        = TRIM(Sensor_Id)
       SRF%WMO_Satellite_ID = WMO_Satellite_ID
-      SRF%WMO_Sensor_ID = WMO_Sensor_ID
-      SRF%Sensor_Type = Sensor_Type
-      SRF%Channel = SensorInfo%Sensor_Channel(l)
-      SRF%Frequency = MW_SensorData%Frequency(*,l)
-      SRF%Response = MW_SensorData%Response(*,l)
+      SRF%WMO_Sensor_ID    = WMO_Sensor_ID
+      SRF%Sensor_Type      = Sensor_Type
+      SRF%Channel          = Sensor_Channel(l)
+      SRF%Frequency        = MW_SensorData%Frequency(:,l)
+      SRF%Response         = MW_SensorData%Response(:,l)
+            
+      ! Obtain number of points for sidebands
+      n_SBPoints(:)=0
+      DO ln = 1, MW_SensorData%n_Sidebands( l )
+        df = MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l)
+        n_SBPoints(ln) = NINT(df/MW_SensorData%Delta_Frequency(l)) + 1
+      END DO
       
-      ! Fill the integrated and summation fields
-      Error_Status = Integrate_SRF( SRF ) ! In/Output
-      IF ( Error_Status /= SUCCESS ) THEN
-         CALL Display_Message( PROGRAM_NAME,                                      &
-                               'Error Calculating Integrated and Summation SRF',  &
-                               Error_Status                                       )
-      END IF  
-      
-      ! assign the number of points and the bounds for the bands
-      IF (n_Bands=1) THEN
+      ! assign the number of points to corresponding band and 
+      ! assign the bounds for the bands
+      IF (n_Bands==1) THEN
         SRF%f1_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
         SRF%f2_Band(1)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
         SRF%npts_Band(1)=256
-      ELSE IF(n_Bands=2) THEN
+      ELSE IF(n_Bands==2) THEN
         SRF%f1_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
         SRF%f2_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(1,1,l)
         SRF%f1_Band(2)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(1,1,l)
         SRF%f2_Band(2)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
-        SRF%npts_Band(1)=128
-        SRF%npts_Band(2)=128
-      ELSE IF(n_Bands=4) THEN
+        SRF%npts_Band(1)=n_SBPoints(1)
+        SRF%npts_Band(2)=n_SBPoints(1)
+      ELSE IF(n_Bands==4) THEN
         SRF%f1_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,2,l)
         SRF%f2_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(1,2,l)
         SRF%f1_Band(2)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
@@ -194,11 +222,19 @@ PROGRAM Create_MW_SRF
         SRF%f2_Band(3)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
         SRF%f1_Band(4)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(1,2,l)
         SRF%f2_Band(4)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,2,l)
-        SRF%npts_Band(1)=64
-        SRF%npts_Band(2)=64
-        SRF%npts_Band(3)=64
-        SRF%npts_Band(4)=64
-      END ELSE
+        SRF%npts_Band(1)=n_SBPoints(2)
+        SRF%npts_Band(2)=n_SBPoints(1)
+        SRF%npts_Band(3)=n_SBPoints(1)
+        SRF%npts_Band(4)=n_SBPoints(2)
+      END IF
+      
+      ! Fill the integrated and summation fields
+      Error_Status = Integrate_SRF( SRF ) ! In/Output
+      IF ( Error_Status /= SUCCESS ) THEN
+         CALL Display_Message( PROGRAM_NAME,                                      &
+                               'Error Calculating Integrated and Summation SRF',  &
+                               Error_Status                                       )
+      END IF
       
       ! Write the SRF data
       Error_Status = Write_SRF_netCDF(  NC_Filename,   &  ! In/Output
@@ -215,9 +251,27 @@ PROGRAM Create_MW_SRF
          CALL Display_Message( PROGRAM_NAME,                                      &
                                'Error destroying SRF structure',                  &
                                Error_Status                                       )
-      END IF                                  
+      END IF 
+      
+      ! Allocate Sideband points array
+      DEALLOCATE( n_SBPoints,          &
+                  STAT = Error_Status  )
+      IF ( Error_Status /= SUCCESS ) THEN
+         CALL Display_Message( PROGRAM_NAME,                  &
+                               'Error allocating for array',  &
+                               Error_Status                   )
+      END IF                                 
             
     END DO Channel_Loop
+    
+    ! Allocate for Sensor_Channel allocatable array
+    DEALLOCATE( Sensor_Channel,      &
+                STAT = Error_Status  )
+    IF ( Error_Status /= SUCCESS ) THEN
+       CALL Display_Message( PROGRAM_NAME,                    &
+                             'Error deallocating for array',  &
+                             Error_Status                     )
+    END IF
     
     ! Destroy MW_SensorData structure
     Error_Status = Destroy_MW_SensorData( MW_SensorData ) 
@@ -229,7 +283,7 @@ PROGRAM Create_MW_SRF
     
   END DO Sensor_Loop
         
-            
+END PROGRAM Create_MW_SRF            
       
       
       
