@@ -2647,11 +2647,16 @@ CONTAINS
       ! Compute the number of points in the sideband(s)
       ! -----------------------------------------------
       ! First determine the total frequency range in the sidebands
-      df = ZERO
-      DO ln = 1, MW_SensorData%n_Sidebands( l )
-        df = df + ( MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l) )
-      END DO
-
+      
+      df=ZERO
+      ! Test for instances of no stopband and single passband
+      IF(MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
+        df = MW_SensorData%IF_Band(2,1,l) + MW_SensorData%IF_Band(2,1,l)
+      ELSE
+        DO ln = 1, MW_SensorData%n_Sidebands( l )
+          df = df + ( MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l) )
+        END DO
+      ENDIF
       ! Now determine the frequency interval for this frequency
       ! range to provide the required number of points. Note that
       ! for > 1 sideband channels, the divisor is n-2, not n-1.
@@ -2665,7 +2670,12 @@ CONTAINS
       ! --
       !       1   2   3          4   5   6   7   8     INTERVALS    (n-2)
       !
-      IF ( MW_SensorData%n_Sidebands( l ) == 1 ) THEN
+      
+      ! Test for instances of no stopband and single passband
+      ! In this case the number of intervals used is N_FREQUENCIES-1
+      IF(MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
+        MW_SensorData%Delta_Frequency(l) = df / REAL(N_FREQUENCIES-1,fp)        
+      ELSE IF( MW_SensorData%n_Sidebands( l ) == 1) THEN
         MW_SensorData%Delta_Frequency(l) = df / REAL(N_HALFPOINTS-1,fp)
       ELSE
         MW_SensorData%Delta_Frequency(l) = df / REAL(N_HALFPOINTS-2,fp)
@@ -2678,26 +2688,32 @@ CONTAINS
       ! the sidebands are. E.g.: If they are the same width, then
       ! we'll get N_HALFPOINTS/2 points per sideband
       n_Points(:) = 0
-      DO ln = 1, MW_SensorData%n_Sidebands( l )
-        df = MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l)
-        n_Points(ln) = NINT(df/MW_SensorData%Delta_Frequency(l)) + 1
-      END DO
-
-      ! Check the result
-      IF ( SUM(n_Points) /= n_HalfPoints ) THEN
-        Error_Status = FAILURE
-        WRITE( Message,'("Error computing n_HalfPoints for channel ",i0,&
-                        &" of ",a,". Computed value is ",i0)' ) &
-                        MW_SensorData%Sensor_Channel( l ), &
-                        TRIM(MW_SensorData%Sensor_ID), &
-                        SUM(n_Points)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        STOP
+    
+      ! Test for instances of no stopband and single passband
+      ! where only one band is considered. Therefore, the
+      ! number of points in these instances is N_FREQUENCIES
+      IF( MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
+        n_Points(1)=N_FREQUENCIES
+      ELSE
+        DO ln = 1, MW_SensorData%n_Sidebands( l )
+          df = MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l)
+          n_Points(ln) = NINT(df/MW_SensorData%Delta_Frequency(l)) + 1
+        END DO
+        ! check the result
+        IF ( SUM(n_Points) /= n_HalfPoints ) THEN
+          Error_Status = FAILURE
+          WRITE( Message,'("Error computing n_HalfPoints for channel ",i0,&
+                          &" of ",a,". Computed value is ",i0)' ) &
+                          MW_SensorData%Sensor_Channel( l ), &
+                          TRIM(MW_SensorData%Sensor_ID), &
+                          SUM(n_Points)
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(Message), &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          STOP
+        END IF
       END IF
-
 
       ! Fill the frequency array. It's a bit convoluted as I
       ! want the frequencies to be in ascending order.
@@ -2721,38 +2737,46 @@ CONTAINS
       !     n_Lower                                        n_Upper
       !
       ! -----------------------------------------------------------
-      ! Initialise the sideband point offset. This is the
-      ! the number of points offset from the central frequency
-      ! for a sideband.
-      n_OffsetPoints = 0
-
-      ! Loop over the number of sidebands
-      DO ln = 1, MW_SensorData%n_Sidebands(l)
-
-        ! Assign the start intermediate frequency for the sideband
-        f1 = MW_SensorData%IF_Band( 1, ln, l )
-
-        ! Loop over the number of points in the sideband
-        DO i = 1, n_Points( ln )
-
-          ! Determine the positions of the frequencies in the array
-          i_Upper = N_HALFPOINTS + n_OffsetPoints + i
-          i_Lower = N_HALFPOINTS - n_OffsetPoints - i + 1
-
-          ! Compute the frequency offset
+      
+      ! Fill the frequencies for instances of no stopband and single passband      
+      IF( MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
+        f1 = MW_SensorData%Central_Frequency(l) - MW_SensorData%IF_Band(2,1,l)
+        DO i = 1, n_Points(1)
           f = f1 + ( REAL(i-1,fp) * MW_SensorData%Delta_Frequency(l) )
-
-          ! Apply the offset to the central frequency
-          MW_SensorData%Frequency( i_Upper, l ) = MW_SensorData%Central_Frequency(l) + f
-          MW_SensorData%Frequency( i_Lower, l ) = MW_SensorData%Central_Frequency(l) - f
-
+          MW_SensorData%Frequency(i,l) = MW_SensorData%Central_Frequency(l) + f  
         END DO
+      ELSE      
+        ! Initialise the sideband point offset. This is the
+        ! the number of points offset from the central frequency
+        ! for a sideband. 
+        n_OffsetPoints = 0
+        ! Loop over the number of sidebands
+        DO ln = 1, MW_SensorData%n_Sidebands(l)
 
-        ! Update the number of offset points
-        n_OffsetPoints = n_OffsetPoints + n_Points( ln )
+          ! Assign the start intermediate frequency for the sideband
+          f1 = MW_SensorData%IF_Band(1,ln,l)
 
-      END DO
+          ! Loop over the number of points in the sideband
+          DO i = 1, n_Points( ln )
 
+            ! Determine the positions of the frequencies in the array
+            i_Upper = N_HALFPOINTS + n_OffsetPoints + i
+            i_Lower = N_HALFPOINTS - n_OffsetPoints - i + 1
+
+            ! Compute the frequency offset
+            f = f1 + ( REAL(i-1,fp) * MW_SensorData%Delta_Frequency(l) )
+
+            ! Apply the offset to the central frequency
+            MW_SensorData%Frequency(i_Upper,l) = MW_SensorData%Central_Frequency(l) + f
+            MW_SensorData%Frequency(i_Lower,l) = MW_SensorData%Central_Frequency(l) - f
+
+          END DO
+
+          ! Update the number of offset points
+          n_OffsetPoints = n_OffsetPoints + n_Points( ln )
+        END DO
+        
+      END IF
 
       ! The response is assumed unity
       ! -----------------------------
@@ -2761,9 +2785,6 @@ CONTAINS
     END DO Channel_Response_Loop
 
   END FUNCTION Load_MW_SensorData
-
-
-
 
 !--------------------------------------------------------------------------------
 !
