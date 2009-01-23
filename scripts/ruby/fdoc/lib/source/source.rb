@@ -19,22 +19,26 @@ module FDoc
     
     # Instance method to extract code between a delimiter
     def extract(delimiter)
+#      # XML-style delimiters:  <tag> and </tag>    
+#      regexp = %r{
+#                  ^\s*!\s*        # Whitespace before and after Fortran comment character
+#                  <#{delimiter}>  # Opening delimiter
+#                    ([\D\d]*?)    # Text between delimiters
+#                  ^\s*!\s*        # Whitespace before and after Fortran comment character
+#                  </#{delimiter}> # Closing delimiter
+#                 }ix
 
-#regexp = Regexp.new("#{delimiter}\\+(\\s*|\\w*)*#{delimiter}-")
-regexp = Regexp.new("\\s*!\\s*#{delimiter}[^+]*\\+((?:\\s*\\w*\\s*)*?)\\s*!\\s*#{delimiter}-")
-puts regexp.inspect
-x = @lines.scan(regexp)
-puts x.inspect
-x
-#if @lines =~ regexp
-#  puts $1
-#end
-#
-#      extracted_string = []
-#      lines = @lines
-#      i1 = lines.index("#{delimiter}+")
-#      i2 = lines.index("#{delimiter}-")
-#      extracted_string << lines[i1,i2-i1].chomp.to_a[1..-2].join
+      # CRTM-style delimiter:  :tag+  and  :tag-    
+      regexp = %r{
+                  ^\s*!\s*          # Whitespace before and after Fortran comment character
+                  :#{delimiter}\+   # Opening delimiter
+                    \n([\D\d]*?)\n  # Text between delimiters, excluding first and last newlines
+                  ^\s*!\s*          # Whitespace before and after Fortran comment character
+                  :#{delimiter}-    # Closing delimiter
+                 }ix
+                 
+      # Extract out all the matches
+      matches = @lines.scan(regexp).flatten
     end
     
   end
