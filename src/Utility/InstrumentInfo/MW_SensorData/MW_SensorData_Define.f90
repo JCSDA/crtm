@@ -36,6 +36,7 @@ MODULE MW_SensorData_Define
                              RC_POLARIZATION, &
                              LC_POLARIZATION, &
                              POLARIZATION_TYPE_NAME
+  USE CRTM_Parameters, ONLY: TWO
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -74,8 +75,7 @@ MODULE MW_SensorData_Define
   ! Total number of points per channel for computing the
   ! channel frequencies and responses. Must be evenly
   ! divisible by 2 and 4.
-  INTEGER, PARAMETER :: N_FREQUENCIES = 256
-  INTEGER, PARAMETER :: N_HALFPOINTS  = N_FREQUENCIES/2
+  INTEGER, PARAMETER :: DEFAULT_N_FREQUENCIES = 256
 
 
   ! ---------------------------------
@@ -1911,12 +1911,14 @@ CONTAINS
 
   FUNCTION Allocate_MW_SensorData( n_Channels   , &  ! Input
                                    MW_SensorData, &  ! Output
+                                   n_Frequencies, &  ! Optional input
                                    RCS_Id       , &  ! Optional output
                                    Message_Log  ) &  ! Error messaging
                                  RESULT( Error_Status )
     ! Arguments
     INTEGER                 , INTENT(IN)     :: n_Channels
     TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData
+    INTEGER     ,   OPTIONAL, INTENT(IN)     :: n_Frequencies
     CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
@@ -1926,6 +1928,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message
     INTEGER :: Allocate_Status
+    INTEGER :: local_n_Frequencies
 
     ! Set up
     ! ------
@@ -1940,6 +1943,11 @@ CONTAINS
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
+    END IF
+    IF ( PRESENT(n_Frequencies) ) THEN
+      local_n_Frequencies = n_Frequencies
+    ELSE
+      local_n_Frequencies = DEFAULT_N_FREQUENCIES
     END IF
 
     ! Check if ANY pointers are already associated. If so,
@@ -1966,8 +1974,8 @@ CONTAINS
               MW_SensorData%n_Sidebands( n_Channels ), &
               MW_SensorData%IF_Band( 2, MAX_N_SIDEBANDS, n_Channels ), &
               MW_SensorData%Delta_Frequency( n_Channels ), &
-              MW_SensorData%Frequency( N_FREQUENCIES, n_Channels ), &
-              MW_SensorData%Response( N_FREQUENCIES, n_Channels ), &
+              MW_SensorData%Frequency( local_n_Frequencies, n_Channels ), &
+              MW_SensorData%Response( local_n_Frequencies, n_Channels ), &
               STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -1983,7 +1991,7 @@ CONTAINS
 
     ! Assign the dimensions
     ! ---------------------
-    MW_SensorData%n_Frequencies = N_FREQUENCIES
+    MW_SensorData%n_Frequencies = local_n_Frequencies
     MW_SensorData%n_Channels    = n_Channels
 
 
@@ -2239,6 +2247,7 @@ CONTAINS
 !----------------------------------------------------------------------------------
 
   FUNCTION Load_MW_SensorData( MW_SensorData   , &  ! Output
+                               n_Frequencies   , &  ! Optional input
                                Sensor_ID       , &  ! Optional Input
                                WMO_Satellite_ID, &  ! Optional Input
                                WMO_Sensor_ID   , &  ! Optional Input
@@ -2247,6 +2256,7 @@ CONTAINS
                              RESULT( Error_Status )
     ! Arguments
     TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData
+    INTEGER     ,   OPTIONAL, INTENT(IN)     :: n_Frequencies
     CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Sensor_ID
     INTEGER     ,   OPTIONAL, INTENT(IN)     :: WMO_Satellite_ID
     INTEGER     ,   OPTIONAL, INTENT(IN)     :: WMO_Sensor_ID
@@ -2261,9 +2271,10 @@ CONTAINS
     CHARACTER(256) :: Message
     CHARACTER(SL) :: Local_Sensor_Id
     LOGICAL :: No_Sensor_Id, No_WMO_Ids
+    INTEGER :: local_n_Frequencies, n_Halfpoints
     INTEGER :: i, n
-    INTEGER, DIMENSION( 1 ) :: idx
-    INTEGER, DIMENSION( 2 ) :: n_Points
+    INTEGER :: idx(1)
+    INTEGER :: n_Points(2)
     INTEGER :: n_OffsetPoints
     INTEGER :: l, ln
     INTEGER :: i_Upper, i_Lower
@@ -2275,6 +2286,26 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
+    ! Check dimensions
+    IF ( PRESENT(n_Frequencies) ) THEN
+      local_n_Frequencies = n_Frequencies
+    ELSE
+      local_n_Frequencies = DEFAULT_N_FREQUENCIES
+    END IF
+    
+    ! ensure local_n_frequencies is /2 and /4
+    IF(MOD(local_n_Frequencies,4) /= ZERO) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'The n_frequencies field supplied is not divisble by /2, /4.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+    
+    n_Halfpoints = local_n_Frequencies/2
+
+    
     ! Were *any* ids passed?
     No_Sensor_Id = .NOT. PRESENT(Sensor_ID)
     No_WMO_Ids   = .NOT. ( PRESENT(WMO_Satellite_ID) .AND. PRESENT(WMO_Sensor_ID) )
@@ -2340,7 +2371,8 @@ CONTAINS
     ! ------------------------------------
     Error_Status = Allocate_MW_SensorData( VALID_N_CHANNELS( idx(1) ), &
                                            MW_SensorData, &
-                                           Message_Log=Message_Log )
+                                           n_Frequencies=local_n_Frequencies, &
+                                           Message_Log  =Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error occurred allocating MW_SensorData structure..', &
@@ -2651,7 +2683,7 @@ CONTAINS
       df=ZERO
       ! Test for instances of no stopband and single passband
       IF(MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
-        df = MW_SensorData%IF_Band(2,1,l) + MW_SensorData%IF_Band(2,1,l)
+        df = TWO*MW_SensorData%IF_Band(2,1,l)
       ELSE
         DO ln = 1, MW_SensorData%n_Sidebands( l )
           df = df + ( MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l) )
@@ -2666,35 +2698,35 @@ CONTAINS
       !       Sideband 1             Sideband 2
       !     |-----------|      |-------------------|
       !     x   x   x   x      x   x   x   x   x   x
-      !     1   2   3   4      5   6   7   8   9  10   N_HALFPOINTS (n)
+      !     1   2   3   4      5   6   7   8   9  10   n_Halfpoints (n)
       ! --
       !       1   2   3          4   5   6   7   8     INTERVALS    (n-2)
       !
       
       ! Test for instances of no stopband and single passband
-      ! In this case the number of intervals used is N_FREQUENCIES-1
       IF(MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
-        MW_SensorData%Delta_Frequency(l) = df / REAL(N_FREQUENCIES-1,fp)        
+        ! In this case the number of intervals used is local_n_Frequencies-1
+        MW_SensorData%Delta_Frequency(l) = df / REAL(local_n_Frequencies-1,fp)        
       ELSE IF( MW_SensorData%n_Sidebands( l ) == 1) THEN
-        MW_SensorData%Delta_Frequency(l) = df / REAL(N_HALFPOINTS-1,fp)
+        MW_SensorData%Delta_Frequency(l) = df / REAL(n_Halfpoints-1,fp)
       ELSE
-        MW_SensorData%Delta_Frequency(l) = df / REAL(N_HALFPOINTS-2,fp)
+        MW_SensorData%Delta_Frequency(l) = df / REAL(n_Halfpoints-2,fp)
       END IF
-
+      
       ! Now determine the number of points for each sideband.
-      ! Note that for single sideband channels, this will
-      ! *always* be N_HALFPOINTS. For double sideband channels
-      ! the points will be split up according to how broad the
-      ! the sidebands are. E.g.: If they are the same width, then
-      ! we'll get N_HALFPOINTS/2 points per sideband
       n_Points(:) = 0
     
       ! Test for instances of no stopband and single passband
       ! where only one band is considered. Therefore, the
-      ! number of points in these instances is N_FREQUENCIES
+      ! number of points in these instances is local_n_Frequencies
       IF( MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
-        n_Points(1)=N_FREQUENCIES
+        ! Case of single passband *AND* no stopband
+        n_Points(1)=local_n_Frequencies
       ELSE
+        ! All other channels:
+        ! - single passband with stopband
+        ! - double passband
+        ! - quadruple passband
         DO ln = 1, MW_SensorData%n_Sidebands( l )
           df = MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l)
           n_Points(ln) = NINT(df/MW_SensorData%Delta_Frequency(l)) + 1
@@ -2730,7 +2762,7 @@ CONTAINS
       ! For the second sideband loop:
       !
       !                              F0      Sideband1    Sideband2
-      !                               ^
+      !                               ^                
       !    |------|   |----------|    |    |----------|   |------|
       !                               |
       !    |<.....|                                       |.....>|
@@ -2738,12 +2770,11 @@ CONTAINS
       !
       ! -----------------------------------------------------------
       
-      ! Fill the frequencies for instances of no stopband and single passband      
       IF( MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
+        ! Fill the frequencies for instances of no stopband and single passband      
         f1 = MW_SensorData%Central_Frequency(l) - MW_SensorData%IF_Band(2,1,l)
         DO i = 1, n_Points(1)
-          f = f1 + ( REAL(i-1,fp) * MW_SensorData%Delta_Frequency(l) )
-          MW_SensorData%Frequency(i,l) = MW_SensorData%Central_Frequency(l) + f  
+          MW_SensorData%Frequency(i,l) = f1 + ( REAL(i-1,fp) * MW_SensorData%Delta_Frequency(l) )
         END DO
       ELSE      
         ! Initialise the sideband point offset. This is the
@@ -2760,8 +2791,8 @@ CONTAINS
           DO i = 1, n_Points( ln )
 
             ! Determine the positions of the frequencies in the array
-            i_Upper = N_HALFPOINTS + n_OffsetPoints + i
-            i_Lower = N_HALFPOINTS - n_OffsetPoints - i + 1
+            i_Upper = n_Halfpoints + n_OffsetPoints + i
+            i_Lower = n_Halfpoints - n_OffsetPoints - i + 1
 
             ! Compute the frequency offset
             f = f1 + ( REAL(i-1,fp) * MW_SensorData%Delta_Frequency(l) )
