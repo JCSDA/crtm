@@ -38,28 +38,23 @@ PROGRAM Create_MW_SRF
                                        MICROWAVE_SENSOR_TYPE
   
   ! Parameters
-  !--------------------------------------------------------------
+  ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_MW_SRF'
-  INTEGER, PARAMETER :: N_POINTS = 256  
+
   
   ! Variables
-  ! --------------------------------------------------------------
-  
-  ! Structures
+  ! ---------
   TYPE( MW_SensorData_type ) :: MW_SensorData
   TYPE( SensorInfo_List_type ) :: SensorInfo_List
   TYPE( SRF_type ) :: SRF
   TYPE( SensorInfo_type ) :: SensorInfo
-  
-  ! Allocatable Array
   INTEGER, DIMENSION(:), ALLOCATABLE :: n_SBPoints
-  
-  ! Scalars
-  CHARACTER(256) :: SensorInfo_Filename
-  CHARACTER(256) :: NC_Filename
-  CHARACTER(256) :: Title, Comment
+  CHARACTER(256)  :: SensorInfo_Filename
+  CHARACTER(256)  :: NC_Filename
+  CHARACTER(5000) :: Title, Comment
+  INTEGER :: n_Frequencies
   INTEGER :: n_Sensors
   INTEGER :: n_Bands
   INTEGER :: n, l, ln
@@ -71,22 +66,10 @@ PROGRAM Create_MW_SRF
   ! --------------
   CALL Program_Message( PROGRAM_NAME,                                            &
                         'Program to create netcdf SRF files for the microwave.', &
-                        '$Revision$'                                            )
+                        '$Revision$'                                      )
   
   ! Get user specified inputs
   ! -------------------------
-  
-  ! Set a user specified version for the SRF files to be created
-  WRITE( *,FMT='(/5x,"Default SRF file version is: ",i0, &
-               &".  Enter value: ")', &
-           ADVANCE='NO' ) SRF%VERSION
-  READ( *,* ) Version
-  IF ( Version < SRF%VERSION ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Invalid version number specified. Using default.', &
-                          INFORMATION )
-    Version = SRF%VERSION
-  END IF
   
   ! Set a user specified SensorInfo filename
   WRITE( *,FMT    ='(/5x,"Enter a SensorInfo filename: ")', &
@@ -107,6 +90,23 @@ PROGRAM Create_MW_SRF
   ! Get number of sensors
   n_Sensors = Count_SensorInfo_Nodes( SensorInfo_List )
     
+  ! Set a user specified version for the SRF files to be created
+  WRITE( *,FMT='(/5x,"Default SRF file version is: ",i0, &
+               &".  Enter value: ")', &
+           ADVANCE='NO' ) SRF%VERSION
+  READ( *,* ) Version
+  IF ( Version < SRF%VERSION ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Invalid version number specified. Using default.', &
+                          INFORMATION )
+    Version = SRF%VERSION
+  END IF
+
+  ! Get the number of frequency points
+  WRITE( *,FMT    ='(/5x,"Enter number of frequencies [256] :")', &
+           ADVANCE='NO' )
+  READ( *,* ) n_Frequencies
+  
   ! Loop over sensors
   !--------------------------------
   Sensor_Loop: DO n = 1, n_Sensors 
@@ -122,7 +122,8 @@ PROGRAM Create_MW_SRF
     END IF 
     
     ! Cycle if its not a microwave sensor or if the sensor name is SSMIS 
-    IF ( .NOT. (SensorInfo%Microwave_Flag==1) .OR. TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
+    IF ( .NOT. (SensorInfo%Microwave_Flag==1) .OR. &
+          TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
           
     ! Name of file to write to for sensor
     NC_Filename= TRIM(SensorInfo%Sensor_Id) // '.srf.nc'
@@ -150,8 +151,9 @@ PROGRAM Create_MW_SRF
     END IF                         
                                            
     ! Fill the MW_SensorData structure
-    Error_Status = Load_MW_SensorData( MW_SensorData,        &
-                                       SensorInfo%Sensor_Id  )
+    Error_Status = Load_MW_SensorData( MW_SensorData,                  &
+                                       n_Frequencies=n_Frequencies,    &
+                                       Sensor_Id=SensorInfo%Sensor_Id  )
     IF ( Error_Status /= SUCCESS ) THEN
        CALL Display_Message( PROGRAM_NAME,                  &
                              'Error loading MW_SensorData', &
@@ -179,17 +181,17 @@ PROGRAM Create_MW_SRF
       END IF
       
       ! Allocate for SRF structure
-      Error_Status = Allocate_SRF( N_POINTS              ,  &  ! Input
-                                   SRF                   ,  &  ! Output
-                                   n_Bands                  )  ! Optional Output                                   
+      Error_Status = Allocate_SRF( n_Frequencies,  &  ! Input
+                                   SRF          ,  &  ! Output
+                                   n_Bands         )  ! Optional Output                                   
       IF ( Error_Status /= SUCCESS ) THEN
          CALL Display_Message( PROGRAM_NAME,                &
                                'Error Allocating for SRF',  &
                                Error_Status                 )
       END IF               
       
-      ! Assign components of SRF structure that are channel dependent
-      ! -------------------------------------------------------------                                        
+      ! Assign components of SRF structure
+      ! ----------------------------------                                        
       SRF%Channel          = SensorInfo%Sensor_Channel(l)
       SRF%Frequency        = MW_SensorData%Frequency(:,l)
       SRF%Response         = MW_SensorData%Response(:,l)
@@ -211,7 +213,7 @@ PROGRAM Create_MW_SRF
       IF (n_Bands==1) THEN
         SRF%f1_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
         SRF%f2_Band(1)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
-        SRF%npts_Band(1)=N_POINTS
+        SRF%npts_Band(1)=n_Frequencies
       ELSE IF(n_Bands==2) THEN
         SRF%f1_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
         SRF%f2_Band(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(1,1,l)
@@ -259,7 +261,7 @@ PROGRAM Create_MW_SRF
                                Error_Status                                       )
       END IF 
       
-      ! Allocate Sideband points array
+      ! Deallocate Sideband points array
       DEALLOCATE( n_SBPoints,          &
                   STAT = Error_Status  )
       IF ( Error_Status /= SUCCESS ) THEN
