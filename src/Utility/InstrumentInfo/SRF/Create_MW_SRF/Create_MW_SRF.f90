@@ -40,7 +40,7 @@ PROGRAM Create_MW_SRF
   ! Parameters
   !--------------------------------------------------------------
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id:$'
+  '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_MW_SRF'
   INTEGER, PARAMETER :: N_POINTS = 256  
   
@@ -71,7 +71,7 @@ PROGRAM Create_MW_SRF
   ! --------------
   CALL Program_Message( PROGRAM_NAME,                                            &
                         'Program to create netcdf SRF files for the microwave.', &
-                        '$Revision:$'                                            )
+                        '$Revision$'                                            )
   
   ! Get user specified inputs
   ! -------------------------
@@ -198,9 +198,7 @@ PROGRAM Create_MW_SRF
       SRF%WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID
       SRF%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID 
       SRF%Sensor_Type      = MICROWAVE_SENSOR_TYPE
-      IF(SensorInfo%Sensor_Id=='atms_c1' .and. l==8) THEN
-        print*, MW_SensorData%Frequency(128,l), MW_SensorData%Frequency(129,l)
-      ENDIF      
+            
       ! Obtain number of points for sidebands
       n_SBPoints(:)=0
       DO ln = 1, MW_SensorData%n_Sidebands( l )
