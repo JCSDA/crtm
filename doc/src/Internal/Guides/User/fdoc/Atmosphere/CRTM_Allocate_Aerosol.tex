@@ -1,0 +1,62 @@
+\subsection{\texttt{CRTM\_Allocate\_Aerosol} interface}
+  \label{sec:CRTM_Allocate_Aerosol_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Allocate_Aerosol
+  
+  PURPOSE:
+        Function to allocate the pointer members of the CRTM_Aerosol
+        data structure.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Allocate_Aerosol( n_Layers               , &
+                                              Aerosol                , &
+                                              Message_Log=Message_Log  )
+ 
+  INPUT ARGUMENTS:
+          n_Layers:   Number of atmospheric layers dimension.
+                      Must be > 0
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar OR Rank-1 array
+                      ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        Message_Log:  Character string specifying a filename in which any
+                      messages will be logged. If not specified, or if an
+                      error occurs opening the log file, the default action
+                      is to output messages to standard output.
+                      UNITS:      N/A
+                      TYPE:       CHARACTER(*)
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  OUTPUT ARGUMENTS:
+        Aerosol:      CRTM_Aerosol structure with allocated pointer members.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Aerosol_type
+                      DIMENSION:  Same as input n_Layers argument
+                      ATTRIBUTES: INTENT(IN OUT)
+ 
+ 
+  FUNCTION RESULT:
+        Error_Status: The return value is an integer defining the error status.
+                      The error codes are defined in the Message_Handler module.
+                      If == SUCCESS the structure re-initialisation was successful
+                         == FAILURE - an error occurred, or
+                                    - the structure internal allocation counter
+                                      is not equal to one (1) upon exiting this
+                                      function. This value is incremented and
+                                      decremented for every structure allocation
+                                      and deallocation respectively.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+ 
+  COMMENTS:
+        Note the INTENT on the output Aerosol argument is IN OUT rather than
+        just OUT. This is necessary because the argument may be defined upon
+        input. To prevent memory leaks, the IN OUT INTENT is a must.
+ 
+  \end{alltt}

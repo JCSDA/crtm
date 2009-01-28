@@ -1,0 +1,37 @@
+\subsection{\texttt{CRTM\_Zero\_Aerosol} interface}
+  \label{sec:CRTM_Zero_Aerosol_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Zero_Aerosol
+  
+  PURPOSE:
+        Subroutine to zero-out all members of a CRTM_Aerosol structure - both
+        scalar and pointer.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Zero_Aerosol( Aerosol )
+ 
+  OUTPUT ARGUMENTS:
+        Aerosol: Zeroed out Aerosol structure.
+                 UNITS:      N/A
+                 TYPE:       CRTM_Aerosol_type
+                 DIMENSION:  Scalar or Rank-1 array
+                 ATTRIBUTES: INTENT(IN OUT)
+ 
+  COMMENTS:
+        - No checking of the input structure is performed, so there are no
+          tests for pointer member association status. This means the Aerosol
+          structure must have allocated pointer members upon entry to this
+          routine.
+ 
+        - The dimension components of the structure are *NOT*
+          set to zero.
+ 
+        - The aerosol type component is *NOT* reset.
+ 
+        - Note the INTENT on the output Aerosol argument is IN OUT rather than
+          just OUT. This is necessary because the argument must be defined upon
+          input.
+ 
+  \end{alltt}

@@ -1,0 +1,48 @@
+\subsection{\texttt{CRTM\_Associated\_ChannelInfo} interface}
+  \label{sec:CRTM_Associated_ChannelInfo_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Associated_ChannelInfo
+ 
+  PURPOSE:
+        Function to test the association status of the pointer members of a
+        CRTM_ChannelInfo structure.
+ 
+  CALLING SEQUENCE:
+        Association_Status = CRTM_Associated_ChannelInfo( ChannelInfo      , &
+                                                          ANY_Test=Any_Test  )
+ 
+  INPUT ARGUMENTS:
+        ChannelInfo: ChannelInfo structure which is to have its pointer
+                     member's association status tested.
+                     UNITS:      N/A
+                     TYPE:       CRTM_ChannelInfo_type
+                     DIMENSION:  Scalar OR Rank-1 array
+                     ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        ANY_Test:    Set this argument to test if ANY of the
+                     ChannelInfo structure pointer members are associated.
+                     The default is to test if ALL the pointer members
+                     are associated.
+                     If ANY_Test = 0, test if ALL the pointer members
+                                      are associated.  (DEFAULT)
+                        ANY_Test = 1, test if ANY of the pointer members
+                                      are associated.
+ 
+  FUNCTION RESULT:
+        Association_Status:  The return value is a logical value indicating the
+                             association status of the ChannelInfo pointer
+                             members.
+                             .TRUE.  - if ALL the ChannelInfo pointer members
+                                       are associated, or if the ANY_Test argument
+                                       is set and ANY of the ChannelInfo
+                                       pointer members are associated.
+                             .FALSE. - some or all of the ChannelInfo pointer
+                                       members are NOT associated.
+                             UNITS:      N/A
+                             TYPE:       LOGICAL
+                             DIMENSION:  Same as input ChannelInfo argument
+ 
+  \end{alltt}

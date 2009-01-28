@@ -1,0 +1,31 @@
+\subsection{\texttt{CRTM\_nChannels\_ChannelInfo} interface}
+  \label{sec:CRTM_nChannels_ChannelInfo_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_nChannels_ChannelInfo
+ 
+  PURPOSE:
+        Function to return the number of channels defined in a ChannelInfo
+        structure or structure array
+ 
+  CALLING SEQUENCE:
+        nChannels = CRTM_nChannels_ChannelInfo( ChannelInfo )
+ 
+  INPUT ARGUMENTS:
+        ChannelInfo: ChannelInfo structure or structure which is to have its
+                     channels counted.
+                     UNITS:      N/A
+                     TYPE:       CRTM_ChannelInfo_type
+                     DIMENSION:  Scalar
+                                   or
+                                 Rank-1
+                     ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        nChannels:   The number of defined channels in the input argument.
+                     UNITS:      N/A
+                     TYPE:       INTEGER
+                     DIMENSION:  Scalar
+ 
+  \end{alltt}

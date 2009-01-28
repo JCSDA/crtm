@@ -1,0 +1,107 @@
+\subsection{\texttt{CRTM\_Equal\_RTSolution} interface}
+  \label{sec:CRTM_Equal_RTSolution_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Equal_RTSolution
+ 
+  PURPOSE:
+        Function to test if two RTSolution structures are equal.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Equal_RTSolution( RTSolution_LHS                       , 
+                                              RTSolution_RHS                       , 
+                                              ULP_Scale         =ULP_Scale         , 
+                                              Percent_Difference=Percent_Difference, 
+                                              Check_All         =Check_All         , 
+                                              Check_Intermediate=Check_Intermediate, 
+                                              Message_Log       =Message_Log         
+ 
+ 
+  INPUT ARGUMENTS:
+        RTSolution_LHS:     RTSolution structure to be compared; equivalent to the
+                            left-hand side of a lexical comparison, e.g.
+                              IF ( RTSolution_LHS == RTSolution_RHS ).
+                            UNITS:      N/A
+                            TYPE:       CRTM_RTSolution_type
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN)
+ 
+        RTSolution_RHS:     RTSolution structure to be compared to; equivalent to
+                            right-hand side of a lexical comparison, e.g.
+                              IF ( RTSolution_LHS == RTSolution_RHS ).
+                            UNITS:      N/A
+                            TYPE:       CRTM_RTSolution_type
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        ULP_Scale:          Unit of data precision used to scale the floating
+                            point comparison. ULP stands for "Unit in the Last Place,"
+                            the smallest possible increment or decrement that can be
+                            made using a machine's floating point arithmetic.
+                            Value must be positive - if a negative value is supplied,
+                            the absolute value is used. If not specified, the default
+                            value is 1.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Percent_Differnece: Percentage difference value to use in comparing
+                            the numbers rather than testing within some numerical
+                            limit. The ULP_Scale argument is ignored if this argument is
+                            specified.
+                            UNITS:      N/A
+                            TYPE:       REAL(fp)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: OPTIONAL, INTENT(IN)
+ 
+        Check_All:          Set this argument to check ALL the floating point
+                            channel data of the RTSolution structures. The default
+                            action is return with a FAILURE status as soon as
+                            any difference is found. This optional argument can
+                            be used to get a listing of ALL the differences
+                            between data in RTSolution structures.
+                            If == 0, Return with FAILURE status as soon as
+                                     ANY difference is found  *DEFAULT*
+                               == 1, Set FAILURE status if ANY difference is
+                                     found, but continue to check ALL data.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Check_Intermediate: Set this argument to check the intermediate results held
+                            in the RTSolution structure. The default action does NOT
+                            check these components.
+                            If == 0, Intermediate result components not checked
+                                     for equality.  *DEFAULT*
+                               == 1, Intermediate result components ARE checked
+                                     for equality. Note that this could generate
+                                     a lot of comparison failures.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Message_Log:        Character string specifying a filename in which any
+                            messages will be logged. If not specified, or if an
+                            error occurs opening the log file, the default action
+                            is to output messages to standard output.
+                            UNITS:      None
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:       The return value is an integer defining the error status.
+                            The error codes are defined in the Message_Handler module.
+                            If == SUCCESS the structures were equal
+                               == FAILURE - an error occurred, or
+                                          - the structures were different.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+ 
+  \end{alltt}

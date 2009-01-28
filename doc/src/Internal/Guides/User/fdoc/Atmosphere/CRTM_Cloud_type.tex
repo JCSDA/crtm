@@ -1,0 +1,25 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_Cloud_type
+    INTEGER :: n_Allocates = 0
+    ! Dimension values
+    INTEGER :: Max_Layers = 0  ! K dimension.
+    INTEGER :: n_Layers   = 0  ! Kuse dimension.
+    ! Number of added layers
+    INTEGER :: n_Added_Layers = 0
+    ! Cloud type
+    INTEGER :: Type = NO_CLOUD
+    ! Cloud state variables
+    REAL(fp), POINTER :: Effective_Radius(:)   => NULL() ! K. Units are microns
+    REAL(fp), POINTER :: Effective_Variance(:) => NULL() ! K. Units are microns^2
+    REAL(fp), POINTER :: Water_Content(:) => NULL()      ! K. Units are kg/m^2
+  END TYPE CRTM_Cloud_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_Cloud\_type structure definition.}
+  \label{fig:CRTM_Cloud_type_structure}
+\end{figure}

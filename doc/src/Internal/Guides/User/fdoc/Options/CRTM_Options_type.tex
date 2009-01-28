@@ -1,0 +1,26 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_Options_type
+    INTEGER :: n_Allocates = 0
+    ! Dimensions
+    INTEGER :: n_Channels = 0  ! L dimension
+    ! Index into channel-specific components
+    INTEGER :: Channel = 0
+    ! Emissivity optional arguments
+    INTEGER           :: Emissivity_Switch =  NOT_SET
+    REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
+    ! Direct reflectivity optional arguments
+    INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
+    REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
+    ! Antenna correction application
+    INTEGER :: Antenna_Correction = NOT_SET
+  END TYPE CRTM_Options_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_Options\_type structure definition.}
+  \label{fig:CRTM_Options_type_structure}
+\end{figure}

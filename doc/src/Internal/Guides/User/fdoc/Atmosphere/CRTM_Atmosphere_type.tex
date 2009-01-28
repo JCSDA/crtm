@@ -1,0 +1,38 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_Atmosphere_type
+    INTEGER :: n_Allocates = 0
+    ! Dimension values
+    INTEGER :: Max_Layers   = 0  ! K dimension
+    INTEGER :: n_Layers     = 0  ! Kuse dimension
+    INTEGER :: n_Absorbers  = 0  ! J dimension
+    INTEGER :: Max_Clouds   = 0  ! Nc dimension
+    INTEGER :: n_Clouds     = 0  ! NcUse dimension
+    INTEGER :: Max_Aerosols = 0  ! Na dimension
+    INTEGER :: n_Aerosols   = 0  ! NaUse dimension
+    ! Number of added layers
+    INTEGER :: n_Added_Layers = 0
+    ! Climatology model associated with the profile
+    INTEGER :: Climatology = INVALID_MODEL
+    ! Absorber ID and units
+    INTEGER, POINTER :: Absorber_ID(:)    => NULL() ! J
+    INTEGER, POINTER :: Absorber_Units(:) => NULL() ! J
+    ! Profile LEVEL and LAYER quantities
+    REAL(fp), POINTER :: Level_Pressure(:) => NULL()  ! 0:K
+    REAL(fp), POINTER :: Pressure(:)       => NULL()  ! K
+    REAL(fp), POINTER :: Temperature(:)    => NULL()  ! K
+    REAL(fp), POINTER :: Absorber(:,:)     => NULL()  ! K x J
+    ! Clouds associated with each profile
+    TYPE(CRTM_Cloud_type),   POINTER :: Cloud(:)   => NULL()  ! Nc
+    ! Aerosols associated with each profile
+    TYPE(CRTM_Aerosol_type), POINTER :: Aerosol(:) => NULL()  ! Na
+  END TYPE CRTM_Atmosphere_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_Atmosphere\_type structure definition.}
+  \label{fig:CRTM_Atmosphere_type_structure}
+\end{figure}

@@ -1,0 +1,25 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_SensorData_type
+    INTEGER :: n_Allocates = 0
+    ! Dimension values
+    INTEGER :: n_Channels = 0  ! L
+    ! The WMO sensor ID of the sensor for which the data is to be used
+    INTEGER :: Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
+    ! The data sensor IDs and channels
+    CHARACTER(STRLEN), POINTER :: Sensor_Id(:)        => NULL() ! L
+    INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
+    INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
+    INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
+    ! The sensor brightness temperatures
+    REAL(fp),          POINTER :: Tb(:) => NULL() ! L
+  END TYPE CRTM_SensorData_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_SensorData\_type structure definition.}
+  \label{fig:CRTM_SensorData_type_structure}
+\end{figure}

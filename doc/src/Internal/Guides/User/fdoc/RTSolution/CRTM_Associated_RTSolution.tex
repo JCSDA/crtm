@@ -1,0 +1,53 @@
+\subsection{\texttt{CRTM\_Associated\_RTSolution} interface}
+  \label{sec:CRTM_Associated_RTSolution_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Associated_RTSolution
+ 
+  PURPOSE:
+        Function to test the association status of the pointer members of a
+        CRTM_RTSolution structure.
+ 
+  CALLING SEQUENCE:
+        Association_Status = CRTM_Associated_RTSolution( RTSolution       , &
+                                                         ANY_Test=Any_Test  )
+ 
+  INPUT ARGUMENTS:
+        RTSolution:          RTSolution structure which is to have its pointer
+                             member's association status tested.
+                             UNITS:      N/A
+                             TYPE:       CRTM_RTSolution_type
+                             DIMENSION:  Scalar, Rank-1, OR Rank-2 array
+                             ATTRIBUTES: INTENT(IN)
+ 
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        ANY_Test:            Set this argument to test if ANY of the
+                             CRTM_SfcOptics structure pointer members are associated.
+                             The default is to test if ALL the pointer members
+                             are associated.
+                             If ANY_Test = 0, test if ALL the pointer members
+                                              are associated.  (DEFAULT)
+                                ANY_Test = 1, test if ANY of the pointer members
+                                              are associated.
+                             UNITS:      N/A
+                             TYPE:       INTEGER
+                             DIMENSION:  Scalar
+                             ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Association_Status:  The return value is a logical value indicating the
+                             association status of the RTSolution pointer
+                             members.
+                             .TRUE.  - if ALL the RTSolution pointer members
+                                       are associated, or if the ANY_Test argument
+                                       is set and ANY of the RTSolution
+                                       pointer members are associated.
+                             .FALSE. - some or all of the RTSolution pointer
+                                       members are NOT associated.
+                             UNITS:      N/A
+                             TYPE:       LOGICAL
+                             DIMENSION:  Same as input RTSolution argument
+ 
+  \end{alltt}

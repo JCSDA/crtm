@@ -1,0 +1,66 @@
+\subsection{\texttt{CRTM\_AddLayers\_Atmosphere\_TL} interface}
+  \label{sec:CRTM_AddLayers_Atmosphere_TL_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_AddLayers_Atmosphere_TL
+ 
+  PURPOSE:
+        Function to copy a tangent-linear atmosphere structure and add extra
+        layers as required to supplement the upper atmosphere profile data.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_AddLayers_Atmosphere_TL( Atm_In                 , &    FWD Input
+                                                     Atm_In_TL              , &    TL  Input
+                                                     Atm_Out_TL             , &    TL  Output
+                                                     Message_Log=Message_Log  )    Error messaging
+ 
+  INPUT ARGUMENTS:
+        Atm_In:          Forward model atmosphere structure.
+                         UNITS:      N/A
+                         TYPE:       CRTM_Atmosphere_type
+                         DIMENSION:  Scalar
+                         ATTRIBUTES: INTENT(IN)
+ 
+        Atm_In_TL:       Tangent-linear model atmosphere structure that is
+                         to be copied.
+                         UNITS:      N/A
+                         TYPE:       CRTM_Atmosphere_type
+                         DIMENSION:  Scalar
+                         ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUT ARGUMENTS:
+        Atm_Out_TL:      Copy of the input tangent-linear atmosphere structure
+                         with extra upper atmosphere layers added as required.
+                         Note that the tangent-linear values of the added layers
+                         is *always* zero.
+                         UNITS:      N/A
+                         TYPE:       CRTM_Atmosphere_type
+                         DIMENSION:  Scalar
+                         ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        Message_Log:     Character string specifying a filename in which any
+                         messages will be logged. If not specified, or if an
+                         error occurs opening the log file, the default action
+                         is to output messages to standard output.
+                         UNITS:      N/A
+                         TYPE:       CHARACTER(*)
+                         DIMENSION:  Scalar
+                         ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:    The return value is an integer defining the error status.
+                         The error codes are defined in the Message_Handler module.
+                         If == SUCCESS the operation was successful
+                            == FAILURE an error occurred
+                         UNITS:      N/A
+                         TYPE:       INTEGER
+                         DIMENSION:  Scalar
+ 
+  COMMENTS:
+        Note the INTENT on the output Atm_Out_TL argument is IN OUT rather than
+        just OUT. This is necessary because the argument may be defined upon
+        input. To prevent memory leaks, the IN OUT INTENT is a must.
+ 
+  \end{alltt}

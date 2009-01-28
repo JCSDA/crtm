@@ -1,0 +1,57 @@
+\subsection{\texttt{CRTM\_Assign\_Surface} interface}
+  \label{sec:CRTM_Assign_Surface_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Assign_Surface
+ 
+  PURPOSE:
+        Function to copy valid Surface structures.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Assign_Surface( Surface_in             , &
+                                            Surface_out            , &
+                                            Message_Log=Message_Log  )
+ 
+  INPUT ARGUMENTS:
+        Surface_in:   Surface structure which is to be copied. In the context of
+                      the CRTM, rank-1 corresponds to an vector of profiles,
+                      and rank-2 corresponds to an array of channels x profiles.
+                      The latter is used in the K-matrix model.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Surface_type
+                      DIMENSION:  Scalar, Rank-1, OR Rank-2 array
+                      ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUT ARGUMENTS:
+        Surface_out:  Copy of the input structure, Surface_in.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Surface_type
+                      DIMENSION:  Same as Surface_in
+                      ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        Message_Log:  Character string specifying a filename in which any
+                      messages will be logged. If not specified, or if an
+                      error occurs opening the log file, the default action
+                      is to output messages to standard output.
+                      UNITS:      N/A
+                      TYPE:       CHARACTER(*)
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status: The return value is an integer defining the error status.
+                      The error codes are defined in the Message_Handler module.
+                      If == SUCCESS the structure assignment was successful
+                         == FAILURE an error occurred
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+ 
+  COMMENTS:
+        Note the INTENT on the output Surface argument is IN OUT rather than
+        just OUT. This is necessary because the argument may be defined upon
+        input. To prevent memory leaks, the IN OUT INTENT is a must.
+ 
+  \end{alltt}

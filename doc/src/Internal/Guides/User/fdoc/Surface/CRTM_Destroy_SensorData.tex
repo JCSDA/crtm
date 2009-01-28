@@ -1,0 +1,52 @@
+\subsection{\texttt{CRTM\_Destroy\_SensorData} interface}
+  \label{sec:CRTM_Destroy_SensorData_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Destroy_SensorData
+  
+  PURPOSE:
+        Function to re-initialize the scalar and pointer members of SensorData
+        data structures.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Destroy_SensorData( SensorData             , &
+                                                Message_Log=Message_Log  )
+ 
+  OUTPUT ARGUMENTS:
+        SensorData:   Re-initialized SensorData structure.
+                      UNITS:      N/A
+                      TYPE:       CRTM_SensorData_type
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUT ARGUMENTS:
+        Message_Log:  Character string specifying a filename in which any
+                      messages will be logged. If not specified, or if an
+                      error occurs opening the log file, the default action
+                      is to output messages to standard output.
+                      UNITS:      N/A
+                      TYPE:       CHARACTER(*)
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status: The return value is an integer defining the error status.
+                      The error codes are defined in the ERROR_HANDLER module.
+                      If == SUCCESS the structure re-initialisation was successful
+                         == FAILURE - an error occurred, or
+                                    - the structure internal allocation counter
+                                      is not equal to zero (0) upon exiting this
+                                      function. This value is incremented and
+                                      decremented for every structure allocation
+                                      and deallocation respectively.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+ 
+  COMMENTS:
+        Note the INTENT on the output SensorData argument is IN OUT rather than
+        just OUT. This is necessary because the argument may be defined upon
+        input. To prevent memory leaks, the IN OUT INTENT is a must.
+ 
+  \end{alltt}

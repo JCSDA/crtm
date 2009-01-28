@@ -1,123 +1,31 @@
-\chapter{Structure definitions}
-%==============================
+\chapter{Structure and procedure interface definitions}
+%======================================================
 
 \clearpage
 \section{\ChannelInfo{} Structure}
 %=================================
 \label{sec:channelinfo_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_ChannelInfo_type
-    ! Dimension values
-    INTEGER :: n_Channels = 0  ! L dimension
-    ! Scalar data
-    CHARACTER(STRLEN) :: Sensor_ID        = ' '
-    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    INTEGER           :: Sensor_Index     = 0
-    ! Array data
-    INTEGER,  POINTER :: Sensor_Channel(:) => NULL()  ! L
-    INTEGER,  POINTER :: Channel_Index(:)  => NULL()  ! L
-  END TYPE CRTM_ChannelInfo_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \ChannelInfo{} structure definition.}
-  \label{fig:channelinfo_structure}
-\end{figure}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_type}
 
-% ChannelInfo component description table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{8cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Channels}  & Number of sensor channels (\texttt{L}) & N/A & Scalar \\
-    \texttt{Sensor\_Id} & The sensor and platform identifier character string & N/A & Scalar \\
-    \texttt{WMO\_Satellite\_Id} & The WMO satellite identifier & N/A & Scalar \\
-    \texttt{WMO\_Sensor\_Id} & The WMO sensor identifier & N/A & Scalar \\
-    \texttt{Sensor\_Index} & The index of the current structure in an array. Set during CRTM initialisation & N/A & Scalar \\
-    \texttt{Sensor\_Channel} & The channel numbers of the current sensor & N/A & \texttt{L}\\
-    \texttt{Channel\_Index} & The indices of the selected channels for the current sensors. Currently, all channels are indexed. & N/A & \texttt{L}\\
-    \hline
-  \end{tabular}
-  \caption{CRTM \ChannelInfo{} structure component description.}
-  \label{tab:chanelinfo_structure}
-\end{table}
+% ChannelInfo structure methods
+%-----------------------------
+\input{fdoc/ChannelInfo/CRTM_Associated_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_Allocate_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_Destroy_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_Assign_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_Equal_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_nChannels_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_RCS_ID_ChannelInfo}
+
+
 
 \clearpage
 \section{\Atmosphere{} Structure}
 %================================
 \label{sec:atmosphere_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_Atmosphere_type
-    ! Dimension values
-    INTEGER :: n_Layers     = 0  ! K dimension
-    INTEGER :: n_Absorbers  = 0  ! J dimension
-    INTEGER :: n_Clouds     = 0  ! Nc dimension
-    INTEGER :: n_Aerosols   = 0  ! Na dimension
-    ! Number of added layers
-    INTEGER :: n_Added_Layers = 0
-    ! Climatology model associated with the profile
-    INTEGER :: Climatology = INVALID_MODEL
-    ! Absorber ID and units
-    INTEGER, POINTER :: Absorber_ID(:)    => NULL() ! J
-    INTEGER, POINTER :: Absorber_Units(:) => NULL() ! J
-    ! Profile LEVEL and LAYER quantities
-    REAL(fp), POINTER :: Level_Pressure(:) => NULL()  ! 0:K
-    REAL(fp), POINTER :: Pressure(:)       => NULL()  ! K
-    REAL(fp), POINTER :: Temperature(:)    => NULL()  ! K
-    REAL(fp), POINTER :: Absorber(:,:)     => NULL()  ! K x J
-    ! Clouds associated with each profile
-    TYPE(CRTM_Cloud_type),   POINTER :: Cloud(:)   => NULL()  ! Nc
-    ! Aerosols associated with each profile
-    TYPE(CRTM_Aerosol_type), POINTER :: Aerosol(:) => NULL()  ! Na
-  END TYPE CRTM_Atmosphere_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \Atmosphere{} structure definition.}
-  \label{fig:atmosphere_structure}
-\end{figure}
-
-% Atmosphere component description table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Layers}    & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
-    \texttt{n\_Absorbers} & Number of atmospheric absorbers (\texttt{J}) & N/A & Scalar \\
-    \texttt{n\_Clouds}    & Number of clouds (\texttt{Nc}) & N/A & Scalar \\
-    \texttt{n\_Aerosols}  & Number of aerosols (\texttt{Na}) & N/A & Scalar \\
-    \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
-    \texttt{Climatology} & Climatology of the profile (see table \ref{tab:climatology}) & N/A & Scalar \\
-    \texttt{Absorber\_Id} & Gaseous absorber identifiers (see table \ref{tab:absorber_id}) & N/A & \texttt{J}\\
-    \texttt{Absorber\_Units} & Gaseous absorber amount units (see table \ref{tab:absorber_units}) & N/A & \texttt{J}\\
-    \texttt{Level\_Pressure} & Interface pressures of the profile layers & hPa & \texttt{0:K} \\
-    \texttt{Pressure} & Average layer pressure & hPa & \texttt{K} \\
-    \texttt{Temperatures} & Layer temperatures & Kelvin & \texttt{K} \\
-    \texttt{Absorbers} & Layer absorber amount & Variable & \texttt{K} $\times$ \texttt{J}\\
-    \texttt{Cloud} & Cloud structure array & N/A & \texttt{Nc}\\
-    \texttt{Aerosol} & Aerosol structure array & N/A & \texttt{Na}\\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Atmosphere{} structure component description.}
-  \label{tab:atmosphere_structure}
-\end{table}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_type}
 
 % Climatology table
 \begin{table}[htp]
@@ -139,7 +47,7 @@
 \end{table}
 
 % Absorber id table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{ c l c c l }
     \hline
@@ -168,7 +76,7 @@
 \end{table}
 
 % Absorber units table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{c l}
     \hline
@@ -190,57 +98,31 @@
   \label{tab:absorber_units}
 \end{table}
 
-\clearpage
-\subsection{\Cloud{} Structure}
-%------------------------------
+% Atmosphere structure methods
+%-----------------------------
+\input{fdoc/Atmosphere/CRTM_Associated_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Allocate_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Destroy_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Assign_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Equal_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_SetLayers_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Sum_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Zero_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_RCS_ID_Atmosphere}
+\input{fdoc/Atmosphere/CRTM_Inquire_Atmosphere_Binary}
+\input{fdoc/Atmosphere/CRTM_Read_Atmosphere_Binary}
+\input{fdoc/Atmosphere/CRTM_Write_Atmosphere_Binary}
+
+
+\newpage
+\section{\Cloud{} Structure}
+%================================
 \label{sec:cloud_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_Cloud_type
-    ! Dimension values
-    INTEGER :: n_Layers = 0  ! K dimension.
-    ! Number of added layers
-    INTEGER :: n_Added_Layers = 0
-    ! Cloud type
-    INTEGER :: Type = NO_CLOUD
-    ! Cloud state variables
-    REAL(fp), POINTER :: Effective_Radius(:)   => NULL() ! K
-    REAL(fp), POINTER :: Effective_Variance(:) => NULL() ! K
-    REAL(fp), POINTER :: Water_Content(:)      => NULL() ! K
-  END TYPE CRTM_Cloud_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \Cloud{} structure definition.}
-  \label{fig:cloud_structure}
-\end{figure}
-
-% Cloud component description table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Layers} & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
-    \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
-    \texttt{Type} & Type of cloud (see table \ref{tab:cloud_type}) & N/A & Scalar \\
-    \texttt{Effective\_Radius} & Cloud particle $r_{eff}$ profile & \micron & \texttt{K} \\
-    \texttt{Effective\_Variance} & Cloud particle $\sigma_{eff}$ profile & \micron$^2$ & \texttt{K} \\
-    \texttt{Water\_Content} & Cloud water content profile & kg.m$^{-2}$ & \texttt{K} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Cloud{} structure component description.}
-  \label{tab:cloud_structure}
-\end{table}
+\input{fdoc/Atmosphere/CRTM_Cloud_type}
 
 % Cloud type table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{cc l}
     \hline
@@ -258,74 +140,65 @@
   \label{tab:cloud_type}
 \end{table}
 
+% Cloud structure methods
+%------------------------
+\input{fdoc/Atmosphere/CRTM_Associated_Cloud}
+\input{fdoc/Atmosphere/CRTM_Allocate_Cloud}
+\input{fdoc/Atmosphere/CRTM_Destroy_Cloud}
+\input{fdoc/Atmosphere/CRTM_Assign_Cloud}
+\input{fdoc/Atmosphere/CRTM_Equal_Cloud}
+\input{fdoc/Atmosphere/CRTM_SetLayers_Cloud}
+\input{fdoc/Atmosphere/CRTM_Sum_Cloud}
+\input{fdoc/Atmosphere/CRTM_Zero_Cloud}
+\input{fdoc/Atmosphere/CRTM_RCS_ID_Cloud}
+\input{fdoc/Atmosphere/CRTM_Inquire_Cloud_Binary}
+\input{fdoc/Atmosphere/CRTM_Read_Cloud_Binary}
+\input{fdoc/Atmosphere/CRTM_Write_Cloud_Binary}
+
+
 \clearpage
-\subsection{\Aerosol{} Structure}
-%--------------------------------
+\section{\Aerosol{} Structure}
+%=============================
 \label{sec:aerosol_structure}
 
-
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_Aerosol_type
-    ! Dimensions
-    INTEGER :: n_Layers = 0  ! K dimension
-    ! Number of added layers    
-    INTEGER :: n_Added_Layers = 0
-    ! Aerosol type
-    INTEGER :: Type = NO_AEROSOL
-    ! Aerosol state variables
-    REAL(fp), POINTER :: Effective_Radius(:) => NULL()  ! K
-    REAL(fp), POINTER :: Concentration(:)    => NULL()  ! K
-  END TYPE CRTM_Aerosol_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \Aerosol{} structure definition.}
-  \label{fig:aerosol_structure}
-\end{figure}
-
-% Aerosol component description table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Layers} & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
-    \texttt{n\_Added\_Layers} & Number of layers added so as to extend the input profile to nominal TOA  & N/A & Scalar \\
-    \texttt{Type} & Type of Aerosol (see table \ref{tab:aerosol_type}) & N/A & Scalar \\
-    \texttt{Effective\_Radius} & Aerosol particle $r_{eff}$ profile & \micron & \texttt{K} \\
-    \texttt{Concentration} & Aerosol concentration profile & kg.m$^{-2}$ & \texttt{K} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Aerosol{} structure component description.}
-  \label{tab:aerosol_structure}
-\end{table}
+\input{fdoc/Atmosphere/CRTM_Aerosol_type}
 
 % Aerosol type table
-\begin{table}
+\begin{table}[htp]
   \centering
   \begin{tabular}{c l}
     \hline
     \sffamily\textbf{Aerosol Type} & \sffamily\textbf{Parameter} \\
     \hline\hline
-           Dust         &  \texttt{DUST\_AEROSOL}\\
-       Sea salt SSAM\footnote{SSAM $\equiv$ sea salt accumulation mode, $r_{eff}\sim$0.5-5.0\micron.} &  \texttt{SEASALT\_SSAM\_AEROSOL}\\
-       Sea salt SSCM\footnote{SSCM $\equiv$ sea salt coarse mode, $r_{eff}\sim$5.0-30\micron} &  \texttt{SEASALT\_SSCM\_AEROSOL}\\
-     Dry organic carbon &  \texttt{DRY\_ORGANIC\_CARBON\_AEROSOL}\\
-     Wet organic carbon &  \texttt{WET\_ORGANIC\_CARBON\_AEROSOL}\\
-      Dry black carbon  &  \texttt{DRY\_BLACK\_CARBON\_AEROSOL}\\
-      Wet black carbon  &  \texttt{WET\_BLACK\_CARBON\_AEROSOL}\\
-          Sulfate       &  \texttt{SULFATE\_AEROSOL}\\
+    Dust               &  \texttt{DUST\_AEROSOL}\\
+    Sea salt SSAM\footnote{SSAM $\equiv$ sea salt accumulation mode, $r_{eff}\sim$0.5-5.0\micron.} &  \texttt{SEASALT\_SSAM\_AEROSOL}\\
+    Sea salt SSCM\footnote{SSCM $\equiv$ sea salt coarse mode, $r_{eff}\sim$5.0-30\micron} &  \texttt{SEASALT\_SSCM\_AEROSOL}\\
+    Dry organic carbon &  \texttt{DRY\_ORGANIC\_CARBON\_AEROSOL}\\
+    Wet organic carbon &  \texttt{WET\_ORGANIC\_CARBON\_AEROSOL}\\
+    Dry black carbon   &  \texttt{DRY\_BLACK\_CARBON\_AEROSOL}\\
+    Wet black carbon   &  \texttt{WET\_BLACK\_CARBON\_AEROSOL}\\
+    Sulfate            &  \texttt{SULFATE\_AEROSOL}\\
     \hline
   \end{tabular}
   \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions.}
   \label{tab:aerosol_type}
 \end{table}
+
+% Aerosol structure methods
+%--------------------------
+\input{fdoc/Atmosphere/CRTM_Associated_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Allocate_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Destroy_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Assign_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Equal_Aerosol}
+\input{fdoc/Atmosphere/CRTM_SetLayers_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Sum_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Zero_Aerosol}
+\input{fdoc/Atmosphere/CRTM_RCS_ID_Aerosol}
+\input{fdoc/Atmosphere/CRTM_Inquire_Aerosol_Binary}
+\input{fdoc/Atmosphere/CRTM_Read_Aerosol_Binary}
+\input{fdoc/Atmosphere/CRTM_Write_Aerosol_Binary}
+
 
 
 \clearpage
@@ -333,55 +206,7 @@
 %=============================
 \label{sec:surface_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_Surface_type
-    ! Dimension values
-    INTEGER :: n_Sensors    = 0  ! N dimension
-    ! Gross type of surface determined by coverage
-    REAL(fp) :: Land_Coverage  = ZERO
-    REAL(fp) :: Water_Coverage = ZERO
-    REAL(fp) :: Snow_Coverage  = ZERO
-    REAL(fp) :: Ice_Coverage   = ZERO
-    ! Surface type independent data
-    REAL(fp) :: Wind_Speed     = DEFAULT_WIND_SPEED
-    REAL(fp) :: Wind_Direction = DEFAULT_WIND_DIRECTION
-    ! Land surface type data
-    INTEGER  :: Land_Type             = DEFAULT_LAND_TYPE
-    REAL(fp) :: Land_Temperature      = DEFAULT_LAND_TEMPERATURE
-    REAL(fp) :: Soil_Moisture_Content = DEFAULT_SOIL_MOISTURE_CONTENT
-    REAL(fp) :: Canopy_Water_Content  = DEFAULT_CANOPY_WATER_CONTENT
-    REAL(fp) :: Vegetation_Fraction   = DEFAULT_VEGETATION_FRACTION
-    REAL(fp) :: Soil_Temperature      = DEFAULT_SOIL_TEMPERATURE
-    ! Water type data
-    INTEGER  :: Water_Type        = DEFAULT_WATER_TYPE
-    REAL(fp) :: Water_Temperature = DEFAULT_WATER_TEMPERATURE
-    REAL(fp) :: Salinity          = DEFAULT_SALINITY
-    ! Snow surface type data
-    INTEGER  :: Snow_Type        = DEFAULT_SNOW_TYPE
-    REAL(fp) :: Snow_Temperature = DEFAULT_SNOW_TEMPERATURE
-    REAL(fp) :: Snow_Depth       = DEFAULT_SNOW_DEPTH
-    REAL(fp) :: Snow_Density     = DEFAULT_SNOW_DENSITY
-    REAL(fp) :: Snow_Grain_Size  = DEFAULT_SNOW_GRAIN_SIZE
-    ! Ice surface type data
-    INTEGER  :: Ice_Type        = DEFAULT_ICE_TYPE
-    REAL(fp) :: Ice_Temperature = DEFAULT_ICE_TEMPERATURE
-    REAL(fp) :: Ice_Thickness   = DEFAULT_ICE_THICKNESS
-    REAL(fp) :: Ice_Density     = DEFAULT_ICE_DENSITY
-    REAL(fp) :: Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
-    ! SensorData containing channel brightness temperatures
-    TYPE(CRTM_SensorData_type) :: SensorData  ! N
-  END TYPE CRTM_Surface_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \Surface{} structure definition.}
-  \label{fig:surface_structure}
-\end{figure}
+\input{fdoc/Surface/CRTM_Surface_type}
 
 \begin{table}[htp]
   \centering
@@ -426,7 +251,7 @@
     \hline
   \end{tabular}
   \caption{CRTM \Surface{} structure component description.}
-  \label{tav:surface_structure}
+  \label{tab:surface_structure}
 \end{table}
 
 % Default surface value table
@@ -568,37 +393,28 @@
   \label{tab:surface_ice_type}
 \end{table}
 
+% Surface structure methods
+%--------------------------
+\clearpage
+\input{fdoc/Surface/CRTM_Allocate_Surface}
+\input{fdoc/Surface/CRTM_Destroy_Surface}
+\input{fdoc/Surface/CRTM_Assign_Surface}
+\input{fdoc/Surface/CRTM_Equal_Surface}
+\input{fdoc/Surface/CRTM_Sum_Surface}
+\input{fdoc/Surface/CRTM_Zero_Surface}
+\input{fdoc/Surface/CRTM_RCS_ID_Surface}
+\input{fdoc/Surface/CRTM_Inquire_Surface_Binary}
+\input{fdoc/Surface/CRTM_Read_Surface_Binary}
+\input{fdoc/Surface/CRTM_Write_Surface_Binary}
+
+
 
 \clearpage
 \subsection{\SensorData{} Structure}
 %-----------------------------------
 \label{sec:sensordata_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE, PUBLIC :: CRTM_SensorData_type
-    ! Dimension values
-    INTEGER :: n_Channels = 0  ! L
-    ! The WMO sensor ID of the sensor for which the data is to be used
-    INTEGER :: Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
-    ! The data sensor IDs and channels
-    CHARACTER(STRLEN), POINTER :: Sensor_Id(:)        => NULL() ! L
-    INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
-    INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
-    INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
-    ! The sensor brightness temperatures
-    REAL(fp),          POINTER :: Tb(:) => NULL() ! L
-  END TYPE CRTM_SensorData_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \SensorData{} structure definition.}
-  \label{fig:sensordata_structure}
-\end{figure}
+\input{fdoc/Surface/CRTM_SensorData_type}
 
 % SensorData component description table
 \begin{table}[htp]
@@ -620,6 +436,15 @@
   \label{tab:sensordata_structure}
 \end{table}
 
+% Surface structure methods
+%--------------------------
+\clearpage
+\input{fdoc/Surface/CRTM_Associated_SensorData}
+\input{fdoc/Surface/CRTM_Allocate_SensorData}
+\input{fdoc/Surface/CRTM_Destroy_SensorData}
+\input{fdoc/Surface/CRTM_Assign_SensorData}
+\input{fdoc/Surface/CRTM_Equal_SensorData}
+\input{fdoc/Surface/CRTM_RCS_ID_SensorData}
 
 
 \clearpage
@@ -627,53 +452,7 @@
 %==================================
 \label{sec:geometryinfo_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_GeometryInfo_type
-    ! User Input
-    ! ----------
-    ! Earth location
-    REAL(fp) :: Longitude        = ZERO
-    REAL(fp) :: Latitude         = ZERO
-    REAL(fp) :: Surface_Altitude = ZERO
-    ! Field of view index (1-nFOV)
-    INTEGER  :: iFOV = 0
-    ! Sensor angle information
-    REAL(fp) :: Sensor_Scan_Angle    = ZERO
-    REAL(fp) :: Sensor_Zenith_Angle  = ZERO
-    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
-    ! Source angle information
-    REAL(fp) :: Source_Zenith_Angle  = 100.0_fp  ! Below horizon
-    REAL(fp) :: Source_Azimuth_Angle = ZERO
-    ! Flux angle information
-    REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
-    ! Derived from User Input
-    ! -----------------------
-    ! Default distance ratio
-    REAL(fp) :: Distance_Ratio = EARTH_RADIUS/(EARTH_RADIUS + SATELLITE_HEIGHT)
-    ! Sensor angle information
-    REAL(fp) :: Sensor_Scan_Radian    = ZERO
-    REAL(fp) :: Sensor_Zenith_Radian  = ZERO
-    REAL(fp) :: Sensor_Azimuth_Radian = ZERO
-    REAL(fp) :: Secant_Sensor_Zenith  = ZERO
-    ! Source angle information
-    REAL(fp) :: Source_Zenith_Radian  = ZERO
-    REAL(fp) :: Source_Azimuth_Radian = ZERO
-    REAL(fp) :: Secant_Source_Zenith  = ZERO
-    ! Flux angle information
-    REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
-    REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
-  END TYPE CRTM_GeometryInfo_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \GeometryInfo{} structure definition.}
-  \label{fig:geometryinfo_structure}
-\end{figure}
+\input{fdoc/GeometryInfo/CRTM_GeometryInfo_type}
 
 % GeometryInfo component description table
 \begin{table}[htp]
@@ -726,42 +505,19 @@
   \label{tab:derived_geometryinfo_structure}
 \end{table}
 
+% GeometryInfo structure methods
+%--------------------------
+\clearpage
+\input{fdoc/GeometryInfo/CRTM_Compute_GeometryInfo}
+\input{fdoc/GeometryInfo/CRTM_RCS_ID_GeometryInfo}
+
 
 \clearpage
 \section{\RTSolution{} Structure}
 %==================================
 \label{sec:rtsolution_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_RTSolution_type
-    ! Dimension values
-    INTEGER :: n_Layers = 0  ! K
-    ! Forward radiative transfer intermediate results for a single channel
-    !    These components are not defined when they are used as TL, AD
-    !    and K variables
-    REAL(fp)          :: Surface_Emissivity      = ZERO
-    REAL(fp)          :: Up_Radiance             = ZERO
-    REAL(fp)          :: Down_Radiance           = ZERO
-    REAL(fp)          :: Down_Solar_Radiance     = ZERO
-    REAL(fp)          :: Surface_Planck_Radiance = ZERO
-    REAL(fp), POINTER :: Upwelling_Radiance(:)  => NULL()  ! K
-    ! The layer optical depths
-    REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
-    ! Radiative transfer results for a single channel/node
-    REAL(fp) :: Radiance               = ZERO
-    REAL(fp) :: Brightness_Temperature = ZERO
-  END TYPE CRTM_RTSolution_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \RTSolution{} structure definition.}
-  \label{fig:rtsolution_structure}
-\end{figure}
+\input{fdoc/RTSolution/CRTM_RTSolution_type}
 
 \begin{table}[htp]
   \centering
@@ -785,38 +541,26 @@
   \label{tab:rtsolution_structure}
 \end{table}
 
+% RTSolution structure methods
+%--------------------------
+\clearpage
+\input{fdoc/RTSolution/CRTM_Associated_RTSolution}
+\input{fdoc/RTSolution/CRTM_Allocate_RTSolution}
+\input{fdoc/RTSolution/CRTM_Destroy_RTSolution}
+\input{fdoc/RTSolution/CRTM_Assign_RTSolution}
+\input{fdoc/RTSolution/CRTM_Equal_RTSolution}
+\input{fdoc/RTSolution/CRTM_RCS_ID_RTSolution}
+\input{fdoc/RTSolution/CRTM_Inquire_RTSolution_Binary}
+\input{fdoc/RTSolution/CRTM_Read_RTSolution_Binary}
+\input{fdoc/RTSolution/CRTM_Write_RTSolution_Binary}
+
 
 \clearpage
 \section{\Options{} Structure}
 %=============================
 \label{sec:options_structure}
 
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{ttfamily}
-      \begin{verbatim}
-  TYPE :: CRTM_Options_type
-    ! Dimension values
-    INTEGER :: n_Channels = 0  ! L dimension
-    ! Index into channel-specific components
-    INTEGER :: Channel = 0
-    ! Emissivity optional arguments
-    INTEGER           :: Emissivity_Switch =  NOT_SET
-    REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
-    ! Direct reflectivity optional arguments
-    INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
-    REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
-    ! Antenna correction application
-    INTEGER :: Antenna_Correction = NOT_SET
-  END TYPE CRTM_Options_type\end{verbatim}
-    \end{ttfamily}
-  \end{minipage}
-  }
-  \caption{CRTM \Options{} structure definition.}
-  \label{fig:options_structure}
-\end{figure}
+\input{fdoc/Options/CRTM_Options_type}
 
 \begin{table}[htp]
   \centering
@@ -825,7 +569,7 @@
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
     \texttt{n\_Channels}                  & Number of sensor channels (\texttt{L}). & N/A & Scalar \\
-    \texttt{Channel}                      & Index into channel-specifi components. & N/A & Scalar \\
+    \texttt{Channel}                      & Index into channel-specific components. & N/A & Scalar \\
     \texttt{Emissivity\_Switch}           & Switch to apply user-defined surface emissivity. Valid values:
 
     \parbox{7cm}{\hspace{0.5cm}\texttt{NOT\_SET}: Calculate emissivity (default).
@@ -847,3 +591,12 @@
   \label{tab:options_structure}
 \end{table}
 
+% Options structure methods
+%--------------------------
+\clearpage
+\input{fdoc/Options/CRTM_Associated_Options}
+\input{fdoc/Options/CRTM_Allocate_Options}
+\input{fdoc/Options/CRTM_Destroy_Options}
+\input{fdoc/Options/CRTM_Assign_Options}
+\input{fdoc/Options/CRTM_Equal_Options}
+\input{fdoc/Options/CRTM_RCS_ID_Options}

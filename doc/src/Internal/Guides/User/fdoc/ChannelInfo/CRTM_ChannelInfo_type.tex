@@ -1,0 +1,24 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_ChannelInfo_type
+    INTEGER :: n_Allocates = 0
+    ! Dimensions
+    INTEGER :: n_Channels = 0  ! L dimension
+    ! Scalar data
+    CHARACTER(STRLEN) :: Sensor_ID        = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    INTEGER           :: Sensor_Index     = 0
+    ! Array data
+    INTEGER, POINTER :: Sensor_Channel(:) => NULL()  ! L
+    INTEGER, POINTER :: Channel_Index(:)  => NULL()  ! L
+  END TYPE CRTM_ChannelInfo_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_ChannelInfo\_type structure definition.}
+  \label{fig:CRTM_ChannelInfo_type_structure}
+\end{figure}

@@ -1,0 +1,34 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_RTSolution_type
+    INTEGER :: n_Allocates = 0
+    ! Dimensions
+    INTEGER :: n_Layers = 0  ! K
+    ! Internal variables. Users do not need to worry about these.
+    LOGICAL :: Scattering_Flag = .TRUE.
+    INTEGER :: n_Full_Streams  = 0
+    INTEGER :: n_Stokes        = 0
+    ! Forward radiative transfer intermediate results for a single channel
+    !    These components are not defined when they are used as TL, AD
+    !    and K variables
+    REAL(fp) :: Surface_Emissivity      = ZERO
+    REAL(fp) :: Up_Radiance             = ZERO
+    REAL(fp) :: Down_Radiance           = ZERO
+    REAL(fp) :: Down_Solar_Radiance     = ZERO
+    REAL(fp) :: Surface_Planck_Radiance = ZERO
+    REAL(fp), POINTER :: Upwelling_Radiance(:)  => NULL()  ! K
+    ! The layer optical depths
+    REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
+    ! Radiative transfer results for a single channel/node
+    REAL(fp) :: Radiance               = ZERO
+    REAL(fp) :: Brightness_Temperature = ZERO
+  END TYPE CRTM_RTSolution_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_RTSolution\_type structure definition.}
+  \label{fig:CRTM_RTSolution_type_structure}
+\end{figure}
