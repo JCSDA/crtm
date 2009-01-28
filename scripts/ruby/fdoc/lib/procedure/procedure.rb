@@ -2,16 +2,18 @@ module FDoc
   module Procedure
     class Generator < FDoc::Base
     
-      DELIMITER   = "sdoc"
+      TAG         = "sdoc"
       NAME_REGEXP = %r{^\s*!\s*NAME:\s*!\s*([\D\d]*?)\n}ix
       
+      # Class constructor
       def initialize(source)
         @source  = source
         @list    = []
       end
       
+      # Main generator method
       def generate
-        list(@source.extract(DELIMITER))
+        list(@source.extract(TAG))
         generate_latex
         generate_html
       end
@@ -43,18 +45,11 @@ module FDoc
       def generate_latex
         @list.each do |element|
           latex_string=<<-EOT
-\\begin{figure}[htp]
-  \\centering
-  \\doublebox{
-  \\begin{minipage}[b]{6.5in}
-    \\begin{alltt}
+\\subsection{\\texttt{#{element[:name].gsub(/_/,"\\_")}} interface}
+  \\label{sec:#{element[:name]}_interface}
+  \\begin{alltt}
 #{element[:entry]}
-    \\end{alltt}
-  \\end{minipage}
-  }
-  \\caption{#{element[:name].gsub(/_/,"\\_")} interface and argument description.}
-  \\label{fig:#{element[:name]}_interface}
-\\end{figure}
+  \\end{alltt}
           EOT
           tex_file_name = "#{element[:name]}.tex"
           File.open(tex_file_name,'w') {|f| f.write(latex_string)}

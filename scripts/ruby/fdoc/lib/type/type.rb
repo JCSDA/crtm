@@ -2,8 +2,8 @@ module FDoc
   module Type
     class Generator < FDoc::Base
     
-      DELIMITER = "tdoc"
-      TYPE_REGEXP = %r{^\s*TYPE\s*::\s*(\w*)}ix
+      TAG = "tdoc"
+      TYPE_REGEXP = %r{^\s*TYPE\s*(?:,\s*PUBLIC\s*)?::\s*(\w*)}ix
       
       def initialize(source)
         @source = source
@@ -11,7 +11,7 @@ module FDoc
       end
       
       def generate
-        list(@source.extract(DELIMITER))
+        list(@source.extract(TAG))
         generate_latex
       end
 
