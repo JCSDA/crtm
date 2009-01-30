@@ -1,14 +1,6 @@
 \chapter{Introduction}
 %=====================
 
-What version does this apply to?
-
-Overview of CRTM; nomenclature (AtmAbsorption, SfcOptics, CloudScatter, RTSolution etc)
-
-Flowcharts
-
-
-
 \section{Conventions}
 %====================
 \label{sec:conventions}
@@ -21,19 +13,15 @@ The derived data type, or structure\footnote{The terms ``derived type'' and ``st
 \hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_type} 
 
 where \textit{name} is an identifier that indicates for what a structure is to be used. All structure type names are suffixed with ``\f{\_type}'' and CRTM-specific structure types are prefixed with ``\f{CRTM\_}''. Some examples are,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   SpcCoeff_type
-  CRTM_Atmosphere_type
-  CRTM_RTSolution_type\end{verbatim}
-\end{ttfamily}
+  \hyperref[sec:atmosphere_structure]{CRTM_Atmosphere_type}
+  \hyperref[sec:rtsolution_structure]{CRTM_RTSolution_type}\end{alltt}
 An instance of a structure is then referred to via its \textit{name}, or some sort of derivate of its \textit{name}. Some structure declarations examples are,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   TYPE(SpcCoeff_type)        :: SpcCoeff
-  TYPE(CRTM_Atmosphere_type) :: atm, atm_K
-  TYPE(CRTM_RTSolution_type) :: rts, rts_K\end{verbatim}
-\end{ttfamily}
+  TYPE(\hyperref[sec:atmosphere_structure]{CRTM_Atmosphere_type}) :: atm, atm_K
+  TYPE(\hyperref[sec:rtsolution_structure]{CRTM_RTSolution_type}) :: rts, rts_K\end{alltt}
 where the K-matrix structure variables are identified with a ``\f{\_K}'' suffix. Similarly, tangent-linear and adjoint variables are suffixed with ``\f{\_TL}'' or ``\f{\_AD}'' respectively.
 
 \subsection{Naming of Definition Modules}
@@ -43,28 +31,12 @@ Modules containing structure type definitions are termed \textit{definition modu
 \hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_Define} 
 
 where, as with the structure type names, all definition module names are suffixed with ``\f{\_Define}'' and CRTM-specific definition modules are prefixed with ``\f{CRTM\_}''. Some examples are,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   SpcCoeff_Define
   CRTM_Atmosphere_Define
-  CRTM_RTSolution_Define\end{verbatim}
-\end{ttfamily}
+  CRTM_RTSolution_Define\end{alltt}
 The actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
 
-\subsection{Naming of I/O Modules}
-%---------------------------------
-Modules containing the routines that read and write data from and to files are, naturally, termed \textit{I/O modules}. The naming convention adopted for application modules in the CRTM is, 
-
-\hspace{0.5cm}\f{CRTM\_}\textit{name}
-
-Some examples are,
-\begin{ttfamily}
-  \begin{verbatim}
-  CRTM_AtmAbsorption
-  CRTM_SfcOptics
-  CRTM_RTSolution\end{verbatim}
-\end{ttfamily}
-However, in this case, \textit{name} does not necessarilty refer just to a structure type. Separate application modules are used as required to split up tasks in manageable (and easily maintained) chunks. For example, separate modules have been provided to contain the cloud and aerosol optical property retrieval; similarly separate modules handle different surface types for different instrument types in computing surface optics.
 
 \subsection{Naming of Application Modules}
 %-----------------------------------------
@@ -73,59 +45,94 @@ Modules containing the routines that perform the calculations for the various co
 \hspace{0.5cm}\f{CRTM\_}\textit{name}
 
 Some examples are,
-\begin{ttfamily}
-  \begin{verbatim}
+\begin{alltt}
   CRTM_AtmAbsorption
   CRTM_SfcOptics
-  CRTM_RTSolution\end{verbatim}
-\end{ttfamily}
+  CRTM_RTSolution\end{alltt}
 However, in this case, \textit{name} does not necessarilty refer just to a structure type. Separate application modules are used as required to split up tasks in manageable (and easily maintained) chunks. For example, separate modules have been provided to contain the cloud and aerosol optical property retrieval; similarly separate modules handle different surface types for different instrument types in computing surface optics.
 
 Again, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix. Note that not all definition modules have a corresponding application module since some structures (e.g. SpcCoeff structures) are simply data containers.
 
 
+\subsection{Naming of I/O Modules}
+%---------------------------------
+Modules containing routines that read and write data from and to files are, naturally, termed I/O modules. Not all data structures have associated I/O modules. The naming convention adopted for these modules in the CRTM is, 
 
+\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_Binary\_IO}
+
+or
+
+\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_netCDF\_IO}
+
+Some examples are,
+\begin{alltt}
+  SpcCoeff_Binary_IO
+  SpcCoeff_netCDF_IO
+  CRTM_Atmosphere_Binary_IO
+  CRTM_RTSolution_Binary_IO\end{alltt}
+As with the other module types, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
+
+In the context of the CRTM, the term ``Binary'' is a euphemisn for sequential, unformatted I/O in Fortran. Additionally, since some data structure constructions are not naturally amenable to fixed length data records (at least, not without significant wastage of space), not all data structures used in the CRTM have both netCDF and Binary I/O modules.
 
 
 \section{Components}
 %===================
-The radiative transfer problem is divided into three broad categories: atmospheric optics, surface optics and radiative transfer.
+The CRTM is designed around three broad categories: atmospheric optics, surface optics and radiative transfer.
 
 \subsection{Atmospheric Optics}
 %------------------------------
-(\AtmOptics) Includes computation of the absorption by atmospheric gases (\AtmAbsorption) and scattering and absorption by both clouds (\CloudScatter) and aerosols (\AerosolScatter).
+(\AtmOptics) This category includes computation of the absorption by atmospheric gases (\AtmAbsorption) and scattering and absorption by both clouds (\CloudScatter) and aerosols (\AerosolScatter).
 
-  Concerned with the interpolation of a lut of data to obtain the optical properties of clouds and aerosols for the current set of parameters.
+The gaseous absorption component computes the optical depth of the absorbing constituents in the atmosphere given the pressure, temperature, water vapour, and ozone concentration\footnote{Additional trace gas absorption capabilities are being added.} profiles.
+
+The scattering component simply interpolates look-up-tables (LUTs) of optical properties -- such as mass extinction coefficient and single scatter albedo -- for cloud and aerosol types that are then used in the radiative transfer component. See tables \ref{tab:cloud_type} and \ref{tab:aerosol_type} for the valid cloud and aerosol types, respectively, that are valid in the CRTM.
 
 
 \subsection{Surface Optics}
 %------------------------------
-  Separate models for each gross surface type for each spectral type (IR or MW).
+(\SfcOptics) This category includes the computation of surface emissivity and reflectivity for four gross surface types (land, water, snow, and ice). Each gross surface type has a specified number of specific surface types associated with it. See tables \ref{tab:surface_land_type}, \ref{tab:surface_water_type}, \ref{tab:surface_snow_type}, and \ref{tab:surface_ice_type} for the land, water, snow, and ice surface types, respectively, that are valid in the CRTM.
 
-(\SfcOptics) Includes the computation of surface emissivity and reflectivity for four gross surface types (land, sea, snow, and ice).
+The CRTM utilises separate models for each gross surface type for each spectral type (infrared and microwave). These models can be either physical models or database/LUT type of models.
+
 
 \subsection{Radiative Transfer Solution}
-%------------------------------
-  The solution of the RT problem using the various bits.
-(\RTSolution) Takes the \AtmOptics{} and \SfcOptics{} data and solves the radiative transfer problem.
+%---------------------------------------
+(\RTSolution) This category takes the \AtmOptics{} and \SfcOptics{} data and solves the radiative transfer problem either clear or scattering atmospheres.
 
 
 \section{Models}
 %===============
-FWD, tL, AD, and K-Matrix
-
+The CRTM is composed of four models: a forward model, a tangent-linear model, an adjoint model, and a K-matrix model. These can be represented as shown in equations \ref{eqn:fwd} to \ref{eqn:k}.
 \begin{subequations}
   \begin{eqnarray}
-    \mathbf{T_{B}},\mathbf{R} &=& \mathbf{F}(\mathbf{T},\mathbf{q},T_{s},...)\\\nonumber\\
-    \mathbf{\delta{T_{B}}},\mathbf{\delta{R}} &=& \mathbf{H}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\delta{T}},\mathbf{\delta{q}},\delta{T_{s}},...)\\\nonumber\\
-    \mathbf{\dstar{T}},\mathbf{\dstar{q}},\dstar{T_{s}},... &=& \mathbf{H^T}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\dstar{T_{B}}},\mathbf{\dstar{R}})\\\nonumber\\
-    \mathbf{\dstar{T}}_l,\mathbf{\dstar{q}}_l,\dstar{T_{s,l}},... &=& \mathbf{K}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\dstar{T_{B}}},\mathbf{\dstar{R}})\textrm{ for }l=1,2,...,L
+    \mathbf{T_{B}},\mathbf{R} &=& \mathbf{F}(\mathbf{T},\mathbf{q},T_{s},...)\label{eqn:fwd}\\\nonumber\\
+    \mathbf{\delta{T_{B}}},\mathbf{\delta{R}} &=& \mathbf{H}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\delta{T}},\mathbf{\delta{q}},\delta{T_{s}},...)\label{eqn:tl}\\\nonumber\\
+    \mathbf{\dstar{T}},\mathbf{\dstar{q}},\dstar{T_{s}},... &=& \mathbf{H^T}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\dstar{T_{B}}})\label{eqn:ad}\\\nonumber\\
+    \mathbf{\dstar{T}}_l,\mathbf{\dstar{q}}_l,\dstar{T_{s,l}},... &=& \mathbf{K}(\mathbf{T},\mathbf{q},T_{s},...\mathbf{\dstar{T_{B}}})\textrm{ for }l=1,2,...,L\label{eqn:k}
   \end{eqnarray}
 \end{subequations}
+Here $\mathbf{F}$ is the forward operator that, given the atmospheric temperature and absorber profiles ($\mathbf{T}$ and $\mathbf{q}$), surface temperature ($T_{s}$), etc., produces a vector of channel brightness temperatures ($\mathbf{T_{B}}$) and radiances ($\mathbf{R}$).
+
+The tangent-linear operator, $\mathbf{H}$, represents a linearisation of the forward model about $\mathbf{T}$, $\mathbf{q}$, $T_{s}$, etc. and when also supplied with perturbations about the linearisation point (quantities represented by the $\delta$'s) produces the expected perturbations to the brightness temperature and channel radiances.
+
+The adjoint operator, $\mathbf{H^T}$, is simply the transpose of the tangent-linear operator and produces gradients (the quantities represented by the $\dstar$'s). It is worth noting that, in the CRTM, these adjoint gradients are accumulated over channel and thus do not represent channel-specific Jacobians.
+
+The K-matrix operator\footnote{The term K-matrix is used because references to this operation in the literature commonly use the symbol $\mathbf{K}$}, $\mathbf{K}$, is effectively the same as the adjoint but with the results preserved by channel (indicated via the subscript $l$). In the CRTM, the adjoint and K-matrix results are related by,
+\begin{equation}
+  \dstar{x} = \sum_{l=1}^{L}\dstar{x}_l
+\end{equation}
+Thus, the K-matrix results are the derivatives of the diagnostic variables with respect to the prognostic variables, e.g.
+\begin{equation}
+  \dstar{x_{l}} = \frac{\partial{T_{B,l}}}{\partial{x}}
+\end{equation}
+Typically, only the forward or K-matrix models are used in applications. However, the intermediate models are generated and retained for maintenance and testing purposes. Any changes to the CRTM forward model are translated to the tangent-linear model and the latter tested against the former. When the tangent-linear model changes have been verified, the changes then translated to the adjoint model and, as before, the latter is tested against the former. This process is repeated for the adjoint-to-K-matrix models also.
 
 
 \section{Design Framework}
 %=========================
+This document is not really the place to fully discuss the design framework of the CRTM, so it will only be briefly mentioned here. Where appropriate, different physical processes are isolated into their own modules. The CRTM interfaces presented to the user are, at their core, simply drivers for the individual parts. This is shown schematically in the forward and K-matrix model flowcharts of figure \ref{fig:fwd_k_flowchart}.
+
+A fundamental tenet of the CRTM design is that each component define its own structure definition and application modules to facilitate independent development of an algorithm outside of the mainline CRTM development. By isolating different processes, we can more easily identify requirements for an algorithm with a view to minimise or eliminate potential software conflicts and/or redundancies. The end result sought via this approach is that components developed by different groups can more easily be added into the framework leading to faster implementation of new science and algorithms.
 
 \begin{figure}[htp]
   \centering

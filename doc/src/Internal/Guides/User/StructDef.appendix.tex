@@ -100,6 +100,7 @@
 
 % Atmosphere structure methods
 %-----------------------------
+\clearpage
 \input{fdoc/Atmosphere/CRTM_Associated_Atmosphere}
 \input{fdoc/Atmosphere/CRTM_Allocate_Atmosphere}
 \input{fdoc/Atmosphere/CRTM_Destroy_Atmosphere}
@@ -142,6 +143,7 @@
 
 % Cloud structure methods
 %------------------------
+\clearpage
 \input{fdoc/Atmosphere/CRTM_Associated_Cloud}
 \input{fdoc/Atmosphere/CRTM_Allocate_Cloud}
 \input{fdoc/Atmosphere/CRTM_Destroy_Cloud}
@@ -186,6 +188,7 @@
 
 % Aerosol structure methods
 %--------------------------
+\clearpage
 \input{fdoc/Atmosphere/CRTM_Associated_Aerosol}
 \input{fdoc/Atmosphere/CRTM_Allocate_Aerosol}
 \input{fdoc/Atmosphere/CRTM_Destroy_Aerosol}
@@ -315,15 +318,15 @@
          Broadleaf forest     & \texttt{BROADLEAF\_FOREST} \\
            Pine forest        & \texttt{PINE\_FOREST} \\
              Tundra           & \texttt{TUNDRA} \\
-           Grass soil         & \texttt{GRASS\_SOIL} \\
+           Grass-soil         & \texttt{GRASS\_SOIL} \\
        Broadleaf-pine forest  & \texttt{BROADLEAF\_PINE\_FOREST} \\
            Grass scrub        & \texttt{GRASS\_SCRUB} \\
-            Oil grass         & \texttt{OIL\_GRASS} \\
+         Soil-grass-scrub     & \texttt{SOIL\_GRASS\_SCRUB} \\
           Urban concrete      & \texttt{URBAN\_CONCRETE} \\
             Pine brush        & \texttt{PINE\_BRUSH} \\
           Broadleaf brush     & \texttt{BROADLEAF\_BRUSH} \\
              Wet soil         & \texttt{WET\_SOIL} \\
-            Scrub soil        & \texttt{SCRUB\_SOIL} \\
+            Scrub-soil        & \texttt{SCRUB\_SOIL} \\
       Broadleaf(70)-Pine(30)  & \texttt{BROADLEAF70\_PINE30} \\
     \hline
   \end{tabular}
@@ -504,6 +507,41 @@
   \caption{Description of CRTM \GeometryInfo{} structure components derived from user inputs.}
   \label{tab:derived_geometryinfo_structure}
 \end{table}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/gInfo/sensor_scan_angle.pstex_t}
+  \caption{Definition of \GeometryInfo{} sensor scan angle component.}
+  \label{fig:gInfo_sensor_scan_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/gInfo/sensor_zenith_angle.pstex_t}
+  \caption{Definition of \GeometryInfo{} sensor zenith angle component.}
+  \label{fig:gInfo_sensor_zenith_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/gInfo/sensor_azimuth_angle.pstex_t}
+  \caption{Definition of \GeometryInfo{} sensor azimuth angle component.}
+  \label{fig:gInfo_sensor_azimuth_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/gInfo/source_zenith_angle.pstex_t}
+  \caption{Definition of \GeometryInfo{} source zenith angle component.}
+  \label{fig:gInfo_source_zenith_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/gInfo/source_azimuth_angle.pstex_t}
+  \caption{Definition of \GeometryInfo{} source azimuth angle component.}
+  \label{fig:gInfo_source_azimuth_angle}
+\end{figure}
 
 % GeometryInfo structure methods
 %--------------------------

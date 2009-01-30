@@ -7,14 +7,14 @@
   
   PURPOSE:
         Function to compute the derived geometry from the user specified
-        components of the CRTM_GeometryInfo structure.
+        components of the CRTM GeometryInfo structure.
  
   CALLING SEQUENCE:
         Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo           , &
                                                   Message_Log=Message_Log  )
  
   INPUT ARGUMENTS:
-        GeometryInfo:  The CRTM_GeometryInfo structure containing the user
+        GeometryInfo:  The GeometryInfo structure containing the user
                        defined inputs, in particular the angles.
                        UNITS:      N/A
                        TYPE:       CRTM_GeometryInfo_type
@@ -22,7 +22,7 @@
                        ATTRIBUTES: INTENT(IN OUT)
  
   OUTPUT ARGUMENTS:
-        GeometryInfo:  The CRTM_GeometryInfo structure with the derived
+        GeometryInfo:  The GeometryInfo structure with the derived
                        angle components filled..
                        UNITS:      N/A
                        TYPE:       CRTM_GeometryInfo_type

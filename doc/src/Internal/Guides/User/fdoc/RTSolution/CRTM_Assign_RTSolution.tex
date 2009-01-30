@@ -6,7 +6,7 @@
         CRTM_Assign_RTSolution
  
   PURPOSE:
-        Function to copy valid CRTM_RTSolution structures.
+        Function to copy valid CRTM RTSolution structures.
  
   CALLING SEQUENCE:
         Error_Status = CRTM_Assign_RTSolution( RTSolution_in          , &
@@ -14,14 +14,14 @@
                                                Message_Log=Message_Log  )
  
   INPUT ARGUMENTS:
-        RTSolution_in:   CRTM_RTSolution structure which is to be copied.
+        RTSolution_in:   RTSolution structure which is to be copied.
                          UNITS:      N/A
                          TYPE:       CRTM_RTSolution_type
                          DIMENSION:  Scalar, Rank-1, or Rank-2
                          ATTRIBUTES: INTENT(IN)
  
   OUTPUT ARGUMENTS:
-        RTSolution_out:  Copy of the input structure, CRTM_RTSolution_in.
+        RTSolution_out:  Copy of the input structure, RTSolution_in.
                          UNITS:      N/A
                          TYPE:       CRTM_RTSolution_type
                          DIMENSION:  Same as input RTSolution_in

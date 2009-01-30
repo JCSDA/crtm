@@ -43,35 +43,41 @@ To compute satellite radiances you need to declare structures for the following 
   \item Optional inputs. Handled using the \hyperref[sec:options_structure]{\Options} structure.
 \end{enumerate}
 
-Let's assume you want to process, say, 50 profiles for the NOAA-18 AMSU-A sensor which has 15 channels. The declarations would look something like,
+Let's assume you want to process, say, 50 profiles for the NOAA-18 AMSU-A sensor which has 15 channels. The forward model declarations would look something like,
 \begin{alltt}
   ! Processing parameters
   INTEGER     , PARAMETER :: N_SENSORS  =  1
   INTEGER     , PARAMETER :: N_CHANNELS = 15
   INTEGER     , PARAMETER :: N_PROFILES = 50
   CHARACTER(*), PARAMETER :: SID(N_SENSORS) = (/'amsua_n18'/)
-  ! Declarations
-  TYPE(CRTM_Atmosphere_type)   :: atm(N_PROFILES)
-  TYPE(CRTM_Surface_type)      :: sfc(N_PROFILES)
-  TYPE(CRTM_GeometryInfo_type) :: gInfo(N_PROFILES)  
-  TYPE(CRTM_ChannelInfo_type)  :: chInfo(N_SENSORS)  
-  TYPE(CRTM_RTSolution_type)   :: rts(N_CHANNELS,N_PROFILES)\end{alltt}
+  TYPE(\hyperref[fig:CRTM_ChannelInfo_type_structure]{CRTM_ChannelInfo_type})  :: chInfo(N_SENSORS)  
+  TYPE(\hyperref[fig:CRTM_GeometryInfo_type_structure]{CRTM_GeometryInfo_type}) :: gInfo(N_PROFILES)  
+  ! Forward declarations
+  TYPE(\hyperref[fig:CRTM_Atmosphere_type_structure]{CRTM_Atmosphere_type})   :: atm(N_PROFILES)
+  TYPE(\hyperref[fig:CRTM_Surface_type_structure]{CRTM_Surface_type})      :: sfc(N_PROFILES)
+  TYPE(\hyperref[fig:CRTM_RTSolution_type_structure]{CRTM_RTSolution_type})   :: rts(N_CHANNELS,N_PROFILES)\end{alltt}
+If you are also interested in calling the K-matrix model, you will also need the following declarations,
+\begin{alltt}
+  ! K-Matrix declarations
+  TYPE(\hyperref[fig:CRTM_Atmosphere_type_structure]{CRTM_Atmosphere_type})   :: atm_K(N_CHANNELS,N_PROFILES)
+  TYPE(\hyperref[fig:CRTM_Surface_type_structure]{CRTM_Surface_type})      :: sfc_K(N_CHANNELS,N_PROFILES)
+  TYPE(\hyperref[fig:CRTM_RTSolution_type_structure]{CRTM_RTSolution_type})   :: rts_K(N_CHANNELS,N_PROFILES)\end{alltt}
 
 
 \subsection{Step 3: Initialise the CRTM}
 %---------------------------------------
 \stepcounter{step}
 \label{sec:init_step}
-The CRTM is initialised by calling the \hyperref[fig:init_interface]{\f{CRTM\_Init()}} function in the \f{CRTM\_LifeCycle.f90} module. This loads all the various coefficient data used by CRTM components into memory for later use. We'll assume that all the required datafiles reside in the subdirectory \f{./coeff\_data} and follow on from the example of Step \ref{sec:declare_step}. The CRTM initialisation is profile independent, so we're only dealing with sensor information here. The CRTM initialisation function call looks like,
+The CRTM is initialised by calling the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function. This loads all the various coefficient data used by CRTM components into memory for later use. We'll assume that all the required datafiles reside in the subdirectory \f{./coeff\_data} and follow on from the example of Step \ref{sec:declare_step}. The CRTM initialisation is profile independent, so we're only dealing with sensor information here. The CRTM initialisation function call looks like,
 \begin{alltt}
   INTEGER :: errStatus
   ....
-  errStatus = CRTM_Init( chInfo, Sensor_Id=SID, File_Path='./coeff_data' )
+  errStatus = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( chInfo, Sensor_Id=SID, File_Path='./coeff_data' )
   IF ( errStatus /= SUCCESS ) THEN 
     \textrm{\textit{handle error...}}
   END IF\end{alltt}
 
-Here we see for the first time how the CRTM functions let you know if they were successful. As you can see the \hyperref[fig:init_interface]{\f{CRTM\_Init()}} function result is an error status that is checked against a parameterised integer error code, \f{SUCCESS}. The function result should \emph{not} be tested against the actual value of the error code, just its parameterised name. Other available error code parameters are \f{FAILURE}, \f{WARNING}, and \f{INFORMATION} -- although the latter is never used as a function result.
+Here we see for the first time how the CRTM functions let you know if they were successful. As you can see the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function result is an error status that is checked against a parameterised integer error code, \f{SUCCESS}. The function result should \emph{not} be tested against the actual value of the error code, just its parameterised name. Other available error code parameters are \f{FAILURE}, \f{WARNING}, and \f{INFORMATION} -- although the latter is never used as a function result.
 
 
 \subsection{Step 4: Allocate the CRTM structures}
@@ -79,293 +85,125 @@ Here we see for the first time how the CRTM functions let you know if they were 
 \stepcounter{step}
 Now we need to allocate the \emph{internal} components of the various CRTM structures where necessary to hold the input or output data. In this case, functions are used to perform these ``internal'' allocations. The function naming convention is \f{CRTM\_Allocate\_}\textit{name} where, for typical usage, the CRTM structures that need to be allocated are the \hyperref[sec:atmosphere_structure]{\Atmosphere}, \hyperref[sec:rtsolution_structure]{\RTSolution} and, if used, \hyperref[sec:options_structure]{\Options} structures. Potentially, the \hyperref[sec:sensordata_structure]{\SensorData} component of the \hyperref[sec:surface_structure]{\Surface} structure may also need to be allocated to allow for input of sensor observations for some of the NESDIS microwave surface emissivity models.
 
-\subsubsection{Allocation of the Atmosphere structure}
-%.....................................................
-First, we'll allocate the atmosphere structure to the required dimensions, like so:
+\subsubsection{Allocation of the Atmosphere structures}
+%......................................................
+First, we'll allocate the atmosphere structures to the required dimensions. The forward variable is allocated like so:
 \begin{alltt}
-  ! Allocate the atmosphere structure
-  errStatus = CRTM_Allocate_Atmosphere( n_Layers   , &  ! Input
+  ! Allocate the forward atmosphere structure
+  errStatus = \hyperref[sec:CRTM_Allocate_Atmosphere_interface]{CRTM_Allocate_Atmosphere}( n_Layers   , &  ! Input
                                         N_ABSORBERS, &  ! Input (always 2)
                                         n_Clouds   , &  ! Input
                                         n_Aerosols , &  ! Input
                                         atm          )  ! Output
   IF ( errStatus /= SUCCESS ) THEN 
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error allocating the atmosphere structure', & 
-                          FAILURE )
-    STOP
+    \textrm{\textit{handle error...}}
   END IF\end{alltt}
+and the K-matrix variable is allocated by looping over all profiles,
+\begin{alltt}
+  ! Allocate the K-matrix atmosphere structure
+  DO m = 1, N_PROFILES
+    errStatus = \hyperref[sec:CRTM_Allocate_Atmosphere_interface]{CRTM_Allocate_Atmosphere}( n_Layers   , &  ! Input
+                                          N_ABSORBERS, &  ! Input (always 2)
+                                          n_Clouds   , &  ! Input
+                                          n_Aerosols , &  ! Input
+                                          atm_k(:,m)   )  ! Output
+    IF ( errStatus /= SUCCESS ) THEN 
+      \textrm{\textit{handle error...}}
+    END IF
+  END DO\end{alltt}
 Note that the number of absorbers is in all capitals. In the CRTM, this style convention indicates a parameter. A parameter is used for the number of absorbers in the current CRTM release because the number of absorbers is fixed at two: water vapour and ozone. Future CRTM releases will allow more flexibility in selecting the number of absorbers, but currently the number must be set to two.
-
-If 
-
-
-
-
-
-
-
-
 
 
 \subsection{Step 6: Fill the CRTM input structures with data}
 %------------------------------------------------------------
 \stepcounter{step}
+This step simply entails filling the input \texttt{atm}, \texttt{sfc} and \texttt{gInfo} structures with the required information. However, there are some issues that need to be mentioned:
+\begin{itemize}
+  \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the \texttt{Climatology} component is not yet used.
+  \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, \emph{both} the level and layer pressure profiles must be specified.
+  \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the absorber profile data units \emph{must} be mass mixing ratio for water vapour and ppmv for ozone. The \texttt{Absorber\_Units} component is not yet utilised to allow conversion of different user-supplied concentration units.
+  \item In the \hyperref[sec:surface_structure]{\Surface} structure, the sum of the coverage types \emph{must} add up to 1.0.
+  \item In the \hyperref[sec:geometryinfo_structure]{\GeometryInfo} structure, the sensor zenith and sensor scan angles should be consistent.
+  \item Graphical definitions of the \hyperref[sec:geometryinfo_structure]{\GeometryInfo} structure sensor scan, sensor zenith, sensor azimuth, source zenith, and source azimuth angles are shown in figures \ref{fig:gInfo_sensor_scan_angle}, \ref{fig:gInfo_sensor_zenith_angle}, \ref{fig:gInfo_sensor_azimuth_angle}, \ref{fig:gInfo_source_zenith_angle}, and  \ref{fig:gInfo_source_azimuth_angle} respectively.
+\end{itemize}
+For the K-matrix structures, you should zero the K-matrix \emph{outputs}, \texttt{atm\_K}, \texttt{sfc\_K},
+\begin{alltt}
+  ! Zero the K-matrix OUTPUT structures
+  CALL \hyperref[sec:CRTM_Zero_Atmosphere_interface]{CRTM_Zero_Atmosphere}( atm_K )
+  CALL \hyperref[sec:CRTM_Zero_Surface_interface]{CRTM_Zero_Surface}( sfc_K )\end{alltt}
+and initialise the K-matrix \emph{input}, \texttt{rts\_K}, to provide you with the derivatives you want. For example, if you want the \texttt{atm\_K}, \texttt{sfc\_K} outputs to contain brightness temperature derivatives, you should initialise \texttt{rts\_K} like so,
+\begin{alltt}
+  ! Initialise the K-Matrix INPUT to provide dTb/dx derivatives
+  rts_K%Radiance = ZERO
+  rts_K%Brightness_Temperature = ONE\end{alltt}
+Alternatively, if you want radiance derivatives returned in \texttt{atm\_K} and \texttt{sfc\_K}, the \texttt{rts\_K} structure should be initialised like so,  
+\begin{alltt}
+  ! Initialise the K-Matrix INPUT to provide dR/dx derivatives
+  rts_K%Radiance = ONE
+  rts_K%Brightness_Temperature = ZERO\end{alltt}
+
+For computational efficiency, there is minimal input data checking done so the GIGO\footnote{Garbage In, Garbage Out} principle applies.
 
 
 \subsection{Step 7: Call the required CRTM function}
 %---------------------------------------------------
 \stepcounter{step}
+At this point, much of the prepatory heavy lifting has been done. The CRTM function calls themselves are quite simple. For the forward model we do,
+\begin{alltt}
+  Error_Status = \hyperref[sec:CRTM_Forward_interface]{CRTM_Forward}( atm   , & ! Input
+                               sfc   , & ! Input
+                               gInfo , & ! Input
+                               chInfo, & ! Input
+                               rts     ) ! Output
+  IF ( Error_Status /= SUCCESS ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+and for the K-matrix model, the calling syntax is,
+\begin{alltt}
+  Error_Status = \hyperref[sec:CRTM_K_Matrix_interface]{CRTM_K_Matrix}( atm   , & ! Forward  input  
+                                sfc   , & ! Forward  input    
+                                rts_K , & ! K-matrix input    
+                                gInfo , & ! Input  
+                                chInfo, & ! Input  
+                                atm_K , & ! K-matrix output
+                                sfc_K , & ! K-matrix output  
+                                rts     ) ! Forward  output
+  IF ( Error_Status /= SUCCESS ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+Note that the K-matrix model also returns the forward model radiances. The \hyperref[sec:CRTM_Tangent_Linear_interface]{tangent-linear} and \hyperref[sec:CRTM_Adjoint_interface]{adjoint} models have similar call structures and will not be shown here.
 
 
-\subsection{Step 8: Destroy the CRTM}
-%------------------------------------
+\subsection{Step 8: Destroy the CRTM and cleanup}
+%------------------------------------------------
 \stepcounter{step}
-
+The last step is to cleanup. This involves calling the CRTM destruction function
+\begin{alltt}
+  Error_Status = \hyperref[sec:CRTM_Destroy_interface]{CRTM_Destroy}( chInfo )
+  IF ( Error_Status /= SUCCESS ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+to deallocate all the shared coefficient data, as well as calling the individual structure destroy functions to deallocate as required. For the example here, that entails deallocating the forward and K-matrix \hyperref[sec:atmosphere_structure]{\Atmosphere}  structures, \texttt{atm} and \texttt{atm\_K},
+\begin{alltt}
+  Error_Status = \hyperref[sec:CRTM_Destroy_Atmosphere_interface]{CRTM_Destroy_Atmosphere}(atm_K)
+  IF ( Error_Status /= SUCCESS ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF
+  
+  Error_Status = \hyperref[sec:CRTM_Destroy_Atmosphere_interface]{CRTM_Destroy_Atmosphere}(atm)
+  IF ( Error_Status /= SUCCESS ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
 
 
 \section{Interface Descriptions}
 %===============================
 
-\subsection{CRTM Initialisation}
-%-------------------------------
-
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{alltt}
-  FUNCTION CRTM_Init( ChannelInfo      , &
-                      Sensor_ID        , &
-                      CloudCoeff_File  , &
-                      AerosolCoeff_File, &
-                      EmisCoeff_File   , &
-                      File_Path        , &
-                      Quiet            , &
-                      Process_ID       , &
-                      Output_Process_ID, &
-                      RCS_Id           , &
-                      Message_Log      ) &
-                    RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: CloudCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: EmisCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: File_Path
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Quiet
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Output_Process_ID
-    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    \end{alltt}
-    \centering
-    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
-      \hline
-      \tblhd{Argument}             & \tblhd{Description}                             & \tblhd{Rank} & \tblhd{Intent} \\
-      \hline\hline
-      \f{ChannelInfo}              & Sensor and channel info structure               & $N$          & Output \\
-      \optarg{Sensor\_Id}          & \textit{Sensor identification string}           & $N$          & \textit{Input}  \\
-      \optarg{CloudCoeff\_File}    & \textit{Cloud optical property LUT filename}    & Scalar       & \textit{Input}  \\
-      \optarg{AerosolCoeff\_File}  & \textit{Aerosol optical property LUT filename}  & Scalar       & \textit{Input}  \\
-      \optarg{EmisCoeff\_File}     & \textit{IR sea surface emissivity LUT filename} & Scalar       & \textit{Input}  \\
-      \optarg{File\_Path}          & \textit{Path to *Coeff files}                   & Scalar       & \textit{Input}  \\
-      \optarg{Quiet}               & \textit{Keyword to control info message output} & Scalar       & \textit{Input}  \\
-      \optarg{Process\_Id}         & \textit{MPI process Id}                         & Scalar       & \textit{Input}  \\
-      \optarg{Output\_Process\_Id} & \textit{MPI process Id for message output}      & Scalar       & \textit{Input}  \\
-      \optarg{RCS\_Id}             & \textit{Version control ID for the module}      & Scalar       & \textit{Output} \\
-      \optarg{Message\_Log}        & \textit{Log message filename}                   & Scalar       & \textit{Input} 
-    \end{tabular}
-  \end{minipage}
-  }
-  \caption{CRTM Initialisation interface and argument description.}
-  \label{fig:init_interface}
-\end{figure}
-
-\subsection{Forward Model}
-%-------------------------
-
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{alltt}
-  FUNCTION CRTM_Forward( Atmosphere  , &
-                         Surface     , &
-                         GeometryInfo, &
-                         ChannelInfo , &
-                         RTSolution  , &
-                         Options     , &    
-                         RCS_Id      , &
-                         Message_Log ) &
-                       RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)
-    TYPE(CRTM_Surface_type),           INTENT(IN)     :: Surface(:)
-    TYPE(CRTM_GeometryInfo_type),      INTENT(IN OUT) :: GeometryInfo(:)
-    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)
-    TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)
-    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)
-    CHARACTER(*),            OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    \end{alltt}
-    \centering
-    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
-      \hline
-      \tblhd{Argument}       & \tblhd{Description}                           & \tblhd{Rank} & \tblhd{Intent} \\
-      \hline\hline
-      \f{Atmosphere}         & Atmospheric state                             & $M$          & Input  \\
-      \f{Surface}            & Surface state                                 & $M$          & Input  \\
-      \f{GeometryInfo}       & Geometry information (e.g. angles)            & $M$          & Input  \\
-      \f{ChannelInfo}        & Sensor channel information                    & $N$          & Input  \\
-      \f{RTSolution}         & Radiative transfer solution                   & $L \times M$ & Output \\
-      \optarg{Options}       & \textit{Structure containing optional inputs} & $M$          & \textit{Input}  \\
-      \optarg{RCS\_Id}       & \textit{Version control ID for the module}    & Scalar       & \textit{Output} \\
-      \optarg{Message\_Log}  & \textit{Log message filename}                 & Scalar       & \textit{Input} 
-    \end{tabular}
-  \end{minipage}
-  }
-  \caption{CRTM Forward model interface and argument description.}
-  \label{fig:fwd_interface}
-\end{figure}
+\input{fdoc/CRTM_Init}
+\input{fdoc/CRTM_Forward}
+\input{fdoc/CRTM_Tangent_Linear}
+\input{fdoc/CRTM_Adjoint}
+\input{fdoc/CRTM_K_Matrix}
+\input{fdoc/CRTM_Destroy}
 
 
-\subsection{K-Matrix Model}
-%--------------------------
-
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{alltt}
-  FUNCTION CRTM_K_Matrix( Atmosphere  , &
-                          Surface     , &
-                          RTSolution_K, &
-                          GeometryInfo, &
-                          ChannelInfo , &
-                          Atmosphere_K, &
-                          Surface_K   , &
-                          RTSolution  , &
-                          Options     , &
-                          RCS_Id      , &
-                          Message_Log ) &
-                        RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere(:)
-    TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface(:)
-    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution_K(:,:)
-    TYPE(CRTM_GeometryInfo_type)     , INTENT(IN OUT) :: GeometryInfo(:)
-    TYPE(CRTM_ChannelInfo_type)      , INTENT(IN)     :: ChannelInfo(:)
-    TYPE(CRTM_Atmosphere_type)       , INTENT(IN OUT) :: Atmosphere_K(:,:)
-    TYPE(CRTM_Surface_type)          , INTENT(IN OUT) :: Surface_K(:,:)
-    TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution(:,:)
-    TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)
-    CHARACTER(*),            OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),            OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    \end{alltt}
-    \centering
-    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
-      \hline
-      \tblhd{Argument}      & \tblhd{Description}                           & \tblhd{Rank} & \tblhd{Intent} \\
-      \hline\hline
-      \f{Atmosphere}        & Atmospheric state                             & $M$          & FWD Input  \\
-      \f{Surface}           & Surface state                                 & $M$          & FWD Input  \\
-      \f{RTSolution\_K}     & Adjoint radiative transfer solution           & $L \times M$ & K   Input  \\
-      \f{GeometryInfo}      & Geometry information (e.g. angles)            & $M$          & Input      \\
-      \f{ChannelInfo}       & Sensor channel information                    & $N$          & Input      \\
-      \f{Atmosphere\_K}     & Atmospheric state Jacobians                   & $L \times M$ & K   Output \\
-      \f{Surface\_K}        & Surface state Jacobians                       & $L \times M$ & K   Output \\
-      \f{RTSolution}        & Radiative transfer solution                   & $L \times M$ & FWD Output \\
-      \optarg{Options}      & \textit{Structure containing optional inputs} & $M$          & \textit{Input}  \\
-      \optarg{RCS\_Id}      & \textit{Version control ID for the module}    & Scalar       & \textit{Output} \\
-      \optarg{Message\_Log} & \textit{Log message filename}                 & Scalar       & \textit{Input} 
-    \end{tabular}
-  \end{minipage}
-  }
-  \caption{CRTM K-Matrix model interface and argument description.}
-  \label{fig:k_interface}
-\end{figure}
-
-
-\subsection{CRTM Destruction}
-%----------------------------
-
-\begin{figure}[htp]
-  \centering
-  \doublebox{
-  \begin{minipage}[b]{16.5cm}
-    \begin{alltt}
-  FUNCTION CRTM_Destroy( ChannelInfo , &  ! Output
-                         Process_ID  , &  ! Optional input
-                         RCS_Id      , &  ! Revision control
-                         Message_Log ) &  ! Error messaging
-                       RESULT ( Error_Status )
-    ! Arguments
-    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
-    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    \end{alltt}
-    \centering
-    \begin{tabular}{p{3.25cm} p{6.5cm} p{1.75cm} p{2.5cm}}
-      \hline
-      \tblhd{Argument}      & \tblhd{Description}                           & \tblhd{Rank} & \tblhd{Intent} \\
-      \hline\hline
-      \f{ChannelInfo}       & Sensor and channel info structure             & $N$          & In/Output       \\
-      \optarg{Process\_Id}  & \textit{MPI process Id}                       & Scalar       & \textit{Input}  \\
-      \optarg{RCS\_Id}      & \textit{Version control ID for the module}    & Scalar       & \textit{Output} \\
-      \optarg{Message\_Log} & \textit{Log message filename}                 & Scalar       & \textit{Input} 
-    \end{tabular}
-  \end{minipage}
-  }
-  \caption{CRTM Destruction interface and argument description.}
-  \label{fig:destroy_interface}
-\end{figure}
-
-
-\section{Filling input data structures}
-%======================================
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/gInfo/sensor_scan_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} sensor scan angle component.}
-  \label{fig:gInfo_sensor_scan_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/gInfo/sensor_zenith_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} sensor zenith angle component.}
-  \label{fig:gInfo_sensor_zenith_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/gInfo/sensor_azimuth_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} sensor azimuth angle component.}
-  \label{fig:gInfo_sensor_azimuth_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/gInfo/source_zenith_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} source zenith angle component.}
-  \label{fig:gInfo_source_zenith_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/gInfo/source_azimuth_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} source azimuth angle component.}
-  \label{fig:gInfo_source_azimuth_angle}
-\end{figure}

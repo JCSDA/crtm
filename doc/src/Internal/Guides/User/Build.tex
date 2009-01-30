@@ -1,11 +1,8 @@
 \chapter{How to build the CRTM library}
 %======================================
 
-\section{Overview}
-%=================
-
-\subsection{Build Files}
-%-----------------------
+\section{Build Files}
+%====================
 The build system for the CRTM is currently quite unsophisticated. It consists of a number of make and include files in the CRTM tarball hierarchy:
 
 \begin{tabular}{l@{ : }p{4.75in}}
@@ -14,8 +11,8 @@ The build system for the CRTM is currently quite unsophisticated. It consists of
   \,\texttt{make.rules} & The include file containing the suffix rules for compiling Fortran95 source code.\\
 \end{tabular}
 
-\subsection{Predefined Build Targets}
-%------------------------------------
+\section{Predefined Build Targets}
+%=================================
 Several targets are available for specific compilers. The compilers and makefile target names are shown in table \ref{tab:predefined_build_targets}. Both ``production'' and debug target names are supplied, with the former using compiler switches to produce fast code and the latter using compiler switches to turn on all the available debugging capabilities. Note that the debug targets will produce executables much slower than the production builds. 
 \begin{table}[htp]
   \centering
@@ -23,15 +20,16 @@ Several targets are available for specific compilers. The compilers and makefile
     \hline
     \sffamily\textbf{Platform} & \sffamily\textbf{Compiler} & \sffamily\textbf{Production Target} & \sffamily\textbf{Debug Target} \\
     \hline\hline
-    \multirow{6}{*}{Linux}     & GNU gfortran      & \texttt{gfortran} & \texttt{gfortran\_debug}\\
-        &Lahey lf95            & \texttt{lahey}    & \texttt{lahey\_debug}   \\
-        &Intel ifort           & \texttt{intel}    & \texttt{intel\_debug}   \\
-        &PGI pgf95             & \texttt{pgi}      & \texttt{pgi\_debug}     \\
-        &g95                   & \texttt{g95}      & \texttt{g95\_debug}     \\
-        &Absoft$^\dagger$      & \texttt{absoft}   & \texttt{absoft\_debug}  \\[0.2cm]
-    IBM &AIX xlf95             & \texttt{ibm}      & \texttt{ibm\_debug}     \\[0.2cm]
-    SGI &IRIX f90$^\dagger$    & \texttt{sgi}      & \texttt{sgi\_debug}     \\[0.2cm]
-    Sun &Solaris f90$^\dagger$ & \texttt{sun}      & \texttt{sun\_debug}     \\
+    \multirow{6}{*}{Linux} & GNU gfortran          & \texttt{gfortran} & \texttt{gfortran\_debug}\\
+                           & Lahey lf95            & \texttt{lahey}    & \texttt{lahey\_debug}   \\
+                           & Intel ifort           & \texttt{intel}    & \texttt{intel\_debug}   \\
+                           & PGI pgf95             & \texttt{pgi}      & \texttt{pgi\_debug}     \\
+                           & g95                   & \texttt{g95}      & \texttt{g95\_debug}     \\
+                           & Absoft$^\dagger$      & \texttt{absoft}   & \texttt{absoft\_debug}  \\[0.2cm]
+    IBM                    & AIX xlf95             & \texttt{ibm}      & \texttt{ibm\_debug}     \\[0.2cm]
+    HP                     & HP-UX f90$^\dagger$   & \texttt{hp}       & \texttt{hp\_debug}      \\[0.2cm]
+    SGI                    & IRIX f90$^\dagger$    & \texttt{sgi}      & \texttt{sgi\_debug}     \\[0.2cm]
+    Sun                    & Solaris f90$^\dagger$ & \texttt{sun}      & \texttt{sun\_debug}     \\
     \hline
   \end{tabular}
   \caption{Predefined makefile targets for CRTM library build. ($^\dagger$ Untested.)}
@@ -40,44 +38,41 @@ Several targets are available for specific compilers. The compilers and makefile
 
 The actual compiler and switch definitions are listed in the \texttt{make.macros} file. Also note that not all of the above compilers have been tested for the current release.
 
-\subsection{Building on Linux/MacOSX systems}
-%--------------------------------------------
+\section{Building the library}
+%=============================
 The default build is performed by simply typing,
 
-\quad\texttt{make}
+\begin{verbatim}     make\end{verbatim}
 
-and is operating system sensitive in that the compiler is selected based on the platform you are one. For example, if you build on an IBM/AIX system, the xlf95 compiler is invoked. Doing the same on a linux or MacOSX system invokes the default linux compiler; currently this is the GNU gfortran f95 compiler.
+and is operating system sensitive in that the compiler is selected based on the platform. For example, if you build on an IBM/AIX system, the xlf95 compiler is invoked. Doing the same on a linux or MacOSX system invokes the default linux compiler; currently this is the GNU gfortran f95 compiler.
 
-So, if you are using a linux or MacOSX systemm and want to modify the defaulthow the CRTM builds (different compiler, different switches) editing the "make.macros" file is, for now, your best best. Eventually we'll put together something smarter.
+So, if you are using a linux or MacOSX system and want to modify the \emph{default} CRTM build (different compiler, different switches), you will need to edit the \texttt{make.macros} file. At the bottom of this file, you will see the following macro definitions,
+\begin{verbatim}
+     LINUX_FLAGS = $(LINUX_FLAGS_GFORTRAN)
+     #LINUX_FLAGS = $(LINUX_FLAGS_LAHEY)
+     #LINUX_FLAGS = $(LINUX_FLAGS_PGI)
+     #LINUX_FLAGS = $(LINUX_FLAGS_INTEL)
+     #LINUX_FLAGS = $(LINUX_FLAGS_G95)\end{verbatim}
+where you can see the generic \texttt{LINUX\_FLAGS} macros is set to \texttt{LINUX\_FLAGS\_GFORTRAN}. To use any of the other defined compilers (Lahey, PGI, Intel, or g95), simply uncomment the required line. For example, if your compiler of choice is Intel \texttt{ifort} and you want that to be the default build, the change would simply be
+\begin{verbatim}
+     #LINUX_FLAGS = $(LINUX_FLAGS_GFORTRAN)
+     #LINUX_FLAGS = $(LINUX_FLAGS_LAHEY)
+     #LINUX_FLAGS = $(LINUX_FLAGS_PGI)
+     LINUX_FLAGS = $(LINUX_FLAGS_INTEL)
+     #LINUX_FLAGS = $(LINUX_FLAGS_G95)\end{verbatim}
+Note, however, than an Intel \texttt{ifort} build can also be obtained by using the predefined makefile targets as shown in table \ref{tab:predefined_build_targets}.
+     
+     
+\section{Installing the library}
+%===============================
+An very simple install target is specified in the supplied makefile to put all the necessary include files (the generated \texttt{*.mod} files containing all the procedure interface information) in an \texttt{/include} subdirectory and the library itself (the generated \texttt{libCRTM.a} file) in a \texttt{/lib} subdirectory. The make command is
+\begin{verbatim}     make install\end{verbatim}
+The \texttt{/include} and \texttt{/lib} subdirectories can then be moved to a more suitable location on your system, for example: \texttt{\$HOME/local/CRTM}
 
-%   For the linux folks out there, the bottom of the "make.macros" file contains
-%   the following
-%     LINUX_FLAGS = $(LINUX_FLAGS_GFORTRAN)
-%     #LINUX_FLAGS = $(LINUX_FLAGS_LAHEY)
-%     #LINUX_FLAGS = $(LINUX_FLAGS_PGI)
-%     #LINUX_FLAGS = $(LINUX_FLAGS_INTEL)
-%     #LINUX_FLAGS = $(LINUX_FLAGS_G95)
-%   If you want to change the default linux compiler simply comment out the gfrotran
-%   definition line and uncomment the compiler definition of your choice.
-%
-%
-%1) Once all the above stuff has been sorted out, to build the CRTM library type
-%
-%     make [target]
-%
-%   where the optional target is one listed in (0) above. Note that for some modules 
-%   you will get a number of "unused dummy argument" warnings. This is normal.
-%
-%
-%2) To install the CRTM library in ./lib and ./include directories, type
-%
-%     make install
-%
-%
-%3) That's really it. Any questions, suggestions, additions, bug reports, etc,
-%   let us know know at
-%     ncep.list.emc.jcsda_crtm@noaa.gov
-%   or
-%     paul.vandelst@noaa.gov
-%
 
+\section{Linking to the library}
+%===============================
+Let's assume you've built the CRTM library and placed the \texttt{/include} and \texttt{/lib} subdirectories in your own local area, \texttt{\$HOME/local/CRTM}. In the makefile for your application that uses the CRTM, you will need to add
+\begin{verbatim}     -I$HOME/local/CRTM/include\end{verbatim}
+to your list of compilation switches, and the following to your list of link switches,
+\begin{verbatim}     -L$HOME/local/CRTM/lib -lCRTM\end{verbatim}

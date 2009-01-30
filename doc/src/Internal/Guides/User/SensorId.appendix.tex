@@ -38,9 +38,9 @@ NOAA-06 AVHRR/2           & \texttt{avhrr2\_n06}     & \hspace{0.2cm} & GOES-R A
 NOAA-07 AVHRR/2           & \texttt{avhrr2\_n07}     & \hspace{0.2cm} & MTSAT-1R Imager              & \texttt{imgr\_mt1r}        \\
 NOAA-08 AVHRR/2           & \texttt{avhrr2\_n08}     & \hspace{0.2cm} & Aqua MODIS                   & \texttt{modis\_aqua}       \\
 NOAA-09 AVHRR/2           & \texttt{avhrr2\_n09}     & \hspace{0.2cm} & Terra MODIS                  & \texttt{modis\_terra}      \\
-NOAA-10 AVHRR/2           & \texttt{avhrr2\_n10}     & \hspace{0.2cm} & MetoeSat-08 SEVIRI           & \texttt{seviri\_m08}       \\
-NOAA-11 AVHRR/2           & \texttt{avhrr2\_n11}     & \hspace{0.2cm} & MetoeSat-09 SEVIRI           & \texttt{seviri\_m09}       \\
-NOAA-12 AVHRR/2           & \texttt{avhrr2\_n12}     & \hspace{0.2cm} & MetoeSat-10 SEVIRI           & \texttt{seviri\_m10}       \\
+NOAA-10 AVHRR/2           & \texttt{avhrr2\_n10}     & \hspace{0.2cm} & MeteoSat-08 SEVIRI           & \texttt{seviri\_m08}       \\
+NOAA-11 AVHRR/2           & \texttt{avhrr2\_n11}     & \hspace{0.2cm} & MeteoSat-09 SEVIRI           & \texttt{seviri\_m09}       \\
+NOAA-12 AVHRR/2           & \texttt{avhrr2\_n12}     & \hspace{0.2cm} & MeteoSat-10 SEVIRI           & \texttt{seviri\_m10}       \\
 NOAA-14 AVHRR/2           & \texttt{avhrr2\_n14}     & \hspace{0.2cm} & GOES-08 Sounder              & \texttt{sndr\_g08}         \\
 NOAA-15 AVHRR/3           & \texttt{avhrr3\_n15}     & \hspace{0.2cm} & GOES-09 Sounder              & \texttt{sndr\_g09}         \\
 NOAA-16 AVHRR/3           & \texttt{avhrr3\_n16}     & \hspace{0.2cm} & GOES-10 Sounder              & \texttt{sndr\_g10}         \\
@@ -75,33 +75,31 @@ NOAA-15 HIRS/3            & \texttt{hirs3\_n15}      & \hspace{0.2cm} & Fengyun-
     \hline
     \sffamily\textbf{Instrument} & \sffamily\textbf{Sensor Id} & \hspace{0.2cm} & \sffamily\textbf{Instrument} & \sffamily\textbf{Sensor Id} \\
     \hline\hline
-Aqua AMSR-E     & \texttt{amsre\_aqua}    & \hspace{0.2cm} & NOAA-19 MHS      & \texttt{mhs\_n19}           \\
-Aqua AMSU-A     & \texttt{amsua\_aqua}    & \hspace{0.2cm} & MetOp-A MHS      & \texttt{mhs\_metop-a}       \\
-Aqua HSB        & \texttt{hsb\_aqua}      & \hspace{0.2cm} & MetOp-B MHS      & \texttt{mhs\_metop-b}       \\
-TIROS-N MSU     & \texttt{msu\_tirosn}    & \hspace{0.2cm} & MetOp-C MHS      & \texttt{mhs\_metop-c}       \\
-NOAA-06 MSU     & \texttt{msu\_n06}       & \hspace{0.2cm} & DMSP-08 SSM/I    & \texttt{ssmi\_f08}          \\
-NOAA-07 MSU     & \texttt{msu\_n07}       & \hspace{0.2cm} & DMSP-10 SSM/I    & \texttt{ssmi\_f10}          \\
-NOAA-08 MSU     & \texttt{msu\_n08}       & \hspace{0.2cm} & DMSP-11 SSM/I    & \texttt{ssmi\_f11}          \\
-NOAA-09 MSU     & \texttt{msu\_n09}       & \hspace{0.2cm} & DMSP-13 SSM/I    & \texttt{ssmi\_f13}          \\
-NOAA-10 MSU     & \texttt{msu\_n10}       & \hspace{0.2cm} & DMSP-14 SSM/I    & \texttt{ssmi\_f14}          \\
-NOAA-11 MSU     & \texttt{msu\_n11}       & \hspace{0.2cm} & DMSP-15 SSM/I    & \texttt{ssmi\_f15}          \\
-NOAA-12 MSU     & \texttt{msu\_n12}       & \hspace{0.2cm} & DMSP-13 SSM/T-1  & \texttt{ssmt1\_f13}         \\
-NOAA-14 MSU     & \texttt{msu\_n14}       & \hspace{0.2cm} & DMSP-15 SSM/T-1  & \texttt{ssmt1\_f15}         \\
-NOAA-15 AMSU-A  & \texttt{amsua\_n15}     & \hspace{0.2cm} & DMSP-14 SSM/T-2  & \texttt{ssmt2\_f14}         \\
-NOAA-16 AMSU-A  & \texttt{amsua\_n16}     & \hspace{0.2cm} & DMSP-15 SSM/T-2  & \texttt{ssmt2\_f15}         \\
-NOAA-17 AMSU-A  & \texttt{amsua\_n17}     & \hspace{0.2cm} & DMSP-16 SSMIS    & \texttt{ssmis\_f16}         \\
-NOAA-18 AMSU-A  & \texttt{amsua\_n18}     & \hspace{0.2cm} & DMSP-17 SSMIS    & \texttt{ssmis\_f17}         \\
-NOAA-19 AMSU-A  & \texttt{amsua\_n19}     & \hspace{0.2cm} & DMSP-18 SSMIS    & \texttt{ssmis\_f18}         \\
-MetOp-A AMSU-A  & \texttt{amsua\_metop-a} & \hspace{0.2cm} & DMSP-19 SSMIS    & \texttt{ssmis\_f19}         \\
-MetOp-B AMSU-A  & \texttt{amsua\_metop-b} & \hspace{0.2cm} & DMSP-20 SSMIS    & \texttt{ssmis\_f20}         \\
-MetOp-C AMSU-A  & \texttt{amsua\_metop-c} & \hspace{0.2cm} & NPP ATMS         & \texttt{atms\_npp}          \\
-NOAA-15 AMSU-B  & \texttt{amsub\_n15}     & \hspace{0.2cm} & Coriolis WindSat & \texttt{windsat\_coriolis}  \\
-NOAA-16 AMSU-B  & \texttt{amsub\_n16}     & \hspace{0.2cm} & TRMM TMI         & \texttt{tmi\_trmm}          \\
-NOAA-17 AMSU-B  & \texttt{amsub\_n17}     & \hspace{0.2cm} & GPM GMI          & \texttt{gmi\_gpm}           \\
-NOAA-15 AMSU-B  & \texttt{amsub\_n15}     & \hspace{0.2cm} & Fengyun-3A MWRI  & \texttt{mwri\_fy3a}         \\
-NOAA-16 AMSU-B  & \texttt{amsub\_n16}     & \hspace{0.2cm} & Fengyun-3A MWHS  & \texttt{mwhs\_fy3a}         \\
-NOAA-17 AMSU-B  & \texttt{amsub\_n17}     & \hspace{0.2cm} & Fengyun-3A MWTS  & \texttt{mwts\_fy3a}         \\
-NOAA-18 MHS     & \texttt{mhs\_n18}       & \hspace{0.2cm} & & \\
+Aqua AMSR-E     & \texttt{amsre\_aqua}    & \hspace{0.2cm} & MetOp-A MHS      & \texttt{mhs\_metop-a}      \\
+Aqua AMSU-A     & \texttt{amsua\_aqua}    & \hspace{0.2cm} & MetOp-B MHS      & \texttt{mhs\_metop-b}      \\
+Aqua HSB        & \texttt{hsb\_aqua}      & \hspace{0.2cm} & MetOp-C MHS      & \texttt{mhs\_metop-c}      \\
+TIROS-N MSU     & \texttt{msu\_tirosn}    & \hspace{0.2cm} & DMSP-08 SSM/I    & \texttt{ssmi\_f08}         \\
+NOAA-06 MSU     & \texttt{msu\_n06}       & \hspace{0.2cm} & DMSP-10 SSM/I    & \texttt{ssmi\_f10}         \\
+NOAA-07 MSU     & \texttt{msu\_n07}       & \hspace{0.2cm} & DMSP-11 SSM/I    & \texttt{ssmi\_f11}         \\
+NOAA-08 MSU     & \texttt{msu\_n08}       & \hspace{0.2cm} & DMSP-13 SSM/I    & \texttt{ssmi\_f13}         \\
+NOAA-09 MSU     & \texttt{msu\_n09}       & \hspace{0.2cm} & DMSP-14 SSM/I    & \texttt{ssmi\_f14}         \\
+NOAA-10 MSU     & \texttt{msu\_n10}       & \hspace{0.2cm} & DMSP-15 SSM/I    & \texttt{ssmi\_f15}         \\
+NOAA-11 MSU     & \texttt{msu\_n11}       & \hspace{0.2cm} & DMSP-13 SSM/T-1  & \texttt{ssmt1\_f13}        \\
+NOAA-12 MSU     & \texttt{msu\_n12}       & \hspace{0.2cm} & DMSP-15 SSM/T-1  & \texttt{ssmt1\_f15}        \\
+NOAA-14 MSU     & \texttt{msu\_n14}       & \hspace{0.2cm} & DMSP-14 SSM/T-2  & \texttt{ssmt2\_f14}        \\
+NOAA-15 AMSU-A  & \texttt{amsua\_n15}     & \hspace{0.2cm} & DMSP-15 SSM/T-2  & \texttt{ssmt2\_f15}        \\
+NOAA-16 AMSU-A  & \texttt{amsua\_n16}     & \hspace{0.2cm} & DMSP-16 SSMIS    & \texttt{ssmis\_f16}        \\
+NOAA-17 AMSU-A  & \texttt{amsua\_n17}     & \hspace{0.2cm} & DMSP-17 SSMIS    & \texttt{ssmis\_f17}        \\
+NOAA-18 AMSU-A  & \texttt{amsua\_n18}     & \hspace{0.2cm} & DMSP-18 SSMIS    & \texttt{ssmis\_f18}        \\
+NOAA-19 AMSU-A  & \texttt{amsua\_n19}     & \hspace{0.2cm} & DMSP-19 SSMIS    & \texttt{ssmis\_f19}        \\
+MetOp-A AMSU-A  & \texttt{amsua\_metop-a} & \hspace{0.2cm} & DMSP-20 SSMIS    & \texttt{ssmis\_f20}        \\
+MetOp-B AMSU-A  & \texttt{amsua\_metop-b} & \hspace{0.2cm} & NPP ATMS         & \texttt{atms\_npp}         \\
+MetOp-C AMSU-A  & \texttt{amsua\_metop-c} & \hspace{0.2cm} & Coriolis WindSat & \texttt{windsat\_coriolis} \\
+NOAA-15 AMSU-B  & \texttt{amsub\_n15}     & \hspace{0.2cm} & TRMM TMI         & \texttt{tmi\_trmm}         \\
+NOAA-16 AMSU-B  & \texttt{amsub\_n16}     & \hspace{0.2cm} & GPM GMI          & \texttt{gmi\_gpm}          \\
+NOAA-17 AMSU-B  & \texttt{amsub\_n17}     & \hspace{0.2cm} & Fengyun-3A MWRI  & \texttt{mwri\_fy3a}        \\
+NOAA-18 MHS     & \texttt{mhs\_n18}       & \hspace{0.2cm} & Fengyun-3A MWHS  & \texttt{mwhs\_fy3a}        \\ 
+NOAA-19 MHS     & \texttt{mhs\_n19}       & \hspace{0.2cm} & Fengyun-3A MWTS  & \texttt{mwts\_fy3a}        \\ 
     \hline
   \end{tabular}
   \caption{CRTM sensor identifiers for microwave instruments.}
