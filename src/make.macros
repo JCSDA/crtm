@@ -375,13 +375,12 @@ LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                                      -warn errors \
                                      -free \
                                      -assume byterecl \
-                                     -fpstkchk \
-                                     -mp \
+                                     -fp-stack-check \
+                                     -mieee-fp \
                                      ${INCLUDES} \
                                      ${LINUX_COMMON_FLAGS_DEBUG}" \
 	                  "FL_FLAGS= ${LINUX_COMMON_FLAGS_DEBUG} \
                                      ${LIBRARIES} \
-                                     -static-libcxa \
                                      -o" \
                           "ENDIAN=Little_Endian"
 
@@ -399,7 +398,6 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
                                     ${LINUX_COMMON_FLAGS_PROD}" \
                          "FL_FLAGS= ${LINUX_COMMON_FLAGS_PROD} \
                                     ${LIBRARIES} \
-                                    -static-libcxa \
                                     -o" \
                          "ENDIAN=Little_Endian"
 

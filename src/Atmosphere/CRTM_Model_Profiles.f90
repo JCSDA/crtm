@@ -496,6 +496,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Get_Model_Profile
@@ -507,10 +508,10 @@ CONTAINS
 !       Currently the only absorbers available are water vapour and ozone.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Get_Model_Profile( Pressure   , &  ! Output
-!                                    Temperature, &  ! Output
-!                                    Absorber   , &  ! Output
-!                                    Model=Model  )  ! Optional Input
+!       CALL CRTM_Get_Model_Profile( Pressure   , &
+!                                    Temperature, &
+!                                    Absorber   , &
+!                                    Model=Model  )
 !                                    
 !
 ! OUTPUT ARGUMENTS:
@@ -560,6 +561,7 @@ CONTAINS
 !         levels are filled with profile data.
 !       - Currently the only absorbers available are water vapour and ozone.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE CRTM_Get_Model_Profile( p, t, a, Model )

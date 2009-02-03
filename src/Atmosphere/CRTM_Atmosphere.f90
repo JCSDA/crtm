@@ -62,6 +62,7 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_AddLayers_Atmosphere
@@ -114,6 +115,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_AddLayers_Atmosphere( Atm_In     , &  ! Input
@@ -333,6 +335,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_AddLayers_Atmosphere_TL
@@ -395,6 +398,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_AddLayers_Atmosphere_TL( Atm_In     , &  ! FWD Input
@@ -459,6 +463,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_AddLayers_Atmosphere_AD
@@ -524,6 +529,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_AddLayers_Atmosphere_AD( Atm_In     , &  ! FWD Input

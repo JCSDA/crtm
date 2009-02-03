@@ -38,12 +38,18 @@ MODULE CRTM_RTSolution_Define
   PUBLIC :: CRTM_Allocate_RTSolution
   PUBLIC :: CRTM_Assign_RTSolution
   PUBLIC :: CRTM_Equal_RTSolution
+  PUBLIC :: CRTM_RCS_ID_RTSolution
 
 
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-
+  INTERFACE CRTM_Associated_RTSolution
+    MODULE PROCEDURE Associated_Scalar
+    MODULE PROCEDURE Associated_Rank1
+    MODULE PROCEDURE Associated_Rank2
+  END INTERFACE CRTM_Associated_RTSolution
+  
   INTERFACE CRTM_Destroy_RTSolution
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
@@ -80,6 +86,7 @@ MODULE CRTM_RTSolution_Define
   ! -------------------------------
   ! RTSolution data type definition
   ! -------------------------------
+  !:tdoc+:
   TYPE :: CRTM_RTSolution_type
     INTEGER :: n_Allocates = 0
     ! Dimensions
@@ -103,6 +110,7 @@ MODULE CRTM_RTSolution_Define
     REAL(fp) :: Radiance               = ZERO
     REAL(fp) :: Brightness_Temperature = ZERO
   END TYPE CRTM_RTSolution_type
+  !:tdoc-:
 
 
 CONTAINS
@@ -117,30 +125,31 @@ CONTAINS
 !##################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Associated_RTSolution
 !
 ! PURPOSE:
 !       Function to test the association status of the pointer members of a
-!       CRTM_RTSolution structure.
+!       CRTM RTSolution structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_RTSolution( RTSolution       , &  ! Input
-!                                                        ANY_Test=Any_Test  )  ! Optional input
+!       Association_Status = CRTM_Associated_RTSolution( RTSolution       , &
+!                                                        ANY_Test=Any_Test  )
 !
 ! INPUT ARGUMENTS:
 !       RTSolution:          RTSolution structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
 !                            TYPE:       CRTM_RTSolution_type
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Scalar, Rank-1, OR Rank-2 array
 !                            ATTRIBUTES: INTENT(IN)
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       ANY_Test:            Set this argument to test if ANY of the
-!                            CRTM_SfcOptics structure pointer members are associated.
+!                            RTSolution structure pointer members are associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
 !                            If ANY_Test = 0, test if ALL the pointer members
@@ -164,17 +173,14 @@ CONTAINS
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Same as input RTSolution argument
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_RTSolution( RTSolution, & ! Input
-                                       ANY_Test  ) & ! Optional input
-                                     RESULT( Association_Status )
+  FUNCTION Associated_Scalar( RTSolution, & ! Input
+                              ANY_Test  ) & ! Optional input
+                            RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution
     INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
@@ -209,10 +215,47 @@ CONTAINS
       END IF
     END IF
 
-  END FUNCTION CRTM_Associated_RTSolution
+  END FUNCTION Associated_Scalar
+
+  FUNCTION Associated_Rank1( RTSolution  , & ! Input
+                             ANY_Test    ) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution(:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL :: Association_Status(SIZE(RTSolution))
+    ! Local variables
+    INTEGER :: i
+
+    DO i = 1, SIZE(RTSolution)
+      Association_Status(i) = Associated_Scalar( RTSolution(i),ANY_Test=ANY_Test )
+    END DO
+
+  END FUNCTION Associated_Rank1
+
+  FUNCTION Associated_Rank2( RTSolution  , & ! Input
+                             ANY_Test    ) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution(:,:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL :: Association_Status(SIZE(RTSolution,DIM=1),SIZE(RTSolution,DIM=2))
+    ! Local variables
+    INTEGER :: i, j
+
+    DO j = 1, SIZE(RTSolution,DIM=2)
+      DO i = 1, SIZE(RTSolution,DIM=1)
+        Association_Status(i,j) = Associated_Scalar( RTSolution(i,j),ANY_Test=ANY_Test )
+      END DO
+    END DO
+
+  END FUNCTION Associated_Rank2
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_RTSolution
@@ -222,10 +265,16 @@ CONTAINS
 !       RTSolution data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_RTSolution( RTSolution             , &  ! Output
-!                                               RCS_Id     =RCS_Id     , &  ! Revision control
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_RTSolution( RTSolution             , &
+!                                               Message_Log=Message_Log  )
 ! 
+! OUTPUT ARGUMENTS:
+!       RTSolution:   Re-initialized RTSolution structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_RTSolution_type
+!                     DIMENSION:  Scalar, Rank-1, or Rank-2
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
 !                     Messages will be logged. If not specified, or if an
@@ -235,21 +284,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution:  Re-initialized RTSolution structure.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_RTSolution_type
-!                     DIMENSION:  Scalar, Rank-1, or Rank-2
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -270,21 +304,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( RTSolution  , &  ! Output
                            No_Clear    , &  ! Optional input
-                           RCS_Id      , &  ! Revision control
                            Message_Log ) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT)  :: RTSolution
     INTEGER,          OPTIONAL, INTENT(IN)      :: No_Clear
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)     :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)      :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -298,7 +327,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Re-initialise the dimensions
     RTSolution%n_Layers = 0
@@ -322,7 +350,7 @@ CONTAINS
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message,'("Error deallocating CRTM_RTSolution. STAT = ",i0)' ) &
+      WRITE( Message,'("Error deallocating RTSolution. STAT = ",i0)' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
@@ -345,16 +373,13 @@ CONTAINS
     END IF
   END FUNCTION Destroy_Scalar
 
-
   FUNCTION Destroy_Rank1( RTSolution  , &  ! Output
                           No_Clear    , &  ! Optional input
-                          RCS_Id      , &  ! Revision control
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:)
     INTEGER,          OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -368,7 +393,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -380,7 +404,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error destroying element #", i0, &
-                          &" of rank-1 CRTM_RTSolution structure array." )' ) n
+                          &" of rank-1 RTSolution structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -389,16 +413,13 @@ CONTAINS
     END DO
   END FUNCTION Destroy_Rank1
 
-
   FUNCTION Destroy_Rank2( RTSolution,   &  ! Output
                           No_Clear,     &  ! Optional input
-                          RCS_Id,       &  ! Revision control
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:,:)
     INTEGER,          OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -412,7 +433,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -425,7 +445,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error destroying element #(", i0, ",", i0, &
-                            &") of rank-2 CRTM_RTSolution structure array." )' ) i,j
+                            &") of rank-2 RTSolution structure array." )' ) i,j
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -437,19 +457,19 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_RTSolution
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the CRTM_RTSolution
+!       Function to allocate the pointer members of the CRTM RTSolution
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_RTSolution( n_Layers               , &  ! Input
-!                                                RTSolution             , &  ! Output
-!                                                RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_RTSolution( n_Layers               , &
+!                                                RTSolution             , &
+!                                                Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     Number of atmospheric layers 
@@ -459,18 +479,8 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
-!       RTSolution:   CRTM_RTSolution structure with allocated pointer members.
+!       RTSolution:   RTSolution structure with allocated pointer members.
 !                     Upon allocation, all pointer members are initialized to
 !                     a value of zero.
 !
@@ -494,14 +504,15 @@ CONTAINS
 !                     DIMENSION:  Scalar, Rank-1, or Rank-2
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -522,21 +533,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Jun-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Layers    , &  ! Input
                             RTSolution  , &  ! Output
-                            RCS_Id      , &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                    INTENT(IN)     :: n_Layers
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -549,7 +555,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     IF ( n_Layers < 1 ) THEN
@@ -569,7 +574,7 @@ CONTAINS
                                               Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CRTM_RTSolution pointer members.', &
+                              'Error deallocating RTSolution pointer members.', &
                               Error_Status,    &
                               Message_Log=Message_Log )
         RETURN
@@ -618,13 +623,11 @@ CONTAINS
 
   FUNCTION Allocate_Rank1( n_Layers    , &  ! Input,  scalar
                            RTSolution  , &  ! Output, rank-1 (L or M)
-                           RCS_Id      , &  ! Revision control
                            Message_Log ) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     INTEGER,                    INTENT(IN)     :: n_Layers
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:)
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -638,7 +641,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -650,7 +652,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of rank-1 CRTM_RTSolution structure array." )' ) n
+                          &" of rank-1 RTSolution structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -659,16 +661,13 @@ CONTAINS
     END DO
   END FUNCTION Allocate_Rank1
 
-
   FUNCTION Allocate_Rank2( n_Layers    , &  ! Input,  scalar
                            RTSolution  , &  ! Output, rank-2 (L x M)
-                           RCS_Id      , &  ! Revision control 
                            Message_Log ) &  ! Error messaging  
                          RESULT( Error_Status )
     ! Arguments
     INTEGER,                    INTENT(IN)     :: n_Layers
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:,:)
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -682,7 +681,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over RTSolution entries
@@ -695,7 +693,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error allocating element #(", i0, ",", i0, &
-                            &") of rank-2 CRTM_RTSolution structure array." )' ) i, j
+                            &") of rank-2 RTSolution structure array." )' ) i, j
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -707,25 +705,33 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_RTSolution
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_RTSolution structures.
+!       Function to copy valid CRTM RTSolution structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_RTSolution( RTSolution_in          , &  ! Input
-!                                              RTSolution_out         , &  ! Output
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_RTSolution( RTSolution_in          , &
+!                                              RTSolution_out         , &
+!                                              Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
-!       RTSolution_in:   CRTM_RTSolution structure which is to be copied.
+!       RTSolution_in:   RTSolution structure which is to be copied.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_RTSolution_type
 !                        DIMENSION:  Scalar, Rank-1, or Rank-2
 !                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       RTSolution_out:  Copy of the input structure, RTSolution_in.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_RTSolution_type
+!                        DIMENSION:  Same as input RTSolution_in
+!                        ATTRIBUTES: INTENT(IN OUT)
+!
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -736,22 +742,6 @@ CONTAINS
 !                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution_out:  Copy of the input structure, CRTM_RTSolution_in.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_RTSolution_type
-!                        DIMENSION:  Same as input RTSolution_in
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -767,21 +757,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Jun-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Assign_Scalar( RTSolution_in , &  ! Input
                           RTSolution_out, &  ! Output
-                          RCS_Id        , &  ! Revision control
                           Message_Log   ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)     :: RTSolution_in
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution_out
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -792,7 +777,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
     IF ( .NOT. CRTM_Associated_RTSolution( RTSolution_In ) ) THEN
@@ -843,13 +827,11 @@ CONTAINS
 
   FUNCTION Assign_Rank1( RTSolution_in , &  ! Input
                          RTSolution_out, &  ! Output
-                         RCS_Id        , &  ! Revision control
                          Message_Log   ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)     :: RTSolution_in(:)
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution_out(:)
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -863,7 +845,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     n = SIZE( RTSolution_in )
@@ -886,7 +867,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i0, &
-                          &" of rank-1 CRTM_RTSolution structure array." )' ) i
+                          &" of rank-1 RTSolution structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -898,13 +879,11 @@ CONTAINS
 
   FUNCTION Assign_Rank2( RTSolution_in , &  ! Input
                          RTSolution_out, &  ! Output
-                         RCS_Id        , &  ! Revision control
                          Message_Log   ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN)     :: RTSolution_in(:,:)
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution_out(:,:)
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -918,7 +897,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Dimensions
     l = SIZE(RTSolution_in, DIM=1)
@@ -944,7 +922,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error copying element #(", i0, ",", i0, &
-                            &") of rank-2 CRTM_RTSolution structure array." )' ) i, j
+                            &") of rank-2 RTSolution structure array." )' ) i, j
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -956,6 +934,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Equal_RTSolution
@@ -964,14 +943,13 @@ CONTAINS
 !       Function to test if two RTSolution structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_RTSolution( RTSolution_LHS                       , &  ! Input
-!                                             RTSolution_RHS                       , &  ! Input
-!                                             ULP_Scale         =ULP_Scale         , &  ! Optional input
-!                                             Percent_Difference=Percent_Difference, &  ! Optional input
-!                                             Check_All         =Check_All         , &  ! Optional input
-!                                             Check_Intermediate=Check_Intermediate, &  ! Optional input
-!                                             RCS_Id            =RCS_Id            , &  ! Optional output
-!                                             Message_Log       =Message_Log         )  ! Error messaging
+!       Error_Status = CRTM_Equal_RTSolution( RTSolution_LHS                       , 
+!                                             RTSolution_RHS                       , 
+!                                             ULP_Scale         =ULP_Scale         , 
+!                                             Percent_Difference=Percent_Difference, 
+!                                             Check_All         =Check_All         , 
+!                                             Check_Intermediate=Check_Intermediate, 
+!                                             Message_Log       =Message_Log         
 !
 !
 ! INPUT ARGUMENTS:
@@ -1050,14 +1028,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
 !                           The error codes are defined in the Message_Handler module.
@@ -1068,6 +1038,7 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Equal_Scalar( RTSolution_LHS    , &  ! Input
@@ -1076,7 +1047,6 @@ CONTAINS
                          Percent_Difference, &  ! Optional input
                          Check_All         , &  ! Optional input
                          Check_Intermediate, &  ! Optional input
-                         RCS_Id            , &  ! Revision control
                          Message_Log       ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
@@ -1086,7 +1056,6 @@ CONTAINS
     REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_Intermediate
-    CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1101,7 +1070,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1300,14 +1268,12 @@ CONTAINS
 
   END FUNCTION Equal_Scalar
 
-
   FUNCTION Equal_Rank1( RTSolution_LHS    , &  ! Input
                         RTSolution_RHS    , &  ! Input
                         ULP_Scale         , &  ! Optional input
                         Percent_Difference, &  ! Optional input
                         Check_All         , &  ! Optional input
                         Check_Intermediate, &  ! Optional input
-                        RCS_Id            , &  ! Revision control
                         Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
@@ -1317,7 +1283,6 @@ CONTAINS
     REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_Intermediate
-    CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1332,7 +1297,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1367,7 +1331,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_RTSolution structure array." )' ) i
+                          &" of rank-1 RTSolution structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1383,7 +1347,6 @@ CONTAINS
                         Percent_Difference, &  ! Optional input
                         Check_All         , &  ! Optional input
                         Check_Intermediate, &  ! Optional input
-                        RCS_Id            , &  ! Revision control
                         Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
@@ -1393,7 +1356,6 @@ CONTAINS
     REAL(fp),         OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_Intermediate
-    CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1408,7 +1370,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1446,7 +1407,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &
-                            &" of rank-2 CRTM_RTSolution structure array." )' ) i, j
+                            &" of rank-2 RTSolution structure array." )' ) i, j
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -1456,6 +1417,35 @@ CONTAINS
       END DO
     END DO
   END FUNCTION Equal_Rank2
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_RCS_ID_RTSolution
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_RTSolution( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_RTSolution( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_RTSolution
 
 
 !##################################################################################
@@ -1472,13 +1462,13 @@ CONTAINS
 !       CRTM_Clear_RTSolution
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_RTSolution structure.
+!       Subroutine to clear the scalar members of a CRTM RTSolution structure.
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_Clear_RTSolution( RTSolution ) ! Output
 !
 ! OUTPUT ARGUMENTS:
-!       RTSolution:  CRTM_RTSolution structure for which the scalar members have
+!       RTSolution:  RTSolution structure for which the scalar members have
 !                    been cleared.
 !                    UNITS:      N/A
 !                    TYPE:       CRTM_RTSolution_type

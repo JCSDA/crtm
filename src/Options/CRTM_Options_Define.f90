@@ -16,9 +16,10 @@ MODULE CRTM_Options_Define
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,      ONLY: fp
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters, ONLY: ZERO, SET, NOT_SET, STRLEN
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE CRTM_Parameters      , ONLY: ZERO, SET, NOT_SET, STRLEN
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -30,16 +31,24 @@ MODULE CRTM_Options_Define
   PRIVATE
   ! Structure data type
   PUBLIC :: CRTM_Options_type
-  ! Definition functions
+  ! Definition procedures
   PUBLIC :: CRTM_Associated_Options
   PUBLIC :: CRTM_Destroy_Options
   PUBLIC :: CRTM_Allocate_Options
   PUBLIC :: CRTM_Assign_Options
+  PUBLIC :: CRTM_Equal_Options
+  ! Utility procedures
+  PUBLIC :: CRTM_RCS_ID_Options
 
 
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
+  INTERFACE CRTM_Associated_Options
+    MODULE PROCEDURE Associated_Scalar
+    MODULE PROCEDURE Associated_Rank1
+  END INTERFACE CRTM_Associated_Options
+
   INTERFACE CRTM_Destroy_Options
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
@@ -55,6 +64,11 @@ MODULE CRTM_Options_Define
     MODULE PROCEDURE Assign_Rank1
   END INTERFACE CRTM_Assign_Options
 
+  INTERFACE CRTM_Equal_Options
+    MODULE PROCEDURE Equal_Scalar
+    MODULE PROCEDURE Equal_Rank1
+  END INTERFACE CRTM_Equal_Options
+
 
   ! -----------------
   ! Module parameters
@@ -62,11 +76,14 @@ MODULE CRTM_Options_Define
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! ----------------------------
   ! Options data type definition
   ! ----------------------------
+  !:tdoc+:
   TYPE :: CRTM_Options_type
     INTEGER :: n_Allocates = 0
     ! Dimensions
@@ -82,9 +99,11 @@ MODULE CRTM_Options_Define
     ! Antenna correction application
     INTEGER :: Antenna_Correction = NOT_SET
   END TYPE CRTM_Options_type
+  !:tdoc-:
 
 
 CONTAINS
+
 
 !################################################################################
 !################################################################################
@@ -95,24 +114,25 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Associated_Options
 !
 ! PURPOSE:
 !       Function to test the association status of the pointer members of a
-!       CRTM_Options structure.
+!       CRTM Options structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Options( Options            , &  ! Input
-!                                                     ANY_Test = Any_Test  )  ! Optional input
+!       Association_Status = CRTM_Associated_Options( Options          , &
+!                                                     ANY_Test=Any_Test  )
 !
 ! INPUT ARGUMENTS:
 !       Options:             Options structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
 !                            TYPE:       CRTM_Options_type
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Scalar or Rank-1 array
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -141,13 +161,14 @@ CONTAINS
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Same as input Options argument
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_Options( Options,   & ! Input
-                                    ANY_Test ) & ! Optional input
-                                  RESULT( Association_Status )
+  FUNCTION Associated_Scalar( Options , & ! Input
+                              ANY_Test) & ! Optional input
+                            RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN) :: Options
     INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
@@ -156,6 +177,8 @@ CONTAINS
     ! Local variables
     LOGICAL :: ALL_Test
 
+    ! Set up
+    ! ------
     ! Default is to test ALL the pointer members
     ! for a true association status....
     ALL_Test = .TRUE.
@@ -163,9 +186,12 @@ CONTAINS
     IF ( PRESENT( ANY_Test ) ) THEN
       IF ( ANY_Test == SET ) ALL_Test = .FALSE.
     END IF
-
-    ! Test the structure pointer association
+    ! Initialise a result
     Association_Status = .FALSE.
+
+    
+    ! Test the structure pointer association
+    ! --------------------------------------
     IF ( ALL_Test ) THEN
       IF (ASSOCIATED(Options%Emissivity         ) .AND. &
           ASSOCIATED(Options%Direct_Reflectivity)) THEN 
@@ -178,10 +204,28 @@ CONTAINS
       END IF
     END IF
 
-  END FUNCTION CRTM_Associated_Options
+  END FUNCTION Associated_Scalar
 
+  FUNCTION Associated_Rank1( Options , & ! Input
+                             ANY_Test) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_Options_type), INTENT(IN) :: Options(:)
+    INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL :: Association_Status(SIZE(Options))
+    ! Local variables
+    INTEGER :: i
+
+    DO i = 1, SIZE(Options)
+      Association_Status(i) = Associated_Scalar( Options(i),ANY_Test=ANY_Test )
+    END DO
+
+  END FUNCTION Associated_Rank1
+  
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_Options
@@ -191,9 +235,8 @@ CONTAINS
 !       Options data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Options( Options                , &  ! Output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Options( Options                , &
+!                                            Message_Log=Message_Log  )
 ! 
 ! OUTPUT ARGUMENTS:
 !       Options:      Re-initialized Options structure.
@@ -211,14 +254,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -239,35 +274,31 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( Options    , &  ! Output
                            No_Clear   , &  ! Optional input
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
     INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Options(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
     ! Reset the dimension indicators
     Options%n_Channels = 0
-    
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
@@ -275,7 +306,6 @@ CONTAINS
       IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
     IF ( Clear ) CALL CRTM_Clear_Options( Options )
-
     ! If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. CRTM_Associated_Options( Options ) ) RETURN
 
@@ -309,30 +339,26 @@ CONTAINS
     END IF
   END FUNCTION Destroy_Scalar
 
-
   FUNCTION Destroy_Rank1( Options    , &  ! Output
                           No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options(:)
     INTEGER,      OPTIONAL,  INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL,  INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL,  INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Options(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Loop over Options entries
     ! -------------------------
@@ -343,7 +369,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error destroying element #", i0, &
-                          &" of CRTM_Options structure array." )' ) n
+                          &" of Options structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -354,6 +380,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_Options
@@ -363,10 +390,9 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Options( n_Channels             , &  ! Input
-!                                             Options                , &  ! Output
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Options( n_Channels             , &
+!                                             Options                , &
+!                                             Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Channels:   Number of sensor channels
@@ -377,7 +403,7 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Options:      CRTM_Options structure with allocated pointer members.
+!       Options:      Options structure with allocated pointer members.
 !                     Upon allocation, all pointer members are initialized to
 !                     a value of zero.
 !                     UNITS:      N/A
@@ -394,14 +420,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -423,31 +441,28 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Channels , &  ! Input
                             Options    , &  ! Output
-                            RCS_Id     , &  ! Revision control
                             Message_Log) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                 INTENT(IN)     :: n_Channels
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Options(Scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
     ! Dimensions
     IF ( n_Channels < 1 ) THEN
       Error_Status = FAILURE
@@ -457,7 +472,6 @@ CONTAINS
                             Message_Log=Message_Log )
       RETURN
     END IF
-
     ! Check if ANY pointers are already associated
     ! If they are, deallocate them but leave scalars.
     IF ( CRTM_Associated_Options( Options, ANY_Test=SET ) ) THEN
@@ -466,7 +480,7 @@ CONTAINS
                                            Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CRTM_Options pointer members.', &
+                              'Error deallocating Options pointer members.', &
                               Error_Status,    &
                               Message_Log=Message_Log )
         RETURN
@@ -481,7 +495,7 @@ CONTAINS
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating CRTM_Options data arrays. STAT = ", i0 )' ) &
+      WRITE( Message, '( "Error allocating Options data arrays. STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM(Message), &
@@ -517,29 +531,25 @@ CONTAINS
 
   END FUNCTION Allocate_Scalar
 
-
   FUNCTION Allocate_Rank1( n_Channels , &  ! Input,  scalar
                            Options    , &  ! Output, rank-1
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     INTEGER,                 INTENT(IN)     :: n_Channels
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options(:)
-    CHARACTER(*), OPTIONAL,  INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL,  INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Options(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Loop over Options entries
@@ -550,7 +560,7 @@ CONTAINS
                                       Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of rank-1 CRTM_Options structure array." )' ) n
+                          &" of rank-1 Options structure array." )' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -562,6 +572,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_Options
@@ -570,10 +581,9 @@ CONTAINS
 !       Function to copy valid CRTM Options structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Options( Options_in             , &  ! Input
-!                                           Options_out            , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_Options( Options_in             , &
+!                                           Options_out            , &
+!                                           Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Options_in:      Options structure which is to be copied.
@@ -599,14 +609,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
@@ -621,17 +623,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Assign_Scalar( Options_in , &  ! Input
                           Options_out, &  ! Output
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN)     :: Options_in
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options_out
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -641,8 +642,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
     ! ALL *input* pointers must be associated.
     IF ( .NOT. CRTM_Associated_Options( Options_In ) ) THEN
       Error_Status = FAILURE
@@ -661,7 +660,7 @@ CONTAINS
                                           Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output CRTM_Options arrays.', &
+                            'Error allocating output Options arrays.', &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -670,6 +669,7 @@ CONTAINS
 
     ! Assign non-dimension scalar members
     ! -----------------------------------
+    Options_out%Channel                    = Options_in%Channel
     Options_out%Emissivity_Switch          = Options_in%Emissivity_Switch
     Options_out%Direct_Reflectivity_Switch = Options_in%Direct_Reflectivity_Switch
     Options_out%Antenna_Correction         = Options_in%Antenna_Correction
@@ -682,30 +682,25 @@ CONTAINS
 
   END FUNCTION Assign_Scalar
 
-
   FUNCTION Assign_Rank1( Options_in , &  ! Input
                          Options_out, &  ! Output
-                         RCS_Id     , &  ! Revision control
                          Message_Log) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN)     :: Options_in(:)
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options_out(:)
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Options(Rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
     ! Dimensions
     n = SIZE(Options_in)
     IF ( SIZE(Options_out) /= n ) THEN
@@ -727,7 +722,7 @@ CONTAINS
                                     Message_Log=Message_Log  )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message, '( "Error copying element #", i0, &
-                          &" of CRTM_Options structure array." )' ) i
+                          &" of Options structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -736,6 +731,310 @@ CONTAINS
       END IF
     END DO
   END FUNCTION Assign_Rank1
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Equal_Options
+!
+! PURPOSE:
+!       Function to test if two CRTM Options structures are equal.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Equal_Options( Options_LHS            , &
+!                                          Options_RHS            , &
+!                                          ULP_Scale  =ULP_Scale  , &
+!                                          Check_All  =Check_All  , &
+!                                          Message_Log=Message_Log  )
+!
+!
+! INPUT ARGUMENTS:
+!       Options_LHS:        Options structure to be compared; equivalent to the
+!                           left-hand side of a lexical comparison, e.g.
+!                             IF ( Options_LHS == Options_RHS ).
+!                           In the context of the CRTM, rank-1 corresponds to an
+!                           vector of profiles.
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_Options_type
+!                           DIMENSION:  Scalar or Rank-1 array
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Options_RHS:        Options structure to be compared to; equivalent to
+!                           right-hand side of a lexical comparison, e.g.
+!                             IF ( Options_LHS == Options_RHS ).
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_Options_type
+!                           DIMENSION:  Same as Options_LHS
+!                           ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       ULP_Scale:          Unit of data precision used to scale the floating
+!                           point comparison. ULP stands for "Unit in the Last Place,"
+!                           the smallest possible increment or decrement that can be
+!                           made using a machine's floating point arithmetic.
+!                           Value must be positive - if a negative value is supplied,
+!                           the absolute value is used. If not specified, the default
+!                           value is 1.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Check_All:          Set this argument to check ALL the floating point
+!                           channel data of the Options structures. The default
+!                           action is return with a FAILURE status as soon as
+!                           any difference is found. This optional argument can
+!                           be used to get a listing of ALL the differences
+!                           between data in Options structures.
+!                           If == 0, Return with FAILURE status as soon as
+!                                    ANY difference is found  *DEFAULT*
+!                              == 1, Set FAILURE status if ANY difference is
+!                                    found, but continue to check ALL data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Message_Log:        Character string specifying a filename in which any
+!                           messages will be logged. If not specified, or if an
+!                           error occurs opening the log file, the default action
+!                           is to output messages to standard output.
+!                           UNITS:      None
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:       The return value is an integer defining the error status.
+!                           The error codes are defined in the Message_Handler module.
+!                           If == SUCCESS the structures were equal
+!                              == FAILURE - an error occurred, or
+!                                         - the structures were different.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION Equal_Scalar( Options_LHS, &  ! Input
+                         Options_RHS, &  ! Input
+                         ULP_Scale  , &  ! Optional input
+                         Check_All  , &  ! Optional input
+                         Message_Log) &  ! Error messaging
+                       RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Options_type), INTENT(IN)  :: Options_LHS
+    TYPE(CRTM_Options_type), INTENT(IN)  :: Options_RHS
+    INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
+    INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
+    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Options(scalar)'
+    ! Local variables
+    CHARACTER(ML) :: Message
+    LOGICAL :: Check_Once
+    INTEGER :: l
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    ! Default action is to return on ANY difference...
+    Check_Once = .TRUE.
+    ! ...unless the Check_All argument is set
+    IF ( PRESENT(Check_All) ) THEN
+      IF ( Check_All == SET ) Check_Once = .FALSE.
+    END IF
+    ! Check the structure association status
+    IF ( .NOT. CRTM_Associated_Options( Options_LHS ) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Some or all INPUT Options_LHS pointer '//&
+                            'members are NOT associated.', &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+    IF ( .NOT. CRTM_Associated_Options( Options_RHS ) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,    &
+                            'Some or all INPUT Options_RHS pointer '//&
+                            'members are NOT associated.', &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Check dimensions
+    ! ----------------
+    IF ( Options_LHS%n_Channels /= Options_RHS%n_Channels ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Structure dimensions are different', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Compare the values
+    ! ------------------
+    IF ( Options_LHS%Channel /= Options_RHS%Channel ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Channel values are different:",2(1x,i0))') &
+                     Options_LHS%Channel, Options_RHS%Channel
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    IF ( Options_LHS%Emissivity_Switch /= Options_RHS%Emissivity_Switch ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Emissivity_Switch values are different:",2(1x,i0))') &
+                     Options_LHS%Emissivity_Switch, Options_RHS%Emissivity_Switch
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    DO l = 1, Options_LHS%n_Channels
+      IF ( .NOT. Compare_Float( Options_LHS%Emissivity(l), &
+                                Options_RHS%Emissivity(l), &
+                                ULP=ULP_Scale              ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Emissivity values are different at channel index ",i0,&
+                        &":",3(1x,es13.6))') &
+                       l, Options_LHS%Emissivity(l), &
+                          Options_RHS%Emissivity(l), &
+                          Options_LHS%Emissivity(l)-Options_RHS%Emissivity(l)
+        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    IF ( Options_LHS%Direct_Reflectivity_Switch /= Options_RHS%Direct_Reflectivity_Switch ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Direct_Reflectivity_Switch values are different:",2(1x,i0))') &
+                     Options_LHS%Direct_Reflectivity_Switch, Options_RHS%Direct_Reflectivity_Switch
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+    DO l = 1, Options_LHS%n_Channels
+      IF ( .NOT. Compare_Float( Options_LHS%Direct_Reflectivity(l), &
+                                Options_RHS%Direct_Reflectivity(l), &
+                                ULP=ULP_Scale                       ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Direct_Reflectivity values are different at channel index ",i0,&
+                        &":",3(1x,es13.6))') &
+                       l, Options_LHS%Direct_Reflectivity(l), &
+                          Options_RHS%Direct_Reflectivity(l), &
+                          Options_LHS%Direct_Reflectivity(l)-Options_RHS%Direct_Reflectivity(l)
+        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    IF ( Options_LHS%Antenna_Correction /= Options_RHS%Antenna_Correction ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Antenna_Correction flag values are different:",2(1x,i0))') &
+                     Options_LHS%Antenna_Correction, Options_RHS%Antenna_Correction
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+      IF ( Check_Once ) RETURN
+    END IF
+  END FUNCTION Equal_Scalar
+
+  FUNCTION Equal_Rank1( Options_LHS, &  ! Input
+                        Options_RHS, &  ! Output
+                        ULP_Scale  , &  ! Optional input
+                        Check_All  , &  ! Optional input
+                        Message_Log) &  ! Error messaging
+                      RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Options_type), INTENT(IN)  :: Options_LHS(:)
+    TYPE(CRTM_Options_type), INTENT(IN)  :: Options_RHS(:)
+    INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
+    INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
+    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Options(Rank-1)'
+    ! Local variables
+    CHARACTER(ML) :: Message
+    LOGICAL :: Check_Once
+    INTEGER :: Scalar_Status
+    INTEGER :: m, n_Profiles
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    ! Default action is to return on ANY difference...
+    Check_Once = .TRUE.
+    ! ...unless the Check_All argument is set
+    IF ( PRESENT(Check_All) ) THEN
+      IF ( Check_All == SET ) Check_Once = .FALSE.
+    END IF
+    ! Arguments must conform
+    n_Profiles = SIZE(Options_LHS)
+    IF ( SIZE(Options_RHS) /= n_Profiles ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input Options_LHS and Options_RHS arrays'//&
+                            ' have different dimensions', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Test for equality
+    ! -----------------
+    DO m = 1, n_Profiles
+      Scalar_Status = Equal_Scalar( Options_LHS(m), &
+                                    Options_RHS(m), &
+                                    ULP_Scale  =ULP_Scale, &
+                                    Check_All  =Check_All, &
+                                    Message_Log=Message_Log )
+      IF ( Scalar_Status /= SUCCESS ) THEN
+        Error_Status = Scalar_Status
+        WRITE( Message, '( "Error comparing element (",i0,")", &
+                          &" of rank-1 Options structure array." )' ) m
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+  END FUNCTION Equal_Rank1
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_RCS_ID_Options
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_Options( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_Options( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_Options
 
 
 !##################################################################################
@@ -755,7 +1054,7 @@ CONTAINS
 !       Subroutine to clear the scalar members of a CRTM Options structure.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Options( Options ) ! Output
+!       CALL CRTM_Clear_Options( Options )
 !
 ! OUTPUT ARGUMENTS:
 !       Options:      Options structure for which the scalar members have

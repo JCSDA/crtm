@@ -29,7 +29,9 @@ MODULE CRTM_LifeCycle
   ! ------------
   ! Visibilities
   ! ------------
+  ! Everything private by default
   PRIVATE
+  ! Public procedures
   PUBLIC :: CRTM_Init
   PUBLIC :: CRTM_Destroy
 
@@ -37,16 +39,17 @@ MODULE CRTM_LifeCycle
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
   ! Maximum string length for path+filenames
-  INTEGER, PRIVATE, PARAMETER :: SL = 2000
+  INTEGER, PARAMETER :: SL = 2000
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Init
@@ -55,24 +58,24 @@ CONTAINS
 !       Function to initialise the CRTM.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Init( ChannelInfo                        , &  ! Output
-!                                 Sensor_ID        =Sensor_ID        , &  ! Optional input
-!                                 CloudCoeff_File  =CloudCoeff_File  , &  ! Optional input
-!                                 AerosolCoeff_File=AerosolCoeff_File, &  ! Optional input
-!                                 EmisCoeff_File   =EmisCoeff_File   , &  ! Optional input
-!                                 File_Path        =File_Path        , &  ! Optional input
-!                                 Quiet            =Quiet            , &  ! Optional input
-!                                 Process_ID       =Process_ID       , &  ! Optional input
-!                                 Output_Process_ID=Output_Process_ID, &  ! Optional input
-!                                 RCS_Id           =RCS_Id           , &  ! Revision control
-!                                 Message_Log      =Message_Log        )  ! Error messaging
+!       Error_Status = CRTM_Init( ChannelInfo                        , &
+!                                 Sensor_ID        =Sensor_ID        , &
+!                                 CloudCoeff_File  =CloudCoeff_File  , &
+!                                 AerosolCoeff_File=AerosolCoeff_File, &
+!                                 EmisCoeff_File   =EmisCoeff_File   , &
+!                                 File_Path        =File_Path        , &
+!                                 Quiet            =Quiet            , &
+!                                 Process_ID       =Process_ID       , &
+!                                 Output_Process_ID=Output_Process_ID, &
+!                                 RCS_Id           =RCS_Id           , &
+!                                 Message_Log      =Message_Log        )
 !
 ! OUTPUT ARGUMENTS:
 !       ChannelInfo:        ChannelInfo structure array populated based on
 !                           the contents of the coefficient files and the
 !                           user inputs.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_ChannelInfo_type)
+!                           TYPE:       CRTM_ChannelInfo_type
 !                           DIMENSION:  Rank-1 (n_Sensors)
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
@@ -82,14 +85,12 @@ CONTAINS
 !                           initialised. These Sensor ID are used to construct
 !                           the sensor specific SpcCoeff and TauCoeff filenames
 !                           containing the necessary coefficient data, i.e.
-!                             <SensorID>.SpcCoeff.bin
+!                             <Sensor_ID>.SpcCoeff.bin
 !                           and
-!                             <SensorID>.TauCoeff.bin
-!                           IF this argument is not specified, the default SpcCoeff
-!                           and TauCoeff filenames are
-!                             SpcCoeff.bin
-!                           and
-!                             TauCoeff.bin
+!                             <Sensor_ID>.TauCoeff.bin
+!                           for each sensor Id in the list. IF this argument is
+!                           not specified, the default SpcCoeff and TauCoeff
+!                           filenames are "SpcCoeff.bin" and "TauCoeff.bin"
 !                           respectively.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
@@ -98,7 +99,7 @@ CONTAINS
 !
 !       CloudCoeff_File:    Name of the CRTM Binary format CloudCoeff file
 !                           containing the scattering coefficient data. If not
-!                           specified, "CloudCoeff.bin" is the default.
+!                           specified the default filename is "CloudCoeff.bin".
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -106,8 +107,8 @@ CONTAINS
 !
 !       AerosolCoeff_File:  Name of the CRTM Binary format AerosolCoeff file
 !                           containing the aerosol absorption and scattering
-!                           coefficient data. If not specified, "AerosolCoeff.bin"
-!                           is the default.
+!                           coefficient data. If not specified the default
+!                           filename is "AerosolCoeff.bin".
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -115,7 +116,7 @@ CONTAINS
 !
 !       EmisCoeff_File:     Name of the CRTM Binary format EmisCoeff file
 !                           containing the IRSSEM coefficient data. If not
-!                           specified, "EmisCoeff.bin" is the default.
+!                           specified the default filename is "EmisCoeff.bin".
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -201,6 +202,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Init( ChannelInfo      , &  ! Output
@@ -430,6 +432,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy
@@ -439,15 +442,15 @@ CONTAINS
 !       populated during the CRTM initialization.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy( ChannelInfo            , &  ! Output
-!                                    Process_ID =Process_ID , &  ! Optional input
-!                                    RCS_Id     =RCS_Id     , &  ! Revision control
-!                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy( ChannelInfo            , &
+!                                    Process_ID =Process_ID , &
+!                                    RCS_Id     =RCS_Id     , &
+!                                    Message_Log=Message_Log  )
 !
 ! OUTPUT ARGUMENTS:
 !       ChannelInfo:  Reinitialized ChannelInfo structure.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_ChannelInfo_type)
+!                     TYPE:       CRTM_ChannelInfo_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
@@ -496,13 +499,14 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy( ChannelInfo , &  ! Output
-                         Process_ID  , &  ! Optional input
-                         RCS_Id      , &  ! Revision control
-                         Message_Log ) &  ! Error messaging
-                       RESULT ( Error_Status )
+  FUNCTION CRTM_Destroy( ChannelInfo, &  ! Output
+                         Process_ID , &  ! Optional input
+                         RCS_Id     , &  ! Revision control
+                         Message_Log) &  ! Error messaging
+                       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
     INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID

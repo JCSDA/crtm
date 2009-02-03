@@ -395,12 +395,10 @@ PROGRAM Test_Adjoint
     
       ! Compare them
       Atm_Status = CRTM_Equal_Atmosphere( Atm_Baseline, Atm_AD, &
-                                          Percent_Difference=D_PERCENT, &
-                                          Check_All=1 )
+                                          Percent_Difference=D_PERCENT )
       CALL Is_Equal(Atm_Status,SUCCESS,UTest)
       Sfc_Status = CRTM_Equal_Surface( Sfc_Baseline, Sfc_AD, &
-                                       Percent_Difference=D_PERCENT, &
-                                       Check_All=1 )
+                                       Percent_Difference=D_PERCENT )
       CALL Is_Equal(Sfc_Status,SUCCESS,UTest)
     END IF
 

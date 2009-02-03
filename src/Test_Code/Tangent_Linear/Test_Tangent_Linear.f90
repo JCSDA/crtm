@@ -404,11 +404,10 @@ PROGRAM Test_Tangent_Linear
     ! -------------------------
     IF ( Compare_Results ) THEN
       ! Read baseline results
-      CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=2 )
+      CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=1 )
       ! Compare them
       Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution_TL, &
-                                            Percent_Difference=D_PERCENT, &
-                                            Check_All=1 )
+                                            Percent_Difference=D_PERCENT )
       CALL Is_Equal(Error_Status,SUCCESS,UTest)
     END IF
 

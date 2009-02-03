@@ -1,7 +1,7 @@
 !
 ! CRTM_Cloud_Define
 !
-! Module defining the CRTM_Cloud structure and containing routines to 
+! Module defining the CRTM Cloud structure and containing routines to 
 ! manipulate it.
 !
 ! PUBLIC PARAMETERS:
@@ -57,7 +57,7 @@ MODULE CRTM_Cloud_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_Cloud Parameters
+  ! Cloud Parameters
   PUBLIC :: N_VALID_CLOUD_TYPES
   PUBLIC ::      NO_CLOUD 
   PUBLIC ::   WATER_CLOUD 
@@ -67,9 +67,9 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: GRAUPEL_CLOUD 
   PUBLIC ::    HAIL_CLOUD 
   PUBLIC :: CLOUD_TYPE_NAME
-  ! CRTM_Cloud data structure definition
+  ! Cloud data structure definition
   PUBLIC :: CRTM_Cloud_type
-  ! CRTM_Cloud structure routines
+  ! Cloud structure routines
   PUBLIC :: CRTM_Associated_Cloud
   PUBLIC :: CRTM_Destroy_Cloud
   PUBLIC :: CRTM_Allocate_Cloud
@@ -156,6 +156,7 @@ MODULE CRTM_Cloud_Define
   ! --------------------------
   ! Cloud data type definition
   ! --------------------------
+  !:tdoc+:
   TYPE :: CRTM_Cloud_type
     INTEGER :: n_Allocates = 0
     ! Dimension values
@@ -170,49 +171,10 @@ MODULE CRTM_Cloud_Define
     REAL(fp), POINTER :: Effective_Variance(:) => NULL() ! K. Units are microns^2
     REAL(fp), POINTER :: Water_Content(:) => NULL()      ! K. Units are kg/m^2
   END TYPE CRTM_Cloud_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_Cloud
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a Cloud structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Cloud( Cloud ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       Cloud:       Cloud structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_Cloud_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Cloud argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_Cloud( Cloud )
-    TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud
-    Cloud%Type = NO_CLOUD
-  END SUBROUTINE CRTM_Clear_Cloud
 
 
 !################################################################################
@@ -224,23 +186,24 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Associated_Cloud
 !
 ! PURPOSE:
-!       Function to test the association status of a CRTM_Cloud structure.
+!       Function to test the association status of a CRTM Cloud structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Cloud( Cloud            , &  ! Input
-!                                                   ANY_Test=Any_Test  )  ! Optional input
+!       Association_Status = CRTM_Associated_Cloud( Cloud            , &
+!                                                   ANY_Test=Any_Test  )
 !
 ! INPUT ARGUMENTS:
 !       Cloud:               Cloud structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
 !                            TYPE:       CRTM_Cloud_type
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Scalar OR Rank-1 array
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -268,8 +231,9 @@ CONTAINS
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Same as input Cloud argument
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Associated_Scalar( Cloud,     & ! Input
@@ -332,16 +296,24 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_Cloud
 ! 
 ! PURPOSE:
-!       Function to re-initialize CRTM_Cloud structures.
+!       Function to re-initialize CRTM Cloud structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Cloud( Cloud                  , &  ! Output
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Cloud( Cloud                  , &
+!                                          Message_Log=Message_Log  )
+!
+! OUTPUT ARGUMENTS:
+!       Cloud:        Re-initialized Cloud structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Cloud_type
+!                     DIMENSION:  Scalar OR Rank-1 array
+!                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
@@ -352,15 +324,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Cloud:        Re-initialized Cloud structure.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Cloud_type
-!                     DIMENSION:  Scalar
-!                                   OR
-!                                 Rank1 array
-!                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -381,6 +344,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( Cloud      , &  ! Output
@@ -429,7 +393,7 @@ CONTAINS
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating CRTM_Cloud pointer components.", &
+      WRITE( Message, '( "Error deallocating Cloud pointer components.", &
                       &" STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
@@ -498,25 +462,25 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_Cloud
 ! 
 ! PURPOSE:
-!       Function to allocate CRTM_Cloud structures.
+!       Function to allocate CRTM Cloud structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Cloud( n_Layers               , &  ! Input
-!                                           Cloud                  , &  ! Output
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Cloud( n_Layers               , &
+!                                           Cloud                  , &
+!                                           Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     Number of layers for which there is cloud data.
 !                     Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar OR Rank-1
-!                                 See output Cloud dimensionality chart
+!                     DIMENSION:  Scalar OR Rank-1 array
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
@@ -555,6 +519,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Layers   , &  ! Input
@@ -596,7 +561,7 @@ CONTAINS
                                          Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CRTM_Cloud pointer members.', &
+                              'Error deallocating Cloud pointer members.', &
                               Error_Status,    &
                               Message_Log=Message_Log )
         RETURN
@@ -612,7 +577,7 @@ CONTAINS
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating CRTM_Cloud data arrays. STAT = ", i0 )' ) &
+      WRITE( Message, '( "Error allocating Cloud data arrays. STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM(Message), &
@@ -675,7 +640,7 @@ CONTAINS
     IF ( SIZE(n_Layers) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Layers and CRTM_Cloud arrays have different dimensions', &
+                            'Input n_Layers and Cloud arrays have different dimensions', &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -690,7 +655,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Cloud structure array." )' ) i
+                          &" of Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -702,17 +667,18 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_Cloud
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_Cloud structures.
+!       Function to copy valid CRTM Cloud structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Cloud( Cloud_in               , &  ! Input  
-!                                         Cloud_out              , &  ! Output 
-!                                         Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_Cloud( Cloud_in               , &
+!                                         Cloud_out              , &
+!                                         Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Cloud_in:      Cloud structure which is to be copied.
@@ -752,6 +718,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Assign_Scalar( Cloud_in      , &  ! Input
@@ -784,7 +751,7 @@ CONTAINS
                                          Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output CRTM_Cloud pointer members.', &
+                              'Error deallocating output Cloud pointer members.', &
                               Error_Status,    &
                               Message_Log=Message_Log )
       END IF
@@ -814,7 +781,7 @@ CONTAINS
                                           Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
-                              'Error allocating output CRTM_Cloud arrays.', &
+                              'Error allocating output Cloud arrays.', &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
@@ -884,7 +851,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i0, &
-                          &" of CRTM_Cloud structure array." )' ) i
+                          &" of Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -896,6 +863,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Equal_Cloud
@@ -904,11 +872,11 @@ CONTAINS
 !       Function to test if two Cloud structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Cloud( Cloud_LHS              , &  ! Input
-!                                        Cloud_RHS              , &  ! Input
-!                                        ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                        Check_All  =Check_All  , &  ! Optional input
-!                                        Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Equal_Cloud( Cloud_LHS              , &
+!                                        Cloud_RHS              , &
+!                                        ULP_Scale  =ULP_Scale  , &
+!                                        Check_All  =Check_All  , &
+!                                        Message_Log=Message_Log  )
 !
 !
 ! INPUT ARGUMENTS:
@@ -917,7 +885,7 @@ CONTAINS
 !                            IF ( Cloud_LHS == Cloud_RHS ).
 !                          UNITS:      N/A
 !                          TYPE:       CRTM_Cloud_type
-!                          DIMENSION:  Scalar
+!                          DIMENSION:  Scalar OR Rank-1 array
 !                          ATTRIBUTES: INTENT(IN)
 !
 !       Cloud_RHS:         Cloud structure to be compared to; equivalent to
@@ -925,7 +893,7 @@ CONTAINS
 !                            IF ( Cloud_LHS == Cloud_RHS ).
 !                          UNITS:      N/A
 !                          TYPE:       CRTM_Cloud_type
-!                          DIMENSION:  Scalar
+!                          DIMENSION:  Same as Cloud_RHS argument
 !                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -975,6 +943,7 @@ CONTAINS
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Equal_Scalar( Cloud_LHS  , &  ! Input
@@ -1172,7 +1141,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_Cloud structure array." )' ) i
+                          &" of rank-1 Cloud structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1184,18 +1153,19 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_SetLayers_Cloud
 ! 
 ! PURPOSE:
-!       Function to set the number of layers to use in a CRTM_Cloud
+!       Function to set the number of layers to use in a CRTM Cloud
 !       structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_SetLayers_Cloud( n_Layers               , &  ! Input
-!                                            Cloud                  , &  ! In/Output
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_SetLayers_Cloud( n_Layers               , &
+!                                            Cloud                  , &
+!                                            Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     The value to set the n_Layers component of the 
@@ -1210,7 +1180,7 @@ CONTAINS
 !                     is to be updated.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Cloud_type
-!                     DIMENSION:  Scalar or Rank-1 array
+!                     DIMENSION:  Scalar OR Rank-1 array
 !                     ATTRIBUTES: INTENT(IN OUT)
 ! OUTPUT ARGUMENTS:
 !       Cloud:        On output, the Cloud structure with the updated
@@ -1241,7 +1211,7 @@ CONTAINS
 !
 ! SIDE EFFECTS:
 !       The argument Cloud is INTENT(IN OUT) and is modified upon output. The
-!       elements of the structureare reinitialised
+!       elements of the structure are reinitialised
 !
 ! COMMENTS:
 !       - Note that the n_Layers input is *ALWAYS* scalar. Thus, all Cloud
@@ -1253,6 +1223,7 @@ CONTAINS
 !       - If n_Layers > Cloud%Max_Layers, then the entire structure is
 !         reallocated to the required number of layers.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION SetLayers_Scalar( n_Layers   , &  ! Input
@@ -1297,7 +1268,6 @@ CONTAINS
     
   END FUNCTION SetLayers_Scalar
 
-
   FUNCTION SetLayers_Rank1( n_Layers   , &  ! Input
                             Cloud      , &  ! In/Output
                             Message_Log) &  ! Error Messaging
@@ -1334,29 +1304,30 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Sum_Cloud
 !
 ! PURPOSE:
-!       Function to perform a sum of two valid CRTM_Cloud structures. The
+!       Function to perform a sum of two valid CRTM Cloud structures. The
 !       summation performed is:
 !         A = A + Scale_Factor*B + Offset
-!       where A and B are the CRTM_Cloud structures, and Scale_Factor and Offset
+!       where A and B are the CRTM Cloud structures, and Scale_Factor and Offset
 !       are optional weighting factors.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Sum_Cloud( A                        , &  ! In/Output
-!                                      B                        , &  ! Input
-!                                      Scale_Factor=Scale_Factor, &  ! Optional input
-!                                      Offset      =Offset      , &  ! Optional input
-!                                      Message_Log =Message_Log   )  ! Error messaging
+!       Error_Status = CRTM_Sum_Cloud( A                        , &
+!                                      B                        , &
+!                                      Scale_Factor=Scale_Factor, &
+!                                      Offset      =Offset      , &
+!                                      Message_Log =Message_Log   )
 !
 ! INPUT ARGUMENTS:
 !       A:             Cloud structure that is to be added to.
 !                      UNITS:      N/A
 !                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Scalar OR Rank-1
+!                      DIMENSION:  Scalar OR Rank-1 array
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
 !       B:             Cloud structure that is to be weighted and
@@ -1365,6 +1336,15 @@ CONTAINS
 !                      TYPE:       CRTM_Cloud_type
 !                      DIMENSION:  Same as A
 !                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       A:             Structure containing the summation result,
+!                        A = A + Scale_Factor*B + Offset
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_Cloud_type
+!                      DIMENSION:  Same as B
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Scale_Factor:  The first weighting factor used to scale the
@@ -1392,15 +1372,6 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OUTPUT ARGUMENTS:
-!       A:             Structure containing the summation result,
-!                        A = A + Scale_Factor*B + Offset
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Same as B
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
@@ -1413,6 +1384,7 @@ CONTAINS
 ! SIDE EFFECTS:
 !       The argument A is INTENT(IN OUT) and is modified upon output.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Sum_Scalar( A           , &  ! Input/Output
@@ -1492,7 +1464,6 @@ CONTAINS
 
   END FUNCTION Sum_Scalar
 
-
   FUNCTION Sum_Rank1( A           , &  ! Input/Output
                       B           , &  ! Input
                       Scale_Factor, &  ! Input
@@ -1545,7 +1516,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error computing sum for element #", i0, &
-                          &" of CRTM_Cloud structure arrays." )' ) i
+                          &" of Cloud structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1557,12 +1528,13 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Zero_Cloud
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out various members of a CRTM_Cloud structure - both
+!       Subroutine to zero-out various members of a CRTM Cloud structure - both
 !       scalar and pointer.
 !
 ! CALLING SEQUENCE:
@@ -1589,6 +1561,7 @@ CONTAINS
 !         just OUT. This is necessary because the argument must be defined upon
 !         input.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Zero_Scalar( Cloud )  ! Output
@@ -1614,6 +1587,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_RCS_ID_Cloud
@@ -1632,11 +1606,52 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE CRTM_RCS_ID_Cloud( RCS_Id )
     CHARACTER(*), INTENT(OUT) :: RCS_Id
     RCS_Id = MODULE_RCS_ID
   END SUBROUTINE CRTM_RCS_ID_Cloud
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_Cloud
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a Cloud structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_Cloud( Cloud )
+!
+! OUTPUT ARGUMENTS:
+!       Cloud:       Cloud structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_Cloud_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output Cloud argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_Cloud( Cloud )
+    TYPE(CRTM_Cloud_type), INTENT(IN OUT) :: Cloud
+    Cloud%Type = NO_CLOUD
+  END SUBROUTINE CRTM_Clear_Cloud
 
 END MODULE CRTM_Cloud_Define

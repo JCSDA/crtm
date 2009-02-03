@@ -15,12 +15,20 @@ PROGRAM Test_Surface
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Type_Kinds               , ONLY: fp
-  USE Message_Handler          , ONLY: SUCCESS, FAILURE, INFORMATION, &
-                                       Display_Message, Program_Message
-  USE CRTM_Parameters          , ONLY: SET
-  USE CRTM_Surface_Define
-  USE CRTM_Surface_Binary_IO
+  USE Type_Kinds            , ONLY: fp
+  USE Message_Handler       , ONLY: SUCCESS, FAILURE, INFORMATION, &
+                                    Display_Message, Program_Message
+  USE CRTM_Parameters       , ONLY: SET
+  USE CRTM_Surface_Define   , ONLY: CRTM_Surface_type, &
+                                    CRTM_Destroy_Surface, &
+                                    CRTM_Allocate_Surface, &
+                                    CRTM_Assign_Surface, &
+                                    CRTM_Equal_Surface, &
+                                    CRTM_Sum_Surface, &
+                                    CRTM_Zero_Surface
+  USE CRTM_Surface_Binary_IO, ONLY: CRTM_Inquire_Surface_Binary, &
+                                    CRTM_Write_Surface_Binary, &
+                                    CRTM_Read_Surface_Binary
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -41,15 +49,14 @@ PROGRAM Test_Surface
   INTEGER, PARAMETER :: N_PROFILES  = 2
   INTEGER, PARAMETER :: N_CHANNELS  = 20
   
-  REAL(fp), PARAMETER :: W1 = 10.0_fp
-  REAL(fp), PARAMETER :: W2 =  0.5_fp
+  REAL(fp), PARAMETER :: SCALE_FACTOR = 10.0_fp
+  REAL(fp), PARAMETER :: OFFSET       =  0.5_fp
 
 
   ! ---------
   ! Variables
   ! ---------
   CHARACTER(256) :: Message
-  CHARACTER(256) :: Input_Filename
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
   INTEGER :: m, n
@@ -67,8 +74,7 @@ PROGRAM Test_Surface
 
   ! Allocate the SensorData structure
   ! ---------------------------------
-  Error_Status = CRTM_Allocate_Surface( N_CHANNELS, &  ! Input
-                                        Surface     )  ! Output
+  Error_Status = CRTM_Allocate_Surface( N_CHANNELS, Surface )  ! Output
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error allocating Surface structure array.', &
@@ -109,9 +115,9 @@ PROGRAM Test_Surface
   END DO
 
 
-  ! Test the weighted sum routine
-  ! -----------------------------
-  WRITE( *, '( /5x, "Testing WeightedSum functions ..." )' )
+  ! Test the sum routine
+  ! --------------------
+  WRITE( *, '( /5x, "Testing Sum functions ..." )' )
 
   ! Copy the structure array
   Error_Status = CRTM_Assign_Surface( Surface, Surface_Copy )
@@ -122,14 +128,14 @@ PROGRAM Test_Surface
     STOP
   END IF
 
-  ! Compute the weighted sum
-  Error_Status = CRTM_WeightedSum_Surface( Surface, &
-                                           Surface_Copy, &
-                                           W1, &
-                                           w2 = W2 )
+  ! Compute the sum
+  Error_Status = CRTM_Sum_Surface( Surface, &
+                                   Surface_Copy, &
+                                   Scale_Factor=SCALE_FACTOR, &
+                                   Offset      =OFFSET )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error computing Surface weighted sum', &
+                          'Error computing Surface sum', &
                           FAILURE )
     STOP
   END IF

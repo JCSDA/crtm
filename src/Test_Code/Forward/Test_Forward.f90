@@ -351,11 +351,10 @@ PROGRAM Test_Forward
     ! -------------------------
     IF ( Compare_Results ) THEN
       ! Read baseline results
-      CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=2 )
+      CALL Read_RTSolution_TestFile( Exp_ID, ChannelInfo, Baseline, Quiet=1 )
       ! Perform the test
       Error_Status = CRTM_Equal_RTSolution( Baseline, RTSolution, &
-                                            Percent_Difference=D_PERCENT, &
-                                            Check_All=1 )
+                                            Percent_Difference=D_PERCENT )
       CALL Is_Equal(Error_Status,SUCCESS,UTest)
     END IF
 

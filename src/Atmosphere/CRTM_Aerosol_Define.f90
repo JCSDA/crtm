@@ -61,7 +61,7 @@ MODULE CRTM_Aerosol_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_Aerosol parameters
+  ! Aerosol parameters
   PUBLIC :: N_VALID_AEROSOL_TYPES
   PUBLIC :: NO_AEROSOL
   PUBLIC :: DUST_AEROSOL
@@ -73,9 +73,9 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: WET_BLACK_CARBON_AEROSOL
   PUBLIC :: SULFATE_AEROSOL
   PUBLIC :: AEROSOL_TYPE_NAME
-  ! CRTM_Aerosol data structure definition
+  ! Aerosol data structure definition
   PUBLIC :: CRTM_Aerosol_type
-  ! CRTM_Aerosol structure routines
+  ! Aerosol structure routines
   PUBLIC :: CRTM_Associated_Aerosol
   PUBLIC :: CRTM_Destroy_Aerosol
   PUBLIC :: CRTM_Allocate_Aerosol
@@ -165,6 +165,7 @@ MODULE CRTM_Aerosol_Define
   ! ----------------------------
   ! Aerosol data type definition
   ! ----------------------------
+  !:tdoc+:
   TYPE :: CRTM_Aerosol_type
     INTEGER :: n_Allocates = 0
     ! Dimensions
@@ -178,49 +179,10 @@ MODULE CRTM_Aerosol_Define
     REAL(fp), POINTER :: Effective_Radius(:) => NULL()  ! K. Units are microns
     REAL(fp), POINTER :: Concentration(:)    => NULL()  ! K. Units are kg/m^2  
   END TYPE CRTM_Aerosol_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_Aerosol
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_Aerosol structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Aerosol( Aerosol ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       Aerosol:  CRTM_Aerosol structure for which the scalar members have
-!                 been cleared.
-!                 UNITS:      N/A
-!                 TYPE:       CRTM_Aerosol_type
-!                 DIMENSION:  Scalar
-!                 ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Aerosol argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_Aerosol( Aerosol )
-    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
-    Aerosol%Type = NO_AEROSOL
-  END SUBROUTINE CRTM_Clear_Aerosol
 
 
 !################################################################################
@@ -232,29 +194,30 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Associated_Aerosol
 !
 ! PURPOSE:
 !       Function to test the association status of the pointer members of a
-!       CRTM_Aerosol structure.
+!       CRTM Aerosol structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Aerosol( Aerosol          , &  ! Input
-!                                                     ANY_Test=Any_Test  )  ! Optional input
+!       Association_Status = CRTM_Associated_Aerosol( Aerosol          , &
+!                                                     ANY_Test=Any_Test  )
 !
 ! INPUT ARGUMENTS:
-!       Aerosol:             CRTM_Aerosol structure which is to have its pointer
+!       Aerosol:             Aerosol structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
 !                            TYPE:       CRTM_Aerosol_type
-!                            DIMENSION:  Scalar or Rank-1
+!                            DIMENSION:  Scalar OR Rank-1 array
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       ANY_Test:            Set this argument to test if ANY of the
-!                            CRTM_Aerosol structure pointer members are associated.
+!                            Aerosol structure pointer members are associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
 !                            If ANY_Test = 0, test if ALL the pointer members
@@ -268,17 +231,18 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating the
-!                            association status of the CRTM_Aerosol pointer members.
-!                            .TRUE.  - if ALL the CRTM_Aerosol pointer members are
+!                            association status of the Aerosol pointer members.
+!                            .TRUE.  - if ALL the Aerosol pointer members are
 !                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the CRTM_Aerosol pointer
+!                                      is set and ANY of the Aerosol pointer
 !                                      members are associated.
-!                            .FALSE. - some or all of the CRTM_Aerosol pointer
+!                            .FALSE. - some or all of the Aerosol pointer
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Same as input Aerosol argument
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Associated_Scalar( Aerosol , & ! Input
@@ -340,17 +304,18 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_Aerosol
 ! 
 ! PURPOSE:
 !       Function to re-initialize the scalar and pointer members of
-!       a CRTM_Aerosol data structure.
+!       a CRTM Aerosol data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Aerosol( Aerosol                , &  ! Output
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Aerosol( Aerosol                , &
+!                                            Message_Log=Message_Log  )
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:  Character string specifying a filename in which any
@@ -363,10 +328,10 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Aerosol:      Re-initialized CRTM_Aerosol structure.
+!       Aerosol:      Re-initialized Aerosol structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Aerosol_type
-!                     DIMENSION:  Scalar or Rank1
+!                     DIMENSION:  Scalar OR Rank-1 array
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! FUNCTION RESULT:
@@ -388,6 +353,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( Aerosol    , &  ! Output
@@ -435,7 +401,7 @@ CONTAINS
                 STAT = Allocate_Status    )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating CRTM_Aerosol pointer components.", &
+      WRITE( Message, '( "Error deallocating Aerosol pointer components.", &
                         &" STAT = ", i0 )' ) &
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME,    &
@@ -504,18 +470,19 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_Aerosol
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the CRTM_Aerosol
+!       Function to allocate the pointer members of the CRTM Aerosol
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Aerosol( n_Layers               , &  ! Input
-!                                             Aerosol                , &  ! Output
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Aerosol( n_Layers               , &
+!                                             Aerosol                , &
+!                                             Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !         n_Layers:   Number of atmospheric layers dimension.
@@ -536,7 +503,7 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Aerosol:      CRTM_Aerosol structure with allocated pointer members.
+!       Aerosol:      Aerosol structure with allocated pointer members.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Aerosol_type
 !                     DIMENSION:  Same as input n_Layers argument
@@ -562,6 +529,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Layers   , &  ! Input
@@ -695,7 +663,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Aerosol structure array." )' ) i
+                          &" of Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -707,24 +675,33 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_Aerosol
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_Aerosol structures.
+!       Function to copy valid CRTM Aerosol structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Aerosol( Aerosol_in             , &  ! Input
-!                                           Aerosol_out            , &  ! Output
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_Aerosol( Aerosol_in             , &
+!                                           Aerosol_out            , &
+!                                           Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
-!       Aerosol_in:      CRTM_Aerosol structure which is to be copied.
+!       Aerosol_in:      Aerosol structure which is to be copied.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Aerosol_type
-!                        DIMENSION:  Scalar or Rank-1 array
+!                        DIMENSION:  Scalar OR Rank-1 array
 !                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       Aerosol_out:     Copy of the input structure, Aerosol_in.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Aerosol_type
+!                        DIMENSION:  Same as Aerosol_in argument
+!                        ATTRIBUTES: INTENT(IN OUT)
+!
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:     Character string specifying a filename in which any
@@ -735,14 +712,6 @@ CONTAINS
 !                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Aerosol_out:     Copy of the input structure, CRTM_Aerosol_in.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Aerosol_type
-!                        DIMENSION:  Same as Aerosol_in argument
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -758,6 +727,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Assign_Scalar( Aerosol_in    , &  ! Input
@@ -889,7 +859,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element #", i0, &
-                          &" of CRTM_Aerosol structure array." )' ) i
+                          &" of Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -901,6 +871,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Equal_Aerosol
@@ -909,11 +880,11 @@ CONTAINS
 !       Function to test if two Aerosol structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Aerosol( Aerosol_LHS            , &  ! Input
-!                                          Aerosol_RHS            , &  ! Input
-!                                          ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                          Check_All  =Check_All  , &  ! Optional input
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Equal_Aerosol( Aerosol_LHS            , &
+!                                          Aerosol_RHS            , &
+!                                          ULP_Scale  =ULP_Scale  , &
+!                                          Check_All  =Check_All  , &
+!                                          Message_Log=Message_Log  )
 !
 !
 ! INPUT ARGUMENTS:
@@ -922,7 +893,7 @@ CONTAINS
 !                            IF ( Aerosol_LHS == Aerosol_RHS ).
 !                          UNITS:      N/A
 !                          TYPE:       CRTM_Aerosol_type
-!                          DIMENSION:  Scalar
+!                          DIMENSION:  Scalar OR Rank-1 array
 !                          ATTRIBUTES: INTENT(IN)
 !
 !       Aerosol_RHS:       Aerosol structure to be compared to; equivalent to
@@ -930,7 +901,7 @@ CONTAINS
 !                            IF ( Aerosol_LHS == Aerosol_RHS ).
 !                          UNITS:      N/A
 !                          TYPE:       CRTM_Aerosol_type
-!                          DIMENSION:  Scalar
+!                          DIMENSION:  Same as Aerosol_LHS
 !                          ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -980,6 +951,7 @@ CONTAINS
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Equal_Scalar( Aerosol_LHS, &  ! Input
@@ -1160,7 +1132,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_Aerosol structure array." )' ) i
+                          &" of rank-1 Aerosol structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1172,18 +1144,19 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_SetLayers_Aerosol
 ! 
 ! PURPOSE:
-!       Function to set the number of layers to use in a CRTM_Aerosol
+!       Function to set the number of layers to use in a CRTM Aerosol
 !       structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_SetLayers_Aerosol( n_Layers               , &  ! Input
-!                                              Aerosol                , &  ! In/Output
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_SetLayers_Aerosol( n_Layers               , &
+!                                              Aerosol                , &
+!                                              Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     The value to set the n_Layers component of the 
@@ -1241,6 +1214,7 @@ CONTAINS
 !       - If n_Layers > Aerosol%Max_Layers, then the entire structure is
 !         reallocated to the required number of layers.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION SetLayers_Scalar( n_Layers   , &  ! Input
@@ -1322,23 +1296,24 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Sum_Aerosol
 !
 ! PURPOSE:
-!       Function to perform a sum of two valid CRTM_Aerosol structures. The
+!       Function to perform a sum of two valid CRTM Aerosol structures. The
 !       summation performed is:
 !         A = A + Scale_Factor*B + Offset
-!       where A and B are the CRTM_Aerosol structures, and Scale_Factor and Offset
+!       where A and B are the CRTM Aerosol structures, and Scale_Factor and Offset
 !       are optional weighting factors.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Sum_Aerosol( A                        , &  ! In/Output
-!                                        B                        , &  ! Input
-!                                        Scale_Factor=Scale_Factor, &  ! Optional input
-!                                        Offset      =Offset      , &  ! Optional input
-!                                        Message_Log =Message_Log   )  ! Error messaging
+!       Error_Status = CRTM_Sum_Aerosol( A                        , &
+!                                        B                        , &
+!                                        Scale_Factor=Scale_Factor, &
+!                                        Offset      =Offset      , &
+!                                        Message_Log =Message_Log   )
 !
 ! INPUT ARGUMENTS:
 !       A:             Aerosol structure that is to be added to.
@@ -1401,6 +1376,7 @@ CONTAINS
 ! SIDE EFFECTS:
 !       The argument A is INTENT(IN OUT) and is modified upon output.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Sum_Scalar( A           , &  ! Input/Output
@@ -1532,7 +1508,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error computing sum for element #", i0, &
-                          &" of CRTM_Aerosol structure arrays." )' ) i
+                          &" of Aerosol structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1544,12 +1520,13 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Zero_Aerosol
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out all members of a CRTM_Aerosol structure - both
+!       Subroutine to zero-out all members of a CRTM Aerosol structure - both
 !       scalar and pointer.
 !
 ! CALLING SEQUENCE:
@@ -1577,6 +1554,7 @@ CONTAINS
 !         just OUT. This is necessary because the argument must be defined upon
 !         input.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Zero_Scalar( Aerosol )  ! Output
@@ -1601,6 +1579,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_RCS_ID_Aerosol
@@ -1619,11 +1598,52 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE CRTM_RCS_ID_Aerosol( RCS_Id )
     CHARACTER(*), INTENT(OUT) :: RCS_Id
     RCS_Id = MODULE_RCS_ID
   END SUBROUTINE CRTM_RCS_ID_Aerosol
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_Aerosol
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM Aerosol structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_Aerosol( Aerosol )
+!
+! OUTPUT ARGUMENTS:
+!       Aerosol:  Aerosol structure for which the scalar members have
+!                 been cleared.
+!                 UNITS:      N/A
+!                 TYPE:       CRTM_Aerosol_type
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output Aerosol argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_Aerosol( Aerosol )
+    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: Aerosol
+    Aerosol%Type = NO_AEROSOL
+  END SUBROUTINE CRTM_Clear_Aerosol
 
 END MODULE CRTM_Aerosol_Define

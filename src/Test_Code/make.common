@@ -44,8 +44,10 @@ MW_SENSOR_IDS = $(MW_SENSOR_IDS_NO_AC) $(MW_SENSOR_IDS_AC)
 SENSOR_IDS = $(IR_SENSOR_IDS) $(MW_SENSOR_IDS) 
 
 # CRTM Library and include macros
-INCLUDES = -I$(CRTM_SOURCE_ROOT)/Build/include
-LIBRARIES = -L$(CRTM_SOURCE_ROOT)/Build/lib -lCRTM
+#INCLUDES = -I$(CRTM_SOURCE_ROOT)/Build/include
+#LIBRARIES = -L$(CRTM_SOURCE_ROOT)/Build/lib -lCRTM
+INCLUDES = -I$(HOME)/local/CRTM/include
+LIBRARIES = -L$(HOME)/local/CRTM/lib -lCRTM
 
 
 # ------------------
@@ -132,7 +134,7 @@ remove_links:
 
 # Clean up
 clean:
-	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD *.stb
+	$(REMOVE) $(OBJ_FILES) $(EXE_FILE) *.mod *.MOD gmon.out
 
 realclean: remove_links clean
 	$(REMOVE) *.signal *.bin Test.Report

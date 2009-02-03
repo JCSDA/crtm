@@ -70,10 +70,10 @@ CONTAINS
 !       Function to inquire Binary format CRTM Aerosol structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Inquire_Aerosol_Binary( Filename              , &  ! Input
-!                                                   n_Aerosols =n_Aerosols, &  ! Optional output
-!                                                   RCS_Id     =RCS_Id    , &  ! Revision control
-!                                                   Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Inquire_Aerosol_Binary( Filename              , &
+!                                                   n_Aerosols =n_Aerosols, &
+!                                                   RCS_Id     =RCS_Id    , &
+!                                                   Message_Log=Message_Log )
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of a
@@ -212,14 +212,14 @@ CONTAINS
 !       Function to read Binary format CRTM Aerosol structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Read_Aerosol_Binary( Filename                   , &  ! Input
-!                                                Aerosol                    , &  ! Output
-!                                                Quiet        =Quiet        , &  ! Optional input
-!                                                No_File_Close=No_File_Close, &  ! Optional input
-!                                                No_Allocate  =No_Allocate  , &  ! Optional input
-!                                                n_Aerosols   =n_Aerosols   , &  ! Optional output
-!                                                RCS_Id       =RCS_Id       , &  ! Revision control
-!                                                Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = CRTM_Read_Aerosol_Binary( Filename                   , &
+!                                                Aerosol                    , &
+!                                                Quiet        =Quiet        , &
+!                                                No_File_Close=No_File_Close, &
+!                                                No_Allocate  =No_Allocate  , &
+!                                                n_Aerosols   =n_Aerosols   , &
+!                                                RCS_Id       =RCS_Id       , &
+!                                                Message_Log  =Message_Log    )
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of a
@@ -495,12 +495,12 @@ CONTAINS
 !       Function to write Binary format Aerosol files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Write_Aerosol_Binary( Filename                   , &  ! Input
-!                                                 Aerosol                    , &  ! Input
-!                                                 Quiet        =Quiet        , &  ! Optional input
-!                                                 No_File_Close=No_File_Close, &  ! Optional input
-!                                                 RCS_Id       =RCS_Id       , &  ! Revision control
-!                                                 Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = CRTM_Write_Aerosol_Binary( Filename                   , &
+!                                                 Aerosol                    , &
+!                                                 Quiet        =Quiet        , &
+!                                                 No_File_Close=No_File_Close, &
+!                                                 RCS_Id       =RCS_Id       , &
+!                                                 Message_Log  =Message_Log    )
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of an output
@@ -731,9 +731,9 @@ CONTAINS
 !       Utility function to read a single aerosol data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_Record( FileID                 , &  ! Input
-!                                   Aerosol                , &  ! Output
-!                                   Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Read_Record( FileID                 , &
+!                                   Aerosol                , &
+!                                   Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       FileID:       Logical unit number from which to read data.
@@ -870,9 +870,9 @@ CONTAINS
 !       Function to write a single aerosol data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_Record( FileID                 , &  ! Input
-!                                    Aerosol                , &  ! Input
-!                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_Record( FileID                 , &
+!                                    Aerosol                , &
+!                                    Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       FileID:       Logical unit number to which data is written

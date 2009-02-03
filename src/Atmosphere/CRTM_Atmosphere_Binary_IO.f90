@@ -89,11 +89,11 @@ CONTAINS
 !       Function to inquire Binary format CRTM Atmosphere structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Inquire_Atmosphere_Binary( Filename               , &  ! Input
-!                                                      n_Channels =n_Channels , &  ! Optional output
-!                                                      n_Profiles =n_Profiles , &  ! Optional output
-!                                                      RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                      Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Inquire_Atmosphere_Binary( Filename               , &
+!                                                      n_Channels =n_Channels , &
+!                                                      n_Profiles =n_Profiles , &
+!                                                      RCS_Id     =RCS_Id     , &
+!                                                      Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an
@@ -244,13 +244,13 @@ CONTAINS
 !       Function to read Binary format CRTM Atmosphere structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Read_Atmosphere_Binary( Filename               , &  ! Input
-!                                                   Atmosphere             , &  ! Output
-!                                                   Quiet      =Quiet      , &  ! Optional input
-!                                                   n_Channels =n_Channels , &  ! Optional output
-!                                                   n_Profiles =n_Profiles , &  ! Optional output
-!                                                   RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                   Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Read_Atmosphere_Binary( Filename               , &
+!                                                   Atmosphere             , &
+!                                                   Quiet      =Quiet      , &
+!                                                   n_Channels =n_Channels , &
+!                                                   n_Profiles =n_Profiles , &
+!                                                   RCS_Id     =RCS_Id     , &
+!                                                   Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an
@@ -656,11 +656,11 @@ CONTAINS
 !       Function to write Binary format Atmosphere files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Write_Atmosphere_Binary( Filename               , &  ! Input
-!                                                    Atmosphere             , &  ! Input
-!                                                    Quiet      =Quiet      , &  ! Optional input
-!                                                    RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Write_Atmosphere_Binary( Filename               , &
+!                                                    Atmosphere             , &
+!                                                    Quiet      =Quiet      , &
+!                                                    RCS_Id     =RCS_Id     , &
+!                                                    Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an output
@@ -1003,10 +1003,10 @@ CONTAINS
 !       Utility function to read a single atmosphere data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_Record( FileID                 , &  ! Input
-!                                   Atmosphere             , &  ! Output
-!                                   Quiet      =Quiet      , &  ! Optional input
-!                                   Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Read_Record( FileID                 , &
+!                                   Atmosphere             , &
+!                                   Quiet      =Quiet      , &
+!                                   Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       FileID:       Logical unit number from which to read data.
@@ -1091,12 +1091,12 @@ CONTAINS
                                n_Clouds, &
                                n_Aerosols
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'( "Error reading atm data dimensions. IOSTAT = ",i0)' ) io_stat
+      WRITE( msg,'( "Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
-    ! Allocate the atm structure
+    ! Allocate the Atmosphere structure
     ! ---------------------------------
     err_stat = CRTM_Allocate_Atmosphere( n_Layers, &
                                          n_Absorbers, &
@@ -1105,7 +1105,7 @@ CONTAINS
                                          atm, &
                                          Message_Log=Message_Log )
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error allocating atm data structure.'
+      msg = 'Error allocating data structure.'
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
@@ -1200,10 +1200,10 @@ CONTAINS
 !       Function to write a single atmosphere data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_Record( FileID                 , &  ! Input
-!                                    Atmosphere             , &  ! Input
-!                                    Quiet      =Quiet      , &  ! Optional input
-!                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_Record( FileID                 , &
+!                                    Atmosphere             , &
+!                                    Quiet      =Quiet      , &
+!                                    Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       FileID:       Logical unit number to which data is written

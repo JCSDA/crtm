@@ -67,10 +67,10 @@ CONTAINS
 !       Function to inquire Binary format CRTM Cloud structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Inquire_Cloud_Binary( Filename              , &  ! Input
-!                                                 n_Clouds   =n_Clouds  , &  ! Optional output
-!                                                 RCS_Id     =RCS_Id    , &  ! Revision control
-!                                                 Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Inquire_Cloud_Binary( Filename              , &
+!                                                 n_Clouds   =n_Clouds  , &
+!                                                 RCS_Id     =RCS_Id    , &
+!                                                 Message_Log=Message_Log )
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of a
@@ -209,14 +209,14 @@ CONTAINS
 !       Function to read Binary format CRTM Cloud structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Read_Cloud_Binary( Filename                   , &  ! Input
-!                                              Cloud                      , &  ! Output
-!                                              Quiet        =Quiet        , &  ! Optional input
-!                                              No_File_Close=No_File_Close, &  ! Optional input
-!                                              No_Allocate  =No_Allocate  , &  ! Optional input
-!                                              n_Clouds     =n_Clouds     , &  ! Optional output
-!                                              RCS_Id       =RCS_Id       , &  ! Revision control
-!                                              Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = CRTM_Read_Cloud_Binary( Filename                   , &
+!                                              Cloud                      , &
+!                                              Quiet        =Quiet        , &
+!                                              No_File_Close=No_File_Close, &
+!                                              No_Allocate  =No_Allocate  , &
+!                                              n_Clouds     =n_Clouds     , &
+!                                              RCS_Id       =RCS_Id       , &
+!                                              Message_Log  =Message_Log    )
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of a
@@ -491,12 +491,12 @@ CONTAINS
 !       Function to write Binary format Cloud files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Write_Cloud_Binary( Filename                   , &  ! Input
-!                                               Cloud                      , &  ! Input
-!                                               Quiet        =Quiet        , &  ! Optional input
-!                                               No_File_Close=No_File_Close, &  ! Optional input
-!                                               RCS_Id       =RCS_Id       , &  ! Revision control
-!                                               Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = CRTM_Write_Cloud_Binary( Filename                   , &
+!                                               Cloud                      , &
+!                                               Quiet        =Quiet        , &
+!                                               No_File_Close=No_File_Close, &
+!                                               RCS_Id       =RCS_Id       , &
+!                                               Message_Log  =Message_Log    )
 !
 ! INPUT ARGUMENTS:
 !       Filename:       Character string specifying the name of an output
@@ -727,9 +727,9 @@ CONTAINS
 !       Utility function to read a single cloud data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_Record( FileID                 , &  ! Input
-!                                   Cloud                  , &  ! Output
-!                                   Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Read_Record( FileID                 , &
+!                                   Cloud                  , &
+!                                   Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       FileID:       Logical unit number from which to read data.
@@ -867,9 +867,9 @@ CONTAINS
 !       Function to write a single cloud data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_Record( FileID                 , &  ! Input
-!                                    Cloud                  , &  ! Input
-!                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_Record( FileID                 , &
+!                                    Cloud                  , &
+!                                    Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       FileID:       Logical unit number to which data is written

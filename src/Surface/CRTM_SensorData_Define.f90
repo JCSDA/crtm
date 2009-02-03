@@ -31,12 +31,16 @@ MODULE CRTM_SensorData_Define
   ! ------------
   ! Everything private by default
   PRIVATE
+  ! The data type
+  PUBLIC :: CRTM_SensorData_type
   ! CRTM_SensorData routines in this module
   PUBLIC :: CRTM_Associated_SensorData
   PUBLIC :: CRTM_Destroy_SensorData
   PUBLIC :: CRTM_Allocate_SensorData
   PUBLIC :: CRTM_Assign_SensorData
   PUBLIC :: CRTM_Equal_SensorData
+  ! Utility procedures in this module
+  PUBLIC :: CRTM_RCS_ID_SensorData
 
 
   ! -----------------
@@ -49,9 +53,10 @@ MODULE CRTM_SensorData_Define
 
 
   ! -------------------------------
-  ! SensorData data type definition
+  ! SensorData structure definition
   ! -------------------------------
-  TYPE, PUBLIC :: CRTM_SensorData_type
+  !:tdoc+:
+  TYPE :: CRTM_SensorData_type
     INTEGER :: n_Allocates = 0
     ! Dimension values
     INTEGER :: n_Channels = 0  ! L
@@ -65,49 +70,10 @@ MODULE CRTM_SensorData_Define
     ! The sensor brightness temperatures
     REAL(fp),          POINTER :: Tb(:) => NULL() ! L
   END TYPE CRTM_SensorData_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_SensorData
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM SensorData structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_SensorData( SensorData) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       SensorData:  SensorData structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_SensorData_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_SensorData( SensorData )
-    TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
-    SensorData%Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
-  END SUBROUTINE CRTM_Clear_SensorData
 
 
 !################################################################################
@@ -119,6 +85,7 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Associated_SensorData
@@ -128,8 +95,8 @@ CONTAINS
 !       CRTM_SensorData structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_SensorData( SensorData       , &  ! Input
-!                                                        ANY_Test=Any_Test  )  ! Optional input
+!       Association_Status = CRTM_Associated_SensorData( SensorData       , &
+!                                                        ANY_Test=Any_Test  )
 !
 ! INPUT ARGUMENTS:
 !       SensorData:  SensorData structure which is to have its pointer
@@ -163,6 +130,7 @@ CONTAINS
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Associated_SensorData( SensorData, & ! Input
@@ -212,6 +180,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_SensorData
@@ -221,9 +190,8 @@ CONTAINS
 !       data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_SensorData( SensorData             , &  ! Output
-!                                               RCS_Id     =RCS_Id     , &  ! Revision control
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_SensorData( SensorData             , &
+!                                               Message_Log=Message_Log  )
 !
 ! OUTPUT ARGUMENTS:
 !       SensorData:   Re-initialized SensorData structure.
@@ -241,14 +209,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -269,17 +229,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Destroy_SensorData( SensorData , &  ! Output
                                     No_Clear   , &  ! Optional input
-                                    RCS_Id     , &  ! Revision control
                                     Message_Log) &  ! Error messaging
                                   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
     INTEGER,          OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -294,7 +253,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Reinitialise the dimensions
     SensorData%n_Channels = 0
@@ -348,6 +306,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_SensorData
@@ -357,10 +316,9 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_SensorData( n_Channels             , &  ! Input
-!                                                SensorData             , &  ! Output
-!                                                RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_SensorData( n_Channels             , &
+!                                                SensorData             , &
+!                                                Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Channels:   The number of channels in the SensorData structure.
@@ -388,14 +346,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the ERROR_HANDLER module.
@@ -416,17 +366,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Allocate_SensorData( n_Channels , &  ! Input
                                      SensorData , &  ! Output
-                                     RCS_Id     , &  ! Revision control
                                      Message_Log) &  ! Error messaging
                                    RESULT( Error_Status )
     ! Arguments
     INTEGER                   , INTENT(IN)     :: n_Channels
     TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -439,7 +388,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Dimensions
     IF ( n_Channels < 0 ) THEN
@@ -516,6 +464,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_SensorData
@@ -524,10 +473,9 @@ CONTAINS
 !       Function to copy valid SensorData structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_SensorData( SensorData_in          , &  ! Input
-!                                              SensorData_out         , &  ! Output
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_SensorData( SensorData_in          , &
+!                                              SensorData_out         , &
+!                                              Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       SensorData_in:   SensorData structure which is to be copied.
@@ -553,14 +501,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the ERROR_HANDLER module.
@@ -575,17 +515,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Assign_SensorData( SensorData_in , &  ! Input
                                    SensorData_out, &  ! Output
-                                   RCS_Id        , &  ! Revision control
                                    Message_Log   ) &  ! Error messaging
                                  RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_SensorData_type), INTENT(IN)     :: SensorData_in
     TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData_out
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -595,7 +534,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated.
     ! If this test succeeds, then some or all of the
@@ -641,6 +579,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Equal_SensorData
@@ -649,12 +588,11 @@ CONTAINS
 !       Function to test if two SensorData structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_SensorData( SensorData_LHS         , &  ! Input
-!                                             SensorData_RHS         , &  ! Input
-!                                             ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                             Check_All  =Check_All  , &  ! Optional input
-!                                             RCS_Id     =RCS_Id     , &  ! Optional output
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Equal_SensorData( SensorData_LHS         , &
+!                                             SensorData_RHS         , &
+!                                             ULP_Scale  =ULP_Scale  , &
+!                                             Check_All  =Check_All  , &
+!                                             Message_Log=Message_Log  )
 !
 !
 ! INPUT ARGUMENTS:
@@ -711,14 +649,6 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      None
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
 !                          The error codes are defined in the Message_Handler module.
@@ -729,13 +659,13 @@ CONTAINS
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Equal_SensorData( SensorData_LHS, &  ! Input
                                   SensorData_RHS, &  ! Input
                                   ULP_Scale     , &  ! Optional input
                                   Check_All     , &  ! Optional input
-                                  RCS_Id        , &  ! Revision control
                                   Message_Log   ) &  ! Error messaging
                                 RESULT( Error_Status )
     ! Arguments
@@ -743,7 +673,6 @@ CONTAINS
     TYPE(CRTM_SensorData_type), INTENT(IN)  :: SensorData_RHS
     INTEGER,          OPTIONAL, INTENT(IN)  :: ULP_Scale
     INTEGER,          OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -758,7 +687,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Default precision is a single unit in last place
     ULP = 1
@@ -880,5 +808,74 @@ CONTAINS
       END IF
     END DO
   END FUNCTION CRTM_Equal_SensorData
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_RCS_ID_SensorData
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_SensorData( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_SensorData( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_SensorData
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_SensorData
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM SensorData structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_SensorData( SensorData) ! Output
+!
+! OUTPUT ARGUMENTS:
+!       SensorData:  SensorData structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_SensorData_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output SensorData argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_SensorData( SensorData )
+    TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
+    SensorData%Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
+  END SUBROUTINE CRTM_Clear_SensorData
 
 END MODULE CRTM_SensorData_Define

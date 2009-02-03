@@ -7,7 +7,7 @@
 ! DERIVED TYPES:
 !       CRTM_GeometryInfo_type
 !       ----------------------
-!       Definition of the public CRTM_GeometryInfo data structure.
+!       Definition of the public CRTM GeometryInfo data structure.
 !       Fields are:
 !
 !         USER INPUTS: It is expected the user will fill these components
@@ -258,6 +258,7 @@ MODULE CRTM_GeometryInfo_Define
   PRIVATE
   PUBLIC :: CRTM_GeometryInfo_type
   PUBLIC :: CRTM_Compute_GeometryInfo
+  PUBLIC :: CRTM_RCS_Id_GeometryInfo
 
 
   ! -----------------
@@ -270,8 +271,8 @@ MODULE CRTM_GeometryInfo_Define
   ! ---------------------------------
   ! GeometryInfo data type definition
   ! ---------------------------------
+  !:tdoc+:
   TYPE :: CRTM_GeometryInfo_type
-
     ! User Input
     ! ----------
     ! Earth location
@@ -289,7 +290,6 @@ MODULE CRTM_GeometryInfo_Define
     REAL(fp) :: Source_Azimuth_Angle = ZERO
     ! Flux angle information
     REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
-
     ! Derived from User Input
     ! -----------------------
     ! Default distance ratio
@@ -306,41 +306,42 @@ MODULE CRTM_GeometryInfo_Define
     ! Flux angle information
     REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
     REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
-
   END TYPE CRTM_GeometryInfo_type
+  !:tdoc-:
 
 
 CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_GeometryInfo
 ! 
 ! PURPOSE:
 !       Function to compute the derived geometry from the user specified
-!       components of the CRTM_GeometryInfo structure.
+!       components of the CRTM GeometryInfo structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo,             &  ! In/Output
-!                                                 Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo           , &
+!                                                 Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
-!       GeometryInfo:  The CRTM_GeometryInfo structure containing the user
+!       GeometryInfo:  The GeometryInfo structure containing the user
 !                      defined inputs, in particular the angles.
 !                      UNITS:      N/A
 !                      TYPE:       CRTM_GeometryInfo_type
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN OUT )
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
 ! OUTPUT ARGUMENTS:
-!       GeometryInfo:  The CRTM_GeometryInfo structure with the derived
+!       GeometryInfo:  The GeometryInfo structure with the derived
 !                      angle components filled..
 !                      UNITS:      N/A
 !                      TYPE:       CRTM_GeometryInfo_type
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN OUT )
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:   Character string specifying a filename in which any
@@ -366,6 +367,7 @@ CONTAINS
 !       This function changes the values of the derived components of the
 !       GeometryInfo structure argument.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_GeometryInfo( gInfo      , &  ! In/Output
@@ -447,5 +449,35 @@ CONTAINS
     gInfo%Secant_Flux_Zenith = ONE / COS(gInfo%Flux_Zenith_Radian)
 
   END FUNCTION CRTM_Compute_GeometryInfo
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_RCS_ID_GeometryInfo
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_GeometryInfo( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_GeometryInfo( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_GeometryInfo
+
 
 END MODULE CRTM_GeometryInfo_Define

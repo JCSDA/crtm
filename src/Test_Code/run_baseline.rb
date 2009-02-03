@@ -18,6 +18,10 @@
 # --dry-run  (-n)
 #    echo the commands to be executed, but do nothing
 #
+# --compare (-c)
+#    Compare the current output with the baseline files. If not specified,
+#    the output is generated but no comparison is performed.
+#
 # --forward  (-f)
 #    Run the forward model tests.
 #
@@ -68,12 +72,14 @@ models={:fwd => {:dir => "Forward"       , :run => false},
         :ad  => {:dir => "Adjoint"       , :run => false},
         :k   => {:dir => "K_Matrix"      , :run => false} }
 noop = false
+compare = "n"
 make_flags = ""
 
 # Specify accepted options
 options=GetoptLong.new(
   [ "--help",           "-h", GetoptLong::NO_ARGUMENT ],
   [ "--dry-run",        "-n", GetoptLong::NO_ARGUMENT ],
+  [ "--compare",        "-c", GetoptLong::NO_ARGUMENT ],
   [ "--forward",        "-f", GetoptLong::NO_ARGUMENT ],
   [ "--tangent-linear", "-t", GetoptLong::NO_ARGUMENT ],
   [ "--adjoint",        "-a", GetoptLong::NO_ARGUMENT ],
@@ -93,6 +99,8 @@ begin
         exit SUCCESS
       when "--dry-run"
         noop = true
+      when "--compare"
+        compare = "y"
       when "--forward"
         models[:fwd][:run] = true
       when "--tangent-linear"
@@ -128,6 +136,9 @@ end
 
 # Set the make noop switch if necessary
 noop_flag = noop ? "-n" : ""
+
+# Create the Test.Default_Input file
+File.open("Test.Default_Input",'w') {|f| f.write("#{compare}\n")}
 
 # Remove the test report file
 report_file = "Test.Report"

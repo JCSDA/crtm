@@ -259,7 +259,7 @@ MODULE CRTM_Atmosphere_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_Cloud parameters
+  ! Cloud parameters
   PUBLIC :: N_VALID_CLOUD_TYPES
   PUBLIC :: NO_CLOUD
   PUBLIC :: WATER_CLOUD
@@ -269,10 +269,10 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: GRAUPEL_CLOUD
   PUBLIC :: HAIL_CLOUD
   PUBLIC :: CLOUD_TYPE_NAME
-  ! CRTM_Cloud structure data type
+  ! Cloud structure data type
   ! in the CRTM_Cloud_Define module
   PUBLIC :: CRTM_Cloud_type
-  ! CRTM_Cloud structure routines inherited
+  ! Cloud structure routines inherited
   ! from the CRTM_Cloud_Define module
   PUBLIC :: CRTM_Associated_Cloud
   PUBLIC :: CRTM_Destroy_Cloud
@@ -280,7 +280,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Assign_Cloud
   PUBLIC :: CRTM_Equal_Cloud
   PUBLIC :: CRTM_SetLayers_Cloud
-  ! CRTM_Aerosol parameters
+  ! Aerosol parameters
   PUBLIC :: N_VALID_AEROSOL_TYPES
   PUBLIC :: NO_AEROSOL
   PUBLIC :: DUST_AEROSOL
@@ -292,10 +292,10 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: WET_BLACK_CARBON_AEROSOL
   PUBLIC :: SULFATE_AEROSOL  
   PUBLIC :: AEROSOL_TYPE_NAME
-  ! CRTM_Aerosol structure data type
+  ! Aerosol structure data type
   ! in the CRTM_Aerosol_Define module
   PUBLIC :: CRTM_Aerosol_type
-  ! CRTM_Aerosol structure routines inherited
+  ! Aerosol structure routines inherited
   ! from the CRTM_Aerosol_Define module
   PUBLIC :: CRTM_Associated_Aerosol
   PUBLIC :: CRTM_Destroy_Aerosol
@@ -303,7 +303,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Assign_Aerosol
   PUBLIC :: CRTM_Equal_Aerosol
   PUBLIC :: CRTM_SetLayers_Aerosol
-  ! CRTM_Atmosphere parameters
+  ! Atmosphere parameters
   PUBLIC :: N_VALID_ABSORBER_IDS
   PUBLIC :: INVALID_ABSORBER_ID
   PUBLIC ::   H2O_ID
@@ -362,9 +362,9 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: SUBARCTIC_WINTER
   PUBLIC :: US_STANDARD_ATMOSPHERE
   PUBLIC :: CLIMATOLOGY_MODEL_NAME
-  ! CRTM_Atmosphere structure data type
+  ! Atmosphere structure data type
   PUBLIC :: CRTM_Atmosphere_type
-  ! CRTM_Atmosphere routines in this module
+  ! Atmosphere routines in this module
   PUBLIC :: CRTM_Associated_Atmosphere
   PUBLIC :: CRTM_Destroy_Atmosphere
   PUBLIC :: CRTM_Allocate_Atmosphere
@@ -380,6 +380,12 @@ MODULE CRTM_Atmosphere_Define
   ! -------------------
   ! Procedure overloads
   ! -------------------
+  INTERFACE CRTM_Associated_Atmosphere
+    MODULE PROCEDURE Associated_Scalar
+    MODULE PROCEDURE Associated_Rank1
+    MODULE PROCEDURE Associated_Rank2
+  END INTERFACE CRTM_Associated_Atmosphere
+
   INTERFACE CRTM_Destroy_Atmosphere
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
@@ -540,9 +546,10 @@ MODULE CRTM_Atmosphere_Define
   INTEGER, PARAMETER :: ML = 256
 
 
-  ! ------------------------------------
-  ! CRTM_Atmosphere structure definition
-  ! ------------------------------------
+  ! -------------------------------
+  ! Atmosphere structure definition
+  ! -------------------------------
+  !:tdoc+:
   TYPE :: CRTM_Atmosphere_type
     INTEGER :: n_Allocates = 0
     ! Dimension values
@@ -570,50 +577,10 @@ MODULE CRTM_Atmosphere_Define
     ! Aerosols associated with each profile
     TYPE(CRTM_Aerosol_type), POINTER :: Aerosol(:) => NULL()  ! Na
   END TYPE CRTM_Atmosphere_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_Atmosphere
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_Atmosphere structure.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Atmosphere( Atmosphere ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       Atmosphere:  Atmosphere structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_Atmosphere_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Atmosphere argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_Atmosphere( Atmosphere )
-    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere
-    Atmosphere%Climatology = INVALID_MODEL
-  END SUBROUTINE CRTM_Clear_Atmosphere
-
 
 
 !################################################################################
@@ -625,26 +592,27 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Associated_Atmosphere
 !
 ! PURPOSE:
 !       Function to test the association status of the components of a
-!       CRTM_Atmosphere structure.
+!       CRTM Atmosphere structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Atmosphere( Atmosphere               , &  ! Input
-!                                                        ANY_Test    =Any_Test    , &  ! Optional input
-!                                                        Skip_Cloud  =Skip_Cloud  , &  ! Optional input
-!                                                        Skip_Aerosol=Skip_Aerosol  )  ! Optional input
+!       Association_Status = CRTM_Associated_Atmosphere( Atmosphere               , &
+!                                                        ANY_Test    =Any_Test    , &
+!                                                        Skip_Cloud  =Skip_Cloud  , &
+!                                                        Skip_Aerosol=Skip_Aerosol  )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:          Structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
 !                            TYPE:       CRTM_Atmosphere_type
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Scalar, Rank-1, OR Rank-2 array
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -698,15 +666,16 @@ CONTAINS
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!                            DIMENSION:  Same as input Atmosphere argument
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_Atmosphere( Atmosphere  , & ! Input
-                                       ANY_Test    , & ! Optional input
-                                       Skip_Cloud  , & ! Optional input
-                                       Skip_Aerosol) & ! Optional input
-                                     RESULT( Association_Status )
+  FUNCTION Associated_Scalar( Atmosphere  , & ! Input
+                              ANY_Test    , & ! Optional input
+                              Skip_Cloud  , & ! Optional input
+                              Skip_Aerosol) & ! Optional input
+                            RESULT( Association_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atmosphere
     INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
@@ -804,20 +773,71 @@ CONTAINS
       END IF
     END IF
 
-  END FUNCTION CRTM_Associated_Atmosphere
+  END FUNCTION Associated_Scalar
+
+  FUNCTION Associated_Rank1( Atmosphere  , & ! Input
+                             ANY_Test    , & ! Optional input
+                             Skip_Cloud  , & ! Optional input
+                             Skip_Aerosol) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atmosphere(:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
+    INTEGER,          OPTIONAL, INTENT(IN) :: Skip_Cloud
+    INTEGER,          OPTIONAL, INTENT(IN) :: Skip_Aerosol
+    ! Function result
+    LOGICAL :: Association_Status(SIZE(Atmosphere))
+    ! Local variables
+    INTEGER :: i
+
+    DO i = 1, SIZE(Atmosphere)
+      Association_Status(i) = Associated_Scalar( Atmosphere(i), &
+                                                 ANY_Test    =ANY_Test, &
+                                                 Skip_Cloud  =Skip_Cloud, &
+                                                 Skip_Aerosol=Skip_Aerosol )
+    END DO
+
+  END FUNCTION Associated_Rank1
+
+  FUNCTION Associated_Rank2( Atmosphere  , & ! Input
+                             ANY_Test    , & ! Optional input
+                             Skip_Cloud  , & ! Optional input
+                             Skip_Aerosol) & ! Optional input
+                           RESULT( Association_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atmosphere(:,:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
+    INTEGER,          OPTIONAL, INTENT(IN) :: Skip_Cloud
+    INTEGER,          OPTIONAL, INTENT(IN) :: Skip_Aerosol
+    ! Function result
+    LOGICAL :: Association_Status(SIZE(Atmosphere,DIM=1),SIZE(Atmosphere,DIM=2))
+    ! Local variables
+    INTEGER :: i, j
+
+    DO j = 1, SIZE(Atmosphere,DIM=2)
+      DO i = 1, SIZE(Atmosphere,DIM=1)
+        Association_Status(i,j) = Associated_Scalar( Atmosphere(i,j), &
+                                                     ANY_Test    =ANY_Test, &
+                                                     Skip_Cloud  =Skip_Cloud, &
+                                                     Skip_Aerosol=Skip_Aerosol )
+      END DO
+    END DO
+
+  END FUNCTION Associated_Rank2
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_Atmosphere
 ! 
 ! PURPOSE:
-!       Function to re-initialize CRTM_Atmosphere data structures.
+!       Function to re-initialize CRTM Atmosphere data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Atmosphere( Atmosphere             , &  ! Output
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Atmosphere( Atmosphere             , &
+!                                               Message_Log=Message_Log  )
 !
 ! OUTPUT ARGUMENTS:
 !       Atmosphere:   Re-initialized Atmosphere structure. In the context of
@@ -826,7 +846,7 @@ CONTAINS
 !                     The latter is used in the K-matrix model.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Atmosphere_type
-!                     DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                     DIMENSION:  Scalar, Rank-1, OR Rank-2 array
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -858,6 +878,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( Atmosphere , &  ! Output
@@ -963,7 +984,7 @@ CONTAINS
                                            Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error destroying CRTM_Atmosphere Aerosol structure(s).', &
+                              'Error destroying Atmosphere Aerosol structure(s).', &
                               Error_Status,    &
                               Message_Log=Message_Log )
       END IF
@@ -972,8 +993,8 @@ CONTAINS
       DEALLOCATE( Atmosphere%Aerosol, STAT = Allocate_Status )
       IF ( Allocate_Status /= 0 ) THEN
         Error_Status = FAILURE
-        WRITE( Message,'("Error deallocating CRTM_Atmosphere cloud ", &
-                        &"member. STAT = ",i0)' ) &
+        WRITE( Message,'("Error deallocating Atmosphere aerosol ", &
+                        &"component. STAT = ",i0)' ) &
                         Allocate_Status
         CALL Display_Message( ROUTINE_NAME,    &
                               TRIM(Message), &
@@ -1085,20 +1106,21 @@ CONTAINS
   
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_Atmosphere
 ! 
 ! PURPOSE:
-!       Function to allocate CRTM_Atmosphere data structures.
+!       Function to allocate CRTM Atmosphere data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Atmosphere( n_Layers               , &  ! Input
-!                                                n_Absorbers            , &  ! Input
-!                                                n_Clouds               , &  ! Input
-!                                                n_Aerosols             , &  ! Input
-!                                                Atmosphere             , &  ! Output
-!                                                Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Atmosphere( n_Layers               , &
+!                                                n_Absorbers            , &
+!                                                n_Clouds               , &
+!                                                n_Aerosols             , &
+!                                                Atmosphere             , &
+!                                                Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     Number of layers dimension.
@@ -1193,6 +1215,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Layers   , &  ! Input
@@ -1423,7 +1446,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1486,7 +1509,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1549,7 +1572,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1612,7 +1635,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1675,7 +1698,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1739,7 +1762,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1803,7 +1826,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1868,7 +1891,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1880,17 +1903,18 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_Atmosphere
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_Atmosphere structures.
+!       Function to copy valid CRTM Atmosphere structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Atmosphere( Atmosphere_in          , &  ! Input
-!                                              Atmosphere_out         , &  ! Output
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_Atmosphere( Atmosphere_in          , &
+!                                              Atmosphere_out         , &
+!                                              Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere_in:   Atmosphere structure which is to be copied. In the
@@ -1934,6 +1958,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Assign_Scalar( Atmosphere_in , &  ! Input
@@ -1967,7 +1992,7 @@ CONTAINS
                                               Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output CRTM_Atmosphere components.', &
+                              'Error deallocating output Atmosphere components.', &
                               Error_Status,    &
                               Message_Log=Message_Log )
       END IF
@@ -2004,7 +2029,7 @@ CONTAINS
                                                Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
-                              'Error allocating output CRTM_Atmosphere arrays.', &
+                              'Error allocating output Atmosphere arrays.', &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
@@ -2112,7 +2137,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error copying element (",i0,")", &
-                          &" of CRTM_Atmosphere structure array." )' ) i
+                          &" of Atmosphere structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -2172,7 +2197,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error copying element (",i0,",",i0,")",&
-                            &" of CRTM_Atmosphere structure array." )' ) i,j
+                            &" of Atmosphere structure array." )' ) i,j
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -2185,6 +2210,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Equal_Atmosphere
@@ -2193,12 +2219,12 @@ CONTAINS
 !       Function to test if two Atmosphere structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Atmosphere( Atmosphere_LHS                       , &  ! Input
-!                                             Atmosphere_RHS                       , &  ! Input
-!                                             ULP_Scale         =ULP_Scale         , &  ! Optional input
-!                                             Percent_Difference=Percent_Difference, &  ! Optional input
-!                                             Check_All         =Check_All         , &  ! Optional input
-!                                             Message_Log       =Message_Log         )  ! Error messaging
+!       Error_Status = CRTM_Equal_Atmosphere( Atmosphere_LHS                       , &
+!                                             Atmosphere_RHS                       , &
+!                                             ULP_Scale         =ULP_Scale         , &
+!                                             Percent_Difference=Percent_Difference, &
+!                                             Check_All         =Check_All         , &
+!                                             Message_Log       =Message_Log         )
 !
 !
 ! INPUT ARGUMENTS:
@@ -2278,6 +2304,7 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Equal_Scalar( Atmosphere_LHS    , &  ! Input
@@ -2557,7 +2584,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_Atmosphere structure array." )' ) m
+                          &" of rank-1 Atmosphere structure array." )' ) m
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -2632,7 +2659,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &
-                            &" of rank-2 CRTM_Atmosphere structure array." )' ) l,m
+                            &" of rank-2 Atmosphere structure array." )' ) l,m
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -2645,18 +2672,19 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_SetLayers_Atmosphere
 ! 
 ! PURPOSE:
-!       Function to set the number of layers to use in a CRTM_Atmosphere
+!       Function to set the number of layers to use in a CRTM Atmosphere
 !       structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_SetLayers_Atmosphere( n_Layers               , &  ! Input
-!                                                 Atmosphere             , &  ! In/Output
-!                                                 Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_SetLayers_Atmosphere( n_Layers               , &
+!                                                 Atmosphere             , &
+!                                                 Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Layers:     The value to set the n_Layers component of the 
@@ -2714,6 +2742,7 @@ CONTAINS
 !         reallocated to the required number of layers. No other dimensions
 !         of the structure or substructures are altered.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION SetLayers_Scalar( n_Layers   , &  ! Input
@@ -2865,6 +2894,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Sum_Atmosphere
@@ -2877,11 +2907,11 @@ CONTAINS
 !       Offset are optional weighting factors.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Sum_Atmosphere( A                        , &  ! In/Output
-!                                           B                        , &  ! Input
-!                                           Scale_Factor=Scale_Factor, &  ! Optional input
-!                                           Offset      =Offset      , &  ! Optional input
-!                                           Message_Log =Message_Log   )  ! Error messaging
+!       Error_Status = CRTM_Sum_Atmosphere( A                        , &
+!                                           B                        , &
+!                                           Scale_Factor=Scale_Factor, &
+!                                           Offset      =Offset      , &
+!                                           Message_Log =Message_Log   )
 !
 ! INPUT ARGUMENTS:
 !       A:               Atmosphere structure that is to be added to.
@@ -2947,6 +2977,7 @@ CONTAINS
 ! SIDE EFFECTS:
 !       The argument A is INTENT(IN OUT) and is modified upon output.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Sum_Scalar( A           , &  ! Input/Output
@@ -3089,7 +3120,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error computing sum for element #",i0, &
-                          &" of CRTM_Atmosphere structure arrays." )' ) i
+                          &" of Atmosphere structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -3151,7 +3182,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error computing sum for element (",i0,",",i0,")", &
-                            &" of CRTM_Atmosphere structure arrays." )' ) l,m
+                            &" of Atmosphere structure arrays." )' ) l,m
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -3164,12 +3195,13 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Zero_Atmosphere
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out various members of a CRTM_Atmosphere structure -
+!       Subroutine to zero-out various members of a CRTM Atmosphere structure -
 !       both scalar and pointer.
 !
 ! CALLING SEQUENCE:
@@ -3201,6 +3233,7 @@ CONTAINS
 !         just OUT. This is necessary because the argument must be defined upon
 !         input.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Zero_Scalar( Atmosphere )  ! Output
@@ -3242,6 +3275,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_RCS_ID_Atmosphere
@@ -3260,6 +3294,7 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE CRTM_RCS_ID_Atmosphere( RCS_Id )
@@ -3269,13 +3304,14 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Get_AbsorberIdx
 ! 
 ! PURPOSE:
 !       Function to determine the index of the requested absorber in the
-!       CRTM_Atmosphere structure absorber component.
+!       CRTM Atmosphere structure absorber component.
 !
 ! CALLING SEQUENCE:
 !       Idx = CRTM_Get_AbsorberIdx(Atmosphere, AbsorberId)
@@ -3304,6 +3340,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Get_AbsorberIdx(Atm, AbsorberId) RESULT(AbsorberIdx)
@@ -3325,5 +3362,45 @@ CONTAINS
     AbsorberIdx=Idx(1)
     
   END FUNCTION CRTM_Get_AbsorberIdx
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_Atmosphere
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM Atmosphere structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_Atmosphere( Atmosphere )
+!
+! OUTPUT ARGUMENTS:
+!       Atmosphere:  Atmosphere structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_Atmosphere_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output Atmosphere argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_Atmosphere( Atmosphere )
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere
+    Atmosphere%Climatology = INVALID_MODEL
+  END SUBROUTINE CRTM_Clear_Atmosphere
 
 END MODULE CRTM_Atmosphere_Define

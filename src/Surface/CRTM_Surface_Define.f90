@@ -21,15 +21,15 @@
 !               Broadleaf forest            BROADLEAF_FOREST        
 !                 Pine forest               PINE_FOREST             
 !                   Tundra                  TUNDRA                   
-!                 Grass soil                GRASS_SOIL              
+!                 Grass-soil                GRASS_SOIL              
 !             Broadleaf-pine forest         BROADLEAF_PINE_FOREST   
-!                 Grass scrub               GRASS_SCRUB             
-!                  Oil grass                OIL_GRASS               
+!                 Grass-scrub               GRASS_SCRUB             
+!                  Soil-grass-scrub         SOIL_GRASS_SCRUB
 !                Urban concrete             URBAN_CONCRETE          
 !                  Pine brush               PINE_BRUSH              
 !                Broadleaf brush            BROADLEAF_BRUSH         
 !                   Wet soil                WET_SOIL                 
-!                  Scrub soil               SCRUB_SOIL              
+!                  Scrub-soil               SCRUB_SOIL              
 !            Broadleaf(70)-Pine(30)         BROADLEAF70_PINE30
 !
 !
@@ -121,18 +121,22 @@ MODULE CRTM_Surface_Define
 
   ! Public procedures
   ! -----------------
-  PUBLIC :: CRTM_Destroy_Surface
-  PUBLIC :: CRTM_Allocate_Surface
-  PUBLIC :: CRTM_Assign_Surface
-  PUBLIC :: CRTM_Equal_Surface
-  PUBLIC :: CRTM_WeightedSum_Surface
-  PUBLIC :: CRTM_Zero_Surface
-  ! Use associated procedures
+  ! CRTM_SensorData structure procedures inherited
+  ! from the CRTM_SensorData_Define module.
   PUBLIC :: CRTM_Associated_SensorData
   PUBLIC :: CRTM_Destroy_SensorData
   PUBLIC :: CRTM_Allocate_SensorData
   PUBLIC :: CRTM_Assign_SensorData
   PUBLIC :: CRTM_Equal_SensorData
+  ! Surface procedures in this module
+  PUBLIC :: CRTM_Destroy_Surface
+  PUBLIC :: CRTM_Allocate_Surface
+  PUBLIC :: CRTM_Assign_Surface
+  PUBLIC :: CRTM_Equal_Surface
+  PUBLIC :: CRTM_Sum_Surface
+  PUBLIC :: CRTM_Zero_Surface
+  ! Utility procedures in this module
+  PUBLIC :: CRTM_RCS_ID_Surface
 
   ! Public parameters
   ! -----------------
@@ -160,7 +164,7 @@ MODULE CRTM_Surface_Define
   PUBLIC :: GRASS_SOIL
   PUBLIC :: BROADLEAF_PINE_FOREST
   PUBLIC :: GRASS_SCRUB
-  PUBLIC :: OIL_GRASS
+  PUBLIC :: SOIL_GRASS_SCRUB
   PUBLIC :: URBAN_CONCRETE
   PUBLIC :: PINE_BRUSH
   PUBLIC :: BROADLEAF_BRUSH
@@ -234,11 +238,11 @@ MODULE CRTM_Surface_Define
     MODULE PROCEDURE Equal_Rank2
   END INTERFACE CRTM_Equal_Surface
 
-  INTERFACE CRTM_WeightedSum_Surface
-    MODULE PROCEDURE WeightedSum_Scalar
-    MODULE PROCEDURE WeightedSum_Rank1
-    MODULE PROCEDURE WeightedSum_Rank2
-  END INTERFACE CRTM_WeightedSum_Surface
+  INTERFACE CRTM_Sum_Surface
+    MODULE PROCEDURE Sum_Scalar
+    MODULE PROCEDURE Sum_Rank1
+    MODULE PROCEDURE Sum_Rank2
+  END INTERFACE CRTM_Sum_Surface
 
   INTERFACE CRTM_Zero_Surface
     MODULE PROCEDURE Zero_Scalar
@@ -297,7 +301,7 @@ MODULE CRTM_Surface_Define
   INTEGER, PARAMETER :: GRASS_SOIL               = 11
   INTEGER, PARAMETER :: BROADLEAF_PINE_FOREST    = 12
   INTEGER, PARAMETER :: GRASS_SCRUB              = 13
-  INTEGER, PARAMETER :: OIL_GRASS                = 14
+  INTEGER, PARAMETER :: SOIL_GRASS_SCRUB         = 14
   INTEGER, PARAMETER :: URBAN_CONCRETE           = 15
   INTEGER, PARAMETER :: PINE_BRUSH               = 16
   INTEGER, PARAMETER :: BROADLEAF_BRUSH          = 17
@@ -316,15 +320,15 @@ MODULE CRTM_Surface_Define
                         'Broadleaf forest         ', &
                         'Pine forest              ', &
                         'Tundra                   ', &
-                        'Grass soil               ', &
+                        'Grass-soil               ', &
                         'Broadleaf-pine forest    ', &
-                        'Grass scrub              ', &
-                        'Oil grass                ', &
+                        'Grass-scrub              ', &
+                        'Soil-grass-scrub         ', &
                         'Urban concrete           ', &
                         'Pine brush               ', &
                         'Broadleaf brush          ', &
                         'Wet soil                 ', &
-                        'Scrub soil               ', &
+                        'Scrub-soil               ', &
                         'Broadleaf(70)-Pine(30)   ' /)
 
   ! For water, the water types
@@ -408,8 +412,8 @@ MODULE CRTM_Surface_Define
   ! Default value parameters
   ! ------------------------
   ! Surface type independent data
-  REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED = 5.0_fp  ! m/s
-  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! North
+  REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED     = 5.0_fp  ! m/s
+  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION = 0.0_fp  ! North
   ! Land surface type data
   INTEGER,  PARAMETER :: DEFAULT_LAND_TYPE             = GRASS_SOIL
   REAL(fp), PARAMETER :: DEFAULT_LAND_TEMPERATURE      = 283.0_fp  ! K
@@ -436,8 +440,9 @@ MODULE CRTM_Surface_Define
 
 
   ! ----------------------------
-  ! Surface data type definition
+  ! Surface structure definition
   ! ----------------------------
+  !:tdoc+:
   TYPE :: CRTM_Surface_type
     INTEGER :: n_Allocates = 0
     ! Dimension values
@@ -477,83 +482,10 @@ MODULE CRTM_Surface_Define
     ! SensorData containing channel brightness temperatures
     TYPE(CRTM_SensorData_type) :: SensorData  ! N
   END TYPE CRTM_Surface_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_Surface
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM Surface structure to
-!       their default values.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Surface( Surface ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       Surface:     Surface structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_Surface_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Surface argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_Surface( Surface )
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
-    ! Gross surface type
-    Surface%Land_Coverage  = ZERO
-    Surface%Water_Coverage = ZERO
-    Surface%Snow_Coverage  = ZERO
-    Surface%Ice_Coverage   = ZERO
-    ! Surface type independent data
-    Surface%Wind_Speed     = DEFAULT_WIND_SPEED
-    Surface%Wind_Direction = DEFAULT_WIND_DIRECTION
-    ! Land surface type data
-    Surface%Land_Type             = DEFAULT_LAND_TYPE
-    Surface%Land_Temperature      = DEFAULT_LAND_TEMPERATURE
-    Surface%Soil_Moisture_Content = DEFAULT_SOIL_MOISTURE_CONTENT
-    Surface%Canopy_Water_Content  = DEFAULT_CANOPY_WATER_CONTENT
-    Surface%Vegetation_Fraction   = DEFAULT_VEGETATION_FRACTION
-    Surface%Soil_Temperature      = DEFAULT_SOIL_TEMPERATURE
-    ! Water surface type data
-    Surface%Water_Type        = DEFAULT_WATER_TYPE
-    Surface%Water_Temperature = DEFAULT_WATER_TEMPERATURE
-    Surface%Salinity          = DEFAULT_SALINITY
-    ! Snow surface type data
-    Surface%Snow_Type        = DEFAULT_SNOW_TYPE
-    Surface%Snow_Temperature = DEFAULT_SNOW_TEMPERATURE
-    Surface%Snow_Depth       = DEFAULT_SNOW_DEPTH
-    Surface%Snow_Density     = DEFAULT_SNOW_DENSITY
-    Surface%Snow_Grain_Size  = DEFAULT_SNOW_GRAIN_SIZE
-    ! Snow surface type data
-    Surface%Ice_Type        = DEFAULT_ICE_TYPE
-    Surface%Ice_Temperature = DEFAULT_ICE_TEMPERATURE
-    Surface%Ice_Thickness   = DEFAULT_ICE_THICKNESS
-    Surface%Ice_Density     = DEFAULT_ICE_DENSITY
-    Surface%Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
-  END SUBROUTINE CRTM_Clear_Surface
-
-
-
 
 
 !################################################################################
@@ -565,6 +497,7 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Destroy_Surface
@@ -579,9 +512,8 @@ CONTAINS
 !             the same manner as for CRTM_Atmosphere_type structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Surface( Surface                , &  ! Output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Destroy_Surface( Surface                , &
+!                                            Message_Log=Message_Log  )
 !
 ! OUTPUT ARGUMENTS:
 !       Surface:      Re-initialized Surface structure. In the context of
@@ -590,7 +522,7 @@ CONTAINS
 !                     The latter is used in the K-matrix model.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                     DIMENSION:  Scalar, Rank-1, OR Rank-2 array
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -602,14 +534,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -630,17 +554,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( Surface    , &  ! Output
                            No_Clear   , &  ! Optional input
-                           RCS_Id     , &  ! Revision control
                            Message_Log) &  ! Error messaging
                          RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
     INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -652,7 +575,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default is to clear scalar members...
     Clear = .TRUE.
@@ -666,27 +588,24 @@ CONTAINS
     ! Destroy the SensorData structure component
     ! ------------------------------------------
     Error_Status = CRTM_Destroy_SensorData( Surface%SensorData, &
-                                            No_Clear = No_Clear, &
+                                            No_Clear   =No_Clear, &
                                             Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME,    &
-                            'Error destroying CRTM_Surface SensorData structure.', &
+                            'Error destroying Surface SensorData structure.', &
                             Error_Status,    &
                             Message_Log=Message_Log )
     END IF
 
   END FUNCTION Destroy_Scalar
 
-
   FUNCTION Destroy_Rank1( Surface    , &  ! Output
                           No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:)
     INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -700,7 +619,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise array
     ! ------------------
@@ -721,16 +639,13 @@ CONTAINS
 
   END FUNCTION Destroy_Rank1
 
-
   FUNCTION Destroy_Rank2( Surface    , &  ! Output
                           No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:,:)
     INTEGER     ,  OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -744,7 +659,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise array
     ! ------------------
@@ -769,12 +683,13 @@ CONTAINS
   
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Allocate_Surface
 ! 
 ! PURPOSE:
-!       Function to allocate CRTM_Surface data structures.
+!       Function to allocate CRTM Surface data structures.
 !
 !       NOTE: This function is a wrapper for the CRTM_SensorData allocation 
 !             routine to provide the functionality and convenience for
@@ -782,10 +697,9 @@ CONTAINS
 !             the same manner as for CRTM_Atmosphere_type structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Surface( n_Channels             , &  ! Input
-!                                             Surface                , &  ! Output
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Allocate_Surface( n_Channels             , &
+!                                             Surface                , &
+!                                             Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       n_Channels:   Number of channels dimension of Surface%SensorData
@@ -796,16 +710,6 @@ CONTAINS
 !                     DIMENSION:  Scalar OR Rank-1
 !                                 See output Surface dimensionality table
 !                     ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !       Surface:      Surface structure with allocated SensorData pointer
@@ -831,13 +735,15 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -858,17 +764,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_Scalar( n_Channels,   &  ! Input
                             Surface,      &  ! Output
-                            RCS_Id,       &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                 INTENT(IN)     :: n_Channels   
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -880,7 +785,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! If no channel data, do nothing
     IF ( n_Channels == 0 ) RETURN
@@ -914,13 +818,11 @@ CONTAINS
 
   FUNCTION Allocate_Rank01( n_Channels,   &  ! Input
                             Surface,      &  ! Output
-                            RCS_Id,       &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                               INTENT(IN)     :: n_Channels
     TYPE(CRTM_Surface_type), DIMENSION(:), INTENT(IN OUT) :: Surface
-    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
     CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -933,7 +835,6 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Perform the allocation
     DO i = 1, SIZE(Surface)
@@ -943,7 +844,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Surface structure array." )' ) i
+                          &" of Surface structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -953,16 +854,13 @@ CONTAINS
 
   END FUNCTION Allocate_Rank01
 
-
   FUNCTION Allocate_Rank11( n_Channels,   &  ! Input
                             Surface,      &  ! Output
-                            RCS_Id,       &  ! Revision control
                             Message_Log ) &  ! Error messaging
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Channels
     TYPE(CRTM_Surface_type), DIMENSION(:), INTENT(IN OUT) :: Surface
-    CHARACTER(*),            OPTIONAL,     INTENT(OUT)    :: RCS_Id
     CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -975,14 +873,13 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     n = SIZE( n_Channels )
     IF ( SIZE( Surface ) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Channels and CRTM_Surface arrays have different dimensions', &
+                            'Input n_Channels and Surface arrays have different dimensions', &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
@@ -996,7 +893,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of CRTM_Surface structure array." )' ) i
+                          &" of Surface structure array." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1008,6 +905,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Assign_Surface
@@ -1016,10 +914,9 @@ CONTAINS
 !       Function to copy valid Surface structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Surface( Surface_in             , &  ! Input
-!                                           Surface_out            , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Assign_Surface( Surface_in             , &
+!                                           Surface_out            , &
+!                                           Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Surface_in:   Surface structure which is to be copied. In the context of
@@ -1028,7 +925,7 @@ CONTAINS
 !                     The latter is used in the K-matrix model.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                     DIMENSION:  Scalar, Rank-1, OR Rank-2 array
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
@@ -1048,14 +945,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1070,17 +959,16 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Assign_Scalar( Surface_in , &  ! Input
                           Surface_out, &  ! Output
-                          RCS_Id     , &  ! Revision control
                           Message_Log) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN)     :: Surface_in
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface_out
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1090,7 +978,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Assign scalar members
@@ -1158,16 +1045,13 @@ CONTAINS
 
   END FUNCTION Assign_Scalar
 
-
   FUNCTION Assign_Rank1( Surface_in , &  ! Input
                          Surface_out, &  ! Output
-                         RCS_Id     , &  ! Revision control
                          Message_Log) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN)     :: Surface_in(:)
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface_out(:)
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1181,7 +1065,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     n = SIZE( Surface_in )
@@ -1214,16 +1097,13 @@ CONTAINS
 
   END FUNCTION Assign_Rank1
 
-
   FUNCTION Assign_Rank2( Surface_in , &  ! Input
                          Surface_out, &  ! Output
-                         RCS_Id     , &  ! Revision control
                          Message_Log) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN)     :: Surface_in(:,:)
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface_out(:,:)
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1237,7 +1117,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
     l = SIZE(Surface_in,1)
@@ -1264,7 +1143,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error copying element (",i0,",",i0,")",&
-                            &" of CRTM_Surface structure array." )' ) i,j
+                            &" of Surface structure array." )' ) i,j
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -1277,6 +1156,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Equal_Surface
@@ -1285,13 +1165,12 @@ CONTAINS
 !       Function to test if two Surface structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Surface( Surface_LHS                          , &  ! Input
-!                                          Surface_RHS                          , &  ! Input
-!                                          ULP_Scale         =ULP_Scale         , &  ! Optional input
-!                                          Percent_Difference=Percent_Difference, &  ! Optional input
-!                                          Check_All         =Check_All         , &  ! Optional input
-!                                          RCS_Id            =RCS_Id            , &  ! Optional output
-!                                          Message_Log       =Message_Log         )  ! Error messaging
+!       Error_Status = CRTM_Equal_Surface( Surface_LHS                          , &
+!                                          Surface_RHS                          , &
+!                                          ULP_Scale         =ULP_Scale         , &
+!                                          Percent_Difference=Percent_Difference, &
+!                                          Check_All         =Check_All         , &
+!                                          Message_Log       =Message_Log         )
 !
 !
 ! INPUT ARGUMENTS:
@@ -1357,14 +1236,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
 !                           The error codes are defined in the Message_Handler module.
@@ -1375,6 +1246,7 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Equal_Scalar( Surface_LHS       , &  ! Input
@@ -1382,7 +1254,6 @@ CONTAINS
                          ULP_Scale         , &  ! Optional input
                          Percent_Difference, &  ! Optional input
                          Check_All         , &  ! Optional input
-                         RCS_Id            , &  ! Revision control
                          Message_Log       ) &  ! Error messaging
                        RESULT( Error_Status )
     ! Arguments
@@ -1391,7 +1262,6 @@ CONTAINS
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
     REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1405,7 +1275,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1818,13 +1687,11 @@ CONTAINS
     END IF
   END FUNCTION Equal_Scalar
 
-
   FUNCTION Equal_Rank1( Surface_LHS       , &  ! Input
                         Surface_RHS       , &  ! Output
                         ULP_Scale         , &  ! Optional input
                         Percent_Difference, &  ! Optional input
                         Check_All         , &  ! Optional input
-                        RCS_Id            , &  ! Revision control
                         Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
@@ -1833,7 +1700,6 @@ CONTAINS
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
     REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1848,7 +1714,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1882,7 +1747,7 @@ CONTAINS
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
         WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 CRTM_Surface structure array." )' ) m
+                          &" of rank-1 Surface structure array." )' ) m
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
@@ -1892,13 +1757,11 @@ CONTAINS
     END DO
   END FUNCTION Equal_Rank1
 
-
   FUNCTION Equal_Rank2( Surface_LHS       , &  ! Input
                         Surface_RHS       , &  ! Output
                         ULP_Scale         , &  ! Optional input
                         Percent_Difference, &  ! Optional input
                         Check_All         , &  ! Optional input
-                        RCS_Id            , &  ! Revision control
                         Message_Log       ) &  ! Error messaging
                       RESULT( Error_Status )
     ! Arguments
@@ -1907,7 +1770,6 @@ CONTAINS
     INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
     REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
     INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1923,7 +1785,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to return on ANY difference...
     Check_Once = .TRUE.
@@ -1960,7 +1821,7 @@ CONTAINS
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
           WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &
-                            &" of rank-2 CRTM_Surface structure array." )' ) l,m
+                            &" of rank-2 Surface structure array." )' ) l,m
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -1973,30 +1834,34 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       CRTM_WeightedSum_Surface
+!       CRTM_Sum_Surface
 !
 ! PURPOSE:
-!       Function to perform a weighted sum of two valid CRTM_Surface
-!       structures. The weighted summation performed is:
-!         A = A + w1*B + w2
-!       where A and B are the CRTM_Surface structures, and w1 and w2
-!       are the weighting factors. Note that w2 is optional.
+!       Function to perform a sum of two valid CRTM Surface structures. The
+!       summation performed is:
+!         A = A + Scale_Factor*B + Offset
+!       where A and B are the CRTM Surface structures, and Scale_Factor and
+!       Offset are optional weighting factors.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_WeightedSum_Surface( A,                        &  ! In/Output
-!                                                B,                        &  ! Input
-!                                                w1,                       &  ! Input
-!                                                w2 = w2,                  &  ! Optional input
-!                                                RCS_Id = RCS_Id,          &  ! Revision control
-!                                                Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_Sum_Surface( A                        , &
+!                                        B                        , &
+!                                        Scale_Factor=Scale_Factor, &
+!                                        Offset      =Offset      , &
+!                                        Message_Log =Message_Log   )
 !
 ! INPUT ARGUMENTS:
 !       A:               Surface structure that is to be added to.
+!                        In the context of the CRTM, rank-1 corresponds to an
+!                        vector of profiles, and rank-2 corresponds to an array
+!                        of channels x profiles. The latter is used in the
+!                        K-matrix model.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Scalar OR Rank-1
+!                        DIMENSION:  Scalar, Rank-1, or Rank-2 array
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !       B:               Surface structure that is to be weighted and
@@ -2006,20 +1871,31 @@ CONTAINS
 !                        DIMENSION:  Same as A
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       w1:              The first weighting factor used to multiply the
-!                        contents of the input structure, B.
+! OUTPUT ARGUMENTS:
+!       A:               Structure containing the weight sum result,
+!                          A = A + Scale_Factor*B + Offset
 !                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!                        TYPE:       CRTM_Surface_type
+!                        DIMENSION:  Same as B
+!                        ATTRIBUTES: INTENT(IN OUT)
+!
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       w2:              The second weighting factor used to offset the
-!                        weighted sum of the input structures.
+!       Scale_Factor:    The first weighting factor used to scale the
+!                        contents of the input structure, B.
+!                        If not specified, Scale_Factor = 1.0.
 !                        UNITS:      N/A
 !                        TYPE:       REAL(fp)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Offset:          The second weighting factor used to offset the
+!                        sum of the input structures.
+!                        If not specified, Offset = 0.0.
+!                        UNITS:      N/A
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Message_Log:     Character string specifying a filename in which any
 !                        messages will be logged. If not specified, or if an
@@ -2029,23 +1905,6 @@ CONTAINS
 !                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       A:               Structure containing the weight sum result,
-!                          A = A + w1*B + w2
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Same as B
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -2059,100 +1918,97 @@ CONTAINS
 ! SIDE EFFECTS:
 !       The argument A is INTENT(IN OUT) and is modified upon output.
 !
+! COMMENTS:
+!       The SensorData component of the Surface structures are not operated on.
+!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION WeightedSum_Scalar( A,              &  ! Input/Output
-                               B,              &  ! Input
-                               w1,             &  ! Input
-                               w2,             &  ! optional input
-                               RCS_Id,         &  ! Revision control
-                               Message_Log )   &  ! Error messaging
-                             RESULT( Error_Status )
+  FUNCTION Sum_Scalar( A           , &  ! Input/Output
+                       B           , &  ! Input
+                       Scale_Factor, &  ! Optional Input
+                       Offset      , &  ! Optional Input
+                       Message_Log ) &  ! Error messaging
+                     RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A
     TYPE(CRTM_Surface_type), INTENT(IN)     :: B
-    REAL(fp)    ,            INTENT(IN)     :: w1
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightedSum_Surface(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Surface(Scalar)'
     ! Local variables
-    REAL(fp) :: w2_Local
+    REAL(fp) :: m, c
 
 
-    ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-    ! Assign the optional weight
-    w2_Local = ZERO
-    IF ( PRESENT( w2 ) ) w2_Local = w2
+    ! Assign the optional weights
+    m = ONE; c = ZERO
+    IF ( PRESENT(Scale_Factor) ) m = Scale_Factor
+    IF ( PRESENT(Offset      ) ) c = Offset
 
 
-    ! ------------------------
-    ! Perform the weighted sum
-    ! ------------------------
-    A%Wind_Speed     = A%Wind_Speed     + (w1*B%Wind_Speed    ) + w2_Local
-    A%Wind_Direction = A%Wind_Direction + (w1*B%Wind_Direction) + w2_Local
+    ! Perform the summation
+    ! ---------------------
+    A%Wind_Speed     = A%Wind_Speed     + (m*B%Wind_Speed    ) + c
+    A%Wind_Direction = A%Wind_Direction + (m*B%Wind_Direction) + c
     
-    A%Land_Temperature      = A%Land_Temperature      + (w1*B%Land_Temperature     ) + w2_Local
-    A%Soil_Moisture_Content = A%Soil_Moisture_Content + (w1*B%Soil_Moisture_Content) + w2_Local
-    A%Canopy_Water_Content  = A%Canopy_Water_Content  + (w1*B%Canopy_Water_Content ) + w2_Local
-    A%Vegetation_Fraction   = A%Vegetation_Fraction   + (w1*B%Vegetation_Fraction  ) + w2_Local
-    A%Soil_Temperature      = A%Soil_Temperature      + (w1*B%Soil_Temperature     ) + w2_Local
+    A%Land_Temperature      = A%Land_Temperature      + (m*B%Land_Temperature     ) + c
+    A%Soil_Moisture_Content = A%Soil_Moisture_Content + (m*B%Soil_Moisture_Content) + c
+    A%Canopy_Water_Content  = A%Canopy_Water_Content  + (m*B%Canopy_Water_Content ) + c
+    A%Vegetation_Fraction   = A%Vegetation_Fraction   + (m*B%Vegetation_Fraction  ) + c
+    A%Soil_Temperature      = A%Soil_Temperature      + (m*B%Soil_Temperature     ) + c
     
-    A%Water_Temperature = A%Water_Temperature + (w1*B%Water_Temperature) + w2_Local
-    A%Salinity          = A%Salinity          + (w1*B%Salinity         ) + w2_Local
+    A%Water_Temperature = A%Water_Temperature + (m*B%Water_Temperature) + c
+    A%Salinity          = A%Salinity          + (m*B%Salinity         ) + c
     
-    A%Snow_Temperature = A%Snow_Temperature + (w1*B%Snow_Temperature) + w2_Local
-    A%Snow_Depth       = A%Snow_Depth       + (w1*B%Snow_Depth      ) + w2_Local
-    A%Snow_Density     = A%Snow_Density     + (w1*B%Snow_Density    ) + w2_Local
-    A%Snow_Grain_Size  = A%Snow_Grain_Size  + (w1*B%Snow_Grain_Size ) + w2_Local
+    A%Snow_Temperature = A%Snow_Temperature + (m*B%Snow_Temperature) + c
+    A%Snow_Depth       = A%Snow_Depth       + (m*B%Snow_Depth      ) + c
+    A%Snow_Density     = A%Snow_Density     + (m*B%Snow_Density    ) + c
+    A%Snow_Grain_Size  = A%Snow_Grain_Size  + (m*B%Snow_Grain_Size ) + c
     
-    A%Ice_Temperature = A%Ice_Temperature + (w1*B%Ice_Temperature) + w2_Local
-    A%Ice_Thickness   = A%Ice_Thickness   + (w1*B%Ice_Thickness  ) + w2_Local
-    A%Ice_Density     = A%Ice_Density     + (w1*B%Ice_Density    ) + w2_Local
-    A%Ice_Roughness   = A%Ice_Roughness   + (w1*B%Ice_Roughness  ) + w2_Local
+    A%Ice_Temperature = A%Ice_Temperature + (m*B%Ice_Temperature) + c
+    A%Ice_Thickness   = A%Ice_Thickness   + (m*B%Ice_Thickness  ) + c
+    A%Ice_Density     = A%Ice_Density     + (m*B%Ice_Density    ) + c
+    A%Ice_Roughness   = A%Ice_Roughness   + (m*B%Ice_Roughness  ) + c
 
-  END FUNCTION WeightedSum_Scalar
+  END FUNCTION Sum_Scalar
 
 
-  FUNCTION WeightedSum_Rank1( A          , &  ! Input/Output
-                              B          , &  ! Input
-                              w1         , &  ! Input
-                              w2         , &  ! optional input
-                              RCS_Id     , &  ! Revision control
-                              Message_Log) &  ! Error messaging
-                            RESULT( Error_Status )
+  FUNCTION Sum_Rank1( A           , &  ! Input/Output
+                      B           , &  ! Input
+                      Scale_Factor, &  ! Optional Input
+                      Offset      , &  ! Optional Input
+                      Message_Log ) &  ! Error messaging
+                    RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A(:)
     TYPE(CRTM_Surface_type), INTENT(IN)     :: B(:)
-    REAL(fp)    ,            INTENT(IN)     :: w1
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightSum_Surface(Rank-1)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Surface(Rank-1)'
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
-    INTEGER :: m, nProfiles
+    INTEGER :: i, n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Array arguments must conform
-    nProfiles = SIZE(A)
-    IF ( SIZE(B) /= nProfiles  ) THEN
+    n = SIZE(A)
+    IF ( SIZE(B) /= n ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input structure arguments have different dimensions', &
@@ -2164,43 +2020,40 @@ CONTAINS
 
     ! Perform the summation
     ! ---------------------
-    DO m = 1, nProfiles
-      Scalar_Status = WeightedSum_Scalar( A(m), &
-                                          B(m), &
-                                          w1, &
-                                          w2         =w2, &
-                                          Message_Log=Message_Log )
+    DO i = 1, n
+      Scalar_Status = Sum_Scalar( A(i), &
+                                  B(i), &
+                                  Scale_Factor=Scale_Factor, &
+                                  Offset      =Offset      , &
+                                  Message_Log =Message_Log   )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error computing weighted sum for element (",i0,")", &
-                          &" of CRTM_Surface structure arrays." )' ) m
+        WRITE( Message, '( "Error computing sum for element (",i0,")", &
+                          &" of Surface structure arrays." )' ) i
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
                               Error_Status, &
                               Message_Log=Message_Log )
       END IF
     END DO
-  END FUNCTION WeightedSum_Rank1
+  END FUNCTION Sum_Rank1
 
-
-  FUNCTION WeightedSum_Rank2( A          , &  ! Input/Output
-                              B          , &  ! Input
-                              w1         , &  ! Input
-                              w2         , &  ! optional input
-                              RCS_Id     , &  ! Revision control
-                              Message_Log) &  ! Error messaging
-                            RESULT( Error_Status )
+  FUNCTION Sum_Rank2( A           , &  ! Input/Output
+                      B           , &  ! Input
+                      Scale_Factor, &  ! Optional Input
+                      Offset      , &  ! Optional Input
+                      Message_Log ) &  ! Error messaging
+                    RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A(:,:)
     TYPE(CRTM_Surface_type), INTENT(IN)     :: B(:,:)
-    REAL(fp)    ,            INTENT(IN)     :: w1
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: w2
-    CHARACTER(*),  OPTIONAL, INTENT(OUT)    :: RCS_Id
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
+    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
     CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WeightSum_Surface(Rank-2)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Surface(Rank-2)'
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
@@ -2210,7 +2063,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Arguments must conform
     nChannels = SIZE(A,1)
@@ -2230,15 +2082,15 @@ CONTAINS
     ! ---------------------
     DO m = 1, nProfiles
       DO l = 1, nChannels
-        Scalar_Status = WeightedSum_Scalar( A(l,m), &
-                                            B(l,m), &
-                                            w1, &
-                                            w2         =w2, &
-                                            Message_Log=Message_Log )
+        Scalar_Status = Sum_Scalar( A(l,m), &
+                                    B(l,m), &
+                                    Scale_Factor=Scale_Factor, &
+                                    Offset      =Offset      , &
+                                    Message_Log =Message_Log   )
         IF ( Scalar_Status /= SUCCESS ) THEN
           Error_Status = Scalar_Status
-          WRITE( Message, '( "Error computing weighted sum for element (",i0,",",i0,")", &
-                            &" of CRTM_Surface structure arrays." )' ) l,m
+          WRITE( Message, '( "Error computing sum for element (",i0,",",i0,")", &
+                            &" of Surface structure arrays." )' ) l,m
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
                                 Error_Status, &
@@ -2246,16 +2098,17 @@ CONTAINS
         END IF
       END DO
     END DO
-  END FUNCTION WeightedSum_Rank2
+  END FUNCTION Sum_Rank2
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Zero_Surface
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out members of a CRTM_Surface structure.
+!       Subroutine to zero-out members of a CRTM Surface structure.
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_Zero_Surface( Surface )
@@ -2281,36 +2134,37 @@ CONTAINS
 !         just OUT. This is necessary because the argument must be defined upon
 !         input.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Zero_Scalar( Surface )  ! Output
     TYPE(CRTM_Surface_type),  INTENT(IN OUT) :: Surface
-    
+    ! Gross surface type
     Surface%Land_Coverage  = ZERO
     Surface%Water_Coverage = ZERO
     Surface%Snow_Coverage  = ZERO
     Surface%Ice_Coverage   = ZERO
-    
+    ! Surface type independent data
     Surface%Wind_Speed     = ZERO
     Surface%Wind_Direction = ZERO
-    
+    ! Land surface type data
     Surface%Land_Type = INVALID_LAND
     Surface%Land_Temperature      = ZERO
     Surface%Soil_Moisture_Content = ZERO
     Surface%Canopy_Water_Content  = ZERO
     Surface%Vegetation_Fraction   = ZERO
     Surface%Soil_Temperature      = ZERO
-    
+    ! Water surface type data
     Surface%Water_Type = INVALID_WATER
     Surface%Water_Temperature = ZERO
     Surface%Salinity          = ZERO
-    
+    ! Snow surface type data
     Surface%Snow_Type = INVALID_SNOW
     Surface%Snow_Temperature = ZERO
     Surface%Snow_Depth       = ZERO
     Surface%Snow_Density     = ZERO
     Surface%Snow_Grain_Size  = ZERO
-    
+    ! Ice surface type data
     Surface%Ice_Type = INVALID_ICE
     Surface%Ice_Temperature = ZERO
     Surface%Ice_Thickness   = ZERO
@@ -2337,5 +2191,105 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Zero_Rank2
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_RCS_ID_Surface
+!
+! PURPOSE:
+!       Subroutine to return the module RCS Id information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RCS_Id_Surface( RCS_Id )
+!
+! OUTPUT ARGUMENTS:
+!       RCS_Id:        Character string containing the Revision Control
+!                      System Id field for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RCS_ID_Surface( RCS_Id )
+    CHARACTER(*), INTENT(OUT) :: RCS_Id
+    RCS_Id = MODULE_RCS_ID
+  END SUBROUTINE CRTM_RCS_ID_Surface
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Clear_Surface
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a CRTM Surface structure to
+!       their default values.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Clear_Surface( Surface )
+!
+! OUTPUT ARGUMENTS:
+!       Surface:     Surface structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_Surface_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       Note the INTENT on the output Surface argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Clear_Surface( Surface )
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
+    ! Gross surface type
+    Surface%Land_Coverage  = ZERO
+    Surface%Water_Coverage = ZERO
+    Surface%Snow_Coverage  = ZERO
+    Surface%Ice_Coverage   = ZERO
+    ! Surface type independent data
+    Surface%Wind_Speed     = DEFAULT_WIND_SPEED
+    Surface%Wind_Direction = DEFAULT_WIND_DIRECTION
+    ! Land surface type data
+    Surface%Land_Type             = DEFAULT_LAND_TYPE
+    Surface%Land_Temperature      = DEFAULT_LAND_TEMPERATURE
+    Surface%Soil_Moisture_Content = DEFAULT_SOIL_MOISTURE_CONTENT
+    Surface%Canopy_Water_Content  = DEFAULT_CANOPY_WATER_CONTENT
+    Surface%Vegetation_Fraction   = DEFAULT_VEGETATION_FRACTION
+    Surface%Soil_Temperature      = DEFAULT_SOIL_TEMPERATURE
+    ! Water surface type data
+    Surface%Water_Type        = DEFAULT_WATER_TYPE
+    Surface%Water_Temperature = DEFAULT_WATER_TEMPERATURE
+    Surface%Salinity          = DEFAULT_SALINITY
+    ! Snow surface type data
+    Surface%Snow_Type        = DEFAULT_SNOW_TYPE
+    Surface%Snow_Temperature = DEFAULT_SNOW_TEMPERATURE
+    Surface%Snow_Depth       = DEFAULT_SNOW_DEPTH
+    Surface%Snow_Density     = DEFAULT_SNOW_DENSITY
+    Surface%Snow_Grain_Size  = DEFAULT_SNOW_GRAIN_SIZE
+    ! Ice surface type data
+    Surface%Ice_Type        = DEFAULT_ICE_TYPE
+    Surface%Ice_Temperature = DEFAULT_ICE_TEMPERATURE
+    Surface%Ice_Thickness   = DEFAULT_ICE_THICKNESS
+    Surface%Ice_Density     = DEFAULT_ICE_DENSITY
+    Surface%Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
+  END SUBROUTINE CRTM_Clear_Surface
 
 END MODULE CRTM_Surface_Define

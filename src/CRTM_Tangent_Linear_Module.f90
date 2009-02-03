@@ -100,6 +100,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Tangent_Linear
@@ -110,47 +111,47 @@ CONTAINS
 !       profile or profile set and user specified satellites/channels.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Tangent_Linear( Atmosphere             , &  ! FWD Input
-!                                           Surface                , &  ! FWD Input
-!                                           Atmosphere_TL          , &  ! TL  Input
-!                                           Surface_TL             , &  ! TL  Input
-!                                           GeometryInfo           , &  ! Input
-!                                           ChannelInfo            , &  ! Input
-!                                           RTSolution             , &  ! FWD Output
-!                                           RTSolution_TL          , &  ! TL  Output
-!                                           Options    =Options    , &  ! Optional FWD input
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Tangent_Linear( Atmosphere             , &
+!                                           Surface                , &
+!                                           Atmosphere_TL          , &
+!                                           Surface_TL             , &
+!                                           GeometryInfo           , &
+!                                           ChannelInfo            , &
+!                                           RTSolution             , &
+!                                           RTSolution_TL          , &
+!                                           Options    =Options    , &
+!                                           RCS_Id     =RCS_Id     , &
+!                                           Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     Structure containing the Atmosphere data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Rank-1 (nProfiles)
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Rank-1 (n_Profiles)
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       Surface:        Structure containing the Surface data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Surface_type)
+!                       TYPE:       CRTM_Surface_type
 !                       DIMENSION:  Same as input Atmosphere structure
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:  Structure containing the tangent-linear Atmosphere data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Same as input Atmosphere structure
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       Surface_TL:     Structure containing the tangent-linear Surface data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Surface_type)
+!                       TYPE:       CRTM_Surface_type
 !                       DIMENSION:  Same as input Atmosphere structure
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       GeometryInfo:   Structure containing the view geometry
 !                       information.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                       TYPE:       CRTM_GeometryInfo_type
 !                       DIMENSION:  Same as input Atmosphere structure
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -158,30 +159,30 @@ CONTAINS
 !                       that contains the satellite/sensor channel index
 !                       information.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_ChannelInfo_type)
-!                       DIMENSION:  Rank-1 (nSensors)
+!                       TYPE:       CRTM_ChannelInfo_type
+!                       DIMENSION:  Rank-1 (n_Sensors)
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
 !       RTSolution:     Structure containing the solution to the RT equation
 !                       for the given inputs.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_RTSolution_type)
-!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Rank-2 (n_Channels x n_Profiles)
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 !       RTSolution_TL:  Structure containing the solution to the tangent-
 !                       linear RT equation for the given inputs.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_RTSolution_type)
-!                       DIMENSION:  Rank-2 (nChannels x nProfiles)
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Rank-2 (n_Channels x n_Profiles)
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Options:        Options structure containing the optional forward model
 !                       arguments for the CRTM.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Options_type)
+!                       TYPE:       CRTM_Options_type
 !                       DIMENSION:  Same as input Atmosphere structure
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -221,6 +222,7 @@ CONTAINS
 !         than just OUT. This is necessary because the arguments may be defined
 !         upon input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Tangent_Linear( Atmosphere   , &  ! FWD Input, M
@@ -228,7 +230,7 @@ CONTAINS
                                 Atmosphere_TL, &  ! TL  Input, M
                                 Surface_TL   , &  ! TL  Input, M
                                 GeometryInfo , &  ! Input, M
-                                ChannelInfo  , &  ! Input, nSensors  
+                                ChannelInfo  , &  ! Input, n_Sensors  
                                 RTSolution   , &  ! FWD Output, L x M  
                                 RTSolution_TL, &  ! TL  Output, L x M  
                                 Options      , &  ! Optional FWD input, M
@@ -241,7 +243,7 @@ CONTAINS
     TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere_TL(:)   ! M
     TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface_TL(:)      ! M
     TYPE(CRTM_GeometryInfo_type)     , INTENT(IN OUT) :: GeometryInfo(:)    ! M
-    TYPE(CRTM_ChannelInfo_type)      , INTENT(IN)     :: ChannelInfo(:)     ! nSensors
+    TYPE(CRTM_ChannelInfo_type)      , INTENT(IN)     :: ChannelInfo(:)     ! n_Sensors
     TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution(:,:)    ! L x M
     TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution_TL(:,:) ! L x M
     TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)         ! M
@@ -259,9 +261,9 @@ CONTAINS
     LOGICAL :: User_AntCorr
     LOGICAL :: Compute_AntCorr
     INTEGER :: Status_FWD, Status_TL
-    INTEGER :: n, nSensors,  SensorIndex
-    INTEGER :: l, nChannels, ChannelIndex
-    INTEGER :: m, nProfiles
+    INTEGER :: n, n_Sensors,  SensorIndex
+    INTEGER :: l, n_Channels, ChannelIndex
+    INTEGER :: m, n_Profiles
     INTEGER :: ln
     INTEGER :: n_Full_Streams
     INTEGER, DIMENSION(6) :: AllocStatus, AllocStatus_TL
@@ -293,20 +295,20 @@ CONTAINS
     ! ----------------------------------------
     ! If no sensors or channels, simply return
     ! ----------------------------------------
-    nSensors  = SIZE(ChannelInfo)
-    nChannels = SUM(ChannelInfo%n_Channels)
-    IF ( nSensors == 0 .OR. nChannels == 0 ) RETURN
+    n_Sensors  = SIZE(ChannelInfo)
+    n_Channels = SUM(ChannelInfo%n_Channels)
+    IF ( n_Sensors == 0 .OR. n_Channels == 0 ) RETURN
 
 
     ! ---------------------------------
     ! Output RTSolution array too small
     ! ---------------------------------
-    IF ( SIZE(RTSolution,   DIM=1) < nChannels .OR. &
-         SIZE(RTSolution_TL,DIM=1) < nChannels      ) THEN
+    IF ( SIZE(RTSolution,   DIM=1) < n_Channels .OR. &
+         SIZE(RTSolution_TL,DIM=1) < n_Channels      ) THEN
       Error_Status = FAILURE
       WRITE(Message,'("Output RTSolution structure arrays too small (",i0," and ",i0,&
                      &") to hold results for the number of requested channels (",i0,")")') &
-                     SIZE(RTSolution,DIM=1), SIZE(RTSolution_TL,DIM=1), nChannels
+                     SIZE(RTSolution,DIM=1), SIZE(RTSolution_TL,DIM=1), n_Channels
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
@@ -319,16 +321,16 @@ CONTAINS
     ! Check the number of profiles
     ! ----------------------------
     ! Number of atmospheric profiles.
-    nProfiles = SIZE(Atmosphere)
+    n_Profiles = SIZE(Atmosphere)
 
     ! Check that the number of profiles is not greater than
     ! MAX_N_PROFILES. This is simply a limit to restrict the
     ! size of the input arrays so they're not TOO big.
-    IF ( nProfiles > MAX_N_PROFILES ) THEN
+    IF ( n_Profiles > MAX_N_PROFILES ) THEN
       Error_Status = FAILURE
       WRITE(Message,'("Number of passed profiles (",i0,&
                      &") > maximum number of profiles allowed(",i0,")")') &
-                    nProfiles, MAX_N_PROFILES
+                    n_Profiles, MAX_N_PROFILES
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
@@ -338,12 +340,12 @@ CONTAINS
 
     ! Check the profile dimensionality
     ! of the other mandatory arguments
-    IF ( SIZE(Surface)             /= nProfiles .OR. &
-         SIZE(Atmosphere_TL)       /= nProfiles .OR. &
-         SIZE(Surface_TL)          /= nProfiles .OR. &
-         SIZE(GeometryInfo)        /= nProfiles .OR. &
-         SIZE(RTSolution,   DIM=2) /= nProfiles .OR. &
-         SIZE(RTSolution_TL,DIM=2) /= nProfiles      ) THEN
+    IF ( SIZE(Surface)             /= n_Profiles .OR. &
+         SIZE(Atmosphere_TL)       /= n_Profiles .OR. &
+         SIZE(Surface_TL)          /= n_Profiles .OR. &
+         SIZE(GeometryInfo)        /= n_Profiles .OR. &
+         SIZE(RTSolution,   DIM=2) /= n_Profiles .OR. &
+         SIZE(RTSolution_TL,DIM=2) /= n_Profiles      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent profile dimensionality for '//&
@@ -358,7 +360,7 @@ CONTAINS
     Options_Present = .FALSE.
     IF ( PRESENT(Options) ) THEN
       Options_Present = .TRUE.
-      IF ( SIZE(Options) /= nProfiles ) THEN
+      IF ( SIZE(Options) /= n_Profiles ) THEN
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent profile dimensionality for '//&
@@ -374,7 +376,7 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     !#                           -- PROFILE LOOP --                             #
     !#--------------------------------------------------------------------------#
-    Profile_Loop: DO m = 1, nProfiles
+    Profile_Loop: DO m = 1, n_Profiles
 
 
       ! ---------------------------------------------
@@ -391,11 +393,11 @@ CONTAINS
         ! Check if the supplied emissivity should be used
         IF ( Options(m)%Emissivity_Switch == SET ) THEN
           ! Are the channel dimensions consistent
-          IF ( Options(m)%n_Channels < nChannels ) THEN
+          IF ( Options(m)%n_Channels < n_Channels ) THEN
             Error_Status = FAILURE
             WRITE( Message, '( "Input Options channel dimension (", i0, ") is less ", &
                               &"than the number of requested channels (",i0, ")" )' ) &
-                            Options(m)%n_Channels, nChannels
+                            Options(m)%n_Channels, n_Channels
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM( Message ), &
                                   Error_Status, &
@@ -565,7 +567,7 @@ CONTAINS
       ! -----------
       ! Sensor loop
       ! -----------
-      Sensor_Loop: DO n = 1, nSensors
+      Sensor_Loop: DO n = 1, n_Sensors
 
         ! Shorter name
         SensorIndex = ChannelInfo(n)%Sensor_Index

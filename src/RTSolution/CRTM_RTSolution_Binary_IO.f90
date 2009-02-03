@@ -49,6 +49,8 @@ MODULE CRTM_RTSolution_Binary_IO
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
+  ! Default message length
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
@@ -63,6 +65,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Inquire_RTSolution_Binary
@@ -71,11 +74,11 @@ CONTAINS
 !       Function to inquire Binary format CRTM RTSolution structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Inquire_RTSolution_Binary( Filename               , &  ! Input
-!                                                      n_Channels =n_Channels , &  ! Optional output
-!                                                      n_Profiles =n_Profiles , &  ! Optional output
-!                                                      RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                      Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Inquire_RTSolution_Binary( Filename               , &
+!                                                      n_Channels =n_Channels , &
+!                                                      n_Profiles =n_Profiles , &
+!                                                      RCS_Id     =RCS_Id     , &
+!                                                      Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an
@@ -127,6 +130,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Inquire_RTSolution_Binary( Filename   , &  ! Input
@@ -134,7 +138,7 @@ CONTAINS
                                            n_Profiles , &  ! Optional output
                                            RCS_Id     , &  ! Revision control
                                            Message_Log) &  ! Error messaging
-                                         RESULT ( Error_Status )
+                                         RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels
@@ -142,84 +146,81 @@ CONTAINS
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Inquire_RTSolution_Binary'
     ! Function variables
-    CHARACTER(256) :: Message
-    INTEGER :: IO_Status
-    INTEGER :: FileID
-    INTEGER :: n_Channels_in_File
-    INTEGER :: n_Profiles_in_File
+    CHARACTER(ML) :: msg
+    INTEGER :: io_stat
+    INTEGER :: fid
+    INTEGER :: l, m
  
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Message = 'File '//TRIM(Filename)//' not found.'
-      GOTO 2000  ! Clean up
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 2000
+    err_stat = Open_Binary_File( Filename, fid, Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Read the number of profiles
-    ! ---------------------------
-    CALL Read_Dimensions( Filename, FileID, &
-                          n_Channels_in_File, n_Profiles_in_File, &
-                          IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
-
-
-    ! Save optional return arguments
-    ! ------------------------------
-    IF ( PRESENT( n_Channels ) ) n_Channels = n_Channels_in_File
-    IF ( PRESENT( n_Profiles ) ) n_Profiles = n_Profiles_in_File
+    ! Read the number of channels,profiles
+    ! ------------------------------------
+    READ( fid,IOSTAT=io_stat ) l, m
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions from ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
 
 
     ! Close the file
     ! --------------
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    CLOSE( fid, IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
-    !=====
-    RETURN
-    !=====
 
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+    ! Set the return arguments
+    ! ------------------------
+    IF ( PRESENT(n_Channels) ) n_Channels = l
+    IF ( PRESENT(n_Profiles) ) n_Profiles = m
+
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,IOSTAT=io_stat )
+          IF ( io_stat /= SUCCESS ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup'
+        END IF
+      END IF
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION CRTM_Inquire_RTSolution_Binary
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Read_RTSolution_Binary
@@ -228,13 +229,13 @@ CONTAINS
 !       Function to read Binary format CRTM RTSolution structure files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Read_RTSolution_Binary( Filename               , &  ! Input
-!                                                   RTSolution             , &  ! Output
-!                                                   Quiet      =Quiet      , &  ! Optional input
-!                                                   n_Channels =n_Channels , &  ! Optional output
-!                                                   n_Profiles =n_Profiles , &  ! Optional output
-!                                                   RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                   Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Read_RTSolution_Binary( Filename               , &
+!                                                   RTSolution             , &
+!                                                   Quiet      =Quiet      , &
+!                                                   n_Channels =n_Channels , &
+!                                                   n_Profiles =n_Profiles , &
+!                                                   RCS_Id     =RCS_Id     , &
+!                                                   Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an
@@ -254,15 +255,12 @@ CONTAINS
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this argument to suppress non-ERROR messages
+!       Quiet:        Set this argument to suppress INFORMATION messages
 !                     being printed to standard output (or the message
 !                     log file if the Message_Log optional argument is
-!                     used.) By default, INFORMATION and WARNING messages
-!                     are printed.
-!                     If QUIET = 0, All messages are output.
-!                        QUIET = 1, INFORMATION messages are suppressed.
-!                        QUIET = 2, WARNING and INFORMATION messages
-!                                   are suppressed.
+!                     used.) By default, INFORMATION messages are printed.
+!                     If QUIET = 0, INFORMATION messages are OUTPUT.
+!                        QUIET = 1, INFORMATION messages are SUPPRESSED.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -311,6 +309,7 @@ CONTAINS
 !       than just OUT. This is necessary because the argument may be defined on
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Read_RTSolution_Binary( Filename    , &  ! Input
@@ -320,7 +319,7 @@ CONTAINS
                                         n_Profiles  , &  ! Optional output
                                         RCS_Id      , &  ! Revision control
                                         Message_Log ) &  ! Error messaging
-                                      RESULT ( Error_Status )
+                                      RESULT( err_stat )
     ! Arguments
     CHARACTER(*),               INTENT(IN)     :: Filename
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution(:,:)  ! L x M
@@ -330,167 +329,137 @@ CONTAINS
     CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_RTSolution_Binary(L x M)'
     ! Function variables
-    CHARACTER(256) :: Message
-    LOGICAL :: Output_Information, Output_Warning
-    INTEGER :: IO_Status
-    INTEGER :: Destroy_Status
-    INTEGER :: FileID
+    CHARACTER(ML) :: msg
+    LOGICAL :: Noisy
+    INTEGER :: io_stat
+    INTEGER :: fid
     INTEGER :: l, n_File_Channels, n_Input_Channels
     INTEGER :: m, n_File_Profiles, n_Input_Profiles
-    TYPE(CRTM_RTSolution_type) :: Dummy_RTSolution
  
 
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
+    ! Default action is to output info messages...
+    Noisy = .TRUE.
+    ! ...unless the Quiet optional argument is set.
+    IF ( PRESENT(Quiet) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Message = 'File '//TRIM(Filename)//' not found.'
-      GOTO 2000  ! Clean up
-    END IF
-
-    ! Check Quiet optional argument
-    Output_Information = .TRUE.
-    Output_Warning     = .TRUE.
-    IF ( PRESENT(Quiet) ) THEN
-      SELECT CASE (Quiet)
-        CASE (1); Output_Information = .FALSE.
-        CASE (2); Output_Information = .FALSE.
-                  Output_Warning     = .FALSE.
-        CASE DEFAULT
-          ! Do nothing
-      END SELECT
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 2000  ! Clean up
+    err_stat = Open_Binary_File( Filename, fid, Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Read the dimensions     
     ! -------------------
-    CALL Read_Dimensions( Filename, FileID, &
-                          n_File_Channels, n_File_Profiles, &
-                          IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
-
+    READ( fid,IOSTAT=io_stat ) n_File_Channels, n_File_Profiles
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions from ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
     ! Check if n_Channels in file is > size of output array
-    n_Input_Channels = SIZE(RTSolution,1)
+    n_Input_Channels = SIZE(RTSolution,DIM=1)
     IF ( n_File_Channels > n_Input_Channels ) THEN
-      WRITE( Message, '( "Number of channels, ",i0," > size of the output RTSolution ", &
-                        &"structure array dimension, ",i0,". Only the first ",i0, &
-                        &" channel RTSolution structures will be read." )' ) &
-                      n_File_Channels, n_Input_Channels, n_Input_Channels
-      IF ( Output_Warning ) CALL Display_Message( ROUTINE_NAME, &
-                                                  TRIM(Message), &
-                                                  WARNING, &
-                                                  Message_Log=Message_Log )
+      WRITE( msg,'("Number of channels, ",i0," > size of the output RTSolution ", &
+                  &"structure array dimension, ",i0,". Only the first ",i0, &
+                  &" channel RTSolution structures will be read." )' ) &
+                  n_File_Channels, n_Input_Channels, n_Input_Channels
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING, Message_Log=Message_Log )
     END IF
     n_Input_Channels = MIN(n_Input_Channels, n_File_Channels)
-    
     ! Check if n_Profiles in file is > size of output array
-    n_Input_Profiles = SIZE(RTSolution,2)
+    n_Input_Profiles = SIZE(RTSolution,DIM=2)
     IF ( n_File_Profiles > n_Input_Profiles ) THEN
-      WRITE( Message, '( "Number of profiles, ",i0," > size of the output RTSolution ", &
-                        &"structure array dimension, ",i0,". Only the first ",i0, &
-                        &" profile RTSolution structures will be read." )' ) &
-                      n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      IF ( Output_Warning ) CALL Display_Message( ROUTINE_NAME, &
-                                                  TRIM(Message), &
-                                                  WARNING, &
-                                                  Message_Log=Message_Log )
+      WRITE( msg,'("Number of profiles, ",i0," > size of the output RTSolution ", &
+                  &"structure array dimension, ",i0,". Only the first ",i0, &
+                  &" profile RTSolution structures will be read." )' ) &
+                  n_File_Profiles, n_Input_Profiles, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING, Message_Log=Message_Log )
     END IF
     n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
 
-    ! Loop over all the profiles
-    ! --------------------------
+    ! Loop over all the profiles and channels
+    ! ---------------------------------------
     Profile_Loop: DO m = 1, n_Input_Profiles
       Channel_Loop: DO l = 1, n_Input_Channels
-  
-        ! Read the structure
-        Error_Status = Read_RTSolution_Record( FileID, &
-                                               RTSolution(l,m), &
-                                               Message_Log=Message_Log )
-
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message, '( "Error reading RTSolution element (",i0,",",i0,") from ", a )' ) &
-                          l, m, TRIM(Filename)
-          GOTO 1000  ! Clean up
+        err_stat = Read_Record( fid, RTSolution(l,m), Message_Log=Message_Log )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading RTSolution element (",i0,",",i0,") from ",a)' ) &
+                     l, m, TRIM(Filename)
+          CALL Read_Cleanup(Close_File=.TRUE.); RETURN
         END IF
-
       END DO Channel_Loop
     END DO Profile_Loop
 
+    
+    ! Close the file
+    ! --------------
+    CLOSE( fid,IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
 
-    ! Save optional return arguments
-    ! ------------------------------
+
+    ! Set the return values
+    ! ---------------------
     IF ( PRESENT(n_Channels) ) n_Channels = n_Input_Channels
     IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
 
 
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, STATUS='KEEP',   &
-                   IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = WARNING
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-
-
     ! Output an info message
     ! ----------------------
-    IF ( Output_Information ) THEN
-      WRITE( Message, '("Number of channels and profiles read from ",a,": ",i0,1x,i0 )' ) &
-                      TRIM(Filename), n_Input_Channels, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+    IF ( Noisy ) THEN
+      WRITE( msg,'("Number of channels and profiles read from ",a,": ",i0,1x,i0)' ) &
+                 TRIM(Filename), n_Input_Channels, n_Input_Profiles
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION, Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    CLOSE( FileID )
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_RTSolution( RTSolution, &
-                                              Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_RTSolution( Dummy_RTSolution, &
-                                              Message_Log=Message_Log )
-
+  CONTAINS
+  
+    SUBROUTINE Read_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,IOSTAT=io_stat )
+          IF ( io_stat /= 0 ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+        END IF
+      END IF
+      ! Destroy the structure
+      err_stat = CRTM_Destroy_RTSolution( RTSolution, Message_Log=Message_Log)
+      IF ( err_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error destroying RTSolution structure during error cleanup.'
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Read_CleanUp
+  
   END FUNCTION CRTM_Read_RTSolution_Binary
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Write_RTSolution_Binary
@@ -499,11 +468,11 @@ CONTAINS
 !       Function to write Binary format RTSolution files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Write_RTSolution_Binary( Filename               , &  ! Input
-!                                                    RTSolution             , &  ! Input
-!                                                    Quiet      =Quiet      , &  ! Optional input
-!                                                    RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Write_RTSolution_Binary( Filename               , &
+!                                                    RTSolution             , &
+!                                                    Quiet      =Quiet      , &
+!                                                    RCS_Id     =RCS_Id     , &
+!                                                    Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       Filename:     Character string specifying the name of an output
@@ -563,6 +532,7 @@ CONTAINS
 !       - If an error occurs *during* the write phase, the output file is deleted
 !         before returning to the calling routine.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Write_RTSolution_Binary( Filename    , &  ! Input
@@ -570,7 +540,7 @@ CONTAINS
                                          Quiet       , &  ! Optional input
                                          RCS_Id      , &  ! Revision control
                                          Message_Log ) &  ! Error messaging
-                                       RESULT ( Error_Status )
+                                       RESULT( err_stat )
     ! Arguments
     CHARACTER(*),               INTENT(IN)  :: Filename
     TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution(:,:)  ! L x M
@@ -578,108 +548,104 @@ CONTAINS
     CHARACTER(*),     OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_RTSolution_Binary'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_RTSolution_Binary(L x M)'
     ! Function variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: FileID
+    INTEGER :: io_stat
+    INTEGER :: fid
     INTEGER :: l, n_Output_Channels
     INTEGER :: m, n_Output_Profiles
  
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
+    ! Default action is to output info messages...
+    Noisy = .TRUE.
+    ! ...unless the Quiet optional argument is set.
+    IF ( PRESENT(Quiet) ) THEN
+      IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
     ! Set the allowed dimensions
     n_Output_Channels = SIZE(RTSolution,1)
     n_Output_Profiles = SIZE(RTSolution,2)
 
-    ! Check Quiet optional argument
-    Noisy = .TRUE.
-    IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
-    END IF
-
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     For_Output  = SET, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      GOTO 1000
+    err_stat = Open_Binary_File( TRIM(Filename), &
+                                 fid, &
+                                 For_Output  = SET, &
+                                 Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Write the dimensions
     ! --------------------
-    CALL Write_Dimensions( Filename, FileID, n_Output_Channels, n_Output_Profiles, &
-                           IO_Status, Message )
-    IF ( IO_Status /= 0 ) GOTO 1000
+    WRITE( fid,IOSTAT=io_stat ) n_Output_Channels, n_Output_Profiles
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing data dimensions to ",a,". IOSTAT = ",i0)' ) &
+                 TRIM(Filename), io_stat
+      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
 
 
-    ! Loop over all the data
-    ! ----------------------
+    ! Write the data
+    ! --------------
     Profile_Loop: DO m = 1, n_Output_Profiles
       Channel_Loop: DO l = 1, n_Output_Channels
-
-        ! Write the structure data
-        Error_Status = Write_RTSolution_Record( FileID, &
-                                                RTSolution(l,m), &
-                                                Message_Log=Message_Log )
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message, '("Error writing RTSolution element (",i0,",",i0,") to ",a)' ) &
-                          l, m, TRIM(Filename)
-          GOTO 1000
+        err_stat = Write_Record( fid, RTSolution(l,m), Message_Log=Message_Log )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error writing RTSolution element (",i0,",",i0,") to ",a)' ) &
+                     l, m, TRIM(Filename)
+          CALL Write_Cleanup(Close_File=.TRUE.); RETURN
         END IF
-
       END DO Channel_Loop
     END DO Profile_Loop
 
 
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, STATUS='KEEP',   &
-                   IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    ! Close the file (if error, no delete)
+    ! ------------------------------------
+    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      WRITE( Message, '("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
-                      TRIM(Filename), n_Output_Channels, n_Output_Profiles
+      WRITE( msg,'("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
+                 TRIM(Filename), n_Output_Channels, n_Output_Profiles
       CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
+                            TRIM(msg), &
                             INFORMATION, &
                             Message_Log=Message_Log )
     END IF
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+  CONTAINS
+  
+    SUBROUTINE Write_CleanUp( Close_File )
+      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File ) THEN
+          CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+          IF ( io_stat /= 0 ) &
+            msg = TRIM(msg)//'; Error deleting output file during error cleanup.'
+        END IF
+      END IF
+      ! Set error status and print error message
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Write_CleanUp
 
   END FUNCTION CRTM_Write_RTSolution_Binary
 
@@ -693,223 +659,255 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-  ! ------------------------------------------------
-  ! Function to read a single RTSolution data record
-  ! ------------------------------------------------
-  FUNCTION Read_RTSolution_Record( FileID     , &  ! Input
-                                   RTSolution , &  ! Output
-                                   Message_Log) &  ! Error messaging
-                                 RESULT ( Error_Status )
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       Read_Record
+!
+! PURPOSE:
+!       Utility function to read a single RTSolution data record
+!
+! CALLING SEQUENCE:
+!       Error_Status = Read_Record( FileID                 , &
+!                                   RTSolution             , &
+!                                   Message_Log=Message_Log  )
+!
+! INPUT ARGUMENTS:
+!       FileID:       Logical unit number from which to read data.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       RTSolution:   CRTM RTSolution structure containing the data read in.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_RTSolution_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the record read was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!----------------------------------------------------------------------------------
+
+  FUNCTION Read_Record( fid        , &  ! Input
+                        rts        , &  ! Output
+                        Message_Log) &  ! Error messaging
+                      RESULT( err_stat )
     ! Arguments
-    INTEGER,                    INTENT(IN)     :: FileID
-    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
+    INTEGER,                    INTENT(IN)     :: fid
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: rts
     CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Read_RTSolution_Binary(Record)'
     ! Function variables
-    CHARACTER(256) :: Message
-    INTEGER :: IO_Status
-    INTEGER :: Destroy_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: io_stat
     INTEGER :: n_Layers
 
     ! Set up
     ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
 
 
     ! Read the data dimensions
     ! ------------------------
-    READ( FileID, IOSTAT=IO_Status ) n_Layers
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading RTSolution data dimensions. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
+    READ( fid,IOSTAT=io_stat ) n_Layers
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'( "Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Allocate the RTSolution structure
     ! ---------------------------------
-    Error_Status = CRTM_Allocate_RTSolution( n_Layers, &
-                                             RTSolution, &
-                                             Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error allocating RTSolution data structure.'
-      GOTO 1000  ! Clean up
+    err_stat = CRTM_Allocate_RTSolution( n_Layers, &
+                                         rts, &
+                                         Message_Log=Message_Log )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error allocating data structure.'
+      CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the forward radiative transfer intermediate results
     ! --------------------------------------------------------
-    READ( FileID, IOSTAT=IO_Status ) RTSolution%Surface_Emissivity     , &
-                                     RTSolution%Up_Radiance            , &
-                                     RTSolution%Down_Radiance          , &
-                                     RTSolution%Down_Solar_Radiance    , &
-                                     RTSolution%Surface_Planck_Radiance, &
-                                     RTSolution%Layer_Optical_Depth
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading RTSolution intermediate results. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
+    READ( fid,IOSTAT=io_stat ) rts%Surface_Emissivity     , &
+                               rts%Up_Radiance            , &
+                               rts%Down_Radiance          , &
+                               rts%Down_Solar_Radiance    , &
+                               rts%Surface_Planck_Radiance, &
+                               rts%Layer_Optical_Depth
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading RTSolution intermediate results. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the radiative transfer results
-    ! ---------------------------------
-    READ( FileID, IOSTAT=IO_Status ) RTSolution%Radiance              , &
-                                     RTSolution%Brightness_Temperature
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error reading RTSolution data. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
+    ! -----------------------------------
+    READ( fid,IOSTAT=io_stat ) rts%Radiance              , &
+                               rts%Brightness_Temperature
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading RTSolution data. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
     END IF
 
+  CONTAINS
+  
+    SUBROUTINE Read_Record_Cleanup()
+      ! Deallocate RTSolution structure
+      err_stat = CRTM_Destroy_RTSolution( rts, Message_Log=Message_Log )
+      IF ( err_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error destroying RTSolution structure during error cleanup'
+      ! Close input file
+      CLOSE( fid,IOSTAT=io_stat )
+      IF ( io_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error closing file during error cleanup'
+      ! Report error(s)
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Read_Record_Cleanup
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    Destroy_Status = CRTM_Destroy_RTSolution( RTSolution, &
-                                              Message_Log=Message_Log )
-    CLOSE( FileID, IOSTAT=IO_Status )
-
-  END FUNCTION Read_RTSolution_Record
+  END FUNCTION Read_Record
 
 
-  ! -------------------------------------------------
-  ! Function to write a single RTSolution data record
-  ! -------------------------------------------------
-  FUNCTION Write_RTSolution_Record( FileID     , &  ! Input
-                                    RTSolution , &  ! Input
-                                    Message_Log) &  ! Error messaging
-                                  RESULT ( Error_Status )
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       Write_Record
+!
+! PURPOSE:
+!       Function to write a single RTSolution data record
+!
+! CALLING SEQUENCE:
+!       Error_Status = Write_Record( FileID                 , &
+!                                    RTSolution             , &
+!                                    Message_Log=Message_Log  )
+!
+! INPUT ARGUMENTS:
+!       FileID:       Logical unit number to which data is written
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       RTSolution:   CRTM RTSolution structure containing the data to write.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_RTSolution_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the record write was successful
+!                        == FAILURE an unrecoverable error occurred.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!----------------------------------------------------------------------------------
+
+  FUNCTION Write_Record( fid        , &  ! Input
+                         rts        , &  ! Input
+                         Message_Log) &  ! Error messaging
+                       RESULT( err_stat )
     ! Arguments
-    INTEGER,                    INTENT(IN)  :: FileID
-    TYPE(CRTM_RTSolution_type), INTENT(IN)  :: RTSolution
+    INTEGER,                    INTENT(IN)  :: fid
+    TYPE(CRTM_RTSolution_type), INTENT(IN)  :: rts
     CHARACTER(*),     OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Write_RTSolution_Binary(Record)'
     ! Function variables
-    CHARACTER(256) :: Message
-    INTEGER :: IO_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: io_stat
  
     ! Set up
     ! ------
-    Error_Status = SUCCESS
-
+    err_stat = SUCCESS
     ! Check structure pointer association status
-    IF ( .NOT. CRTM_Associated_RTSolution( RTSolution ) ) THEN
-      Message = 'Some or all INPUT RTSolution pointer members are NOT associated.'
-      GOTO 1000
+    IF ( .NOT. CRTM_Associated_RTSolution( rts ) ) THEN
+      msg = 'Some or all INPUT RTSolution pointer members are NOT associated.'
+      CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the data dimensions
     ! -------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%n_Layers
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing RTSolution data dimensions. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
+    WRITE( fid,IOSTAT=io_stat ) rts%n_Layers
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing RTSolution data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Record_Cleanup(); RETURN
     END IF
     
     
     ! Write the forward radiative transfer intermediate results
     ! ---------------------------------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%Surface_Emissivity     , &
-                                      RTSolution%Up_Radiance            , &
-                                      RTSolution%Down_Radiance          , &
-                                      RTSolution%Down_Solar_Radiance    , &
-                                      RTSolution%Surface_Planck_Radiance, &
-                                      RTSolution%Layer_Optical_Depth
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing RTSolution intermediate results. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
+    WRITE( fid,IOSTAT=io_stat ) rts%Surface_Emissivity     , &
+                                rts%Up_Radiance            , &
+                                rts%Down_Radiance          , &
+                                rts%Down_Solar_Radiance    , &
+                                rts%Surface_Planck_Radiance, &
+                                rts%Layer_Optical_Depth
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing RTSolution intermediate results. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the radiative transfer results
     ! ------------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) RTSolution%Radiance              , &
-                                      RTSolution%Brightness_Temperature
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message, '( "Error writing RTSolution data. IOSTAT = ", i0 )' ) &
-                      IO_Status
-      GOTO 1000  ! Clean up
+    WRITE( fid,IOSTAT=io_stat ) rts%Radiance              , &
+                                rts%Brightness_Temperature
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing RTSolution data. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Record_Cleanup(); RETURN
     END IF
 
+  CONTAINS
+  
+    SUBROUTINE Write_Record_Cleanup()
+      ! Close and delete output file
+      CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+      IF ( io_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error closing file during error cleanup'
+      ! Report error(s)
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat, Message_Log=Message_Log )
+    END SUBROUTINE Write_Record_Cleanup
 
-    !=====
-    RETURN
-    !=====
-
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM(Message), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
-    CLOSE( FileID, STATUS=WRITE_ERROR_STATUS, IOSTAT=IO_Status )
-
-  END FUNCTION Write_RTSolution_Record
-
-
-  ! -------------------------------------------
-  ! Utility routine to read the file dimensions
-  ! -------------------------------------------
-  SUBROUTINE Read_Dimensions( Filename, FileID, &
-                              n_Channels, n_Profiles, &
-                              IO_Status, Message )
-    ! Arguments
-    CHARACTER(*), INTENT(IN)  :: Filename
-    INTEGER,      INTENT(IN)  :: FileID
-    INTEGER,      INTENT(OUT) :: n_Channels
-    INTEGER,      INTENT(OUT) :: n_Profiles
-    INTEGER,      INTENT(OUT) :: IO_Status
-    CHARACTER(*), INTENT(OUT) :: Message
-    ! Read the dimensions from file    
-    READ( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading RTSolution data dimensions from ",a,&
-                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-    END IF
-  END SUBROUTINE Read_Dimensions
-
-
-  ! --------------------------------------------
-  ! Utility routine to write the file dimensions
-  ! --------------------------------------------
-  SUBROUTINE Write_Dimensions( Filename, FileID, &
-                               n_Channels, n_Profiles, &
-                               IO_Status, Message )
-    ! Arguments
-    CHARACTER(*), INTENT(IN)  :: Filename
-    INTEGER,      INTENT(IN)  :: FileID
-    INTEGER,      INTENT(IN)  :: n_Channels
-    INTEGER,      INTENT(IN)  :: n_Profiles
-    INTEGER,      INTENT(OUT) :: IO_Status
-    CHARACTER(*), INTENT(OUT) :: Message
-    ! Write the dimensions to file    
-    WRITE( FileID, IOSTAT=IO_Status ) n_Channels, n_Profiles
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error writing RTSolution data dimensions to ",a, &
-                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-      CLOSE( FileID, STATUS=WRITE_ERROR_STATUS )
-    END IF
-  END SUBROUTINE Write_Dimensions
+  END FUNCTION Write_Record
 
 END MODULE CRTM_RTSolution_Binary_IO

@@ -406,8 +406,7 @@ PROGRAM Test_K_Matrix
                                           Check_All=1 )
       CALL Is_Equal(Atm_Status,SUCCESS,UTest)
       Sfc_Status = CRTM_Equal_Surface( Sfc_Baseline, Sfc_K, &
-                                       Percent_Difference=D_PERCENT, &
-                                       Check_All=1 )
+                                       Percent_Difference=D_PERCENT )
       CALL Is_Equal(Sfc_Status,SUCCESS,UTest)
     END IF
 
