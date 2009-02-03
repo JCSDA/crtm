@@ -114,11 +114,12 @@ and the K-matrix variable is allocated by looping over all profiles,
 Note that the number of absorbers is in all capitals. In the CRTM, this style convention indicates a parameter. A parameter is used for the number of absorbers in the current CRTM release because the number of absorbers is fixed at two: water vapour and ozone. Future CRTM releases will allow more flexibility in selecting the number of absorbers, but currently the number must be set to two.
 
 
-\subsection{Step 6: Fill the CRTM input structures with data}
+\subsection{Step 5: Fill the CRTM input structures with data}
 %------------------------------------------------------------
 \stepcounter{step}
 This step simply entails filling the input \texttt{atm}, \texttt{sfc} and \texttt{gInfo} structures with the required information. However, there are some issues that need to be mentioned:
 \begin{itemize}
+  \item In the CRTM, all profile layering is from top-of-atmosphere (TOA) to surface (SFC). So, for an atmospheric profile layered as $k = 1,2,...,K$, layer 1 is the TOA layer and layer $K$ is the SFC layer.
   \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the \texttt{Climatology} component is not yet used.
   \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, \emph{both} the level and layer pressure profiles must be specified.
   \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the absorber profile data units \emph{must} be mass mixing ratio for water vapour and ppmv for ozone. The \texttt{Absorber\_Units} component is not yet utilised to allow conversion of different user-supplied concentration units.
@@ -145,7 +146,7 @@ Alternatively, if you want radiance derivatives returned in \texttt{atm\_K} and 
 For computational efficiency, there is minimal input data checking done so the GIGO\footnote{Garbage In, Garbage Out} principle applies.
 
 
-\subsection{Step 7: Call the required CRTM function}
+\subsection{Step 6: Call the required CRTM function}
 %---------------------------------------------------
 \stepcounter{step}
 At this point, much of the prepatory heavy lifting has been done. The CRTM function calls themselves are quite simple. For the forward model we do,
@@ -174,7 +175,7 @@ and for the K-matrix model, the calling syntax is,
 Note that the K-matrix model also returns the forward model radiances. The \hyperref[sec:CRTM_Tangent_Linear_interface]{tangent-linear} and \hyperref[sec:CRTM_Adjoint_interface]{adjoint} models have similar call structures and will not be shown here.
 
 
-\subsection{Step 8: Destroy the CRTM and cleanup}
+\subsection{Step 7: Destroy the CRTM and cleanup}
 %------------------------------------------------
 \stepcounter{step}
 The last step is to cleanup. This involves calling the CRTM destruction function
