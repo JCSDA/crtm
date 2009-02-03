@@ -2,77 +2,106 @@
 
 # == Synopsis
 #
-# collect_Coeff.rb:: Extract out the CRTM coefficients for the specified
-#                    instruments. Non-instrument specific coefficient files
-#                    are also pulled out.
+# collect_coeffs.rb:: Create tarball of the CRTM coefficients.
 #
 # == Usage
 #
-# collect_Coeff.rb [-h] [-l] id1 [id2 id3 ....]
+# collect_coeffs.rb [-h]
 #
 # -h, --help:
 #    you're looking at it
 #
-# -l, --little:
-#    Extract the little-endian format files. By default, big-endian files
-#    are extracted.
-#
-# id1 [id2 id3 ....]
-#    Instrument sensor ID strings following the format <sensor>_<platform>.
-#    Examples are hirs3_n15, mhs_n18, etc. An error is raised if no matching
-#    sensors are found.
 #    
-# Written by:: Paul van Delst, CIMSS/SSEC 11-Aug-2006 (paul.vandelst@ssec.wisc.edu)
+# Written by:: Paul van Delst, 02-Feb-2009 (paul.vandelst@noaa.gov)
 #
 
 require 'getoptlong'
 require 'rdoc/usage'
 require 'fileutils'
+require 'sensorinfo'
 
-# Specify accepted options
-options=GetoptLong.new(
-  [ "--help",     "-h", GetoptLong::NO_ARGUMENT ],
-  [ "--little",   "-l", GetoptLong::NO_ARGUMENT ] )
+# Define constants and defaults
+FIXFILE_ROOT = ENV['CRTM_FIXFILE_ROOT']
+FIXFILE_SENSORINFO = "SensorInfo.release"
+FIXFILE_FORMAT = [{:name=>"Big_Endian",:ext=>"bin"},
+                  {:name=>"Little_Endian",:ext=>"bin"},
+                  {:name=>"netCDF",:ext=>"nc"}]
+FIXFILE_TAR = "CRTM_Coefficients"
+FIXFILE_INFO = [{:name=>"TauCoeff",
+                 :subdirs=>["Infrared/ORD","Infrared/PW","Microwave/Rosenkranz"]},
+                {:name=>"SpcCoeff",
+                 :subdirs=>["Infrared","Microwave/No_AC","Microwave/AAPP_AC"]},
+                {:name=>"AerosolCoeff",
+                 :subdirs=>[]},
+                {:name=>"CloudCoeff",
+                 :subdirs=>[]},
+                {:name=>"EmisCoeff",
+                 :subdirs=>[]}]
+      
+              
+puts("---> Collecting coefficient files...")
 
-# Defaults
-etag="Big_Endian"
-
-# Parse the command line options
 begin
-  options.each do |opt, arg|
-    case opt
-      when "--help"
-        RDoc::usage
-        exit 0
-      when "--little"
-        etag="Little_Endian"
+  FileUtils.chdir(FIXFILE_ROOT) do
+
+    # Read the SensorInfo file
+    sensorinfo = SensorInfo::Node.load(FIXFILE_SENSORINFO)
+
+    # Create the main directory
+    FileUtils.rm_rf(FIXFILE_TAR,:secure=>true) if File.exists?(FIXFILE_TAR)
+    FileUtils.mkdir(FIXFILE_TAR)
+
+    # Begin linking    
+    FileUtils.chdir(FIXFILE_TAR) do
+    
+      # Loop over each type of Coeff file
+      FIXFILE_INFO.each do |type|
+        FileUtils.mkdir(type[:name])
+        type_root = "#{FIXFILE_ROOT}/#{type[:name]}"
+        FileUtils.chdir(type[:name]) do
+        
+          # Loop over each type of Coeff format
+          FIXFILE_FORMAT.each do |format|
+            FileUtils.mkdir(format[:name])
+            FileUtils.chdir(format[:name]) do
+            
+              if type[:name] == "TauCoeff" || type[:name] == "SpcCoeff"
+                # TauCoeff and SpcCoeff special case as they are sensor specific
+                type[:subdirs].each do |subdir|
+                  sensorinfo.each do |s|
+                    sensor_id = s.first
+                    coeff_file = "#{sensor_id}.#{type[:name]}.#{format[:ext]}"
+                    src_dir = "#{type_root}/#{subdir}/#{format[:name]}"
+                    # Skip link if file doesn't exist
+                    if File.exists?("#{src_dir}/#{coeff_file}")
+                      puts("linking in #{coeff_file} from #{src_dir}")
+                      FileUtils.ln_sf("#{src_dir}/#{coeff_file}", coeff_file)
+                    end
+                  end
+                end
+              else
+                # Other Coeff types do not have subdirs
+                coeff_file = "#{type[:name]}.#{format[:ext]}"
+                src_dir = "#{type_root}/#{format[:name]}"
+                # Skip link if file doesn't exist
+                if File.exists?("#{src_dir}/#{coeff_file}")
+                  puts("linking in #{coeff_file} from #{src_dir}")
+                  FileUtils.ln_sf("#{src_dir}/#{coeff_file}", coeff_file)
+                end
+              end
+            end
+          end
+        end
+      end
     end
   end
-rescue StandardError=>error_message
-  puts "ERROR: #{error_message}"
-  RDoc::usage
-  exit 1
-end
-
-if ARGV.length == 0
-  puts "\nERROR: Missing sensor id argument(s)"
-  RDoc::usage
-  exit 1
-end
-
-puts("---> Collecting #{etag.upcase.split("_").join(" ")} coefficient files...")
-
-begin
-  tar="CRTM_Coefficients"
-  FileUtils.mkdir(tar)
-  ["CloudCoeff","AerosolCoeff","EmisCoeff"].each { |fid| FileUtils.cp("#{fid}/#{etag}/#{fid}.bin","./#{tar}") }
-  ARGV.each do |sid|
-    ["TauCoeff","SpcCoeff"].each { |fid| FileUtils.cp("#{fid}/#{etag}/#{sid}.#{fid}.bin", "./#{tar}") }
-  end
-  system("tar cvf #{tar}.tar ./#{tar}")
-  system("gzip -f #{tar}.tar")
-  FileUtils.remove_dir("./#{tar}",force=true)
-rescue StandardError=>error_message
+  
+  # Create a tarball of the created directory
+  system("tar cvhf #{FIXFILE_TAR}.tar ./#{FIXFILE_TAR}")
+  system("gzip -f #{FIXFILE_TAR}.tar")
+  FileUtils.rm_rf("./#{FIXFILE_TAR}")
+  
+rescue Exception => error_message
   puts "ERROR: #{error_message}"
   exit 1
 end
