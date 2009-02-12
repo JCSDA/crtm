@@ -17,14 +17,21 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Type_Kinds       , ONLY: fp
-  USE Message_Handler  , ONLY: SUCCESS, FAILURE, INFORMATION, &
-                               Display_Message, Program_Message
-  USE File_Utility     , ONLY: Get_Lun
-  USE AntCorr_Define   , ONLY: AntCorr_type, &
-                               Allocate_AntCorr, &
-                               Destroy_AntCorr
-  USE AntCorr_netCDF_IO, ONLY: Write_AntCorr_netCDF
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                                   Display_Message, Program_Message
+  USE File_Utility         , ONLY: Get_Lun, File_Exists
+  USE SensorInfo_Define    , ONLY: SensorInfo_type, &
+                                   Destroy_SensorInfo
+  USE SensorInfo_LinkedList, ONLY: SensorInfo_List_type, &
+                                   Count_SensorInfo_Nodes, &
+                                   GetFrom_SensorInfo_List, &
+                                   Destroy_SensorInfo_List
+  USE SensorInfo_IO        , ONLY: Read_SensorInfo
+  USE AntCorr_Define       , ONLY: AntCorr_type, &
+                                   Allocate_AntCorr, &
+                                   Destroy_AntCorr
+  USE AntCorr_netCDF_IO    , ONLY: Write_AntCorr_netCDF
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -34,14 +41,10 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'AAPP_AMSU_AntCorr_ASC2NC'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
     '$Id$'
-  ! Structure dimensions
-  INTEGER, PARAMETER :: AMSUA_N_FOVS     = 30
-  INTEGER, PARAMETER :: AMSUA_N_CHANNELS = 15
-  INTEGER, PARAMETER :: AMSUBMHS_N_FOVS     = 90
-  INTEGER, PARAMETER :: AMSUBMHS_N_CHANNELS = 5
+  INTEGER, PARAMETER :: SET = 1
   ! The sensors
-  INTEGER, PARAMETER :: N_SENSORS = 10
-  CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = &
+  INTEGER, PARAMETER :: N_AC_SENSORS = 12
+  CHARACTER(*), PARAMETER :: SENSOR_ID(N_AC_SENSORS) = &
     (/ 'amsua_n15    ', &
        'amsua_n16    ', &
        'amsua_n17    ', &
@@ -51,34 +54,12 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
        'amsub_n16    ', &
        'amsub_n17    ', &
        'mhs_n18      ', &
-       'mhs_metop-a  ' /)
-  INTEGER, PARAMETER :: WMO_SATELLITE_ID(N_SENSORS) = &
-    (/ 206, 207, 208, 209, 4, 206, 207, 208, 209, 4 /)
+       'mhs_metop-a  ', &
+       'amsua_n19    ', &
+       'mhs_n19      ' /)
   INTEGER, PARAMETER :: AMSUA_WMO_SENSOR_ID = 570
   INTEGER, PARAMETER :: AMSUB_WMO_SENSOR_ID = 574
   INTEGER, PARAMETER :: MHS_WMO_SENSOR_ID   = 203
-  INTEGER, PARAMETER :: WMO_SENSOR_ID(N_SENSORS) = &
-    (/ AMSUA_WMO_SENSOR_ID, &
-       AMSUA_WMO_SENSOR_ID, &
-       AMSUA_WMO_SENSOR_ID, &
-       AMSUA_WMO_SENSOR_ID, &
-       AMSUA_WMO_SENSOR_ID, &
-       AMSUB_WMO_SENSOR_ID, &
-       AMSUB_WMO_SENSOR_ID, &
-       AMSUB_WMO_SENSOR_ID, &
-       MHS_WMO_SENSOR_ID  , &
-       MHS_WMO_SENSOR_ID   /)
-  CHARACTER(*), PARAMETER :: PLATFORM_NAME(N_SENSORS) = &
-    (/ 'NOAA-15', &
-       'NOAA-16', &
-       'NOAA-17', &
-       'NOAA-18', &
-       'MetOp-A', &
-       'NOAA-15', &
-       'NOAA-16', &
-       'NOAA-17', &
-       'NOAA-18', &
-       'MetOp-A' /)
   CHARACTER(*), PARAMETER :: AMSUA_REFERENCE = &
     'T. Mo, (1999), "AMSU-A Antenna Pattern Corrections", IEEE Transactions '//&
     'on Geoscience and Remote Sensing, Vol.37, pp.103-112'
@@ -91,6 +72,7 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
   ! Variables
   ! ---------  
   CHARACTER(256) :: Message
+  CHARACTER(256) :: SensorInfo_Filename
   CHARACTER(256) :: ASC_Filename, NC_Filename
   CHARACTER(500) :: Title
   CHARACTER(500) :: Comment
@@ -98,8 +80,10 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
   CHARACTER(256) :: FDF_Id
   INTEGER :: Error_Status, IO_Status
   INTEGER :: Version
-  INTEGER :: i, l, n, FileID
-  INTEGER :: n_FOVs, n_Channels
+  INTEGER :: l, n, FileID
+  INTEGER :: n_Sensors, n_FOVs, n_Channels
+  TYPE(SensorInfo_type)      :: SensorInfo
+  TYPE(SensorInfo_List_type) :: SensorInfo_List
   TYPE(AntCorr_type) :: AC
   
   
@@ -112,8 +96,33 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
                         '$Revision$' )
 
 
+  ! Get user inputs
+  ! ---------------
+  ! The SensorInfo filename and data
+  WRITE( *,FMT='(/5x,"Enter a SensorInfo filename: ")',ADVANCE='NO' )
+  READ( *,FMT='(a)' ) SensorInfo_Filename
+  SensorInfo_Filename = ADJUSTL(SensorInfo_Filename)
+
+  Error_Status = Read_SensorInfo( SensorInfo_Filename, &
+                                  SensorInfo_List    , &
+                                  Quiet=SET            )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error reading SensorInfo file '//&
+                          TRIM(SensorInfo_Filename), &
+                          FAILURE )
+    STOP
+  END IF
+
+  n_Sensors = Count_SensorInfo_Nodes( SensorInfo_List )
+  IF ( n_Sensors < 1 ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'SensorInfo_List is empty.', &
+                          FAILURE )
+    STOP
+  END IF
+
   ! Enter the AAPP data file name
-  ! -----------------------------
   WRITE( *,'(/5x,"Enter the AAPP fdf identifier: ")', ADVANCE='NO' )
   READ( *,'(a)' ) FDF_Id
   FDF_Id = ADJUSTL(FDF_Id)
@@ -127,6 +136,8 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
       Version = 3
     CASE ('_v6.4')
       Version = 4
+    CASE ('_v6.8')
+      Version = 5
     CASE DEFAULT
       CALL Display_Message( PROGRAM_NAME, &
                             'Unrecognised FDF Id, '//TRIM(FDF_Id), &
@@ -134,9 +145,7 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
       STOP
   END SELECT
     
-  
   ! Enter an output comment attribute
-  ! ---------------------------------
   WRITE( *,'(/5x,"Enter a file comment: ")' )
   READ( *,'(a)' ) Comment
   Comment = ADJUSTL(Comment)
@@ -144,14 +153,44 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
 
   ! Begin loop over sensors
   ! -----------------------
-  Sensor_Loop: DO n = 1, N_SENSORS
+  Sensor_Loop: DO n = 1, n_Sensors
 
-    WRITE(*,'(/5x,"Converting antenna correction data for ",a)') TRIM(SENSOR_ID(n))
+
+    ! Get the current SensorInfo data from the list
+    ! ---------------------------------------------
+    Error_Status = GetFrom_SensorInfo_List( SensorInfo_List, &
+                                            n, &
+                                            SensorInfo )
+    IF ( Error_Status /= SUCCESS ) THEN
+      WRITE( Message,'("Error retrieving SensorInfo data for sensor # ",i0)' ) n
+      CALL Display_Message( PROGRAM_NAME, &
+                            TRIM(Message), &
+                            FAILURE )
+      STOP
+    END IF
+
+
+    ! Only operate on the specified microwave sensors
+    ! -----------------------------------------------
+    IF ( .NOT. ANY(SENSOR_ID == SensorInfo%Sensor_Id) ) CYCLE Sensor_Loop
+
+
+    ! Begin conversion...
+    ! -------------------
+    WRITE(*,'(/5x,"Converting antenna correction data for ",a)') TRIM(SensorInfo%Sensor_Id)
     
-    ! Construct filenames
-    ASC_Filename = TRIM(SENSOR_ID(n))//'.fdf'//TRIM(FDF_Id)
-    NC_Filename  = TRIM(SENSOR_ID(n))//'.AntCorr.nc'
+    ! Construct filenames and determine if they exist
+    ! -----------------------------------------------
+    ASC_Filename = TRIM(SensorInfo%Sensor_Id)//'.fdf'//TRIM(FDF_Id)
+    NC_Filename  = TRIM(SensorInfo%Sensor_Id)//'.AntCorr.nc'
 
+    IF ( .NOT. File_Exists(ASC_Filename) ) THEN
+      CALL Display_Message( PROGRAM_NAME, &
+                            'ASCII file '//TRIM(ASC_Filename)//' not found. Skipping...', &
+                            INFORMATION )
+      CYCLE Sensor_Loop
+    END IF
+    
 
     ! Read the ASCII data
     ! -------------------
@@ -180,7 +219,7 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
     Error_Status = Allocate_AntCorr( n_FOVs, n_Channels, AC )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error allocating AntCorr structure for '//TRIM(SENSOR_ID(n)), &
+                            'Error allocating AntCorr structure for '//TRIM(SensorInfo%Sensor_Id), &
                             FAILURE )
       STOP
     END IF
@@ -203,20 +242,26 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
     
     ! Fill the Sensor id info
     ! -----------------------
-    AC%Sensor_Id        = TRIM(SENSOR_ID(n))
-    AC%WMO_Satellite_Id = WMO_SATELLITE_ID(n)
-    AC%WMO_Sensor_Id    = WMO_SENSOR_ID(n)
+    AC%Sensor_Id        = TRIM(SensorInfo%Sensor_Id)
+    AC%WMO_Satellite_Id = SensorInfo%WMO_Satellite_Id
+    AC%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id
 
     CLOSE(FileID)
 
 
     ! Set the data reference
     ! ----------------------
-    IF ( WMO_SENSOR_ID(n) == AMSUA_WMO_SENSOR_ID ) THEN
-      Reference = AMSUA_REFERENCE
-    ELSE
-      Reference = AMSUBMHS_REFERENCE
-    END IF
+    SELECT CASE (AC%Sensor_Id(1:INDEX(AC%Sensor_Id,'_')-1))
+      CASE('amsua')
+        Reference = AMSUA_REFERENCE
+      CASE('amsub','mhs')
+        Reference = AMSUBMHS_REFERENCE
+      CASE DEFAULT
+        CALL Display_Message( PROGRAM_NAME, &
+                              'Data reference select case failed for '//TRIM(SensorInfo%Sensor_Id), &
+                              FAILURE )
+        STOP
+    END SELECT
     
     
     ! Write the netCDF file
@@ -240,11 +285,31 @@ PROGRAM AAPP_AMSU_AntCorr_ASC2NC
     Error_Status = Destroy_AntCorr( AC )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying AntCorr structure used for '//TRIM(SENSOR_ID(n)), &
+                            'Error destroying AntCorr structure used for '//TRIM(SensorInfo%Sensor_Id), &
+                            FAILURE )
+      STOP
+    END IF
+    
+    ! Destroy the SensorInfo structure
+    ! --------------------------------
+    Error_Status = Destroy_SensorInfo( SensorInfo )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( PROGRAM_NAME, &
+                            'Error destroying SensorInfo data structure.', &
                             FAILURE )
       STOP
     END IF
     
   END DO Sensor_Loop
   
+  
+  ! Destroy the SensorInfo linked list
+  ! ----------------------------------
+  Error_Status = Destroy_SensorInfo_List( SensorInfo_List )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error destroying SensorInfo linked list.', &
+                          WARNING )
+  END IF
+
 END PROGRAM AAPP_AMSU_AntCorr_ASC2NC
