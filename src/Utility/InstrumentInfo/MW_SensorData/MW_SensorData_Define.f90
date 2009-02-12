@@ -36,10 +36,9 @@ MODULE MW_SensorData_Define
                              RC_POLARIZATION, &
                              LC_POLARIZATION, &
                              POLARIZATION_TYPE_NAME
-  USE CRTM_Parameters, ONLY: TWO
+                             
   ! Disable implicit typing
   IMPLICIT NONE
-
 
   ! ------------
   ! Visibilities
@@ -68,6 +67,7 @@ MODULE MW_SensorData_Define
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER ::  ONE   = 1.0_fp
+  REAL(fp), PARAMETER ::  TWO   = 2.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp
   ! MW_SensorData valid values
   INTEGER, PARAMETER :: INVALID = -1
