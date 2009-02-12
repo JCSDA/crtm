@@ -98,10 +98,6 @@ PROGRAM Create_MW_SpcCoeff
     'COBE Far-Infrared Absolute Spectrophotometer (FIRAS)," Astrophysical '//&
     'Journal, vol 512, pp 511-520'
 
-  ! A list of the instruments for which we have antenna correction data
-  CHARACTER(*), PARAMETER :: AC_SENSOR_ID_LIST = &
-  'amsua_n15:amsua_n16:amsua_n17:amsua_n18:amsua_metop-a:amsub_n15:amsub_n16:'//&
-  'amsub_n17:mhs_n18:mhs_metop-a'
 
   ! ---------
   ! Variables
@@ -233,7 +229,7 @@ PROGRAM Create_MW_SpcCoeff
       STOP
     END IF
 
-    ! Modify GAtss for concatenation
+    ! Modify GAtts for concatenation
     MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
 
 
@@ -243,9 +239,7 @@ PROGRAM Create_MW_SpcCoeff
     AntCorr_History  = ' '
     AntCorr_Comment  = ' '
     n_FOVs = 0
-    IF ( INDEX(AC_SENSOR_ID_LIST,TRIM(SensorInfo%Sensor_ID)) /= 0 .AND. &
-         File_Exists(AntCorr_Filename) ) THEN
-      
+    IF ( File_Exists(AntCorr_Filename) ) THEN
       ! Read the antenna correction data
       Error_Status = Read_AntCorr_netCDF( AntCorr_Filename, &
                                           AntCorr, &
@@ -258,11 +252,9 @@ PROGRAM Create_MW_SpcCoeff
                               FAILURE )
         STOP
       END IF
-      
-      ! Modify GAtss for concatenation
+      ! Modify GAtts for concatenation
       AntCorr_History = '; AntCorr: '//TRIM(AntCorr_History)
       AntCorr_Comment = '; AntCorr: '//TRIM(AntCorr_Comment)
-
       ! Set the FOV dimension for the SpcCoeff allocation
       n_FOVs = AntCorr%n_FOVs
     END IF
@@ -298,7 +290,7 @@ PROGRAM Create_MW_SpcCoeff
     ! Assign various data components
     ! ------------------------------
     ! Set the version value
-    SpcCoeff%Version   = SpcCoeff_File_Version
+    SpcCoeff%Version = SpcCoeff_File_Version
 
     ! Assign the sensor ID values
     SpcCoeff%Sensor_Id        = SensorInfo%Sensor_Id
