@@ -1,16 +1,16 @@
 !
-! Create_IR_SpcCoeff
+! Create_SpcCoeff_from_SRF
 !
-! Program to create the infrared spectral coefficient (SpcCoeff)
-! data files from the sensor SRF data files.
+! Program to create spectral coefficient (SpcCoeff) data files
+! from the sensor SRF data files.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Jan-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     David Groff 13-Feb-2009 (Friday 13th!)
+!                       david.groff@noaa.gov
 !
 
-PROGRAM Create_IR_SpcCoeff
+PROGRAM Create_SpcCoeff_from_SRF
 
 
   ! ------------------
@@ -27,8 +27,34 @@ PROGRAM Create_IR_SpcCoeff
                                        Spline_Interpolate
   USE Integrate_Utility        , ONLY: Simpsons_Integral
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz
-  USE SensorInfo_Define        , ONLY: SENSORINFO_INFRARED => INFRARED_SENSOR_TYPE, &
-                                       SensorInfo_type, &
+  USE MW_SensorData_Define     , ONLY: MW_SensorData_type, &
+                                       Load_MW_SensorData, &
+                                       Destroy_MW_SensorData
+  USE SensorInfo_Define        , ONLY: N_SENSOR_TYPES          , &
+                                       INVALID_SENSOR          , &
+                                       MICROWAVE_SENSOR        , &
+                                       INFRARED_SENSOR         , &
+                                       VISIBLE_SENSOR          , &
+                                       ULTRAVIOLET_SENSOR      , &
+                                       SENSOR_TYPE_NAME        , &
+                                       N_POLARIZATION_TYPES    , &
+                                       INVALID_POLARIZATION    , &
+                                       UNPOLARIZED             , &
+                                       INTENSITY               , &
+                                       FIRST_STOKES_COMPONENT  , &
+                                       SECOND_STOKES_COMPONENT , &
+                                       THIRD_STOKES_COMPONENT  , &
+                                       FOURTH_STOKES_COMPONENT , &
+                                       VL_POLARIZATION         , &
+                                       HL_POLARIZATION         , &
+                                       plus45L_POLARIZATION    , &
+                                       minus45L_POLARIZATION   , &
+                                       VL_MIXED_POLARIZATION   , &
+                                       HL_MIXED_POLARIZATION   , &
+                                       RC_POLARIZATION         , &
+                                       LC_POLARIZATION         , &
+                                       POLARIZATION_TYPE_NAME  , &
+                                       SensorInfo_type         , &
                                        Destroy_SensorInfo
   USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type, &
                                        Count_SensorInfo_Nodes, &
@@ -43,9 +69,11 @@ PROGRAM Create_IR_SpcCoeff
                                        Destroy_Solar
   USE Solar_netCDF_IO          , ONLY: Inquire_Solar_netCDF, &
                                        Read_Solar_netCDF
-  USE SpcCoeff_Define          , ONLY: SPCCOEFF_INFRARED => INFRARED_SENSOR, &
-                                       UNPOLARIZED, &
-                                       SOLAR_FLAG, &
+  USE AntCorr_Define           , ONLY: AntCorr_type, &
+                                       Assign_AntCorr, &
+                                       Destroy_AntCorr
+  USE AntCorr_netCDF_IO        , ONLY: Read_AntCorr_netCDF
+  USE SpcCoeff_Define          , ONLY: SOLAR_FLAG, &
                                        SpcCoeff_type, &
                                        SetFlag_SpcCoeff, &
                                        ClearFlag_SpcCoeff, &
@@ -60,7 +88,7 @@ PROGRAM Create_IR_SpcCoeff
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_IR_SpcCoeff'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_SpcCoeff_from_SRF'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
 
@@ -92,6 +120,9 @@ PROGRAM Create_IR_SpcCoeff
 
   ! Solar channel cut-off frequency
   REAL(fp), PARAMETER :: SOLAR_CUTOFF_WAVENUMBER = 500.0_fp
+  
+  ! Cosmic background temperature
+  REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253
 
   ! Integration methods
   INTEGER, PARAMETER :: N_INTEGRATION_METHODS = 2
@@ -149,12 +180,13 @@ PROGRAM Create_IR_SpcCoeff
   TYPE(SRF_type)             :: SRF
   TYPE(Solar_type)           :: Solar
   TYPE(SpcCoeff_type)        :: SpcCoeff
+  TYPE(MW_SensorData_type)   :: MW_SensorData
 
 
   ! Program header
   ! --------------
   CALL Program_Message(PROGRAM_NAME, &
-                       'Program to create the infrared SpcCoeff '//&
+                       'Program to create the SpcCoeff '//&
                        'files from the sensor SRF data files.', &
                        '$Revision$' )
 
@@ -287,35 +319,77 @@ PROGRAM Create_IR_SpcCoeff
       STOP
     END IF
 
-    ! Only operate on infrared sensors with SRF file
-    ! present (and skip the AIRS subset files)
-    ! ----------------------------------------------
-    ! Create the SRF filename for the current sensor
-    SRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.srf.nc'
 
-    ! Cycle loop if not an IR sensor or no data
-    IF ( .NOT. ( SensorInfo%Microwave_Flag == SENSORINFO_INFRARED   .AND. &
-                 File_Exists( SRF_Filename )                        .AND. &
-                 TRIM(SensorInfo%Sensor_ID) /= 'airs281SUBSET_aqua' .AND. &
-                 TRIM(SensorInfo%Sensor_ID) /= 'airs324SUBSET_aqua' .AND. &
-                 TRIM(SensorInfo%Sensor_ID) /= 'airs_aqua'                )) CYCLE Sensor_Loop
+    ! Only operate on sensors with SRF file present
+    ! ---------------------------------------------
+    SRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.srf.nc'
+    IF ( .NOT. File_Exists( SRF_Filename ) ) CYCLE Sensor_Loop
+
 
     ! Output an info message
     ! ----------------------
     WRITE( *,'(//5x,"Creating the SpcCoeff data file for ",a)' ) &
               TRIM(SensorInfo%Sensor_Id)
 
+    ! Read MW_SENSORDATA AND ANTCORR data for microwave
+    ! -------------------------------------------------
+    IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
+    
+      ! Load the current microwave sensor data
+      ! --------------------------------------
+      Error_Status = Load_MW_SensorData( MW_SensorData, &
+                                         Sensor_ID=SensorInfo%Sensor_ID, &
+                                         RCS_Id   =MW_SensorData_History )
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( PROGRAM_NAME, &
+                              'Error loading MW sensor data for '//&
+                              TRIM(SensorInfo%Sensor_Id), &
+                              FAILURE )
+        STOP
+      END IF
+       
+      ! Modify GAtts for concatenation
+      MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
 
+      ! Load antenna correction data if required
+      ! ----------------------------------------
+      AntCorr_Filename = TRIM(SensorInfo%Sensor_ID)//'.AntCorr.nc'
+      AntCorr_History  = ' '
+      AntCorr_Comment  = ' '
+      n_FOVs = 0
+      IF ( File_Exists(AntCorr_Filename) ) THEN
+        
+        ! Read the antenna correction data
+        Error_Status = Read_AntCorr_netCDF( AntCorr_Filename, &
+                                            AntCorr, &
+                                            History=AntCorr_History, &
+                                            Comment=AntCorr_Comment )
+        IF ( Error_Status /= SUCCESS ) THEN
+          CALL Display_Message( PROGRAM_NAME, &
+                                'Error loading antenna correction data for '//&
+                                TRIM(SensorInfo%Sensor_Id), &
+                                FAILURE )
+          STOP
+        END IF
+        
+        ! Modify GAtts for concatenation
+        AntCorr_History = '; AntCorr: '//TRIM(AntCorr_History)
+        AntCorr_Comment = '; AntCorr: '//TRIM(AntCorr_Comment)
+        
+        ! Set the FOV dimension for the SpcCoeff allocation
+        n_FOVs = AntCorr%n_FOV
+      END IF
+
+    END IF
     ! Inquire the SRF file for its GAtts
     ! ----------------------------------
-    Error_Status = Inquire_SRF_netCDF( TRIM(SRF_Filename), &  ! Input
-                                       Title         = Title,         & ! Optional output
-                                       History       = SRF_History,   & ! Optional output
-                                       Comment       = Comment        ) ! Optional output
+    Error_Status = Inquire_SRF_netCDF( SRF_Filename         , &  ! Input
+                                       Title   = Title      , & ! Optional output
+                                       History = SRF_History, & ! Optional output
+                                       Comment = Comment      ) ! Optional output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error inquiring the netCDF SRF file '//&
-                            TRIM( SRF_Filename ), &
+                            'Error inquiring the netCDF SRF file '//TRIM(SRF_Filename), &
                             Error_Status )
       STOP
     END IF
@@ -323,8 +397,7 @@ PROGRAM Create_IR_SpcCoeff
 
     ! Allocate the SpcCoeff structure
     ! -------------------------------
-    Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, &
-                                      SpcCoeff )
+    Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, SpcCoeff, n_FOVs=n_FOVs )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error allocating SpcCoeff data structure.', &
@@ -333,27 +406,63 @@ PROGRAM Create_IR_SpcCoeff
     END IF
 
 
-    ! Assign various data components
-    ! ------------------------------
-    ! Set the version value
-    SpcCoeff%Version   = SpcCoeff_File_Version
-
-    ! Assign the sensor ID values
+    ! Assign the sensor-independent data components
+    ! ---------------------------------------------
+    SpcCoeff%Version          = SpcCoeff_File_Version
     SpcCoeff%Sensor_Id        = SensorInfo%Sensor_Id
-    SpcCoeff%Sensor_Type      = SPCCOEFF_INFRARED
+    SpcCoeff%Sensor_Type      = SensorInfo%Sensor_Type
     SpcCoeff%WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID
     SpcCoeff%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID
     SpcCoeff%Sensor_Channel   = SensorInfo%Sensor_Channel
+    ! Initialise
+    SpcCoeff%Solar_Irradiance = ZERO
+    CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,SOLAR_FLAG)
+    CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,ZEEMAN_FLAG)
 
-    ! Set the channel polarizations
-    SpcCoeff%Polarization = UNPOLARIZED
+    ! Assign the simple sensor-dependent data components
+    ! --------------------------------------------------
+    SELECT CASE (SpcCoeff%Sensor_Type)
+      CASE (MICROWAVE_SENSOR)
+        SpcCoeff%Frequency    = MW_SensorData%Central_Frequency
+        SpcCoeff%Polarization = MW_SensorData%Polarization
+        ! The antenna correction data
+        IF ( SpcCoeff%AC_Present ) THEN
+          ! Copy it
+          Error_Status = Assign_AntCorr( AntCorr, SpcCoeff%AC )
+          IF ( Error_Status /= SUCCESS ) THEN
+            CALL Display_Message( PROGRAM_NAME, &
+                                  'Error copying antenna correction data into SpcCoeff structure for '//&
+                                  TRIM(SensorInfo%Sensor_Id), &
+                                  FAILURE )
+            STOP
+          END IF
+          ! Destroy it
+          Error_Status = Destroy_AntCorr( AntCorr )
+          IF ( Error_Status /= SUCCESS ) THEN
+            CALL Display_Message( PROGRAM_NAME, &
+                                  'Error destroying AntCorr structure for '//&
+                                  TRIM(SensorInfo%Sensor_Id), &
+                                  FAILURE )
+            STOP
+          END IF
+        END IF
+        
+      CASE (INFRARED_SENSOR)
+        SpcCoeff%Polarization = UNPOLARIZED
 
+      CASE (VISIBLE_SENSOR)
+        SpcCoeff%Polarization = UNPOLARIZED
+
+      CASE DEFAULT
+        CALL Display_Message( PROGRAM_NAME,'Unsupported sensor type!',FAILURE )
+        STOP
+    END SELECT
+    
 
 
     ! Open file for band correction fit output
     ! ----------------------------------------
     ASCII_Filename = TRIM(SensorInfo%Sensor_Id)//'.SpcCoeff.asc'
-
     ASCII_FileID = Get_Lun()
     IF ( ASCII_FileID < 0 ) THEN
       CALL Display_Message( PROGRAM_NAME, &
@@ -385,12 +494,20 @@ PROGRAM Create_IR_SpcCoeff
     ! ------------------------
     WRITE( *,'(/,"    CH        V0            ",&
                 &"FK1            FK2            BC1            BC2          ",&
-                &"F(Solar)")' )
+                &"CBR            F(Solar)       POLARIZATION")' )
 
     Channel_Loop: DO l = 1, SpcCoeff%n_Channels
     
       WRITE( *,FMT='(2x,i4)',ADVANCE='NO') SpcCoeff%Sensor_Channel(l)
 
+
+      ! Set the Zeeman flag if necessary
+      ! --------------------------------
+      IF ( SpcCoeff%Sensor_Type == MICROWAVE_SENSOR ) THEN
+        IF ( MW_SensorData%Zeeman(l) == SET ) &
+          CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),ZEEMAN_FLAG)
+      END IF
+      
 
       ! Read the current SRF data
       ! -------------------------
@@ -433,9 +550,14 @@ PROGRAM Create_IR_SpcCoeff
 
       ! Determine the SRF centroid and Planck coefficients
       ! --------------------------------------------------
-      ! Compute the centroid
-      SpcCoeff%Wavenumber(l) = SRF_First_Moment / SRF_Integral
-      SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
+      SELECT CASE (Sensor_Type)
+        CASE (MICROWAVE_SENSOR)
+          SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
+
+        CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
+          SpcCoeff%Wavenumber(l) = SRF_First_Moment / SRF_Integral
+          SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
+      END SELECT
       
       ! Compute the coefficients
       SpcCoeff%Planck_C1(l) = C_1_SCALE_FACTOR * C_1 * ( SpcCoeff%Wavenumber(l)**3 )
@@ -463,6 +585,8 @@ PROGRAM Create_IR_SpcCoeff
       ! -------------------------------------------------
       Radiance => Spectrum
       
+
+
       ! Generate the "polychromatic" temperatures
       Temperature_Loop: DO i = 1, N_TEMPERATURES
       
@@ -479,33 +603,38 @@ PROGRAM Create_IR_SpcCoeff
           STOP
         END IF
         
-        ! Convolve the radiance spectrum with the SRF
-        Error_Status = Simpsons_Integral( SRF%Frequency, &
-                                          Radiance*SRF%Response, &
-                                          Convolved_Radiance, &
-                                          Order=CUBIC_ORDER )
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message,'("Error convolving radiance at T = ",f5.1," K.")' ) &
-                         x_Temperature(i)
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE )
-          STOP
-        END IF
-        
-        ! Normalise the convolved radiance
-        Convolved_Radiance = Convolved_Radiance/SRF_Integral
+        IF(SpcCoeff%Sensor_Type == INFRARED_SENSOR .OR. &
+        SpcCoeff%Sensor_Type == VISIBLE_SENSOR) THEN
+          ! Convolve the radiance spectrum with the SRF
+          Error_Status = Simpsons_Integral( SRF%Frequency, &
+                                            Radiance*SRF%Response, &
+                                            Convolved_Radiance, &
+                                            Order=CUBIC_ORDER )
+          IF ( Error_Status /= SUCCESS ) THEN
+            WRITE( Message,'("Error convolving radiance at T = ",f5.1," K.")' ) &
+                           x_Temperature(i)
+            CALL Display_Message( PROGRAM_NAME, &
+                                  TRIM(Message), &
+                                  FAILURE )
+            STOP
+          END IF       
+          ! Normalise the convolved radiance
+          Convolved_Radiance = Convolved_Radiance/SRF_Integral
+        ELSE
+          ! Convolve the radiance spectrum with the MW response
+          Convolved_Radiance = SUM(Radiance)*MW_SensorData%Delta_Frequency(l)/Integrated_MW_Response
+        ENDIF  
         
         ! Convert the convolved radiance back into a temperature
-        Error_Status = Planck_Temperature( SpcCoeff%Wavenumber(l), &
-                                           Convolved_Radiance, &
+        Error_Status = Planck_Temperature( SpcCoeff%Wavenumber(l),    &
+                                           Convolved_Radiance,        &
                                            y_Effective_Temperature(i) )
         IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message,'("Error calculating polychromatic temperature at T = ",f5.1," K.")' ) &
-                          x_Temperature(i)
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE)
+        WRITE( Message,'("Error calculating polychromatic temperature at T = ",f5.1," K.")' ) &
+                        x_Temperature(i)
+        CALL Display_Message( PROGRAM_NAME, &
+                              TRIM(Message), &
+                              FAILURE)
           STOP
         END IF
       END DO Temperature_Loop
@@ -544,53 +673,83 @@ PROGRAM Create_IR_SpcCoeff
                              y_Effective_Temperature(i) - yFit_Effective_Temperature(i)
       END DO
 
+      
+      IF(SpcCoeff%Sensor_Type == INFRARED_SENSOR .OR.  &
+      SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
+        
+        ! Fill the cosmic background field
+        ! --------------------------------
+        SpcCoeff%Cosmic_Background_Radiance( l ) = ZERO
+        
+      ELSE
+      
+        ! Compute the cosmic background radiance
+        ! --------------------------------------
+        Error_Status = Planck_Radiance( SpcCoeff%Wavenumber(l), &
+                                        COSMIC_BACKGROUND_TEMPERATURE, &
+                                        SpcCoeff%Cosmic_Background_Radiance(l) )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( *,* )
+          WRITE( Message,'("Error computing cosmic background radiance for ",a,&
+                          &" channel ", i0,".")' ) &
+                          TRIM(SensorInfo%Sensor_Id ), &
+                          SpcCoeff%Sensor_Channel(l)
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                FAILURE )
+          STOP
+        END IF
 
-      ! Fill the cosmic background field
-      ! --------------------------------
-      SpcCoeff%Cosmic_Background_Radiance( l ) = ZERO
-
-
+      ENDIF
+      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Cosmic_Background_Radiance(l)
+        
       ! Set the solar fields
       ! --------------------
       ! Initialize the solar irradiance
       SpcCoeff%Solar_Irradiance(l) = ZERO
 
-      ! Interpolate the solar spectrum to the SRF spacing
-      Irradiance => Spectrum
-      Error_Status = Spline_Interpolate( Solar%Frequency    , &  ! X
-                                         Solar%Irradiance   , &  ! Y
-                                         SRF%Frequency      , &  ! Xint
-                                         Irradiance         , &  ! Yint
-                                         y2=Solar_Derivative  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error interpolating solar spectrum for SRF channel ",i0)' ) &
-                       SRF%Channel
-        CALL Display_Message( PROGRAM_NAME, &
-                              TRIM(Message), &
-                              FAILURE )
-        STOP
-      END IF
 
-      ! Convolve the irradiance witrh the SRF
-      IF ( SRF_Integration_Method == SUMMATION_METHOD ) THEN
-        ! via summation
-        SpcCoeff%Solar_Irradiance(l) = SUM(SRF%Response*Irradiance) * &
-                                       Solar%Frequency_Interval/SRF_Integral
-      ELSE
-        ! via integration
-        Error_Status = Simpsons_Integral( SRF%Frequency, &
-                                          SRF%Response * Irradiance, &
-                                          SpcCoeff%Solar_Irradiance(l), &
-                                          Order=CUBIC_ORDER )
+      IF(SpcCoeff%Sensor_Type == INFRARED_SENSOR .OR. &
+      SpcCoeff%Sensor_Type == VISIBLE_SENSOR) THEN
+        
+        ! Interpolate the solar spectrum to the SRF spacing
+        Irradiance => Spectrum
+        Error_Status = Spline_Interpolate( Solar%Frequency    , &  ! X
+                                           Solar%Irradiance   , &  ! Y
+                                           SRF%Frequency      , &  ! Xint
+                                           Irradiance         , &  ! Yint
+                                           y2=Solar_Derivative  )
         IF ( Error_Status /= SUCCESS ) THEN
+          WRITE( Message,'("Error interpolating solar spectrum for SRF channel ",i0)' ) &
+                         SRF%Channel
           CALL Display_Message( PROGRAM_NAME, &
-                                'Error occurred convoling solar irradiance with SRF.', &
+                                TRIM(Message), &
                                 FAILURE )
           STOP
         END IF
-        SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/SRF_Integral
-      END IF
-      NULLIFY( Irradiance )
+
+        ! Convolve the irradiance witrh the SRF
+        IF ( SRF_Integration_Method == SUMMATION_METHOD ) THEN
+          ! via summation
+          SpcCoeff%Solar_Irradiance(l) = SUM(SRF%Response*Irradiance) * &
+                                         Solar%Frequency_Interval/SRF_Integral
+        ELSE
+          ! via integration
+          Error_Status = Simpsons_Integral( SRF%Frequency, &
+                                            SRF%Response * Irradiance, &
+                                            SpcCoeff%Solar_Irradiance(l), &
+                                            Order=CUBIC_ORDER )
+          IF ( Error_Status /= SUCCESS ) THEN
+            CALL Display_Message( PROGRAM_NAME, &
+                                  'Error occurred convoling solar irradiance with SRF.', &
+                                  FAILURE )
+            STOP
+          END IF
+          SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/SRF_Integral
+        END IF
+        NULLIFY( Irradiance )
+        
+      ENDIF
 
       ! Set the solar channel flag
       IF ( SpcCoeff%Wavenumber(l) > SOLAR_CUTOFF_WAVENUMBER ) THEN
@@ -986,4 +1145,4 @@ CONTAINS
 
   END FUNCTION Compute_Frequency_Index
 
-END PROGRAM Create_IR_SpcCoeff
+END PROGRAM Create_SpcCoeff_from_SRF
