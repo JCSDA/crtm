@@ -18,6 +18,16 @@ MODULE SensorInfo_Define
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID   , &
+                                   N_SENSOR_TYPES          , &
+                                   INVALID_SENSOR          , &
+                                   MICROWAVE_SENSOR        , &
+                                   INFRARED_SENSOR         , &
+                                   VISIBLE_SENSOR          , &
+                                   ULTRAVIOLET_SENSOR      , &
+                                   SENSOR_TYPE_NAME        , &
+                                   N_POLARIZATION_TYPES
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -27,9 +37,15 @@ MODULE SensorInfo_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Parameters
-  PUBLIC :: INFRARED_SENSOR_TYPE
-  PUBLIC :: MICROWAVE_SENSOR_TYPE
+  ! Parameters (passed through from SensorInfo_Parameters)
+  PUBLIC :: N_SENSOR_TYPES
+  PUBLIC :: INVALID_SENSOR  
+  PUBLIC :: MICROWAVE_SENSOR
+  PUBLIC :: INFRARED_SENSOR 
+  PUBLIC :: VISIBLE_SENSOR  
+  PUBLIC :: ULTRAVIOLET_SENSOR  
+  PUBLIC :: SENSOR_TYPE_NAME
+  PUBLIC :: N_POLARIZATION_TYPES
   ! The derived type definition
   PUBLIC :: SensorInfo_type
   ! Procedures
@@ -61,12 +77,7 @@ MODULE SensorInfo_Define
   INTEGER, PARAMETER :: SL  = 20
   INTEGER, PARAMETER :: SL2 = 12
   ! Default values
-  INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
-  INTEGER, PARAMETER :: INVALID_WMO_SENSOR_ID    = 2047
   INTEGER, PARAMETER :: INVALID = -1
-  ! The IR/uW sensor indicator
-  INTEGER, PARAMETER ::  INFRARED_SENSOR_TYPE = 0
-  INTEGER, PARAMETER :: MICROWAVE_SENSOR_TYPE = 1
 
 
   ! -------------------------------
@@ -83,8 +94,8 @@ MODULE SensorInfo_Define
     CHARACTER(SL) :: Sensor_Id        = ' '
     INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    ! IR/uW sensor flag
-    INTEGER :: Microwave_Flag = INVALID
+    ! Sensor type
+    INTEGER :: Sensor_Type = INVALID_SENSOR
     ! The channel data
     INTEGER , POINTER :: Sensor_Channel(:) => NULL() ! L
     INTEGER , POINTER :: Use_Flag(:)       => NULL() ! L
@@ -656,7 +667,7 @@ CONTAINS
     SensorInfo_out%Sensor_Id        = SensorInfo_in%Sensor_Id
     SensorInfo_out%WMO_Satellite_Id = SensorInfo_in%WMO_Satellite_Id
     SensorInfo_out%WMO_Sensor_Id    = SensorInfo_in%WMO_Sensor_Id
-    SensorInfo_out%Microwave_Flag   = SensorInfo_in%Microwave_Flag
+    SensorInfo_out%Sensor_Type      = SensorInfo_in%Sensor_Type
 
     ! Copy array data
     ! ---------------
@@ -709,7 +720,7 @@ CONTAINS
     SensorInfo%Sensor_Id        = ' '                      
     SensorInfo%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     SensorInfo%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    SensorInfo%Microwave_Flag   = INVALID 
+    SensorInfo%Sensor_Type      = INVALID_SENSOR
   END SUBROUTINE Clear_SensorInfo
 
 END MODULE SensorInfo_Define
