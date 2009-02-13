@@ -20,6 +20,32 @@ MODULE SpcCoeff_Define
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, &
                                    Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID   , &
+                                   N_SENSOR_TYPES          , &
+                                   INVALID_SENSOR          , &
+                                   MICROWAVE_SENSOR        , &
+                                   INFRARED_SENSOR         , &
+                                   VISIBLE_SENSOR          , &
+                                   ULTRAVIOLET_SENSOR      , &
+                                   SENSOR_TYPE_NAME        , &
+                                   N_POLARIZATION_TYPES    , &
+                                   INVALID_POLARIZATION    , &
+                                   UNPOLARIZED             , &
+                                   INTENSITY               , &
+                                   FIRST_STOKES_COMPONENT  , &
+                                   SECOND_STOKES_COMPONENT , &
+                                   THIRD_STOKES_COMPONENT  , &
+                                   FOURTH_STOKES_COMPONENT , &
+                                   VL_POLARIZATION         , &
+                                   HL_POLARIZATION         , &
+                                   plus45L_POLARIZATION    , &
+                                   minus45L_POLARIZATION   , &
+                                   VL_MIXED_POLARIZATION   , &
+                                   HL_MIXED_POLARIZATION   , &
+                                   RC_POLARIZATION         , &
+                                   LC_POLARIZATION         , &
+                                   POLARIZATION_TYPE_NAME
   USE AntCorr_Define       , ONLY: AntCorr_type        , &
                                    Associated_AntCorr  , &
                                    Destroy_AntCorr     , &
@@ -119,55 +145,6 @@ MODULE SpcCoeff_Define
   ! ASCII codes for Version routine
   INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
   INTEGER, PARAMETER :: LINEFEED = 10
-  ! Invalid sensor ids
-  INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
-  INTEGER, PARAMETER :: INVALID_WMO_SENSOR_ID    = 2047
-  ! The instrument types
-  INTEGER, PARAMETER :: N_SENSOR_TYPES     = 4
-  INTEGER, PARAMETER :: INVALID_SENSOR     = 0
-  INTEGER, PARAMETER :: MICROWAVE_SENSOR   = 1
-  INTEGER, PARAMETER :: INFRARED_SENSOR    = 2
-  INTEGER, PARAMETER :: VISIBLE_SENSOR     = 3
-  INTEGER, PARAMETER :: ULTRAVIOLET_SENSOR = 4
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_SENSOR_TYPES ) :: &
-    SENSOR_TYPE_NAME = (/ 'Invalid    ', &
-                          'Microwave  ', &
-                          'Infrared   ', &
-                          'Visible    ', &
-                          'Ultraviolet' /)
-
-  ! The polarisation flags
-  INTEGER, PARAMETER :: N_POLARIZATION_TYPES    = 12
-  INTEGER, PARAMETER :: INVALID_POLARIZATION    = 0
-  INTEGER, PARAMETER :: UNPOLARIZED             = 1
-  INTEGER, PARAMETER :: INTENSITY               = UNPOLARIZED
-  INTEGER, PARAMETER :: FIRST_STOKES_COMPONENT  = UNPOLARIZED
-  INTEGER, PARAMETER :: SECOND_STOKES_COMPONENT = 2
-  INTEGER, PARAMETER :: THIRD_STOKES_COMPONENT  = 3
-  INTEGER, PARAMETER :: FOURTH_STOKES_COMPONENT = 4
-  INTEGER, PARAMETER :: VL_POLARIZATION         = 5
-  INTEGER, PARAMETER :: HL_POLARIZATION         = 6
-  INTEGER, PARAMETER :: plus45L_POLARIZATION    = 7
-  INTEGER, PARAMETER :: minus45L_POLARIZATION   = 8
-  INTEGER, PARAMETER :: VL_MIXED_POLARIZATION   = 9
-  INTEGER, PARAMETER :: HL_MIXED_POLARIZATION   = 10
-  INTEGER, PARAMETER :: RC_POLARIZATION         = 11
-  INTEGER, PARAMETER :: LC_POLARIZATION         = 12
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_POLARIZATION_TYPES ) :: &
-    POLARIZATION_TYPE_NAME = (/ 'Invalid                                          ', &
-                                'Unpolarized/Intensity/First Stokes component (I) ', &
-                                'Second Stokes component (Q)                      ', &
-                                'Third Stokes component (U)                       ', &
-                                'Fourth Stokes component (V)                      ', &
-                                'Vertical linear polarization                     ', &
-                                'Horizontal linear polarization                   ', &
-                                '+45deg. linear polarization                      ', &
-                                '-45deg. linear polarization                      ', &
-                                'Vertical polarization at nadir; mixed off nadir  ', &
-                                'Horizontal polarization at nadir; mixed off nadir', &
-                                'Right circular polarization                      ', &
-                                'Left circular polarization                       ' /)
-
   ! The bit positions for the various channel flags
   INTEGER, PARAMETER :: SOLAR_FLAG  = 0
   INTEGER, PARAMETER :: ZEEMAN_FLAG = 1
