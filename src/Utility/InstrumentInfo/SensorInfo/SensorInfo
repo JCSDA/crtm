@@ -8,18 +8,19 @@
 ! o A sensor information line:
 !   READ FORMAT is '(1x,2(1x,a12),1x,a20,1x,i1,6x,3(1x,i5))'
 !
-!                                                 +--------------------------- Microwave flag
-!    +------------------- Sensor name             |                            (0==IR, 1==MW)
-!    |            +------ Satellite/platform name |
+!
+!    +------------------- Sensor name
+!    |            +------ Satellite/platform name +--------------------------- Sensor Type
 !    |            |  +--- Sensor ID               |          +---------------- WMO sensor ID
 !    |            |  |                            |          |     +---------- WMO satellite ID
 !    |            |  +-------------+              |          |     |      +--- No. of channels
 !    |            |                |              |          |     |      |
-!  HIRS/3       NOAA-17      hirs3_n17            0         606   208    19
+!  HIRS/3       NOAA-17      hirs3_n17            2         606   208    19
 !  AMSU-A       NOAA-17      amsua_n17            1         570   208    15
 !  AMSU-B       NOAA-17      amsub_n17            1         574   208     5
-!  AIRS         AQUA         airs281SUBSET_aqua   0         420   784   281
-!  MODIS        TERRA        modisD08_terra       0         389   783    16
+!  AVHRR/3      NOAA-19      v.avhrr3_n19         3         591   223     3
+!  AIRS         AQUA         airs281SUBSET_aqua   2         420   784   281
+!  MODIS        TERRA        modisD08_terra       2         389   783    16
 !
 ! o A channel information line for each sensor channel:
 !   READ FORMAT is '(i5,3x,i2,5x,es13.6)'
@@ -52,44 +53,38 @@
 ! o The Sensor ID string is used throughout CRTM and ancillary codes to
 !   identify sensor/satellite combinations and for sensor-specific file names.
 !
+! o Sensor ID strings that begin with "v." signify the visible channel portion
+!   of predominantly infrared instruments.
+!
 ! o MODIS Terra and Aqua has entries for the band-averaged SRFs and
 !   for each detector (10). Thus there are 11 separate MODIS entries
 !   for Terra and Aqua.
 !
-! o GOES-N(13) Sounder has entries for the band-averaged SRFs and
+! o GOES 08-15 Sounder have entries for the band-averaged SRFs and
 !   for each detector (4). Thus there are 5 separate Sounder entries
-!   for GOES-N(13).
+!   for each GOES 08-15 platform.
 !
-! o GOES-N(13) Imager has entries for the band-averaged SRFs and
+! o GOES 08-15 Imager has entries for the band-averaged SRFs and
 !   for each detector (2) *for each electonic side* (2). Thus there are 6
-!   separate Imager entries for GOES-N(13). Note channel 6 has only one
-!   detector, not two. Once the instrument is in orbit and an operational
+!   separate Imager entries for GOES 08-15. Note that in some cases, channel 6 has
+!   only one detector, not two. Once the instrument is in orbit and an operational
 !   electronic side is decided upon, the averaged entries for each electronic
 !   side will be replaced with a single "generic" entry.
 !
 !-----------------------------------------------------------------------------------
-  AATSR        ENVISAT      aatsr_envisat        0          10    60     3
+  AATSR        ENVISAT      aatsr_envisat        2          10    60     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  ATSR-1       ERS-1        atsr1_ers1           0          11     1     3
+  ATSR-1       ERS-1        atsr1_ers1           2          11     1     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  ATSR-2       ERS-2        atsr2_ers2           0          12     2     3
+  ATSR-2       ERS-2        atsr2_ers2           2          12     2     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  VTPR         ITOS         vtprS1_itos          0        2047  1023     8
-    1    1      1.000000E+02
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    5    1      1.000000E+02
-    6    1      1.000000E+02
-    7    1      1.000000E+02
-    8    1      1.000000E+02
-  VTPR         ITOS         vtprS2_itos          0        2047  1023     8
+  VTPR         ITOS         vtprS1_itos          2        2047  1023     8
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -98,7 +93,7 @@
     6    1      1.000000E+02
     7    1      1.000000E+02
     8    1      1.000000E+02
-  VTPR         ITOS         vtprS3_itos          0        2047  1023     8
+  VTPR         ITOS         vtprS2_itos          2        2047  1023     8
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -107,7 +102,7 @@
     6    1      1.000000E+02
     7    1      1.000000E+02
     8    1      1.000000E+02
-  VTPR         ITOS         vtprS4_itos          0        2047  1023     8
+  VTPR         ITOS         vtprS3_itos          2        2047  1023     8
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -116,7 +111,16 @@
     6    1      1.000000E+02
     7    1      1.000000E+02
     8    1      1.000000E+02
-  HIRS/2       TIROS-N      hirs2_tirosn         0         605   708    19
+  VTPR         ITOS         vtprS4_itos          2        2047  1023     8
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+    8    1      1.000000E+02
+  HIRS/2       TIROS-N      hirs2_tirosn         2         605   708    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -141,17 +145,17 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          TIROS-N      ssu_tirosn           0         627   708     3
+  SSU          TIROS-N      ssu_tirosn           2         627   708     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      TIROS-N      avhrr2_tirosn        0         590   708     2
+  AVHRR/2      TIROS-N      avhrr2_tirosn        2         590   708     2
     3    1      1.000000E+02
     4    1      1.000000E+02
-  AVHRR/2      TIROS-N      v.avhrr2_tirosn      0         590   708     2
+  AVHRR/2      TIROS-N      v.avhrr2_tirosn      3         590   708     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-06      hirs2_n06            0         605   706    19
+  HIRS/2       NOAA-06      hirs2_n06            2         605   706    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -176,17 +180,17 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          NOAA-06      ssu_n06              0         627   706     3
+  SSU          NOAA-06      ssu_n06              2         627   706     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      NOAA-06      avhrr2_n06           0         590   706     2
+  AVHRR/2      NOAA-06      avhrr2_n06           2         590   706     2
     3    1      1.000000E+02
     4    1      1.000000E+02
-  AVHRR/2      NOAA-06      v.avhrr2_n06         0         590   706     2
+  AVHRR/2      NOAA-06      v.avhrr2_n06         3         590   706     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-07      hirs2_n07            0         605   707    19
+  HIRS/2       NOAA-07      hirs2_n07            2         605   707    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -211,18 +215,18 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          NOAA-07      ssu_n07              0         627   707     3
+  SSU          NOAA-07      ssu_n07              2         627   707     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      NOAA-07      avhrr2_n07           0         590   707     3
+  AVHRR/2      NOAA-07      avhrr2_n07           2         590   707     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/2      NOAA-07      v.avhrr2_n07         0         590   707     2
+  AVHRR/2      NOAA-07      v.avhrr2_n07         3         590   707     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-08      hirs2_n08            0         605   200    19
+  HIRS/2       NOAA-08      hirs2_n08            2         605   200    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -247,17 +251,17 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          NOAA-08      ssu_n08              0         627   200     3
+  SSU          NOAA-08      ssu_n08              2         627   200     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      NOAA-08      avhrr2_n08           0         590   200     2
+  AVHRR/2      NOAA-08      avhrr2_n08           2         590   200     2
     3    1      1.000000E+02
     4    1      1.000000E+02
-  AVHRR/2      NOAA-08      v.avhrr2_n08         0         590   200     2
+  AVHRR/2      NOAA-08      v.avhrr2_n08         3         590   200     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-09      hirs2_n09            0         605   201    19
+  HIRS/2       NOAA-09      hirs2_n09            2         605   201    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -282,18 +286,18 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          NOAA-09      ssu_n09              0         627   201     3
+  SSU          NOAA-09      ssu_n09              2         627   201     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      NOAA-09      avhrr2_n09           0         590   201     3
+  AVHRR/2      NOAA-09      avhrr2_n09           2         590   201     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/2      NOAA-09      v.avhrr2_n09         0         590   201     2
+  AVHRR/2      NOAA-09      v.avhrr2_n09         3         590   201     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-10      hirs2_n10            0         605   202    19
+  HIRS/2       NOAA-10      hirs2_n10            2         605   202    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -318,13 +322,13 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  AVHRR/2      NOAA-10      avhrr2_n10           0         590   202     2
+  AVHRR/2      NOAA-10      avhrr2_n10           2         590   202     2
     3    1      1.000000E+02
     4    1      1.000000E+02
-  AVHRR/2      NOAA-10      v.avhrr2_n10         0         590   202     2
+  AVHRR/2      NOAA-10      v.avhrr2_n10         3         590   202     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-11      hirs2_n11            0         605   203    19
+  HIRS/2       NOAA-11      hirs2_n11            2         605   203    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -349,18 +353,18 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  SSU          NOAA-11      ssu_n11              0         627   203     3
+  SSU          NOAA-11      ssu_n11              2         627   203     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      NOAA-11      avhrr2_n11           0         590   203     3
+  AVHRR/2      NOAA-11      avhrr2_n11           2         590   203     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/2      NOAA-11      v.avhrr2_n11         0         590   203     2
+  AVHRR/2      NOAA-11      v.avhrr2_n11         3         590   203     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-12      hirs2_n12            0         605   204    19
+  HIRS/2       NOAA-12      hirs2_n12            2         605   204    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -385,14 +389,14 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  AVHRR/2      NOAA-12      avhrr2_n12           0         590   204     3
+  AVHRR/2      NOAA-12      avhrr2_n12           2         590   204     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/2      NOAA-12      v.avhrr2_n12         0         590   204     2
+  AVHRR/2      NOAA-12      v.avhrr2_n12         3         590   204     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/2       NOAA-14      hirs2_n14            0         605   205    19
+  HIRS/2       NOAA-14      hirs2_n14            2         605   205    19
     1    1      1.000000E+02
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -417,18 +421,18 @@
     2    1      3.050000E-01
     3    1      2.400000E-01
     4    1      2.900000E-01
-  SSU          NOAA-14      ssu_n14              0         627   205     3
+  SSU          NOAA-14      ssu_n14              2         627   205     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/2      NOAA-14      avhrr2_n14           0         590   205     3
+  AVHRR/2      NOAA-14      avhrr2_n14           2         590   205     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/2      NOAA-14      v.avhrr2_n14         0         590   205     2
+  AVHRR/2      NOAA-14      v.avhrr2_n14         3         590   205     2
     1    1      1.000000E+02
     2    1      1.000000E+02
-  HIRS/3       NOAA-15      hirs3_n15            0         606   206    19
+  HIRS/3       NOAA-15      hirs3_n15            2         606   206    19
     1    1      1.000000E+02
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -470,15 +474,15 @@
     3    1      3.500000E+00
     4    1      3.000000E+00
     5    1      2.800000E+00
-  AVHRR/3      NOAA-15      avhrr3_n15           0         591   206     3
+  AVHRR/3      NOAA-15      avhrr3_n15           2         591   206     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-15      v.avhrr3_n15         0         591   206     3
+  AVHRR/3      NOAA-15      v.avhrr3_n15         3         591   206     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  HIRS/3       NOAA-16      hirs3_n16            0         606   207    19
+  HIRS/3       NOAA-16      hirs3_n16            2         606   207    19
     1    1      1.000000E+02
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -520,15 +524,15 @@
     3    1      3.500000E+00
     4    1      3.000000E+00
     5    1      2.800000E+00
-  AVHRR/3      NOAA-16      avhrr3_n16           0         591   207     3
+  AVHRR/3      NOAA-16      avhrr3_n16           2         591   207     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-16      v.avhrr3_n16         0         591   207     3
+  AVHRR/3      NOAA-16      v.avhrr3_n16         3         591   207     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  HIRS/3       NOAA-17      hirs3_n17            0         606   208    19
+  HIRS/3       NOAA-17      hirs3_n17            2         606   208    19
     1    1      1.000000E+02
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -570,19 +574,19 @@
     3    1      3.500000E+00
     4    1      3.000000E+00
     5    1      2.800000E+00
-  AVHRR/3      NOAA-17      avhrr3_n17           0         591   208     3
+  AVHRR/3      NOAA-17      avhrr3_n17           2         591   208     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-17      v.avhrr3_n17         0         591   208     3
+  AVHRR/3      NOAA-17      v.avhrr3_n17         3         591   208     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/3      NOAA-17      avhrr3JM_n17         0         591   208     3
+  AVHRR/3      NOAA-17      avhrr3JM_n17         2         591   208     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  HIRS/4       NOAA-18      hirs4_n18            0         607   209    19
+  HIRS/4       NOAA-18      hirs4_n18            2         607   209    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -624,19 +628,19 @@
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-18      avhrr3_n18           0         591   209     3
+  AVHRR/3      NOAA-18      avhrr3_n18           2         591   209     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-18      v.avhrr3_n18         0         591   209     3
+  AVHRR/3      NOAA-18      v.avhrr3_n18         3         591   209     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  AVHRR/3      NOAA-18      avhrr3JM_n18         0         591   209     3
+  AVHRR/3      NOAA-18      avhrr3JM_n18         2         591   209     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  HIRS/4       NOAA-19      hirs4_n19            0         607   223    19
+  HIRS/4       NOAA-19      hirs4_n19            2         607   223    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -678,15 +682,15 @@
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-19      avhrr3_n19           0         591   223     3
+  AVHRR/3      NOAA-19      avhrr3_n19           2         591   223     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      NOAA-19      v.avhrr3_n19         0         591   223     3
+  AVHRR/3      NOAA-19      v.avhrr3_n19         3         591   223     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
-  HIRS/4       MetOp-A      hirs4_metop-a        0         607     4    19
+  HIRS/4       MetOp-A      hirs4_metop-a        2         607     4    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -706,11 +710,11 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  AVHRR/3      MetOp-A      avhrr3_metop-a       0         591     4     3
+  AVHRR/3      MetOp-A      avhrr3_metop-a       2         591     4     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  AVHRR/3      MetOp-A      v.avhrr3_metop-a     0         591     4     3
+  AVHRR/3      MetOp-A      v.avhrr3_metop-a     3         591     4     3
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -780,7 +784,7 @@
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VAS          GOES-04      vas_g04              0         630   734    12
+  VAS          GOES-04      vas_g04              2         630   734    12
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -793,7 +797,7 @@
    10    1      1.000000E+02
    11    1      1.000000E+02
    12    1      1.000000E+02
-  VAS          GOES-05      vas_g05              0         630   735    12
+  VAS          GOES-05      vas_g05              2         630   735    12
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -806,7 +810,7 @@
    10    1      1.000000E+02
    11    1      1.000000E+02
    12    1      1.000000E+02
-  VAS          GOES-06      vas_g06              0         630   250    12
+  VAS          GOES-06      vas_g06              2         630   250    12
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -819,7 +823,7 @@
    10    1      1.000000E+02
    11    1      1.000000E+02
    12    1      1.000000E+02
-  VAS          GOES-07      vas_g07              0         630   251    12
+  VAS          GOES-07      vas_g07              2         630   251    12
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -832,7 +836,7 @@
    10    1      1.000000E+02
    11    1      1.000000E+02
    12    1      1.000000E+02
-  SOUNDER      GOES-08      sndr_g08             0         626   252    18
+  SOUNDER      GOES-08      sndr_g08             2         626   252    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -851,7 +855,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-08      sndrD1_g08           0         626   252    18
+  SOUNDER      GOES-08      sndrD1_g08           2         626   252    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -870,7 +874,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-08      sndrD2_g08           0         626   252    18
+  SOUNDER      GOES-08      sndrD2_g08           2         626   252    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -889,7 +893,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-08      sndrD3_g08           0         626   252    18
+  SOUNDER      GOES-08      sndrD3_g08           2         626   252    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -908,7 +912,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-08      sndrD4_g08           0         626   252    18
+  SOUNDER      GOES-08      sndrD4_g08           2         626   252    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -927,49 +931,49 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-08      v.sndr_g08           0         626   252     1
+  SOUNDER      GOES-08      v.sndr_g08           3         626   252     1
    19    1      1.000000E+02
-  SOUNDER      GOES-08      v.sndrD1_g08         0         626   252     1
+  SOUNDER      GOES-08      v.sndrD1_g08         3         626   252     1
    19    1      1.000000E+02
-  SOUNDER      GOES-08      v.sndrD2_g08         0         626   252     1
+  SOUNDER      GOES-08      v.sndrD2_g08         3         626   252     1
    19    1      1.000000E+02
-  SOUNDER      GOES-08      v.sndrD3_g08         0         626   252     1
+  SOUNDER      GOES-08      v.sndrD3_g08         3         626   252     1
    19    1      1.000000E+02
-  SOUNDER      GOES-08      v.sndrD4_g08         0         626   252     1
+  SOUNDER      GOES-08      v.sndrD4_g08         3         626   252     1
    19    1      1.000000E+02
-  IMAGER       GOES-08      imgr_g08             0         615   252     4
+  IMAGER       GOES-08      imgr_g08             2         615   252     4
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
     5    1      3.000000E+00
-  IMAGER       GOES-08      imgrD1_g08           0         615   252     4
+  IMAGER       GOES-08      imgrD1_g08           2         615   252     4
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
     5    1      3.000000E+00
-  IMAGER       GOES-08      imgrD2_g08           0         615   252     3
+  IMAGER       GOES-08      imgrD2_g08           2         615   252     3
     2    1      2.000000E+00
     4    1      3.000000E+00
     5    1      3.000000E+00
-  IMAGER       GOES-08      v.imgr_g08           0         615   252     1
+  IMAGER       GOES-08      v.imgr_g08           3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD1_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD1_g08         3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD2_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD2_g08         3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD3_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD3_g08         3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD4_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD4_g08         3         615   252     1
     1    1      1.000000E+02
- IMAGER        GOES-08      v.imgrD5_g08         0         615   252     1
+ IMAGER        GOES-08      v.imgrD5_g08         3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD6_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD6_g08         3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD7_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD7_g08         3         615   252     1
     1    1      1.000000E+02
-  IMAGER       GOES-08      v.imgrD8_g08         0         615   252     1
+  IMAGER       GOES-08      v.imgrD8_g08         3         615   252     1
     1    1      1.000000E+02 
-  SOUNDER      GOES-09      sndr_g09             0         626   253    18
+  SOUNDER      GOES-09      sndr_g09             2         626   253    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -988,7 +992,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-09      sndrD1_g09           0         626   253    18
+  SOUNDER      GOES-09      sndrD1_g09           2         626   253    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1007,7 +1011,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-09      sndrD2_g09           0         626   253    18
+  SOUNDER      GOES-09      sndrD2_g09           2         626   253    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1026,7 +1030,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-09      sndrD3_g09           0         626   253    18
+  SOUNDER      GOES-09      sndrD3_g09           2         626   253    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1045,7 +1049,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-09      sndrD4_g09           0         626   253    18
+  SOUNDER      GOES-09      sndrD4_g09           2         626   253    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1064,49 +1068,49 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-09      v.sndr_g09           0         626   253     1
+  SOUNDER      GOES-09      v.sndr_g09           3         626   253     1
    19    1      1.000000E+02
-  SOUNDER      GOES-09      v.sndrD1_g09         0         626   253     1
+  SOUNDER      GOES-09      v.sndrD1_g09         3         626   253     1
    19    1      1.000000E+02
-  SOUNDER      GOES-09      v.sndrD2_g09         0         626   253     1
+  SOUNDER      GOES-09      v.sndrD2_g09         3         626   253     1
    19    1      1.000000E+02
-  SOUNDER      GOES-09      v.sndrD3_g09         0         626   253     1
+  SOUNDER      GOES-09      v.sndrD3_g09         3         626   253     1
    19    1      1.000000E+02
-  SOUNDER      GOES-09      v.sndrD4_g09         0         626   253     1
+  SOUNDER      GOES-09      v.sndrD4_g09         3         626   253     1
    19    1      1.000000E+02
-  IMAGER       GOES-09      imgr_g09             0         615   253     4
+  IMAGER       GOES-09      imgr_g09             2         615   253     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       GOES-09      imgrD1_g09           0         615   253     4
+  IMAGER       GOES-09      imgrD1_g09           2         615   253     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       GOES-09      imgrD2_g09           0         615   253     3
+  IMAGER       GOES-09      imgrD2_g09           2         615   253     3
     2    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       GOES-09      v.imgr_g09           0         615   253     1
+  IMAGER       GOES-09      v.imgr_g09           3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD1_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD1_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD2_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD2_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD3_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD3_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD4_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD4_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD5_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD5_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD6_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD6_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD7_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD7_g09         3         615   253     1
     1    1      1.000000E+02
-  IMAGER       GOES-09      v.imgrD8_g09         0         615   253     1
+  IMAGER       GOES-09      v.imgrD8_g09         3         615   253     1
     1    1      1.000000E+02
-  SOUNDER      GOES-10      sndr_g10             0         626   254    18
+  SOUNDER      GOES-10      sndr_g10             2         626   254    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1125,7 +1129,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-10      sndrD1_g10           0         626   254    18
+  SOUNDER      GOES-10      sndrD1_g10           2         626   254    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1144,7 +1148,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-10      sndrD2_g10           0         626   254    18
+  SOUNDER      GOES-10      sndrD2_g10           2         626   254    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1163,7 +1167,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-10      sndrD3_g10           0         626   254    18
+  SOUNDER      GOES-10      sndrD3_g10           2         626   254    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1182,7 +1186,7 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-10      sndrD4_g10           0         626   254    18
+  SOUNDER      GOES-10      sndrD4_g10           2         626   254    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1201,49 +1205,49 @@
    16    1      4.350000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-10      v.sndr_g10           0         626   254     1
+  SOUNDER      GOES-10      v.sndr_g10           3         626   254     1
    19    1      1.000000E+02
-  SOUNDER      GOES-10      v.sndrD1_g10         0         626   254     1
+  SOUNDER      GOES-10      v.sndrD1_g10         3         626   254     1
    19    1      1.000000E+02
-  SOUNDER      GOES-10      v.sndrD2_g10         0         626   254     1
+  SOUNDER      GOES-10      v.sndrD2_g10         3         626   254     1
    19    1      1.000000E+02
-  SOUNDER      GOES-10      v.sndrD3_g10         0         626   254     1
+  SOUNDER      GOES-10      v.sndrD3_g10         3         626   254     1
    19    1      1.000000E+02
-  SOUNDER      GOES-10      v.sndrD4_g10         0         626   254     1
+  SOUNDER      GOES-10      v.sndrD4_g10         3         626   254     1
    19    1      1.000000E+02
-  IMAGER       GOES-10      imgr_g10             0         615   254     4
+  IMAGER       GOES-10      imgr_g10             2         615   254     4
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
     5    1      3.000000E+00
-  IMAGER       GOES-10      imgrD1_g10           0         615   254     4
+  IMAGER       GOES-10      imgrD1_g10           2         615   254     4
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
     5    1      3.000000E+00
-  IMAGER       GOES-10      imgrD2_g10           0         615   254     3
+  IMAGER       GOES-10      imgrD2_g10           2         615   254     3
     2    1      2.000000E+00
     4    1      3.000000E+00
     5    1      3.000000E+00
-  IMAGER       GOES-10      v.imgr_g10           0         615   254     1
+  IMAGER       GOES-10      v.imgr_g10           3         615   254     1
     1    1      1.000000E+02
-  IMAGER       GOES-10      v.imgrD1_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD1_g10         3         615   254     1
     1    1      1.000000E+02
-  IMAGER       GOES-10      v.imgrD2_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD2_g10         3         615   254     1
     1    1      1.000000E+02 
-  IMAGER       GOES-10      v.imgrD3_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD3_g10         3         615   254     1
     1    1      1.000000E+02
-  IMAGER       GOES-10      v.imgrD4_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD4_g10         3         615   254     1
     1    1      1.000000E+02
-  IMAGER       GOES-10      v.imgrD5_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD5_g10         3         615   254     1
     1    1      1.000000E+02
-  IMAGER       GOES-10      v.imgrD6_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD6_g10         3         615   254     1
     1    1      1.000000E+02 
-  IMAGER       GOES-10      v.imgrD7_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD7_g10         3         615   254     1
     1    1      1.000000E+02
-  IMAGER       GOES-10      v.imgrD8_g10         0         615   254     1
+  IMAGER       GOES-10      v.imgrD8_g10         3         615   254     1
     1    1      1.000000E+02  
-  SOUNDER      GOES-11      sndr_g11             0         626   255    18
+  SOUNDER      GOES-11      sndr_g11             2         626   255    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1262,7 +1266,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-11      sndrD1_g11           0         626   255    18
+  SOUNDER      GOES-11      sndrD1_g11           2         626   255    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1281,7 +1285,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-11      sndrD2_g11           0         626   255    18
+  SOUNDER      GOES-11      sndrD2_g11           2         626   255    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1300,7 +1304,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-11      sndrD3_g11           0         626   255    18
+  SOUNDER      GOES-11      sndrD3_g11           2         626   255    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1319,7 +1323,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-11      sndrD4_g11           0         626   255    18
+  SOUNDER      GOES-11      sndrD4_g11           2         626   255    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1338,49 +1342,49 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-11      v.sndr_g11           0         626   255     1
+  SOUNDER      GOES-11      v.sndr_g11           3         626   255     1
    19    1      1.000000E+02
-  SOUNDER      GOES-11      v.sndrD1_g11         0         626   255     1
+  SOUNDER      GOES-11      v.sndrD1_g11         3         626   255     1
    19    1      1.000000E+02
-  SOUNDER      GOES-11      v.sndrD2_g11         0         626   255     1
+  SOUNDER      GOES-11      v.sndrD2_g11         3         626   255     1
    19    1      1.000000E+02
-  SOUNDER      GOES-11      v.sndrD3_g11         0         626   255     1
+  SOUNDER      GOES-11      v.sndrD3_g11         3         626   255     1
    19    1      1.000000E+02
-  SOUNDER      GOES-11      v.sndrD4_g11         0         626   255     1
+  SOUNDER      GOES-11      v.sndrD4_g11         3         626   255     1
    19    1      1.000000E+02
-  IMAGER       GOES-11      imgr_g11             0         615   255     4
+  IMAGER       GOES-11      imgr_g11             2         615   255     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       GOES-11      imgrD1_g11           0         615   255     4
+  IMAGER       GOES-11      imgrD1_g11           2         615   255     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       GOES-11      imgrD2_g11           0         615   255     3
+  IMAGER       GOES-11      imgrD2_g11           2         615   255     3
     2    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       GOES-11      v.imgr_g11           0         615   255     1
+  IMAGER       GOES-11      v.imgr_g11           3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD1_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD1_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD2_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD2_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD3_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD3_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD4_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD4_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD5_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD5_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD6_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD6_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD7_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD7_g11         3         615   255     1
     1    1      1.000000E+02
-  IMAGER       GOES-11      v.imgrD8_g11         0         615   255     1
+  IMAGER       GOES-11      v.imgrD8_g11         3         615   255     1
     1    1      1.000000E+02
-  SOUNDER      GOES-12      sndr_g12             0         626   256    18
+  SOUNDER      GOES-12      sndr_g12             2         626   256    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1399,7 +1403,7 @@
    16    1      4.400000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-12      sndrD1_g12           0         626   256    18
+  SOUNDER      GOES-12      sndrD1_g12           2         626   256    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1418,7 +1422,7 @@
    16    1      4.400000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-12      sndrD2_g12           0         626   256    18
+  SOUNDER      GOES-12      sndrD2_g12           2         626   256    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1437,7 +1441,7 @@
    16    1      4.400000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-12      sndrD3_g12           0         626   256    18
+  SOUNDER      GOES-12      sndrD3_g12           2         626   256    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1456,7 +1460,7 @@
    16    1      4.400000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-12      sndrD4_g12           0         626   256    18
+  SOUNDER      GOES-12      sndrD4_g12           2         626   256    18
     1    1      4.500000E+00
     2    1      4.100000E-01
     3    1      3.600000E-01
@@ -1475,49 +1479,49 @@
    16    1      4.400000E-01
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-12      v.sndr_g12           0         626   256     1
+  SOUNDER      GOES-12      v.sndr_g12           3         626   256     1
    19    1      1.000000E+02
-  SOUNDER      GOES-12      v.sndrD1_g12         0         626   256     1
+  SOUNDER      GOES-12      v.sndrD1_g12         3         626   256     1
    19    1      1.000000E+02
-  SOUNDER      GOES-12      v.sndrD2_g12         0         626   256     1
+  SOUNDER      GOES-12      v.sndrD2_g12         3         626   256     1
    19    1      1.000000E+02
-  SOUNDER      GOES-12      v.sndrD3_g12         0         626   256     1
+  SOUNDER      GOES-12      v.sndrD3_g12         3         626   256     1
    19    1      1.000000E+02
-  SOUNDER      GOES-12      v.sndrD4_g12         0         626   256     1
+  SOUNDER      GOES-12      v.sndrD4_g12         3         626   256     1
    19    1      1.000000E+02
-  IMAGER       GOES-12      imgr_g12             0         615   256     4
+  IMAGER       GOES-12      imgr_g12             2         615   256     4
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
     6    1      3.000000E+00
-  IMAGER       GOES-12      imgrD1_g12           0         615   256     4
+  IMAGER       GOES-12      imgrD1_g12           2         615   256     4
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
     6    1      3.000000E+00
-  IMAGER       GOES-12      imgrD2_g12           0         615   256     3
+  IMAGER       GOES-12      imgrD2_g12           2         615   256     3
     2    1      2.000000E+00
     3    1      1.400000E+00
     4    1      3.000000E+00
-  IMAGER       GOES-12      v.imgr_g12           0         615   256     1
+  IMAGER       GOES-12      v.imgr_g12           3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD1_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD1_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD2_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD2_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD3_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD3_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD4_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD4_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD5_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD5_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD6_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD6_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD7_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD7_g12         3         615   256     1
     1    1      1.000000E+00
-  IMAGER       GOES-12      v.imgrD8_g12         0         615   256     1
+  IMAGER       GOES-12      v.imgrD8_g12         3         615   256     1
     1    1      1.000000E+00
-  SOUNDER      GOES-13      sndr_g13             0         626   257    18
+  SOUNDER      GOES-13      sndr_g13             2         626   257    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1536,7 +1540,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-13      sndrD1_g13           0         626   257    18
+  SOUNDER      GOES-13      sndrD1_g13           2         626   257    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1555,7 +1559,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-13      sndrD2_g13           0         626   257    18
+  SOUNDER      GOES-13      sndrD2_g13           2         626   257    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1574,7 +1578,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-13      sndrD3_g13           0         626   257    18
+  SOUNDER      GOES-13      sndrD3_g13           2         626   257    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1593,7 +1597,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-13      sndrD4_g13           0         626   257    18
+  SOUNDER      GOES-13      sndrD4_g13           2         626   257    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1612,68 +1616,49 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-13      v.sndr_g13           0         626   257     1 
+  SOUNDER      GOES-13      v.sndr_g13           3         626   257     1 
    19    1      1.000000E+02
-  SOUNDER      GOES-13      v.sndrD1_g13         0         626   257     1 
+  SOUNDER      GOES-13      v.sndrD1_g13         3         626   257     1 
    19    1      1.000000E+02
-  SOUNDER      GOES-13      v.sndrD2_g13         0         626   257     1 
+  SOUNDER      GOES-13      v.sndrD2_g13         3         626   257     1 
    19    1      1.000000E+02
-  SOUNDER      GOES-13      v.sndrD3_g13         0         626   257     1 
+  SOUNDER      GOES-13      v.sndrD3_g13         3         626   257     1 
    19    1      1.000000E+02
-  SOUNDER      GOES-13      v.sndrD4_g13         0         626   257     1 
+  SOUNDER      GOES-13      v.sndrD4_g13         3         626   257     1 
    19    1      1.000000E+02
-  IMAGER       GOES-13      imgr_g13             0         615   257     4
+  IMAGER       GOES-13      imgr_g13             2         615   257     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-13      imgrD1_g13           0         615   257     4
+  IMAGER       GOES-13      imgrD1_g13           2         615   257     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-13      imgrD2_g13           0         615   257     3
+  IMAGER       GOES-13      imgrD2_g13           2         615   257     3
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  IMAGER       GOES-13      v.imgr_g13           0         615   257     1
+  IMAGER       GOES-13      v.imgr_g13           3         615   257     1
     1    1      1.000000E+02
-  IMAGER       GOES-13      v.imgrD1_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD1_g13         3         615   257     1
     1    1      1.000000E+02
-  IMAGER       GOES-13      v.imgrD2_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD2_g13         3         615   257     1
     1    1      1.000000E+02  
-  IMAGER       GOES-13      v.imgrD3_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD3_g13         3         615   257     1
     1    1      1.000000E+02
-  IMAGER       GOES-13      v.imgrD4_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD4_g13         3         615   257     1
     1    1      1.000000E+02
-  IMAGER       GOES-13      v.imgrD5_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD5_g13         3         615   257     1
     1    1      1.000000E+02
-  IMAGER       GOES-13      v.imgrD6_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD6_g13         3         615   257     1
     1    1      1.000000E+02  
-  IMAGER       GOES-13      v.imgrD7_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD7_g13         3         615   257     1
     1    1      1.000000E+02
-  IMAGER       GOES-13      v.imgrD8_g13         0         615   257     1
+  IMAGER       GOES-13      v.imgrD8_g13         3         615   257     1
     1    1      1.000000E+02
-  SOUNDER      GOES-14      sndr_g14             0         626   258    18
-    1    1      1.000000E+02
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    5    1      1.000000E+02
-    6    1      1.000000E+02
-    7    1      1.000000E+02
-    8    1      1.000000E+02
-    9    1      1.000000E+02
-   10    1      1.000000E+02
-   11    1      1.000000E+02
-   12    1      1.000000E+02
-   13    1      1.000000E+02
-   14    1      1.000000E+02
-   15    1      1.000000E+02
-   16    1      1.000000E+02
-   17    1      1.000000E+02
-   18    1      1.000000E+02
-  SOUNDER      GOES-14      sndrD1_g14           0         626   258    18
+  SOUNDER      GOES-14      sndr_g14             2         626   258    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1692,7 +1677,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-14      sndrD2_g14           0         626   258    18
+  SOUNDER      GOES-14      sndrD1_g14           2         626   258    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1711,7 +1696,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-14      sndrD3_g14           0         626   258    18
+  SOUNDER      GOES-14      sndrD2_g14           2         626   258    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1730,7 +1715,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-14      sndrD4_g14           0         626   258    18
+  SOUNDER      GOES-14      sndrD3_g14           2         626   258    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1749,92 +1734,92 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndr_g14           0         626   258     2
-   19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD1_g14         0         626   258     2
-   19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD2_g14         0         626   258     2
-   19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD3_g14         0         626   258     2
-   19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD4_g14         0         626   258     2
-   19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD5_g14         0         626   258     1
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD6_g14         0         626   258     1
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD7_g14         0         626   258     1
-   20    1      1.000000E+02
-  SOUNDER      GOES-14      v.sndrD8_g14         0         626   258     1
-   20    1      1.000000E+02
-  IMAGER       GOES-14      imgr_g14             0         615   258     4
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    6    1      1.000000E+02
-  IMAGER       GOES-14      imgrD1_g14           0         615   258     4
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    6    1      1.000000E+02
-  IMAGER       GOES-14      imgrD2_g14           0         615   258     4
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    6    1      1.000000E+02
-  IMAGER       GOES-14      imgrD3_g14           0         615   258     4
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    6    1      1.000000E+02
-  IMAGER       GOES-14      imgrD4_g14           0         615   258     4
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    6    1      1.000000E+02
-  IMAGER       GOES-14      v.imgr_g14           0         615   258     1
+  SOUNDER      GOES-14      sndrD4_g14           2         626   258    18
     1    1      1.000000E+02
-  IMAGER       GOES-14      v.imgrD1_g14         0         615   258     1
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+    8    1      1.000000E+02
+    9    1      1.000000E+02
+   10    1      1.000000E+02
+   11    1      1.000000E+02
+   12    1      1.000000E+02
+   13    1      1.000000E+02
+   14    1      1.000000E+02
+   15    1      1.000000E+02
+   16    1      1.000000E+02
+   17    1      1.000000E+02
+   18    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndr_g14           3         626   258     2
+   19    1      1.000000E+02
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD1_g14         3         626   258     2
+   19    1      1.000000E+02
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD2_g14         3         626   258     2
+   19    1      1.000000E+02
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD3_g14         3         626   258     2
+   19    1      1.000000E+02
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD4_g14         3         626   258     2
+   19    1      1.000000E+02
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD5_g14         3         626   258     1
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD6_g14         3         626   258     1
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD7_g14         3         626   258     1
+   20    1      1.000000E+02
+  SOUNDER      GOES-14      v.sndrD8_g14         3         626   258     1
+   20    1      1.000000E+02
+  IMAGER       GOES-14      imgr_g14             2         615   258     4
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    6    1      1.000000E+02
+  IMAGER       GOES-14      imgrD1_g14           2         615   258     4
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    6    1      1.000000E+02
+  IMAGER       GOES-14      imgrD2_g14           2         615   258     4
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    6    1      1.000000E+02
+  IMAGER       GOES-14      imgrD3_g14           2         615   258     4
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    6    1      1.000000E+02
+  IMAGER       GOES-14      imgrD4_g14           2         615   258     4
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    6    1      1.000000E+02
+  IMAGER       GOES-14      v.imgr_g14           3         615   258     1
     1    1      1.000000E+02
-  IMAGER       GOES-14      v.imgrD2_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD1_g14         3         615   258     1
+    1    1      1.000000E+02
+  IMAGER       GOES-14      v.imgrD2_g14         3         615   258     1
     1    1      1.000000E+02  
-  IMAGER       GOES-14      v.imgrD3_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD3_g14         3         615   258     1
     1    1      1.000000E+02
-  IMAGER       GOES-14      v.imgrD4_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD4_g14         3         615   258     1
     1    1      1.000000E+02
-  IMAGER       GOES-14      v.imgrD5_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD5_g14         3         615   258     1
     1    1      1.000000E+02
-  IMAGER       GOES-14      v.imgrD6_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD6_g14         3         615   258     1
     1    1      1.000000E+02  
-  IMAGER       GOES-14      v.imgrD7_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD7_g14         3         615   258     1
     1    1      1.000000E+02
-  IMAGER       GOES-14      v.imgrD8_g14         0         615   258     1
+  IMAGER       GOES-14      v.imgrD8_g14         3         615   258     1
     1    1      1.000000E+02
-  SOUNDER      GOES-15      sndr_g15             0         626   259    18
-    1    1      1.000000E+02
-    2    1      1.000000E+02
-    3    1      1.000000E+02
-    4    1      1.000000E+02
-    5    1      1.000000E+02
-    6    1      1.000000E+02
-    7    1      1.000000E+02
-    8    1      1.000000E+02
-    9    1      1.000000E+02
-   10    1      1.000000E+02
-   11    1      1.000000E+02
-   12    1      1.000000E+02
-   13    1      1.000000E+02
-   14    1      1.000000E+02
-   15    1      1.000000E+02
-   16    1      1.000000E+02
-   17    1      1.000000E+02
-   18    1      1.000000E+02
-  SOUNDER      GOES-15      sndrD1_g15           0         626   259    18
+  SOUNDER      GOES-15      sndr_g15             2         626   259    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1853,7 +1838,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-15      sndrD2_g15           0         626   259    18
+  SOUNDER      GOES-15      sndrD1_g15           2         626   259    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1872,7 +1857,7 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-15      sndrD3_g15           0         626   259    18
+  SOUNDER      GOES-15      sndrD2_g15           2         626   259    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1891,7 +1876,26 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02
-  SOUNDER      GOES-15      sndrD4_g15           0         626   259    18
+  SOUNDER      GOES-15      sndrD3_g15           2         626   259    18
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+    8    1      1.000000E+02
+    9    1      1.000000E+02
+   10    1      1.000000E+02
+   11    1      1.000000E+02
+   12    1      1.000000E+02
+   13    1      1.000000E+02
+   14    1      1.000000E+02
+   15    1      1.000000E+02
+   16    1      1.000000E+02
+   17    1      1.000000E+02
+   18    1      1.000000E+02
+  SOUNDER      GOES-15      sndrD4_g15           2         626   259    18
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -1910,73 +1914,73 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02  
-  SOUNDER      GOES-15      v.sndr_g15           0         626   259     2
+  SOUNDER      GOES-15      v.sndr_g15           3         626   259     2
    19    1      1.000000E+02
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD1_g15         0         626   259     2
+  SOUNDER      GOES-15      v.sndrD1_g15         3         626   259     2
    19    1      1.000000E+02
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD2_g15         0         626   259     2
+  SOUNDER      GOES-15      v.sndrD2_g15         3         626   259     2
    19    1      1.000000E+02
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD3_g15         0         626   259     2
+  SOUNDER      GOES-15      v.sndrD3_g15         3         626   259     2
    19    1      1.000000E+02
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD4_g15         0         626   259     2
+  SOUNDER      GOES-15      v.sndrD4_g15         3         626   259     2
    19    1      1.000000E+02
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD5_g15         0         626   259     1
+  SOUNDER      GOES-15      v.sndrD5_g15         3         626   259     1
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD6_g15         0         626   259     1
+  SOUNDER      GOES-15      v.sndrD6_g15         3         626   259     1
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD7_g15         0         626   259     1
+  SOUNDER      GOES-15      v.sndrD7_g15         3         626   259     1
    20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD8_g15         0         626   259     1
+  SOUNDER      GOES-15      v.sndrD8_g15         3         626   259     1
    20    1      1.000000E+02
-  IMAGER       GOES-15      imgr_g15             0         615   259     4
+  IMAGER       GOES-15      imgr_g15             2         615   259     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-15      imgrD1_g15           0         615   259     4
+  IMAGER       GOES-15      imgrD1_g15           2         615   259     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-15      imgrD2_g15           0         615   259     4
+  IMAGER       GOES-15      imgrD2_g15           2         615   259     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-15      imgrD3_g15           0         615   259     4
+  IMAGER       GOES-15      imgrD3_g15           2         615   259     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-15      imgrD4_g15           0         615   259     4
+  IMAGER       GOES-15      imgrD4_g15           2         615   259     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       GOES-15      v.imgr_g15           0         615   259     1
+  IMAGER       GOES-15      v.imgr_g15           3         615   259     1
     1    1      1.000000E+02
-  IMAGER       GOES-15      v.imgrD1_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD1_g15         3         615   259     1
     1    1      1.000000E+02
-  IMAGER       GOES-15      v.imgrD2_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD2_g15         3         615   259     1
     1    1      1.000000E+02  
-  IMAGER       GOES-15      v.imgrD3_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD3_g15         3         615   259     1
     1    1      1.000000E+02
-  IMAGER       GOES-15      v.imgrD4_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD4_g15         3         615   259     1
     1    1      1.000000E+02
-  IMAGER       GOES-15      v.imgrD5_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD5_g15         3         615   259     1
     1    1      1.000000E+02
-  IMAGER       GOES-15      v.imgrD6_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD6_g15         3         615   259     1
     1    1      1.000000E+02  
-  IMAGER       GOES-15      v.imgrD7_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD7_g15         3         615   259     1
     1    1      1.000000E+02
-  IMAGER       GOES-15      v.imgrD8_g15         0         615   259     1
+  IMAGER       GOES-15      v.imgrD8_g15         3         615   259     1
     1    1      1.000000E+02
-  ABI          GOES-R       abi_gr               0        2047  1023    10
+  ABI          GOES-R       abi_gr               2        2047  1023    10
     7    1      1.000000E+02
     8    1      1.000000E+02
     9    1      1.000000E+02
@@ -1987,19 +1991,19 @@
    14    1      1.000000E+02
    15    1      1.000000E+02
    16    1      1.000000E+02
-  ABI          GOES-R       v.abi_gr             0        2047  1023     6
+  ABI          GOES-R       v.abi_gr             3        2047  1023     6
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
     6    1      1.000000E+02
-  IMAGER       MTSAT-1R     imgr_mt1r            0         294   171     4
+  IMAGER       MTSAT-1R     imgr_mt1r            2         294   171     4
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IMAGER       MTSAT-2      imgr_mt2             0         295   172     4
+  IMAGER       MTSAT-2      imgr_mt2             2         295   172     4
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -2287,11 +2291,11 @@
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  VIRR         FengYun-3A   virr_fy3a            0         950  1023     3
+  VIRR         FengYun-3A   virr_fy3a            2         950  1023     3
     3    1      1.000000E+02
     4    1      1.000000E+02
     5    1      1.000000E+02
-  IRAS         FengYun-3A   iras_fy3a            0         933  1023    26
+  IRAS         FengYun-3A   iras_fy3a            2         933  1023    26
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -2318,89 +2322,89 @@
    24    1      1.000000E+02
    25    1      1.000000E+02
    26    1      1.000000E+02
-  MERSI        FengYun-3A   mersi_fy3a           0        2047  1023     1
+  MERSI        FengYun-3A   mersi_fy3a           2        2047  1023     1
     5    1      1.000000E+02
-  MERSI        FengYun-3A   mersiD01_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD01_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD02_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD02_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD03_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD03_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD04_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD04_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD05_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD05_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD06_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD06_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD07_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD07_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD08_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD08_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD09_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD09_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD10_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD10_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD11_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD11_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD12_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD12_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD13_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD13_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD14_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD14_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD15_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD15_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD16_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD16_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD17_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD17_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD18_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD18_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD19_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD19_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD20_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD20_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD21_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD21_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD22_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD22_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD23_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD23_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD24_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD24_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD25_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD25_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD26_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD26_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD27_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD27_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD28_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD28_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD29_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD29_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD30_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD30_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD31_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD31_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD32_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD32_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD33_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD33_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD34_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD34_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD35_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD35_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD36_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD36_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD37_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD37_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD38_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD38_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD39_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD39_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  MERSI        FengYun-3A   mersiD40_fy3a        0        2047  1023     1
+  MERSI        FengYun-3A   mersiD40_fy3a        2        2047  1023     1
     5    1      1.000000e+02
-  AIRS         Aqua         airs281SUBSET_aqua   0         420   784   281
+  AIRS         Aqua         airs281SUBSET_aqua   2         420   784   281
     1    1      6.490000E-01
     6    1      6.540000E-01
     7    1      6.850000E-01
@@ -2682,7 +2686,7 @@
  2370    1      3.520000E-01
  2371    1      3.690000E-01
  2377    1      3.860000E-01
-  AIRS         Aqua         airs324SUBSET_aqua   0         420   784   324
+  AIRS         Aqua         airs324SUBSET_aqua   2         420   784   324
     1    1      6.490000E-01
     6    1      6.540000E-01
     7    1      6.850000E-01
@@ -3007,7 +3011,7 @@
  2370    1      3.520000E-01
  2371    1      3.690000E-01
  2377    1      3.860000E-01
-  AIRS         Aqua         airsM12_aqua         0         420   784   130
+  AIRS         Aqua         airsM12_aqua         2         420   784   130
     1    1      6.490000E-01
     2    1      6.930000E-01
     3    1      6.820000E-01
@@ -3138,7 +3142,7 @@
   128    1      4.400000E-01
   129    1      4.270000E-01
   130    1      3.890000E-01
-  AIRS         Aqua         airsM11_aqua         0         420   784   144
+  AIRS         Aqua         airsM11_aqua         2         420   784   144
   131    1      3.540000E-01
   132    1      2.140000E-01
   133    1      2.110000E-01
@@ -3283,7 +3287,7 @@
   272    1      2.780000E-01
   273    1      3.090000E-01
   274    1      2.680000E-01
-  AIRS         Aqua         airsM10_aqua         0         420   784   167
+  AIRS         Aqua         airsM10_aqua         2         420   784   167
   275    1      2.500000E-01
   276    1      9.810000E-01
   277    1      9.999900E+00
@@ -3451,7 +3455,7 @@
   439    1      3.070000E-01
   440    1      5.660000E-01
   441    1      2.450000E-01
-  AIRS         Aqua         airsM9_aqua          0         420   784   167
+  AIRS         Aqua         airsM9_aqua          2         420   784   167
   442    1      4.010000E-01
   443    1      2.940000E-01
   444    1      2.970000E-01
@@ -3619,7 +3623,7 @@
   606    1      5.370000E-01
   607    1      3.470000E-01
   608    1      4.780000E-01
-  AIRS         Aqua         airsM8_aqua          0         420   784   161
+  AIRS         Aqua         airsM8_aqua          2         420   784   161
   609    1      4.590000E-01
   610    1      6.190000E-01
   611    1      5.170000E-01
@@ -3781,7 +3785,7 @@
   767    1      1.580000E-01
   768    1      5.730000E-01
   769    1      1.880000E-01
-  AIRS         Aqua         airsM7_aqua          0         420   784   167
+  AIRS         Aqua         airsM7_aqua          2         420   784   167
   770    1      5.510000E-01
   771    1      2.160000E-01
   772    1      2.240000E-01
@@ -3949,7 +3953,7 @@
   934    1      9.760000E-01
   935    1      1.130000E-01
   936    1      1.090000E-01
-  AIRS         Aqua         airsM6_aqua          0         420   784   167
+  AIRS         Aqua         airsM6_aqua          2         420   784   167
   937    1      9.999900E+00
   938    1      1.420000E-01
   939    1      4.830000E-01
@@ -4117,7 +4121,7 @@
  1101    1      1.660000E-01
  1102    1      1.640000E-01
  1103    1      9.900000E-02
-  AIRS         Aqua         airsM5_aqua          0         420   784   159
+  AIRS         Aqua         airsM5_aqua          2         420   784   159
  1104    1      1.750000E-01
  1105    1      9.620000E-01
  1106    1      1.390000E-01
@@ -4277,7 +4281,7 @@
  1260    1      2.660000E-01
  1261    1      2.670000E-01
  1262    1      3.960000E-01
-  AIRS         Aqua         airsM4d_aqua         0         420   784   106
+  AIRS         Aqua         airsM4d_aqua         2         420   784   106
  1263    1      8.500000E-02
  1264    1      1.330000E-01
  1265    1      8.700000E-02
@@ -4384,7 +4388,7 @@
  1366    1      1.000000E-01
  1367    1      1.020000E-01
  1368    1      1.640000E-01
-  AIRS         Aqua         airsM4c_aqua         0         420   784    94
+  AIRS         Aqua         airsM4c_aqua         2         420   784    94
  1369    1      1.030000E-01
  1370    1      1.080000E-01
  1371    1      1.040000E-01
@@ -4479,7 +4483,7 @@
  1460    1      1.830000E-01
  1461    1      2.810000E-01
  1462    1      1.870000E-01
-  AIRS         Aqua         airsM3_aqua          0         420   784   192
+  AIRS         Aqua         airsM3_aqua          2         420   784   192
  1463    1      1.000000E-01
  1464    1      9.900000E-02
  1465    1      1.410000E-01
@@ -4672,7 +4676,7 @@
  1652    1      1.220000E-01
  1653    1      9.400000E-02
  1654    1      1.300000E-01
-  AIRS         Aqua         airsM4b_aqua         0         420   784   106
+  AIRS         Aqua         airsM4b_aqua         2         420   784   106
  1655    1      1.150000E-01
  1656    1      8.400000E-02
  1657    1      1.060000E-01
@@ -4779,7 +4783,7 @@
  1758    1      9.600000E-02
  1759    1      9.999900E+00
  1760    1      9.400000E-02
-  AIRS         Aqua         airsM4a_aqua         0         420   784   104
+  AIRS         Aqua         airsM4a_aqua         2         420   784   104
  1761    1      1.170000E-01
  1762    1      1.190000E-01
  1763    1      1.170000E-01
@@ -4884,7 +4888,7 @@
  1862    1      3.180000E-01
  1863    1      3.230000E-01
  1864    1      3.330000E-01
-  AIRS         Aqua         airsM2b_aqua         0         420   784   150
+  AIRS         Aqua         airsM2b_aqua         2         420   784   150
  1865    1      1.210000E-01
  1866    1      1.200000E-01
  1867    1      8.800000E-02
@@ -5035,7 +5039,7 @@
  2012    1      9.999900E+00
  2013    1      9.999900E+00
  2014    1      9.999900E+00
-  AIRS         Aqua         airsM1b_aqua         0         420   784   130
+  AIRS         Aqua         airsM1b_aqua         2         420   784   130
  2015    1      9.999900E+00
  2016    1      9.999900E+00
  2017    1      9.999900E+00
@@ -5166,7 +5170,7 @@
  2142    1      2.500000E-01
  2143    1      2.260000E-01
  2144    1      1.780000E-01
-  AIRS         Aqua         airsM2a_aqua         0         420   784   116
+  AIRS         Aqua         airsM2a_aqua         2         420   784   116
  2145    1      1.760000E-01
  2146    1      1.770000E-01
  2147    1      1.850000E-01
@@ -5283,7 +5287,7 @@
  2258    1      9.999900E+00
  2259    1      9.999900E+00
  2260    1      9.999900E+00
-  AIRS         Aqua         airsM1a_aqua         0         420   784   118
+  AIRS         Aqua         airsM1a_aqua         2         420   784   118
  2261    1      9.999900E+00
  2262    1      9.999900E+00
  2263    1      9.999900E+00
@@ -5402,7 +5406,7 @@
  2376    1      3.810000E-01
  2377    1      3.860000E-01
  2378    1      5.350000E-01
-  MODIS        TERRA        modis_terra          0         389   783    16
+  MODIS        TERRA        modis_terra          2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5419,7 +5423,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD01_terra       0         389   783    16
+  MODIS        TERRA        modisD01_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5436,7 +5440,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD02_terra       0         389   783    16
+  MODIS        TERRA        modisD02_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5453,7 +5457,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD03_terra       0         389   783    16
+  MODIS        TERRA        modisD03_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5470,7 +5474,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD04_terra       0         389   783    16
+  MODIS        TERRA        modisD04_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5487,7 +5491,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD05_terra       0         389   783    16
+  MODIS        TERRA        modisD05_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5504,7 +5508,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD06_terra       0         389   783    16
+  MODIS        TERRA        modisD06_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5521,7 +5525,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD07_terra       0         389   783    16
+  MODIS        TERRA        modisD07_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5538,7 +5542,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD08_terra       0         389   783    16
+  MODIS        TERRA        modisD08_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5555,7 +5559,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD09_terra       0         389   783    16
+  MODIS        TERRA        modisD09_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5572,7 +5576,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        modisD10_terra       0         389   783    16
+  MODIS        TERRA        modisD10_terra       2         389   783    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5589,7 +5593,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        TERRA        v.modis_terra        0         389   783    19
+  MODIS        TERRA        v.modis_terra        3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5609,7 +5613,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD01_terra     0         389   783    19
+  MODIS        TERRA        v.modisD01_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5629,7 +5633,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD02_terra     0         389   783    19
+  MODIS        TERRA        v.modisD02_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5649,7 +5653,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD03_terra     0         389   783    19
+  MODIS        TERRA        v.modisD03_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5669,7 +5673,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD04_terra     0         389   783    19
+  MODIS        TERRA        v.modisD04_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5689,7 +5693,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD05_terra     0         389   783    19
+  MODIS        TERRA        v.modisD05_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5709,7 +5713,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD06_terra     0         389   783    19
+  MODIS        TERRA        v.modisD06_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5729,7 +5733,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD07_terra     0         389   783    19
+  MODIS        TERRA        v.modisD07_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5749,7 +5753,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD08_terra     0         389   783    19
+  MODIS        TERRA        v.modisD08_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5769,7 +5773,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD09_terra     0         389   783    19
+  MODIS        TERRA        v.modisD09_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5789,7 +5793,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        TERRA        v.modisD10_terra     0         389   783    19
+  MODIS        TERRA        v.modisD10_terra     3         389   783    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -5809,7 +5813,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        AQUA         modis_aqua           0         389   784    16
+  MODIS        AQUA         modis_aqua           2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5826,7 +5830,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD01_aqua        0         389   784    16
+  MODIS        AQUA         modisD01_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5843,7 +5847,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD02_aqua        0         389   784    16
+  MODIS        AQUA         modisD02_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5860,7 +5864,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD03_aqua        0         389   784    16
+  MODIS        AQUA         modisD03_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5877,7 +5881,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD04_aqua        0         389   784    16
+  MODIS        AQUA         modisD04_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5894,7 +5898,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD05_aqua        0         389   784    16
+  MODIS        AQUA         modisD05_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5911,7 +5915,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD06_aqua        0         389   784    16
+  MODIS        AQUA         modisD06_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5928,7 +5932,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD07_aqua        0         389   784    16
+  MODIS        AQUA         modisD07_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5945,7 +5949,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD08_aqua        0         389   784    16
+  MODIS        AQUA         modisD08_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5962,7 +5966,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD09_aqua        0         389   784    16
+  MODIS        AQUA         modisD09_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5979,7 +5983,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         modisD10_aqua        0         389   784    16
+  MODIS        AQUA         modisD10_aqua        2         389   784    16
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
@@ -5996,7 +6000,7 @@
    34    1      1.000000E+02
    35    1      1.000000E+02
    36    1      1.000000E+02
-  MODIS        AQUA         v.modis_aqua         0         389   784    19
+  MODIS        AQUA         v.modis_aqua         3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6016,7 +6020,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        AQUA         v.modisD01_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD01_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6036,7 +6040,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02 
-  MODIS        AQUA         v.modisD02_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD02_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6056,7 +6060,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02 
-  MODIS        AQUA         v.modisD03_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD03_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6076,7 +6080,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02 
-  MODIS        AQUA         v.modisD04_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD04_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6096,7 +6100,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02 
-  MODIS        AQUA         v.modisD05_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD05_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6116,7 +6120,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02 
-  MODIS        AQUA         v.modisD06_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD06_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6136,7 +6140,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        AQUA         v.modisD07_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD07_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6156,7 +6160,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        AQUA         v.modisD08_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD08_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6176,7 +6180,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        AQUA         v.modisD09_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD09_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6196,7 +6200,7 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  MODIS        AQUA         v.modisD10_aqua      0         389   784    19
+  MODIS        AQUA         v.modisD10_aqua      3         389   784    19
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -6216,45 +6220,45 @@
    17    1      1.000000E+02
    18    1      1.000000E+02
    19    1      1.000000E+02
-  VISSR        GMS-5        vissrDetA_gms5       0         489   152     3
+  VISSR        GMS-5        vissrDetA_gms5       2         489   152     3
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  VISSR        GMS-5        vissrDetB_gms5       0         489   152     3
+  VISSR        GMS-5        vissrDetB_gms5       2         489   152     3
     2    1      1.000000E+02
     3    1      1.000000E+02
     4    1      1.000000E+02
-  MVIRI        METEOSAT-03  mviriNOM_m03         0         205    50     2
+  MVIRI        METEOSAT-03  mviriNOM_m03         2         205    50     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-03  mviriBKUP_m03        0         205    50     2
+  MVIRI        METEOSAT-03  mviriBKUP_m03        2         205    50     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-04  mviriNOM_m04         0         205    51     2
+  MVIRI        METEOSAT-04  mviriNOM_m04         2         205    51     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-04  mviriBKUP_m04        0         205    51     2
+  MVIRI        METEOSAT-04  mviriBKUP_m04        2         205    51     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-05  mviriNOM_m05         0         205    52     2
+  MVIRI        METEOSAT-05  mviriNOM_m05         2         205    52     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-05  mviriBKUP_m05        0         205    52     2
+  MVIRI        METEOSAT-05  mviriBKUP_m05        2         205    52     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-06  mviriNOM_m06         0         205    53     2
+  MVIRI        METEOSAT-06  mviriNOM_m06         2         205    53     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-06  mviriBKUP_m06        0         205    53     2
+  MVIRI        METEOSAT-06  mviriBKUP_m06        2         205    53     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-07  mviriNOM_m07         0         205    54     2
+  MVIRI        METEOSAT-07  mviriNOM_m07         2         205    54     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  MVIRI        METEOSAT-07  mviriBKUP_m07        0         205    54     2
+  MVIRI        METEOSAT-07  mviriBKUP_m07        2         205    54     2
     2    1      1.000000E+02
     3    1      1.000000E+02
-  SEVIRI       METEOSAT-08  seviri_m08           0         207    55     8
+  SEVIRI       METEOSAT-08  seviri_m08           2         207    55     8
     4    1      1.000000E+02
     5    1      1.000000E+02
     6    1      1.000000E+02
@@ -6263,12 +6267,12 @@
     9    1      1.000000E+02
    10    1      1.000000E+02
    11    1      1.000000E+02
-  SEVIRI       METEOSAT-08  v.seviri_m08         0         207    55     4
+  SEVIRI       METEOSAT-08  v.seviri_m08         3         207    55     4
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
    12    1      1.000000E+02
-  SEVIRI       METEOSAT-09  seviri_m09           0         207    56     8
+  SEVIRI       METEOSAT-09  seviri_m09           2         207    56     8
     4    1      1.000000E+02
     5    1      1.000000E+02
     6    1      1.000000E+02
@@ -6277,12 +6281,12 @@
     9    1      1.000000E+02
    10    1      1.000000E+02
    11    1      1.000000E+02  
-  SEVIRI       METEOSAT-09  v.seviri_m09         0         207    56     4
+  SEVIRI       METEOSAT-09  v.seviri_m09         3         207    56     4
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
    12    1      1.000000E+02
-  SEVIRI       METEOSAT-10  seviri_m10           0         207    57     8
+  SEVIRI       METEOSAT-10  seviri_m10           2         207    57     8
     4    1      1.000000E+02
     5    1      1.000000E+02
     6    1      1.000000E+02
@@ -6291,12 +6295,12 @@
     9    1      1.000000E+02
    10    1      1.000000E+02
    11    1      1.000000E+02
-  SEVIRI       METEOSAT-10  v.seviri_m10         0         207    57     4
+  SEVIRI       METEOSAT-10  v.seviri_m10         3         207    57     4
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
    12    1      1.000000E+02
-  SEVIRI       METEOSAT-11  seviri_m11           0         207    70     8
+  SEVIRI       METEOSAT-11  seviri_m11           2         207    70     8
     4    1      1.000000E+02
     5    1      1.000000E+02
     6    1      1.000000E+02
@@ -6345,7 +6349,7 @@
    20    1      1.000000E+02
    21    1      1.000000E+02
    22    1      1.000000E+02
-  AIRS         Aqua         airs_aqua            0         420   784  2378
+  AIRS         Aqua         airs_aqua            2         420   784  2378
     1    1      6.490000E-01
     2    1      6.930000E-01
     3    1      6.820000E-01
@@ -6357,8 +6361,8 @@
     9    1      6.600000E-01
    10    1      6.480000E-01
    11    1      6.780000E-01
-   12    0      6.350000E-01
-   13    0      6.090000E-01
+   12    2      6.350000E-01
+   13    2      6.090000E-01
    14    1      6.220000E-01
    15    1      6.360000E-01
    16    1      6.720000E-01
@@ -6393,8 +6397,8 @@
    45    1      4.760000E-01
    46    1      4.700000E-01
    47    1      5.010000E-01
-   48    0      4.510000E-01
-   49    0      4.460000E-01
+   48    2      4.510000E-01
+   49    2      4.460000E-01
    50    1      5.120000E-01
    51    1      4.830000E-01
    52    1      4.780000E-01
@@ -6466,8 +6470,8 @@
   118    1      4.110000E-01
   119    1      4.340000E-01
   120    1      4.590000E-01
-  121    0      3.240000E-01
-  122    0      3.230000E-01
+  121    2      3.240000E-01
+  122    2      3.230000E-01
   123    1      4.060000E-01
   124    1      4.290000E-01
   125    1      4.190000E-01
@@ -6477,9 +6481,9 @@
   129    1      4.270000E-01
   130    1      3.890000E-01
   131    1      3.540000E-01
-  132    0      2.140000E-01
-  133    0      2.110000E-01
-  134    0      2.120000E-01
+  132    2      2.140000E-01
+  133    2      2.110000E-01
+  134    2      2.120000E-01
   135    1      3.480000E-01
   136    1      3.390000E-01
   137    1      3.510000E-01
@@ -6583,7 +6587,7 @@
   235    1      2.500000E-01
   236    1      2.450000E-01
   237    1      2.420000E-01
-  238    0      9.999900E+00
+  238    2      9.999900E+00
   239    1      2.400000E-01
   240    1      2.560000E-01
   241    1      2.280000E-01
@@ -6622,7 +6626,7 @@
   274    1      2.680000E-01
   275    1      2.500000E-01
   276    1      9.810000E-01
-  277    0      9.999900E+00
+  277    2      9.999900E+00
   278    1      3.530000E-01
   279    1      2.360000E-01
   280    1      3.650000E-01
@@ -6633,11 +6637,11 @@
   285    1      3.320000E-01
   286    1      2.600000E-01
   287    1      3.370000E-01
-  288    0      3.530000E-01
+  288    2      3.530000E-01
   289    1      3.430000E-01
   290    1      4.330000E-01
-  291    0      5.840000E-01
-  292    0      2.597000E+00
+  291    2      5.840000E-01
+  292    2      2.597000E+00
   293    1      3.410000E-01
   294    1      3.300000E-01
   295    1      3.480000E-01
@@ -6669,7 +6673,7 @@
   321    1      5.050000E-01
   322    1      3.230000E-01
   323    1      2.970000E-01
-  324    0      9.180000E-01
+  324    2      9.180000E-01
   325    1      3.220000E-01
   326    1      3.970000E-01
   327    1      3.570000E-01
@@ -6691,11 +6695,11 @@
   343    1      3.450000E-01
   344    1      2.580000E-01
   345    1      3.180000E-01
-  346    0      3.190000E-01
+  346    2      3.190000E-01
   347    1      2.460000E-01
   348    1      3.630000E-01
-  349    0      2.300000E-01
-  350    0      2.775000E+00
+  349    2      2.300000E-01
+  350    2      2.775000E+00
   351    1      3.640000E-01
   352    1      3.230000E-01
   353    1      2.770000E-01
@@ -6719,14 +6723,14 @@
   371    1      3.180000E-01
   372    1      2.940000E-01
   373    1      3.030000E-01
-  374    0      2.246000E+00
+  374    2      2.246000E+00
   375    1      2.330000E-01
   376    1      3.240000E-01
   377    1      4.090000E-01
   378    1      3.120000E-01
   379    1      3.990000E-01
   380    1      3.410000E-01
-  381    0      1.361000E+00
+  381    2      1.361000E+00
   382    1      2.570000E-01
   383    1      2.300000E-01
   384    1      2.580000E-01
@@ -6736,20 +6740,20 @@
   388    1      2.390000E-01
   389    1      2.150000E-01
   390    1      2.660000E-01
-  391    0      1.098000E+00
+  391    2      1.098000E+00
   392    1      2.510000E-01
   393    1      2.350000E-01
   394    1      2.190000E-01
   395    1      2.380000E-01
   396    1      1.014000E+00
   397    1      2.440000E-01
-  398    0      2.700000E-01
+  398    2      2.700000E-01
   399    1      3.190000E-01
   400    1      3.400000E-01
-  401    0      3.500000E-01
-  402    0      2.790000E+00
+  401    2      3.500000E-01
+  402    2      2.790000E+00
   403    1      3.530000E-01
-  404    0      7.872000E+00
+  404    2      7.872000E+00
   405    1      4.270000E-01
   406    1      2.480000E-01
   407    1      3.220000E-01
@@ -6757,15 +6761,15 @@
   409    1      3.250000E-01
   410    1      3.510000E-01
   411    1      3.180000E-01
-  412    0      8.270000E-01
+  412    2      8.270000E-01
   413    1      3.490000E-01
   414    1      3.240000E-01
-  415    0      1.032000E+00
+  415    2      1.032000E+00
   416    1      3.290000E-01
   417    1      3.950000E-01
   418    1      3.440000E-01
   419    1      2.820000E-01
-  420    0      1.985000E+00
+  420    2      1.985000E+00
   421    1      4.550000E-01
   422    1      3.390000E-01
   423    1      2.430000E-01
@@ -6773,13 +6777,13 @@
   425    1      2.850000E-01
   426    1      3.420000E-01
   427    1      4.400000E-01
-  428    0      4.430000E-01
+  428    2      4.430000E-01
   429    1      3.890000E-01
   430    1      2.570000E-01
   431    1      5.600000E-01
-  432    0      5.380000E-01
+  432    2      5.380000E-01
   433    1      2.660000E-01
-  434    0      3.750000E-01
+  434    2      3.750000E-01
   435    1      3.640000E-01
   436    1      3.330000E-01
   437    1      2.950000E-01
@@ -6787,16 +6791,16 @@
   439    1      3.070000E-01
   440    1      5.660000E-01
   441    1      2.450000E-01
-  442    0      4.010000E-01
+  442    2      4.010000E-01
   443    1      2.940000E-01
   444    1      2.970000E-01
   445    1      2.500000E-01
   446    1      2.950000E-01
   447    1      3.450000E-01
-  448    0      4.070000E-01
+  448    2      4.070000E-01
   449    1      2.570000E-01
   450    1      2.630000E-01
-  451    0      2.770000E-01
+  451    2      2.770000E-01
   452    1      4.200000E-01
   453    1      2.580000E-01
   454    1      3.830000E-01
@@ -6808,21 +6812,21 @@
   460    1      2.970000E-01
   461    1      1.161000E+00
   462    1      3.890000E-01
-  463    0      3.206000E+00
-  464    0      5.150000E-01
-  465    0      2.920000E-01
+  463    2      3.206000E+00
+  464    2      5.150000E-01
+  465    2      2.920000E-01
   466    1      3.460000E-01
   467    1      3.980000E-01
-  468    0      3.100000E-01
+  468    2      3.100000E-01
   469    1      2.490000E-01
-  470    0      6.110000E-01
+  470    2      6.110000E-01
   471    1      3.480000E-01
   472    1      4.090000E-01
   473    1      3.500000E-01
-  474    0      4.550000E-01
+  474    2      4.550000E-01
   475    1      2.730000E-01
   476    1      2.830000E-01
-  477    0      3.940000E-01
+  477    2      3.940000E-01
   478    1      2.640000E-01
   479    1      2.540000E-01
   480    1      2.620000E-01
@@ -6832,32 +6836,32 @@
   484    1      3.820000E-01
   485    1      3.380000E-01
   486    1      2.450000E-01
-  487    0      7.700000E-01
-  488    0      3.870000E-01
+  487    2      7.700000E-01
+  488    2      3.870000E-01
   489    1      1.449000E+00
-  490    0      3.270000E-01
-  491    0      3.830000E-01
+  490    2      3.270000E-01
+  491    2      3.830000E-01
   492    1      8.900000E-01
   493    1      4.110000E-01
-  494    0      9.999900E+00
-  495    0      3.605000E+00
+  494    2      9.999900E+00
+  495    2      3.605000E+00
   496    1      3.700000E-01
   497    1      3.350000E-01
   498    1      9.120000E-01
-  499    0      1.169000E+00
-  500    0      1.639000E+00
+  499    2      1.169000E+00
+  500    2      1.639000E+00
   501    1      3.280000E-01
-  502    0      4.320000E-01
+  502    2      4.320000E-01
   503    1      2.660000E-01
   504    1      3.800000E-01
   505    1      4.190000E-01
   506    1      3.130000E-01
-  507    0      3.600000E-01
+  507    2      3.600000E-01
   508    1      3.430000E-01
   509    1      3.190000E-01
-  510    0      3.400000E-01
+  510    2      3.400000E-01
   511    1      2.780000E-01
-  512    0      8.970000E-01
+  512    2      8.970000E-01
   513    1      3.010000E-01
   514    1      6.550000E-01
   515    1      4.950000E-01
@@ -6870,19 +6874,19 @@
   522    1      2.700000E-01
   523    1      3.320000E-01
   524    1      3.790000E-01
-  525    0      2.142000E+00
+  525    2      2.142000E+00
   526    1      2.690000E-01
   527    1      2.580000E-01
   528    1      4.140000E-01
-  529    0      2.680000E-01
+  529    2      2.680000E-01
   530    1      3.480000E-01
-  531    0      4.440000E-01
+  531    2      4.440000E-01
   532    1      3.330000E-01
   533    1      3.780000E-01
   534    1      7.220000E-01
   535    1      3.850000E-01
   536    1      2.610000E-01
-  537    0      1.289000E+00
+  537    2      1.289000E+00
   538    1      3.420000E-01
   539    1      3.910000E-01
   540    1      2.680000E-01
@@ -6903,7 +6907,7 @@
   555    1      3.740000E-01
   556    1      4.150000E-01
   557    1      3.640000E-01
-  558    0      4.260000E-01
+  558    2      4.260000E-01
   559    1      3.140000E-01
   560    1      3.090000E-01
   561    1      3.640000E-01
@@ -6923,18 +6927,18 @@
   575    1      4.180000E-01
   576    1      3.990000E-01
   577    1      3.050000E-01
-  578    0      3.990000E-01
+  578    2      3.990000E-01
   579    1      4.010000E-01
   580    1      4.950000E-01
   581    1      6.520000E-01
-  582    0      6.622000E+00
-  583    0      6.416000E+00
-  584    0      4.670000E-01
+  582    2      6.622000E+00
+  583    2      6.416000E+00
+  584    2      4.670000E-01
   585    1      4.250000E-01
   586    1      4.850000E-01
   587    1      2.990000E-01
   588    1      5.000000E-01
-  589    0      8.550000E-01
+  589    2      8.550000E-01
   590    1      5.000000E-01
   591    1      1.008000E+00
   592    1      2.990000E-01
@@ -6943,50 +6947,50 @@
   595    1      4.140000E-01
   596    1      7.300000E-01
   597    1      3.200000E-01
-  598    0      1.149000E+00
+  598    2      1.149000E+00
   599    1      5.360000E-01
   600    1      4.640000E-01
   601    1      3.200000E-01
   602    1      6.850000E-01
-  603    0      3.587000E+00
-  604    0      8.080000E-01
+  603    2      3.587000E+00
+  604    2      8.080000E-01
   605    1      4.580000E-01
   606    1      5.370000E-01
   607    1      3.470000E-01
-  608    0      4.780000E-01
+  608    2      4.780000E-01
   609    1      4.590000E-01
-  610    0      6.190000E-01
-  611    0      5.170000E-01
-  612    0      4.270000E-01
+  610    2      6.190000E-01
+  611    2      5.170000E-01
+  612    2      4.270000E-01
   613    1      4.190000E-01
   614    1      3.970000E-01
-  615    0      3.850000E-01
+  615    2      3.850000E-01
   616    1      4.020000E-01
   617    1      3.800000E-01
   618    1      3.710000E-01
   619    1      3.520000E-01
-  620    0      4.760000E-01
+  620    2      4.760000E-01
   621    1      3.460000E-01
-  622    0      9.999900E+00
-  623    0      5.400000E-01
-  624    0      3.380000E-01
+  622    2      9.999900E+00
+  623    2      5.400000E-01
+  624    2      3.380000E-01
   625    1      3.390000E-01
   626    1      4.500000E-01
   627    1      3.300000E-01
   628    1      3.260000E-01
-  629    0      3.380000E-01
-  630    0      4.050000E-01
-  631    0      5.360000E-01
+  629    2      3.380000E-01
+  630    2      4.050000E-01
+  631    2      5.360000E-01
   632    1      3.650000E-01
   633    1      3.370000E-01
   634    1      4.260000E-01
   635    1      3.190000E-01
-  636    0      7.590000E-01
+  636    2      7.590000E-01
   637    1      3.080000E-01
   638    1      3.520000E-01
   639    1      4.780000E-01
   640    1      2.900000E-01
-  641    0      3.130000E-01
+  641    2      3.130000E-01
   642    1      3.700000E-01
   643    1      2.780000E-01
   644    1      3.620000E-01
@@ -7026,14 +7030,14 @@
   678    1      8.630000E-01
   679    1      1.910000E-01
   680    1      3.120000E-01
-  681    0      9.797000E+00
-  682    0      3.240000E-01
+  681    2      9.797000E+00
+  682    2      3.240000E-01
   683    1      1.820000E-01
   684    1      2.430000E-01
   685    1      1.820000E-01
   686    1      2.580000E-01
   687    1      2.340000E-01
-  688    0      4.302000E+00
+  688    2      4.302000E+00
   689    1      1.690000E-01
   690    1      2.860000E-01
   691    1      1.690000E-01
@@ -7048,7 +7052,7 @@
   700    1      1.600000E-01
   701    1      1.610000E-01
   702    1      2.210000E-01
-  703    0      2.610000E-01
+  703    2      2.610000E-01
   704    1      1.600000E-01
   705    1      1.720000E-01
   706    1      3.030000E-01
@@ -7078,39 +7082,39 @@
   730    1      1.440000E-01
   731    1      2.360000E-01
   732    1      1.440000E-01
-  733    0      5.424000E+00
+  733    2      5.424000E+00
   734    1      2.340000E-01
   735    1      1.420000E-01
-  736    0      5.143000E+00
+  736    2      5.143000E+00
   737    1      1.440000E-01
   738    1      1.450000E-01
   739    1      2.200000E-01
   740    1      1.970000E-01
   741    1      2.060000E-01
-  742    0      9.999900E+00
-  743    0      9.999900E+00
+  742    2      9.999900E+00
+  743    2      9.999900E+00
   744    1      2.340000E-01
   745    1      1.930000E-01
   746    1      1.870000E-01
   747    1      1.533000E+00
   748    1      1.880000E-01
-  749    0      2.723000E+00
-  750    0      2.560000E-01
+  749    2      2.723000E+00
+  750    2      2.560000E-01
   751    1      2.270000E-01
   752    1      1.810000E-01
-  753    0      2.009000E+00
+  753    2      2.009000E+00
   754    1      2.300000E-01
-  755    0      9.999900E+00
-  756    0      9.999900E+00
+  755    2      9.999900E+00
+  756    2      9.999900E+00
   757    1      1.300000E-01
   758    1      1.330000E-01
   759    1      1.780000E-01
   760    1      2.650000E-01
   761    1      1.420000E-01
-  762    0      5.450000E-01
+  762    2      5.450000E-01
   763    1      1.660000E-01
   764    1      2.010000E-01
-  765    0      9.999900E+00
+  765    2      9.999900E+00
   766    1      1.930000E-01
   767    1      1.580000E-01
   768    1      5.730000E-01
@@ -7118,7 +7122,7 @@
   770    1      5.510000E-01
   771    1      2.160000E-01
   772    1      2.240000E-01
-  773    0      4.840000E-01
+  773    2      4.840000E-01
   774    1      2.860000E-01
   775    1      2.250000E-01
   776    1      1.380000E-01
@@ -7128,30 +7132,30 @@
   780    1      1.280000E-01
   781    1      1.320000E-01
   782    1      1.820000E-01
-  783    0      9.999900E+00
+  783    2      9.999900E+00
   784    1      1.200000E-01
   785    1      1.170000E-01
   786    1      1.140000E-01
   787    1      1.100000E-01
   788    1      1.740000E-01
   789    1      1.810000E-01
-  790    0      2.210000E-01
+  790    2      2.210000E-01
   791    1      1.250000E-01
   792    1      1.640000E-01
   793    1      1.620000E-01
   794    1      1.480000E-01
-  795    0      1.620000E-01
+  795    2      1.620000E-01
   796    1      1.030000E-01
   797    1      1.040000E-01
   798    1      1.260000E-01
   799    1      1.630000E-01
-  800    0      2.482000E+00
+  800    2      2.482000E+00
   801    1      2.940000E-01
-  802    0      2.724000E+00
-  803    0      1.500000E+00
+  802    2      2.724000E+00
+  803    2      1.500000E+00
   804    1      1.000000E-01
   805    1      1.000000E-01
-  806    0      1.029000E+00
+  806    2      1.029000E+00
   807    1      1.610000E-01
   808    1      1.810000E-01
   809    1      1.640000E-01
@@ -7162,7 +7166,7 @@
   814    1      1.490000E-01
   815    1      2.610000E-01
   816    1      1.080000E-01
-  817    0      1.680000E-01
+  817    2      1.680000E-01
   818    1      9.200000E-02
   819    1      9.200000E-02
   820    1      1.720000E-01
@@ -7171,30 +7175,30 @@
   823    1      1.030000E-01
   824    1      1.470000E-01
   825    1      1.500000E-01
-  826    0      3.450000E+00
+  826    2      3.450000E+00
   827    1      1.500000E-01
-  828    0      1.523000E+00
+  828    2      1.523000E+00
   829    1      1.530000E-01
   830    1      1.450000E-01
-  831    0      3.762000E+00
-  832    0      5.410000E-01
+  831    2      3.762000E+00
+  832    2      5.410000E-01
   833    1      1.480000E-01
-  834    0      1.457000E+00
+  834    2      1.457000E+00
   835    1      1.420000E-01
   836    1      1.410000E-01
-  837    0      9.999900E+00
+  837    2      9.999900E+00
   838    1      1.410000E-01
   839    1      1.240000E-01
   840    1      9.400000E-02
   841    1      1.730000E-01
-  842    0      9.999900E+00
+  842    2      9.999900E+00
   843    1      1.280000E-01
   844    1      1.490000E-01
   845    1      1.230000E-01
   846    1      9.700000E-02
   847    1      1.280000E-01
   848    1      1.390000E-01
-  849    0      2.896000E+00
+  849    2      2.896000E+00
   850    1      9.500000E-02
   851    1      1.370000E-01
   852    1      1.220000E-01
@@ -7204,7 +7208,7 @@
   856    1      2.430000E-01
   857    1      1.200000E-01
   858    1      1.390000E-01
-  859    0      7.280000E-01
+  859    2      7.280000E-01
   860    1      1.420000E-01
   861    1      1.270000E-01
   862    1      9.000000E-02
@@ -7212,7 +7216,7 @@
   864    1      3.350000E-01
   865    1      9.630000E-01
   866    1      3.170000E-01
-  867    0      2.794000E+00
+  867    2      2.794000E+00
   868    1      9.220000E-01
   869    1      1.390000E-01
   870    1      1.420000E-01
@@ -7220,113 +7224,113 @@
   872    1      9.000000E-02
   873    1      1.370000E-01
   874    1      9.700000E-02
-  875    0      6.635000E+00
-  876    0      3.225000E+00
+  875    2      6.635000E+00
+  876    2      3.225000E+00
   877    1      1.220000E-01
-  878    0      1.810000E+00
-  879    0      7.910000E-01
-  880    0      2.200000E-01
+  878    2      1.810000E+00
+  879    2      7.910000E-01
+  880    2      2.200000E-01
   881    1      1.420000E-01
   882    1      1.380000E-01
   883    1      1.233000E+00
   884    1      9.220000E-01
-  885    0      1.466000E+00
-  886    0      1.450000E-01
-  887    0      3.470000E+00
+  885    2      1.466000E+00
+  886    2      1.450000E-01
+  887    2      3.470000E+00
   888    1      1.170000E-01
-  889    0      5.620000E-01
-  890    0      1.450000E-01
-  891    0      2.510000E-01
-  892    0      1.400000E-01
+  889    2      5.620000E-01
+  890    2      1.450000E-01
+  891    2      2.510000E-01
+  892    2      1.400000E-01
   893    1      9.600000E-02
-  894    0      1.281000E+00
+  894    2      1.281000E+00
   895    1      1.370000E-01
   896    1      1.420000E-01
   897    1      1.380000E-01
   898    1      2.040000E-01
-  899    0      1.568000E+00
-  900    0      4.591000E+00
-  901    0      1.410000E-01
+  899    2      1.568000E+00
+  900    2      4.591000E+00
+  901    2      1.410000E-01
   902    1      1.190000E-01
   903    1      1.160000E-01
   904    1      1.160000E-01
   905    1      1.500000E-01
-  906    0      2.024000E+00
-  907    0      9.999900E+00
+  906    2      2.024000E+00
+  907    2      9.999900E+00
   908    1      1.220000E-01
   909    1      1.150000E-01
   910    1      1.760000E-01
   911    1      8.130000E-01
-  912    0      4.310000E+00
+  912    2      4.310000E+00
   913    1      1.410000E-01
   914    1      1.210000E-01
-  915    0      1.018000E+00
+  915    2      1.018000E+00
   916    1      1.340000E-01
   917    1      1.170000E-01
-  918    0      1.380000E-01
+  918    2      1.380000E-01
   919    1      1.352000E+00
-  920    0      9.150000E-01
+  920    2      9.150000E-01
   921    1      2.130000E-01
-  922    0      2.935000E+00
+  922    2      2.935000E+00
   923    1      1.100000E-01
   924    1      1.110000E-01
   925    1      4.930000E-01
   926    1      1.320000E-01
-  927    0      1.320000E-01
+  927    2      1.320000E-01
   928    1      8.550000E-01
   929    1      8.200000E-02
-  930    0      4.129000E+00
+  930    2      4.129000E+00
   931    1      6.550000E-01
   932    1      8.500000E-02
   933    1      1.140000E-01
   934    1      9.760000E-01
   935    1      1.130000E-01
   936    1      1.090000E-01
-  937    0      9.999900E+00
-  938    0      1.420000E-01
-  939    0      4.830000E-01
-  940    0      2.750000E-01
+  937    2      9.999900E+00
+  938    2      1.420000E-01
+  939    2      4.830000E-01
+  940    2      2.750000E-01
   941    1      1.420000E-01
-  942    0      5.604000E+00
-  943    0      1.105000E+00
+  942    2      5.604000E+00
+  943    2      1.105000E+00
   944    1      8.900000E-02
-  945    0      2.490000E-01
+  945    2      2.490000E-01
   946    1      9.500000E-02
-  947    0      9.999900E+00
+  947    2      9.999900E+00
   948    1      1.090000E-01
-  949    0      5.890000E-01
+  949    2      5.890000E-01
   950    1      9.000000E-02
   951    1      1.150000E-01
-  952    0      1.448000E+00
+  952    2      1.448000E+00
   953    1      1.320000E-01
-  954    0      9.999900E+00
+  954    2      9.999900E+00
   955    1      1.240000E-01
-  956    0      1.885000E+00
-  957    0      9.999900E+00
+  956    2      1.885000E+00
+  957    2      9.999900E+00
   958    1      2.070000E-01
   959    1      1.990000E-01
   960    1      1.050000E-01
   961    1      1.190000E-01
-  962    0      9.999900E+00
+  962    2      9.999900E+00
   963    1      8.100000E-02
   964    1      8.600000E-02
-  965    0      9.999900E+00
+  965    2      9.999900E+00
   966    1      1.290000E-01
   967    1      1.310000E-01
   968    1      1.190000E-01
   969    1      1.440000E-01
-  970    0      1.560000E-01
+  970    2      1.560000E-01
   971    1      1.580000E-01
   972    1      1.150000E-01
   973    1      1.500000E-01
-  974    0      5.599000E+00
-  975    0      9.999900E+00
+  974    2      5.599000E+00
+  975    2      9.999900E+00
   976    1      1.470000E-01
   977    1      1.000000E-01
   978    1      1.130000E-01
-  979    0      1.140000E-01
+  979    2      1.140000E-01
   980    1      1.780000E-01
-  981    0      9.999900E+00
+  981    2      9.999900E+00
   982    1      7.800000E-02
   983    1      1.670000E-01
   984    1      1.190000E-01
@@ -7335,38 +7339,38 @@
   987    1      7.800000E-02
   988    1      1.000000E-01
   989    1      1.160000E-01
-  990    0      9.999900E+00
-  991    0      1.460000E-01
+  990    2      9.999900E+00
+  991    2      1.460000E-01
   992    1      1.410000E-01
   993    1      1.760000E-01
-  994    0      1.410000E-01
+  994    2      1.410000E-01
   995    1      1.060000E-01
   996    1      8.300000E-02
   997    1      1.140000E-01
   998    1      8.400000E-02
   999    1      7.800000E-02
  1000    1      1.350000E-01
- 1001    0      8.400000E-02
+ 1001    2      8.400000E-02
  1002    1      7.700000E-02
  1003    1      1.140000E-01
  1004    1      7.500000E-02
  1005    1      1.000000E-01
  1006    1      1.060000E-01
- 1007    0      1.380000E-01
+ 1007    2      1.380000E-01
  1008    1      1.100000E-01
  1009    1      8.800000E-02
  1010    1      8.700000E-02
  1011    1      8.700000E-02
  1012    1      8.100000E-02
  1013    1      8.400000E-02
- 1014    0      1.480000E-01
+ 1014    2      1.480000E-01
  1015    1      1.210000E-01
  1016    1      1.610000E-01
  1017    1      1.300000E-01
  1018    1      1.230000E-01
  1019    1      9.700000E-02
  1020    1      8.500000E-02
- 1021    0      8.233000E+00
+ 1021    2      8.233000E+00
  1022    1      1.090000E-01
  1023    1      3.490000E-01
  1024    1      9.400000E-02
@@ -7386,17 +7390,17 @@
  1038    1      1.170000E-01
  1039    1      1.290000E-01
  1040    1      1.060000E-01
- 1041    0      1.470000E-01
+ 1041    2      1.470000E-01
  1042    1      8.700000E-02
  1043    1      1.140000E-01
  1044    1      8.000000E-02
  1045    1      1.310000E-01
  1046    1      1.300000E-01
- 1047    0      1.160000E-01
+ 1047    2      1.160000E-01
  1048    1      1.120000E-01
  1049    1      2.420000E-01
  1050    1      1.150000E-01
- 1051    0      2.790000E-01
+ 1051    2      2.790000E-01
  1052    1      1.200000E-01
  1053    1      1.170000E-01
  1054    1      1.790000E-01
@@ -7408,20 +7412,20 @@
  1060    1      1.240000E-01
  1061    1      8.800000E-02
  1062    1      1.220000E-01
- 1063    0      2.050000E-01
+ 1063    2      2.050000E-01
  1064    1      1.230000E-01
  1065    1      9.900000E-02
- 1066    0      9.999900E+00
+ 1066    2      9.999900E+00
  1067    1      8.800000E-02
- 1068    0      1.270000E-01
+ 1068    2      1.270000E-01
  1069    1      9.200000E-02
  1070    1      9.100000E-02
  1071    1      8.600000E-02
  1072    1      9.000000E-02
- 1073    0      9.000000E-02
+ 1073    2      9.000000E-02
  1074    1      9.400000E-02
  1075    1      9.000000E-02
- 1076    0      1.510000E-01
+ 1076    2      1.510000E-01
  1077    1      1.060000E-01
  1078    1      9.700000E-02
  1079    1      9.600000E-02
@@ -7436,10 +7440,10 @@
  1088    1      1.330000E-01
  1089    1      1.600000E-01
  1090    1      9.400000E-02
- 1091    0      1.350000E-01
+ 1091    2      1.350000E-01
  1092    1      1.610000E-01
  1093    1      1.730000E-01
- 1094    0      9.600000E-02
+ 1094    2      9.600000E-02
  1095    1      2.340000E-01
  1096    1      1.590000E-01
  1097    1      1.120000E-01
@@ -7447,14 +7451,14 @@
  1099    1      1.640000E-01
  1100    1      9.500000E-02
  1101    1      1.660000E-01
- 1102    0      1.640000E-01
+ 1102    2      1.640000E-01
  1103    1      9.900000E-02
  1104    1      1.750000E-01
  1105    1      9.620000E-01
  1106    1      1.390000E-01
  1107    1      1.800000E-01
  1108    1      1.350000E-01
- 1109    0      9.999900E+00
+ 1109    2      9.999900E+00
  1110    1      1.750000E-01
  1111    1      2.350000E-01
  1112    1      2.430000E-01
@@ -7470,10 +7474,10 @@
  1122    1      1.570000E-01
  1123    1      1.210000E-01
  1124    1      1.560000E-01
- 1125    0      9.999900E+00
+ 1125    2      9.999900E+00
  1126    1      1.840000E-01
  1127    1      2.080000E-01
- 1128    0      1.500000E-01
+ 1128    2      1.500000E-01
  1129    1      2.060000E-01
  1130    1      1.180000E-01
  1131    1      1.210000E-01
@@ -7493,8 +7497,8 @@
  1145    1      1.310000E-01
  1146    1      1.820000E-01
  1147    1      1.290000E-01
- 1148    0      9.999900E+00
- 1149    0      2.050000E-01
+ 1148    2      9.999900E+00
+ 1149    2      2.050000E-01
  1150    1      1.320000E-01
  1151    1      1.360000E-01
  1152    1      1.350000E-01
@@ -7512,13 +7516,13 @@
  1164    1      1.450000E-01
  1165    1      3.170000E-01
  1166    1      3.230000E-01
- 1167    0      2.430000E-01
+ 1167    2      2.430000E-01
  1168    1      2.280000E-01
  1169    1      1.880000E-01
  1170    1      1.380000E-01
  1171    1      1.380000E-01
  1172    1      1.390000E-01
- 1173    0      3.765000E+00
+ 1173    2      3.765000E+00
  1174    1      1.380000E-01
  1175    1      1.350000E-01
  1176    1      1.460000E-01
@@ -7528,7 +7532,7 @@
  1180    1      1.360000E-01
  1181    1      1.450000E-01
  1182    1      1.420000E-01
- 1183    0      1.390000E-01
+ 1183    2      1.390000E-01
  1184    1      1.970000E-01
  1185    1      2.030000E-01
  1186    1      1.990000E-01
@@ -7538,39 +7542,39 @@
  1190    1      1.226000E+00
  1191    1      2.380000E-01
  1192    1      3.240000E-01
- 1193    0      1.181000E+00
+ 1193    2      1.181000E+00
  1194    1      1.500000E-01
  1195    1      2.500000E-01
  1196    1      2.170000E-01
  1197    1      2.710000E-01
- 1198    0      3.980000E-01
+ 1198    2      3.980000E-01
  1199    1      2.190000E-01
  1200    1      1.650000E-01
  1201    1      1.600000E-01
  1202    1      1.590000E-01
- 1203    0      9.999900E+00
+ 1203    2      9.999900E+00
  1204    1      2.650000E-01
  1205    1      2.360000E-01
  1206    1      1.650000E-01
  1207    1      2.900000E-01
- 1208    0      9.999900E+00
+ 1208    2      9.999900E+00
  1209    1      2.780000E-01
- 1210    0      9.999900E+00
+ 1210    2      9.999900E+00
  1211    1      2.750000E-01
  1212    1      2.430000E-01
  1213    1      1.820000E-01
  1214    1      2.850000E-01
  1215    1      2.860000E-01
- 1216    0      2.778000E+00
- 1217    0      2.950000E-01
+ 1216    2      2.778000E+00
+ 1217    2      2.950000E-01
  1218    1      1.750000E-01
  1219    1      1.770000E-01
  1220    1      2.610000E-01
  1221    1      1.870000E-01
- 1222    0      2.560000E-01
+ 1222    2      2.560000E-01
  1223    1      2.620000E-01
- 1224    0      2.670000E-01
- 1225    0      2.530000E-01
+ 1224    2      2.670000E-01
+ 1225    2      2.530000E-01
  1226    1      2.310000E-01
  1227    1      2.670000E-01
  1228    1      2.810000E-01
@@ -7585,22 +7589,22 @@
  1237    1      3.950000E-01
  1238    1      3.000000E-01
  1239    1      3.040000E-01
- 1240    0      9.999900E+00
+ 1240    2      9.999900E+00
  1241    1      3.190000E-01
- 1242    0      5.659000E+00
+ 1242    2      5.659000E+00
  1243    1      3.410000E-01
- 1244    0      3.540000E-01
+ 1244    2      3.540000E-01
  1245    1      3.250000E-01
- 1246    0      3.292000E+00
+ 1246    2      3.292000E+00
  1247    1      2.200000E-01
  1248    1      3.520000E-01
  1249    1      3.490000E-01
  1250    1      3.390000E-01
- 1251    0      3.302000E+00
+ 1251    2      3.302000E+00
  1252    1      3.400000E-01
  1253    1      2.360000E-01
  1254    1      3.870000E-01
- 1255    0      3.546000E+00
+ 1255    2      3.546000E+00
  1256    1      3.880000E-01
  1257    1      2.410000E-01
  1258    1      3.540000E-01
@@ -7625,26 +7629,26 @@
  1277    1      9.900000E-02
  1278    1      1.330000E-01
  1279    1      9.600000E-02
- 1280    0      9.999900E+00
- 1281    0      8.400000E-02
- 1282    0      8.200000E-02
- 1283    0      2.410000E-01
+ 1280    2      9.999900E+00
+ 1281    2      8.400000E-02
+ 1282    2      8.200000E-02
+ 1283    2      2.410000E-01
  1284    1      1.000000E-01
  1285    1      8.700000E-02
  1286    1      9.200000E-02
- 1287    0      1.300000E-01
- 1288    0      8.100000E-02
- 1289    0      8.100000E-02
- 1290    0      8.000000E-02
- 1291    0      7.900000E-02
- 1292    0      8.200000E-02
- 1293    0      8.800000E-02
- 1294    0      8.200000E-02
- 1295    0      7.800000E-02
- 1296    0      7.700000E-02
- 1297    0      1.280000E-01
- 1298    0      8.200000E-02
- 1299    0      8.000000E-02
+ 1287    2      1.300000E-01
+ 1288    2      8.100000E-02
+ 1289    2      8.100000E-02
+ 1290    2      8.000000E-02
+ 1291    2      7.900000E-02
+ 1292    2      8.200000E-02
+ 1293    2      8.800000E-02
+ 1294    2      8.200000E-02
+ 1295    2      7.800000E-02
+ 1296    2      7.700000E-02
+ 1297    2      1.280000E-01
+ 1298    2      8.200000E-02
+ 1299    2      8.000000E-02
  1300    1      8.300000E-02
  1301    1      8.100000E-02
  1302    1      8.000000E-02
@@ -7696,11 +7700,11 @@
  1348    1      8.900000E-02
  1349    1      9.400000E-02
  1350    1      1.060000E-01
- 1351    0      9.999900E+00
+ 1351    2      9.999900E+00
  1352    1      9.500000E-02
  1353    1      1.130000E-01
- 1354    0      1.337000E+00
- 1355    0      9.999900E+00
+ 1354    2      1.337000E+00
+ 1355    2      9.999900E+00
  1356    1      9.700000E-02
  1357    1      9.400000E-02
  1358    1      1.050000E-01
@@ -7742,9 +7746,9 @@
  1394    1      1.140000E-01
  1395    1      1.210000E-01
  1396    1      1.290000E-01
- 1397    0      6.360000E-01
+ 1397    2      6.360000E-01
  1398    1      1.460000E-01
- 1399    0      9.999900E+00
+ 1399    2      9.999900E+00
  1400    1      1.790000E-01
  1401    1      1.140000E-01
  1402    1      1.170000E-01
@@ -7828,17 +7832,17 @@
  1480    1      9.200000E-02
  1481    1      1.240000E-01
  1482    1      1.710000E-01
- 1483    0      9.000000E-02
- 1484    0      8.800000E-02
- 1485    0      1.050000E-01
- 1486    0      1.240000E-01
- 1487    0      2.740000E-01
- 1488    0      2.470000E-01
- 1489    0      1.540000E-01
- 1490    0      2.120000E-01
- 1491    0      1.250000E-01
- 1492    0      2.440000E-01
- 1493    0      8.800000E-02
+ 1483    2      9.000000E-02
+ 1484    2      8.800000E-02
+ 1485    2      1.050000E-01
+ 1486    2      1.240000E-01
+ 1487    2      2.740000E-01
+ 1488    2      2.470000E-01
+ 1489    2      1.540000E-01
+ 1490    2      2.120000E-01
+ 1491    2      1.250000E-01
+ 1492    2      2.440000E-01
+ 1493    2      8.800000E-02
  1494    1      1.230000E-01
  1495    1      8.900000E-02
  1496    1      1.430000E-01
@@ -7852,8 +7856,8 @@
  1504    1      8.300000E-02
  1505    1      8.800000E-02
  1506    1      8.200000E-02
- 1507    0      3.330000E-01
- 1508    0      1.100000E-01
+ 1507    2      3.330000E-01
+ 1508    2      1.100000E-01
  1509    1      1.110000E-01
  1510    1      9.000000E-02
  1511    1      9.000000E-02
@@ -8017,7 +8021,7 @@
  1669    1      9.400000E-02
  1670    1      9.400000E-02
  1671    1      9.400000E-02
- 1672    0      3.117000E+00
+ 1672    2      3.117000E+00
  1673    1      7.200000E-02
  1674    1      7.300000E-02
  1675    1      7.100000E-02
@@ -8036,7 +8040,7 @@
  1688    1      7.200000E-02
  1689    1      1.230000E-01
  1690    1      3.580000E-01
- 1691    0      9.999900E+00
+ 1691    2      9.999900E+00
  1692    1      7.200000E-02
  1693    1      1.040000E-01
  1694    1      9.200000E-02
@@ -8057,10 +8061,10 @@
  1709    1      7.200000E-02
  1710    1      7.800000E-02
  1711    1      7.400000E-02
- 1712    0      4.160000E-01
- 1713    0      3.206000E+00
+ 1712    2      4.160000E-01
+ 1713    2      3.206000E+00
  1714    1      7.300000E-02
- 1715    0      8.200000E-02
+ 1715    2      8.200000E-02
  1716    1      7.400000E-02
  1717    1      7.400000E-02
  1718    1      7.300000E-02
@@ -8070,23 +8074,23 @@
  1722    1      9.600000E-02
  1723    1      1.120000E-01
  1724    1      9.300000E-02
- 1725    0      1.420000E-01
- 1726    0      9.900000E-02
- 1727    0      1.210000E-01
- 1728    0      9.999900E+00
- 1729    0      9.800000E-01
- 1730    0      9.999900E+00
- 1731    0      9.999900E+00
- 1732    0      3.840000E-01
- 1733    0      5.890000E-01
- 1734    0      4.250000E-01
- 1735    0      9.999900E+00
- 1736    0      3.147000E+00
+ 1725    2      1.420000E-01
+ 1726    2      9.900000E-02
+ 1727    2      1.210000E-01
+ 1728    2      9.999900E+00
+ 1729    2      9.800000E-01
+ 1730    2      9.999900E+00
+ 1731    2      9.999900E+00
+ 1732    2      3.840000E-01
+ 1733    2      5.890000E-01
+ 1734    2      4.250000E-01
+ 1735    2      9.999900E+00
+ 1736    2      3.147000E+00
  1737    1      9.300000E-02
  1738    1      1.150000E-01
  1739    1      1.030000E-01
  1740    1      1.090000E-01
- 1741    0      2.220000E-01
+ 1741    2      2.220000E-01
  1742    1      8.700000E-02
  1743    1      8.700000E-02
  1744    1      8.800000E-02
@@ -8104,7 +8108,7 @@
  1756    1      9.500000E-02
  1757    1      1.220000E-01
  1758    1      9.600000E-02
- 1759    0      9.999900E+00
+ 1759    2      9.999900E+00
  1760    1      9.400000E-02
  1761    1      1.170000E-01
  1762    1      1.190000E-01
@@ -8119,25 +8123,25 @@
  1771    1      1.220000E-01
  1772    1      1.660000E-01
  1773    1      1.210000E-01
- 1774    0      1.640000E-01
+ 1774    2      1.640000E-01
  1775    1      1.210000E-01
  1776    1      1.200000E-01
  1777    1      1.200000E-01
  1778    1      1.210000E-01
  1779    1      1.210000E-01
  1780    1      1.230000E-01
- 1781    0      9.999900E+00
- 1782    0      1.700000E-01
+ 1781    2      9.999900E+00
+ 1782    2      1.700000E-01
  1783    1      1.260000E-01
- 1784    0      1.700000E-01
+ 1784    2      1.700000E-01
  1785    1      1.630000E-01
- 1786    0      1.387000E+00
- 1787    0      1.720000E-01
- 1788    0      9.999900E+00
+ 1786    2      1.387000E+00
+ 1787    2      1.720000E-01
+ 1788    2      9.999900E+00
  1789    1      1.770000E-01
  1790    1      1.770000E-01
  1791    1      1.750000E-01
- 1792    0      9.999900E+00
+ 1792    2      9.999900E+00
  1793    1      1.870000E-01
  1794    1      1.500000E-01
  1795    1      1.440000E-01
@@ -8170,7 +8174,7 @@
  1822    1      1.800000E-01
  1823    1      1.810000E-01
  1824    1      1.800000E-01
- 1825    0      1.860000E-01
+ 1825    2      1.860000E-01
  1826    1      1.870000E-01
  1827    1      1.880000E-01
  1828    1      1.950000E-01
@@ -8181,7 +8185,7 @@
  1833    1      2.700000E-01
  1834    1      2.040000E-01
  1835    1      2.150000E-01
- 1836    0      3.000000E-01
+ 1836    2      3.000000E-01
  1837    1      2.170000E-01
  1838    1      2.150000E-01
  1839    1      2.190000E-01
@@ -8202,7 +8206,7 @@
  1854    1      2.900000E-01
  1855    1      3.470000E-01
  1856    1      3.100000E-01
- 1857    0      4.020000E-01
+ 1857    2      4.020000E-01
  1858    1      3.110000E-01
  1859    1      3.980000E-01
  1860    1      4.160000E-01
@@ -8267,7 +8271,7 @@
  1919    1      1.470000E-01
  1920    1      1.030000E-01
  1921    1      1.460000E-01
- 1922    0      9.999900E+00
+ 1922    2      9.999900E+00
  1923    1      1.080000E-01
  1924    1      1.120000E-01
  1925    1      1.080000E-01
@@ -8330,7 +8334,7 @@
  1982    1      1.820000E-01
  1983    1      2.500000E-01
  1984    1      1.980000E-01
- 1985    0      9.999900E+00
+ 1985    2      9.999900E+00
  1986    1      1.880000E-01
  1987    1      1.940000E-01
  1988    1      1.940000E-01
@@ -8348,29 +8352,29 @@
  2000    1      2.320000E-01
  2001    1      2.410000E-01
  2002    1      2.470000E-01
- 2003    0      2.530000E-01
- 2004    0      2.610000E-01
- 2005    0      2.680000E-01
- 2006    0      3.770000E-01
- 2007    0      3.060000E-01
- 2008    0      4.280000E-01
- 2009    0      7.550000E-01
- 2010    0      2.376000E+00
- 2011    0      9.999900E+00
- 2012    0      9.999900E+00
- 2013    0      9.999900E+00
- 2014    0      9.999900E+00
- 2015    0      9.999900E+00
- 2016    0      9.999900E+00
- 2017    0      9.999900E+00
- 2018    0      1.361000E+00
- 2019    0      4.390000E-01
- 2020    0      2.140000E-01
- 2021    0      1.690000E-01
- 2022    0      2.260000E-01
- 2023    0      3.070000E-01
- 2024    0      1.580000E-01
- 2025    0      1.570000E-01
+ 2003    2      2.530000E-01
+ 2004    2      2.610000E-01
+ 2005    2      2.680000E-01
+ 2006    2      3.770000E-01
+ 2007    2      3.060000E-01
+ 2008    2      4.280000E-01
+ 2009    2      7.550000E-01
+ 2010    2      2.376000E+00
+ 2011    2      9.999900E+00
+ 2012    2      9.999900E+00
+ 2013    2      9.999900E+00
+ 2014    2      9.999900E+00
+ 2015    2      9.999900E+00
+ 2016    2      9.999900E+00
+ 2017    2      9.999900E+00
+ 2018    2      1.361000E+00
+ 2019    2      4.390000E-01
+ 2020    2      2.140000E-01
+ 2021    2      1.690000E-01
+ 2022    2      2.260000E-01
+ 2023    2      3.070000E-01
+ 2024    2      1.580000E-01
+ 2025    2      1.570000E-01
  2026    1      1.510000E-01
  2027    1      1.520000E-01
  2028    1      1.570000E-01
@@ -8496,7 +8500,7 @@
  2148    1      1.770000E-01
  2149    1      1.830000E-01
  2150    1      1.840000E-01
- 2151    0      9.999900E+00
+ 2151    2      9.999900E+00
  2152    1      1.830000E-01
  2153    1      2.130000E-01
  2154    1      2.710000E-01
@@ -8583,12 +8587,12 @@
  2235    1      4.100000E-01
  2236    1      4.050000E-01
  2237    1      4.070000E-01
- 2238    0      5.470000E-01
+ 2238    2      5.470000E-01
  2239    1      5.700000E-01
  2240    1      4.260000E-01
  2241    1      5.820000E-01
  2242    1      5.990000E-01
- 2243    0      9.999900E+00
+ 2243    2      9.999900E+00
  2244    1      5.040000E-01
  2245    1      4.490000E-01
  2246    1      4.510000E-01
@@ -8599,25 +8603,25 @@
  2251    1      4.850000E-01
  2252    1      5.020000E-01
  2253    1      5.220000E-01
- 2254    0      6.950000E-01
- 2255    0      1.147000E+00
- 2256    0      3.268000E+00
- 2257    0      9.999900E+00
- 2258    0      9.999900E+00
- 2259    0      9.999900E+00
- 2260    0      9.999900E+00
- 2261    0      9.999900E+00
- 2262    0      9.999900E+00
- 2263    0      9.999900E+00
- 2264    0      2.437000E+00
- 2265    0      1.238000E+00
- 2266    0      5.710000E-01
- 2267    0      4.080000E-01
- 2268    0      3.510000E-01
- 2269    0      3.560000E-01
- 2270    0      3.410000E-01
- 2271    0      3.320000E-01
- 2272    0      3.400000E-01
+ 2254    2      6.950000E-01
+ 2255    2      1.147000E+00
+ 2256    2      3.268000E+00
+ 2257    2      9.999900E+00
+ 2258    2      9.999900E+00
+ 2259    2      9.999900E+00
+ 2260    2      9.999900E+00
+ 2261    2      9.999900E+00
+ 2262    2      9.999900E+00
+ 2263    2      9.999900E+00
+ 2264    2      2.437000E+00
+ 2265    2      1.238000E+00
+ 2266    2      5.710000E-01
+ 2267    2      4.080000E-01
+ 2268    2      3.510000E-01
+ 2269    2      3.560000E-01
+ 2270    2      3.410000E-01
+ 2271    2      3.320000E-01
+ 2272    2      3.400000E-01
  2273    1      3.400000E-01
  2274    1      3.380000E-01
  2275    1      3.370000E-01
@@ -8673,7 +8677,7 @@
  2325    1      3.480000E-01
  2326    1      3.170000E-01
  2327    1      4.050000E-01
- 2328    0      3.180000E-01
+ 2328    2      3.180000E-01
  2329    1      3.140000E-01
  2330    1      3.120000E-01
  2331    1      3.120000E-01
@@ -8704,7 +8708,7 @@
  2356    1      4.260000E-01
  2357    1      1.399000E+00
  2358    1      3.230000E-01
- 2359    0      9.999900E+00
+ 2359    2      9.999900E+00
  2360    1      3.280000E-01
  2361    1      4.450000E-01
  2362    1      4.840000E-01
@@ -8724,7 +8728,7 @@
  2376    1      3.810000E-01
  2377    1      3.860000E-01
  2378    1      5.350000E-01
-  IASI         MetOp-A      iasiB1_metop-a       0         221     4  2260
+  IASI         MetOp-A      iasiB1_metop-a       2         221     4  2260
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -10985,7 +10989,7 @@
  2258    1      1.000000E+02
  2259    1      1.000000E+02
  2260    1      1.000000E+02
-  IASI         MetOp-A      iasiB2_metop-a       0         221     4  3160
+  IASI         MetOp-A      iasiB2_metop-a       2         221     4  3160
  2261    1      1.000000E+02
  2262    1      1.000000E+02
  2263    1      1.000000E+02
@@ -14146,7 +14150,7 @@
  5418    1      1.000000E+02
  5419    1      1.000000E+02
  5420    1      1.000000E+02
-  IASI         MetOp-A      iasiB3_metop-a       0         221     4  3041
+  IASI         MetOp-A      iasiB3_metop-a       2         221     4  3041
  5421    1      1.000000E+02
  5422    1      1.000000E+02
  5423    1      1.000000E+02
@@ -17188,7 +17192,7 @@
  8459    1      1.000000E+02
  8460    1      1.000000E+02
  8461    1      1.000000E+02
-  IASI         MetOp-A      iasi300_metop-a      0         221     4   300
+  IASI         MetOp-A      iasi300_metop-a      2         221     4   300
    16    1      1.000000E+02
    38    1      1.000000E+02
    49    1      1.000000E+02
@@ -17489,7 +17493,7 @@
  7428    1      1.000000E+02
  7885    1      1.000000E+02
  8007    1      1.000000E+02
-  IASI         MetOp-A      iasi316_metop-a      0         221     4   316
+  IASI         MetOp-A      iasi316_metop-a      2         221     4   316
    29    1      1.000000E+02
    32    1      1.000000E+02
    35    1      1.000000E+02
@@ -17806,7 +17810,7 @@
  8015    1      1.000000E+02
  8055    1      1.000000E+02
  8078    1      1.000000E+02
-  IASI         MetOp-A      iasi616_metop-a      0         221     4   616
+  IASI         MetOp-A      iasi616_metop-a      2         221     4   616
    16    1      1.000000E+02
    29    1      1.000000E+02
    32    1      1.000000E+02
@@ -18423,7 +18427,7 @@
  8015    1      1.000000E+02
  8055    1      1.000000E+02
  8078    1      1.000000E+02
-  CrIS         NPP          crisB1_npp           0         620   224   713
+  CrIS         NPP          crisB1_npp           2         620   224   713
     1    1      1.000000E+02
     2    1      1.000000E+02
     3    1      1.000000E+02
@@ -19137,7 +19141,7 @@
   711    1      1.000000E+02
   712    1      1.000000E+02
   713    1      1.000000E+02
-  CrIS         NPP          crisB2_npp           0         620   224   433
+  CrIS         NPP          crisB2_npp           2         620   224   433
   714    1      1.000000E+02
   715    1      1.000000E+02
   716    1      1.000000E+02
@@ -19571,7 +19575,7 @@
  1144    1      1.000000E+02
  1145    1      1.000000E+02
  1146    1      1.000000E+02
-  CrIS         NPP          crisB3_npp           0         620   224   159
+  CrIS         NPP          crisB3_npp           2         620   224   159
  1147    1      1.000000E+02
  1148    1      1.000000E+02
  1149    1      1.000000E+02
