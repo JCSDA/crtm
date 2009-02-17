@@ -286,7 +286,8 @@ PROGRAM Create_Solar
                    History = PROGRAM_RCS_ID//'; '//&
                              TRIM(Interpolation_RCS_Id)//'; '//&
                              'AER extract_solar.f', &
-                   Comment = '4-pt Lagrangian interpolated from original Kurucz data.', &
+                   Comment = '4-pt Lagrangian interpolated from original Kurucz data. Data '//&
+                             'extracted from AER solar.kurucz.rad.mono.full_disk.bin file.', &
                    Source = 'Solar spectrum computed with a version of the model atmosphere program ATLAS', &
                    References = 'Kurucz, R.L., Synthetic infrared spectra, in Infrared Solar Physics, '//&
                                 'IAU Symp. 154, edited by D.M. Rabin and J.T. Jefferies, Kluwer, Acad., '//&
