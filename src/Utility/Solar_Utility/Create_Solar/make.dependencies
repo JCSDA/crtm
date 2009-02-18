@@ -1,5 +1,6 @@
+Average_Utility.o : Average_Utility.f90 Message_Handler.o Type_Kinds.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
-Create_Solar.o : Create_Solar.f90 Solar_netCDF_IO.o Solar_Define.o Planck_Functions.o Interpolate_Utility.o Fundamental_Constants.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Create_Solar.o : Create_Solar.f90 Solar_netCDF_IO.o Solar_Define.o Planck_Functions.o Average_Utility.o Interpolate_Utility.o Fundamental_Constants.o Message_Handler.o File_Utility.o Type_Kinds.o 
 File_Utility.o : File_Utility.f90 
 Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
 Integrate_Utility.o : Integrate_Utility.f90 Interpolate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 

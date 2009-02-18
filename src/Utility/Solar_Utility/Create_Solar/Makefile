@@ -25,6 +25,7 @@ SRC_FILES = Type_Kinds.f90 \
             Polynomial_Interpolation.f90 \
             Spline_Interpolation.f90 \
             Integrate_Utility.f90 \
+            Average_Utility.f90 \
             Planck_Functions.f90 \
             Solar_Define.f90 \
             Solar_netCDF_IO.f90 \
