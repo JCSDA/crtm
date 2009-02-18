@@ -1,0 +1,122 @@
+% The generic preamble
+\input{preamble}
+
+
+%\includeonly{}
+
+% Title info
+\title{Solar Irradiance data used in SpcCoeff generation}
+\author{Paul van Delst\email{paul.vandelst@noaa.gov}, David Groff\email{david.groff@noaa.gov}\\JCSDA/EMC/SAIC}
+\date{February, 2009}
+\docnumber{(unassigned)}
+\docseries{CRTM}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+%\draftwatermark
+
+% The front matter
+%=================
+\thispagestyle{empty}
+\vspace*{10cm}
+\begin{center}
+  {\sffamily\Large\bfseries Change History}
+  \begin{table}[htp]
+    \centering
+    \begin{tabular}{|p{2cm}|p{3cm}|p{8cm}|}
+      \hline
+      \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
+      \hline\hline
+      2009-02-18 & P.van Delst & Initial release.\\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+% The main matter
+%================
+%\include{}
+
+\section{Original Data}
+The solar irradiance data used in the CRTM spectral coefficient (SpcCoeff) data files are that of  \citet{Kurucz1992} that are supplied with the AER Line By Line Radiative Transfer Model, LBLRTM \citep{Clough_etal_2005}. Figure \ref{fig:Kurucz_orig}(a) shows the actual irradiance data and figure \ref{fig:Kurucz_orig}(b) shows the spectral variation in the frequency grid.
+
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=1]{graphics/orig.eps}
+  \caption{\textbf{(a)} Original Kurucz solar irradiance data. \textbf{(b)} Frequency spacing of data.}
+  \label{fig:Kurucz_orig}
+\end{figure}
+
+\section{Processed Data}
+For use with infrared and visible broadband channel spectral reponse functions (SRFs), the Kurucz data is resampled via boxcar averaging at the same frequency spacing as the SRFs. Because the frequency spacing of the original data varies with frequency, both interpolation and boxcar-averaging to $\Delta f = 0.1$\invcm{} was performed. Both results are shown in figure \ref{fig:Kurucz_int-avg}(a) with the difference shown in figure \ref{fig:Kurucz_int-avg}(b). As expected, the averaged results are at a lower spectral resolution -- evidenced by the smaller magnitude of the absorption peaks in figure \ref{fig:Kurucz_int-avg}(a) -- but the difference spectrum is well distributed about zero. The impact of convolving either the interpolated or averaged irradiance with a sensor SRF is shown in table \ref{tab:convolved_diff}.
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=1]{graphics/int-avg_diff.eps}
+  \caption{\textbf{(a)} Original Kurucz solar irradiance data interpolated and averaged to 0.1\invcm{} frequency spacing. \textbf{(b)} Difference between the interpolated and averaged solar irradiance data.}
+  \label{fig:Kurucz_int-avg}
+\end{figure}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l c *{3}{r@{.}l}}
+    \hline
+                    &                  & \multicolumn{2}{c}{\textbf{Interpolated}} & \multicolumn{2}{c}{\textbf{Averaged}}  & \multicolumn{2}{c}{\textbf{Difference}} \\
+    \rb{\textbf{Sensor}} & \rb{\textbf{Channel}} & \multicolumn{2}{c}{\textbf{(mW/(m$^2$.cm$^{-1}$))}} & \multicolumn{2}{c}{\textbf{(mW/(m$^2$.cm$^{-1}$))}}  & \multicolumn{2}{c}{\textbf{(\%)}} \\
+    \hline\hline
+                 &  1 &  1&10858275698263630 &  1&10866351598035706 & -7&28e-03 \\ 
+                 &  2 &  1&15079368806780535 &  1&15077606592176739 &  1&53e-03 \\ 
+                 &  3 &  1&18004534060217025 &  1&18004267483969593 &  2&26e-04 \\ 
+                 &  4 &  1&22799824621161834 &  1&22800185804646067 & -2&94e-04 \\ 
+                 &  5 &  1&26439535427395388 &  1&26439462571735084 &  5&76e-05 \\ 
+                 &  6 &  1&32487833258853626 &  1&32486693207386840 &  8&61e-04 \\ 
+                 &  7 &  1&39178666458440658 &  1&39178147425172738 &  3&73e-04 \\ 
+                 &  8 &  1&98961684438544006 &  1&98957482344496972 &  2&11e-03 \\ 
+                 &  9 &  2&57923716144076342 &  2&57944413221971480 & -8&02e-03 \\ 
+    \rb{HIRS/4}  & 10 &  1&58160613225902002 &  1&58155236738516857 &  3&40e-03 \\ 
+                 & 11 &  4&44893794503619677 &  4&44914627456187172 & -4&68e-03 \\
+                 & 12 &  5&54583604355146331 &  5&54563490444953721 &  3&63e-03 \\
+                 & 13 & 10&12785526452585749 & 10&15620852588738998 & -2&79e-01 \\
+                 & 14 & 10&31783506913986770 & 10&29967168123845056 &  1&76e-01 \\
+                 & 15 & 10&60864568505230032 & 10&60570363692216311 &  2&77e-02 \\
+                 & 16 & 10&73681456441526905 & 10&72539119188912693 &  1&07e-01 \\
+                 & 17 & 13&14133514666552927 & 13&13825396027710823 &  2&35e-02 \\
+                 & 18 & 14&07449197010368991 & 14&07840484387444135 & -2&78e-02 \\
+                 & 19 & 15&60461010867800269 & 15&60394088060967022 &  4&29e-03 \\
+    \hline
+                 &  1 & 65&92492445299077986 & 65&92331782150506569 &  2&44e-03 \\ 
+                 &  2 & 72&25298702951161545 & 72&25274953120639054 &  3&29e-04 \\ 
+                 & 3A & 62&81728889722613474 & 62&81711632897867048 &  2&75e-04 \\ 
+    \rb{AVHRR/3} & 3B & 15&64859793656921383 & 15&64762481332486033 & -6&22e-03 \\ 
+                 &  4 &  2&10938960294082944 &  2&10938768223147343 & -9&11e-05 \\ 
+                 &  5 &  1&71052718051786256 &  1&71052741075749237 &  1&35e-05 \\ 
+    \hline
+  \end{tabular}
+  \caption{Differences in the convolved solar irradiance for the NOAA-18 HIRS/4 and AVHRR/3 sensors between using the interpolated and boxcar-averaged solar irradiance of figure \ref{fig:Kurucz_int-avg}(a).}
+  \label{tab:convolved_diff}
+\end{table}
+
+
+% The references section
+%=======================
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+
+% The appendices section
+%=======================
+%\begin{appendix}
+%
+%\end{appendix}
+
+\end{document}
+
