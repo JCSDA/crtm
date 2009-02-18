@@ -31,6 +31,8 @@ MODULE Average_Utility
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
+  ! Default message length
+  INTEGER, PARAMETER :: ML = 256
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -51,7 +53,7 @@ CONTAINS
 !       a specified bin size for an input x-vector.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Boxcar_Average( x_in, y_in, x1, dx,     &  ! Input   
+!       Error_Status = Boxcar_Average( x_in, y_in, x1, x2, dx, &  ! Input   
 !                                      y_out, n_out,           &  ! Output
 !                                      RCS_Id     =RCS_Id,     &  ! Revision control
 !                                      Message_Log=Message_Log )  ! Error messaging
@@ -59,12 +61,14 @@ CONTAINS
 !
 ! INPUT ARGUMENTS:
 !       x_in, y_in:   The tabulated (x,y) vector pairs to be averaged.
+!                     The x-spacing doesn't need to be uniform (but it
+!                     is recommended).
 !                     UNITS:      Argument dependent.
 !                     TYPE:       REAL(fp)
 !                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(IN)
 !
-!       x1:           The first output x-value to report.
+!       x1, x2:       The first and last output x-value to report.
 !                     UNITS:      Same as input x_in.
 !                     TYPE:       REAL(fp)
 !                     DIMENSION:  Rank-1
@@ -127,6 +131,7 @@ CONTAINS
   FUNCTION Boxcar_Average( x_in        , &  ! Input
                            y_in        , &  ! Input
                            x1          , &  ! Input
+                           x2          , &  ! Input
                            dx          , &  ! Input
                            y_out       , &  ! Input
                            n_out       , &  ! Output
@@ -135,7 +140,7 @@ CONTAINS
                          RESULT( Error_Status )
     ! Arguments
     REAL(fp)              , INTENT(IN)  :: x_in(:), y_in(:)
-    REAL(fp)              , INTENT(IN)  :: x1, dx
+    REAL(fp)              , INTENT(IN)  :: x1, x2, dx
     REAL(fp)              , INTENT(OUT) :: y_out(:)
     INTEGER               , INTENT(OUT) :: n_out
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
@@ -145,15 +150,15 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Boxcar_Average'
     ! Local variables
-    INTEGER :: i, n_in, n, n_avg
-    INTEGER, ALLOCATABLE :: idx(:)
-    INTEGER :: idx_x_in(SIZE(x_in))
-    LOGICAL :: mask_x_in(SIZE(x_in))
-    REAL(fp) :: min_dx_in, dx2, max_x_in, x2, x, xb, xe
+    CHARACTER(ML) :: msg
+    INTEGER :: i, n_in, n_avg, j_start, j1, j2, j
+    REAL(fp) :: min_dx_in, dx2, max_x_in, x, xb, xe
     
     ! Setup
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+
+    ! Compute and check the averaging parameters
     n_in = SIZE(x_in)
     IF ( SIZE(y_in) /= n_in ) THEN
       Error_Status = FAILURE
@@ -172,51 +177,51 @@ CONTAINS
                             Message_Log=Message_Log )
       RETURN
     END IF
-    
-    ! Compute the averaging parameters
-    dx2 = dx/TWO
-    IF ( x1-dx2 < x_in(1) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Not enough input data to produce output at X1.', &
-                            Error_Status, & 
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    max_x_in = MAXVAL(x_in)
-    n = INT((max_x_in - x1)/dx + ONEpointFIVE)
-    Find_n_and_x2: DO
-      x2 = x1 + REAL(n-1,fp)*dx
-      IF ( x2+dx2 < max_x_in ) EXIT Find_n_and_x2
-      n = n-1
-    END DO Find_n_and_x2
-    IF ( SIZE(y_out) < n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Y_OUT array not large enough for result.', &
-                            Error_Status, & 
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    
-    ! Allocate the local averaging arrays
     n_avg = INT(dx/min_dx_in) + 5  !...plus some slop
-    ALLOCATE(idx(n_avg))
+    dx2 = dx/TWO
+    max_x_in = MAXVAL(x_in)
+    IF ( x1-dx2 < x_in(1) .OR. x2+dx2 > max_x_in ) THEN
+      Error_Status = FAILURE
+      WRITE( msg,'("Input data range (",es13.6,",",es13.6,") insufficient to produce ",&
+                  &"average output. Range of at least (",es13.6,",",es13.6,") required")' ) &
+                  x_in(1), max_x_in, x1-dx2, x2+dx2
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      RETURN
+    END IF
+    n_out = INT((x2 - x1)/dx + ONEpointFIVE)
+    IF ( SIZE(y_out) < n_out ) THEN
+      Error_Status = FAILURE
+      WRITE( msg,'("Y_OUT size too small (",i0,") for result (",i0,").")' ) SIZE(y_out),n_out
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      RETURN
+    END IF
     
+    ! Initialise search start point for input
+    j_start = 1
+
     ! Begin the averaging loop over the binned output
-    idx_x_in = (/(i,i=1,n_in)/)
-    Average: DO i = 1, n
+    Average: DO i = 1, n_out
       x = x1 + REAL(i-1,fp)*dx
       xb = x - dx2 - SPACING(x); xe = x + dx2 + SPACING(x)
-      mask_x_in = (x_in >= xb .AND. x_in < xe)
-      n_avg = COUNT(mask_x_in)
-      idx(1:n_avg) = PACK(idx_x_in,mask_x_in)
-      y_out(i) = SUM(y_in(idx(1:n_avg))) / REAL(n_avg,fp)
+      ! ..Linear search for averaging boundary indices 
+      ! ..since input x-spacing may not be uniform
+      j1_Search: DO j = j_start, n_in
+        IF ( x_in(j) >= xb ) THEN
+          j1 = j
+          j_start = j
+          EXIT j1_Search
+        END IF
+      END DO j1_Search
+      j2_Search: DO j = j_start, n_in
+        IF ( x_in(j) > xe ) THEN
+          j2 = j-1
+          j_start = j-1
+          EXIT j2_Search
+        END IF
+      END DO j2_Search
+      n_avg = j2-j1+1
+      y_out(i) = SUM(y_in(j1:j2)) / REAL(n_avg,fp)
     END DO Average
-    n_out = n
-    
-    ! Cleanup
-    DEALLOCATE(idx)
     
   END FUNCTION Boxcar_Average
 
