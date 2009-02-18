@@ -43,7 +43,7 @@ MODULE Linear_Interpolation
   ! -----------------
   ! RCS Id field
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Linear_Interpolation.f90,v 1.1 2006/10/09 14:16:38 wd20pd Exp $'
+    '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp

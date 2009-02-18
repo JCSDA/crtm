@@ -23,7 +23,7 @@ PROGRAM Test_Interpolate_Utility
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Test_Interpolate_Utility'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Interpolate_Utility.f90,v 1.3 2006/10/09 14:24:09 wd20pd Exp $'
+    '$Id$'
   INTEGER,      PARAMETER :: N  = 25
 !  INTEGER,      PARAMETER :: N  = 12
   INTEGER,      PARAMETER :: NI = 78

@@ -38,6 +38,6 @@ MODULE Interpolate_Utility
   ! -----------------
   ! RCS Id field
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Interpolate_Utility.f90,v 1.4 2006/10/09 14:19:23 wd20pd Exp $'
+    '$Id$'
 
 END MODULE Interpolate_Utility
