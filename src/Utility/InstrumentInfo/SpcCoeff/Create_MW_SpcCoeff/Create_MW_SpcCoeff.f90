@@ -33,8 +33,7 @@ PROGRAM Create_MW_SpcCoeff
   USE MW_SensorData_Define     , ONLY: MW_SensorData_type, &
                                        Load_MW_SensorData, &
                                        Destroy_MW_SensorData
-  USE SensorInfo_Define        , ONLY: SENSORINFO_MICROWAVE=>MICROWAVE_SENSOR_TYPE, &
-                                       SensorInfo_type, &
+  USE SensorInfo_Define        , ONLY: SensorInfo_type, &
                                        Destroy_SensorInfo
   USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type, &
                                        Count_SensorInfo_Nodes, &
@@ -45,7 +44,7 @@ PROGRAM Create_MW_SpcCoeff
                                        Assign_AntCorr, &
                                        Destroy_AntCorr
   USE AntCorr_netCDF_IO        , ONLY: Read_AntCorr_netCDF
-  USE SpcCoeff_Define          , ONLY: SPCCOEFF_MICROWAVE=>MICROWAVE_SENSOR, &
+  USE SpcCoeff_Define          , ONLY: MICROWAVE_SENSOR, &
                                        POLARIZATION_TYPE_NAME, &
                                        SOLAR_FLAG, ZEEMAN_FLAG, &
                                        SpcCoeff_type, &
@@ -207,7 +206,7 @@ PROGRAM Create_MW_SpcCoeff
 
     ! Only operate on microwave sensors
     ! ---------------------------------
-    IF ( SensorInfo%Microwave_Flag /= SENSORINFO_MICROWAVE ) CYCLE Sensor_Loop
+    IF ( SensorInfo%Sensor_Type /= MICROWAVE_SENSOR ) CYCLE Sensor_Loop
 
 
     ! Output an info message
@@ -294,7 +293,7 @@ PROGRAM Create_MW_SpcCoeff
 
     ! Assign the sensor ID values
     SpcCoeff%Sensor_Id        = SensorInfo%Sensor_Id
-    SpcCoeff%Sensor_Type      = SPCCOEFF_MICROWAVE
+    SpcCoeff%Sensor_Type      = SensorInfo%Sensor_Type
     SpcCoeff%WMO_Satellite_ID = MW_SensorData%WMO_Satellite_ID
     SpcCoeff%WMO_Sensor_ID    = MW_SensorData%WMO_Sensor_ID
     SpcCoeff%Sensor_Channel   = MW_SensorData%Sensor_Channel

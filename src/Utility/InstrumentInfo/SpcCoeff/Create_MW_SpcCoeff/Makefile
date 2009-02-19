@@ -19,9 +19,11 @@ SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
+            String_Utility.f90 \
             Fundamental_Constants.f90 \
             Planck_Functions.f90 \
             Spectral_Units_Conversion.f90 \
+            SensorInfo_Parameters.f90 \
             MW_SensorData_Define.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
@@ -29,11 +31,7 @@ SRC_FILES = Type_Kinds.f90 \
             AntCorr_Define.f90 \
             AntCorr_netCDF_IO.f90 \
             SpcCoeff_Define.f90 \
-            SpcCoeff_netCDF_IO.f90 \
-            netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
-            netCDF_Variable_Utility.f90
+            SpcCoeff_netCDF_IO.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
