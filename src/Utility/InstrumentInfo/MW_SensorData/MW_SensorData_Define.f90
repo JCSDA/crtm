@@ -185,7 +185,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_AMSRE_CHANNELS   = 12
   INTEGER, PARAMETER :: N_WINDSAT_CHANNELS = 16
   INTEGER, PARAMETER :: N_ATMS_CHANNELS    = 22
-  INTEGER, PARAMETER :: N_MWRI_CHANNELS    = 12
+  INTEGER, PARAMETER :: N_MWRI_CHANNELS    = 10
   INTEGER, PARAMETER :: N_MWHS_CHANNELS    =  5
   INTEGER, PARAMETER :: N_MWTS_CHANNELS    =  4
   INTEGER, PARAMETER :: N_TMI_CHANNELS     =  9
@@ -1294,7 +1294,7 @@ MODULE MW_SensorData_Define
   ! Central frequencies in GHz.
   REAL(fp), PARAMETER :: MWRI_F0( N_MWRI_CHANNELS ) = &
     (/ 10.65_fp, 10.65_fp, 18.7_fp, 18.7_fp,  23.8_fp,  23.8_fp, &
-       36.5_fp , 36.5_fp , 89.0_fp, 89.0_fp, 150.0_fp, 150.0_fp /)
+       36.5_fp , 36.5_fp , 89.0_fp, 89.0_fp /)
 
   ! I/F band limits in GHz.
   REAL(fp), PARAMETER :: MWRI_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWRI_CHANNELS ) = &
@@ -1307,9 +1307,7 @@ MODULE MW_SensorData_Define
                 ZERO, 0.45_fp, ZERO, ZERO, &    ! ch7
                 ZERO, 0.45_fp, ZERO, ZERO, &    ! ch8
                 ZERO, 2.30_fp, ZERO, ZERO, &    ! ch9  :Only bandwidth info available. No I/F
-                ZERO, 2.30_fp, ZERO, ZERO, &    ! ch10 :Only bandwidth info available. No I/F
-                ZERO, 1.00_fp, ZERO, ZERO, &    ! ch11 :The 1.0 value is completely made up
-                ZERO, 1.00_fp, ZERO, ZERO /), & ! ch12 :The 1.0 value is completely made up
+                ZERO, 2.30_fp, ZERO, ZERO /), & ! ch10 :Only bandwidth info available. No I/F
              (/ 2, MAX_N_SIDEBANDS, N_MWRI_CHANNELS /) )
 
 
@@ -1575,9 +1573,7 @@ MODULE MW_SensorData_Define
      VL_POLARIZATION, &  ! MWRI ch7
      HL_POLARIZATION, &  ! MWRI ch8
      VL_POLARIZATION, &  ! MWRI ch9
-     HL_POLARIZATION, &  ! MWRI ch10
-     VL_POLARIZATION, &  ! MWRI ch11
-     HL_POLARIZATION /)  ! MWRI ch12
+     HL_POLARIZATION /)  ! MWRI ch10
 
   ! FengYun-3 MWHS
   ! --------------
