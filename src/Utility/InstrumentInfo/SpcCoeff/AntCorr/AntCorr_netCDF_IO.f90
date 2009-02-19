@@ -20,6 +20,8 @@ MODULE AntCorr_netCDF_IO
   USE Type_Kinds     , ONLY: Long, Double
   USE Message_Handler, ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                              Display_Message
+  USE File_Utility   , ONLY: File_Exists
+  USE String_Utility , ONLY: StrClean
   USE AntCorr_Define , ONLY: AntCorr_type, &
                              Associated_AntCorr, &
                              Destroy_AntCorr, &
@@ -27,7 +29,6 @@ MODULE AntCorr_netCDF_IO
                              CheckRelease_AntCorr, &
                              Info_AntCorr
   USE netcdf
-  USE netCDF_Utility
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -131,6 +132,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       DefineVar_AntCorr_netCDF
@@ -197,6 +199,7 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION DefineVar_AntCorr_netCDF( NC_Filename     , &  ! Input
@@ -218,7 +221,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'DefineVar_AntCorr_netCDF'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
     INTEGER :: varID
     INTEGER :: Put_Status(4)
@@ -235,39 +238,22 @@ CONTAINS
     NF90_Status = NF90_INQ_VARID( NC_FileID, &
                                   SENSOR_CHANNEL_VARNAME, &
                                   varID )
-    
     ! Define it if required
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                  SENSOR_CHANNEL_VARNAME, &
-                                  SENSOR_CHANNEL_TYPE, &
+      NF90_Status = NF90_DEF_VAR( NC_FileID,SENSOR_CHANNEL_VARNAME,SENSOR_CHANNEL_TYPE, &
                                   dimIDs=(/n_Channels_DimID/), &
                                   varID =VarID )
       IF ( NF90_Status /= NF90_NOERR ) THEN
-        Message = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
+        msg = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
                   TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
         CALL DefineVar_Cleanup(); RETURN
       END IF
-
-      Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                    VarID, &
-                                    LONGNAME_ATTNAME, &
-                                    SENSOR_CHANNEL_LONGNAME )
-      Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                    VarID, &
-                                    DESCRIPTION_ATTNAME, &
-                                    SENSOR_CHANNEL_DESCRIPTION )
-      Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                    VarID, &
-                                    UNITS_ATTNAME, &
-                                    SENSOR_CHANNEL_UNITS )
-      Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                    VarID, &
-                                    FILLVALUE_ATTNAME, &
-                                    SENSOR_CHANNEL_FILLVALUE )
+      Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,SENSOR_CHANNEL_LONGNAME )
+      Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,SENSOR_CHANNEL_DESCRIPTION )
+      Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,SENSOR_CHANNEL_UNITS )
+      Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,SENSOR_CHANNEL_FILLVALUE )
       IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-        Message = 'Error writing '//SENSOR_CHANNEL_VARNAME//&
-                  ' variable attributes to '//TRIM(NC_Filename)
+        msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' variable attributes to '//TRIM(NC_Filename)
         CALL DefineVar_Cleanup(); RETURN
       END IF
     END IF
@@ -276,104 +262,54 @@ CONTAINS
     ! Define the antenna correction data
     ! ----------------------------------
     ! The earth view antenna efficiencies
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                A_EARTH_VARNAME, &
-                                A_EARTH_TYPE, &
+    NF90_Status = NF90_DEF_VAR( NC_FileID,A_EARTH_VARNAME,A_EARTH_TYPE, &
                                 dimIDs=(/n_FOVs_DimID, n_Channels_DimID/), &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//A_EARTH_VARNAME//' variable in '//&
+      msg = 'Error defining '//A_EARTH_VARNAME//' variable in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  A_EARTH_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  A_EARTH_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  A_EARTH_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  A_EARTH_FILLVALUE )
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,A_EARTH_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,A_EARTH_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,A_EARTH_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,A_EARTH_FILLVALUE )
     IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      Message = 'Error writing '//A_EARTH_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+      msg = 'Error writing '//A_EARTH_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
-
     ! The space antenna efficiencies
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                A_SPACE_VARNAME, &
-                                A_SPACE_TYPE, &
+    NF90_Status = NF90_DEF_VAR( NC_FileID,A_SPACE_VARNAME,A_SPACE_TYPE, &
                                 dimIDs=(/n_FOVs_DimID, n_Channels_DimID/), &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//A_SPACE_VARNAME//' variable in '//&
+      msg = 'Error defining '//A_SPACE_VARNAME//' variable in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  A_SPACE_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  A_SPACE_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  A_SPACE_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  A_SPACE_FILLVALUE )
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,A_SPACE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,A_SPACE_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,A_SPACE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,A_SPACE_FILLVALUE )
     IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      Message = 'Error writing '//A_SPACE_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+      msg = 'Error writing '//A_SPACE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
-
     ! The platform view antenna efficiencies
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                A_PLATFORM_VARNAME, &
-                                A_PLATFORM_TYPE, &
+    NF90_Status = NF90_DEF_VAR( NC_FileID,A_PLATFORM_VARNAME,A_PLATFORM_TYPE, &
                                 dimIDs=(/n_FOVs_DimID, n_Channels_DimID/), &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//A_PLATFORM_VARNAME//' variable in '//&
+      msg = 'Error defining '//A_PLATFORM_VARNAME//' variable in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
-
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  A_PLATFORM_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  A_PLATFORM_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  A_PLATFORM_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  A_PLATFORM_FILLVALUE )
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,A_PLATFORM_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,A_PLATFORM_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,A_PLATFORM_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,A_PLATFORM_FILLVALUE )
     IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      Message = 'Error writing '//A_PLATFORM_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
+      msg = 'Error writing '//A_PLATFORM_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
@@ -383,20 +319,18 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = TRIM(Message)//'; Error closing input file during error cleanup - '//&
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
                   TRIM(NF90_STRERROR( NF90_Status ) )
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE DefineVar_CleanUp
 
   END FUNCTION DefineVar_AntCorr_netCDF
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       WriteVar_AntCorr_netCDF
@@ -454,6 +388,7 @@ CONTAINS
 ! SIDE EFFECTS:
 !       If an error occurs, the netCDF file is closed.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION WriteVar_AntCorr_netCDF( NC_Filename, &  ! Input
@@ -473,9 +408,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar_AntCorr_netCDF'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
-                               
+    INTEGER :: VarId
+                                   
     ! Set up
     ! ------
     Error_Status = SUCCESS                                      
@@ -485,35 +421,55 @@ CONTAINS
     ! Write the antenna correction data
     ! ---------------------------------
     ! Sensor channel list
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        SENSOR_CHANNEL_VARNAME, &
-                                        AntCorr%Sensor_Channel )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AntCorr%Sensor_Channel )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
     ! Earth view antenna efficiency
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        A_EARTH_VARNAME, &
-                                        AntCorr%A_earth )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//A_EARTH_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,A_EARTH_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//A_EARTH_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AntCorr%A_earth )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//A_EARTH_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
     ! Space view antenna efficiency
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        A_SPACE_VARNAME, &
-                                        AntCorr%A_space )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//A_SPACE_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,A_SPACE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//A_SPACE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AntCorr%A_space )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//A_SPACE_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
     ! Platform view antenna efficiency
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        A_PLATFORM_VARNAME, &
-                                        AntCorr%A_platform )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//A_PLATFORM_VARNAME//' to '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,A_PLATFORM_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//A_PLATFORM_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AntCorr%A_platform )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//A_PLATFORM_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
 
@@ -523,20 +479,18 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = TRIM(Message)//'; Error closing input file during error cleanup - '//&
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
                   TRIM(NF90_STRERROR( NF90_Status ) )
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE WriteVar_CleanUp
 
   END FUNCTION WriteVar_AntCorr_netCDF
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ReadVar_AntCorr_netCDF
@@ -601,6 +555,7 @@ CONTAINS
 !       than just OUT. This is necessary because the argument may be defined
 !       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION ReadVar_AntCorr_netCDF( NC_Filename, &  ! Input
@@ -620,9 +575,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar_AntCorr_netCDF'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
-                               
+    INTEGER :: VarId
+                                   
     ! Set up
     ! ------
     Error_Status = SUCCESS                                      
@@ -632,35 +588,55 @@ CONTAINS
     ! Read the data
     ! -------------
     ! Sensor channel list
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        SENSOR_CHANNEL_VARNAME, &
-                                        AntCorr%Sensor_Channel )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//SENSOR_CHANNEL_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AntCorr%Sensor_Channel )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
     ! Earth view antenna efficiency
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        A_EARTH_VARNAME, &
-                                        AntCorr%A_earth )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//A_EARTH_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,A_EARTH_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//A_EARTH_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AntCorr%A_earth )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//A_EARTH_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
     ! Space view antenna efficiency
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        A_SPACE_VARNAME, &
-                                        AntCorr%A_space )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//A_SPACE_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,A_SPACE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//A_SPACE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AntCorr%A_space )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//A_SPACE_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
     ! Platform view antenna efficiency
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        A_PLATFORM_VARNAME, &
-                                        AntCorr%A_platform )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//A_PLATFORM_VARNAME//' from '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQ_VARID( NC_FileId,A_PLATFORM_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//A_PLATFORM_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AntCorr%A_platform )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//A_PLATFORM_VARNAME//' from '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
 
@@ -670,20 +646,18 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = TRIM(Message)//'; Error closing input file during error cleanup - '//&
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
                   TRIM(NF90_STRERROR( NF90_Status ) )
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE ReadVar_CleanUp
 
   END FUNCTION ReadVar_AntCorr_netCDF
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Inquire_AntCorr_netCDF
@@ -809,6 +783,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Inquire_AntCorr_netCDF( NC_Filename     , &  ! Input
@@ -844,9 +819,10 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_AntCorr_netCDF'
     ! Function variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NC_FileID
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
+    INTEGER :: DimId
     TYPE(AntCorr_type) :: AntCorr
     
     ! Set up
@@ -857,33 +833,40 @@ CONTAINS
 
     ! Open the file
     ! -------------
-    Error_Status = Open_netCDF( TRIM(NC_Filename), &
-                                NC_FileID, &
-                                Mode = 'READ' )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF AntCorr data file '//TRIM(NC_Filename)
+    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Get the dimensions
     ! ------------------
-    ! The number of fields of view
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         FOV_DIMNAME, &
-                                         AntCorr%n_FOVs, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//FOV_DIMNAME//' dimension from '//TRIM(NC_Filename)
+    ! Fields of view
+    NF90_Status = NF90_INQ_DIMID( NC_FileId,FOV_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//FOV_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
-    ! The number of spectral channels
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         CHANNEL_DIMNAME, &
-                                         AntCorr%n_Channels, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//CHANNEL_DIMNAME//' dimension from '//TRIM(NC_Filename)
+    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=AntCorr%n_FOVs )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//FOV_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    ! Spectral channels
+    NF90_Status = NF90_INQ_DIMID( NC_FileId,CHANNEL_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//CHANNEL_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=AntCorr%n_Channels )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//CHANNEL_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
@@ -901,32 +884,27 @@ CONTAINS
                               Comment          =Comment                 , &
                               Message_Log      =Message_Log               )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
+      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
       CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
     ! Close the file
     ! --------------
-    Close_Status = Close_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      Message = 'Error closing netCDF AntCorr data file '//TRIM(NC_Filename)
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Set the return values
     ! ---------------------
-    ! Dimensions
-    IF ( PRESENT(n_FOVs    ) ) n_FOVs     = AntCorr%n_FOVs
-    IF ( PRESENT(n_Channels) ) n_Channels = AntCorr%n_Channels
-    
-    ! Release/Version information
-    IF ( PRESENT(Release) ) Release = AntCorr%Release
-    IF ( PRESENT(Version) ) Version = AntCorr%Version
-
-    ! Sensor ids
-    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = AntCorr%Sensor_Id(1:MIN(LEN(Sensor_Id),LEN_TRIM(AntCorr%Sensor_Id)))
+    IF ( PRESENT(n_FOVs          ) ) n_FOVs           = AntCorr%n_FOVs
+    IF ( PRESENT(n_Channels      ) ) n_Channels       = AntCorr%n_Channels
+    IF ( PRESENT(Release         ) ) Release          = AntCorr%Release
+    IF ( PRESENT(Version         ) ) Version          = AntCorr%Version
+    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = AntCorr%Sensor_Id
     IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id = AntCorr%WMO_Satellite_Id
     IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id    = AntCorr%WMO_Sensor_Id   
     
@@ -937,23 +915,21 @@ CONTAINS
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
         IF ( Close_File ) THEN
-          Close_Status = Close_netCDF(NC_FileID)
-          IF ( Close_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup.'
         END IF
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_AntCorr_netCDF
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Write_AntCorr_netCDF
@@ -1045,6 +1021,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Write_AntCorr_netCDF( NC_Filename , &  ! Input
@@ -1070,10 +1047,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_AntCorr_netCDF'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
     INTEGER :: NC_FileID
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
 
     ! Set up
     ! ------
@@ -1089,7 +1066,7 @@ CONTAINS
 
     ! Check structure association
     IF ( .NOT. Associated_AntCorr( AntCorr ) ) THEN
-      Message = 'Some or all INPUT AntCorr pointer members are NOT associated.'
+      msg = 'Some or all INPUT AntCorr pointer members are NOT associated.'
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -1109,7 +1086,7 @@ CONTAINS
                                Comment          =Comment                 , &  ! Optional input
                                Message_Log      =Message_Log               )  ! Error messaging
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error creating output file '//TRIM(NC_Filename)
+      msg = 'Error creating output file '//TRIM(NC_Filename)
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -1119,30 +1096,28 @@ CONTAINS
     Error_Status = WriteVar_AntCorr_netCDF( NC_Filename            , &
                                             NC_FileID              , &
                                             AntCorr                , &
-                                            Message_Log=Message_Log)
+                                            Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing AC variables to output file '//TRIM(NC_Filename)
+      msg = 'Error writing AC variables to output file '//TRIM(NC_Filename)
       CALL Write_Cleanup(); RETURN
     END IF
     
 
     ! Close the file
     ! --------------
-    Close_Status = Close_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF AntCorr data file '//TRIM(NC_Filename), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      CALL Info_AntCorr( AntCorr, Message )
+      CALL Info_AntCorr( AntCorr, msg )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
                             INFORMATION, &
                             Message_Log=Message_Log )
     END IF
@@ -1154,23 +1129,22 @@ CONTAINS
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
         IF ( Close_File ) THEN
-          Close_Status = Close_netCDF(NC_FileID)
-          IF ( Close_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_AntCorr_netCDF
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Read_AntCorr_netCDF
@@ -1271,6 +1245,7 @@ CONTAINS
 !       because the argument may be defined on input. To prevent memory leaks,
 !       the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Read_AntCorr_netCDF( NC_Filename, &  ! Input
@@ -1296,11 +1271,10 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AntCorr_netCDF'
     ! Function variables
-    CHARACTER(1000) :: Message
+    CHARACTER(1000) :: msg
     LOGICAL :: Noisy
     INTEGER :: NC_FileID
-    INTEGER :: Destroy_Status
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
     INTEGER :: n_FOVs    
     INTEGER :: n_Channels
 
@@ -1329,7 +1303,7 @@ CONTAINS
                                            Comment    =Comment    , &
                                            Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining AntCorr dimensions from '//TRIM(NC_Filename)
+      msg = 'Error obtaining AntCorr dimensions from '//TRIM(NC_Filename)
       CALL Read_Cleanup(); RETURN
     END IF
 
@@ -1339,19 +1313,18 @@ CONTAINS
                                      AntCorr   , &
                                      Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error occurred allocating AntCorr structure.'
+      msg = 'Error occurred allocating AntCorr structure.'
       CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Open the netCDF file for reading
     ! --------------------------------
-    Error_Status = Open_netCDF( NC_Filename, &
-                                NC_FileID, &
-                                Mode='READ' )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF AntCorr data file '//TRIM(NC_Filename)
-      CALL Read_Cleanup( Destroy_Structure=.TRUE. ); RETURN
+    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
@@ -1366,7 +1339,7 @@ CONTAINS
                               WMO_Sensor_Id    =AntCorr%WMO_Sensor_Id   , &
                               Message_Log      =Message_Log               )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading global attribute from '//TRIM(NC_Filename)
+      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
       CALL Read_Cleanup( Close_File=.TRUE., Destroy_Structure=.TRUE. ); RETURN
     END IF
 
@@ -1374,7 +1347,7 @@ CONTAINS
     Error_Status = CheckRelease_AntCorr( AntCorr, &
                                          Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'AntCorr Release check failed for '//TRIM(NC_Filename)
+      msg = 'AntCorr Release check failed for '//TRIM(NC_Filename)
       CALL Read_Cleanup( Close_File=.TRUE., Destroy_Structure=.TRUE. ); RETURN
     END IF
     
@@ -1386,28 +1359,26 @@ CONTAINS
                                            AntCorr                , &
                                            Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading AC variables from '//TRIM(NC_Filename)
+      msg = 'Error reading AC variables from '//TRIM(NC_Filename)
       CALL Read_Cleanup( Destroy_Structure=.TRUE. ); RETURN
     END IF
 
 
     ! Close the file
     ! --------------
-    Close_Status = Close_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF AntCorr data file '//TRIM(NC_Filename), &
-                            WARNING, &
-                            Message_Log=Message_Log )
+    NF90_Status = NF90_CLOSE( NC_FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
     END IF
 
 
     ! Output an info message
     ! ----------------------
     IF ( Noisy ) THEN
-      CALL Info_AntCorr( AntCorr, Message )
+      CALL Info_AntCorr( AntCorr, msg )
       CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
                             INFORMATION, &
                             Message_Log=Message_Log )
     END IF
@@ -1420,25 +1391,23 @@ CONTAINS
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
         IF ( Close_File ) THEN
-          Close_Status = Close_netCDF(NC_FileID)
-          IF ( Close_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+          NF90_Status = NF90_CLOSE( NC_FileId )
+          IF ( NF90_Status /= NF90_NOERR ) &
+            msg = TRIM(msg)//'; Error closing input file during error cleanup- '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
       ! Destroy the structure if necessary
       IF ( PRESENT(Destroy_Structure) ) THEN
         IF ( Destroy_Structure ) THEN
-          Destroy_Status = Destroy_AntCorr(AntCorr, Message_Log=Message_Log)
-          IF ( Destroy_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error destroying AntCorr structure during error cleanup.'
+          Error_Status = Destroy_AntCorr(AntCorr, Message_Log=Message_Log)
+          IF ( Error_Status /= SUCCESS ) &
+            msg = TRIM(msg)//'; Error destroying AntCorr structure during error cleanup.'
         END IF
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_AntCorr_netCDF
@@ -1587,7 +1556,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
     CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     CHARACTER(ML) :: GAttName
     CHARACTER(8)  :: cdate
     CHARACTER(10) :: ctime
@@ -1599,7 +1568,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    Message = ' '
+    msg = ' '
 
 
     ! Mandatory global attributes
@@ -1733,14 +1702,14 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        Message = '; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ) )
+        msg = '; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status ) )
       ! Set error status and print error message
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error writing '//TRIM(GAttName)//' attribute to '//&
                             TRIM(NC_Filename)//' - '// &
-                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(Message), &
+                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(msg), &
                             Error_Status, &
                             Message_Log=Message_Log )
     END SUBROUTINE WriteGAtts_CleanUp
@@ -1940,7 +1909,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       Sensor_Id = GAttString(1:MIN( LEN(Sensor_Id), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1979,7 +1948,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       Title = GAttString(1:MIN( LEN(Title), LEN_TRIM(GAttString) ))
     END IF
 
@@ -1994,7 +1963,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       History = GAttString(1:MIN( LEN(History), LEN_TRIM(GAttString) ))
     END IF
 
@@ -2009,7 +1978,7 @@ CONTAINS
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
-      CALL Remove_NULL_Characters( GAttString )
+      CALL StrClean( GAttString )
       Comment = GAttString(1:MIN( LEN(Comment), LEN_TRIM(GAttString) ))
     END IF
 
@@ -2183,11 +2152,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CreateFile'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
     INTEGER :: n_FOVs_DimID
     INTEGER :: n_Channels_DimID
-    INTEGER :: VarID
     
 
     ! Set up
@@ -2197,19 +2165,17 @@ CONTAINS
     ! Check input
     IF ( n_FOVs     < 1 .OR. &
          n_Channels < 1      ) THEN
-      Message = 'Invalid dimension input detected.'
+      msg = 'Invalid dimension input detected.'
       CALL Create_Cleanup(); RETURN
     END IF
 
 
     ! Create the data file
     ! --------------------
-    NF90_Status = NF90_CREATE( NC_Filename, &
-                               NF90_CLOBBER, &
-                               NC_FileID )
+    NF90_Status = NF90_CREATE( NC_Filename,NF90_CLOBBER,NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error creating '//TRIM(NC_Filename)//' - '//&
-                TRIM(NF90_STRERROR( NF90_Status ))
+      msg = 'Error creating '//TRIM(NC_Filename)//' - '//&
+            TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
 
@@ -2220,7 +2186,7 @@ CONTAINS
     NF90_Status = NF90_DEF_DIM( NC_FileID, &
                                 FOV_DIMNAME, n_FOVs, n_FOVs_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//FOV_DIMNAME//' dimension in '//&
+      msg = 'Error defining '//FOV_DIMNAME//' dimension in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
@@ -2229,7 +2195,7 @@ CONTAINS
     NF90_Status = NF90_DEF_DIM( NC_FileID, &
                                 CHANNEL_DIMNAME, n_Channels, n_Channels_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
+      msg = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
@@ -2248,7 +2214,7 @@ CONTAINS
                                Comment         =Comment         , &
                                Message_Log     =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing global attributes to '//TRIM(NC_Filename)
+      msg = 'Error writing global attributes to '//TRIM(NC_Filename)
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
@@ -2261,7 +2227,7 @@ CONTAINS
                                              n_Channels_DimID       , &
                                              Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error defining variables in '//TRIM(NC_Filename)
+      msg = 'Error defining variables in '//TRIM(NC_Filename)
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
                                              
@@ -2271,7 +2237,7 @@ CONTAINS
     ! -----------------------------------
     NF90_Status = NF90_ENDDEF( NC_FileID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
+      msg = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
@@ -2284,16 +2250,13 @@ CONTAINS
         IF ( Close_File ) THEN
           NF90_Status = NF90_CLOSE( NC_FileID )
           IF ( NF90_Status /= NF90_NOERR ) &
-            Message = '; Error closing input file during error cleanup - '//&
-                      TRIM(NF90_STRERROR( NF90_Status ))
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                  TRIM(NF90_STRERROR( NF90_Status ))
         END IF
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Create_CleanUp
 
   END FUNCTION CreateFile
