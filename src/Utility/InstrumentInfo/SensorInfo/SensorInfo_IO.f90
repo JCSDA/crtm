@@ -300,7 +300,7 @@ CONTAINS
                          IOSTAT=IO_Status ) SensorInfo%Sensor_Name, &
                                             SensorInfo%Satellite_Name, &
                                             SensorInfo%Sensor_Id, &
-                                            SensorInfo%Microwave_Flag, &
+                                            SensorInfo%Sensor_Type, &
                                             SensorInfo%WMO_Sensor_ID, &
                                             SensorInfo%WMO_Satellite_ID, &
                                             n_Channels
@@ -619,7 +619,7 @@ CONTAINS
                      IOSTAT=IO_Status ) SensorInfo%Sensor_Name, &
                                         SensorInfo%Satellite_Name, &
                                         SensorInfo%Sensor_Id, &
-                                        SensorInfo%Microwave_Flag, &
+                                        SensorInfo%Sensor_Type, &
                                         SensorInfo%WMO_Sensor_ID, &
                                         SensorInfo%WMO_Satellite_ID, &
                                         SensorInfo%n_Channels

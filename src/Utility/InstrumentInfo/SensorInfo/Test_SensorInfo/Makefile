@@ -17,6 +17,7 @@ EXE_FILE = Test_SensorInfo
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
+            SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90
