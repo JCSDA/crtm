@@ -18,7 +18,7 @@ MODULE AntCorr_netCDF_IO
   ! -----------------
   ! Module use
   USE Type_Kinds     , ONLY: Long, Double
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+  USE Message_Handler, ONLY: SUCCESS, FAILURE, INFORMATION, &
                              Display_Message
   USE File_Utility   , ONLY: File_Exists
   USE String_Utility , ONLY: StrClean
@@ -142,12 +142,12 @@ CONTAINS
 !       output netCDF file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = DefineVar_AntCorr_netCDF( NC_Filename     , &  ! Input
-!                                                NC_FileID       , &  ! Input
-!                                                n_FOVs_DimID    , &  ! Input
-!                                                n_Channels_DimID, &  ! Input
-!                                                RCS_Id          , &  ! Revision control
-!                                                Message_Log       )  ! Error messaging
+!       Error_Status = DefineVar_AntCorr_netCDF( NC_Filename     , &
+!                                                NC_FileID       , &
+!                                                n_FOVs_DimID    , &
+!                                                n_Channels_DimID, &
+!                                                RCS_Id          , &
+!                                                Message_Log       )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -229,7 +229,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS                                      
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Define the sensor channels
@@ -340,11 +340,11 @@ CONTAINS
 !       in which they have been defined.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = WriteVar_AntCorr_netCDF( NC_Filename            , &  ! Input
-!                                               NC_FileID              , &  ! Input
-!                                               AntCorr                , &  ! Input
-!                                               RCS_Id     =RCS_Id     , &  ! Revision control
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = WriteVar_AntCorr_netCDF( NC_Filename            , &
+!                                               NC_FileID              , &
+!                                               AntCorr                , &
+!                                               RCS_Id     =RCS_Id     , &
+!                                               Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:     Character string specifying the name of the
@@ -415,7 +415,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS                                      
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Write the antenna correction data
@@ -500,11 +500,11 @@ CONTAINS
 !       netCDF file in which they have been defined.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = ReadVar_AntCorr_netCDF( NC_Filename            , &  ! Input
-!                                              NC_FileID              , &  ! Input
-!                                              AntCorr                , &  ! Output
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = ReadVar_AntCorr_netCDF( NC_Filename            , &
+!                                              NC_FileID              , &
+!                                              AntCorr                , &
+!                                              RCS_Id     =RCS_Id     , &
+!                                              Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:     Character string specifying the name of the
@@ -582,7 +582,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS                                      
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Read the data
@@ -667,19 +667,19 @@ CONTAINS
 !       dimensions and global attributes.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_AntCorr_netCDF( NC_Filename                       , &  ! Input
-!                                              n_FOVs           =n_FOVs          , &  ! Optional output
-!                                              n_Channels       =n_Channels      , &  ! Optional output
-!                                              Release          =Release         , &  ! Optional output
-!                                              Version          =Version         , &  ! Optional output
-!                                              Sensor_Id        =Sensor_Id       , &  ! Optional output
-!                                              WMO_Satellite_Id =WMO_Satellite_Id, &  ! Optional output
-!                                              WMO_Sensor_Id    =WMO_Sensor_Id   , &  ! Optional output
-!                                              Title            =Title           , &  ! Optional output
-!                                              History          =History         , &  ! Optional output
-!                                              Comment          =Comment         , &  ! Optional output
-!                                              RCS_Id           =RCS_Id          , &  ! Revision control
-!                                              Message_Log      =Message_Log       )  ! Error messaging
+!       Error_Status = Inquire_AntCorr_netCDF( NC_Filename                       , &
+!                                              n_FOVs           =n_FOVs          , &
+!                                              n_Channels       =n_Channels      , &
+!                                              Release          =Release         , &
+!                                              Version          =Version         , &
+!                                              Sensor_Id        =Sensor_Id       , &
+!                                              WMO_Satellite_Id =WMO_Satellite_Id, &
+!                                              WMO_Sensor_Id    =WMO_Sensor_Id   , &
+!                                              Title            =Title           , &
+!                                              History          =History         , &
+!                                              Comment          =Comment         , &
+!                                              RCS_Id           =RCS_Id          , &
+!                                              Message_Log      =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the
@@ -771,17 +771,15 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF file inquiry was successful.
-!                        == FAILURE an error occurred reading any of the requested
-!                                   dimension or variable data.
-!                        == WARNING - an error occurred reading any of the requested
-!                                     global file attributes, or
-!                                   - an error occurred closing the netCDF file.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           Message_Handler module.
+!                           If == SUCCESS the netCDF file inquiry was successful
+!                              == FAILURE an error occurred reading any of the
+!                                         requested data
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -828,7 +826,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
 
     ! Open the file
@@ -938,14 +936,14 @@ CONTAINS
 !       Function to write AntCorr data to a netCDF format AntCorr file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_AntCorr_netCDF( NC_Filename            , &  ! Input
-!                                            AntCorr                , &  ! Input
-!                                            Quiet      =Quiet      , &  ! Optional input
-!                                            Title      =Title      , &  ! Optional input
-!                                            History    =History    , &  ! Optional input
-!                                            Comment    =Comment    , &  ! Optional input
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_AntCorr_netCDF( NC_Filename            , &
+!                                            AntCorr                , &
+!                                            Quiet      =Quiet      , &
+!                                            Title      =Title      , &
+!                                            History    =History    , &
+!                                            Comment    =Comment    , &
+!                                            RCS_Id     =RCS_Id     , &
+!                                            Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:  Character string specifying the name of the netCDF
@@ -1055,12 +1053,12 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Output informational messages....
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
+    IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
@@ -1233,8 +1231,6 @@ CONTAINS
 !                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the netCDF data read was successful.
 !                        == FAILURE an unrecoverable error occurred.
-!                        == WARNING an error occurred closing the netCDF
-!                                   input file after a successful read.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -1271,7 +1267,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AntCorr_netCDF'
     ! Function variables
-    CHARACTER(1000) :: msg
+    CHARACTER(ML) :: msg
     LOGICAL :: Noisy
     INTEGER :: NC_FileID
     INTEGER :: NF90_Status
@@ -1282,12 +1278,12 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Output informational messages....
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
+    IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
@@ -1859,7 +1855,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadGAtts'
     ! Local variables
-    CHARACTER(256)  :: GAttName
+    CHARACTER(ML)  :: GAttName
     CHARACTER(5000) :: GAttString
     INTEGER :: Rel
     INTEGER :: NF90_Status
@@ -2006,18 +2002,18 @@ CONTAINS
 !       Function to create a netCDF AntCorr data file for writing.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CreateFile( NC_Filename                      , &  ! Input
-!                                  n_FOVs                           , &  ! Input
-!                                  n_Channels                       , &  ! Input
-!                                  NC_FileID                        , &  ! Output
-!                                  Version         =Version         , &  ! Optional input
-!                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional input
-!                                  Title           =Title           , &  ! Optional input
-!                                  History         =History         , &  ! Optional input
-!                                  Comment         =Comment         , &  ! Optional input
-!                                  Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = CreateFile( NC_Filename                      , &
+!                                  n_FOVs                           , &
+!                                  n_Channels                       , &
+!                                  NC_FileID                        , &
+!                                  Version         =Version         , &
+!                                  Sensor_Id       =Sensor_Id       , &
+!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                  Title           =Title           , &
+!                                  History         =History         , &
+!                                  Comment         =Comment         , &
+!                                  Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the
@@ -2112,9 +2108,6 @@ CONTAINS
 !                           The error codes are defined in the Message_Handler module. 
 !                           If == SUCCESS the netCDF file creation was successful.     
 !                              == FAILURE an unrecoverable error occurred.             
-!                              == WARNING - an error occurred writing any of the       
-!                                           supplied global attributes.                
-!                                         - an error occurred closing the netCDF file. 
 !                           UNITS:      N/A                                            
 !                           TYPE:       INTEGER                                        
 !                           DIMENSION:  Scalar                                         

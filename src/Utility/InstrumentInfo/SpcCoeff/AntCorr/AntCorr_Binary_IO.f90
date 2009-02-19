@@ -15,7 +15,7 @@ MODULE AntCorr_Binary_IO
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds
+  USE Type_Kinds         , ONLY: Long
   USE File_Utility       , ONLY: File_Open, File_Exists
   USE Binary_File_Utility, ONLY: Open_Binary_File
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -64,6 +64,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Inquire_AntCorr_Binary
@@ -72,16 +73,16 @@ CONTAINS
 !       Function to inquire a Binary format AntCorr file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_AntCorr_Binary( Filename                           , &  ! Input
-!                                              n_FOVs           = n_FOVs          , &  ! Optional output
-!                                              n_Channels       = n_Channels      , &  ! Optional output
-!                                              Release          = Release         , &  ! Optional output
-!                                              Version          = Version         , &  ! Optional output
-!                                              Sensor_Id        = Sensor_Id       , &  ! Optional output
-!                                              WMO_Satellite_Id = WMO_Satellite_Id, &  ! Optional output
-!                                              WMO_Sensor_Id    = WMO_Sensor_Id   , &  ! Optional output
-!                                              RCS_Id           = RCS_Id          , &  ! Revision control
-!                                              Message_Log      = Message_Log       )  ! Error messaging
+!       Error_Status = Inquire_AntCorr_Binary( Filename                           , &
+!                                              n_FOVs           = n_FOVs          , &
+!                                              n_Channels       = n_Channels      , &
+!                                              Release          = Release         , &
+!                                              Version          = Version         , &
+!                                              Sensor_Id        = Sensor_Id       , &
+!                                              WMO_Satellite_Id = WMO_Satellite_Id, &
+!                                              WMO_Sensor_Id    = WMO_Sensor_Id   , &
+!                                              RCS_Id           = RCS_Id          , &
+!                                              Message_Log      = Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       Filename:           Character string specifying the name of the binary
@@ -163,6 +164,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Inquire_AntCorr_Binary( Filename        , &  ! Input
@@ -198,9 +200,8 @@ CONTAINS
     TYPE(AntCorr_type) :: AntCorr
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -210,10 +211,7 @@ CONTAINS
     
     
     ! Open the Binary format AntCorr file
-    ! -----------------------------------
-    Error_Status = Open_Binary_File( TRIM(Filename), &
-                                     FileID, &
-                                     Message_Log=Message_Log)
+    Error_Status = Open_Binary_File( Filename,FileID,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening AntCorr Binary file '//TRIM(Filename)
       CALL Inquire_Cleanup(); RETURN
@@ -221,94 +219,74 @@ CONTAINS
 
 
     ! Read the Release and Version information
-    ! ----------------------------------------
     READ(FileID, IOSTAT=IO_Status) AntCorr%Release, AntCorr%Version
     IF ( IO_Status /= 0 ) THEN
       WRITE(Message,'("Error reading AntCorr Release/Version values from ", a, &
-                     &". IOSTAT = ", i0 )' ) &
-                     TRIM(Filename), IO_Status
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+                     &". IOSTAT = ", i0 )' ) TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Read the data dimensions
-    ! ------------------------
     READ(FileID, IOSTAT=IO_Status) AntCorr%n_FOVs, AntCorr%n_Channels
     IF ( IO_Status /= 0 ) THEN
       WRITE(Message,'("Error reading AntCorr dimension values from ", a, &
-                     &". IOSTAT = ", i0 )' ) &
-                     TRIM(Filename), IO_Status
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+                     &". IOSTAT = ", i0 )' ) TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Read the sensor id information
-    ! ------------------------------
     READ(FileID, IOSTAT=IO_Status) AntCorr%Sensor_Id       , &
                                    AntCorr%WMO_Satellite_Id, &
                                    AntCorr%WMO_Sensor_Id    
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error reading AntCorr sensor information from ",a,&
-                      &". IOSTAT = ",i0)' ) &
-                      TRIM(Filename), IO_Status
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
+                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Close the file
-    ! --------------
     CLOSE( FileID, IOSTAT=IO_Status )
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0)' ) &
-                    TRIM(Filename), IO_Status
+      WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
       CALL Inquire_Cleanup(); RETURN
     END IF
     
 
     ! Assign the return arguments
-    ! ---------------------------
-    ! Dimensions
-    IF ( PRESENT(n_FOVs    ) ) n_FOVs     = AntCorr%n_FOVs
-    IF ( PRESENT(n_Channels) ) n_Channels = AntCorr%n_Channels
-
-    ! Release/Version information
-    IF ( PRESENT(Release) ) Release = AntCorr%Release
-    IF ( PRESENT(Version) ) Version = AntCorr%Version
-
-    ! Sensor ids
-    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = AntCorr%Sensor_Id(1:MIN(LEN(Sensor_Id),LEN_TRIM(AntCorr%Sensor_Id)))
+    IF ( PRESENT(n_FOVs          ) ) n_FOVs     = AntCorr%n_FOVs
+    IF ( PRESENT(n_Channels      ) ) n_Channels = AntCorr%n_Channels
+    IF ( PRESENT(Release         ) ) Release = AntCorr%Release
+    IF ( PRESENT(Version         ) ) Version = AntCorr%Version
+    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = AntCorr%Sensor_Id
     IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id = AntCorr%WMO_Satellite_Id
     IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id    = AntCorr%WMO_Sensor_Id   
-    
 
   CONTAINS
   
-    SUBROUTINE Inquire_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+    SUBROUTINE Inquire_CleanUp()
       CHARACTER(ML) :: Close_Message
       ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          CLOSE( FileID, IOSTAT=IO_Status )
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Close_Message,'("; Error closing input file during error cleanup. IOSTAT=",i0)') &
-                                 IO_Status
-            Message = TRIM(Message)//TRIM(Close_Message)
-          END IF
+      IF ( File_Open( Filename ) ) THEN
+        CLOSE( FileID, IOSTAT=IO_Status )
+        IF ( IO_Status /= 0 ) THEN
+          WRITE( Close_Message,'("; Error closing input file during error cleanup. IOSTAT=",i0)') &
+                               IO_Status
+          Message = TRIM(Message)//TRIM(Close_Message)
         END IF
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_AntCorr_Binary
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Read_AntCorr_Binary
@@ -317,13 +295,13 @@ CONTAINS
 !       Function to read data into an AntCorr structure from a Binary format file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_AntCorr_Binary( Filename                   , &  ! Input
-!                                           AntCorr                    , &  ! Output
-!                                           No_File_Close=No_File_Close, &  ! Optional input
-!                                           No_Allocate  =No_Allocate  , &  ! Optional input
-!                                           Quiet        = Quiet       , &  ! Optional input
-!                                           RCS_Id       = RCS_Id      , &  ! Revision control
-!                                           Message_Log  = Message_Log   )  ! Error messaging
+!       Error_Status = Read_AntCorr_Binary( Filename                   , &
+!                                           AntCorr                    , &
+!                                           No_File_Close=No_File_Close, &
+!                                           No_Allocate  =No_Allocate  , &
+!                                           Quiet        =Quiet        , &
+!                                           RCS_Id       =RCS_Id       , &
+!                                           Message_Log  =Message_Log    )
 !
 ! INPUT ARGUMENTS:
 !       Filename:           Character string specifying the name of the binary
@@ -399,10 +377,6 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
-! SIDE EFFECTS:
-!       If the AntCorr argument is defined upon input, it is redefined 
-!       upon output.
-!
 ! COMMENTS:
 !       Note the INTENT on the output AntCorr argument is IN OUT rather than
 !       just OUT. This is necessary because the argument may be defined upon
@@ -431,37 +405,35 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AntCorr_Binary'
     ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Destroy_Status
+    CHARACTER(ML) :: Message
     LOGICAL :: Yes_Close
     LOGICAL :: Yes_Allocate
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: n_Channels, n_FOVs
+    INTEGER(Long) :: n_Channels, n_FOVs
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
-    ! Default action is to close the file on exit....
+    ! ..Default action is to close the file on exit
     Yes_Close = .TRUE.
-    ! ...unless the No_File_Close optional argument is set.
+    ! ..unless the No_File_Close optional argument is set.
     IF ( PRESENT( No_File_Close ) ) THEN
       IF ( No_File_Close == SET ) Yes_Close = .FALSE.
     END IF
     
-    ! Default action is to allocate the structure....
+    ! ..Default action is to allocate the structure
     Yes_Allocate = .TRUE.
-    ! ...unless the No_Allocate optional argument is set.
+    ! ..unless the No_Allocate optional argument is set.
     IF ( PRESENT( No_Allocate ) ) THEN
       IF ( No_Allocate == SET ) Yes_Allocate = .FALSE.
     END IF
     
-    ! Output informational messages...
+    ! ..Default action is to output informational messages
     Noisy = .TRUE.
-    ! ...unless the Quiet keyword is set
+    ! ..unless the Quiet keyword is set
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
@@ -469,87 +441,77 @@ CONTAINS
     
     ! Check that the file is open. If not, open it.
     ! Otherwise get its FileID.
-    ! ---------------------------------------------
     IF ( .NOT. File_Open( FileName ) ) THEN
-      ! Check that the file exists
+      ! ..Check that the file exists
       IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
         Message = 'File '//TRIM(Filename)//' not found.'
-        CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+        CALL Read_CleanUp(); RETURN
       END IF 
-      ! Open the file
-      Error_Status = Open_Binary_File( Filename, &
-                                       FileID, &
-                                       Message_Log=Message_Log )
+      ! ..Open the file
+      Error_Status = Open_Binary_File( Filename,FileID,Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error opening '//TRIM(Filename)
-        CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+        CALL Read_CleanUp(); RETURN
       END IF
     ELSE
-      ! Inquire for the logical unit number
+      ! ..Inquire for the logical unit number
       INQUIRE( FILE=Filename, NUMBER=FileID )
-      ! Ensure it's valid
+      ! ..Ensure it's valid
       IF ( FileID == -1 ) THEN
         Message = 'Error inquiring '//TRIM(Filename)//' for its FileID'
-        CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+        CALL Read_CleanUp(); RETURN
       END IF
     END IF
 
+
     ! Read the Release and Version information
-    ! ----------------------------------------
     READ( FileID, IOSTAT=IO_Status ) AntCorr%Release, AntCorr%Version
     IF ( IO_Status /= 0 ) THEN
       WRITE(Message,'("Error reading AntCorr Release/Version values from ", a, &
                      &". IOSTAT = ", i0 )' ) &
                      TRIM(Filename), IO_Status
-      CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+      CALL Read_CleanUp(); RETURN
     END IF
-
-    ! Check the release
-    Error_Status = CheckRelease_AntCorr( AntCorr, &
-                                         Message_Log=Message_Log)
+    Error_Status = CheckRelease_AntCorr( AntCorr,Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'AntCorr Release check failed for '//TRIM(Filename)
-      CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+      CALL Read_CleanUp(); RETURN
     END IF
 
 
     ! Read the data dimensions
-    ! ------------------------
     READ(FileID, IOSTAT=IO_Status) n_FOVs, n_Channels
     IF ( IO_Status /= 0 ) THEN
       WRITE(Message,'("Error reading AntCorr dimension values from ",a,". IOSTAT = ",i0)' ) &
                      TRIM(Filename), IO_Status
-      CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+      CALL Read_CleanUp(); RETURN
     END IF
 
 
     ! Allocate the output structure if required
-    ! -----------------------------------------
     IF ( Yes_Allocate ) THEN
       Error_Status = Allocate_AntCorr( n_FOVs, n_Channels, &
                                        AntCorr, &
                                        Message_Log=Message_Log)
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'AntCorr allocation failed'
-        CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+        CALL Read_CleanUp(); RETURN
       END IF
     END IF
 
 
     ! Read the sensor id information
-    ! ------------------------------
     READ(FileID, IOSTAT=IO_Status) AntCorr%Sensor_Id       , &
                                    AntCorr%WMO_Satellite_Id, &
                                    AntCorr%WMO_Sensor_Id    
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error reading AntCorr sensor information from ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+      CALL Read_CleanUp(); RETURN
     END IF
 
 
     ! Read the antenna correction data
-    ! --------------------------------
     READ(FileID, IOSTAT=IO_Status) AntCorr%Sensor_Channel, &
                                    AntCorr%A_earth       , &
                                    AntCorr%A_space       , &
@@ -557,27 +519,21 @@ CONTAINS
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error reading AntCorr data from ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      CALL Read_CleanUp( Close_File=Yes_Close, Destroy_Structure=Yes_Allocate ); RETURN
+      CALL Read_CleanUp(); RETURN
     END IF
 
 
-    ! Close the file
-    ! --------------
+    ! Close the file if required
     IF ( Yes_Close ) THEN
       CLOSE( FileID, IOSTAT=IO_Status )
       IF ( IO_Status /= 0 ) THEN
-        WRITE( Message, '( "Error closing ", a, ". IOSTAT = ", i0 )' ) &
-                        TRIM(Filename), IO_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              WARNING, &
-                              Message_Log=Message_Log )
+        WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+        CALL Read_Cleanup(); RETURN
       END IF
     END IF
 
 
     ! Output an info message
-    ! ----------------------
     IF ( Noisy ) THEN
       CALL Info_AntCorr( AntCorr, Message )
       CALL Display_Message( ROUTINE_NAME, &
@@ -588,42 +544,33 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE Read_CleanUp(Close_File, Destroy_Structure)
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
+    SUBROUTINE Read_CleanUp()
       CHARACTER(ML) :: Close_Message
-      INTEGER :: Destroy_Status
       ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          CLOSE( FileID, IOSTAT=IO_Status )
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
-                                 TRIM(Filename), IO_Status
-            Message = TRIM(Message)//TRIM(Close_Message)
-          END IF
+      IF ( File_Open( Filename ) ) THEN
+        CLOSE( FileID,IOSTAT=IO_Status )
+        IF ( IO_Status /= 0 ) THEN
+          WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
+                               TRIM(Filename), IO_Status
+          Message = TRIM(Message)//TRIM(Close_Message)
         END IF
       END IF
       ! Destroy the structure
-      IF ( PRESENT(Destroy_Structure) ) THEN
-        IF ( Destroy_Structure ) THEN
-          Destroy_Status = Destroy_AntCorr( AntCorr, Message_Log=Message_Log )
-          IF ( Destroy_Status /= SUCCESS ) &
-            Message = TRIM(Message)//'; Error destroying AntCorr structure during error cleanup.'
-        END IF
+      IF ( Associated_AntCorr( AntCorr ) ) THEN
+        Error_Status = Destroy_AntCorr( AntCorr, Message_Log=Message_Log )
+        IF ( Error_Status /= SUCCESS ) &
+          Message = TRIM(Message)//'; Error destroying AntCorr structure during error cleanup.'
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_AntCorr_Binary
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Write_AntCorr_Binary
@@ -632,12 +579,12 @@ CONTAINS
 !       Function to write data from an AntCorr structure into a Binary format file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_AntCorr_Binary( Filename                   , &  ! Input
-!                                           AntCorr                    , &  ! Input
-!                                           No_File_Close=No_File_Close, &  ! Optional input
-!                                           Quiet        =Quiet        , &  ! Optional input
-!                                           RCS_Id       =RCS_Id       , &  ! Revision control
-!                                           Message_Log  =Message_Log    )  ! Error messaging
+!       Error_Status = Read_AntCorr_Binary( Filename                   , &
+!                                           AntCorr                    , &
+!                                           No_File_Close=No_File_Close, &
+!                                           Quiet        =Quiet        , &
+!                                           RCS_Id       =RCS_Id       , &
+!                                           Message_Log  =Message_Log    )
 !
 ! INPUT ARGUMENTS:
 !       Filename:           Character string specifying the name of the binary
@@ -702,6 +649,7 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Write_AntCorr_Binary( Filename     , &  ! Input            
@@ -732,7 +680,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default action is to close the file on exit....
     Yes_Close = .TRUE.
@@ -751,21 +699,20 @@ CONTAINS
     ! Check structure association status
     IF ( .NOT. Associated_AntCorr( AntCorr ) ) THEN
       Message = 'Some or all INPUT AntCorr pointer members are NOT associated.'
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
     
     ! Check the release
-    Error_Status = CheckRelease_AntCorr( AntCorr, &
-                                         Message_Log=Message_Log)
+    Error_Status = CheckRelease_AntCorr( AntCorr,Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'AntCorr structure Release check failed.'
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
 
     ! Check the structure dimensions
     IF ( AntCorr%n_FOVs < 1 .OR. AntCorr%n_Channels < 1 ) THEN
       Message = 'Dimensions of AntCorr structure are < or = 0.'
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
@@ -788,7 +735,7 @@ CONTAINS
       ! Ensure it's valid
       IF ( FileID == -1 ) THEN
         Message = 'Error inquiring '//TRIM(Filename)//' for its FileID'
-        CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+        CALL Write_Cleanup(); RETURN
       END IF
     END IF
 
@@ -800,7 +747,7 @@ CONTAINS
       WRITE(Message,'("Error writing AntCorr Release/Version values to ", a, &
                      &". IOSTAT = ", i0 )' ) &
                      TRIM(Filename), IO_Status
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
@@ -811,7 +758,7 @@ CONTAINS
       WRITE(Message,'("Error writing AntCorr dimension values to ", a, &
                      &". IOSTAT = ", i0 )' ) &
                      TRIM(Filename), IO_Status
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
@@ -823,7 +770,7 @@ CONTAINS
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error writing AntCorr sensor information to ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
@@ -836,7 +783,7 @@ CONTAINS
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message, '("Error writing AntCorr data to ",a,". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
-      CALL Write_Cleanup(Close_File=Yes_Close); RETURN
+      CALL Write_Cleanup(); RETURN
     END IF
 
     
@@ -867,26 +814,20 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE Write_CleanUp(Close_File)
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+    SUBROUTINE Write_CleanUp()
       CHARACTER(ML) :: Close_Message
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          CLOSE( FileID, IOSTAT=IO_Status )
-          IF ( IO_Status /= 0 ) THEN
-            WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
-                                 TRIM(Filename), IO_Status
-            Message = TRIM(Message)//TRIM(Close_Message)
-          END IF
+      ! Close file if it's open
+      IF ( File_Open( Filename ) ) THEN
+        CLOSE( FileID,IOSTAT=IO_Status )
+        IF ( IO_Status /= 0 ) THEN
+          WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
+                               TRIM(Filename), IO_Status
+          Message = TRIM(Message)//TRIM(Close_Message)
         END IF
       END IF
       ! Set error status and print error message
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_AntCorr_Binary
