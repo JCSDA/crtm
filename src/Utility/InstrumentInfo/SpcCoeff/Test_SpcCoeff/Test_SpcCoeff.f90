@@ -37,8 +37,8 @@ PROGRAM Test_SpcCoeff
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Memory leak looping values
-  INTEGER, PARAMETER :: MAX_N_LOOPS  = 5000
-  INTEGER, PARAMETER :: INFO_N_LOOPS = 1000
+  INTEGER, PARAMETER :: MAX_N_LOOPS  = 500
+  INTEGER, PARAMETER :: INFO_N_LOOPS = 100
   ! Structure dimensions
   INTEGER, PARAMETER :: N_CHANNELS = 200
   INTEGER, PARAMETER :: N_N_FOVS = 2
@@ -68,7 +68,7 @@ PROGRAM Test_SpcCoeff
   ! -----------------------
   FOV_Loop: DO i = 1, N_N_FOVS
   
-    WRITE( *,'(////10x,"NUMBER OF FIELDS OF VIEW FOR THIS TEST: ",i0,//)' ) N_FOVS(i)
+    WRITE( *,'(//10x,"NUMBER OF FIELDS OF VIEW FOR THIS TEST: ",i0,//)' ) N_FOVS(i)
     
     
     ! Allocate the SpcCoeff structure
