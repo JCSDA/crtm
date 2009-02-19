@@ -382,7 +382,7 @@ PROGRAM Compute_MW_Transmittance
 
     ! Only process microwave sensors
     ! ------------------------------
-    IF ( SensorInfo%Microwave_Flag /= MICROWAVE_SENSOR_TYPE ) CYCLE Sensor_Loop
+    IF ( SensorInfo%Sensor_Type /= MICROWAVE_SENSOR ) CYCLE Sensor_Loop
     ! Output an info message
     WRITE( *,'(//5x,"Calculating ",a," transmittances for ",a,1x,a)' ) &
              TRIM(DIRECTION_NAME( Direction )), &

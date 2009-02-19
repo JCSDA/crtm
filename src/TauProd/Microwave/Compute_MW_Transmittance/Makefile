@@ -21,6 +21,7 @@ SRC_FILES = Type_Kinds.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Fundamental_Constants.f90 \
+            String_Utility.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
@@ -29,6 +30,7 @@ SRC_FILES = Type_Kinds.f90 \
             Geopotential.f90 \
             Units_Conversion.f90 \
             Atmospheric_Properties.f90 \
+            SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
