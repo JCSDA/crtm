@@ -71,10 +71,10 @@ PROGRAM SpcCoeff_Compare
   CHARACTER(256) :: Filename2
   INTEGER :: File1_Format
   INTEGER :: File2_Format
-  TYPE( SpcCoeff_Sensor_type ) :: SpcCoeff_Sensor1
-  TYPE( SpcCoeff_Sensor_type ) :: SpcCoeff_Sensor2
-  TYPE( SpcCoeff_Spectral_type ) :: SpcCoeff_Spectral1
-  TYPE( SpcCoeff_Spectral_type ) :: SpcCoeff_Spectral2
+  TYPE( SpcCoeff_type ) :: SpcCoeff_Sensor1
+  TYPE( SpcCoeff_type ) :: SpcCoeff_Sensor2
+  TYPE( SpcCoeff_type ) :: SpcCoeff_Spectral1
+  TYPE( SpcCoeff_type ) :: SpcCoeff_Spectral2
 
 
   ! Program header
