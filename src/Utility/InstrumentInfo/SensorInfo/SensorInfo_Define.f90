@@ -27,7 +27,9 @@ MODULE SensorInfo_Define
                                    VISIBLE_SENSOR          , &
                                    ULTRAVIOLET_SENSOR      , &
                                    SENSOR_TYPE_NAME        , &
-                                   N_POLARIZATION_TYPES
+                                   N_POLARIZATION_TYPES    , &
+                                   UNPOLARIZED
+                                   
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -38,6 +40,7 @@ MODULE SensorInfo_Define
   ! Everything private by default
   PRIVATE
   ! Parameters (passed through from SensorInfo_Parameters)
+  PUBLIC :: UNPOLARIZED
   PUBLIC :: N_SENSOR_TYPES
   PUBLIC :: INVALID_SENSOR  
   PUBLIC :: MICROWAVE_SENSOR
