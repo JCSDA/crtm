@@ -1,0 +1,63 @@
+% The generic preamble
+\input{preamble}
+
+
+%\includeonly{}
+
+% Title info
+\title{title}
+\author{AUTHOR\email{EMAIL}\\AFFILIATION}
+\date{MONTH, YEAR}
+\docnumber{(unassigned)}
+\docseries{CRTM}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+\draftwatermark
+
+% The front matter
+%=================
+\thispagestyle{empty}
+\vspace*{10cm}
+\begin{center}
+  {\sffamily\Large\bfseries Change History}
+  \begin{table}[htp]
+    \centering
+    \begin{tabular}{|p{2cm}|p{3cm}|p{8cm}|}
+      \hline
+      \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
+      \hline\hline
+      YYYY-MM-DD & AUTHOR & Initial release.\\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+% The main matter
+%================
+%\include{}
+
+% The references section
+%=======================
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+
+% The appendices section
+%=======================
+%\begin{appendix}
+%
+%\end{appendix}
+
+\end{document}
+
