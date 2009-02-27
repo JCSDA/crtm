@@ -38,18 +38,26 @@
 #    Run all the CRTM baseline tests. Overrides any of the individual
 #    test run options.
 #
-# --lahey  [LINUX ONLY]
-#    Build the test code using the Lahey Fortran95 compiler.
-#
-# --pgi  [LINUX ONLY]
-#    Build the test code using the Lahey Fortran95 compiler.
-#
-# --gfortran  [LINUX ONLY]
+# --gfortran, --gfortran_debug  [LINUX ONLY]
 #    Build the test code using the GNU gfortran Fortran95 compiler.
+#    The "_debug" qualifier uses debug compiler switches.
 #    This is the default CRTM compiler for linux.
 #
-# --g95  [LINUX ONLY]
+# --lahey, --lahey_debug  [LINUX ONLY]
+#    Build the test code using the Lahey Fortran95 compiler.
+#    The "_debug" qualifier uses debug compiler switches.
+#
+# --pgi, --pgi_debug  [LINUX ONLY]
+#    Build the test code using the PGI Fortran95 compiler.
+#    The "_debug" qualifier uses debug compiler switches.
+#
+# --intel, --intel_debug  [LINUX ONLY]
+#    Build the test code using the Intel Fortran95 compiler.
+#    The "_debug" qualifier uses debug compiler switches.
+#
+# --g95, --g95_debug  [LINUX ONLY]
 #    Build the test code using the g95 Fortran95 compiler.
+#    The "_debug" qualifier uses debug compiler switches.
 #
 #
 # CREATION HISTORY:
@@ -88,7 +96,13 @@ options=GetoptLong.new(
   [ "--gfortran",             GetoptLong::NO_ARGUMENT ],
   [ "--pgi",                  GetoptLong::NO_ARGUMENT ],
   [ "--g95",                  GetoptLong::NO_ARGUMENT ],
-  [ "--lahey",                GetoptLong::NO_ARGUMENT ] )
+  [ "--intel",                GetoptLong::NO_ARGUMENT ],
+  [ "--lahey",                GetoptLong::NO_ARGUMENT ],
+  [ "--gfortran_debug",       GetoptLong::NO_ARGUMENT ],
+  [ "--pgi_debug",            GetoptLong::NO_ARGUMENT ],
+  [ "--g95_debug",            GetoptLong::NO_ARGUMENT ],
+  [ "--intel_debug",          GetoptLong::NO_ARGUMENT ],
+  [ "--lahey_debug",          GetoptLong::NO_ARGUMENT ] )
 
 # Parse the command line options
 begin
@@ -115,10 +129,22 @@ begin
         make_flags = 'TARGET="gfortran"'
       when "--lahey"
         make_flags = 'TARGET="lahey" RUN_OPTS="-Wl,-T"'
+      when "--intel"
+        make_flags = 'TARGET="intel"'
       when "--pgi"
         make_flags = 'TARGET="pgi"'
       when "--g95"
         make_flags = 'TARGET="g95"'
+      when "--gfortran_debug"
+        make_flags = 'TARGET="gfortran_debug"'
+      when "--lahey_debug"
+        make_flags = 'TARGET="lahey_debug" RUN_OPTS="-Wl,-T"'
+      when "--intel_debug"
+        make_flags = 'TARGET="intel_debug"'
+      when "--pgi_debug"
+        make_flags = 'TARGET="pgi_debug"'
+      when "--g95_debug"
+        make_flags = 'TARGET="g95_debug"'
     end
   end
 rescue StandardError=>error_message

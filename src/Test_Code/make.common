@@ -65,6 +65,12 @@ all:
        esac
 
 # Targets for specific Linux compilers.
+gfortran_debug:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_GFORTRAN_DEBUG)
+
+gfortran:
+	make -f $(MAKE_FILE) build $(LINUX_FLAGS_GFORTRAN_PROD)
+
 intel_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_INTEL_DEBUG)
 
