@@ -7,6 +7,7 @@ SRC_FILES = Type_Kinds.f90 \
             Sort_Utility.f90 \
             Fundamental_Constants.f90 \
             Spectral_Units_Conversion.f90 \
+            SensorInfo_Parameters.f90 \
             AntCorr_Define.f90 \
             AntCorr_Binary_IO.f90 \
             SpcCoeff_Define.f90 \
