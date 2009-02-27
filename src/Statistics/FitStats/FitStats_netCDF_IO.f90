@@ -7,7 +7,7 @@
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 10-Apr-2007
-!                       paul.vandelst@ssec.wisc.edu
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE FitStats_netCDF_IO
@@ -50,7 +50,7 @@ MODULE FitStats_netCDF_IO
     '$Id$'
   ! Keyword set value
   INTEGER,      PARAMETER :: SET = 1
-  ! msg string length
+  ! Message string length
   INTEGER,      PARAMETER :: ML = 512
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
@@ -216,6 +216,7 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Inquire_FitStats_netCDF
@@ -225,19 +226,19 @@ CONTAINS
 !       dimensions and global attributes.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_FitStats_netCDF( NC_Filename                       , &  ! Input
-!                                               n_Channels       =n_Channels      , &  ! Optional output
-!                                               Release          =Release         , &  ! Optional output
-!                                               Version          =Version         , &  ! Optional output
-!                                               Sensor_Id        =Sensor_Id       , &  ! Optional output
-!                                               WMO_Satellite_Id =WMO_Satellite_Id, &  ! Optional output
-!                                               WMO_Sensor_Id    =WMO_Sensor_Id   , &  ! Optional output
-!                                               ID_Tag           =ID_Tag          , &  ! Optional output
-!                                               Title            =Title           , &  ! Optional output
-!                                               History          =History         , &  ! Optional output
-!                                               Comment          =Comment         , &  ! Optional output
-!                                               RCS_Id           =RCS_Id          , &  ! Revision control
-!                                               Message_Log      =Message_Log       )  ! Error messaging
+!       Error_Status = Inquire_FitStats_netCDF( NC_Filename                       , &
+!                                               n_Channels       =n_Channels      , &
+!                                               Release          =Release         , &
+!                                               Version          =Version         , &
+!                                               Sensor_Id        =Sensor_Id       , &
+!                                               WMO_Satellite_Id =WMO_Satellite_Id, &
+!                                               WMO_Sensor_Id    =WMO_Sensor_Id   , &
+!                                               ID_Tag           =ID_Tag          , &
+!                                               Title            =Title           , &
+!                                               History          =History         , &
+!                                               Comment          =Comment         , &
+!                                               RCS_Id           =RCS_Id          , &
+!                                               Message_Log      =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the
@@ -343,6 +344,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Inquire_FitStats_netCDF( NC_Filename     , &  ! Input
@@ -432,7 +434,7 @@ CONTAINS
                               Comment          =Comment         , &
                               Message_Log      =Message_Log       )
     IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
+      msg = 'Error reading global attributes from '//TRIM(NC_Filename)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -472,6 +474,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Write_FitStats_netCDF
@@ -480,15 +483,15 @@ CONTAINS
 !       Function to write FitStats data to a netCDF format FitStats file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_FitStats_netCDF( NC_Filename            , &  ! Input
-!                                             FitStats               , &  ! Input
-!                                             Quiet      =Quiet      , &  ! Optional input
-!                                             ID_Tag     =ID_Tag     , &  ! Optional input
-!                                             Title      =Title      , &  ! Optional input
-!                                             History    =History    , &  ! Optional input
-!                                             Comment    =Comment    , &  ! Optional input
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_FitStats_netCDF( NC_Filename            , &
+!                                             FitStats               , &
+!                                             Quiet      =Quiet      , &
+!                                             ID_Tag     =ID_Tag     , &
+!                                             Title      =Title      , &
+!                                             History    =History    , &
+!                                             Comment    =Comment    , &
+!                                             RCS_Id     =RCS_Id     , &
+!                                             Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:  Character string specifying the name of the netCDF
@@ -572,6 +575,7 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Write_FitStats_netCDF( NC_Filename , &  ! Input
@@ -696,6 +700,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Read_FitStats_netCDF
@@ -704,15 +709,15 @@ CONTAINS
 !       Function to read data from a netCDF format FitStats file.
 !
 ! CALLING SEQUENCE:
-!     Error_Status = Read_FitStats_netCDF( NC_Filename            , &  ! Input
-!                                          FitStats               , &  ! Output
-!                                          Quiet      =Quiet      , &  ! Optional input
-!                                          ID_Tag     =ID_Tag     , &  ! Optional output
-!                                          Title      =Title      , &  ! Optional output
-!                                          History    =History    , &  ! Optional output
-!                                          Comment    =Comment    , &  ! Optional output
-!                                          RCS_Id     =RCS_Id     , &  ! Revision control
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!     Error_Status = Read_FitStats_netCDF( NC_Filename            , &
+!                                          FitStats               , &
+!                                          Quiet      =Quiet      , &
+!                                          ID_Tag     =ID_Tag     , &
+!                                          Title      =Title      , &
+!                                          History    =History    , &
+!                                          Comment    =Comment    , &
+!                                          RCS_Id     =RCS_Id     , &
+!                                          Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:  Character string specifying the name of the
@@ -805,6 +810,7 @@ CONTAINS
 !       because the argument may be defined on input. To prevent memory leaks,
 !       the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Read_FitStats_netCDF( NC_Filename, &  ! Input
@@ -876,7 +882,7 @@ CONTAINS
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
             TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
@@ -896,14 +902,14 @@ CONTAINS
                               Message_Log     =Message_Log                )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
     ! Check the release
     Error_Status = CheckRelease_FitStats( FitStats,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'FitStats Release check failed for '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
     
 
@@ -915,7 +921,7 @@ CONTAINS
                             Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error reading FitStats variables from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
@@ -924,7 +930,7 @@ CONTAINS
     NF90_Status = NF90_CLOSE( NC_FileId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
@@ -940,9 +946,8 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
+    SUBROUTINE Read_CleanUp( Close_File )
        LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
         IF ( Close_File ) THEN
@@ -953,12 +958,10 @@ CONTAINS
         END IF
       END IF
       ! Destroy the structure if necessary
-      IF ( PRESENT(Destroy_Structure) ) THEN
-        IF ( Destroy_Structure ) THEN
-          Error_Status = Destroy_FitStats(FitStats, Message_Log=Message_Log)
-          IF ( Error_Status /= SUCCESS ) &
-            msg = TRIM(msg)//'; Error destroying FitStats during error cleanup.'
-        END IF
+      IF ( Associated_FitStats( FitStats ) ) THEN
+        Error_Status = Destroy_FitStats(FitStats, Message_Log=Message_Log)
+        IF ( Error_Status /= SUCCESS ) &
+          msg = TRIM(msg)//'; Error destroying FitStats during error cleanup.'
       END IF
       ! Set error status and print error msg
       Error_Status = FAILURE
@@ -986,17 +989,17 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = WriteGAtts( NC_Filename                      , &  ! Input
-!                                  NC_FileID                        , &  ! Input
-!                                  Version         =Version         , &  ! Optional input
-!                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional input
-!                                  ID_Tag          =ID_Tag          , &  ! Optional input
-!                                  Title           =Title           , &  ! Optional input
-!                                  History         =History         , &  ! Optional input
-!                                  Comment         =Comment         , &  ! Optional input
-!                                  Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = WriteGAtts( NC_Filename                      , &
+!                                  NC_FileID                        , &
+!                                  Version         =Version         , &
+!                                  Sensor_Id       =Sensor_Id       , &
+!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                  ID_Tag          =ID_Tag          , &
+!                                  Title           =Title           , &
+!                                  History         =History         , &
+!                                  Comment         =Comment         , &
+!                                  Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -1306,18 +1309,18 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = ReadGAtts( NC_Filename                      , &  ! Input
-!                                 NC_FileID                        , &  ! Input
-!                                 Release         =Release         , &  ! Optional output
-!                                 Version         =Version         , &  ! Optional output
-!                                 Sensor_Id       =Sensor_Id       , &  ! Optional output
-!                                 WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional output
-!                                 WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional output
-!                                 ID_Tag          =ID_Tag          , &  ! Optional output
-!                                 Title           =Title           , &  ! Optional output
-!                                 History         =History         , &  ! Optional output
-!                                 Comment         =Comment         , &  ! Optional output
-!                                 Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = ReadGAtts( NC_Filename                      , &
+!                                 NC_FileID                        , &
+!                                 Release         =Release         , &
+!                                 Version         =Version         , &
+!                                 Sensor_Id       =Sensor_Id       , &
+!                                 WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                 WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                 ID_Tag          =ID_Tag          , &
+!                                 Title           =Title           , &
+!                                 History         =History         , &
+!                                 Comment         =Comment         , &
+!                                 Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -1613,12 +1616,12 @@ CONTAINS
 !       netCDF file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = DefineVar( NC_Filename            , &  ! Input
-!                                 NC_FileID              , &  ! Input
-!                                 n_Predictors_DimID     , &  ! Input
-!                                 n_Channels_DimID       , &  ! Input
-!                                 RCS_Id     =RCS_Id     , &  ! Revision control
-!                                 Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = DefineVar( NC_Filename            , &
+!                                 NC_FileID              , &
+!                                 n_Predictors_DimID     , &
+!                                 n_Channels_DimID       , &
+!                                 RCS_Id     =RCS_Id     , &
+!                                 Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -1736,7 +1739,7 @@ CONTAINS
     NF90_Status(1) = NF90_DEF_VAR( NC_FileID,N_PREDICTORS_VARNAME,N_PREDICTORS_TYPE, &
                                    dimIDs=(/n_Channels_DimID/),varID=VarID )
     IF ( NF90_Status(1) /= NF90_NOERR ) THEN
-      msg = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
+      msg = 'Error defining '//N_PREDICTORS_VARNAME//' variable in '//&
             TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
@@ -1995,7 +1998,7 @@ CONTAINS
       ! Close file
       NF90_Status(1) = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status(1) /= NF90_NOERR ) &
-        msg = '; Error closing input file during error cleanup - '//&
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
               TRIM(NF90_STRERROR( NF90_Status(1) ) )
       ! Set error status and print error msg
       Error_Status = FAILURE
@@ -2015,11 +2018,11 @@ CONTAINS
 !       netCDF file in which they have been defined.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = WriteVar( NC_Filename            , &  ! Input
-!                                NC_FileID              , &  ! Input
-!                                FitStats               , &  ! Input
-!                                RCS_Id     =RCS_Id     , &  ! Revision control
-!                                Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = WriteVar( NC_Filename            , &
+!                                NC_FileID              , &
+!                                FitStats               , &
+!                                RCS_Id     =RCS_Id     , &
+!                                Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -2336,7 +2339,7 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        msg = '; Error closing input file during error cleanup - '//&
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
               TRIM(NF90_STRERROR( NF90_Status ) )
       ! Set error status and print error msg
       Error_Status = FAILURE
@@ -2356,11 +2359,11 @@ CONTAINS
 !       netCDF file in which they have been defined.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = ReadVar( NC_Filename            , &  ! Input
-!                               NC_FileID              , &  ! Input
-!                               FitStats               , &  ! Output
-!                               RCS_Id     =RCS_Id     , &  ! Revision control
-!                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = ReadVar( NC_Filename            , &
+!                               NC_FileID              , &
+!                               FitStats               , &
+!                               RCS_Id     =RCS_Id     , &
+!                               Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -2684,8 +2687,8 @@ CONTAINS
       ! Close file
       NF90_Status = NF90_CLOSE( NC_FileID )
       IF ( NF90_Status /= NF90_NOERR ) &
-        msg = '; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ) )
+        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status ) )
       ! Set error status and print error msg
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
@@ -2703,18 +2706,18 @@ CONTAINS
 !       Function to create a netCDF FitStats data file for writing.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CreateFile( NC_Filename                      , &  ! Input
-!                                  n_Channels                       , &  ! Input
-!                                  NC_FileID                        , &  ! Output
-!                                  Version         =Version         , &  ! Optional input
-!                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional input
-!                                  ID_Tag          =ID_Tag          , &  ! Optional input
-!                                  Title           =Title           , &  ! Optional input
-!                                  History         =History         , &  ! Optional input
-!                                  Comment         =Comment         , &  ! Optional input
-!                                  Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = CreateFile( NC_Filename                      , &
+!                                  n_Channels                       , &
+!                                  NC_FileID                        , &
+!                                  Version         =Version         , &
+!                                  Sensor_Id       =Sensor_Id       , &
+!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                  ID_Tag          =ID_Tag          , &
+!                                  Title           =Title           , &
+!                                  History         =History         , &
+!                                  Comment         =Comment         , &
+!                                  Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the
@@ -2948,7 +2951,7 @@ CONTAINS
         IF ( Close_File ) THEN
           NF90_Status = NF90_CLOSE( NC_FileID )
           IF ( NF90_Status /= NF90_NOERR ) &
-            msg = '; Error closing input file during error cleanup - '//&
+            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
                       TRIM(NF90_STRERROR( NF90_Status ) )
         END IF
       END IF

@@ -115,6 +115,7 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Associated_FitStats
@@ -162,6 +163,7 @@ CONTAINS
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Associated_FitStats( FitStats, &  ! Input          
@@ -169,7 +171,7 @@ CONTAINS
                               RESULT(Association_Status)      
     ! Arguments
     TYPE(FitStats_type), INTENT(IN) :: FitStats
-    INTEGER, OPTIONAL , INTENT(IN) :: ANY_Test
+    INTEGER, OPTIONAL  , INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -232,6 +234,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Destroy_FitStats
@@ -289,6 +292,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Destroy_FitStats( FitStats   , &  ! Output
@@ -306,14 +310,14 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_FitStats'
     ! Local variables
-    CHARACTER(256)  :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
     
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Reset the dimension indicators
     FitStats%n_Channels = 0
@@ -381,6 +385,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Allocate_FitStats
@@ -453,6 +458,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Allocate_FitStats( n_Channels , &  ! Input            
@@ -476,7 +482,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Check dimensions
     IF ( n_Channels < 1 ) THEN
@@ -584,6 +590,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Assign_FitStats
@@ -643,6 +650,7 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Assign_FitStats( FitStats_in , &  ! Input
@@ -663,7 +671,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. Associated_FitStats( FitStats_in ) ) THEN
@@ -725,6 +733,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Equal_FitStats
@@ -812,6 +821,7 @@ CONTAINS
 !                      TYPE:       INTEGER
 !                      DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Equal_FitStats( FitStats_LHS, &  ! Input
@@ -841,7 +851,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Default precision is a single unit in last place
     ULP = 1
@@ -1196,6 +1206,7 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CheckRelease_FitStats
@@ -1245,6 +1256,7 @@ CONTAINS
 !                      TYPE:       INTEGER
 !                      DIMENSION:  Scalar
 !
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   FUNCTION CheckRelease_FitStats( FitStats   , &  ! Input
@@ -1265,14 +1277,14 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check release is not too old
     ! ----------------------------
-    IF ( FitStats%Release < FitStats_RELEASE ) THEN
-      WRITE( Message, '( "A FitStats data update is needed. ", &
-                        &"FitStats release is ", i0, &
-                        &". Valid release is ",i0,"." )' ) &
+    IF ( FitStats%Release < FITSTATS_RELEASE ) THEN
+      WRITE( Message,'("A FitStats data update is needed. ",&
+                      &"FitStats release is ",i0,&
+                      &". Valid release is ",i0,".")' ) &
                       FitStats%Release, FitStats_RELEASE
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
@@ -1284,11 +1296,11 @@ CONTAINS
 
     ! Check release is not too new
     ! ----------------------------
-    IF ( FitStats%Release > FitStats_RELEASE ) THEN
-      WRITE( Message, '( "A FitStats software update is needed. ", &
-                        &"FitStats release is ", i0, &
-                        &". Valid release is ",i0,"." )' ) &
-                      FitStats%Release, FitStats_RELEASE
+    IF ( FitStats%Release > FITSTATS_RELEASE ) THEN
+      WRITE( Message,'("A FitStats software update is needed. ",&
+                      &"FitStats release is ",i0,&
+                      &". Valid release is ",i0,"." )' ) &
+                      FitStats%Release, FITSTATS_RELEASE
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
@@ -1301,6 +1313,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Info_FitStats
@@ -1337,6 +1350,7 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Info_FitStats( FitStats, &  ! Input
@@ -1355,7 +1369,7 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Write the required info to the local string
     ! -------------------------------------------
