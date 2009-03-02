@@ -18,6 +18,8 @@ MODULE FitStats_Define
   USE Type_Kinds           , ONLY: fp, Long, Double
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -61,13 +63,11 @@ MODULE FitStats_Define
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: FITSTATS_RELEASE = 1
   INTEGER, PARAMETER :: FITSTATS_VERSION = 1
-  ! Sensor Id default values
-  INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
-  INTEGER, PARAMETER :: INVALID_WMO_SENSOR_ID    = 2047
 
   ! -----------------------
   ! Derived type definition
   ! -----------------------
+  !:tdoc+:
   TYPE :: FitStats_type
     INTEGER :: n_Allocates=0
     ! Release and version information
@@ -101,6 +101,7 @@ MODULE FitStats_Define
     REAL(Double) , POINTER :: Tau_Max_RMS(:)     => NULL()  ! L
     REAL(Double) , POINTER :: Max_Pred_Term(:)   => NULL()  ! L
   END TYPE FitStats_type
+  !:tdoc-:
 
 
 CONTAINS

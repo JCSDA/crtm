@@ -2858,8 +2858,6 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: n_Predictors_DimID
     INTEGER :: n_Channels_DimID
-    INTEGER :: VarID
-    TYPE(FitStats_type) :: Dummy
     
 
     ! Set up
