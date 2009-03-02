@@ -977,10 +977,10 @@ PROGRAM Convolve_TauSpc_with_SRF
         ! into the transmittance spectrum
         SRF_Index( 1, lch ) = Compute_Frequency_Index( v1, &
                                                        FREQUENCY_INTERVAL( dF_Index ), &
-                                                       SRF( lch )%Begin_Frequency )
+                                                       SRF( lch )%f1_Band(1) )
         SRF_Index( 2, lch ) = Compute_Frequency_Index( v1, &
                                                        FREQUENCY_INTERVAL( dF_Index ), &
-                                                       SRF( lch )%End_Frequency )
+                                                       SRF( lch )%f2_Band( SRF( lch )%n_Bands ) )
 
         ! Double check the index values
         IF ( ANY( SRF_Index( :, lch ) < 1                 ) .OR. &
