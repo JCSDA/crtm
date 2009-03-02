@@ -502,16 +502,18 @@ CONTAINS
     IF ( ABS(r1-r2) < tol ) THEN
       CALL test_passed(UTest)
       UTest%Last_Test_Result = .TRUE.
-      WRITE( Message, '(4x,"Assert equal within passed for test#",i0,&
-                      &". Expected ",'//RFMT//'," to within ",es13.6," and got ",'//RFMT//')') &
-                      UTest%n_Tests, r1,tol,r2
+      WRITE( Message, '("Assert equal within passed for test#",i0,a,&
+                      &5x,"Expected ",'//RFMT//'," to within ",es13.6," and got ",'//RFMT//',a,&
+                      &5x,"Difference: ",es13.6)') &
+                      UTest%n_Tests, CRLF, r1,tol,r2, CRLF, ABS(r1-r2)
     ELSE
       CALL test_failed(UTest)
       UTest%Last_Test_Result = .FALSE.
       Verbose = .TRUE.  ! Always output test failure
-      WRITE( Message, '(4x,"Assert equal within FAILED for test#",i0,&
-                      &". Expected ",'//RFMT//'," to within ",es13.6," and got ",'//RFMT//')') &
-                      UTest%n_Tests, r1,tol,r2
+      WRITE( Message, '("Assert equal within FAILED for test#",i0,a,&
+                      &5x,"Expected ",'//RFMT//'," to within ",es13.6," and got ",'//RFMT//',a,&
+                      &5x,"Difference: ",es13.6)') &
+                      UTest%n_Tests, CRLF, r1,tol,r2, CRLF, ABS(r1-r2)
     END IF
 
     ! Output message
