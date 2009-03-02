@@ -131,7 +131,7 @@ build: $(OBJ_FILES)
 # Clean up
 # --------
 clean:
-	$(REMOVE) $(OBJ_FILES) *.mod *.MOD
+	$(REMOVE) $(OBJ_FILES) *.mod *.MOD gmon.out
 
 
 # ----------------------
