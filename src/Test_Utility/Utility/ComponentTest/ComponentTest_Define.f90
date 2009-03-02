@@ -20,6 +20,8 @@ MODULE ComponentTest_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -64,9 +66,6 @@ MODULE ComponentTest_Define
   ! String lengths
   INTEGER, PARAMETER :: SL  = 20  ! Sensor id string length
   INTEGER, PARAMETER :: VSL = 64  ! Variable name string length
-  ! Sensor Id default values
-  INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
-  INTEGER, PARAMETER :: INVALID_WMO_SENSOR_ID    = 2047
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: COMPONENTTEST_RELEASE = 1
   INTEGER, PARAMETER :: COMPONENTTEST_VERSION = 1
@@ -99,7 +98,7 @@ MODULE ComponentTest_Define
   ! -----------------------------------
   ! ComponentTest data type definitions
   ! -----------------------------------
-
+  !:tdoc+:
   TYPE :: ComponentTest_type
     INTEGER :: n_Allocates = 0
     ! Release and version information
@@ -138,6 +137,7 @@ MODULE ComponentTest_Define
     REAL(fp), POINTER :: d1( :,:,:,:,: ) => NULL()  ! K x L x nP x nIV x nOV
     REAL(fp), POINTER :: d2( :,:,:,:,: ) => NULL()  ! K x L x nP x nIV x nOV
   END TYPE ComponentTest_type
+  !:tdoc-:
 
 
 CONTAINS
@@ -163,8 +163,8 @@ CONTAINS
 !       ComponentTest structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_ComponentTest( ComponentTest    , &  ! Input
-!                                                      ANY_Test=Any_Test  )  ! Optional input
+!       Association_Status = Associated_ComponentTest( ComponentTest    , &
+!                                                      ANY_Test=Any_Test  )
 !
 ! INPUT ARGUMENTS:
 !       ComponentTest:       ComponentTest structure which is to have its pointer
@@ -263,9 +263,9 @@ CONTAINS
 !       data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_ComponentTest( ComponentTest          , &  ! Output
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Destroy_ComponentTest( ComponentTest          , &
+!                                             RCS_Id     =RCS_Id     , &
+!                                             Message_Log=Message_Log  )
 !
 ! OUTPUT ARGUMENTS:
 !       ComponentTest:  Re-initialized ComponentTest structure.
@@ -408,10 +408,10 @@ CONTAINS
 !       data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_ComponentTest( nK, nL, nP, nIV, nOv,  , &  ! Input
-!                                              ComponentTest          , &  ! Output
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Allocate_ComponentTest( nK, nL, nP, nIV, nOv,  , &
+!                                              ComponentTest          , &
+!                                              RCS_Id     =RCS_Id     , &
+!                                              Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       nK:                   The number of layers dimension of the
@@ -638,10 +638,10 @@ CONTAINS
 !       Function to copy valid ComponentTest structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_ComponentTest( ComponentTest_in       , &  ! Input
-!                                            ComponentTest_out      , &  ! Output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Assign_ComponentTest( ComponentTest_in       , &
+!                                            ComponentTest_out      , &
+!                                            RCS_Id     =RCS_Id     , &
+!                                            Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       ComponentTest_in:   ComponentTest structure which is to be copied.
@@ -780,12 +780,12 @@ CONTAINS
 !       Function to test if two ComponentTest structures are equal.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Equal_ComponentTest( ComponentTest_LHS      , &  ! Input
-!                                           ComponentTest_RHS      , &  ! Input
-!                                           ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                           Check_All  =Check_All  , &  ! Optional input
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Equal_ComponentTest( ComponentTest_LHS      , &
+!                                           ComponentTest_RHS      , &
+!                                           ULP_Scale  =ULP_Scale  , &
+!                                           Check_All  =Check_All  , &
+!                                           RCS_Id     =RCS_Id     , &
+!                                           Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       ComponentTest_LHS:  ComponentTest structure to be compared; equivalent
@@ -1133,9 +1133,9 @@ CONTAINS
 !       Function to check the ComponentTest Release value.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CheckRelease_ComponentTest( ComponentTest          , &  ! Input
-!                                                  RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                  Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CheckRelease_ComponentTest( ComponentTest          , &
+!                                                  RCS_Id     =RCS_Id     , &
+!                                                  Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       ComponentTest: ComponentTest structure for which the Release member
@@ -1234,9 +1234,9 @@ CONTAINS
 !       information about the ComponentTest data structure.
 !
 ! CALLING SEQUENCE:
-!       CALL Info_ComponentTest( ComponentTest, &  ! Input
-!                                Info         , &  ! Output
-!                                RCS_Id=RCS_Id  )  ! Revision control
+!       CALL Info_ComponentTest( ComponentTest, &
+!                                Info         , &
+!                                RCS_Id=RCS_Id  )
 !
 ! INPUT ARGUMENTS:
 !       ComponentTest:      Filled ComponentTest structure.

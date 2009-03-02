@@ -193,8 +193,6 @@ MODULE ComponentTest_netCDF_IO
 CONTAINS
 
 
-
-
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -214,26 +212,26 @@ CONTAINS
 !       dimensions and global attributes.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_ComponentTest_netCDF( NC_Filename                      , &  ! Input
-!                                                    nK              =nK              , &  ! Optional output
-!                                                    nL              =nL              , &  ! Optional output
-!                                                    nP              =nP              , &  ! Optional output
-!                                                    nIV             =nIV             , &  ! Optional output
-!                                                    nOV             =nOV             , &  ! Optional output
-!                                                    nM              =nM              , &  ! Optional output
-!                                                    TestType        =TestType        , &  ! Optional output
-!                                                    DataType        =DataType        , &  ! Optional output
-!                                                    Release         =Release         , &  ! Optional output
-!                                                    Version         =Version         , &  ! Optional output
-!                                                    Sensor_Id       =Sensor_Id       , &  ! Optional output
-!                                                    WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional output
-!                                                    WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional output
-!                                                    Title           =Title           , &  ! Optional output
-!                                                    History         =History         , &  ! Optional output
-!                                                    Comment         =Comment         , &  ! Optional output
-!                                                    ID_Tag          =ID_Tag          , &  ! Optional output
-!                                                    RCS_Id          =RCS_Id          , &  ! Version control
-!                                                    Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = Inquire_ComponentTest_netCDF( NC_Filename                      , &
+!                                                    nK              =nK              , &
+!                                                    nL              =nL              , &
+!                                                    nP              =nP              , &
+!                                                    nIV             =nIV             , &
+!                                                    nOV             =nOV             , &
+!                                                    nM              =nM              , &
+!                                                    TestType        =TestType        , &
+!                                                    DataType        =DataType        , &
+!                                                    Release         =Release         , &
+!                                                    Version         =Version         , &
+!                                                    Sensor_Id       =Sensor_Id       , &
+!                                                    WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                                    WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                                    Title           =Title           , &
+!                                                    History         =History         , &
+!                                                    Comment         =Comment         , &
+!                                                    ID_Tag          =ID_Tag          , &
+!                                                    RCS_Id          =RCS_Id          , &
+!                                                    Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:       Character string specifying the name of the netCDF
@@ -634,16 +632,16 @@ CONTAINS
 !       Function to write ComponentTest data to a netCDF format ComponentTest file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_ComponentTest_netCDF( NC_Filename            , &  ! Input
-!                                                  ComponentTest          , &  ! Input
-!                                                  Quiet      =Quiet      , &  ! Optional input
-!                                                  New        =New        , &  ! Optional input
-!                                                  Title      =Title      , &  ! Optional input
-!                                                  History    =History    , &  ! Optional input
-!                                                  Comment    =Comment    , &  ! Optional input
-!                                                  ID_Tag     =ID_Tag     , &  ! Optional input
-!                                                  RCS_Id     =RCS_Id     , &  ! Version control
-!                                                  Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_ComponentTest_netCDF( NC_Filename            , &
+!                                                  ComponentTest          , &
+!                                                  Quiet      =Quiet      , &
+!                                                  New        =New        , &
+!                                                  Title      =Title      , &
+!                                                  History    =History    , &
+!                                                  Comment    =Comment    , &
+!                                                  ID_Tag     =ID_Tag     , &
+!                                                  RCS_Id     =RCS_Id     , &
+!                                                  Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:     Character string specifying the name of the
@@ -865,7 +863,7 @@ CONTAINS
     ! --------------
     NF90_Status = NF90_CLOSE( NC_FileId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -913,16 +911,16 @@ CONTAINS
 !       netCDF format ComponentTest file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_ComponentTest_netCDF( NC_Filename                  , &  ! Input
-!                                                 nM                           , &  ! Input
-!                                                 ComponentTest                , &  ! Output
-!                                                 Quiet         = Quiet        , &  ! Optional input
-!                                                 Title         = Title        , &  ! Optional output
-!                                                 History       = History      , &  ! Optional output
-!                                                 Comment       = Comment      , &  ! Optional output
-!                                                 ID_Tag        = ID_Tag       , &  ! Optional output
-!                                                 RCS_Id        = RCS_Id       , &  ! Revision control
-!                                                 Message_Log   = Message_Log    )  ! Error messaging
+!       Error_Status = Read_ComponentTest_netCDF( NC_Filename                , &
+!                                                 nM                         , &
+!                                                 ComponentTest              , &
+!                                                 Quiet         = Quiet      , &
+!                                                 Title         = Title      , &
+!                                                 History       = History    , &
+!                                                 Comment       = Comment    , &
+!                                                 ID_Tag        = ID_Tag     , &
+!                                                 RCS_Id        = RCS_Id     , &
+!                                                 Message_Log   = Message_Log  )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:     Character string specifying the name of the netCDF
@@ -1108,7 +1106,7 @@ CONTAINS
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
             TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(); RETURN
     END IF
     
 
@@ -1130,14 +1128,14 @@ CONTAINS
                               Message_Log     =Message_Log             )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
     
     ! Check the release
     Error_Status = CheckRelease_ComponentTest( cTest,Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'ComponentTest Release check failed for '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
@@ -1149,7 +1147,7 @@ CONTAINS
                             Message_Log=Message_Log  )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error reading ComponentTest variables from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
@@ -1158,7 +1156,7 @@ CONTAINS
     NF90_Status = NF90_CLOSE( NC_FileId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
@@ -1174,9 +1172,8 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
+    SUBROUTINE Read_CleanUp( Close_File )
        LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
       ! Close file if necessary
       IF ( PRESENT(Close_File) ) THEN
         IF ( Close_File ) THEN
@@ -1187,12 +1184,10 @@ CONTAINS
         END IF
       END IF
       ! Destroy the structure if necessary
-      IF ( PRESENT(Destroy_Structure) ) THEN
-        IF ( Destroy_Structure ) THEN
-          Error_Status = Destroy_ComponentTest(cTest, Message_Log=Message_Log)
-          IF ( Error_Status /= SUCCESS ) &
-            msg = TRIM(msg)//'; Error destroying ComponentTest during error cleanup.'
-        END IF
+      IF ( Associated_ComponentTest( cTest ) ) THEN
+        Error_Status = Destroy_ComponentTest(cTest, Message_Log=Message_Log)
+        IF ( Error_Status /= SUCCESS ) &
+          msg = TRIM(msg)//'; Error destroying ComponentTest during error cleanup.'
       END IF
       ! Set error status and print error msg
       Error_Status = FAILURE
@@ -1306,19 +1301,19 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = WriteGAtts( NC_Filename                      , &  ! Input
-!                                  NC_FileID                        , &  ! Input
-!                                  TestType                         , &  ! Input
-!                                  DataType                         , &  ! Input
-!                                  Version         =Version         , &  ! Optional input
-!                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional input
-!                                  ID_Tag          =ID_Tag          , &  ! Optional input
-!                                  Title           =Title           , &  ! Optional input
-!                                  History         =History         , &  ! Optional input
-!                                  Comment         =Comment         , &  ! Optional input
-!                                  Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = WriteGAtts( NC_Filename                      , &
+!                                  NC_FileID                        , &
+!                                  TestType                         , &
+!                                  DataType                         , &
+!                                  Version         =Version         , &
+!                                  Sensor_Id       =Sensor_Id       , &
+!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                  ID_Tag          =ID_Tag          , &
+!                                  Title           =Title           , &
+!                                  History         =History         , &
+!                                  Comment         =Comment         , &
+!                                  Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -1665,20 +1660,20 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = ReadGAtts( NC_Filename                      , &  ! Input
-!                                 NC_FileID                        , &  ! Input
-!                                 Release         =Release         , &  ! Optional output
-!                                 Version         =Version         , &  ! Optional output
-!                                 TestType        =TestType        , &  ! Optional output
-!                                 DataType        =DataType        , &  ! Optional output
-!                                 Sensor_Id       =Sensor_Id       , &  ! Optional output
-!                                 WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional output
-!                                 WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional output
-!                                 ID_Tag          =ID_Tag          , &  ! Optional output
-!                                 Title           =Title           , &  ! Optional output
-!                                 History         =History         , &  ! Optional output
-!                                 Comment         =Comment         , &  ! Optional output
-!                                 Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = ReadGAtts( NC_Filename                      , &
+!                                 NC_FileID                        , &
+!                                 Release         =Release         , &
+!                                 Version         =Version         , &
+!                                 TestType        =TestType        , &
+!                                 DataType        =DataType        , &
+!                                 Sensor_Id       =Sensor_Id       , &
+!                                 WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                 WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                 ID_Tag          =ID_Tag          , &
+!                                 Title           =Title           , &
+!                                 History         =History         , &
+!                                 Comment         =Comment         , &
+!                                 Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -2016,18 +2011,18 @@ CONTAINS
 !       netCDF file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = DefineVar( NC_Filename            , &  ! Input
-!                                 NC_FileID              , &  ! Input
-!                                 nK_DimID               , &  ! Input
-!                                 nL_DimID               , &  ! Input
-!                                 nP_DimID               , &  ! Input
-!                                 nIV_DimID              , &  ! Input
-!                                 nOV_DimID              , &  ! Input
-!                                 VSL_DimID              , &  ! Input
-!                                 nM_DimID               , &  ! Input
-!                                 TestType               , &  ! Input
-!                                 DataType               , &  ! Input
-!                                 Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = DefineVar( NC_Filename            , &
+!                                 NC_FileID              , &
+!                                 nK_DimID               , &
+!                                 nL_DimID               , &
+!                                 nP_DimID               , &
+!                                 nIV_DimID              , &
+!                                 nOV_DimID              , &
+!                                 VSL_DimID              , &
+!                                 nM_DimID               , &
+!                                 TestType               , &
+!                                 DataType               , &
+!                                 Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -2368,10 +2363,10 @@ CONTAINS
 !       netCDF file in which they have been defined.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = WriteVar( NC_Filename            , &  ! Input
-!                                NC_FileID              , &  ! Input
-!                                ComponentTest          , &  ! Input
-!                                Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = WriteVar( NC_Filename            , &
+!                                NC_FileID              , &
+!                                ComponentTest          , &
+!                                Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -2602,10 +2597,10 @@ CONTAINS
 !       netCDF file in which they have been defined.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = ReadVar( NC_Filename            , &  ! Input
-!                               NC_FileID              , &  ! Input
-!                               ComponentTest          , &  ! Output
-!                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = ReadVar( NC_Filename            , &
+!                               NC_FileID              , &
+!                               ComponentTest          , &
+!                               Message_Log=Message_Log  )
 !
 ! INPUT ARGUMENTS
 !       NC_Filename:        Character string specifying the name of the
@@ -2694,7 +2689,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Pressure )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2707,7 +2702,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Spectral )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//TRIM(f_VarName)//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//TRIM(f_VarName)//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2720,7 +2715,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Perturbation )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//PERTURBATION_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//PERTURBATION_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2733,7 +2728,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Input_Variable_Name )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//INPUT_VARIABLE_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//INPUT_VARIABLE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2746,7 +2741,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Input_Variable_Units )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//INPUT_UNITS_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//INPUT_UNITS_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2759,7 +2754,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Output_Variable_Name )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//OUTPUT_VARIABLE_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//OUTPUT_VARIABLE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2772,7 +2767,7 @@ CONTAINS
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%Output_Variable_Units )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//OUTPUT_UNITS_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//OUTPUT_UNITS_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2786,7 +2781,7 @@ CONTAINS
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%nM_Name, &
                                 START=(/1,cTest%nM/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//DATASET_NAME_VARNAME//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//DATASET_NAME_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2801,7 +2796,7 @@ CONTAINS
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%d1, &
                                 START=(/1,1,1,1,1,cTest%nM/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//TRIM(d1_VarName)//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//TRIM(d1_VarName)//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2815,7 +2810,7 @@ CONTAINS
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,cTest%d2, &
                                 START=(/1,1,1,1,1,cTest%nM/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//TRIM(d2_VarName)//' to '//TRIM(NC_Filename)//&
+      msg = 'Error reading '//TRIM(d2_VarName)//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
@@ -2845,24 +2840,24 @@ CONTAINS
 !       Function to create a netCDF ComponentTest data file for writing.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CreateFile( NC_Filename                      , &  ! Input
-!                                  nK                               , &  ! Input
-!                                  nL                               , &  ! Input
-!                                  nP                               , &  ! Input
-!                                  nIV                              , &  ! Input
-!                                  nOV                              , &  ! Input
-!                                  TestType                         , &  ! Input
-!                                  DataType                         , &  ! Input
-!                                  NC_FileID                        , &  ! Output
-!                                  Version         =Version         , &  ! Optional input
-!                                  Sensor_Id       =Sensor_Id       , &  ! Optional input
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &  ! Optional input
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &  ! Optional input
-!                                  ID_Tag          =ID_Tag          , &  ! Optional input
-!                                  Title           =Title           , &  ! Optional input
-!                                  History         =History         , &  ! Optional input
-!                                  Comment         =Comment         , &  ! Optional input
-!                                  Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = CreateFile( NC_Filename                      , &
+!                                  nK                               , &
+!                                  nL                               , &
+!                                  nP                               , &
+!                                  nIV                              , &
+!                                  nOV                              , &
+!                                  TestType                         , &
+!                                  DataType                         , &
+!                                  NC_FileID                        , &
+!                                  Version         =Version         , &
+!                                  Sensor_Id       =Sensor_Id       , &
+!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
+!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
+!                                  ID_Tag          =ID_Tag          , &
+!                                  Title           =Title           , &
+!                                  History         =History         , &
+!                                  Comment         =Comment         , &
+!                                  Message_Log     =Message_Log       )
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the
@@ -3227,7 +3222,7 @@ CONTAINS
           NF90_Status = NF90_CLOSE( NC_FileID )
           IF ( NF90_Status /= NF90_NOERR ) &
             msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-                      TRIM(NF90_STRERROR( NF90_Status ) )
+                  TRIM(NF90_STRERROR( NF90_Status ) )
         END IF
       END IF
       ! Set error status and print error msg

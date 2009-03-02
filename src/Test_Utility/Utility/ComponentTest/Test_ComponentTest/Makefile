@@ -19,6 +19,7 @@ SRC_FILES = Type_Kinds.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             String_Utility.f90 \
+            SensorInfo_Parameters.f90 \
             ComponentTest_Define.f90 \
             ComponentTest_netCDF_IO.f90
 
