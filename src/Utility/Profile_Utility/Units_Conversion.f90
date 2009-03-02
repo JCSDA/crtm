@@ -229,7 +229,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       SA_to_MR
 !
@@ -341,7 +341,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 05-Dec-2003
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -441,7 +441,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       MR_to_SA
 !
@@ -521,7 +521,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 05-Dec-2003
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -622,7 +622,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       RH_to_MR
 !
@@ -706,7 +706,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 02-Mar-1999
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -823,7 +823,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       MR_to_RH
 !
@@ -907,7 +907,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 02-Mar-1999
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -1021,7 +1021,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       MR_to_PPMV
 !
@@ -1093,7 +1093,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -1176,7 +1176,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PPMV_to_MR
 !
@@ -1248,7 +1248,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -1332,7 +1332,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PPMV_to_PP
 !
@@ -1402,7 +1402,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -1526,7 +1526,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PP_to_PPMV
 !
@@ -1603,7 +1603,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -1727,7 +1727,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       MR_to_PP
 !
@@ -1914,7 +1914,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 20-Sep-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -2067,7 +2067,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PP_to_MR
 !
@@ -2274,7 +2274,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 20-Sep-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -2432,7 +2432,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PP_to_MD
 !
@@ -2560,7 +2560,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 08-Nov-2004
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -2656,7 +2656,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       MD_to_PP
 !
@@ -2792,7 +2792,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 08-Nov-2004
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -2888,7 +2888,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PP_to_ND
 !
@@ -2991,7 +2991,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 15-Nov-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -3068,7 +3068,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       ND_to_PP
 !
@@ -3171,7 +3171,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 15-Nov-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -3248,7 +3248,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PPMV_to_ND
 !
@@ -3337,7 +3337,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 15-Nov-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -3484,7 +3484,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       ND_to_PPMV
 !
@@ -3579,7 +3579,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 15-Nov-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -3728,7 +3728,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       PPMV_to_KMOL
 !
@@ -3839,7 +3839,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 04-Jan-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============
@@ -3993,7 +3993,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       KMOL_to_PPMV
 !
@@ -4106,7 +4106,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 04-Jan-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ! ==============

@@ -56,7 +56,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Effective_Layer_TP
 !
@@ -287,7 +287,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC, 03-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Effective_Layer_TP( Height,                &  ! Input
@@ -513,7 +513,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Create_Sublevels
 !
@@ -643,7 +643,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 19-Jan-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Create_Sublevels( Level_Pressure,       &  ! Input
@@ -825,7 +825,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Integrate_Sublevels
 !
@@ -1030,7 +1030,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 19-Jan-2001
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Integrate_Sublevels( Sublevel_Height,       &  ! Input

@@ -58,7 +58,7 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Geopotential_Height
 !
@@ -269,7 +269,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 21-Feb-1999
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   FUNCTION Geopotential_Height( Pressure,                 &  ! Input

@@ -111,7 +111,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       MW_Air
 !
@@ -169,7 +169,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
@@ -251,7 +251,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Density
 !
@@ -338,7 +338,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
@@ -466,7 +466,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       SVP_Water
 !
@@ -523,7 +523,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 24-Apr-1998
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
@@ -600,7 +600,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       SVP_Ice
 !
@@ -657,7 +657,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 24-Apr-1998
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
@@ -734,7 +734,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Saturation_Mixing_Ratio
 !
@@ -851,7 +851,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-1998
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
@@ -981,7 +981,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Virtual_Temperature
 !
@@ -1075,7 +1075,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
@@ -1173,7 +1173,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
 ! NAME:
 !       Potential_Temperature
 !
@@ -1264,7 +1264,7 @@ CONTAINS
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 11-Sep-2002
 !                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
   ! ==============
