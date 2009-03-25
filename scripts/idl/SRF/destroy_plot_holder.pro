@@ -27,6 +27,7 @@ FUNCTION Destroy_plot_holder, plot_holder, $                ; Output
   IF ( NOT KEYWORD_SET(No_Clear) ) THEN BEGIN
     plot_holder.Ifile           = ' '
     plot_holder.Sensor_Id       = ' '
+    plot_holder.Sensor_Type     = ' '
     plot_holder.Channel_Name    = ' '
     plot_holder.v1              = ZERO
     plot_holder.v2              = ZERO
@@ -42,11 +43,20 @@ FUNCTION Destroy_plot_holder, plot_holder, $                ; Output
   PTR_FREE, plot_holder.f     , $
             plot_holder.r     , $
             plot_holder.orig_f, $
-            plot_holder.orig_r             
+            plot_holder.orig_r, $
+            plot_holder.f0    , $
+            plot_holder.f0_doc, $
+            plot_holder.f0_hm , $
+            plot_holder.f0_raw  
+                       
   plot_holder.f      = PTR_NEW()
   plot_holder.r      = PTR_NEW()
   plot_holder.orig_f = PTR_NEW()
   plot_holder.orig_r = PTR_NEW()
+  plot_holder.f0     = PTR_NEW() 
+  plot_holder.f0_doc = PTR_NEW()
+  plot_holder.f0_hm  = PTR_NEW()
+  plot_holder.f0_raw = PTR_NEW()
   
   ; Decrement and test allocation counter
   plot_holder.n_Allocates = plot_holder.n_Allocates - 1

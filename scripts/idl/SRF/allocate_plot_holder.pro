@@ -2,6 +2,7 @@
 
 FUNCTION Allocate_plot_holder, n_int_points   , $ ;Input
                                n_ori_points   , $ ;Input
+                               n_bands        , $ ;Input
                                plot_holder        ;Output
 
 
@@ -51,6 +52,10 @@ FUNCTION Allocate_plot_holder, n_int_points   , $ ;Input
   plot_holder.r      = PTR_NEW(DBLARR(n_int_points))
   plot_holder.orig_f = PTR_NEW(DBLARR(n_ori_points))
   plot_holder.orig_r = PTR_NEW(DBLARR(n_ori_points))
+  plot_holder.hmv    = PTR_NEW(DBLARR(n_bands*2))
+  plot_holder.f0_hm  = PTR_NEW(DBLARR(n_bands))
+  plot_holder.f0_raw = PTR_NEW(DBLARR(n_bands))
+  plot_holder.f0_doc = PTR_NEW(DBLARR(n_bands))
 
   ; Increment and test allocation counter
   plot_holder.n_Allocates = plot_holder.n_Allocates + 1
