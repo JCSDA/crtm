@@ -7,7 +7,7 @@ In generating the line-by-line transmittances for microwave instruments, the ``i
 \begin{figure}[htp]
   \centering
   \input{graphics/broadband_frequency_translation.pstex_t}
-  \caption{Frequency translation in heterodyne reception for a broadband signal. Adapted from fig.1.9b in \cite{Janssen1993}}
+  \caption{Frequency translation in heterodyne reception for a broadband signal. Adapted from fig.1.9b in \citet{Janssen_1993}}
   \label{fig:broadband_frequency_translation}
 \end{figure}
 
@@ -39,7 +39,7 @@ Single passband channels are defined as those whose bandwidth span the channel c
 
 \subsection{Channel Frequencies}
 %-------------------------------
-The central and sideband offset frequencies listed here are taken from \cite{Muth_etal_2004}, and the bandwidth frequencies are taken from \cite{ATMS_PFM_CalLog}; these data are shown in table \ref{tab:atms_fo_sb_and_df}.
+The central and sideband offset frequencies listed here are taken from \citet{Muth_2004}, and the bandwidth frequencies are taken from \cite{ATMS_PFM_CalLog}; these data are shown in table \ref{tab:atms_fo_sb_and_df}.
 \begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|c|c|c|}
@@ -72,7 +72,7 @@ The central and sideband offset frequencies listed here are taken from \cite{Mut
            22        &          183.310000        & 1.0                        & 0.0                        & 0.4940        \\
     \hline
   \end{tabular}
-  \caption{Central, sideband offset, and bandwidth frequencies for ATMS. \superscript{a}Data from \cite{Muth_etal_2004}. \superscript{b}Data from \cite{ATMS_PFM_CalLog}. \superscript{c}Different lower and upper sideband widths reported. }
+  \caption{Central, sideband offset, and bandwidth frequencies for ATMS. \superscript{a}Data from \citet{Muth_2004}. \superscript{b}Data from \cite{ATMS_PFM_CalLog}. \superscript{c}Different lower and upper sideband widths reported. }
   \label{tab:atms_fo_sb_and_df}
 \end{table}
 Typically, it is assumed the upper and lower sideband bandwidths are the same for the double and quadruple sideband channels. However, for ATMS channels 6 and 14, different bandwidth for the sidebands were reported (e.g. the lower and upper sidebands for channel 6 differ by about 3.7\%). Thus, rather than determining the intermediate frequency ranges (under the assumption of bandwidth symmetry about the central frequency or sideband offsets), the band edge frequencies relative to the channel central frequencies will be specified, as shown in figure \ref{fig:broadband_frequency_translation}. For the single passband channels, assuming no stopbands), the frequency range $f_1 \rightarrow f_2$ is simply given by,
