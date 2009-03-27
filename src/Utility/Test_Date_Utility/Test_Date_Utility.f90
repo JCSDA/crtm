@@ -22,7 +22,7 @@ PROGRAM Test_Date_Utility
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Date_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Date_Utility.f90,v 1.4 2006/05/02 16:58:03 dgroff Exp $'
+    '$Id$'
   INTEGER, PARAMETER :: DAYS_IN_A_YEAR = 365
 
   ! Variables
@@ -39,7 +39,7 @@ PROGRAM Test_Date_Utility
   ! Program header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to test Date_Utility module procedures', &
-                        '$Revision: $' )
+                        '$Revision$' )
   
   ! Get user input
   WRITE( *,'(/5x,"Enter a year [YYYY]: ")', ADVANCE = 'NO' )
