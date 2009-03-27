@@ -27,17 +27,18 @@ PRO Plot_SRF,    plot_holder,  $  ; structure holding plot information
   IF ( KEYWORD_SET(PS) ) THEN pson, file=plot_holder.Sensor_Id+'/'+plot_holder.Sensor_Id+'.srf.ps'
 
   thick    = (KEYWORD_SET(PS)) ? 2      :  1
-  font     = (KEYWORD_SET(PS)) ? 1      : -1
-  charsize = (KEYWORD_SET(PS)) ? 2.75   :  1
+  font     = (KEYWORD_SET(PS)) ? 1      :  1
+  charsize = (KEYWORD_SET(PS)) ? 4.25   :  1.5
   f0color  = (KEYWORD_SET(PS)) ? BLUE   : CYAN
   
   TopRegion=[0.0,0.40,0.975,1.0]
+  MidRegion=[0.0,0.20,0.975,0.85]
   BottomRegion=[0.0,0.0,0.975,0.40]
     
   IF(plot_holder.Sensor_Type EQ MICROWAVE_SENSOR) THEN BEGIN
     ; assign string for reporting f0 on plot
     cf0 = 'f!D0!N = '+STRTRIM(STRING((*plot_holder.f0_hm)[0],FORMAT='(f9.3)'),2)+'GHz'
-    !P.REGION=TopRegion
+    !P.REGION=MidRegion
     yRange = [-(MAX(*plot_holder.orig_r)/20),MAX(*plot_holder.orig_r)]
     ;STOP
     PLOT, *plot_holder.orig_f, *plot_holder.orig_r, $
@@ -48,9 +49,6 @@ PRO Plot_SRF,    plot_holder,  $  ; structure holding plot information
         XRANGE=[MIN(*plot_holder.orig_f),MAX(*plot_holder.orig_f)], /XSTYLE, $
         FONT=font, THICK=thick, CHARSIZE=charsize, PSYM=-4
     xRange = !X.CRANGE
-    
-    OPLOT, *plot_holder.f, *plot_holder.r, THICK=thick, COLOR=RED, psym=-4;, XRANGE=[MIN(*plot_holder.f), *plot_holder.f/2]
-    ;OPLOT, *plot_holder.f, *plot_holder.r, THICK=thick, COLOR=RED, psym=-4, XRANGE=[MIN(*plot_holder.f), MAX(*plot_holder.f)]
     
     yLimit = MAX(*plot_holder.orig_r)/2
     
@@ -63,37 +61,15 @@ PRO Plot_SRF,    plot_holder,  $  ; structure holding plot information
       
       ; plot the central frequencies
       FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-        OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-        OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-        OPLOT, [(*plot_holder.f0_raw)[n], (*plot_holder.f0_raw)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+        OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=RED
+        OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+        OPLOT, [(*plot_holder.f0_raw)[n], (*plot_holder.f0_raw)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=!P.COLOR
       ENDFOR
-          
-      
-      ;OPLOT, [(*plot_holder.hmv)[1],(*plot_holder.hmv)[1]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[2],(*plot_holder.hmv)[2]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[3],(*plot_holder.hmv)[3]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[4],(*plot_holder.hmv)[4]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[5],(*plot_holder.hmv)[5]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[6],(*plot_holder.hmv)[6]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[7],(*plot_holder.hmv)[7]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_doc)[3], (*plot_holder.f0_doc)[3]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-;      OPLOT, [(*plot_holder.f0_doc)[2], (*plot_holder.f0_doc)[2]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-;      OPLOT, [(*plot_holder.f0_doc)[1], (*plot_holder.f0_doc)[1]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-;      OPLOT, [(*plot_holder.f0_doc)[0], (*plot_holder.f0_doc)[0]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-;   
-;      OPLOT, [(*plot_holder.f0_hm)[2], (*plot_holder.f0_hm)[2]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_hm)[1], (*plot_holder.f0_hm)[1]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_hm)[0], (*plot_holder.f0_hm)[0]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_raw)[3], (*plot_holder.f0_raw)[3]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
-;      OPLOT, [(*plot_holder.f0_raw)[2], (*plot_holder.f0_raw)[2]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
-;      OPLOT, [(*plot_holder.f0_raw)[1], (*plot_holder.f0_raw)[1]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
-;      OPLOT, [(*plot_holder.f0_raw)[0], (*plot_holder.f0_raw)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
-
     ENDIF
     
-      
+          
     IF(plot_holder.n_bands EQ 2) THEN BEGIN
-      
+          
       ; plot the half max values
       FOR n = 0, (plot_holder.n_bands*2) - 1 DO BEGIN
         OPLOT, [(*plot_holder.hmv)[n],(*plot_holder.hmv)[n]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
@@ -101,21 +77,13 @@ PRO Plot_SRF,    plot_holder,  $  ; structure holding plot information
       
       ; plot the central frequencies
       FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-        OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-        OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-        OPLOT, [(*plot_holder.f0_raw)[n], (*plot_holder.f0_raw)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+        OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=RED
+        OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+        OPLOT, [(*plot_holder.f0_raw)[n], (*plot_holder.f0_raw)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=!P.COLOR
       ENDFOR
-      ;OPLOT, [(*plot_holder.hmv)[0],(*plot_holder.hmv)[0]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[1],(*plot_holder.hmv)[1]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[2],(*plot_holder.hmv)[2]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[3],(*plot_holder.hmv)[3]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_doc)[0],(*plot_holder.f0_doc)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE      
-;      OPLOT, [(*plot_holder.f0_doc)[1],(*plot_holder.f0_doc)[1]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE      
-;      OPLOT, [(*plot_holder.f0_hm)[0],(*plot_holder.f0_hm)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA      
-;      OPLOT, [(*plot_holder.f0_hm)[1],(*plot_holder.f0_hm)[1]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_raw)[0],(*plot_holder.f0_raw)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
-;      OPLOT, [(*plot_holder.f0_raw)[1],(*plot_holder.f0_raw)[1]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+      
     ENDIF
+    
     IF(plot_holder.n_bands EQ 1) THEN BEGIN
       ; plot the half max values
       FOR n = 0, (plot_holder.n_bands*2) - 1 DO BEGIN
@@ -124,51 +92,37 @@ PRO Plot_SRF,    plot_holder,  $  ; structure holding plot information
       
       ; plot the central frequencies
       FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-        OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-        OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-        OPLOT, [(*plot_holder.f0_raw)[n], (*plot_holder.f0_raw)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+        OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=RED
+        OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
+        OPLOT, [(*plot_holder.f0_raw)[n], (*plot_holder.f0_raw)[n]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=!P.COLOR
       ENDFOR
       
-      ;OPLOT, [(*plot_holder.hmv)[0],(*plot_holder.hmv)[0]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.hmv)[1],(*plot_holder.hmv)[1]], [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_doc)[0],(*plot_holder.f0_doc)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=BLUE
-;      OPLOT, [(*plot_holder.f0_hm)[0],(*plot_holder.f0_hm)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=MAGENTA
-;      OPLOT, [(*plot_holder.f0_raw)[0],(*plot_holder.f0_raw)[0]], [ylimit*2,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
     ENDIF
   
-    mylegend, 0.65, 0.9,                               $
-            ['Original SRF',                           $
-             'Half Width SRF',                         $
-             'f0 Using half width bounds',             $
-             'f0 Using first moment of total SRF',     $
-             'f0 As Documented',                       $
-             'half width bounds'                   ], $
-            COLOR=[!P.COLOR,RED,Cyan,Green,Blue,Magenta],   $
-            LINESTYLE=[0,0,2,2,2,2],                        $
-            PSYM=[-4,-4,0,0,0,0],                           $
-            THICK=[thick,thick,thick,thick,thick,thick],    $
-            CHARSIZE=charsize,                              $
-            FONT=font
-  
-    ; Plot the frequency derivative
-    ; -----------------------------
+    mylegend, 0.45, 1.30, ['Relative Response Data'], color=[!P.COLOR], LINESTYLE=[0], PSYM=[-4], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
+    mylegend, 0.45, 1.25, ['f!D0!N Calculated As First Moment of Passband Response Data'], color=[!P.COLOR], LINESTYLE=[2], PSYM=[0], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+    mylegend, 0.45, 1.20, ['f!D0!N Calculated From Average of Half Max Points'], color=[GREEN], LINESTYLE=[2], PSYM=[0], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+    mylegend, 0.45, 1.15, ['f!D0!N As Documented'], color=[Red], LINESTYLE=[2], PSYM=[0], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
+    mylegend, 0.45, 1.10, ['Half Max Points'], color=[Magenta], LINESTYLE=[2], PSYM=[0], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+    
     !P.REGION=BottomRegion
-    df=DERIV(*plot_holder.Orig_f)
-    dfmean = MEAN(df)
-    df = df - dfmean
-    PLOT, *plot_holder.Orig_r, df, /YNOZERO, /NOERASE, /NODATA, $
-          FONT=font, THICK=thick, CHARSIZE=charsize, $
-          XRANGE=xRange,            $
-          YRANGE=[MIN(df),MAX(df)], $
-          XTITLE=xtitle, $
-          YTITLE='dF-MEAN(dF)', $
-          TITLE='Frequency derivative. MEAN(df) = '+STRING(dfmean,format='(e8.2,"cm!U-1!N")')
-    OPLOT, *plot_holder.orig_f, df, COLOR=RED
-    OPLOT, !X.CRANGE, [0,0], LINESTYLE=2, THICK=thick
-    !P.REGION=0          
+    
+    
+  ;           'f0 Using half width bounds',             $
+;             'f0 Using first moment of total SRF',     $
+;             'f0 As Documented',                       $
+;             'half width bounds'                   ], $
+;            COLOR=[!P.COLOR,Cyan,Green,Blue,Magenta],   $
+;            LINESTYLE=[0,2,2,2,2],                        $
+;            PSYM=[-4,0,0,0,0],                           $
+;            THICK=[thick,thick,thick,thick,thick],    $
+;            CHARSIZE=charsize,                              $
+;            FONT=font
+  
   
   ENDIF ELSE BEGIN
   
+    yLimit = MAX(*plot_holder.orig_r)/2
     TopRegion=[0.0,0.5,0.975,1.0]
     MiddleRegion=[0.0,0.25,0.975,0.5]
     BottomRegion=[0.0,0.0,0.975,0.25]
@@ -194,7 +148,7 @@ PRO Plot_SRF,    plot_holder,  $  ; structure holding plot information
     IF ( plot_holder.Negative_Count GT 0 ) THEN $
     OPLOT, (*plot_holder.orig_f)[Negative_Loc], (*plot_holder.orig_r)[Negative_Loc], PSYM=4, COLOR=GREEN
     ; The frequency cutoffs
-    
+    ;STOP
     OPLOT, [plot_holder.v1,plot_holder.v1], [yLimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
     ;XYOUTS, (plot_holder.v1), yLimit, 'f1 cutoff', FONT=font, COLOR=RED, CHARSIZE=charsize, /DATA, ALIGNMENT=1.0
     OPLOT, [plot_holder.v2,plot_holder.v2], [yLimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN

@@ -17,10 +17,10 @@ PRO plot_holder__define
            orig_f          : PTR_NEW(),     $ ;   original frequency
            orig_r          : PTR_NEW(),     $ ;   original response
            hmv             : PTR_NEW(),     $ ;   begin/end half_max frequencies
-           f0              : PTR_NEW(),     $ ;   Central Frequency for the IR
            f0_doc          : PTR_NEW(),     $ ;   Documented Central Frequency
            f0_hm           : PTR_NEW(),     $ ;   Central Frequencies using hm end points
-           f0_raw          : PTR_NEW(),     $ ;   Central Frequencies for raw data 
+           f0_raw          : PTR_NEW(),     $ ;   Central Frequencies for raw data
+           f0              : 0.0d0,         $ ;   Central Frequency for the infrared 
            v1              : 0.0d0,         $ ;   cutoff#1 frequency
            v2              : 0.0d0,         $ ;   cutoff#2 frequency
            Percent_Removed : 0.0d0,         $ ;   percent removed
