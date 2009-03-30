@@ -47,7 +47,10 @@ FUNCTION Destroy_plot_holder, plot_holder, $                ; Output
             plot_holder.f0    , $
             plot_holder.f0_doc, $
             plot_holder.f0_hm , $
-            plot_holder.f0_raw  
+            plot_holder.f0_fm , $
+            plot_holder.f_fm  , $
+            plot_holder.f_hm  , $
+            plot_holder.f_doc  
                        
   plot_holder.f      = PTR_NEW()
   plot_holder.r      = PTR_NEW()
@@ -56,7 +59,10 @@ FUNCTION Destroy_plot_holder, plot_holder, $                ; Output
   plot_holder.f0     = PTR_NEW() 
   plot_holder.f0_doc = PTR_NEW()
   plot_holder.f0_hm  = PTR_NEW()
-  plot_holder.f0_raw = PTR_NEW()
+  plot_holder.f0_fm  = PTR_NEW()
+  plot_holder.f_fm   = PTR_NEW()
+  plot_holder.f_hm   = PTR_NEW()
+  plot_holder.f_doc  = PTR_NEW()
   
   ; Decrement and test allocation counter
   plot_holder.n_Allocates = plot_holder.n_Allocates - 1
