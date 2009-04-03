@@ -3,7 +3,7 @@
 
 \subsection{Channel type definitions}
 %------------------------------------
-In generating the line-by-line transmittances for microwave instruments, the ``intermediate frequencies'' are used to define the sensor responses. The ATMS will be treated similarly to heterodyne receivers like the AMSU-A instruments where the received radio frequency (RF) is downconverted to a lower intermediate frequency (IF). The relationship between the intermediate and measurement frequencies is shown in figure \ref{fig:broadband_frequency_translation}. Note that this treatment is purely schematic for explanatory purposes only - it should not be construed as a description of the construction or behaviour of the ATMS itself.
+In generating the line-by-line transmittances for microwave instruments, the ``intermediate frequencies'' are used to define the sensor responses. The ATMS will be treated similarly to heterodyne receivers like the AMSU-A instruments where the received radio frequency (RF) is downconverted to a lower intermediate frequency (IF). The relationship between the intermediate and measurement frequencies is shown in figure \ref{fig:broadband_frequency_translation} - figure 2.4. Note that this treatment is purely schematic for explanatory purposes only - it should not be construed as a description of the construction or behaviour of the ATMS itself.
 \begin{figure}[htp]
   \centering
   \input{graphics/broadband_frequency_translation.pstex_t}
@@ -17,7 +17,7 @@ For modeling the ATMS, the channels are divided into three types,
   \item{Double sideband channels (6,11,18-22)}
   \item{Quadruple sideband channels (12-15)}
 \end{itemize}
-Single passband channels are defined as those whose bandwidth span the channel centre frequency, as shown in figure \ref{fig:single_passband}. Typically for these channels stopbands are specified to reduce the effects of local oscillator noise, although no information is currently available on whetrher or not the ATMS single passband channels have stopbands. Double sideband channels are shown schematically in figure \ref{fig:double_sideband}. These channels are also referred to as folded passbands with the lower frequency sideband referred to as the lower sideband and the higher frequency sideband being the upper sideband. Quadruple sideband channels are shown schematically in figure \ref{fig:quadruple_sideband}. Note that all of the schematic channel definitions in figures \ref{fig:double_sideband} and \ref{fig:quadruple_sideband} assume bandwidth symmetry about the central and first sideband offset frequencies.
+Single passband channels are defined as those whose bandwidth span the channel centre frequency, as shown in figure \ref{fig:single_passband}. Typically for these channels stopbands are specified to reduce the effects of local oscillator noise, although no information is currently available on whetrher or not the ATMS single passband channels have stopbands. Double sideband channels are shown schematically in figure \ref{fig:double_sideband}. With the exception of ATMS channel 6 these channels can be considered as folded passbands with the lower frequency sideband referred to as the lower sideband and the higher frequency sideband being the upper sideband. Quadruple sideband channels are shown schematically in figure \ref{fig:quadruple_sideband}. Note that all of the schematic channel definitions in figures \ref{fig:double_sideband} and \ref{fig:quadruple_sideband} assume bandwidth symmetry about the central and first sideband offset frequencies.
 \begin{figure}[htp]
   \centering
   \input{graphics/single_passband.pstex_t}
@@ -75,7 +75,8 @@ The central and sideband offset frequencies listed here are taken from \citet{Mu
   \caption{Central, sideband offset, and bandwidth frequencies for ATMS. \superscript{a}Data from \citet{Muth_2004}. \superscript{b}Data from \cite{ATMS_PFM_CalLog}. \superscript{c}Different lower and upper sideband widths reported. }
   \label{tab:atms_fo_sb_and_df}
 \end{table}
-Typically, it is assumed the upper and lower sideband bandwidths are the same for the double and quadruple sideband channels. However, for ATMS channels 6 and 14, different bandwidth for the sidebands were reported (e.g. the lower and upper sidebands for channel 6 differ by about 3.7\%). Thus, rather than determining the intermediate frequency ranges (under the assumption of bandwidth symmetry about the central frequency or sideband offsets), the band edge frequencies relative to the channel central frequencies will be specified, as shown in figure \ref{fig:broadband_frequency_translation}. For the single passband channels, assuming no stopbands), the frequency range $f_1 \rightarrow f_2$ is simply given by,
+
+Typically, it is assumed the upper and lower sideband bandwidths are the same for the double and quadruple sideband channels. However, for ATMS channels 6 and 14 the lower and upper sidebands differ. Thus, rather than determining the intermediate frequency ranges (under the assumption of bandwidth symmetry about the central frequency or sideband offsets), the band edge frequencies relative to the channel central frequencies will be specified, as shown in figure \ref{fig:broadband_frequency_translation}. For the single passband channels, (assuming no stopbands), the frequency range $f_1 \rightarrow f_2$ is simply given by,
 \begin{eqnarray*}
   f_1 & = & f_0 - \frac{\Delta f}{2} \\
   f_2 & = & f_0 + \frac{\Delta f}{2}
@@ -101,7 +102,7 @@ The band edge frequency ranges for the ATMS single passband channels are shown i
     17  &    164.93745 - 166.06255  \\
     \hline
   \end{tabular}
-  \caption{Computed band edge frequencies for the ATMS single passband channels}
+  \caption{Calculated band edge frequencies for the ATMS single passband channels}
   \label{tab:atms_single_f}
 \end{table}
 
@@ -163,11 +164,14 @@ The band edge frequency ranges for the ATMS quadruple sideband channels are show
 \end{table}
 
 \subsection{Measured ATMS Response Functions}
-Response data in loss of decibels was obtained from \cite{Muth_etal_2004}. We convert the response data in loss of decibels to relative responses by, 
+Response data in loss of decibels was obtained from \cite{ATMS_PFM_CalLog}. We convert the response data in loss of decibels to relative responses by, 
 \begin{equation}
-  r=10^{\textbf{-0.1*Loss(DB)}}    
+  r=10^{\textbf{-0.1*LDB}}    
 \end{equation}
-We calculate central frequencies for the passbands by taking the first moment of the relative response data for each passband. These passband central frequencies will hereafter be referred to as the "official" calculated passband central frequencies. For comparison purposes only we calculated passband central frequencies by taking the average of the two half maximum frequency points that define the full width half maximum "FWHM" of each passband. These passband central frequencies will hereafter be referred to as the "FWHM" calculations. 
+We then calculate central frequencies for the passbands by taking the average of the two frequency positions that represent the ends of the full width
+at half maximum (FWHM). These passband central frequencies will hereafter be referred to as the "FWHM" calculations. For comparison purposes only we 
+calculated passband central frequencies by taking the first moment of the relative response data for each passband. These passband central frequencies
+will hereafter be referred to as the "First Moment" calculations.
 
 %We calculate two sets of channel and band central frequencies for the response data provided. One set of band and channel central frequencies are 
 %calculated using the full width half maximum points of the channels. For this set the IF central frequency of 
@@ -187,16 +191,16 @@ To construct the measurement frequencies from intermediate frequencies we assign
 For unfolded IF channels the relationships between measurement frequencies and intermediate frequencies are shown in
 figures 2.1 and 2.2. Note that for the unfolded IF channels the relationships between the measurement frequencies
 and intermediate frequencies are dependent on both the IF channel central frequencies and the RF channel central frequencies.
-With the exception of channel 6 all the unfolded channels are single passband. In the particular case of channel 6 the FWHM calculation
+With the exception of channel 6 the unfolded channels are single passband. In the particular case of channel 6 the FWHM calculation
 is the average of the half maximum frequency points that are adjacent to the IF channel central frequency. 
-Differences between the documented and official IF passband central frequencies, and between the documented and FWHM IF passband central frequencies
-are shown in Table \ref{tab:atms_single_Unfolded} for the unfolded single passband channels. Differences between the documented and official IF channel central frequencies, and between the documented and FWHM central frequencies are shown in Table \ref{tab:atms_double_Unfolded} for channel 6 which is an unfolded double passband channel.
+Differences between the documented and "FWHM" IF passband central frequencies, and between the documented and "First Moment" IF passband central frequencies are shown in Table \ref{tab:atms_single_Unfolded} for the unfolded single passband channels. Differences between the documented and "FWHM" IF channel central frequencies, and between the documented and "First Moment" central frequencies are shown in Tables \ref{tab:atms_double_Unfolded_Lower} and \ref{tab:atms_double_Unfolded_Upper} for channel 6 which is an unfolded double passband channel.
 
 \begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline
-    \textbf{Channel} & $\textbf{Documented }$\bfrequency{o} & $\textbf{FWHM Average } ${\textbfm{\Delta}}\bfrequency{o} & $\textbf{Official } ${\textbfm{\Delta}}\bfrequency{o}  \\
+    \textbf{Channel} & $\textbf{Documented }$ & $\textbf{Documented - FWHM } $ & $\textbf{Documented - First Moment } $  \\
+    & $\textbf{IF }$\bfrequency{o} & $\textbf{IF }$\bfrequency{o} & $\textbf{IF }$\bfrequency{o} \\
     & (GHz)  & (GHz)   & (GHz) \\               
     \hline\hline 
     3   &    6.990344   &   0.000392  &   0.000363 \\  
@@ -218,24 +222,42 @@ are shown in Table \ref{tab:atms_single_Unfolded} for the unfolded single passba
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline
-    \textbf{Channel} & $\textbf{Documented }$\bfrequency{o} & $\textbf{FWHM Average } ${\textbfm{\Delta}}\bfrequency{o} & $\textbf{Official } ${\textbfm{\Delta}}\bfrequency{o}  \\
+    \textbf{Channel} & $\textbf{Documented Lower Passband}$\bfrequency{o} & $\textbf{Lower (Documented - FWHM)} $ & $\textbf{Lower (Documented - First Moment)} $   \\
+    & $\textbf{IF }$\bfrequency{o} & $\textbf{IF }$\bfrequency{o} & $\textbf{IF }$\bfrequency{o} \\
     & (GHz)  & (GHz)   & (GHz) \\               
     \hline\hline 
-    6   &    0.000000   &   0.00000  &   0.000000 \\ 
+    6   &    3.5793440   &   0.0004851  &   0.0009964 \\ 
     \hline
   \end{tabular}
-  \caption{Differences between documented intermediate passband central frequencies and calculated intermediate passband central frequencies.}
-  \label{tab:atms_double_Unfolded}
+  \caption{Differences between documented intermediate passband central frequencies for the lower passband and calculated intermediate central frequencies for the lower passband. Channel 6 has
+    two passbands at intermediate frequencies.}
+  \label{tab:atms_double_Unfolded_Lower}
+\end{table}
+%
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|c|c|c|c|}
+    \hline
+    \textbf{Channel} & $\textbf{Documented Upper Passband}$\bfrequency{o} & $\textbf{Upper (Documented - FWHM)} $ & $\textbf{Upper (Documented - First Moment)} $  \\
+    & $\textbf{IF }$\bfrequency{o} & $\textbf{IF }$\bfrequency{o} & $\textbf{IF }$\bfrequency{o} \\
+    & (GHz)  & (GHz)   & (GHz) \\               
+    \hline\hline 
+    6   &    3.8093440   &   -0.00036073773  &   -0.00075957121 \\ 
+    \hline
+  \end{tabular}
+  \caption{Differences between documented intermediate passband central frequencies for the upper passband and calculated intermediate central frequencies for the upper passband. Channel 6 has two passbands
+  at intermediate frequencies.}
+  \label{tab:atms_double_Unfolded_Upper}
 \end{table}
 
 For folded IF channels the relationships between measurement frequencies and intermediate frequencies are shown in
-figures 2.3 and 2.4. Note that for the folded IF channels the relationships between the measurement frequencies and intermediate frequencies are only dependent on the RF channel central frequencies. The RF channel central frequencies are obtained from [source 2] and cannot be corroborated for channels 3-22 since measured RF data is not available. For folded double passband channels the calculated IF passband central frequency is the sideband 1 offset. For folded quadruple passband channels the central frequency of the IF relative responses is needed to calculate the sideband 2 offsets. Differences between the documented and official IF offsets, and between the documented and "FWHM Average" IF offsets are shown in tables \ref{tab:atms_folded_offset1} and \ref{tab:atms_folded_offset2} for the folded multiple sideband channels. 
+figures 2.3 and 2.4. Note that for the folded IF channels the relationships between the measurement frequencies and intermediate frequencies are only dependent on the RF channel central frequencies. The RF channel central frequencies are obtained from \cite{CrIS_EDR_ATBD} and cannot be corroborated for channels 3-22 since measured RF data is not available. For folded double passband channels the calculated IF passband central frequency is the sideband 1 offset. For folded quadruple passband channels the central frequency of the IF relative responses is needed to calculate the sideband 2 offsets. Differences between the documented and "FWHM" IF offsets, and between the documented and "First Moment" IF offsets are shown in tables \ref{tab:atms_folded_offset1} and \ref{tab:atms_folded_offset2} for the folded multiple sideband channels. 
 
 \begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline
-    \textbf{Channel} & $\textbf{Documented d}$\bfrequency{}$\textbf{1}$ & $\textbf{FWHM Average } ${\textbfm{\Delta}}$\textbf{d}$\bfrequency{1} & $\textbf{Official } ${\textbfm{\Delta}}$\textbf{d}$\bfrequency{1} \\   
+    \textbf{Channel} & $\textbf{Documented d}$\bfrequency{1} & $\textbf{Documented - FWHM } $$\textbf{d}$\bfrequency{1} & $\textbf{Documented - First Moment } $$\textbf{d}$\bfrequency{1} \\   
     & (GHz)  & (GHz)   & (GHz) \\               
     \hline\hline
     11  &  0.217000   &   0.001326  & -0.000468 \\
@@ -254,12 +276,11 @@ figures 2.3 and 2.4. Note that for the folded IF channels the relationships betw
   \label{tab:atms_folded_offset1}
 \end{table}
 
-%    6   &  0.115000   &   0.000134  &  0.000345 \\
 \begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline
-     \textbf{Channel} & $\textbf{Documented d}$\bfrequency{2} & $\textbf{FWHM Average } ${\textbfm{\Delta}}$\textbf{d}$\bfrequency{2} &  $\textbf{Official } ${\textbfm{\Delta}}$\textbf{d}$\bfrequency{2}\\   
+     \textbf{Channel} & $\textbf{Documented d}$\bfrequency{2} & $\textbf{Documented - FWHM } $$\textbf{d}$\bfrequency{2} &  $\textbf{Documented - First Moment } $$\textbf{d}$\bfrequency{2}\\    
     & (GHz)  & (GHz)   & (GHz) \\                   
     \hline\hline
     12 & 0.048000 & -0.000026 &  0.001731  \\
@@ -272,21 +293,21 @@ figures 2.3 and 2.4. Note that for the folded IF channels the relationships betw
   \label{tab:atms_folded_offset2}
 \end{table}  
 
-In the case of channel 6 two sideband 1 offsets are calculated, because the channel is an unfolded double passband. Differences between the left and right sideband 1 offsets 
-for both the official and FWHM calculations are shown in table \ref{tab:channel_6_offsets}. 
+In the case of channel 6 two sideband 1 offsets can be calculated, because the channel is an unfolded double passband. Differences between the left and right sideband 1 offsets 
+for both the "FWHM" and "First Moment" calculations are shown in table \ref{tab:channel_6_offsets}. 
 
 \begin{table}[htp]
   \centering
   \begin{tabular}{|c|c|c|}
     \hline
-    \textbf{Channel} & \textbf{FWHM Average} $\textbf{d}$\bfrequency{1}$\textbf{Left - Right}$ & \textbf{Official} $\textbf{d}$\bfrequency{1}$\textbf{Left - Right}$ \\
+    \textbf{Channel} & \textbf{FWHM } $\textbf{d}$\bfrequency{1}$\textbf{Left - Right}$ & \textbf{First Moment } $\textbf{d}$\bfrequency{1}$\textbf{Left - Right}$ \\
     & (GHz)   & (GHz) \\               
     \hline\hline
     6   &  -0.000980  &  -0.002101 \\
     \hline
   \end{tabular}
   \caption{Differences between the left and right sideband 1 offsets for channel 6. The differences are shown for 
-    both "FWHM Average" and "Official" calculations.}
+    both FWHM and First Moment derived calculations.}
   \label{tab:channel_6_offsets}
 \end{table}
 
@@ -298,7 +319,8 @@ For single passband channels 1 and 2 the response data is provided at measuremen
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline
-    \textbf{Channel} & $\textbf{Documented }$\bfrequency{o} & $\textbf{FWHM Average } ${\textbfm{\Delta}}\bfrequency{o} & $\textbf{Official } ${\textbfm{\Delta}}\bfrequency{o}  \\   
+    \textbf{Channel} & $\textbf{Documented }$ & $\textbf{Documented - FWHM} $ & $\textbf{Documented - First Moment }$   \\   
+    & \bfrequency{o} & \bfrequency{o} & \bfrequency{o} \\
     & (GHz)  & (GHz)   & (GHz) \\               
     \hline\hline
     1   &    23.799999  &  -0.005694  &  -0.004027 \\  
