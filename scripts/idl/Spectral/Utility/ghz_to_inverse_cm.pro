@@ -91,7 +91,7 @@ FUNCTION ghz_to_inverse_cm, frequency
   index = WHERE( f LT ZERO, count )
   IF ( count GT 0 ) THEN $
     MESSAGE, 'Negative frequency input. Units must be GHz.', $
-             /NONAME, NOPRINT
+             /NONAME, /NOPRINT
 
   ; Convert from GHz to cm-1
   v = 1.0d+07 * f / SPEED_OF_LIGHT
