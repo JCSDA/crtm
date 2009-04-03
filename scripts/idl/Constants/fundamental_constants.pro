@@ -3,7 +3,8 @@
 ;       fundamental_constants
 ;
 ; PURPOSE:
-;       Include file containing various fundamental physical constants.
+;       Include file containing various fundamental physical constants
+;       in double precision.
 ;
 ; CALLING SEQUENCE:
 ;       @fundamental_constants
@@ -28,15 +29,14 @@
 ;       Written by:     Paul van Delst, CIMSS/SSEC 27-Sep-1999
 ;                       paul.vandelst@noaa.gov
 ;
-;-
-
 
   ;#----------------------------------------------------------------------------#
   ;#                       -- LOCAL LITERAL CONSTANTS --                        #
   ;#----------------------------------------------------------------------------#
 
-  ONE = 1.0d0
-  TWO = 2.0d0
+  ZERO = 0.0d0
+  ONE  = 1.0d0
+  TWO  = 2.0d0
 
 
 
@@ -264,3 +264,6 @@
   LOSCHMIDT_CONSTANT = AVOGADRO_CONSTANT / $
   ;                    -----------------
                        STP_MOLAR_VOLUME
+
+;-
+
