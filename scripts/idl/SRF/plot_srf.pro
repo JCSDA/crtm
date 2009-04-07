@@ -96,9 +96,9 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
       
       ENDIF
       
-      mylegend, 0.21, 1.20, ['Measured Frequencies Constructed Using the First Moment'], color=[!P.Color], PSYM=[-4], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
-      mylegend, 0.21, 1.15, ['Measured Frequencies Constructed Using Passband Averages of Half Max Points'], color=[Red], PSYM=[-2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
-      mylegend, 0.21, 1.10, ['Measured Frequencies Constructed Using Documented Central Frequencies'], color=[GREEN], PSYM=[-1], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+      mylegend, 0.21, 1.30, ['Measured Frequencies Constructed Using the First Moment'], color=[!P.Color], PSYM=[-4], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
+      mylegend, 0.21, 1.21, ['Measured Frequencies Constructed Using Passband Averages of Half Max Points'], color=[Red], PSYM=[-2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
+      mylegend, 0.21, 1.12, ['Measured Frequencies Constructed Using Documented Central Frequencies'], color=[GREEN], PSYM=[-1], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
       
       !P.REGION=BottomRegion
     
@@ -173,9 +173,9 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
       ENDIF
 
       ; legend for overplotted central frequencies 
-      mylegend, 0.21, 1.20, ['The First Moment for a Passband'], color=[!P.Color], LINESTYLE=[2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
-      mylegend, 0.21, 1.15, ['Average of Two Half Max Points for a Passband'], color=[Red], LINESTYLE=[4], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
-      mylegend, 0.21, 1.10, ['The Documented Central Frequency for a Passband'], color=[GREEN], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+      mylegend, 0.21, 1.30, ['The First Moment for a Passband'], color=[!P.Color], LINESTYLE=[2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
+      mylegend, 0.21, 1.21, ['Average of Two Half Max Points for a Passband'], color=[Red], LINESTYLE=[4], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
+      mylegend, 0.21, 1.12, ['The Documented Central Frequency for a Passband'], color=[GREEN], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
 
       !P.REGION=BottomRegion
 
