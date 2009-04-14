@@ -1982,7 +1982,7 @@ End SUBROUTINE Fastem3
      tcelsius_ad    = tcelsius_ad + tcelsius_cu_ad * 3 * tcelsius_sq
 
      tcelsius_ad    = tcelsius_ad + tcelsius_sq_ad * 2 * tcelsius
-     SST_AD = tcelsius_ad
+     SST_AD = SST_AD + tcelsius_ad
 
      wind10_ad = wind10_ad + windsec_ad * seczen
 
