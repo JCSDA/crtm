@@ -17,8 +17,13 @@ EXE_FILE = Test_GeometryInfo
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
+            Compare_Float_Numbers.f90 \
+            Binary_File_Utility.f90 \
+            Endian_Utility.f90 \
             CRTM_Parameters.f90 \
-            CRTM_GeometryInfo_Define.f90
+            CRTM_GeometryInfo_Define.f90 \
+            CRTM_GeometryInfo_IO.f90 \
+            CRTM_GeometryInfo.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

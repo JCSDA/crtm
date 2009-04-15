@@ -29,11 +29,11 @@ MODULE CRTM_Forward_Module
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type, &
                                       CRTM_Destroy_Atmosphere
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
-  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type   , &
-                                      CRTM_Compute_GeometryInfo
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_ChannelInfo_Define,  ONLY: CRTM_ChannelInfo_type
   USE CRTM_Options_Define,      ONLY: CRTM_Options_type
   USE CRTM_Atmosphere,          ONLY: CRTM_AddLayers_Atmosphere
+  USE CRTM_GeometryInfo,        ONLY: CRTM_Compute_GeometryInfo
   USE CRTM_Predictor,           ONLY: CRTM_Predictor_type    , &
                                       CRTM_APVariables_type  , &
                                       CRTM_Allocate_Predictor, &
