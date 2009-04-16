@@ -1424,14 +1424,41 @@ MODULE MW_SensorData_Define
      HL_POLARIZATION, &  ! SSM/T-2 ch4
      HL_POLARIZATION /)  ! SSM/T-2 ch5
 
-  ! DMSP-16 SSMIS
-  ! -------------
-  INTEGER, PARAMETER :: SSMIS_POLARIZATION( N_SSMIS_CHANNELS ) = &
+  ! SSMIS
+  ! -----
+  ! ...DMSP-16
+  INTEGER, PARAMETER :: SSMIS_F16_POLARIZATION( N_SSMIS_CHANNELS ) = &
   (/ VL_POLARIZATION, &  ! SSMIS ch1
      VL_POLARIZATION, &  ! SSMIS ch2
      VL_POLARIZATION, &  ! SSMIS ch3
      VL_POLARIZATION, &  ! SSMIS ch4
      VL_POLARIZATION, &  ! SSMIS ch5
+     RC_POLARIZATION, &  ! SSMIS ch6
+     RC_POLARIZATION, &  ! SSMIS ch7
+     HL_POLARIZATION, &  ! SSMIS ch8
+     HL_POLARIZATION, &  ! SSMIS ch9
+     HL_POLARIZATION, &  ! SSMIS ch10
+     HL_POLARIZATION, &  ! SSMIS ch11
+     HL_POLARIZATION, &  ! SSMIS ch12
+     VL_POLARIZATION, &  ! SSMIS ch13
+     VL_POLARIZATION, &  ! SSMIS ch14
+     HL_POLARIZATION, &  ! SSMIS ch15
+     VL_POLARIZATION, &  ! SSMIS ch16
+     VL_POLARIZATION, &  ! SSMIS ch17
+     HL_POLARIZATION, &  ! SSMIS ch18
+     RC_POLARIZATION, &  ! SSMIS ch19
+     RC_POLARIZATION, &  ! SSMIS ch20
+     RC_POLARIZATION, &  ! SSMIS ch21
+     RC_POLARIZATION, &  ! SSMIS ch22
+     RC_POLARIZATION, &  ! SSMIS ch23
+     RC_POLARIZATION /)  ! SSMIS ch24
+  ! ...DMSP-17 to -20
+  INTEGER, PARAMETER :: SSMIS_POLARIZATION( N_SSMIS_CHANNELS ) = &
+  (/ HL_POLARIZATION, &  ! SSMIS ch1
+     HL_POLARIZATION, &  ! SSMIS ch2
+     HL_POLARIZATION, &  ! SSMIS ch3
+     HL_POLARIZATION, &  ! SSMIS ch4
+     HL_POLARIZATION, &  ! SSMIS ch5
      RC_POLARIZATION, &  ! SSMIS ch6
      RC_POLARIZATION, &  ! SSMIS ch7
      HL_POLARIZATION, &  ! SSMIS ch8
@@ -2473,7 +2500,7 @@ CONTAINS
         MW_SensorData%Sensor_Channel    = SSMIS_SENSOR_CHANNEL
         MW_SensorData%Central_Frequency = SSMIS_F16_F0
         MW_SensorData%Zeeman            = SSMIS_ZEEMAN
-        MW_SensorData%Polarization      = SSMIS_POLARIZATION
+        MW_SensorData%Polarization      = SSMIS_F16_POLARIZATION
         MW_SensorData%n_Sidebands       = SSMIS_N_SIDEBANDS
         MW_SensorData%IF_Band           = SSMIS_F16_IF_BAND
 
