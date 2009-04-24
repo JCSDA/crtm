@@ -2,7 +2,7 @@
 
 # Script to create template document directories.
 #
-# $Id: $
+# $Id$
 
 require 'yaml'
 require 'fileutils'
