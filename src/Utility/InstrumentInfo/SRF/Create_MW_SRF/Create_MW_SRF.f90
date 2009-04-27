@@ -34,8 +34,9 @@ PROGRAM Create_MW_SRF
   USE SensorInfo_LinkedList,     ONLY: SensorInfo_List_type,    &
                                        Count_SensorInfo_Nodes,  &
                                        GetFrom_SensorInfo_List
-  USE SensorInfo_Define,         ONLY: SensorInfo_type,         &
-                                       MICROWAVE_SENSOR_TYPE
+  USE SensorInfo_Define,         ONLY: SensorInfo_type
+  USE SensorInfo_Parameters,     ONLY: MICROWAVE_SENSOR
+                                       
   
   ! Parameters
   ! ----------
@@ -122,7 +123,7 @@ PROGRAM Create_MW_SRF
     END IF 
     
     ! Cycle if its not a microwave sensor or if the sensor name is SSMIS 
-    IF ( .NOT. (SensorInfo%Microwave_Flag==1) .OR. &
+    IF ( .NOT. (SensorInfo%Sensor_Type==1) .OR. &
           TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
           
     ! Name of file to write to for sensor
@@ -137,7 +138,7 @@ PROGRAM Create_MW_SRF
     
     ! Create srf netcdf files for the MW
     Error_Status = Create_SRF_netCDF( NC_Filename                                    ,  & ! Input
-                                      MICROWAVE_SENSOR_TYPE                          ,  & ! Input (MW)
+                                      MICROWAVE_SENSOR                               ,  & ! Input (MW)
                                       SensorInfo%Sensor_Channel                      ,  & ! Input Channel list                               
                                       Version          = Version                     ,  & ! Optional Input               
                                       Sensor_Id        = TRIM(SensorInfo%Sensor_Id)  ,  & ! Optional Input                
@@ -201,7 +202,7 @@ PROGRAM Create_MW_SRF
       SRF%Sensor_Id        = SensorInfo%Sensor_Id
       SRF%WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID
       SRF%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID 
-      SRF%Sensor_Type      = MICROWAVE_SENSOR_TYPE
+      SRF%Sensor_Type      = MICROWAVE_SENSOR
             
       ! Obtain number of points for sidebands
       n_SBPoints(:)=0
