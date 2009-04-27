@@ -123,7 +123,7 @@ PROGRAM Create_MW_SRF
     END IF 
     
     ! Cycle if its not a microwave sensor or if the sensor name is SSMIS 
-    IF ( .NOT. (SensorInfo%Sensor_Type==1) .OR. &
+    IF ( .NOT. (SensorInfo%Sensor_Type==MICROWAVE_SENSOR) .OR. &
           TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
           
     ! Name of file to write to for sensor
@@ -131,10 +131,10 @@ PROGRAM Create_MW_SRF
      
     ! Set the title 
     Title = 'Microwave sensor ' // TRIM(SensorInfo%Sensor_Id) // ' Spectral Response Functions'
-    Comment = 'The SRF data for this sensor is assumed to be a box car shape.' // &
-              ' This is a temporary state until real data becomes available. The' // &
-              'files now contain 256 points. Further testing will be performed' // &
-              'to determine if this is an adequate number of points'
+    Comment = 'The SRF data for this sensor is assumed to be a box car shape.'     // &
+              ' This is a temporary state until real data becomes available. The ' // &
+              'files now contain 256 points. Further testing will be performed'    // &
+              ' to determine if this is an adequate number of points'
     
     ! Create srf netcdf files for the MW
     Error_Status = Create_SRF_netCDF( NC_Filename                                    ,  & ! Input
