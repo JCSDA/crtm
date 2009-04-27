@@ -123,7 +123,7 @@ MODULE MW_SensorData_Define
     'ssmi_f14            ','ssmi_f15            ','ssmt1_f13           ','ssmt1_f14           ',&
     'ssmt1_f15           ','ssmt2_f13           ','ssmt2_f14           ','ssmt2_f15           ',&
     'ssmis_f16           ','amsua_aqua          ','hsb_aqua            ','amsre_aqua          ',&
-    'amsua_n18           ','mhs_n18             ','windsat_coriolis    ','atms_c1             ',&
+    'amsua_n18           ','mhs_n18             ','windsat_coriolis    ','atms_npp            ',&
     'amsua_n19           ','mhs_n19             ','amsua_metop-a       ','mhs_metop-a         ',&
     'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         ',&
     'ssmi_f08            ','ssmi_f10            ','ssmi_f11            ','mwri_fy3a           ',&
@@ -138,7 +138,7 @@ MODULE MW_SensorData_Define
      784, 784, 784, &                                       ! AQUA AMSU-A, HSB, and AMSR-E
      209, 209, &                                            ! NOAA-18 AMSU-A and MHS
      283, &                                                 ! Coriolis WindSat
-     INVALID_WMO_SATELLITE_ID, &                            ! NPOESS-C1 ATMS
+     INVALID_WMO_SATELLITE_ID, &                            ! NPOESS Prepatory Project ATMS
      210, 210, &                                            ! NOAA-N' AMSU-A and MHS (GUESS. NOT LISTED IN C-5)
      4, 4, 3, 3, 5, 5, &                                    ! MetOp-A - C AMSU-A; MHS
      241, 243, 244, &                                       ! DMSP-08,-10,-11 SSM/I
@@ -157,7 +157,7 @@ MODULE MW_SensorData_Define
      570, 246, 479, &                                ! AQUA AMSU-A, HSB, and AMSR-E
      570, 203, &                                     ! NOAA-18 AMSU-A and MHS
      283, &                                          ! Coriolis WindSat
-     621, &                                          ! NPOESS-C1 ATMS
+     621, &                                          ! NPOESS-NPP ATMS
      570, 203, &                                     ! NOAA-N' AMSU-A and MHS
      570, 203, 570, 203, 570, 203, &                 ! MetOp-A - C AMSU-A; MHS
      905, 905, 905, &                                ! DMSP-08,-10,-11 SSM/I
@@ -205,7 +205,7 @@ MODULE MW_SensorData_Define
        N_AMSUA_CHANNELS, N_HSB_CHANNELS, N_AMSRE_CHANNELS, &             ! AQUA AMSU-A, HSB, and AMSR-E
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-18 AMSU-A and MHS
        N_WINDSAT_CHANNELS, &                                             ! Coriolis WindSat 
-       N_ATMS_CHANNELS, &                                                ! NPOESS-C1 ATMS
+       N_ATMS_CHANNELS, &                                                ! NPOESS-NPP ATMS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-N' AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-A AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
@@ -963,14 +963,14 @@ MODULE MW_SensorData_Define
              (/ 2, MAX_N_SIDEBANDS, N_WINDSAT_CHANNELS /) )
 
 
-  ! NPOESS-C1 ATMS
+  ! NPOESS-NPP ATMS
   ! Frequency information taken from ppt presentation
   ! It is assumed there are no stopbands in the same manner
   ! as other microwave instruments with no sidebands so f1
   ! values are all 0.000.
   ! -------------------------------------------------------
   ! ATMS central frequencies in GHz
-  REAL(fp), PARAMETER :: ATMS_C1_F0( N_ATMS_CHANNELS ) = &
+  REAL(fp), PARAMETER :: ATMS_NPP_F0( N_ATMS_CHANNELS ) = &
     (/ 23.800000_fp,  31.400000_fp,  50.300000_fp,  51.760000_fp, &
        52.800000_fp,  53.596000_fp,  54.400000_fp,  54.940000_fp, &
        55.500000_fp,  57.290344_fp,  57.290344_fp,  57.290344_fp, &
@@ -979,7 +979,7 @@ MODULE MW_SensorData_Define
       183.310000_fp, 183.310000_fp /)
 
   ! ATMS I/F band limits in GHz.
-  REAL(fp), PARAMETER :: ATMS_C1_IF_BAND( 2, MAX_N_SIDEBANDS, N_ATMS_CHANNELS ) = &
+  REAL(fp), PARAMETER :: ATMS_NPP_IF_BAND( 2, MAX_N_SIDEBANDS, N_ATMS_CHANNELS ) = &
     RESHAPE( (/ 0.000000_fp,  0.135000_fp,  ZERO,         ZERO,        &      ! ATMS ch1
                 0.000000_fp,  0.090000_fp,  ZERO,         ZERO,        &      ! ATMS ch2
                 0.000000_fp,  0.090000_fp,  ZERO,         ZERO,        &      ! ATMS ch3
@@ -1532,9 +1532,9 @@ MODULE MW_SensorData_Define
      THIRD_STOKES_COMPONENT,  &  ! WindSat ch15, 37.0GHz R(+45) - R(-45)
      FOURTH_STOKES_COMPONENT /)  ! WindSat ch16, 37.0GHz R(rc) - R(lc)  
 
-  ! NPOESS-C1 ATMS
+  ! NPOESS-NPP ATMS
   ! --------------
-  INTEGER, PARAMETER :: ATMS_C1_POLARIZATION( N_ATMS_CHANNELS ) = &
+  INTEGER, PARAMETER :: ATMS_NPP_POLARIZATION( N_ATMS_CHANNELS ) = &
   (/ VL_MIXED_POLARIZATION, &  ! ATMS ch1
      VL_MIXED_POLARIZATION, &  ! ATMS ch2
      HL_MIXED_POLARIZATION, &  ! ATMS ch3
@@ -2580,12 +2580,12 @@ CONTAINS
         MW_SensorData%n_Sidebands       = WINDSAT_N_SIDEBANDS
         MW_SensorData%IF_Band           = WINDSAT_CORIOLIS_IF_BAND
 
-      CASE ('atms_c1')
+      CASE ('atms_npp')
         MW_SensorData%Sensor_Channel    = ATMS_SENSOR_CHANNEL
-        MW_SensorData%Central_Frequency = ATMS_C1_F0
-        MW_SensorData%Polarization      = ATMS_C1_POLARIZATION
+        MW_SensorData%Central_Frequency = ATMS_NPP_F0
+        MW_SensorData%Polarization      = ATMS_NPP_POLARIZATION
         MW_SensorData%n_Sidebands       = ATMS_N_SIDEBANDS
-        MW_SensorData%IF_Band           = ATMS_C1_IF_BAND
+        MW_SensorData%IF_Band           = ATMS_NPP_IF_BAND
 
       CASE ('amsua_n19')
         MW_SensorData%Sensor_Channel    = AMSUA_SENSOR_CHANNEL
