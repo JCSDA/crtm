@@ -73,7 +73,6 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   INTEGER :: Error_Status
   INTEGER :: IO_Status
   INTEGER :: Allocate_Status
-  INTEGER :: Release
   INTEGER :: Version
   INTEGER :: i, Set
   INTEGER :: l, l1, l2
@@ -152,7 +151,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
 
       ! Fill values
       Subset_List = AIRS_SUBSET_281
-      Sensor_ID   = 'airs281SUBSET_aqua'
+      Sensor_ID   = 'airs281_aqua'
 
 
     ! The 324 channel subset
@@ -177,7 +176,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
 
       ! Fill values
       Subset_List = AIRS_SUBSET_324
-      Sensor_ID   = 'airs324SUBSET_aqua'
+      Sensor_ID   = 'airs324_aqua'
 
 
     ! All the channels
@@ -265,8 +264,9 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
         END IF
       END DO
 
-      ! Create the sensor id
-      WRITE( Sensor_ID,'("airs",i0,"SUBSET_aqua")' ) n_Subset_Channels
+      ! Create the subset comment and sensor id
+      WRITE( Subset_Comment,'("User specified AIRS ",i0," channel SUBSET")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("airs",i0,"_aqua")' ) n_Subset_Channels
 
   END SELECT
 

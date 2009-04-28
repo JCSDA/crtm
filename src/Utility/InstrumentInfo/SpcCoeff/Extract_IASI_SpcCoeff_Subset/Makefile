@@ -23,13 +23,11 @@ SRC_FILES = Type_Kinds.f90 \
             Fundamental_Constants.f90 \
             List_File_Utility.f90 \
             Sort_Utility.f90 \
-            netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Variable_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
+            String_Utility.f90 \
             Channel_Subset_Define.f90 \
             IASI_Define.f90 \
             IASI_Subset.f90 \
+            SensorInfo_Parameters.f90 \
             AntCorr_Define.f90 \
             AntCorr_netCDF_IO.f90 \
             SpcCoeff_Define.f90 \

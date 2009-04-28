@@ -76,7 +76,6 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   INTEGER :: Error_Status
   INTEGER :: IO_Status
   INTEGER :: Allocate_Status
-  INTEGER :: Release
   INTEGER :: Version
   INTEGER :: i, Set
   INTEGER :: l, l1, l2
@@ -293,8 +292,9 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
         END IF
       END DO
 
-      ! Create the sensor id
-      WRITE( Sensor_ID,'("iasi",i0,"USER_metop-a")' ) n_Subset_Channels
+      ! Create the subset comment and sensor id
+      WRITE( Subset_Comment,'("User specified IASI ",i0," channel SUBSET")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("iasi",i0,"_metop-a")' ) n_Subset_Channels
 
   END SELECT
 
