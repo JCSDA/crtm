@@ -74,7 +74,6 @@ PROGRAM Extract_IASI_TauCoeff_Subset
   INTEGER :: n_Orders
   INTEGER :: n_Predictors     
   INTEGER :: n_Absorbers      
-  INTEGER :: Release
   INTEGER :: Version
   INTEGER :: Error_Status
   INTEGER :: IO_Status
@@ -290,8 +289,9 @@ PROGRAM Extract_IASI_TauCoeff_Subset
         END IF
       END DO
 
-      ! Create the sensor id
-      WRITE( Sensor_ID,'("iasi",i0,"USER_metop-a")' ) n_Subset_Channels
+      ! Create the subset comment and sensor id
+      WRITE( Subset_Comment,'("User specified IASI ",i0," channel SUBSET")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("iasi",i0,"_metop-a")' ) n_Subset_Channels
 
   END SELECT
 

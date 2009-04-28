@@ -1406,9 +1406,7 @@ CONTAINS
     CHARACTER(256)  :: message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: l, j
-    LOGICAL, DIMENSION(TauCoeff_LHS%n_Orders, &
-                       TauCoeff_LHS%n_Predictors) :: Compare
+    INTEGER :: iorder, iuse, j, l
 
     ! Set up
     Error_Status = SUCCESS
@@ -1647,52 +1645,54 @@ CONTAINS
     END DO j_Absorber_Loop
 
     ! Check index and coefficient pointer members by channel/absorber
-    jl_Channel_Loop: DO l = 1, TauCoeff_RHS%n_Channels
-      jl_Absorber_Loop: DO j = 1, TauCoeff_RHS%n_Absorbers
+    Channel_Loop: DO l = 1, TauCoeff_RHS%n_Channels
+      Absorber_Loop: DO j = 1, TauCoeff_RHS%n_Absorbers
 
         ! The order indices
-        IF ( ANY( TauCoeff_LHS%Order_Index(:,j,l) /= TauCoeff_RHS%Order_Index(:,j,l) ) ) THEN
-          Error_Status = FAILURE
-          WRITE( Message, '( "Order_Index values are different for absorber # ", i2, &
-                            &", channel # ", i4 )' ) &
-                          j, l
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
-                                Error_Status, &
-                                Message_Log = Message_Log )
-          IF ( Check_Once ) RETURN
-        END IF
+        DO iuse = 0, TauCoeff_RHS%n_Predictors
+          IF ( TauCoeff_LHS%Order_Index(iuse,j,l) /= TauCoeff_RHS%Order_Index(iuse,j,l) ) THEN
+            Error_Status = FAILURE
+            WRITE( Message,'("Order_Index values are different for index ",3(i0,1x))' ) iuse,j,l
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM(Message), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+            IF ( Check_Once ) RETURN
+          END IF
+        END DO
 
         ! The predictor indices
-        IF ( ANY( TauCoeff_LHS%Predictor_Index(:,j,l) /= TauCoeff_RHS%Predictor_Index(:,j,l) ) ) THEN
-          Error_Status = FAILURE
-          WRITE( Message, '( "Predictor_Index values are different for absorber # ", i2, &
-                            &", channel # ", i4 )' ) &
-                          j, l
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
-                                Error_Status, &
-                                Message_Log = Message_Log )
-          IF ( Check_Once ) RETURN
-        END IF
+        DO iuse = 0, TauCoeff_RHS%n_Predictors
+          IF ( TauCoeff_LHS%Predictor_Index(iuse,j,l) /= TauCoeff_RHS%Predictor_Index(iuse,j,l) ) THEN
+            Error_Status = FAILURE
+            WRITE( Message,'("Predictor_Index values are different for index ",3(i0,1x))' ) iuse,j,l
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM(Message), &
+                                  Error_Status, &
+                                  Message_Log = Message_Log )
+            IF ( Check_Once ) RETURN
+          END IF
+        END DO
 
         ! The gas absorption coefficients
-        Compare = Compare_Float( TauCoeff_LHS%C(:,:,j,l), &
-                                 TauCoeff_RHS%C(:,:,j,l), &
-                                 ULP = ULP                )
-        IF ( ANY( .NOT. Compare ) ) THEN
-          Error_Status = FAILURE
-          WRITE( Message, '( "Gas absorption coefficient values are different for absorber # ", i2, &
-                            &", channel # ", i4 )' ) &
-                          j, l
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
-                                Error_Status, &
-                                Message_Log = Message_Log )
-          IF ( Check_Once ) RETURN
-        END IF
-      END DO jl_Absorber_Loop
-    END DO jl_Channel_Loop
+        DO iuse = 0, TauCoeff_RHS%n_Predictors
+          DO iorder = 0, TauCoeff_RHS%n_Orders
+            IF ( .NOT. Compare_Float( TauCoeff_LHS%C(iorder,iuse,j,l), &
+                                      TauCoeff_RHS%C(iorder,iuse,j,l), &
+                                      ULP = ULP                        ) ) THEN
+              Error_Status = FAILURE
+              WRITE( Message,'("Gas absorption coefficient values are different for index ",&
+                             &4(i0,1x))' ) iorder,iuse,j,l
+              CALL Display_Message( ROUTINE_NAME, &
+                                    TRIM( Message ), &
+                                    Error_Status, &
+                                    Message_Log = Message_Log )
+              IF ( Check_Once ) RETURN
+            END IF
+          END DO
+        END DO
+      END DO Absorber_Loop
+    END DO Channel_Loop
 
   END FUNCTION Equal_TauCoeff
 
