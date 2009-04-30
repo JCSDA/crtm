@@ -6,10 +6,18 @@
 #
 # == Usage
 #
-# collect_coeffs.rb [-h]
+# collect_coeffs.rb [OPTIONS]
 #
-# -h, --help:
+# --help (-h):
 #    you're looking at it
+#
+# --exclude (-e):
+#    Excludes the sensor-independent files (e.g. CloudCoeff) from
+#    the tarball.
+#
+# --sensorinfo <file> (-s <file>)
+#    Specify a SensorInfo file to read. By default, a file named
+#    SensorInfo.release is read.
 #
 #    
 # Written by:: Paul van Delst, 02-Feb-2009 (paul.vandelst@noaa.gov)
@@ -27,25 +35,57 @@ FIXFILE_FORMAT = [{:name=>"Big_Endian",:ext=>"bin"},
                   {:name=>"Little_Endian",:ext=>"bin"},
                   {:name=>"netCDF",:ext=>"nc"}]
 FIXFILE_TAR = "CRTM_Coefficients"
-FIXFILE_INFO = [{:name=>"TauCoeff",
-                 :subdirs=>["Infrared/ORD","Infrared/PW","Microwave/Rosenkranz"]},
-                {:name=>"SpcCoeff",
-                 :subdirs=>["Infrared","Microwave/No_AC","Microwave/AAPP_AC"]},
-                {:name=>"AerosolCoeff",
-                 :subdirs=>[]},
-                {:name=>"CloudCoeff",
-                 :subdirs=>[]},
-                {:name=>"EmisCoeff",
-                 :subdirs=>[]}]
-      
-              
-puts("---> Collecting coefficient files...")
 
+fixfile_info = [{:name=> "TauCoeff",
+                 :subdirs=> ["Infrared/ORD","Infrared/PW","Microwave/Rosenkranz"],
+                 :sensor=> true},
+                {:name=>"SpcCoeff",
+                 :subdirs=>["Infrared","Microwave/No_AC","Microwave/AAPP_AC"],
+                 :sensor=> true},
+                {:name=>"AerosolCoeff",
+                 :subdirs=>[],
+                 :sensor=> false},
+                {:name=>"CloudCoeff",
+                 :subdirs=>[],
+                 :sensor=> false},
+                {:name=>"EmisCoeff",
+                 :subdirs=>[],
+                 :sensor=> false}]
+exclude = false
+sensorinfo_file =  FIXFILE_SENSORINFO
+     
+# Accepted command line options
+OPTIONS = GetoptLong.new(
+  [ "--help"      , "-h", GetoptLong::NO_ARGUMENT       ],
+  [ "--exclude"   , "-e", GetoptLong::NO_ARGUMENT       ],
+  [ "--sensorinfo", "-s", GetoptLong::REQUIRED_ARGUMENT ] )
+
+
+# Process arguments
+begin
+  OPTIONS.each do |opt, arg|
+    case opt
+      when "--help"
+        RDoc::usage(0)
+      when "--exclude"
+        exclude = true
+      when "--sensorinfo"
+        sensorinfo_file = arg
+    end
+  end
+rescue ArgumentError => error_message
+  puts("ERROR: #{error_message}")
+  puts("Try \"#{File.basename($0)} --help\"\n ")
+  exit 1
+end
+
+
+puts("---> Collecting coefficient files...")
 begin
   FileUtils.chdir(FIXFILE_ROOT) do
 
     # Read the SensorInfo file
-    sensorinfo = SensorInfo::Node.load(FIXFILE_SENSORINFO)
+    sensorinfo = SensorInfo::Node.load(sensorinfo_file)
 
     # Create the main directory
     FileUtils.rm_rf(FIXFILE_TAR,:secure=>true) if File.exists?(FIXFILE_TAR)
@@ -55,7 +95,10 @@ begin
     FileUtils.chdir(FIXFILE_TAR) do
     
       # Loop over each type of Coeff file
-      FIXFILE_INFO.each do |type|
+      fixfile_info.each do |type|
+      
+        next if exclude && !type[:sensor]
+        
         FileUtils.mkdir(type[:name])
         type_root = "#{FIXFILE_ROOT}/#{type[:name]}"
         FileUtils.chdir(type[:name]) do
@@ -103,6 +146,6 @@ begin
   
 rescue Exception => error_message
   puts "ERROR: #{error_message}"
-  exit 1
+  exit(1)
 end
 
