@@ -5,7 +5,9 @@
 PRO Plot_SRF,    plot_holder,                           $  ; structure holding plot information
                  Negative_Loc,                          $  ; location of negative responses
                  SRF=SRF,                               $  ; Optionally pass in SRF structure if passband boundaries are needed
-                 multiple_microwave=multiple_microwave     ; option to overplot microwave frequencies
+                 multiple_microwave=multiple_microwave, $  ; option to overplot microwave frequencies
+                 PS=PS
+                
 
   @color_db
   @srf_parameters
@@ -25,25 +27,22 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
   IF ( !D.X_SIZE NE xSize OR !D.Y_SIZE NE ySize ) THEN $
     WINDOW, winID, XSIZE=xSize, YSIZE=ySize
   ENDIF
-
-  ; output to ps if keyword is set
-  IF ( KEYWORD_SET(PS) ) THEN pson, file=plot_holder.Sensor_Id+'/'+plot_holder.Sensor_Id+'.srf.ps'
-  
+ 
   ; Check for microwave plotting    
   IF(plot_holder.Sensor_Type EQ MICROWAVE_SENSOR) THEN BEGIN
   
     ; scale to make the x axis plots large enough
-    xscale=.0001d0
+    xscale=.0006d0
   
     ; Set plotting info for microwave
-    thick    = (KEYWORD_SET(PS)) ?  1       :  4.5
-    font     = (KEYWORD_SET(PS)) ? -1       :  1
-    charsize = (KEYWORD_SET(PS)) ?  1       :  2.0
-    f0color  = (KEYWORD_SET(PS)) ? BLUE     :  CYAN
-    
+    thick    = (KEYWORD_SET(PS)) ?  4.5     :  4.5
+    font     = (KEYWORD_SET(PS)) ?  1       :  1
+    charsize = (KEYWORD_SET(PS)) ?  2.0     :  2.0
+    ypos1 = (KEYWORD_SET(PS)) ? 1.42  :  1.34
+    ypos2 = (KEYWORD_SET(PS)) ? 1.28  :  1.20
     ; Specify regions for plotting
-    TopRegion=[0.0,0.40,0.975,0.85]
-    BottomRegion=[0.0,0.0,0.975,0.38]
+    TopRegion=[0.0,0.42,0.975,0.90]
+    BottomRegion=[0.0,0.0,0.975,0.40]
     !P.REGION=TopRegion
     
     IF(KEYWORD_SET(multiple_microwave)) THEN BEGIN
@@ -56,14 +55,15 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
              YTITLE='Relative Response',                                       $
              TITLE=plot_holder.Infile+': Ch.'+plot_holder.channel_name,        $
              YRANGE=yRange, /YSTYLE,                                           $
-             XRANGE=[((-xscale)*(*plot_holder.f0_fm)[0]) + MIN([*plot_holder.f_fm,*plot_holder.f_hm,*plot_holder.f_doc]), $
-             ((xscale)*(*plot_holder.f0_fm)[0]) + MAX([*plot_holder.f_fm,*plot_holder.f_hm,*plot_holder.f_doc])], $
-             /XSTYLE,  $
+             XRANGE=[((-xscale)*(*plot_holder.f0_doc)[0]) +                    $
+             MIN([*plot_holder.f_fm,*plot_holder.f_doc]),                      $
+             ((xscale)*(*plot_holder.f0_doc)[0]) +                             $
+              MAX([*plot_holder.f_fm,*plot_holder.f_doc])],                    $
+             /xstyle,                                                          $
              FONT=font, THICK=thick, CHARSIZE=charsize, PSYM=-4
       xRange = !X.CRANGE
       
-      ; overplot the documented and FWHM derived data
-      OPLOT, *plot_holder.f_hm, *plot_holder.r, color=RED, psym=-2, thick=thick
+      ; overplot the document derived data
       OPLOT, *plot_holder.f_doc, *plot_holder.r, color=GREEN, psym=-1, thick=thick
       
       yLimit = MAX(*plot_holder.r)
@@ -72,9 +72,8 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
  
         ; plot the central frequencies
         FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=GREEN
-          OPLOT, [(*plot_holder.f0_hm)[n] , (*plot_holder.f0_hm)[n]],  [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=RED
-          OPLOT, [(*plot_holder.f0_fm)[n] , (*plot_holder.f0_fm)[n]],  [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=!P.COLOR
+          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]],         $
+          [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
         ENDFOR
       ENDIF
                 
@@ -82,9 +81,8 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
  
         ; plot the central frequencies
         FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=GREEN
-          OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=RED
-          OPLOT, [(*plot_holder.f0_fm)[n], (*plot_holder.f0_fm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=!P.COLOR
+          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]],         $
+          [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
         ENDFOR
         
       ENDIF
@@ -93,16 +91,19 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
 
         ; plot the central frequencies
         FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=GREEN
-          OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=RED
-          OPLOT, [(*plot_holder.f0_fm)[n], (*plot_holder.f0_fm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=!P.COLOR
+          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]],         $
+          [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
         ENDFOR
       
       ENDIF
       
-      mylegend, -0.02, 1.52, ['Translation to Measurement Frequencies by Using the First Moment'], color=[!P.Color], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
-      mylegend, -0.02, 1.36, ['Translation to Measurement Frequencies by Using the Average of Half Max Points'], color=[Red], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
-      mylegend, -0.02, 1.20, ['Translation to Measurement Frequencies by Using Documented Central Frequencies'], color=[GREEN], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+      mylegend, -0.02, ypos1,                                                             $
+      ['Translation to Measurement Frequencies by Using the First Moment'],               $
+      color=[!P.Color], LINESTYLE=[2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font         
+                     
+      mylegend, -0.02, ypos2,                                                             $
+      ['Translation to Measurement Frequencies by Using Documented Central Frequencies'], $
+      color=[GREEN], LINESTYLE=[2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
       
       !P.REGION=BottomRegion
     
@@ -116,14 +117,17 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
             XTITLE=xtitle,                                           $                 
             YTITLE='Relative Response',                              $                 
             YRANGE=yRange,      /ystyle,                             $                 
-            XRANGE=[((-xscale)*(*plot_holder.f0_fm)[0]) + MIN([*plot_holder.f_fm,*plot_holder.f_hm,*plot_holder.f_doc]), ((xscale)*(*plot_holder.f0_fm)[0]) + MAX([*plot_holder.f_fm,*plot_holder.f_hm,*plot_holder.f_doc])], /xstyle, $                 
+            XRANGE=[((-xscale)*(*plot_holder.f0_doc)[0]) +           $
+            MIN([*plot_holder.f_fm,*plot_holder.f_doc]),             $
+            ((xscale)*(*plot_holder.f0_doc)[0]) +                    $
+            MAX([*plot_holder.f_fm,*plot_holder.f_doc])],            $
+            /xstyle,                                                 $                 
             TITLE=TITLE,                                             $                 
             FONT=font, THICK=thick, CHARSIZE=charsize, PSYM=-4            
       xRange = !X.CRANGE       
                                                               
-      ; overplot the documented and FWHM derived data
-      OPLOT, *plot_holder.f_hm, *plot_holder.r, THICK=thick, COLOR=RED  
-      OPLOT, *plot_holder.f_doc, *plot_holder.r, THICK=thick, COLOR=GREEN
+      ; overplot the document derived data
+      OPLOT, *plot_holder.f_doc, *plot_holder.r, THICK=thick, COLOR=GREEN, psym=-1
       OPLOT, !X.CRANGE, [0,0], LINESTYLE=2, THICK=thick                                
       !P.REGION=0     
     ENDIF ELSE BEGIN
@@ -135,7 +139,10 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
             XTITLE=xtitle,                                                     $               
             YTITLE='Relative Response',                                        $               
             YRANGE=yRange, /ystyle,                                            $               
-            XRANGE=[((-xscale)*(*plot_holder.f0_fm)[0]) + MIN(*plot_holder.f_fm), ((xscale)*(*plot_holder.f0_fm)[0]) + MAX(*plot_holder.f_fm)], /xstyle,   $               
+            XRANGE=[((-xscale)*(*plot_holder.f0_doc)[0]) +                     $
+            MIN(*plot_holder.f_fm), ((xscale)*(*plot_holder.f0_doc)[0]) +      $
+            MAX(*plot_holder.f_fm)],                                           $               
+            /xstyle,                                                           $
             TITLE=plot_holder.Infile+': Ch.'+plot_holder.channel_name,         $               
             FONT=font, THICK=thick, CHARSIZE=charsize, PSYM=-4          
       xRange = !X.CRANGE
@@ -146,9 +153,8 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
         
         ; plot the central frequencies
         FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=GREEN
-          OPLOT, [(*plot_holder.f0_hm)[n] , (*plot_holder.f0_hm)[n]],  [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=RED
-          OPLOT, [(*plot_holder.f0_fm)[n] , (*plot_holder.f0_fm)[n]],  [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=!P.COLOR
+          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]],       $
+          [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
         ENDFOR  
         
       ENDIF
@@ -157,9 +163,8 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
 
         ; plot the central frequencies
         FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=GREEN
-          OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=RED
-          OPLOT, [(*plot_holder.f0_fm)[n], (*plot_holder.f0_fm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=!P.COLOR
+          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]],       $
+          [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
         ENDFOR
 
       ENDIF
@@ -168,17 +173,15 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
       
         ; plot the central frequencies
         FOR n = 0, plot_holder.n_bands - 1 DO BEGIN
-          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]], [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=GREEN
-          OPLOT, [(*plot_holder.f0_hm)[n], (*plot_holder.f0_hm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=RED
-          OPLOT, [(*plot_holder.f0_fm)[n], (*plot_holder.f0_fm)[n]],   [ylimit,yRange[0]], LINESTYLE=6, THICK=thick, COLOR=!P.COLOR
+          OPLOT, [(*plot_holder.f0_doc)[n], (*plot_holder.f0_doc)[n]],       $
+          [ylimit,yRange[0]], LINESTYLE=2, THICK=thick, COLOR=GREEN
         ENDFOR
 
       ENDIF
       
-      ; legend for overplotted central frequencies 
-      mylegend, 0.08, 1.52, ['The First Moment'], color=[!P.Color], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font
-      mylegend, 0.08, 1.36, ['Average of the Full Width At Half Maximum Endpoints'], color=[Red], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font                         
-      mylegend, 0.08, 1.20, ['The Documented Central Frequency'], color=[GREEN], LINESTYLE=[6], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
+      ; legend for overplotted central frequencies                          
+      mylegend, 0.20, 1.32, ['Documented Band Central Frequency'],            $
+      color=[GREEN], LINESTYLE=[2], THICK=[thick], CHARSIZE=CHARSIZE, FONT=font 
 
       !P.REGION=BottomRegion
 
@@ -192,7 +195,10 @@ PRO Plot_SRF,    plot_holder,                           $  ; structure holding p
             XTITLE=xtitle,                                                    $                  
             YTITLE='Relative Response',                                       $                  
             YRANGE=yRange,     /ystyle,                                       $                  
-            XRANGE=[((-xscale)*(*plot_holder.f0_fm)[0]) + MIN(*plot_holder.f_fm), ((xscale)*(*plot_holder.f0_fm)[0]) + MAX(*plot_holder.f_fm)],  /xstyle, $                  
+            XRANGE=[((-xscale)*(*plot_holder.f0_doc)[0]) +                    $
+            MIN(*plot_holder.f_fm), ((xscale)*(*plot_holder.f0_doc)[0])       $
+            + MAX(*plot_holder.f_fm)],                                        $
+            /xstyle,                                                          $                  
             TITLE=TITLE,                                                      $                  
             FONT=font, THICK=thick, CHARSIZE=charsize, PSYM=-4            
       xRange = !X.CRANGE                                                                
