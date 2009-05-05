@@ -333,6 +333,18 @@ CONTAINS
                               ASV%pcoeff(:,:,ka,n)               , & ! Output
                               ASV%asi(ka,n)                        ) ! Interpolation
 
+        ! interpolation quality control
+        IF( ASV%ke(ka,n) <= ZERO ) THEN
+          ASV%ke(ka,n) = ZERO
+          ASV%w(ka,n)  = ZERO
+        END IF
+        IF( ASV%w(ka,n) <= ZERO ) THEN
+          ASV%w(ka,n) = ZERO
+          ASV%pcoeff(:,:,ka,n) = ZERO
+        END IF
+        IF( ASV%w(ka,n) >= ONE ) THEN
+          ASV%w(ka,n) = ONE
+        END IF        
         ! Compute the volume scattering coefficient for the current
         ! aerosol layer and accumulate it for the layer total for the
         ! profile (i.e. all aerosols)
@@ -613,6 +625,18 @@ CONTAINS
                                 pcoeff_TL                             , & ! TL  Output
                                 ASV%asi(ka,n)                           ) ! Interpolation
 
+        ! interpolation quality control
+        IF( ASV%ke(ka,n) <= ZERO ) THEN
+          ke_TL = ZERO
+          w_TL = ZERO
+        END IF
+        IF( ASV%w(ka,n) <= ZERO ) THEN
+          w_TL  = ZERO
+          pcoeff_TL = ZERO
+        END IF
+        IF( ASV%w(ka,n) >= ONE ) THEN
+          w_TL  = ZERO
+        END IF        
         ! Compute the volume scattering coefficient
         bs = Atm%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)                     
         bs_TL = (Atm_TL%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)) + &
@@ -987,6 +1011,19 @@ CONTAINS
         Atm_AD%Aerosol(n)%Concentration(ka) = Atm_AD%Aerosol(n)%Concentration(ka) + &
                                               (ASV%w(ka,n) * ASV%ke(ka,n) * bs_AD)
                                                      
+        ! interpolation quality control
+        IF( ASV%w(ka,n) >= ONE ) THEN
+          w_AD = ZERO
+        END IF        
+        IF( ASV%ke(ka,n) <= ZERO ) THEN
+          ke_AD = ZERO
+          w_AD = ZERO
+        END IF
+        IF( ASV%w(ka,n) <= ZERO ) THEN
+          w_AD = ZERO
+          pcoeff_AD = ZERO
+        END IF        
+
         ! Adjoint AScat interpolation routine
         CALL Get_Aerosol_Opt_AD(AScat_AD                              , & ! Input
                                 Frequency                             , & ! Input

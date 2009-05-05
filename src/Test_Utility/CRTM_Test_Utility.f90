@@ -48,6 +48,7 @@ MODULE CRTM_Test_Utility
   PUBLIC :: MAX_N_PROFILES
   PUBLIC :: USED_N_PROFILES
   PUBLIC :: TEST_ATM_FILENAME
+  PUBLIC :: TEST_TRUNC_ATM_FILENAME
   PUBLIC :: TEST_SFC_FILENAME
   PUBLIC :: TEST_N_PROFILES
   PUBLIC :: EMISSIVITY_TEST
@@ -97,10 +98,11 @@ MODULE CRTM_Test_Utility
   INTEGER,      PARAMETER :: MAX_N_PROFILES   = 52
   INTEGER,      PARAMETER :: USED_N_PROFILES  = 10
 
-  ! Datafile names and dimensions for model comparison (FWD/TL, TL/AD, TL/K) tests
-  CHARACTER(*), PARAMETER :: TEST_ATM_FILENAME = 'Test.Atmosphere.Cloud.Aerosol.bin'
-  CHARACTER(*), PARAMETER :: TEST_SFC_FILENAME = 'Test.Surface.bin'
-  INTEGER,      PARAMETER :: TEST_N_PROFILES   = 6
+  ! Test datafiles
+  CHARACTER(*), PARAMETER :: TEST_ATM_FILENAME       = 'Test.Atmosphere.Cloud.Aerosol.bin'
+  CHARACTER(*), PARAMETER :: TEST_TRUNC_ATM_FILENAME = 'Truncated.Test.Atmosphere.Cloud.Aerosol.bin'
+  CHARACTER(*), PARAMETER :: TEST_SFC_FILENAME       = 'Test.Surface.bin'
+  INTEGER,      PARAMETER :: TEST_N_PROFILES         = 6
 
   ! Set up the tests
   INTEGER, PARAMETER :: EMISSIVITY_TEST = 1

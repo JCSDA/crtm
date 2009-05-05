@@ -1,7 +1,7 @@
-JCSDA CRTM v1.2 Build Instructions
-==================================
+JCSDA CRTM v1.2.1 Build Instructions
+====================================
 
-$Id:$
+$Id$
 
 
 0) Several targets are available for specific compilers. The target names are:

@@ -33,7 +33,9 @@ MODULE CRTM_Tangent_Linear_Module
   USE CRTM_ChannelInfo_Define,  ONLY: CRTM_ChannelInfo_type
   USE CRTM_Options_Define,      ONLY: CRTM_Options_type
   USE CRTM_Atmosphere,          ONLY: CRTM_AddLayers_Atmosphere   , &
-                                      CRTM_AddLayers_Atmosphere_TL
+                                      CRTM_AddLayers_Atmosphere_TL, &
+                                      iAtm_type, &
+                                      Destroy_iAtm
   USE CRTM_GeometryInfo,        ONLY: CRTM_Compute_GeometryInfo
   USE CRTM_Predictor,           ONLY: CRTM_Predictor_type       , &
                                       CRTM_APVariables_type     , &
@@ -277,6 +279,7 @@ CONTAINS
     TYPE(CRTM_AtmScatter_type)    :: AtmOptics,      AtmOptics_TL
     TYPE(CRTM_SfcOptics_type)     :: SfcOptics,      SfcOptics_TL
     ! Component variable internals
+    TYPE(iAtm_type) :: iAtm             ! Atmosphere
     TYPE(CRTM_APVariables_type) :: APV  ! Predictor
     TYPE(CRTM_AAVariables_type) :: AAV  ! AtmAbsorption
     TYPE(CRTM_CSVariables_type) :: CSV  ! CloudScatter
@@ -439,6 +442,7 @@ CONTAINS
       ! Forward model
       Error_Status = CRTM_AddLayers_Atmosphere( Atmosphere(m)          , &  ! Input
                                                 Atm                    , &  ! Output
+                                                iAtm                   , &  ! Internal variable output
                                                 Message_Log=Message_Log  )  ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
@@ -454,6 +458,7 @@ CONTAINS
       Error_Status = CRTM_AddLayers_Atmosphere_TL( Atmosphere(m)          , &  ! Input
                                                    Atmosphere_TL(m)       , &  ! Input
                                                    Atm_TL                 , &  ! Output
+                                                   iAtm                   , &  ! Internal variable input
                                                    Message_Log=Message_Log  )  ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
@@ -839,9 +844,10 @@ CONTAINS
     END DO Profile_Loop
 
 
-    ! --------------------------------------------
-    ! Destroy "extra layers" atmosphere structures
-    ! --------------------------------------------
+    ! ---------------------------------
+    ! Destroy "extra layers" structures
+    ! ---------------------------------
+    ! The atmosphere copies
     Status_FWD = CRTM_Destroy_Atmosphere( Atm )
     IF ( Status_FWD /= SUCCESS ) THEN
       Error_Status = WARNING
@@ -858,6 +864,15 @@ CONTAINS
                             Error_Status, &                                      
                             Message_Log=Message_Log )                            
     END IF                                                                       
+    ! The internal variable
+    Status_FWD = Destroy_iAtm( iAtm )
+    IF ( Status_FWD /= SUCCESS ) THEN
+      Error_Status = WARNING
+      CALL Display_Message( ROUTINE_NAME, &                                      
+                            'Error deallocating extra layers iAtm structure', & 
+                            Error_Status, &                                      
+                            Message_Log=Message_Log )                            
+    END IF
 
   END FUNCTION CRTM_Tangent_Linear
 

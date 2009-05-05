@@ -1872,15 +1872,19 @@ End SUBROUTINE Fastem3
 
      !1.3.3) Large scale geometric correction
      !------
-     fresnel_v_ad          = -emissstokes_ad(1) * small_rough_cor
-     small_rough_cor_ad    = -emissstokes_ad(1) * fresnel(1)
-     large_rough_cor_ad(1) =  emissstokes_ad(1)
+     IF ( Fastem_Version <= 2 .or. (Fastem_Version == 3 .And. coszen >= 0.5_fp)) THEN
+       fresnel_v_ad          = -emissstokes_ad(1) * small_rough_cor
+       small_rough_cor_ad    = -emissstokes_ad(1) * fresnel(1)
+       large_rough_cor_ad(1) =  emissstokes_ad(1)
 
-     fresnel_h_ad          = -emissstokes_ad(2) * small_rough_cor
-
-     small_rough_cor_ad    =  small_rough_cor_ad - emissstokes_ad(2) * fresnel(2)
-     large_rough_cor_ad(2) =  emissstokes_ad(2)
-
+       fresnel_h_ad          = -emissstokes_ad(2) * small_rough_cor
+       small_rough_cor_ad    =  small_rough_cor_ad - emissstokes_ad(2) * fresnel(2)
+       large_rough_cor_ad(2) =  emissstokes_ad(2)
+     ELSE
+       fresnel_v_ad          = -emissstokes_ad(1)
+       fresnel_h_ad          = -emissstokes_ad(2)     
+     END IF
+     
      windsec_ad   =             large_rough_cor_ad(2) * zc(12) / HUNDRED
      wind10_sq_ad =             large_rough_cor_ad(2) * zc(11) / HUNDRED
      wind10_ad    = wind10_ad + large_rough_cor_ad(2) * zc(10) / HUNDRED
@@ -1897,6 +1901,9 @@ End SUBROUTINE Fastem3
      If (freq_ghz >= 15.0_fp) Then
         wind10_ad = wind10_ad + small_rough_cor_ad *&
              & small_rough_cor * c(21) * coszen_sq / (freq_ghz_sq)
+     Else
+        small_rough_cor    = 1.0
+        small_rough_cor_AD = 0.0
      End If
 
      !1.3.1) Fresnel reflection coefficients

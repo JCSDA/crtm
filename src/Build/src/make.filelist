@@ -56,7 +56,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_GeometryInfo_Define.f90 \
             CRTM_GeometryInfo_IO.f90 \
             CRTM_GeometryInfo.f90 \
-            CRTM_Atmosphere.f90 \
+            CRTM_Atmosphere.f90 iAtm_Define.f90 \
             CRTM_Model_Profiles.f90 \
             CRTM_Predictor_Define.f90 \
             CRTM_Predictor.f90 \
@@ -75,9 +75,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_MW_Land_SfcOptics.f90 \
             CRTM_MW_Snow_SfcOptics.f90 \
             CRTM_MW_Water_SfcOptics.f90 \
-            CRTM_LowFrequency_MWSSEM.f90 \
-            Ocean_Permittivity.f90 \
-            Fresnel.f90 \
+            CRTM_LowFrequency_MWSSEM.f90 Ocean_Permittivity.f90 Fresnel.f90 \
             CRTM_Fastem1.f90 \
             CRTM_Fastem3.f90 \
             CRTM_IRSSEM.f90 \

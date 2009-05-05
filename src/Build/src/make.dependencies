@@ -13,7 +13,7 @@ CRTM_AtmAbsorption.o : CRTM_AtmAbsorption.f90 CRTM_AtmAbsorption_Define.o CRTM_P
 CRTM_AtmAbsorption_Define.o : CRTM_AtmAbsorption_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_AtmOptics.o : CRTM_AtmOptics.f90 CRTM_AtmScatter_Define.o CRTM_AtmAbsorption_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_AtmScatter_Define.o : CRTM_AtmScatter_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
-CRTM_Atmosphere.o : CRTM_Atmosphere.f90 CRTM_Model_Profiles.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
+CRTM_Atmosphere.o : CRTM_Atmosphere.f90 iAtm_Define.o CRTM_Model_Profiles.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_Atmosphere_Binary_IO.o : CRTM_Atmosphere_Binary_IO.f90 CRTM_Aerosol_Binary_IO.o CRTM_Cloud_Binary_IO.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Binary_File_Utility.o Message_Handler.o File_Utility.o 
 CRTM_Atmosphere_Define.o : CRTM_Atmosphere_Define.f90 CRTM_Aerosol_Define.o CRTM_Cloud_Define.o CRTM_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_ChannelInfo_Define.o : CRTM_ChannelInfo_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
@@ -96,3 +96,4 @@ Spectral_Units_Conversion.o : Spectral_Units_Conversion.f90 Fundamental_Constant
 TauCoeff_Binary_IO.o : TauCoeff_Binary_IO.f90 TauCoeff_Define.o Binary_File_Utility.o Message_Handler.o Type_Kinds.o 
 TauCoeff_Define.o : TauCoeff_Define.f90 Sort_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Type_Kinds.o : Type_Kinds.f90 
+iAtm_Define.o : iAtm_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 

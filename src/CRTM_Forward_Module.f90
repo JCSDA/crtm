@@ -32,7 +32,9 @@ MODULE CRTM_Forward_Module
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_ChannelInfo_Define,  ONLY: CRTM_ChannelInfo_type
   USE CRTM_Options_Define,      ONLY: CRTM_Options_type
-  USE CRTM_Atmosphere,          ONLY: CRTM_AddLayers_Atmosphere
+  USE CRTM_Atmosphere,          ONLY: CRTM_AddLayers_Atmosphere, &
+                                      iAtm_type, &
+                                      Destroy_iAtm
   USE CRTM_GeometryInfo,        ONLY: CRTM_Compute_GeometryInfo
   USE CRTM_Predictor,           ONLY: CRTM_Predictor_type    , &
                                       CRTM_APVariables_type  , &
@@ -239,6 +241,7 @@ CONTAINS
     TYPE(CRTM_AtmScatter_type)    :: AtmOptics 
     TYPE(CRTM_SfcOptics_type)     :: SfcOptics
     ! Component variable internals
+    TYPE(iAtm_type) :: iAtm             ! Atmosphere
     TYPE(CRTM_APVariables_type) :: APV  ! Predictor
     TYPE(CRTM_AAVariables_type) :: AAV  ! AtmAbsorption
     TYPE(CRTM_CSVariables_type) :: CSV  ! CloudScatter
@@ -396,6 +399,7 @@ CONTAINS
       ! ----------------------------------------------
       Error_Status = CRTM_AddLayers_Atmosphere( Atmosphere(m)          , &  ! Input
                                                 Atm                    , &  ! Output
+                                                iAtm                   , &  ! Internal variable output
                                                 Message_Log=Message_Log  )  ! Error messaging
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
@@ -673,9 +677,10 @@ CONTAINS
     END DO Profile_Loop
 
 
-    ! -------------------------------------------
-    ! Destroy "extra layers" atmosphere structure
-    ! -------------------------------------------
+    ! ---------------------------------
+    ! Destroy "extra layers" structures
+    ! ---------------------------------
+    ! The atmosphere copy
     Error_Status = CRTM_Destroy_Atmosphere( Atm )
     IF ( Error_Status /= SUCCESS ) THEN
       Error_Status = WARNING
@@ -684,6 +689,15 @@ CONTAINS
                             Error_Status, &                                      
                             Message_Log=Message_Log )                            
     END IF                                                                       
+    ! The internal variable
+    Error_Status = Destroy_iAtm( iAtm )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Error_Status = WARNING
+      CALL Display_Message( ROUTINE_NAME, &                                      
+                            'Error deallocating extra layers iAtm structure', & 
+                            Error_Status, &                                      
+                            Message_Log=Message_Log )                            
+    END IF
 
   END FUNCTION CRTM_Forward
 

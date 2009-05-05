@@ -360,8 +360,20 @@ CONTAINS
             CSV%g(kc,n)          = ZERO
             CSV%pcoeff(:,:,kc,n) = ZERO
         END SELECT
-        
 
+        ! interpolation quality control
+        IF( CSV%ke(kc,n) <= ZERO ) THEN
+          CSV%ke(kc,n) = ZERO
+          CSV%w(kc,n)  = ZERO
+        END IF
+        IF( CSV%w(kc,n) <= ZERO ) THEN
+          CSV%w(kc,n) = ZERO
+          CSV%pcoeff(:,:,kc,n) = ZERO
+        END IF        
+
+        IF( CSV%w(kc,n) >= ONE ) THEN
+          CSV%w(kc,n) = ONE
+        END IF                
         ! Compute the volume scattering coefficient for the current
         ! cloud layer and accumulate it for the layer total for the
         ! profile (i.e. all clouds)
@@ -671,6 +683,18 @@ CONTAINS
             pcoeff_TL = ZERO
         END SELECT
 
+        ! interpolation quality control
+        IF( CSV%ke(kc,n) <= ZERO ) THEN
+          ke_TL = ZERO
+          w_TL  = ZERO
+        END IF
+        IF( CSV%w(kc,n) <= ZERO ) THEN
+          w_TL = ZERO
+          pcoeff_TL = ZERO
+        END IF        
+        IF( CSV%w(kc,n) >= ONE ) THEN
+          w_TL = ZERO
+        END IF        
 
         ! Compute the volume scattering coefficient
         bs = Atm%Cloud(n)%Water_Content(kc) * CSV%w(kc,n) * CSV%ke(kc,n)
@@ -1053,6 +1077,18 @@ CONTAINS
         Atm_AD%Cloud(n)%Water_Content(kc) = Atm_AD%Cloud(n)%Water_Content(kc) + &
                                             ( CSV%w(kc,n) * CSV%ke(kc,n) * bs_AD )
 
+        ! interpolation quality control
+        IF( CSV%w(kc,n) >= ONE ) THEN
+          w_AD = ZERO
+        END IF        
+        IF( CSV%ke(kc,n) <= ZERO ) THEN
+          ke_AD = ZERO
+          w_AD  = ZERO
+        END IF
+        IF( CSV%w(kc,n) <= ZERO ) THEN
+          w_AD = ZERO
+          pcoeff_AD = ZERO
+        END IF        
 
         ! Call sensor specific routines
         SELECT CASE (Sensor_Type)
