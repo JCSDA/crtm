@@ -27,7 +27,7 @@ PROGRAM Create_IR_SpcCoeff
                                        Spline_Interpolate
   USE Integrate_Utility        , ONLY: Simpsons_Integral
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz
-  USE SensorInfo_Define        , ONLY: SENSORINFO_INFRARED => INFRARED_SENSOR_TYPE, &
+  USE SensorInfo_Define        , ONLY: SENSORINFO_INFRARED => INFRARED_SENSOR, &
                                        SensorInfo_type, &
                                        Destroy_SensorInfo
   USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type, &
@@ -294,7 +294,7 @@ PROGRAM Create_IR_SpcCoeff
     SRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.srf.nc'
 
     ! Cycle loop if not an IR sensor or no data
-    IF ( .NOT. ( SensorInfo%Microwave_Flag == SENSORINFO_INFRARED   .AND. &
+    IF ( .NOT. ( SensorInfo%Sensor_Type == SENSORINFO_INFRARED   .AND. &
                  File_Exists( SRF_Filename )                        .AND. &
                  TRIM(SensorInfo%Sensor_ID) /= 'airs281SUBSET_aqua' .AND. &
                  TRIM(SensorInfo%Sensor_ID) /= 'airs324SUBSET_aqua' .AND. &
@@ -575,7 +575,7 @@ PROGRAM Create_IR_SpcCoeff
       IF ( SRF_Integration_Method == SUMMATION_METHOD ) THEN
         ! via summation
         SpcCoeff%Solar_Irradiance(l) = SUM(SRF%Response*Irradiance) * &
-                                       Solar%Frequency_Interval/SRF_Integral
+                                       dFrequency/SRF_Integral
       ELSE
         ! via integration
         Error_Status = Simpsons_Integral( SRF%Frequency, &
