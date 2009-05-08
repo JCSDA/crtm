@@ -3,7 +3,7 @@
 
 \subsection{Guillou Ocean Permittivity}
 %--------------------------------------
-The Guillou ocean permittivity model is taken from \cite{Guillou_etal_1998} where temperature and salinity dependent polynomimal fits for the conductivity, $\sigma$, the static permittivity, \es, the high frequency permittivity, \einf, and the Debye relaxation time, $\tau$, are used to produce complex permittivity values according to the Debye model. The emissivity model invokes the Guillou permittivity procedures only for frequencies less than 20GHz.
+The Guillou ocean permittivity model is taken from \citet{Guillou_1998} where temperature and salinity dependent polynomimal fits for the conductivity, $\sigma$, the static permittivity, \es, the high frequency permittivity, \einf, and the Debye relaxation time, $\tau$, are used to produce complex permittivity values according to the Debye model. The emissivity model invokes the Guillou permittivity procedures only for frequencies less than 20GHz.
 
 This section details the forward/tangent-linear and tangent-linear/adjoint tests performed on the Guillou ocean permittivity procedures. The number and range of input quantities used in the tests are shown in table \ref{tab:guillou_input_range}. A selection of computed forward model Guillou permittivities at different frequencies are shown in figure \ref{fig:guillou_permittivity}. 
 
@@ -67,7 +67,7 @@ The description of the FWD/TL tests for routines with complex valued output was 
   \caption{Maximum tolerance residuals for the Guillou permittivity FWD/TL tests.}
   \label{tab:fwdtl_guillou_alpha}
 \end{table}
-As would be expected, as alpha decreases so do the tolerance residuals since, for smaller and smaller perturbations the forward model reponse becomes more linear, i.e. the residuals are more due to noise than non-linearity. This is quite evident when one compares the residual surfaces of figure \ref{fig:fwdtl_a0.1000_guillou}(e) and (f) with those in figure \ref{fig:fwdtl_a0.0001_guillou}(e) and (f). As the alpha value decreases, the residuals contain less information about the polynomial dependencies of the Guillou permittivity on temperature (higher orders) and salinity (linear). It it surmised that the $O(10^{-10})$ tolerance limit for the FWD/TL tests is due to the propagation of precision errors in the model parameterisation. In any case, the results are well below the precision of the measurements used in generating the fit coefficients as reported in \cite{Guillou_etal_1998}.
+As would be expected, as alpha decreases so do the tolerance residuals since, for smaller and smaller perturbations the forward model reponse becomes more linear, i.e. the residuals are more due to noise than non-linearity. This is quite evident when one compares the residual surfaces of figure \ref{fig:fwdtl_a0.1000_guillou}(e) and (f) with those in figure \ref{fig:fwdtl_a0.0001_guillou}(e) and (f). As the alpha value decreases, the residuals contain less information about the polynomial dependencies of the Guillou permittivity on temperature (higher orders) and salinity (linear). It it surmised that the $O(10^{-10})$ tolerance limit for the FWD/TL tests is due to the propagation of precision errors in the model parameterisation. In any case, the results are well below the precision of the measurements used in generating the fit coefficients as reported in \citet{Guillou_1998}.
 
 \begin{figure}[htp]
   \centering

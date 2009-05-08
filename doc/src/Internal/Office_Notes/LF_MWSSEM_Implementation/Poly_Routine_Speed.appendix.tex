@@ -1,7 +1,7 @@
 \section{Impact on computational speed due to polynomial calculations}
 %=====================================================================
 \label{sec:Poly_Routine_Speed.appendix}
-Both the Ellison \cite{Ellison_etal_2003} and Guillou \cite{Guillou_etal_1998} emissivity models use polynomial fits to data to repesent various components of the complex ocean surface permittivity. Forward, tangent-linear, and adjoint polynomial computation routines were written to simplify their evaluation.
+Both the \citet{Ellison_2003} and \citet{Guillou_1998} emissivity models use polynomial fits to data to repesent various components of the complex ocean surface permittivity. Forward, tangent-linear, and adjoint polynomial computation routines were written to simplify their evaluation.
 
 The permittivity codes were profiled with the polynomial calculations performed inline, and using the polynomial routines with the profiler outputs. The results are shown in figures \ref{fig:ellison_nopoly_profile} and \ref{fig:ellison_poly_profile} for the Ellison code, and figures \ref{fig:guillou_nopoly_profile} and \ref{fig:guillou_poly_profile} for the Guillou code. On average, the inline polynomial evaluation results in the test code running approximately two (Ellison) to three (Guillou) times faster than if evaluation routines were used. The larger impact for the Guillou code is likely due to there being more polynomials to evaluate, many with six coefficients.
 

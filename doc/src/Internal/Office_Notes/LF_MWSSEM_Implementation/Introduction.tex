@@ -1,6 +1,6 @@
 \section{Introduction}
 %=====================
-This article documents the implementation and testing of a low-frequency microwave sea surface emissivity model in the CRTM. The model was developed for use with AMSR-E data, but is applicable to any frequencies below 20GHz. Characteristics of the model affecting the testing will be described, but for a full model description readers are referred to Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008}. For frequencies greater than 20GHz, the Fastem3 model was implemented.
+This article documents the implementation and testing of a low-frequency microwave sea surface emissivity model in the CRTM. The model was developed for use with AMSR-E data, but is applicable to any frequencies below 20GHz. Characteristics of the model affecting the testing will be described, but for a full model description readers are referred to \citet{Kazumori_2008}. For frequencies greater than 20GHz, the Fastem3 model was implemented.
 
 \subsection{Model description}
 %-----------------------------
@@ -14,7 +14,7 @@ A flowchart of the forward model is shown in figure \ref{fig:main_flowchart}. Th
 \end{figure}
 This model is referred to as a low-frequency model since it is not invoked in the calling CRTM SfcOptics module unless the microwave channel frequency is less than 20GHz. For frequencies greater than 20GHz, the Fastem3 model (REF!) is called. Note however that the 20GHz branch is also performed in the model itself.
 
-Additionally, note that for low frequencies the Guillou permittivity model \cite{Guillou_etal_1998} is called. For frequencies greater than the 20GHz limit the Ellison permittivity model \cite{Ellison_etal_2003} is called. One difference in the implementation of the Ellison model compared to its reference is that no salinity dependence was included. This is due to the model always being invoked for frequencies beyond 20GHz where the salinity dependence is negligible (or, at least, less than the precision of the measurements used to derive the relationships.)
+Additionally, note that for low frequencies the Guillou permittivity model \citep{Guillou_1998} is called. For frequencies greater than the 20GHz limit the Ellison permittivity model \citep{Ellison_2003} is called. One difference in the implementation of the Ellison model compared to its reference is that no salinity dependence was included. This is due to the model always being invoked for frequencies beyond 20GHz where the salinity dependence is negligible (or, at least, less than the precision of the measurements used to derive the relationships.)
 
 Since this model is not called from the CRTM SfcOptics calling routine unless the frequency is $\le$ 20GHz, the Ellison permittivity model tests will not be shown. Only the Guillou permittivity model tests will be discussed.
 
@@ -23,7 +23,7 @@ With regards to the model flowchart of figure \ref{fig:main_flowchart}, note in 
 \subsubsection{Small-scale correction to reflectivities}
 %.......................................................
 \label{sec:small_scale_correction}
-The reflectivities of the ocean surface are modified to account for the diffraction effect of small scale waves as described by \cite{GuissardSobieski1987} (see eqn.5 in \cite{Kazumori_etal_2008}),
+The reflectivities of the ocean surface are modified to account for the diffraction effect of small scale waves as described by \citet{GuissardSobieski_1987} (see eqn.5 in \citet{Kazumori_2008}),
 \begin{equation}
   r_p = \left\{ \begin{array}{l@{\quad:\quad}l}
                   r_{p,Fresnel}                                 & f \le 15\textrm{GHz}\\
@@ -31,12 +31,12 @@ The reflectivities of the ocean surface are modified to account for the diffract
                 \end{array} \right.
   \label{eqn:small_scale_correction}
 \end{equation}
-where $p$ designates either vertical or horizontal polarisation, $\theta$ is the incidence angle, $k$ is the wavenumber of the radiation, and $\zeta_R$ is the ocean height variance. The value of $\zeta^2_R$ is determined from the ocean wave spectrum as described in \cite{BjerkaasRiedel1979}. Note that the quantity $4k^2\zeta^2_R$ is precomputed as a function of both frequency and wind speed and stored as a look-up-table (LUT) in the source code.
+where $p$ designates either vertical or horizontal polarisation, $\theta$ is the incidence angle, $k$ is the wavenumber of the radiation, and $\zeta_R$ is the ocean height variance. The value of $\zeta^2_R$ is determined from the ocean wave spectrum as described in \citet{BjerkaasRiedel_1979}. Note that the quantity $4k^2\zeta^2_R$ is precomputed as a function of both frequency and wind speed and stored as a look-up-table (LUT) in the source code.
 
 \subsubsection{Foam-coverage correction to reflectivities}
 %.........................................................
 \label{sec:foam_coverage_correction}
-Similarly, the reflectivity of the ocean surface considering foam is dealt with in \cite{Kazumori_etal_2008} (see eqn.20) by determining a foam coverage fraction and using that in a weighted average of the foam and foam-free reflectivities,
+Similarly, the reflectivity of the ocean surface considering foam is dealt with in \citet{Kazumori_2008} (see eqn.20) by determining a foam coverage fraction and using that in a weighted average of the foam and foam-free reflectivities,
 \begin{equation}
   r_p = \left\{ \begin{array}{l@{\quad:\quad}l}
                   r_{p,no-foam}                      & v < \textrm{7.0ms}^{-1}\\
@@ -44,7 +44,7 @@ Similarly, the reflectivity of the ocean surface considering foam is dealt with 
                 \end{array} \right.
   \label{eqn:foam_coverage_correction}
 \end{equation}
-where $a$ is the computed foam coverage fraction\footnote{Kazumori \textit{et al}, 2008\cite{Kazumori_etal_2008} uses the symbol $f$ for foam coverage fraction. In this document, $f$ is used to refer to frequencies.}.
+where $a$ is the computed foam coverage fraction\footnote{\citet{Kazumori_2008} uses the symbol $f$ for foam coverage fraction. In this document, $f$ is used to refer to frequencies.}.
 
 
 \subsection{Test descriptions}
