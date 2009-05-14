@@ -37,10 +37,10 @@ FIXFILE_FORMAT = [{:name=>"Big_Endian",:ext=>"bin"},
 FIXFILE_TAR = "CRTM_Coefficients"
 
 fixfile_info = [{:name=> "TauCoeff",
-                 :subdirs=> ["Infrared/ORD","Infrared/PW","Microwave/Rosenkranz"],
+                 :subdirs=> ["Infrared/ORD","Infrared/PW","Microwave/Rosenkranz","Visible"],
                  :sensor=> true},
                 {:name=>"SpcCoeff",
-                 :subdirs=>["Infrared","Microwave/No_AC","Microwave/AAPP_AC"],
+                 :subdirs=>["Infrared","Microwave/No_AC","Microwave/AAPP_AC","Visible"],
                  :sensor=> true},
                 {:name=>"AerosolCoeff",
                  :subdirs=>[],
