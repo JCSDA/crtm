@@ -103,24 +103,8 @@ SRC_FILES = Type_Kinds.f90 \
             ODPS_Define.f90 \
             ODPS_TauCoeff.f90 \
             ODPS_ZAtmAbsorption.f90 \
-            ODCAPS_AtmAbsorption.f90 \
-            ODCAPS_Predictor.f90 \
-            ODCAPS_Predictor_Define.f90 \
-            CRTM_Profile_Interpolation.f90 \
-            CRTM_GeometryInfo.f90 \
-            Units_Conversion.f90 \
-            ODCAPS_TauCoeff.f90 \
-            ODCAPS_Define.f90 \
-            ODCAPS_Binary_IO.f90 \
-            ODCAPS_ODAS_Define.f90 \
-            ODCAPS_ODAS_Binary_IO.f90 \
-            ODCAPS_Subset_Define.f90 \
-            ODCAPS_Subset_Binary_IO.f90 \
-            ODCAPS_TraceGas_Define.f90 \
-            ODCAPS_TraceGas_Binary_IO.f90 \
-            Profile_Utility_Parameters.f90 \
-            Atmospheric_Properties.f90
-            
+            CRTM_GeometryInfo.f90
+                        
             #CRTM_ChannelInfo.f90 \
 
 OBJ_FILES =${SRC_FILES:.f90=.o}

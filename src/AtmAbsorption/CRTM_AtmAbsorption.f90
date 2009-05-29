@@ -18,7 +18,7 @@ MODULE CRTM_AtmAbsorption
   ! Module use
   USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters,           ONLY: TAU_ODAS, TAU_ODPS, TAU_ODCAPS, ZERO
+  USE CRTM_Parameters,           ONLY: TAU_ODAS, TAU_ODPS, ZERO
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_TauCoeff,             ONLY: CRTM_TauCoeff_type, &
                                        TC
@@ -64,22 +64,6 @@ MODULE CRTM_AtmAbsorption
                                        ODPS_Get_SaveFWVFlag       => Get_SaveFWVFlag 
 
                                                                               
-  USE ODCAPS_AtmAbsorption,      ONLY: ODCAPS_Compute_AtmAbsorption    => Compute_AtmAbsorption,    &
-                                       ODCAPS_Compute_AtmAbsorption_TL => Compute_AtmAbsorption_TL, &
-                                       ODCAPS_Compute_AtmAbsorption_AD => Compute_AtmAbsorption_AD, &
-                                       ODCAPS_AAVariables_type         => AAVariables_type                                       
-  USE ODCAPS_Predictor,          ONLY: ODCAPS_Compute_Predictors    => Compute_Predictors,    &
-                                       ODCAPS_Compute_Predictors_TL => Compute_Predictors_TL, &
-                                       ODCAPS_Compute_Predictors_AD => Compute_Predictors_AD, &
-                                       ODCAPS_Predictor_type        => Predictor_type,        &
-                                       ODCAPS_Allocate_Predictor    => Allocate_Predictor,    &
-                                       ODCAPS_APVariables_type      => APVariables_type,      &
-                                       ODCAPS_Destroy_Predictor     => Destroy_Predictor,     &
-                                       ODCAPS_Allocate_Predictor    => Allocate_Predictor
-                                       
- USE ODCAPS_Predictor_Define,    ONLY: ODCAPS_MAX_N_LAYERS          => MAX_N_ODCAPS_LAYERS,    &
-                                       ODCAPS_MAX_N_ABSORBERS       => MAX_N_ABSORBERS_ODCAPS
-
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -130,7 +114,6 @@ MODULE CRTM_AtmAbsorption
     PRIVATE
     TYPE(ODAS_Predictor_type)   :: ODAS
     TYPE(ODPS_Predictor_type)   :: ODPS
-    TYPE(ODCAPS_Predictor_type) :: ODCAPS
   END TYPE CRTM_Predictor_type
 
   ! Structure to hold AtmAbsorption
@@ -140,7 +123,6 @@ MODULE CRTM_AtmAbsorption
     PRIVATE
     TYPE(ODAS_AAVariables_type)   :: ODAS
     TYPE(ODPS_AAVariables_type)   :: ODPS
-    TYPE(ODCAPS_AAVariables_type) :: ODCAPS
   END TYPE CRTM_AAVariables_type
 
   ! Structure to hold Predictor
@@ -150,7 +132,6 @@ MODULE CRTM_AtmAbsorption
     PRIVATE
     TYPE(ODAS_APVariables_type)   :: ODAS
     TYPE(ODPS_APVariables_type)   :: ODPS
-    TYPE(ODCAPS_APVariables_type) :: ODCAPS
   END TYPE CRTM_APVariables_type
 
   
@@ -262,13 +243,6 @@ CONTAINS
                     ChannelIndex ,                  &  ! Input 
                     Predictor%ODPS,                 &  ! Input                                          
                     AtmAbsorption)                     ! Output                                         
-      CASE( TAU_ODCAPS )
-          CALL ODCAPS_Compute_AtmAbsorption( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex ,                  &  ! Input                                          
-                    Predictor%ODCAPS,               &  ! Input                                          
-                    AtmAbsorption,                  &  ! Output                                         
-                    AAV%ODCAPS   )                     ! Internal variable output      
     END SELECT
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption               
@@ -384,14 +358,6 @@ CONTAINS
                     Predictor_TL%ODPS,              &  ! Input
                     AtmAbsorption_TL)                  ! Output
 
-      CASE( TAU_ODCAPS )
-          CALL ODCAPS_Compute_AtmAbsorption_TL( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex ,                  &  ! Input                                          
-                    Predictor%ODCAPS,               &  ! Input
-                    Predictor_TL%ODCAPS,            &  ! Input                                          
-                    AtmAbsorption_TL,               &  ! Output                                         
-                    AAV%ODCAPS   )                     ! Internal variable output      
     END SELECT
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption_TL               
@@ -506,14 +472,6 @@ CONTAINS
                     AtmAbsorption_AD,               &  ! AD Input
                     Predictor_AD%ODPS)                 ! AD Output
 
-      CASE( TAU_ODCAPS )
-          CALL ODCAPS_Compute_AtmAbsorption_AD( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex,                   &  ! Input                                          
-                    Predictor%ODCAPS,               &  ! FWD Input
-                    AtmAbsorption_AD,               &  ! AD Input                                         
-                    Predictor_AD%ODCAPS,            &  ! AD Output                                          
-                    AAV%ODCAPS   )                     ! Internal variable output      
     END SELECT
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption_AD              
@@ -603,12 +561,6 @@ CONTAINS
                                       GeometryInfo,      &  ! Input        
                                       Predictor%ODPS)       ! Output  
               
-      CASE( TAU_ODCAPS )
-         CALL ODCAPS_Compute_Predictors(TC%Sensor_LoIndex(SensorIndex),       &  ! Input
-                                        Atmosphere,        &  ! Input
-                                        GeometryInfo,      &  ! Input        
-                                        Predictor%ODCAPS,  &  ! Output  
-                                        APV%ODCAPS   )                  
     END SELECT
 
   END SUBROUTINE CRTM_Compute_Predictors
@@ -721,14 +673,6 @@ CONTAINS
                                          Atmosphere_TL,      &  ! TL Input
                                          Predictor_TL%ODPS)     ! TL Output
               
-      CASE( TAU_ODCAPS )
-         CALL ODCAPS_Compute_Predictors_TL(TC%Sensor_LoIndex(SensorIndex),       &  ! Input
-                                           Atmosphere,         &  ! FWD Input
-                                           Predictor%ODCAPS,   &  ! FWD Input
-                                           Atmosphere_TL,      &  ! TL Input
-                                           GeometryInfo,       &  ! Input     
-                                           Predictor_TL%ODCAPS,&  ! TL Output
-                                           APV%ODCAPS   )                  
     END SELECT
 
   END SUBROUTINE CRTM_Compute_Predictors_TL
@@ -845,14 +789,6 @@ CONTAINS
                                          Predictor_AD%ODPS,   &  ! AD Intput
                                          Atmosphere_AD)          ! AD Output
               
-      CASE( TAU_ODCAPS )
-         CALL ODCAPS_Compute_Predictors_AD(TC%Sensor_LoIndex(SensorIndex),         &  ! Input
-                                           Atmosphere,          &  ! FWD Input
-                                           Predictor%ODCAPS,    &  ! FWD Input
-                                           Predictor_AD%ODCAPS, &  ! AD Intput
-                                           GeometryInfo,        &  ! Input     
-                                           Atmosphere_AD,       &  ! AD Output
-                                           APV%ODCAPS   )                  
     END SELECT
 
   END SUBROUTINE CRTM_Compute_Predictors_AD
@@ -977,12 +913,6 @@ CONTAINS
                          Message_Log = Message_Log )
         END IF
                                                               
-      CASE ( TAU_ODCAPS )                                                       
-
-        Error_Status = ODCAPS_Destroy_Predictor( Predictor%ODCAPS,   &
-                                             No_Clear    = No_Clear, &
-                                             RCS_Id      =  RCS_Id,  &           
-                                             Message_Log = Message_Log )          
     END SELECT                                                                
 
     IF ( Error_Status /= SUCCESS ) THEN                                       
@@ -1147,21 +1077,6 @@ CONTAINS
                                           RCS_Id = RCS_Id,            & ! Revision control     
                                           Message_Log=Message_Log  )    ! Error messaging 
          END IF
-      CASE( TAU_ODCAPS )
-         IF( GeometryInfo%Secant_Source_Zenith > ZERO) THEN
-           Calc_Sun_Angle_Secant = .TRUE.
-         ELSE
-	   Calc_Sun_Angle_Secant = .FALSE.
-	 ENDIF  
-         
-         Allocate_Status = ODCAPS_Allocate_Predictor( &
-                               ODCAPS_MAX_N_ABSORBERS,     &  ! Input
-                               ODCAPS_MAX_N_LAYERS,  &  ! Input
-                               Predictor%ODCAPS   ,        &  ! Output
-                               n_User_Layers = n_Layers ,  &  ! Input - n user layers
-                               Calc_Sun_Angle_Secant=Calc_Sun_Angle_Secant,      &  ! Optional input
-                               RCS_Id = RCS_Id,            &  ! Revision control               
-                               Message_Log=Message_Log  )     ! Error messaging 
     END SELECT
 
     IF ( Allocate_Status /= SUCCESS ) THEN                                             

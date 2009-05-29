@@ -31,7 +31,7 @@ MODULE CRTM_TauCoeff
   USE Binary_File_Utility , ONLY: Open_Binary_File
   USE Message_Handler     , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters     , ONLY: MAX_N_SENSORS, &
-                                  TAU_ODAS, TAU_ODPS, TAU_ODCAPS
+                                  TAU_ODAS, TAU_ODPS
   USE ODAS_TauCoeff       , ONLY: ODAS_Load_TauCoeff    => Load_TauCoeff   , &
                                   ODAS_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODAS_TC => TC
@@ -41,10 +41,6 @@ MODULE CRTM_TauCoeff
                                   ODPS_TC => TC
   USE ODPS_Define         , ONLY: ODPS_type
 
-  USE ODCAPS_TauCoeff     , ONLY: ODCAPS_Load_TauCoeff    => Load_TauCoeff,  &
-                                  ODCAPS_Destroy_TauCoeff => Destroy_TauCoeff, &
-                                  ODCAPS_TC => TC
-  USE ODCAPS_Define       , ONLY: ODCAPS_type
  ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -81,7 +77,6 @@ MODULE CRTM_TauCoeff
     INTEGER( Long ) :: n_Sensors = 0       ! n
     INTEGER( Long ) :: n_ODAS    = 0       ! I1
     INTEGER( Long ) :: n_ODPS    = 0       ! I2
-    INTEGER( Long ) :: n_ODCAPS  = 0       ! I3
 !    ### More dimension variables for additional algorithms ###
 
     ! Algorithm_ID:   Algorithm ID
@@ -94,7 +89,6 @@ MODULE CRTM_TauCoeff
 
     TYPE( ODAS_type ),   DIMENSION(:), POINTER  :: ODAS  =>NULL()  ! I1
     TYPE( ODPS_type ),   DIMENSION(:), POINTER  :: ODPS  =>NULL()  ! I2
-    TYPE( ODCAPS_type ), DIMENSION(:), POINTER  :: ODCAPS=>NULL()  ! I3
 !    ### More dstructure variables for additional algorithms ###
 
   END TYPE CRTM_TauCoeff_type
@@ -372,11 +366,6 @@ Sensor_Loop: DO n = 1, n_Sensors
           ! local sensor index, which is used within the algorithm
           TC%Sensor_LoIndex(n) = TC%n_ODPS
 
-        CASE ( TAU_ODCAPS )
-
-          TC%n_ODCAPS = TC%n_ODCAPS + 1
-          ! local sensor index, which is used within the algorithm
-          TC%Sensor_LoIndex(n) = TC%n_ODCAPS
           
         CASE DEFAULT
 
@@ -476,41 +465,6 @@ Sensor_Loop: DO n = 1, n_Sensors
         
     END IF
 
-    ! *** ODCAPS algorithm (SARTA) ***
-
-    n = TC%n_ODCAPS
-    IF( n > 0 )THEN
-      IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODCAPS)
-        Error_Status = ODCAPS_Load_TauCoeff( &
-                                       Sensor_ID        =SensorIDs(1:n)   , & 
-                                       File_Path        =File_Path        , & 
-                                       Quiet            =Quiet            , & 
-                                       Process_ID       =Process_ID       , & 
-                                       Output_Process_ID=Output_Process_ID, & 
-                                       Message_Log      =Message_Log        ) 
-      ELSE
-        ! for the case that the Sensor_ID is not present (in this case, 1 sensor only)
-        Error_Status = ODCAPS_Load_TauCoeff( &
-                                       File_Path        =File_Path        , &
-                                       Quiet            =Quiet            , &
-                                       Process_ID       =Process_ID       , &
-                                       Output_Process_ID=Output_Process_ID, &
-                                       Message_Log      =Message_Log        )
-      END IF
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error loading ODCAPS TauCoeff data', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-
-      ! set the pointer pointing to the local (algorithm specific) TC array
-      TC%ODCAPS => ODCAPS_TC
-        
-    END IF
 
     !----------------------------------------------
     ! deallocate local arrays
@@ -650,25 +604,6 @@ Sensor_Loop: DO n = 1, n_Sensors
 
     END IF
 
-    IF( TC%n_ODCAPS > 0 )THEN
-
-      ! disassociate the TC%ODCAPS pointer (which is pointing to TauCoeff_ODCAPS)
-      NULLIFY( TC%ODCAPS )
-
-      ! Destroy local TC, i.e TauCoeff_ODAS
-      Destroy_Status = ODCAPS_Destroy_TauCoeff( Process_ID =Process_ID , &
-                                                Message_Log=Message_Log  )
-      IF ( Destroy_Status /= SUCCESS ) THEN
-        Error_Status = Destroy_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating shared TauCoeff_ODCAPS data structure', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-
-      TC%n_ODCAPS     = 0    
-
-    END IF
 
     ! ----------------------------------------------
     ! Deallocate TauCoeff data arrays

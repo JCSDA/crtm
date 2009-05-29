@@ -18,7 +18,6 @@ MODULE CRTM_Parameters
   USE Type_Kinds ,   ONLY: fp
   USE ODAS_Define,   ONLY: ODAS_ALGORITHM
   USE ODPS_Define,   ONLY: ODPS_ALGORITHM
-  USE ODCAPS_Define, ONLY: ODCAPS_ALGORITHM
 
 
   ! ------------------
@@ -138,8 +137,7 @@ MODULE CRTM_Parameters
   ! ---------------------------
   INTEGER, PUBLIC, PARAMETER :: TAU_ODAS   = ODAS_ALGORITHM
   INTEGER, PUBLIC, PARAMETER :: TAU_ODPS   = ODPS_ALGORITHM
-  INTEGER, PUBLIC, PARAMETER :: TAU_ODCAPS = ODCAPS_ALGORITHM
-
+ 
   ! ----------------------------------------------
   ! The minimum absorber amount allowed based upon
   ! the smallest representable numbers.
