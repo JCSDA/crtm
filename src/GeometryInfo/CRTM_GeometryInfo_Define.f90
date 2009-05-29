@@ -309,6 +309,18 @@ MODULE CRTM_GeometryInfo_Define
     REAL(fp) :: Source_Azimuth_Angle = ZERO
     ! Flux angle information
     REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
+    !-------------------------------------------------------------
+    ! Parameters used for ZSSMIS (SSMIS Zeeman channels 19 - 22)
+    !-------------------------------------------------------------
+    ! Earth magnetic field strength in Gauss
+    REAL(fp) :: Be = 0.3_fp  ! initialized to the default value - low end value 
+    ! Cosine of the angle between the Earth magnetic field and wave 
+    ! propagation direction                     
+    REAL(fp) :: CosBK = ZERO
+    ! Doppler frequency shift caused by Earth-rotation in KHz (possivity towards sensor)
+    ! A zero value means no frequency shift.
+    REAL(fp) :: Doppler_Shift = ZERO 
+
     ! Derived from User Input
     ! -----------------------
     ! Default distance ratio

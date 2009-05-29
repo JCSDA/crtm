@@ -42,6 +42,8 @@ MODULE TauProfile_netCDF_IO
   PUBLIC :: Inquire_TauProfile_netCDF
   PUBLIC :: Write_TauProfile_netCDF
   PUBLIC :: Read_TauProfile_netCDF
+  PUBLIC :: Write_GeometricAngle_netCDF
+  PUBLIC :: Read_GeometricAngle_netCDF
 
 
   ! ---------------------
@@ -110,6 +112,7 @@ MODULE TauProfile_netCDF_IO
   CHARACTER(*), PARAMETER :: PROFILE_LIST_VARNAME      = 'Profile_list'
   CHARACTER(*), PARAMETER :: MOLECULE_SET_LIST_VARNAME = 'Molecule_Set_list'
   CHARACTER(*), PARAMETER :: TRANSMITTANCE_VARNAME     = 'transmittance'
+  CHARACTER(*), PARAMETER :: GEOMETRIC_ANGLE_VARNAME   = 'Geometric_Angle'
 
   ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
@@ -120,6 +123,7 @@ MODULE TauProfile_netCDF_IO
   CHARACTER(*), PARAMETER :: PROFILE_LIST_LONGNAME      = 'Profile number'
   CHARACTER(*), PARAMETER :: MOLECULE_SET_LIST_LONGNAME = 'Molecular species index'
   CHARACTER(*), PARAMETER :: TRANSMITTANCE_LONGNAME     = 'Instrument transmittance'
+  CHARACTER(*), PARAMETER :: GEOMETRIC_ANGLE_LONGNAME   = 'Profile geometric angle'
 
   ! Variable description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
@@ -130,6 +134,7 @@ MODULE TauProfile_netCDF_IO
   CHARACTER(*), PARAMETER :: PROFILE_LIST_DESC      = 'List of atmospheric profile set indices.'
   CHARACTER(*), PARAMETER :: MOLECULE_SET_LIST_DESC = 'List of molecular species set indices.'
   CHARACTER(*), PARAMETER :: TRANSMITTANCE_DESC     = 'Instrument resolution channel transmittances'
+  CHARACTER(*), PARAMETER :: GEOMETRIC_ANGLE_DESC   = 'Atmospheric profile geometric angles'
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
@@ -140,6 +145,7 @@ MODULE TauProfile_netCDF_IO
   CHARACTER(*), PARAMETER :: PROFILE_LIST_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: MOLECULE_SET_LIST_UNITS = 'N/A'
   CHARACTER(*), PARAMETER :: TRANSMITTANCE_UNITS     = 'None'
+  CHARACTER(*), PARAMETER :: GEOMETRIC_ANGLE_UNITS   = 'Degree'
 
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
@@ -152,6 +158,7 @@ MODULE TauProfile_netCDF_IO
   INTEGER     , PARAMETER :: PROFILE_LIST_FILLVALUE      = IP_FILLVALUE 
   INTEGER     , PARAMETER :: MOLECULE_SET_LIST_FILLVALUE = IP_FILLVALUE 
   REAL(fp)    , PARAMETER :: TRANSMITTANCE_FILLVALUE     = FP_FILLVALUE
+  REAL(fp)    , PARAMETER :: GEOMETRIC_ANGLE_FILLVALUE   = FP_FILLVALUE
 
   ! Variable types
   INTEGER, PARAMETER :: LEVEL_PRESSURE_TYPE    = NF90_DOUBLE
@@ -160,6 +167,7 @@ MODULE TauProfile_netCDF_IO
   INTEGER, PARAMETER :: PROFILE_LIST_TYPE      = NF90_INT
   INTEGER, PARAMETER :: MOLECULE_SET_LIST_TYPE = NF90_INT
   INTEGER, PARAMETER :: TRANSMITTANCE_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: GEOMETRIC_ANGLE_TYPE   = NF90_DOUBLE
 
 
 CONTAINS
@@ -1345,6 +1353,42 @@ CONTAINS
       GOTO 1000
     END IF
 
+    ! The geometic angle
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                GEOMETRIC_ANGLE_VARNAME, &
+                                GEOMETRIC_ANGLE_TYPE, &
+                                dimIDs=(/ Layer_DimID       , &
+                                          Angle_DimID       , &
+                                          Profile_DimID /)   , &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//GEOMETRIC_ANGLE_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      GOTO 1000
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  GEOMETRIC_ANGLE_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  GEOMETRIC_ANGLE_DESC )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  GEOMETRIC_ANGLE_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  GEOMETRIC_ANGLE_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//GEOMETRIC_ANGLE_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      GOTO 1000
+    END IF
+
     ! The transmittance
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
                                 TRANSMITTANCE_VARNAME, &
@@ -2427,6 +2471,7 @@ CONTAINS
                                  Angle       , &  ! Input
                                  Profile     , &  ! Input
                                  Molecule_Set, &  ! Input
+                                 Geometric_Angle, & ! Optional input
                                  Quiet       , &  ! Optional input
                                  RCS_Id      , &  ! Revision control
                                  Message_Log ) &  ! Error messaging
@@ -2438,6 +2483,7 @@ CONTAINS
     REAL(fp)    ,           INTENT(IN)  :: Angle
     INTEGER     ,           INTENT(IN)  :: Profile
     INTEGER     ,           INTENT(IN)  :: Molecule_Set
+    REAL(fp)    , OPTIONAL, INTENT(IN)  :: Geometric_Angle(:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -2585,7 +2631,30 @@ CONTAINS
       END IF
     END IF
 
+    ! Write the Geometric angle data
+    ! ----------------------------
+    IF ( PRESENT(Geometric_Angle) ) THEN 
+       ! Check the TauProfile dimension values
+      IF ( SIZE( Geometric_Angle, DIM=1) /= k ) THEN
+        Message = 'Geometric_Angle N_LAYERS array size different from netCDF definition.'
+        GOTO 3000
+      END IF
 
+      Error_Status = Put_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          Geometric_Angle, &
+                                          START=(/1,Angle_Index, &
+                                                    Profile_Index/),&
+                                          COUNT=(/k,1,1/) )
+      IF ( Error_Status/= SUCCESS ) THEN
+        WRITE( Message, '( "Error writing Geometric_Angle vector for ", &
+                          &", Angle secant ", f5.2, ", and Profile ", i0, &
+                          &", to ", a, "." )' ) &
+                        Angle, Profile, TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    
+    ENDIF
     ! Write the transmittance data
     ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
@@ -2826,8 +2895,7 @@ CONTAINS
         GOTO 1000
       END IF
     END IF
-
-
+ 
     ! Write the transmittance data
     ! ----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID,   &
@@ -2914,6 +2982,7 @@ CONTAINS
                                  Tau         , &  ! Input
                                  Profile     , &  ! Input
                                  Molecule_Set, &  ! Input
+                                 Geometric_Angle, & ! Optional input
                                  Quiet       , &  ! Optional input
                                  RCS_Id      , &  ! Revision control
                                  Message_Log ) &  ! Error messaging
@@ -2923,6 +2992,7 @@ CONTAINS
     REAL(fp)    ,           INTENT(IN)  :: Tau(:,:,:)
     INTEGER     ,           INTENT(IN)  :: Profile
     INTEGER     ,           INTENT(IN)  :: Molecule_Set
+    REAL(fp)    , OPTIONAL, INTENT(IN)  :: Geometric_Angle(:,:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -3052,6 +3122,30 @@ CONTAINS
       END IF
     END IF
 
+    ! Write the Geometric angle data
+    ! ----------------------------
+    IF ( PRESENT(Geometric_Angle) ) THEN 
+       ! Check the TauProfile dimension values
+      IF ( SIZE( Geometric_Angle, DIM=1) /= k .OR. &
+           SIZE( Geometric_Angle, DIM=2) /= i      ) THEN 
+        Message = 'Geometric_Angle N_LAYERS X N_ANGLES array size different from netCDF definition.'
+        GOTO 3000
+      END IF
+
+      Error_Status = Put_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          Geometric_Angle, &
+                                          START=(/1,1,Profile_Index/),&
+                                          COUNT=(/k,i,1/) )
+      IF ( Error_Status/= SUCCESS ) THEN
+        WRITE( Message, '( "Error writing Geometric_Angle vector for ", &
+                          &" Profile ", i0, &
+                          &", to ", a, "." )' ) &
+                          Profile, TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    
+    ENDIF
 
     ! Write the transmittance data
     ! ----------------------------
@@ -3137,6 +3231,7 @@ CONTAINS
   FUNCTION Write_TauArray_rank4( NC_Filename , &  ! Input
                                  Tau         , &  ! Input
                                  Molecule_Set, &  ! Input
+                                 Geometric_Angle, & ! Optional input
                                  Quiet       , &  ! Optional input
                                  RCS_Id      , &  ! Revision control
                                  Message_Log ) &  ! Error messaging
@@ -3146,6 +3241,7 @@ CONTAINS
     REAL(fp)    ,           INTENT(IN)  :: Tau(:,:,:,:)
     INTEGER     ,           INTENT(IN)  :: Molecule_Set
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    REAL(fp)    , OPTIONAL, INTENT(IN)  :: Geometric_Angle(:,:,:)
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -3264,6 +3360,29 @@ CONTAINS
       END IF
     END IF
 
+    ! Write the Geometric angle data
+    ! ----------------------------
+    IF ( PRESENT(Geometric_Angle) ) THEN 
+       ! Check the TauProfile dimension values
+      IF ( SIZE( Geometric_Angle, DIM=1) /= k .OR. &
+           SIZE( Geometric_Angle, DIM=2) /= i .OR. &
+           SIZE( Geometric_Angle, DIM=3) /= m      ) THEN 
+        Message = 'Geometric_Angle N_LAYERS x N_ANGLES x N_PROFILES array size different from netCDF definition.'
+        GOTO 3000
+      END IF
+
+      Error_Status = Put_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          Geometric_Angle, &
+                                          START=(/1,1,1/),&
+                                          COUNT=(/k,i,m/) )
+      IF ( Error_Status/= SUCCESS ) THEN
+        WRITE( Message, '( "Error writing Geometric_Angle vector for to ", a, "." )' ) &
+                          TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    
+    ENDIF
 
     ! Write the transmittance data
     ! ----------------------------
@@ -3480,6 +3599,7 @@ CONTAINS
 
   FUNCTION Write_TauProfile_type( NC_Filename , &  ! Input
                                   TauProfile  , &  ! Input
+                                  Profile_Angle, &   ! Optional input
                                   Quiet       , &  ! Optional input
                                   RCS_Id      , &  ! Revision control
                                   Message_Log ) &  ! Error messaging
@@ -3487,6 +3607,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
     TYPE(TauProfile_type) , INTENT(IN)  :: TauProfile
+    INTEGER     , OPTIONAL, INTENT(IN)     :: Profile_Angle
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -3497,6 +3618,7 @@ CONTAINS
     ! Local variables
     CHARACTER(1000) :: Message
     LOGICAL :: Noisy
+    LOGICAL :: Write_Profile_Angle
     INTEGER :: NC_FileID
     INTEGER :: Close_Status
     INTEGER :: k, l, i, m, j
@@ -3511,6 +3633,12 @@ CONTAINS
     ! ....unless the QUIET keyword is set.
     IF ( PRESENT( Quiet ) ) THEN
       IF ( Quiet == 1 ) Noisy = .FALSE.
+    END IF
+
+    Write_Profile_Angle = .FALSE.
+    ! ....unless the Profile_Angle keyword is set.
+    IF ( PRESENT( Profile_Angle ) ) THEN
+      IF ( Profile_Angle == 1 ) Write_Profile_Angle = .TRUE.
     END IF
 
     ! Check structure association
@@ -3555,6 +3683,18 @@ CONTAINS
       GOTO 2000
     END IF
 
+    ! Write the Geometric angle data
+    ! ----------------------------
+    IF ( Write_Profile_Angle ) THEN
+      Error_Status = Put_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          TauProfile%Geometric_Angle)
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message, '( "Error writing Geometric_Angle array to ", a, "." )' ) &
+                        TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    END IF
 
     ! Write the transmittance data
     ! ----------------------------
@@ -3608,6 +3748,261 @@ CONTAINS
 
   END FUNCTION Write_TauProfile_type
 
+
+  FUNCTION Write_GeometricAngle_netCDF( NC_Filename , &  ! Input
+                                  Geometric_Angle   , &  ! Input
+                                  Quiet             , &  ! Optional input
+                                  RCS_Id            , &  ! Revision control
+                                  Message_Log )       &  ! Error messaging
+                                RESULT ( Error_Status )
+
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    REAL(fp)    ,           INTENT(IN)  :: Geometric_Angle(:,:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_GeometricAngle_netCDF'
+    ! Local variables
+    CHARACTER(1000) :: Message
+    LOGICAL :: Noisy
+    INTEGER :: NC_FileID
+    INTEGER :: Close_Status
+    INTEGER :: k, i, m
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Output informational messages....
+    Noisy = .TRUE.
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT( Quiet ) ) THEN
+      IF ( Quiet == 1 ) Noisy = .FALSE.
+    END IF
+
+
+    ! Read the dimension values
+    ! -------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
+                                              n_Layers       =k, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              Message_Log    =Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error obtaining TauProfile dimensions from '//&
+                TRIM(NC_Filename)
+      GOTO 2000
+    END IF
+
+    ! Check the TauProfile dimension values
+    IF ( SIZE(Geometric_Angle, DIM=1) /= k .OR. &
+         SIZE(Geometric_Angle, DIM=2) /= i .OR. &
+         SIZE(Geometric_Angle, DIM=3) /= m      ) THEN
+      Message = 'Geometric_Angle N_LAYERS x N_ANGLES x N_PROFILES '//&
+                'array size different from netCDF definition.'
+      GOTO 2000
+    END IF
+
+
+    ! Open the file
+    ! -------------
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
+                                           NC_FileID, &
+                                           Mode = 'READWRITE' )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error opening netCDF TauProfile data file '//&
+                TRIM(NC_Filename)
+      GOTO 2000
+    END IF
+
+
+    ! Write the transmittance data
+    ! ----------------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID,   &
+                                        GEOMETRIC_ANGLE_VARNAME, &
+                                        Geometric_Angle )
+    IF ( Error_Status /= SUCCESS ) THEN
+      WRITE( Message, '( "Error writing  Geometric_Angle array to ", a, "." )' ) &
+                      TRIM(NC_Filename)
+      GOTO 1000
+    END IF
+
+
+    ! Close the file
+    ! --------------
+    Close_Status = Close_TauProfile_netCDF( NC_FileID )
+    IF ( Close_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error closing netCDF TauProfile data file '// &
+                            TRIM(NC_Filename), &
+                            WARNING, &
+                            Message_Log = Message_Log )
+    END IF
+
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      WRITE(Message,'("Geometric_Angle: ", &
+                     &"N_LAYERS=",i0,2x,&
+                     &"N_ANGLES=",i0,2x,&
+                     &"N_PROFILES=",i0 )' ) k,i,m
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log = Message_Log )
+    END IF
+
+    !=====
+    RETURN
+    !=====
+    
+    ! Clean up after an error
+    ! -----------------------
+    1000 CONTINUE
+    Close_Status = Close_TauProfile_netCDF(NC_FileID)
+    IF ( Close_Status /= SUCCESS ) &
+      Message = TRIM(Message)//'; Error closing output file during error cleanup.'
+    2000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
+ 
+  END FUNCTION Write_GeometricAngle_netCDF 
+
+  FUNCTION Read_GeometricAngle_netCDF( NC_Filename, &  ! Input
+                                Geometric_Angle   , &  ! Output
+                                Quiet             , &  ! Optional input
+                                RCS_Id            , &  ! Revision control
+                                Message_Log)        &  ! Error messaging
+                              RESULT ( Error_Status )
+    ! Arguments               
+    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    REAL(fp)    ,           INTENT(OUT) :: Geometric_Angle(:,:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_GeometricAngle_netCDF'
+    ! Local variables
+    CHARACTER(1000) :: Message
+    LOGICAL :: Noisy
+    INTEGER :: NC_FileID
+    INTEGER :: Close_Status
+    INTEGER :: k, i, m
+
+    ! Set up
+    ! ------ 
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Output informational messages....
+    Noisy = .TRUE.
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT( Quiet ) ) THEN
+      IF ( Quiet == 1 ) Noisy = .FALSE.
+    END IF
+
+
+    ! Read the dimension values
+    ! -------------------------
+    Error_Status = Inquire_TauProfile_netCDF( NC_Filename, &
+                                              n_Layers       =k, &
+                                              n_Angles       =i, &
+                                              n_Profiles     =m, &
+                                              Message_Log    =Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error obtaining TauProfile dimensions from '//&
+                TRIM(NC_Filename)
+      GOTO 2000
+    END IF
+
+    ! Check the TauProfile dimension values
+    IF ( SIZE(Geometric_Angle, DIM=1) /= k .OR. &
+         SIZE(Geometric_Angle, DIM=2) /= i .OR. &
+         SIZE(Geometric_Angle, DIM=3) /= m      ) THEN
+      Message = 'Geometric_Angle N_LAYERS x N_ANGLES x N_PROFILES '//&
+                'array size different from netCDF definition.'
+      GOTO 2000
+    END IF
+ 
+
+    ! Open the file
+    ! -------------            
+    Error_Status = Open_TauProfile_netCDF( TRIM(NC_Filename), &
+                                           NC_FileID, &
+                                           Mode = 'READ' )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error opening netCDF TauProfile data file '//&
+                TRIM(NC_Filename)
+      GOTO 2000
+    END IF
+
+
+    ! Read the transmittances
+    ! -----------------------  
+    Error_Status = Get_netCDF_Variable( NC_FileID,   &
+                                        GEOMETRIC_ANGLE_VARNAME, &
+                                        Geometric_Angle )
+    IF ( Error_Status /= SUCCESS ) THEN
+      WRITE( Message, '( "Error writing  Geometric_Angle array to ", a, "." )' ) &
+                      TRIM(NC_Filename)
+      GOTO 1000
+    END IF
+ 
+
+    ! Close the file
+    ! --------------           
+    Close_Status = Close_TauProfile_netCDF( NC_FileID )
+    IF ( Close_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error closing netCDF TauProfile data file '// &
+                            TRIM(NC_Filename), &
+                            WARNING, &
+                            Message_Log = Message_Log )
+    END IF
+
+
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      WRITE(Message,'("Geometric_Angle: ", &
+                     &"N_LAYERS=",i0,2x,&
+                     &"N_ANGLES=",i0,2x,&
+                     &"N_PROFILES=",i0 )' ) k,i,m
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log = Message_Log )
+    END IF
+ 
+    !=====
+    RETURN
+    !=====
+
+    ! Clean up after an error
+    1000 CONTINUE
+    Close_Status = Close_TauProfile_netCDF(NC_FileID)
+    IF ( Close_Status /= SUCCESS ) &
+      Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+    2000 CONTINUE
+    Error_Status = FAILURE
+    CALL Display_Message( ROUTINE_NAME, &
+                          TRIM(Message), &
+                          Error_Status, &
+                          Message_Log=Message_Log )
+
+  END FUNCTION Read_GeometricAngle_netCDF
 
 !------------------------------------------------------------------------------
 !
@@ -3801,6 +4196,7 @@ CONTAINS
                                 Profile     , &  ! Input
                                 Molecule_Set, &  ! Input
                                 Tau         , &  ! Output
+                                Geometric_Angle, & ! Optional ouput
                                 Quiet       , &  ! Optional input
                                 RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
@@ -3812,6 +4208,7 @@ CONTAINS
     INTEGER     ,           INTENT(IN)  :: Profile
     INTEGER     ,           INTENT(IN)  :: Molecule_Set
     REAL(fp)    ,           INTENT(OUT) :: Tau(:)
+    REAL(fp)    , OPTIONAL, INTENT(OUT) :: Geometric_Angle(:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -3946,7 +4343,31 @@ CONTAINS
       GOTO 2000
     END IF
 
+    ! Read the Geometric angle data
+    ! ----------------------------
+    IF ( PRESENT(Geometric_Angle) ) THEN 
+       ! Check the TauProfile dimension values
+      IF ( SIZE( Geometric_Angle, DIM=1) /= k ) THEN
+        Message = 'Geometric_Angle N_LAYERS array size different from netCDF definition.'
+        GOTO 3000
+      END IF
 
+      Error_Status = Get_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          Geometric_Angle, &
+                                          START=(/1,Angle_Index, &
+                                                    Profile_Index/),&
+                                          COUNT=(/k,1,1/) )
+      IF ( Error_Status/= SUCCESS ) THEN
+        WRITE( Message, '( "Error reading Geometric_Angle vector for ", &
+                          &", Angle secant ", f5.2, ", and Profile ", i0, &
+                          &", to ", a, "." )' ) &
+                        Angle, Profile, TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    
+    ENDIF
+ 
     ! Read the transmittance data
     ! ---------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID,   &
@@ -4259,6 +4680,7 @@ CONTAINS
                                 Profile     , &  ! Input
                                 Molecule_Set, &  ! Input
                                 Tau         , &  ! Output
+                                Geometric_Angle, & ! Optional output
                                 Quiet       , &  ! Optional input
                                 RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
@@ -4268,6 +4690,7 @@ CONTAINS
     INTEGER     ,           INTENT(IN)  :: Profile
     INTEGER     ,           INTENT(IN)  :: Molecule_Set
     REAL(fp)    ,           INTENT(OUT) :: Tau(:,:,:)
+    REAL(fp)    , OPTIONAL, INTENT(OUT) :: Geometric_Angle(:,:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -4383,6 +4806,30 @@ CONTAINS
       GOTO 2000
     END IF
 
+    ! Read the Geometric angle data
+    ! ----------------------------
+    IF ( PRESENT(Geometric_Angle) ) THEN 
+       ! Check the TauProfile dimension values
+      IF ( SIZE( Geometric_Angle, DIM=1) /= k .OR. &
+           SIZE( Geometric_Angle, DIM=2) /= i      ) THEN 
+        Message = 'Geometric_Angle N_LAYERS X N_ANGLES array size different from netCDF definition.'
+        GOTO 3000
+      END IF
+
+      Error_Status = Get_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          Geometric_Angle, &
+                                          START=(/1,1,Profile_Index/),&
+                                          COUNT=(/k,i,1/) )
+      IF ( Error_Status/= SUCCESS ) THEN
+        WRITE( Message, '( "Error reading Geometric_Angle vector for ", &
+                          &" Profile ", i0, &
+                          &", to ", a, "." )' ) &
+                          Profile, TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    
+    ENDIF
 
     ! Read the transmittance data
     ! ---------------------------
@@ -4466,6 +4913,7 @@ CONTAINS
   FUNCTION Read_TauArray_rank4( NC_Filename , &  ! Input
                                 Molecule_Set, &  ! Input
                                 Tau         , &  ! Output
+                                Geometric_Angle, & ! Optional output
                                 Quiet       , &  ! Optional input
                                 RCS_Id      , &  ! Revision control
                                 Message_Log ) &  ! Error messaging
@@ -4474,6 +4922,7 @@ CONTAINS
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
     INTEGER     ,           INTENT(IN)  :: Molecule_Set
     REAL(fp)    ,           INTENT(OUT) :: Tau(:,:,:,:)
+    REAL(fp)    , OPTIONAL, INTENT(OUT) :: Geometric_Angle(:,:,:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -4578,6 +5027,30 @@ CONTAINS
                 TRIM(NC_Filename)
       GOTO 2000
     END IF
+
+    ! Read the Geometric angle data
+    ! ----------------------------
+    IF ( PRESENT(Geometric_Angle) ) THEN 
+       ! Check the TauProfile dimension values
+      IF ( SIZE( Geometric_Angle, DIM=1) /= k .OR. &
+           SIZE( Geometric_Angle, DIM=2) /= i .OR. &
+           SIZE( Geometric_Angle, DIM=3) /= m      ) THEN 
+        Message = 'Geometric_Angle N_LAYERS x N_ANGLES x N_PROFILES array size different from netCDF definition.'
+        GOTO 3000
+      END IF
+
+      Error_Status = Get_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          Geometric_Angle, &
+                                          START=(/1,1,1/),&
+                                          COUNT=(/k,i,m/) )
+      IF ( Error_Status/= SUCCESS ) THEN
+        WRITE( Message, '( "Error reading Geometric_Angle vector for to ", a, "." )' ) &
+                          TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    
+    ENDIF
 
 
     ! Read the transmittance data
@@ -4794,6 +5267,7 @@ CONTAINS
 
   FUNCTION Read_TauProfile_type( NC_Filename, &   ! Input
                                  TauProfile , &   ! Output
+                                 Profile_Angle, &   ! Optional input
                                  Quiet      , &   ! Optional input
                                  RCS_Id     , &   ! Revision contorl
                                  Message_Log) &   ! Error messaging
@@ -4801,6 +5275,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: NC_Filename
     TYPE(TauProfile_type) , INTENT(IN OUT) :: TauProfile
+    INTEGER     , OPTIONAL, INTENT(IN)     :: Profile_Angle
     INTEGER     , OPTIONAL, INTENT(IN)     :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -4811,6 +5286,7 @@ CONTAINS
     ! Function variables
     CHARACTER(1000) :: Message
     LOGICAL :: Noisy
+    LOGICAL :: Read_Profile_Angle
     INTEGER :: NC_FileID
     INTEGER :: Destroy_Status
     INTEGER :: Close_Status
@@ -4828,6 +5304,11 @@ CONTAINS
       IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
 
+    Read_Profile_Angle = .FALSE.
+    ! ....unless the Profile_Angle keyword is set.
+    IF ( PRESENT( Profile_Angle ) ) THEN
+      IF ( Profile_Angle == 1 ) Read_Profile_Angle = .TRUE.
+    END IF
 
     ! Read the dimension values
     ! -------------------------
@@ -4911,6 +5392,18 @@ CONTAINS
       GOTO 2000
     END IF
 
+    ! Read the Geometric angle data
+    ! ----------------------------
+    IF ( Read_Profile_Angle ) THEN
+      Error_Status = Get_netCDF_Variable( NC_FileID,   &
+                                          GEOMETRIC_ANGLE_VARNAME, &
+                                          TauProfile%Geometric_Angle)
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message, '( "Error reading Geometric_Angle array to ", a, "." )' ) &
+                        TRIM(NC_Filename)
+        GOTO 1000
+      END IF
+    END IF
 
     ! Read all the transmittance data
     ! -------------------------------

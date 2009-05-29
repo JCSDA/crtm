@@ -9,7 +9,7 @@
 !                       Yong.Han@noaa.gov
 !
 
-MODULE CRTM_Interpolation
+MODULE CRTM_Profile_Interpolation
 
   ! -----------------
   ! Environment setup
@@ -563,4 +563,4 @@ CONTAINS
 
   END SUBROUTINE Interp_loglog_AD
 
-END MODULE CRTM_Interpolation
+END MODULE CRTM_Profile_Interpolation

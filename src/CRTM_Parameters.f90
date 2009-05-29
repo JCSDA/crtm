@@ -15,7 +15,10 @@ MODULE CRTM_Parameters
   ! ---------------------
   ! Module use statements
   ! ---------------------
-  USE Type_Kinds, ONLY: fp
+  USE Type_Kinds ,   ONLY: fp
+  USE ODAS_Define,   ONLY: ODAS_ALGORITHM
+  USE ODPS_Define,   ONLY: ODPS_ALGORITHM
+  USE ODCAPS_Define, ONLY: ODCAPS_ALGORITHM
 
 
   ! ------------------
@@ -127,47 +130,15 @@ MODULE CRTM_Parameters
   !#                       -- AtmAbsorption PARAMETERS --                       #
   !#----------------------------------------------------------------------------#
 
-  ! -------------------------------------
-  ! Absorbers in the gas absorption model
-  ! -------------------------------------
-  ! The total number
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_ABSORBERS = 3
-  ! The indexing order of the absorbers
-  INTEGER, PUBLIC, PARAMETER :: WET_ABSORBER_INDEX = 1
-  INTEGER, PUBLIC, PARAMETER :: DRY_ABSORBER_INDEX = 2
-  INTEGER, PUBLIC, PARAMETER :: OZO_ABSORBER_INDEX = 3
-  ! The absorber index and name arrays
-  INTEGER, PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
-    ABSORBER_INDEX = (/ WET_ABSORBER_INDEX, &
-                        DRY_ABSORBER_INDEX, &
-                        OZO_ABSORBER_INDEX /)
-  CHARACTER( * ), PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
-    ABSORBER_NAME = (/ 'wet', &
-                       'dry', &
-                       'ozo' /)
+  ! Maximum number of absorbers in the gas absorption models
+  ! ---------------------------------------------------------------
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_ABSORBERS = 7
 
-
-  ! --------------------------------------
-  ! Predictors in the gas absorption model
-  ! --------------------------------------
-  ! Standard predictors are absorber independent
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_STANDARD_PREDICTORS   = 11
-  ! Integrated predictors are defined for EACH absoreber
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_INTEGRATED_PREDICTORS = 6
-  ! The total number of predictors
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS = MAX_N_STANDARD_PREDICTORS + &
-                                                   ( MAX_N_ABSORBERS * MAX_N_INTEGRATED_PREDICTORS )
-  ! The number selected from the total to be
-  ! used in the gas absorption algorithm
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS_USED = 6
-
-
-  ! ----------------------------------------------
-  ! Maximum number of polynomial orders for
-  ! reconstructing the gas absorption coefficients
-  ! ----------------------------------------------
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_ORDERS = 10
-
+  ! Transmittance algorithm IDs
+  ! ---------------------------
+  INTEGER, PUBLIC, PARAMETER :: TAU_ODAS   = ODAS_ALGORITHM
+  INTEGER, PUBLIC, PARAMETER :: TAU_ODPS   = ODPS_ALGORITHM
+  INTEGER, PUBLIC, PARAMETER :: TAU_ODCAPS = ODCAPS_ALGORITHM
 
   ! ----------------------------------------------
   ! The minimum absorber amount allowed based upon
@@ -175,7 +146,6 @@ MODULE CRTM_Parameters
   ! This value is equivalent to TINY(ONE)**0.25
   ! ----------------------------------------------
   REAL(fp), PUBLIC, PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
-
 
   ! ---------------------------------------
   ! Numerical limits for the gas absorption

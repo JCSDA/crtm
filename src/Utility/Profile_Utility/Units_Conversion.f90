@@ -114,12 +114,15 @@ MODULE Units_Conversion
   PUBLIC :: SA_to_MR,     MR_to_SA
   PUBLIC :: RH_to_MR,     MR_to_RH
   PUBLIC :: MR_to_PPMV,   PPMV_to_MR
+  PUBLIC :: MR_to_PPMV_TL,MR_to_PPMV_AD
   PUBLIC :: PPMV_to_PP,   PP_to_PPMV
   PUBLIC :: MR_to_PP,     PP_to_MR
   PUBLIC :: PP_to_MD,     MD_to_PP
   PUBLIC :: PP_to_ND,     ND_to_PP
+  PUBLIC :: PP_to_ND_TL,  PP_to_ND_AD
   PUBLIC :: PPMV_to_ND,   ND_to_PPMV
   PUBLIC :: PPMV_to_KMOL, KMOL_to_PPMV
+  PUBLIC :: PPMV_to_KMOL_TL, PPMV_to_KMOL_AD
 
 
   ! ---------------------
@@ -215,6 +218,35 @@ MODULE Units_Conversion
     MODULE PROCEDURE KMOL_to_PPMV_rank1
   END INTERFACE KMOL_to_PPMV
 
+  INTERFACE MR_to_PPMV_TL
+    MODULE PROCEDURE MR_to_PPMV_scalar_TL
+    MODULE PROCEDURE MR_to_PPMV_rank1_TL
+  END INTERFACE MR_to_PPMV_TL
+
+  INTERFACE MR_to_PPMV_AD
+    MODULE PROCEDURE MR_to_PPMV_scalar_AD
+    MODULE PROCEDURE MR_to_PPMV_rank1_AD
+  END INTERFACE MR_to_PPMV_AD
+
+  INTERFACE PP_to_ND_TL
+    MODULE PROCEDURE PP_to_ND_scalar_TL
+    MODULE PROCEDURE PP_to_ND_rank1_TL
+  END INTERFACE PP_to_ND_TL
+  
+  INTERFACE PP_to_ND_AD
+    MODULE PROCEDURE PP_to_ND_scalar_AD
+    MODULE PROCEDURE PP_to_ND_rank1_AD
+  END INTERFACE PP_to_ND_AD
+  
+  INTERFACE PPMV_to_KMOL_TL
+    MODULE PROCEDURE PPMV_to_KMOL_scalar_TL
+    MODULE PROCEDURE PPMV_to_KMOL_rank1_TL
+  END INTERFACE PPMV_to_KMOL_TL
+  
+  INTERFACE PPMV_to_KMOL_AD
+    MODULE PROCEDURE PPMV_to_KMOL_scalar_AD
+    MODULE PROCEDURE PPMV_to_KMOL_rank1_AD
+  END INTERFACE PPMV_to_KMOL_AD
 
   ! -----------------
   ! Module parameters
@@ -1100,15 +1132,18 @@ CONTAINS
   ! Scalar version
   ! ==============
   FUNCTION MR_to_PPMV_scalar( Mixing_Ratio, &  ! Input
+                              ppmv,         &  ! Output
                               Molecule_ID,  &  ! Optional Input
                               Message_Log ) &  ! Error messaging
-                            RESULT( ppmv )
+                            RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN) :: Mixing_Ratio
     INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    ! -- Output
+    REAL( fp ),             INTENT(OUT):: ppmv
     ! Function result
-    REAL(fp) :: ppmv
+    INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV'
     REAL(fp),     PARAMETER :: SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
@@ -1116,8 +1151,9 @@ CONTAINS
     INTEGER :: Id
 
     ! Setup
-    ppmv = -ONE
+    Error_Status = SUCCESS
     IF ( Mixing_Ratio < ZERO ) THEN
+      Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input mixing ratio < 0.', &
                             FAILURE, &
@@ -1126,6 +1162,7 @@ CONTAINS
     ENDIF
     IF ( PRESENT( Molecule_ID ) ) THEN
       IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
+        Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               'Unrecognised Molecule_ID.', &
                               FAILURE, &
@@ -1142,37 +1179,264 @@ CONTAINS
 
   END FUNCTION MR_to_PPMV_scalar
 
+  ! =============================
+  ! Scalar Tangent-linear version
+  ! =============================
+  FUNCTION MR_to_PPMV_scalar_TL( Mixing_Ratio, &  ! Input
+                                 ppmv,         &  ! Input
+                                 Mixing_Ratio_TL, &  ! Input
+                                 ppmv_TL,      &  ! Output
+                                 Molecule_ID,  &  ! Optional Input
+                                 Message_Log ) &  ! Error messaging
+                            RESULT( Error_Status )
+    ! Arguments
+    REAL( fp ),          INTENT( IN ) :: Mixing_Ratio
+    REAL( fp ),          INTENT( IN ) :: Mixing_Ratio_TL
+    REAL( fp ),          INTENT( IN ) :: ppmv
+    ! -- Optional input
+    INTEGER,        OPTIONAL, INTENT( IN ) :: Molecule_ID
+    ! -- Output
+    REAL( fp ),          INTENT( OUT ) :: ppmv_TL
+    ! -- Error handler Message log
+    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV_TL'
+    REAL( fp ), PARAMETER :: SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
+    ! Local variables
+    INTEGER :: Id
+
+    ! Setup
+    Error_Status = SUCCESS
+
+    IF ( Mixing_Ratio < ZERO ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input mixing ratio < 0.', &
+                            FAILURE, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    IF ( PRESENT( Molecule_ID ) ) THEN
+
+      IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Unrecognised Molecule_ID.', &
+                              FAILURE, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+      ! -- Assign ID value
+      Id = Molecule_ID
+    ELSE
+      ! - Default value is for water vapor
+      Id = 1
+    END IF
+
+    ! Convert mass to volume mixing ratio
+    ppmv_TL = SCALE_FACTOR * Mixing_Ratio_TL * MW_DRYAIR / MOLECULAR_WEIGHT( Id ) 
+
+  END FUNCTION MR_to_PPMV_scalar_TL
+
+! ==============
+! Scalar Adjoint version
+! ==============
+
+  FUNCTION MR_to_PPMV_scalar_AD( Mixing_Ratio, &  ! Input
+                                 ppmv,         &  ! Input
+                                 ppmv_AD,      &  ! Input
+                                 Mixing_Ratio_AD, &  ! In/Output
+                                 Molecule_ID,  &  ! Optional Input
+                                 Message_Log ) &  ! Error messaging
+                            RESULT( Error_Status )
+
+    ! Arguments
+    REAL( fp ),          INTENT( IN ) :: Mixing_Ratio
+    REAL( fp ),          INTENT( IN ) :: ppmv_AD 
+    REAL( fp ),          INTENT( IN ) :: ppmv
+    ! -- Optional input
+    INTEGER,        OPTIONAL, INTENT( IN ) :: Molecule_ID
+    ! -- Output
+    REAL( fp ),          INTENT( IN OUT ) :: Mixing_Ratio_AD
+    ! -- Error handler Message log
+    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV_AD'
+
+    REAL( fp ), PARAMETER :: SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
+    ! Local variables
+    INTEGER :: Id
+ 
+    ! Setup
+    Error_Status = SUCCESS
+
+    IF ( Mixing_Ratio < ZERO ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input mixing ratio < 0.', &
+                            FAILURE, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    IF ( PRESENT( Molecule_ID ) ) THEN
+
+      IF ( Molecule_ID < 1 .OR. Molecule_ID > MAX_N_MOLECULAR_SPECIES ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Unrecognised Molecule_ID.', &
+                              FAILURE, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+      ! -- Assign ID value
+      Id = Molecule_ID
+    ELSE
+      ! - Default value is for water vapor
+      Id = 1
+    END IF
+
+    ! -- CONVERT PPMV TO MIXING RATIO -
+    Mixing_Ratio_AD = Mixing_Ratio_AD + SCALE_FACTOR *  ppmv_AD * MW_DRYAIR / MOLECULAR_WEIGHT( Id )
+
+  END FUNCTION MR_to_PPMV_scalar_AD
 
   ! ==============
   ! Rank-1 version
   ! ==============
   FUNCTION MR_to_PPMV_rank1( Mixing_Ratio, &  ! Input
+                             ppmv,         &  ! Output
                              Molecule_ID,  &  ! Input
                              Message_Log ) &  ! Error messaging
-                           RESULT( ppmv )
+                           RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN) :: Mixing_Ratio(:)
     INTEGER,      OPTIONAL, INTENT(IN) :: Molecule_ID
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
-    ! Function result
-    REAL(fp) :: ppmv(SIZE(Mixing_Ratio))
+    ! -- Output
+    REAL(fp), DIMENSION( SIZE( Mixing_Ratio ) ), INTENT( OUT )  :: ppmv
+     ! Function result
+    INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV'
     ! Local variables
     INTEGER :: k
 
     ! Setup
-    ppmv = -ONE
-
+    Error_Status = SUCCESS
+ 
     ! Convert mass to volume mixing ratio
     DO k = 1, SIZE(Mixing_Ratio)
-      ppmv( k ) = MR_to_PPMV_scalar( Mixing_Ratio( k ), &
-                                     Molecule_ID=Molecule_ID, &
-                                     Message_Log=Message_Log )
-      IF ( ppmv( k ) < ZERO ) RETURN
+      Error_Status  = MR_to_PPMV_scalar( Mixing_Ratio( k ), &
+                                       ppmv( k ), &
+                                       Molecule_ID = Molecule_ID, &
+                                       Message_Log = Message_Log )
+      IF ( Error_Status/= SUCCESS .OR. ppmv( k ) < ZERO ) RETURN
+
+    END DO
+ 
+  END FUNCTION MR_to_PPMV_rank1
+  
+  ! ==============
+  ! Rank1 Tangent-linear version
+  ! ==============
+
+  FUNCTION MR_to_PPMV_rank1_TL( Mixing_Ratio, &  ! Input
+                                ppmv,         &  ! Input
+                                Mixing_Ratio_TL, &  ! Input
+                                ppmv_TL,      &  ! Output
+                                Molecule_ID,  &  ! Input
+                                Message_Log ) &  ! Error messaging
+                           RESULT( Error_Status )
+
+
+    ! Arguments
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio_TL
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: ppmv
+    ! -- Optional input
+    INTEGER,         OPTIONAL,       INTENT( IN ) :: Molecule_ID
+    ! -- Output
+    REAL( fp ), DIMENSION( SIZE( Mixing_Ratio ) ), INTENT( OUT )  :: ppmv_TL
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV_TL'
+    ! Local variables
+    INTEGER :: k
+
+    ! Setup
+    Error_Status = SUCCESS
+
+    DO k = 1, SIZE( Mixing_Ratio )
+
+    ! Convert mass to volume mixing ratio
+    Error_Status  = MR_to_PPMV_scalar_TL( Mixing_Ratio( k ), &
+                                          ppmv( k ), &
+                                          Mixing_Ratio_TL(k), &   
+                                          ppmv_TL(k),      &   
+                                          Molecule_ID = Molecule_ID, &
+                                          Message_Log = Message_Log )
+      IF ( Error_Status/= SUCCESS ) RETURN
+
     END DO
 
-  END FUNCTION MR_to_PPMV_rank1
+  END FUNCTION MR_to_PPMV_rank1_TL
+
+
+
+ ! ==============
+ ! Rank1 Adjoint version
+ ! ==============
+
+  FUNCTION MR_to_PPMV_rank1_AD( Mixing_Ratio, &  ! Input
+                                ppmv,         &  ! Input
+                                ppmv_AD,      &  ! Input
+                                Mixing_Ratio_AD, &  ! In/Output
+                                Molecule_ID,  &  ! Input
+                                Message_Log ) &  ! Error messaging
+                           RESULT( Error_Status )
+
+    ! Arguments
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Mixing_Ratio
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: ppmv_AD 
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: ppmv
+    ! -- Optional input
+    INTEGER,         OPTIONAL,       INTENT( IN ) :: Molecule_ID
+    ! -- Output
+    REAL( fp ), DIMENSION( SIZE( Mixing_Ratio ) ), INTENT( OUT )  ::  Mixing_Ratio_AD
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'MR_to_PPMV_AD'
+    ! Local variables
+    INTEGER :: k
+
+    ! Setup
+    Error_Status = SUCCESS
+
+    DO k = 1, SIZE( Mixing_Ratio )
+
+    Error_Status  = MR_to_PPMV_scalar_AD( Mixing_Ratio( k ), &
+                                          ppmv( k ), &
+                                          ppmv_AD(k),      &   
+                                          Mixing_Ratio_AD(k), &   
+                                          Molecule_ID = Molecule_ID, &
+                                          Message_Log = Message_Log )
+      IF ( Error_Status/= SUCCESS ) RETURN
+
+    END DO
+
+  END FUNCTION MR_to_PPMV_rank1_AD
 
 
 !------------------------------------------------------------------------------
@@ -2999,21 +3263,25 @@ CONTAINS
   ! ==============
   FUNCTION PP_to_ND_scalar( Pressure,     &  ! Input
                             Temperature,  &  ! Input
+			    Number_Density, & ! Output
                             Message_Log ) &  ! Error messaging
-                          RESULT( Number_Density )
+                          RESULT( Error_Status  )
     ! Arguments
     REAL(fp),               INTENT(IN) :: Pressure
     REAL(fp),               INTENT(IN) :: Temperature
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
-    ! Function result
-    REAL(fp) :: Number_Density
+    ! -- Output
+    REAL(fp),               INTENT(OUT):: Number_Density
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_ND'
+    ! Function result
+    INTEGER :: Error_Status
 
     ! Setup
-    Number_Density = -ONE
+    Error_Status = SUCCESS
     IF ( Pressure    < ZERO      .OR. &
          Temperature < TOLERANCE      ) THEN
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Input partial Pressure < 0, or Temperature = 0.', &
                             FAILURE, &
@@ -3026,29 +3294,119 @@ CONTAINS
 
   END FUNCTION PP_to_ND_scalar
 
+  ! ==============
+  ! Scalar Tangent_linear version
+  ! ==============
+
+  FUNCTION PP_to_ND_scalar_TL( Pressure,          &  ! Input
+                               Temperature,       &  ! Input
+			       Temperature_TL,    &  ! Input
+ 			       Number_Density_TL, &  ! Output
+                               Message_Log )      &  ! Error messaging
+                          RESULT( Error_Status  )
+
+    ! Arguments
+    REAL( fp ),          INTENT( IN ) :: Pressure
+    REAL( fp ),          INTENT( IN ) :: Temperature
+    REAL( fp ),          INTENT( IN ) :: Temperature_TL
+    ! -- Output
+    REAL( fp ),          INTENT( OUT ) :: Number_Density_TL
+    ! -- Error handler Message log
+    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_ND_TL'
+
+    ! Setup
+    Error_Status = SUCCESS
+
+    IF ( Pressure    < ZERO      .OR. &
+         Temperature < TOLERANCE      ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input partial Pressure < 0, or Temperature = 0.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    ! convert partial pressure to number density
+    Number_Density_TL = - HPA_TO_PA * Pressure * L0 * T0 * Temperature_TL * P0 &
+                      / ( Temperature * P0 )**2.0_fp
+
+ 
+  END FUNCTION PP_to_ND_scalar_TL
+
+  ! ==============
+  ! Scalar Adjoint version
+  ! ==============
+
+  FUNCTION PP_to_ND_scalar_AD( Pressure,          &  ! Input
+                               Temperature,       &  ! Input
+			       Number_Density_AD, &  ! Input
+ 			       Temperature_AD,    &  ! In/Output
+                               Message_Log )      &  ! Error messaging
+                          RESULT( Error_Status  )
+
+
+    ! Arguments
+    REAL( fp ),          INTENT( IN ) :: Pressure
+    REAL( fp ),          INTENT( IN ) :: Temperature
+    REAL( fp ),          INTENT( IN ) :: Number_Density_AD
+    ! -- Output
+    REAL( fp ),          INTENT( IN OUT ) :: Temperature_AD
+    ! -- Error handler Message log
+    CHARACTER( * ), OPTIONAL, INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_ND_AD'
+
+    ! Setup
+    Error_Status = SUCCESS
+    IF ( Pressure    < ZERO      .OR. &
+         Temperature < TOLERANCE      ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input partial Pressure < 0, or Temperature = 0.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    ! convert partial pressure to number density 
+     Temperature_AD = Temperature_AD - HPA_TO_PA * Pressure * L0 * T0 &
+             * Number_Density_AD * P0 / ( Temperature * P0 )**2.0_fp
+
+  END FUNCTION PP_to_ND_scalar_AD
 
   ! ==============
   ! Rank-1 version
   ! ==============
-  FUNCTION PP_to_ND_rank1( Pressure,     &  ! Input
-                           Temperature,  &  ! Input
+  FUNCTION PP_to_ND_rank1( Pressure,       &  ! Input
+                           Temperature,    &  ! Input
+			   Number_Density, & ! Output
                            Message_Log ) &  ! Error messaging
-                         RESULT( Number_Density )
-    ! Arguments
+                         RESULT( Error_Status )
+     ! Arguments
     REAL(fp),               INTENT(IN) :: Pressure(:)
     REAL(fp),               INTENT(IN) :: Temperature(:)
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    ! -- Output
+    REAL( fp ), DIMENSION( SIZE( Pressure ) ), INTENT( OUT ) :: Number_Density
     ! Function result
-    REAL(fp) :: Number_Density(SIZE(Pressure))
+    INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PP_to_ND'
     ! Local variables
     INTEGER :: k, n
 
     ! Setup
-    Number_Density = -ONE
+    Error_Status = SUCCESS
     n = SIZE(Pressure)
     IF ( SIZE(Temperature) /= n ) THEN
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input Pressure/Temperature array sizes.', &
                             FAILURE, &
@@ -3058,13 +3416,118 @@ CONTAINS
 
     ! Convert partial pressure to number density
     DO k = 1, n
-      Number_Density( k ) = PP_to_ND_scalar( Pressure( k ), &
-                                             Temperature( k ), &
-                                             Message_Log=Message_Log )
-      IF ( Number_Density( k ) < ZERO ) RETURN
+      Error_Status = PP_to_ND_scalar( Pressure( k ), &
+                                      Temperature( k ), &
+				      Number_Density( k ), &
+                                      Message_Log = Message_Log )
+      IF ( Error_Status /= SUCCESS ) RETURN
     END DO
 
   END FUNCTION PP_to_ND_rank1
+
+  ! ============================
+  ! Rank1 Tangent-Linear version
+  ! ============================
+
+  FUNCTION PP_to_ND_rank1_TL( Pressure,         &  ! Input
+                              Temperature,      &  ! Input
+			      Temperature_TL,    &  ! Input
+			      Number_Density_TL, & ! Output
+                              Message_Log ) &  ! Error messaging
+                         RESULT( Error_Status )
+    ! Arguments
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Pressure
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Temperature
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Temperature_TL
+    ! -- Output
+    REAL( fp ), DIMENSION( SIZE( Pressure ) ), INTENT( OUT ) :: Number_Density_TL
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_ND_TL'
+    ! Local variables
+    INTEGER :: k, n
+
+
+
+    Error_Status = SUCCESS
+    n = SIZE( Pressure )
+
+    IF ( SIZE( Temperature ) /= n ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Inconsistent input Pressure/Temperature array sizes.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    DO k = 1, n
+      Error_Status = PP_to_ND_scalar_TL( Pressure( k ), &
+                                         Temperature( k ), &
+					 Temperature_TL( k ), &
+				         Number_Density_TL( k ), &
+                                         Message_Log = Message_Log )
+      IF ( Error_Status /= SUCCESS ) RETURN
+    END DO
+
+  END FUNCTION PP_to_ND_rank1_TL
+
+
+  ! ============================
+  ! Rank1 Tangent-Linear version
+  ! ============================ 
+
+  FUNCTION PP_to_ND_rank1_AD( Pressure,         &  ! Input
+                              Temperature,      &  ! Input
+			      Number_Density_AD,&  ! Input
+			      Temperature_AD,   &  ! In/Output
+                              Message_Log )     &  ! Error messaging
+                         RESULT( Error_Status )
+
+    ! Arguments
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Pressure
+    REAL( fp ), DIMENSION( : ), INTENT( IN ) :: Temperature
+    REAL( fp ), DIMENSION( SIZE( Pressure ) ), INTENT( IN ) :: Number_Density_AD
+    ! -- In/Output
+    REAL( fp ), DIMENSION( : ), INTENT( IN OUT) :: Temperature_AD
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,       INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PP_to_ND_TL'
+    ! Local variables
+    INTEGER :: k, n
+
+
+    ! Setup
+    Error_Status = SUCCESS
+    n = SIZE( Pressure )
+
+    IF ( SIZE( Temperature ) /= n ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Inconsistent input Pressure/Temperature array sizes.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    DO k = 1, n
+
+      Error_Status = PP_to_ND_scalar_AD( Pressure( k ), &
+                                         Temperature( k ), &
+					 Number_Density_AD( k ), &
+				         Temperature_AD( k ), &
+                                         Message_Log = Message_Log )
+      IF ( Error_Status /= SUCCESS ) RETURN
+
+    END DO
+
+  END FUNCTION PP_to_ND_rank1_AD
 
 
 !------------------------------------------------------------------------------
@@ -3362,8 +3825,10 @@ CONTAINS
     ! Local variables
     REAL(fp) :: ppv
     REAL(fp) :: Total_Density
+    INTEGER :: Error_Status
 
     ! Setup
+    Error_Status = SUCCESS
     Number_Density = -ONE
     IF ( Pressure    < ZERO      .OR. &
          Temperature < TOLERANCE .OR. &
@@ -3379,16 +3844,28 @@ CONTAINS
     ppv = PPMV_TO_PPV * ppmv
 
     ! Calculate total air number density
-    Total_Density = PP_to_ND_scalar( Pressure, &
-                                     Temperature, &
-                                     Message_Log=Message_Log )
-    IF ( Total_Density < ZERO ) THEN
+    Error_Status = PP_to_ND_scalar(   Pressure, &
+                                      Temperature, &
+				      Total_Density, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status /= SUCCESS  ) THEN     
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
-                            FAILURE, &
-                            Message_Log=Message_Log )
+                            Error_Status, &
+                            Message_Log = Message_Log )
       RETURN
     END IF
+!    Total_Density = PP_to_ND_scalar( Pressure, &
+!                                     Temperature, &
+!                                     Message_Log=Message_Log )
+!    IF ( Total_Density < ZERO ) THEN
+!      CALL Display_Message( ROUTINE_NAME, &
+!                            'Error calculating total number density.', &
+!                            FAILURE, &
+!                            Message_Log=Message_Log )
+!      RETURN
+!    END IF
 
     ! Calculate the molecular number density
     IF ( PRESENT(Water_Vapor) ) THEN
@@ -3605,8 +4082,10 @@ CONTAINS
     REAL(fp) :: Total_Density
     REAL(fp) :: ppv
     REAL(fp) :: Dry_Air_Density
+   INTEGER :: Error_Status
     
     ! Setup
+    Error_Status = SUCCESS
     ppmv = -ONE
     IF ( Pressure       < ZERO      .OR. &
          Temperature    < TOLERANCE .OR. &
@@ -3619,16 +4098,28 @@ CONTAINS
     END IF
 
     ! Calculate total air number density
-    Total_Density = PP_to_ND_scalar( Pressure, &
-                                     Temperature, &
-                                     Message_Log=Message_Log )
-    IF ( Total_Density < ZERO ) THEN
+    Error_Status = PP_to_ND_scalar(   Pressure, &
+                                      Temperature, &
+				      Total_Density, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status /= SUCCESS  ) THEN     
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
-                            FAILURE, &
-                            Message_Log=Message_Log )
+                            Error_Status, &
+                            Message_Log = Message_Log )
       RETURN
     END IF
+!    Total_Density = PP_to_ND_scalar( Pressure, &
+!                                     Temperature, &
+!                                     Message_Log=Message_Log )
+!    IF ( Total_Density < ZERO ) THEN
+!      CALL Display_Message( ROUTINE_NAME, &
+!                            'Error calculating total number density.', &
+!                            FAILURE, &
+!                            Message_Log=Message_Log )
+!      RETURN
+!    END IF
 
     ! Calculate the dry air number density
     IF ( PRESENT(Water_Vapor) ) THEN
@@ -3849,9 +4340,10 @@ CONTAINS
                                 Temperature,  &  ! Input
                                 Delta_Z,      &  ! Input
                                 ppmv,         &  ! Input
+				kmol_per_cm2, &  ! Output
                                 Water_Vapor,  &  ! Optional input
                                 Message_Log ) &  ! Error messaging
-                              RESULT( kmol_per_cm2 )
+                              RESULT ( Error_Status  )
     ! Arguments
     REAL(fp),               INTENT(IN) :: Pressure
     REAL(fp),               INTENT(IN) :: Temperature
@@ -3859,8 +4351,10 @@ CONTAINS
     REAL(fp),               INTENT(IN) :: ppmv
     REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    ! -- Output
+    REAL( fp ),           INTENT( OUT )  :: kmol_per_cm2
     ! Function result
-    REAL(fp) :: kmol_per_cm2
+    INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
     REAL(fp),     PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
@@ -3870,11 +4364,13 @@ CONTAINS
     REAL(fp) :: Column_Density
     
     ! Setup
+    Error_Status = SUCCESS
     kmol_per_cm2 = -ONE
     IF ( Pressure     < TOLERANCE .OR. &
          Temperature  < TOLERANCE .OR. &
          ABS(Delta_Z) < TOLERANCE .OR. &
          ppmv         < ZERO           ) THEN
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Input values < or = 0.0 found.', &
                             FAILURE, &
@@ -3886,14 +4382,16 @@ CONTAINS
     ppv = PPMV_TO_PPV * ppmv
 
     ! Calculate total air number density in molecules.m^-3
-    Number_Density = PP_to_ND_scalar( Pressure, &
+    Error_Status = PP_to_ND_scalar(   Pressure, &
                                       Temperature, &
-                                      Message_Log=Message_Log )
-    IF ( Number_Density < ZERO ) THEN
+				      Number_Density, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status /= SUCCESS  ) THEN     
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
-                            FAILURE, &
-                            Message_Log=Message_Log )
+                            Error_Status, &
+                            Message_Log = Message_Log )
       RETURN
     END IF
 
@@ -3903,6 +4401,7 @@ CONTAINS
     ! Calculate the gas column density
     IF ( PRESENT( Water_Vapor ) ) THEN
       IF ( Water_Vapor < ZERO ) THEN
+        Error_Status = FAILURE 
         CALL Display_Message( ROUTINE_NAME, &
                               'Input water vapor column density < 0.0', &
                               FAILURE, &
@@ -3916,80 +4415,536 @@ CONTAINS
 
   END FUNCTION PPMV_to_KMOL_scalar
 
+ 
+  ! ============================
+  ! Scalar Tangent-linear version
+  ! ============================
+  FUNCTION PPMV_to_KMOL_scalar_TL( Pressure,     &  ! Input
+                                   Temperature,  &  ! Input
+                                   Delta_Z,	 &  ! Input
+                                   ppmv,	 &  ! Input
+                                   Temperature_TL,  &  ! Input
+                                   Delta_Z_TL,      &  ! Input
+                                   ppmv_TL,	    &  ! Input
+			           kmol_per_cm2_TL, &  ! Output
+                                   Water_Vapor,  &  ! Optional input
+                                   Message_Log ) &  ! Error messaging
+                                 RESULT ( Error_Status  )
+    ! Arguments
+    REAL( fp ),           INTENT( IN ) :: Pressure
+    REAL( fp ),           INTENT( IN ) :: Temperature
+    REAL( fp ),           INTENT( IN ) :: Delta_Z
+    REAL( fp ),           INTENT( IN ) :: ppmv
+    REAL( fp ),           INTENT( IN ) :: Temperature_TL
+    REAL( fp ),           INTENT( IN ) :: Delta_Z_TL
+    REAL( fp ),           INTENT( IN ) :: ppmv_TL
+    ! -- Optional input
+    REAL( fp ), OPTIONAL, INTENT( IN ) :: Water_Vapor
+    ! -- Output
+    REAL( fp ),           INTENT( OUT )  :: kmol_per_cm2_TL
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL_TL'
+    REAL( fp ), PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
+    ! Local variables
+    REAL( fp ) :: ppv, ppv_TL
+    REAL( fp ) :: Number_Density, Number_Density_TL
+    REAL( fp ) :: Column_Density, Column_Density_TL
+
+
+    ! Setup
+    Error_Status = SUCCESS
+    IF ( Pressure       < TOLERANCE .OR. &
+         Temperature    < TOLERANCE .OR. &
+         ABS( Delta_Z ) < TOLERANCE .OR. &
+         ppmv           < ZERO           ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input values < or = 0.0 found.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    ! Convert ppmv to ppv
+    ppv = PPMV_TO_PPV * ppmv
+
+    ppv_TL = PPMV_TO_PPV * ppmv_TL
+
+    ! Calculate total air number density in molecules.m^-3
+    Error_Status = PP_to_ND_scalar(   Pressure, &
+                                      Temperature, &
+				      Number_Density, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status /= SUCCESS  ) THEN     
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error calculating total number density.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+ 
+    Error_Status = PP_to_ND_scalar_TL(Pressure, &
+                                      Temperature, &
+				      Temperature_TL, &
+				      Number_Density_TL, & 
+                                      Message_Log = Message_Log )
+    IF ( Error_Status/=SUCCESS ) THEN     
+       CALL Display_Message( ROUTINE_NAME, &
+                            'Error calculating total number density.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    ! Calculate total air column density in kmol.cm^-2
+    Column_Density = SCALE_FACTOR * ABS( Delta_Z ) * Number_Density
+    
+    IF ( Delta_Z > ZERO) THEN
+      Column_Density_TL = SCALE_FACTOR * Delta_Z * Number_Density_TL &
+           +  SCALE_FACTOR * Delta_Z_TL * Number_Density
+    ELSE
+      Column_Density_TL = - SCALE_FACTOR * Delta_Z * Number_Density_TL &
+           -  SCALE_FACTOR * Delta_Z_TL * Number_Density
+    ENDIF	    
+
+    ! Calculate the gas column density
+    IF ( PRESENT( Water_Vapor ) ) THEN
+
+      IF ( Water_Vapor < ZERO ) THEN
+        Error_Status = FAILURE 
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Input water vapor column density < 0.0', &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+      kmol_per_cm2_TL = ppv_TL * ( Column_Density - Water_Vapor ) + &
+                     ppv * Column_Density_TL
+
+    ELSE
+
+      kmol_per_cm2_TL = ( ppv / ( ONE + ppv ) ) * Column_Density_TL  &
+           + ppv_TL / (( ONE + ppv ) * ( ONE + ppv )) * Column_Density
+
+    END IF
+
+  END FUNCTION PPMV_to_KMOL_scalar_TL
+
+  ! ======================
+  ! Scalar Adjoint version
+  ! ======================
+  FUNCTION PPMV_to_KMOL_scalar_AD( Pressure,     &  ! Input
+                                   Temperature,  &  ! Input
+                                   Delta_Z,	 &  ! Input
+                                   ppmv,	 &  ! Input
+				   kmol_per_cm2_AD, &  ! Input
+                                   Temperature_AD,  &  ! In/Output
+                                   Delta_Z_AD,      &  ! In/Output
+                                   ppmv_AD,	    &  ! In/Output
+                                   Water_Vapor,  &  ! Optional input
+                                   Message_Log ) &  ! Error messaging
+                                 RESULT ( Error_Status  )
+    ! Arguments
+    REAL( fp ),           INTENT( IN ) :: Pressure
+    REAL( fp ),           INTENT( IN ) :: Temperature
+    REAL( fp ),           INTENT( IN ) :: Delta_Z
+    REAL( fp ),           INTENT( IN ) :: ppmv
+    REAL( fp ),           INTENT( IN ) :: kmol_per_cm2_AD
+    ! -- Optional input
+    REAL( fp ), OPTIONAL, INTENT( IN ) :: Water_Vapor
+    ! -- In/Output
+    REAL( fp ),           INTENT( IN OUT) :: Temperature_AD
+    REAL( fp ),           INTENT( IN OUT) :: Delta_Z_AD
+    REAL( fp ),           INTENT( IN OUT) :: ppmv_AD
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL, INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ),  PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL_AD'
+    REAL( fp ), PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
+    ! Local variables
+    REAL( fp ) :: ppv, ppv_AD
+    REAL( fp ) :: Number_Density, Number_Density_AD
+    REAL( fp ) :: Column_Density, Column_Density_AD
+
+
+    ! Setup
+    Error_Status = SUCCESS
+
+    ! Forward Model
+    IF ( Pressure       < TOLERANCE .OR. &
+         Temperature    < TOLERANCE .OR. &
+         ABS( Delta_Z ) < TOLERANCE .OR. &
+         ppmv           < ZERO           ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input values < or = 0.0 found.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    ENDIF
+
+    ! Convert ppmv to ppv
+    ppv = PPMV_TO_PPV * ppmv
+
+    ! Calculate total air number density in molecules.m^-3
+    Error_Status = PP_to_ND_scalar(   Pressure, &
+                                      Temperature, &
+				      Number_Density, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status /= SUCCESS  ) THEN     
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error calculating total number density.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+ 
+    ! Calculate total air column density in kmol.cm^-2
+    Column_Density = SCALE_FACTOR * ABS( Delta_Z ) * Number_Density
+    
+
+    ! Adjoint Model
+    ! Calculate the gas column density
+    IF ( PRESENT( Water_Vapor ) ) THEN
+
+      IF ( Water_Vapor < ZERO ) THEN
+        Error_Status = FAILURE 
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Input water vapor column density < 0.0', &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+      ppv_AD = kmol_per_cm2_AD * ( Column_Density - Water_Vapor )
+      Column_Density_AD = ppv * kmol_per_cm2_AD
+  
+    ELSE
+
+      ppv_AD =  kmol_per_cm2_AD / (( ONE + ppv ) * ( ONE + ppv )) * Column_Density
+      Column_Density_AD = ( ppv / ( ONE + ppv ) ) * kmol_per_cm2_AD
+ 
+    END IF
+
+    IF ( Delta_Z > ZERO) THEN
+      Number_Density_AD = Column_Density_AD * SCALE_FACTOR * Delta_Z 
+      Delta_Z_AD = Delta_Z_AD + SCALE_FACTOR * Column_Density_AD * Number_Density
+    ELSE
+      Number_Density_AD = - Column_Density_AD * SCALE_FACTOR * Delta_Z 
+      Delta_Z_AD = Delta_Z_AD - SCALE_FACTOR * Column_Density_AD * Number_Density
+    ENDIF	    
+
+    Error_Status = PP_to_ND_scalar_AD(Pressure, &
+                                      Temperature, &
+ 				      Number_Density_AD, & 
+				      Temperature_AD, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status/=SUCCESS ) THEN     
+       CALL Display_Message( ROUTINE_NAME, &
+                            'Error calculating total number density.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+    
+    ppmv_AD = ppmv_AD + PPMV_TO_PPV * ppv_AD
+    
+
+  END FUNCTION PPMV_to_KMOL_scalar_AD
 
   ! ==============
-  ! Rank-1 version
+  ! Rank1 version
   ! ==============
   FUNCTION PPMV_to_KMOL_rank1( Pressure,     &  ! Input
                                Temperature,  &  ! Input
                                Delta_Z,      &  ! Input
                                ppmv,         &  ! Input
+			       kmol_per_cm2, &  ! Output
                                Water_Vapor,  &  ! Optional input
                                Message_Log ) &  ! Error messaging
-                             RESULT( kmol_per_cm2 )
+                             RESULT ( Error_Status )
+
     ! Arguments
-    REAL(fp),               INTENT(IN) :: Pressure(:)
-    REAL(fp),               INTENT(IN) :: Temperature(:)
-    REAL(fp),               INTENT(IN) :: Delta_Z(:)
-    REAL(fp),               INTENT(IN) :: ppmv(:)
-    REAL(fp),     OPTIONAL, INTENT(IN) :: Water_Vapor(:)
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Pressure
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Temperature
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Delta_Z
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: ppmv
+    ! -- Optional input
+    REAL( fp ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
+    ! -- Output
+    REAL( fp ), DIMENSION( SIZE( Pressure ) ),INTENT( OUT ) :: kmol_per_cm2
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
     ! Function result
-    REAL(fp) :: kmol_per_cm2(SIZE(Pressure))
+    INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL'
     ! Local variables
     INTEGER :: k, n
-    
+
     ! Setup
+    Error_Status = SUCCESS
     kmol_per_cm2 = -ONE
-    n = SIZE(Pressure)
-    IF ( SIZE(Temperature) /= n .OR. & 
-         SIZE(Delta_Z)     /= n .OR. & 
-         SIZE(ppmv)        /= n      ) THEN
+
+    n = SIZE( Pressure )
+    IF ( SIZE( Temperature ) /= n .OR. & 
+         SIZE( Delta_Z     ) /= n .OR. & 
+         SIZE( ppmv        ) /= n      ) THEN
+      Error_Status = FAILURE 
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent input array sizes.', &
-                            FAILURE, &
-                            Message_Log=Message_Log )
+                            Error_Status, &
+                            Message_Log = Message_Log )
       RETURN
     END IF
 
     ! Calculate the gas column density
-    IF ( PRESENT(Water_Vapor) ) THEN
-
+    IF ( PRESENT( Water_Vapor ) ) THEN
       ! Water vapor argument was passed
-      IF ( SIZE(Water_Vapor) /= n ) THEN
+      IF ( SIZE( Water_Vapor ) /= n ) THEN
+        Error_Status = FAILURE 
         CALL Display_Message( ROUTINE_NAME, &
                               'Inconsistent input Pressure/Water_Vapor array sizes.', &
-                              FAILURE, &
-                              Message_Log=Message_Log )
+                              Error_Status, &
+                              Message_Log = Message_Log )
         RETURN
       END IF
+
+      ! -- Loop over elements
       DO k = 1, n
-        kmol_per_cm2( k ) = PPMV_to_KMOL_scalar( Pressure( k ), &
+
+        Error_Status  = PPMV_to_KMOL_scalar( Pressure( k ), &
                                                  Temperature( k ), &
                                                  Delta_Z( k ), &
                                                  ppmv( k ), &
-                                                 Water_Vapor=Water_Vapor( k ), &
-                                                 Message_Log=Message_Log )
-        IF ( kmol_per_cm2( k ) < ZERO ) RETURN
+						 kmol_per_cm2( k ), &
+						 Water_Vapor = Water_Vapor( k ), &
+                                                 Message_Log = Message_Log )
+        IF ( Error_Status/= SUCCESS ) RETURN
       END DO
 
     ELSE
 
       ! Water vapor argument was *NOT*passed
       DO k = 1, n
-        kmol_per_cm2( k ) = PPMV_to_KMOL_scalar( Pressure( k ), &
+        Error_Status = PPMV_to_KMOL_scalar( Pressure( k ), &
                                                  Temperature( k ), &
                                                  Delta_Z( k ), &
                                                  ppmv( k ), &
-                                                 Message_Log=Message_Log )
-        IF ( kmol_per_cm2( k ) < ZERO ) RETURN
+						 kmol_per_cm2( k ), &
+                                                 Message_Log = Message_Log )
+        IF ( Error_Status/= SUCCESS ) RETURN
+      END DO
+      
+    END IF
+  
+  END FUNCTION PPMV_to_KMOL_rank1
+
+
+  ! ============================
+  ! Rank1 Tangent_Linear version
+  ! ============================ 
+  FUNCTION PPMV_to_KMOL_rank1_TL( Pressure,     &  ! Input
+                               Temperature,  &  ! Input
+                               Delta_Z,      &  ! Input
+                               ppmv,         &  ! Input
+                               Temperature_TL,  &  ! Input
+                               Delta_Z_TL,      &  ! Input
+                               ppmv_TL,	    &  ! Input
+			       kmol_per_cm2_TL, &  ! Output
+                               Water_Vapor,  &  ! Optional input
+                               Message_Log ) &  ! Error messaging
+                             RESULT ( Error_Status )
+    ! Arguments
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Pressure
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Temperature
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Delta_Z
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: ppmv
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Temperature_TL
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Delta_Z_TL
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: ppmv_TL
+    ! -- Optional input
+    REAL( fp ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
+    ! -- Output
+    REAL( fp ), DIMENSION( SIZE( Pressure ) ),INTENT( OUT ) :: kmol_per_cm2_TL
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL_TL'
+    ! Local variables
+    INTEGER :: k, n
+
+    ! Setup
+    Error_Status = SUCCESS
+    n = SIZE( Pressure )
+    IF ( SIZE( Temperature ) /= n .OR. & 
+         SIZE( Delta_Z     ) /= n .OR. & 
+         SIZE( ppmv        ) /= n      ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Inconsistent input array sizes.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    IF ( PRESENT( Water_Vapor ) ) THEN
+      ! Water vapor argument was passed
+      IF ( SIZE( Water_Vapor ) /= n ) THEN
+        Error_Status = FAILURE 
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Inconsistent input Pressure/Water_Vapor array sizes.', &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+      DO k = 1, n
+
+        Error_Status = PPMV_to_KMOL_scalar_TL( Pressure( k ), &
+                                                 Temperature( k ), &
+                                                 Delta_Z( k ), &
+                                                 ppmv( k ), &
+                                                 Temperature_TL( k ), &
+                                                 Delta_Z_TL( k ), &
+                                                 ppmv_TL( k ), &
+						 kmol_per_cm2_TL( k ), &
+						 Water_Vapor = Water_Vapor( k ), &
+                                                 Message_Log = Message_Log )
+        IF ( Error_Status/= SUCCESS ) RETURN
+
+      END DO
+
+    ELSE
+
+      ! Water vapor argument was *NOT*passed
+      DO k = 1, n
+
+        Error_Status = PPMV_to_KMOL_scalar_TL( Pressure( k ), &
+                                                 Temperature( k ), &
+                                                 Delta_Z( k ), &
+                                                 ppmv( k ), &
+                                                 Temperature_TL( k ), &
+                                                 Delta_Z_TL( k ), &
+                                                 ppmv_TL( k ), &
+						 kmol_per_cm2_TL( k ), &
+                                                 Message_Log = Message_Log )
+        IF ( Error_Status/= SUCCESS ) RETURN
+
       END DO
 
     END IF
    
-  END FUNCTION PPMV_to_KMOL_rank1
+  END FUNCTION PPMV_to_KMOL_rank1_TL
+  
+
+  ! ============================ 
+  ! Rank1 Adjoint version
+  ! ============================
+  FUNCTION PPMV_to_KMOL_rank1_AD( Pressure,     &  ! Input
+                               Temperature,  &  ! Input
+                               Delta_Z,      &  ! Input
+                               ppmv,         &  ! Input
+			       kmol_per_cm2_AD, &  ! Input 
+                               Temperature_AD,  &  ! In/Output 
+                               Delta_Z_AD,      &  ! In/Output 
+                               ppmv_AD,	    &  ! In/Output 
+                               Water_Vapor,  &  ! Optional input
+                               Message_Log ) &  ! Error messaging
+                             RESULT ( Error_Status )
+    ! Arguments
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Pressure
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Temperature
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: Delta_Z
+    REAL( fp ),           DIMENSION( : ), INTENT( IN ) :: ppmv
+    REAL( fp ), DIMENSION( SIZE( Pressure ) ),INTENT( IN ) :: kmol_per_cm2_AD
+    ! -- Optional input
+    REAL( fp ), OPTIONAL, DIMENSION( : ), INTENT( IN ) :: Water_Vapor
+    ! -- Output
+    REAL( fp ),           DIMENSION( : ), INTENT( IN OUT) :: Temperature_AD
+    REAL( fp ),           DIMENSION( : ), INTENT( IN OUT) :: Delta_Z_AD
+    REAL( fp ),           DIMENSION( : ), INTENT( IN OUT) :: ppmv_AD
+    ! -- Error handler Message log
+    CHARACTER( * ),  OPTIONAL,                 INTENT( IN ) :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'PPMV_to_KMOL_AD'
+    ! Local variables
+    INTEGER :: k, n
+
+    ! Setup
+    Error_Status = SUCCESS
+    n = SIZE( Pressure )
+    IF ( SIZE( Temperature ) /= n .OR. & 
+         SIZE( Delta_Z     ) /= n .OR. & 
+         SIZE( ppmv        ) /= n      ) THEN
+      Error_Status = FAILURE 
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Inconsistent input array sizes.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    IF ( PRESENT( Water_Vapor ) ) THEN
+      ! Water vapor argument was passed
+      IF ( SIZE( Water_Vapor ) /= n ) THEN
+        Error_Status = FAILURE 
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Inconsistent input Pressure/Water_Vapor array sizes.', &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+      DO k = 1, n
+
+        Error_Status = PPMV_to_KMOL_scalar_AD( Pressure( k ), &
+                                                 Temperature( k ), &
+                                                 Delta_Z( k ), &
+                                                 ppmv( k ), &
+						 kmol_per_cm2_AD( k ), &
+                                                 Temperature_AD( k ), &
+                                                 Delta_Z_AD( k ), &
+                                                 ppmv_AD( k ), &
+						 Water_Vapor = Water_Vapor( k ), &
+                                                 Message_Log = Message_Log )
+        IF ( Error_Status/= SUCCESS ) RETURN
+
+      END DO
+
+    ELSE
+      ! Water vapor argument was *NOT*passed
+      DO k = 1, n
+
+        Error_Status = PPMV_to_KMOL_scalar_AD( Pressure( k ), &
+                                                 Temperature( k ), &
+                                                 Delta_Z( k ), &
+                                                 ppmv( k ), &
+						 kmol_per_cm2_AD( k ), &
+                                                 Temperature_AD( k ), &
+                                                 Delta_Z_AD( k ), &
+                                                 ppmv_AD( k ), &
+                                                 Message_Log = Message_Log )
+        IF ( Error_Status/= SUCCESS ) RETURN
+
+      END DO
+
+    END IF
+   
+  END FUNCTION PPMV_to_KMOL_rank1_AD
 
 
 !------------------------------------------------------------------------------
@@ -4136,8 +5091,10 @@ CONTAINS
     REAL(fp) :: Number_Density
     REAL(fp) :: Column_density
     REAL(fp) :: Dry_Column_density
+    INTEGER :: Error_Status
     
     ! Setup
+    Error_Status = SUCCESS
     ppmv = -ONE
     IF ( Pressure     < TOLERANCE .OR. &
          Temperature  < TOLERANCE .OR. &
@@ -4151,16 +5108,27 @@ CONTAINS
     ENDIF
 
     ! Calculate total air number density in molecules.m^-3
-    Number_Density = PP_to_ND_scalar( Pressure, &
+    Error_Status = PP_to_ND_scalar(   Pressure, &
                                       Temperature, &
-                                      Message_Log=Message_Log )
-    IF ( Number_Density < ZERO ) THEN
+				      Number_Density, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status/=SUCCESS  ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error calculating total number density.', &
                             FAILURE, &
-                            Message_Log=Message_Log )
+                            Message_Log = Message_Log )
       RETURN
     END IF
+!    Number_Density = PP_to_ND_scalar( Pressure, &
+!                                      Temperature, &
+!                                      Message_Log=Message_Log )
+!    IF ( Number_Density < ZERO ) THEN
+!      CALL Display_Message( ROUTINE_NAME, &
+!                            'Error calculating total number density.', &
+!                            FAILURE, &
+!                            Message_Log=Message_Log )
+!      RETURN
+!    END IF
 
     ! Calculate total air column density in kmol.cm^-2
     Column_Density = SCALE_FACTOR * ABS(Delta_Z) * Number_Density

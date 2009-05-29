@@ -1,8 +1,8 @@
 !
-! CRTM_Predictor_Define
+! ODAS_Predictor_Define
 !
-! Module defining the CRTM_Predictor data structure and containing routines to 
-! manipulate it.
+! Module defining the Optical Depth Absorber Space (ODAS) Predictor data
+! structure and containing routines to manipulate it.
 !
 ! CREATION HISTORY:
 !       This file was initially automatically generated so edit at your own risk.
@@ -10,8 +10,11 @@
 !       Contact info:  Paul van Delst, CIMSS/SSEC
 !                      paul.vandelst@ssec.wisc.edu
 !
+!       Modifed by:    Yong Han, NESDIS/STAR 25-June-2008
+!                      yong.han@noaa.gov
+!
 
-MODULE CRTM_Predictor_Define
+MODULE ODAS_Predictor_Define
 
   ! ------------------
   ! Environment set up
@@ -30,13 +33,13 @@ MODULE CRTM_Predictor_Define
   ! Everything private by default
   PRIVATE
   ! Predictor data structure definition
-  PUBLIC :: CRTM_Predictor_type
+  PUBLIC :: Predictor_type
   ! Structure procedures
-  PUBLIC :: CRTM_Associated_Predictor
-  PUBLIC :: CRTM_Destroy_Predictor
-  PUBLIC :: CRTM_Allocate_Predictor
-  PUBLIC :: CRTM_Assign_Predictor
-  PUBLIC :: CRTM_Zero_Predictor
+  PUBLIC :: Associated_Predictor
+  PUBLIC :: Destroy_Predictor
+  PUBLIC :: Allocate_Predictor
+  PUBLIC :: Assign_Predictor
+  PUBLIC :: Zero_Predictor
     
 
   ! -----------------
@@ -52,7 +55,7 @@ MODULE CRTM_Predictor_Define
   ! -----------------------
   ! Derived type definition
   ! -----------------------
-  TYPE :: CRTM_Predictor_type
+  TYPE :: Predictor_type
     INTEGER :: n_Allocates=0
     ! Dimensions
     INTEGER :: n_Layers    =0  ! K
@@ -65,7 +68,7 @@ MODULE CRTM_Predictor_Define
     REAL(fp), DIMENSION(:,:), POINTER :: dA  =>NULL() ! K x J, Integrated absorber level difference
     REAL(fp), DIMENSION(:,:), POINTER :: aveA=>NULL() ! K x J, Integrated absorber layer average
     REAL(fp), DIMENSION(:,:), POINTER :: X   =>NULL() ! I x K, Predictors
-  END TYPE CRTM_Predictor_type
+  END TYPE Predictor_type
 
 
 CONTAINS
@@ -82,19 +85,19 @@ CONTAINS
 !----------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Clear_Predictor
+!       Clear_Predictor
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM_Predictor structure.
+!       Subroutine to clear the scalar members of a Predictor structure.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Predictor( Predictor ) ! Output
+!       CALL Clear_Predictor( Predictor ) ! Output
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:  CRTM_Predictor structure for which the scalar
+!       Predictor:  Predictor structure for which the scalar
 !                   members have been cleared.
 !                   UNITS:      N/A
-!                   TYPE:       CRTM_Predictor_type
+!                   TYPE:       Predictor_type
 !                   DIMENSION:  Scalar
 !                   ATTRIBUTES: INTENT(IN OUT)
 !
@@ -105,10 +108,10 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Clear_Predictor(Predictor)
-    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor
+  SUBROUTINE Clear_Predictor(Predictor)
+    TYPE(Predictor_type), INTENT(IN OUT) :: Predictor
     Predictor%Secant_Sensor_Zenith=ZERO
-  END SUBROUTINE CRTM_Clear_Predictor
+  END SUBROUTINE Clear_Predictor
 
 
 
@@ -123,27 +126,27 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Associated_Predictor
+!       Associated_Predictor
 !
 ! PURPOSE:
 !       Function to test the association status of the pointer members of a
 !       Predictor structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Predictor( Predictor,        &  ! Input
-!                                                       ANY_Test=Any_Test )  ! Optional input
+!       Association_Status = Associated_Predictor( Predictor,        &  ! Input
+!                                                  ANY_Test=Any_Test )  ! Optional input
 !
 ! INPUT ARGUMENTS:
-!       Predictor:           CRTM_Predictor structure which is to have its
+!       Predictor:           Predictor structure which is to have its
 !                            pointer member's association status tested.
 !                            UNITS:      N/A
-!                            TYPE:       CRTM_Predictor_type
+!                            TYPE:       Predictor_type
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       ANY_Test:            Set this argument to test if ANY of the
-!                            CRTM_Predictor structure pointer members are
+!                            Predictor structure pointer members are
 !                            associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
@@ -158,14 +161,14 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating
-!                            the association status of the CRTM_Predictor
+!                            the association status of the Predictor
 !                            pointer members.
-!                            .TRUE.  - if ALL the CRTM_Predictor pointer
+!                            .TRUE.  - if ALL the Predictor pointer
 !                                      members are associated, or if the
 !                                      ANY_Test argument is set and ANY of the
-!                                      CRTM_Predictor pointer members are
+!                                      Predictor pointer members are
 !                                      associated.
-!                            .FALSE. - some or all of the CRTM_Predictor
+!                            .FALSE. - some or all of the Predictor
 !                                      pointer members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
@@ -173,13 +176,13 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_Predictor( &
+  FUNCTION Associated_Predictor( &
              Predictor, &  ! Input
              ANY_Test ) & ! Optional input
            RESULT(Association_Status)
     ! Arguments
-    TYPE(CRTM_Predictor_type), INTENT(IN) :: Predictor
-    INTEGER, OPTIONAL        , INTENT(IN) :: ANY_Test
+    TYPE(Predictor_type), INTENT(IN) :: Predictor
+    INTEGER, OPTIONAL   , INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -211,22 +214,22 @@ CONTAINS
       END IF
     END IF
     
-  END FUNCTION CRTM_Associated_Predictor
+  END FUNCTION Associated_Predictor
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Destroy_Predictor
+!       Destroy_Predictor
 ! 
 ! PURPOSE:
 !       Function to re-initialize the scalar and pointer members of
-!       a CRTM_Predictor data structure.
+!       a Predictor data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Predictor( Predictor              , &  ! Output
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Destroy_Predictor( Predictor              , &  ! Output
+!                                         RCS_Id     =RCS_Id     , &  ! Revision control
+!                                         Message_Log=Message_Log  )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:    Character string specifying a filename in which any
@@ -239,9 +242,9 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:      Re-initialized CRTM_Predictor structure.
+!       Predictor:      Re-initialized Predictor structure.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_Predictor_type
+!                       TYPE:       Predictor_type
 !                       DIMENSION:  Scalar OR Rank-1 array
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -274,21 +277,21 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy_Predictor( &
+  FUNCTION Destroy_Predictor( &
              Predictor  , &  ! Output
              No_Clear   , &  ! Optional input
              RCS_Id     , &  ! Revision control
              Message_Log) &  ! Error messaging
            RESULT(Error_Status)
     ! Arguments
-    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor 
-    INTEGER,      OPTIONAL   , INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL   , INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL   , INTENT(IN)     :: Message_Log
+    TYPE(Predictor_type)  , INTENT(IN OUT) :: Predictor 
+    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Predictor'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_Predictor'
     ! Local variables
     CHARACTER(ML) :: Message
     LOGICAL :: Clear
@@ -306,10 +309,10 @@ CONTAINS
     END IF
     
     ! Initialise the scalar members
-    IF ( Clear ) CALL CRTM_Clear_Predictor(Predictor)
+    IF ( Clear ) CALL Clear_Predictor(Predictor)
     
     ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. CRTM_Associated_Predictor(Predictor) ) RETURN
+    IF ( .NOT. Associated_Predictor(Predictor) ) RETURN
     
     ! Deallocate the pointer members
     DEALLOCATE( Predictor%A   , &
@@ -348,25 +351,25 @@ CONTAINS
       RETURN
     END IF
     
-  END FUNCTION CRTM_Destroy_Predictor
+  END FUNCTION Destroy_Predictor
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Allocate_Predictor
+!       Allocate_Predictor
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the CRTM_Predictor
+!       Function to allocate the pointer members of the Predictor
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Predictor( n_Layers               , &  ! Input
-!                                               n_Predictors           , &  ! Input
-!                                               n_Absorbers            , &  ! Input
-!                                               Predictor              , &  ! Output
-!                                               RCS_Id     =RCS_Id     , &  ! Revision control
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Allocate_Predictor( n_Layers               , &  ! Input
+!                                          n_Predictors           , &  ! Input                
+!                                          n_Absorbers            , &  ! Input                
+!                                          Predictor              , &  ! Output               
+!                                          RCS_Id     =RCS_Id     , &  ! Revision control     
+!                                          Message_Log=Message_Log  )  ! Error messaging      
 !
 ! INPUT ARGUMENTS:
 !         n_Layers:          Number of atmospheric layers.
@@ -401,9 +404,9 @@ CONTAINS
 !                            ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:           CRTM_Predictor structure with allocated pointer members
+!       Predictor:           Predictor structure with allocated pointer members
 !                            UNITS:      N/A
-!                            TYPE:       CRTM_Predictor_type
+!                            TYPE:       Predictor_type
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN OUT)
 !
@@ -437,24 +440,24 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Allocate_Predictor( n_Layers     , &  ! Input            
-                                    n_Predictors , &  ! Input            
-                                    n_Absorbers  , &  ! Input            
-                                    Predictor    , &  ! Output           
-                                    RCS_Id       , &  ! Revision control 
-                                    Message_Log  ) &  ! Error messaging  
-                                  RESULT( Error_Status )                 
+  FUNCTION Allocate_Predictor( n_Layers     , &  ! Input            
+                               n_Predictors , &  ! Input                 
+                               n_Absorbers  , &  ! Input                 
+                               Predictor    , &  ! Output                
+                               RCS_Id       , &  ! Revision control      
+                               Message_Log  ) &  ! Error messaging       
+                             RESULT( Error_Status )                      
     ! Arguments
-    INTEGER                  , INTENT(IN)     :: n_Layers
-    INTEGER                  , INTENT(IN)     :: n_Predictors
-    INTEGER                  , INTENT(IN)     :: n_Absorbers
-    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor
-    CHARACTER(*), OPTIONAL   , INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL   , INTENT(IN)     :: Message_Log
+    INTEGER               , INTENT(IN)     :: n_Layers
+    INTEGER               , INTENT(IN)     :: n_Predictors
+    INTEGER               , INTENT(IN)     :: n_Absorbers
+    TYPE(Predictor_type)  , INTENT(IN OUT) :: Predictor
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Predictor'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_Predictor'
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
@@ -478,8 +481,8 @@ CONTAINS
     
     ! Check if ANY pointers are already associated.
     ! If they are, deallocate them but leave scalars.
-    IF ( CRTM_Associated_Predictor( Predictor, ANY_Test=1 ) ) THEN
-      Error_Status = CRTM_Destroy_Predictor( &
+    IF ( Associated_Predictor( Predictor, ANY_Test=1 ) ) THEN
+      Error_Status = Destroy_Predictor( &
                        Predictor, &
                        No_Clear=1, &
                        Message_Log=Message_Log )
@@ -538,27 +541,27 @@ CONTAINS
       RETURN
     END IF
     
-  END FUNCTION CRTM_Allocate_Predictor
+  END FUNCTION Allocate_Predictor
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Assign_Predictor
+!       Assign_Predictor
 !
 ! PURPOSE:
-!       Function to copy valid CRTM_Predictor structures.
+!       Function to copy valid Predictor structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Predictor( Predictor_in           , &  ! Input
-!                                             Predictor_out          , &  ! Output
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Assign_Predictor( Predictor_in           , &  ! Input
+!                                        Predictor_out          , &  ! Output               
+!                                        RCS_Id     =RCS_Id     , &  ! Revision control     
+!                                        Message_Log=Message_Log  )  ! Error messaging      
 !
 ! INPUT ARGUMENTS:
-!       Predictor_in:      CRTM_Predictor structure which is to be copied.
+!       Predictor_in:      Predictor structure which is to be copied.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_Predictor_type
+!                          TYPE:       Predictor_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
@@ -573,9 +576,9 @@ CONTAINS
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor_out:     Copy of the input structure, CRTM_Predictor_in.
+!       Predictor_out:     Copy of the input structure, Predictor_in.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_Predictor_type
+!                          TYPE:       Predictor_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
@@ -604,26 +607,26 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Assign_Predictor( Predictor_in , &  ! Input
-                                  Predictor_out, &  ! Output
-                                  RCS_Id       , &  ! Revision control
-                                  Message_Log  ) &  ! Error messaging
-                                RESULT( Error_Status )
+  FUNCTION Assign_Predictor( Predictor_in , &  ! Input
+                             Predictor_out, &  ! Output               
+                             RCS_Id       , &  ! Revision control     
+                             Message_Log  ) &  ! Error messaging      
+                           RESULT( Error_Status )                     
     ! Arguments
-    TYPE(CRTM_Predictor_type), INTENT(IN)     :: Predictor_in
-    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor_out
-    CHARACTER(*), OPTIONAL   , INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL   , INTENT(IN)     :: Message_Log
+    TYPE(Predictor_type)  , INTENT(IN)     :: Predictor_in      
+    TYPE(Predictor_type)  , INTENT(IN OUT) :: Predictor_out     
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Predictor'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_Predictor'
 
     ! Set up
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
-    IF ( .NOT. CRTM_Associated_Predictor(Predictor_In) ) THEN
+    IF ( .NOT. Associated_Predictor(Predictor_In) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( &
              ROUTINE_NAME, &
@@ -634,11 +637,11 @@ CONTAINS
     END IF
     
     ! Allocate data arrays
-    Error_Status = CRTM_Allocate_Predictor( Predictor_in%n_Layers    , &
-                                            Predictor_in%n_Predictors, &
-                                            Predictor_in%n_Absorbers , &
-                                            Predictor_out            , &
-                                            Message_Log=Message_Log    )
+    Error_Status = Allocate_Predictor( Predictor_in%n_Layers    , &
+                                       Predictor_in%n_Predictors, &
+                                       Predictor_in%n_Absorbers , &
+                                       Predictor_out            , &
+                                       Message_Log=Message_Log    )
     IF ( Error_Status /= SUCCESS ) THEN
       Error_Status = FAILURE
       CALL Display_Message( &
@@ -658,26 +661,26 @@ CONTAINS
     Predictor_out%aveA = Predictor_in%aveA
     Predictor_out%X    = Predictor_in%X
 
-  END FUNCTION CRTM_Assign_Predictor
+  END FUNCTION Assign_Predictor
 
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Zero_Predictor
+!       Zero_Predictor
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out all members of a CRTM_Predictor structure - both
+!       Subroutine to zero-out all members of a Predictor structure - both
 !       scalar and pointer.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Zero_Predictor( Predictor )
+!       CALL Zero_Predictor( Predictor )
 !
 ! OUTPUT ARGUMENTS:
 !       Predictor:    Zeroed out Predictor structure.
 !                     UNITS:      N/A
-!                     TYPE:       CRTM_Predictor_type
+!                     TYPE:       Predictor_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
@@ -693,8 +696,8 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Zero_Predictor( Predictor )  ! Output
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Predictor
+  SUBROUTINE Zero_Predictor( Predictor )  ! Output
+    TYPE(Predictor_type),  INTENT(IN OUT) :: Predictor
     ! Reset the scalar components
     Predictor%Secant_Sensor_Zenith = ZERO
     ! Reset the array components
@@ -702,6 +705,6 @@ CONTAINS
     Predictor%dA   = ZERO
     Predictor%aveA = ZERO
     Predictor%X    = ZERO
-  END SUBROUTINE CRTM_Zero_Predictor
+  END SUBROUTINE Zero_Predictor
   
-END MODULE CRTM_Predictor_Define
+END MODULE ODAS_Predictor_Define

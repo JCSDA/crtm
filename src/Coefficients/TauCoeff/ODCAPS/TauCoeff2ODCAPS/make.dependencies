@@ -1,0 +1,16 @@
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 
+TauCoeff2ODCAPS.o : TauCoeff2ODCAPS.f90 TauCoeff_SARTA_Binary_IO.o TauCoeff_SARTA_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o 
+TauCoeff_SARTA_Binary_IO.o : TauCoeff_SARTA_Binary_IO.f90 TauCoeff_SARTA_Subset_Binary_IO.o TauCoeff_SARTA_TraceGas_Binary_IO.o Tau_OPTRAN_SARTA_Coeff_Binary_IO.o TauCoeff_SARTA_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+TauCoeff_SARTA_Define.o : TauCoeff_SARTA_Define.f90 TauCoeff_SARTA_Subset_Define.o TauCoeff_SARTA_TraceGas_Define.o Tau_OPTRAN_SARTA_Coeff_Define.o Message_Handler.o Type_Kinds.o 
+TauCoeff_SARTA_Subset_Binary_IO.o : TauCoeff_SARTA_Subset_Binary_IO.f90 TauCoeff_SARTA_Subset_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+TauCoeff_SARTA_Subset_Define.o : TauCoeff_SARTA_Subset_Define.f90 Message_Handler.o Type_Kinds.o 
+TauCoeff_SARTA_TraceGas_Binary_IO.o : TauCoeff_SARTA_TraceGas_Binary_IO.f90 TauCoeff_SARTA_TraceGas_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+TauCoeff_SARTA_TraceGas_Define.o : TauCoeff_SARTA_TraceGas_Define.f90 Message_Handler.o Type_Kinds.o 
+Tau_OPTRAN_SARTA_Coeff_Binary_IO.o : Tau_OPTRAN_SARTA_Coeff_Binary_IO.f90 Tau_OPTRAN_SARTA_Coeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Tau_OPTRAN_SARTA_Coeff_Define.o : Tau_OPTRAN_SARTA_Coeff_Define.f90 Message_Handler.o Type_Kinds.o 
+Type_Kinds.o : Type_Kinds.f90 

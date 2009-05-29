@@ -94,6 +94,8 @@ MODULE TauProfile_Define
     REAL(fp), POINTER :: Angle(:)          => NULL() ! I
     INTEGER , POINTER :: Profile(:)        => NULL() ! M
     INTEGER , POINTER :: Molecule_Set(:)   => NULL() ! J
+    ! Geometric angle arrays
+    REAL(fp), POINTER :: Geometric_Angle(:,:,:) => NULL() ! K x I x M
     ! Transmittance profiles
     REAL(fp), POINTER :: Tau(:,:,:,:,:)    => NULL() ! K x L x I x M x J
   END TYPE TauProfile_type
@@ -194,6 +196,7 @@ CONTAINS
            ASSOCIATED( TauProfile%Angle          ) .AND. &
            ASSOCIATED( TauProfile%Profile        ) .AND. &
            ASSOCIATED( TauProfile%Molecule_Set   ) .AND. &
+           ASSOCIATED( TauProfile%Geometric_Angle) .AND. &
            ASSOCIATED( TauProfile%Tau            )       ) THEN
         Association_Status = .TRUE.
       END IF
@@ -203,6 +206,7 @@ CONTAINS
            ASSOCIATED( TauProfile%Angle          ) .OR. &
            ASSOCIATED( TauProfile%Profile        ) .OR. &
            ASSOCIATED( TauProfile%Molecule_Set   ) .OR. &
+           ASSOCIATED( TauProfile%Geometric_Angle) .OR. &
            ASSOCIATED( TauProfile%Tau            )      ) THEN
         Association_Status = .TRUE.
       END IF
@@ -320,6 +324,7 @@ CONTAINS
                 TauProfile%Angle         , &
                 TauProfile%Profile       , &
                 TauProfile%Molecule_Set  , &
+                TauProfile%Geometric_Angle, &
                 TauProfile%Tau           , &
                 STAT = Allocate_Status     )
     IF ( Allocate_Status /= 0 ) THEN
@@ -567,6 +572,9 @@ CONTAINS
               TauProfile%Angle( n_Angles ), &
               TauProfile%Profile( n_Profiles ), &
               TauProfile%Molecule_Set( n_Molecule_Sets ), &
+              TauProfile%Geometric_Angle( n_Layers, &
+                                          n_Angles, &
+                                          n_Profiles ), &
               TauProfile%Tau( n_Layers, &
                               n_Channels, &
                               n_Angles, &
@@ -601,6 +609,7 @@ CONTAINS
     TauProfile%Angle          = FP_INVALID
     TauProfile%Profile        = IP_INVALID
     TauProfile%Molecule_Set   = IP_INVALID
+    TauProfile%Geometric_Angle= FP_INVALID
     TauProfile%Tau            = FP_INVALID
 
 
@@ -746,6 +755,7 @@ CONTAINS
     TauProfile_out%Angle          = TauProfile_in%Angle
     TauProfile_out%Profile        = TauProfile_in%Profile
     TauProfile_out%Molecule_Set   = TauProfile_in%Molecule_Set
+    TauProfile_out%Geometric_Angle= TauProfile_in%Geometric_Angle
     TauProfile_out%Tau            = TauProfile_in%Tau
 
   END FUNCTION Assign_TauProfile
@@ -976,19 +986,19 @@ CONTAINS
 
     ! Check the profile or molecule set values
     IF ( By_Molecule_Set ) THEN
-      IF ( ANY( ( TauProfile1%Molecule_Set - TauProfile2%Molecule_Set ) /= 0 ) ) THEN
+      IF ( ANY( ( TauProfile1%Profile - TauProfile2%Profile ) /= 0 ) ) THEN
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
-                              'TauProfile molecule set IDs are different.', &
+                              'TauProfile profile numbers are different.', &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
       END IF
     ELSE
-      IF ( ANY( ( TauProfile1%Profile - TauProfile2%Profile ) /= 0 ) ) THEN
+      IF ( ANY( ( TauProfile1%Molecule_Set - TauProfile2%Molecule_Set ) /= 0 ) ) THEN
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
-                              'TauProfile profile numbers are different.', &
+                              'TauProfile molecule set IDs are different.', &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
@@ -1100,12 +1110,14 @@ CONTAINS
       ! The first part
       m1 = 1
       m2 = TauProfile_Tmp%n_Profiles
-      TauProfile1%Profile(m1:m2)     = TauProfile_Tmp%Molecule_Set
+      TauProfile1%Profile(m1:m2)     = TauProfile_Tmp%Profile
+      TauProfile1%Geometric_Angle(:,:,m1:m2) = TauProfile_Tmp%Geometric_Angle
       TauProfile1%Tau(:,:,:,m1:m2,:) = TauProfile_Tmp%Tau
       ! The second part
       m1 = m2 + 1
-      m2 = n_Molecule_Sets
-      TauProfile1%Profile(m1:m2)     = TauProfile2%Molecule_Set
+      m2 = n_Profiles
+      TauProfile1%Profile(m1:m2)     = TauProfile2%Profile
+      TauProfile1%Geometric_Angle(:,:,m1:m2) = TauProfile2%Geometric_Angle
       TauProfile1%Tau(:,:,:,m1:m2,:) = TauProfile2%Tau
 
     END IF Concatenate_TauProfile1
@@ -1392,6 +1404,26 @@ CONTAINS
         IF ( Check_Once ) RETURN
       END IF
     END DO
+    DO m = 1, TauProfile_LHS%n_Profiles                                               
+      DO i = 1, TauProfile_LHS%n_Angles                                               
+         DO k = 1, TauProfile_LHS%n_Layers                                            
+           IF ( .NOT. Compare_Float( TauProfile_LHS%Geometric_Angle(k,i,m), &         
+                                     TauProfile_RHS%Geometric_Angle(k,i,m), &         
+                                     ULP=ULP ) ) THEN                                 
+             WRITE(Message,'("TauProfile array component Geometric_Angle values ",&   
+                             &"are different at indices (",3(1x,i0),")")') &          
+                             k,i,m                                                    
+             Error_Status = FAILURE                                                   
+             CALL Display_Message( ROUTINE_NAME, &                                    
+                                   TRIM(Message), &                                   
+                                   Error_Status, &                                    
+                                   Message_Log=Message_Log )                          
+             IF ( Check_Once ) RETURN                                                 
+           END IF                                                                     
+         END DO                                                                       
+      END DO                                                                          
+   END DO                                                                             
+     
     DO j = 1, TauProfile_LHS%n_Molecule_Sets
       DO m = 1, TauProfile_LHS%n_Profiles
         DO i = 1, TauProfile_LHS%n_Angles
@@ -1415,7 +1447,6 @@ CONTAINS
         END DO
       END DO
     END DO
-    
   END FUNCTION Equal_TauProfile
 
 

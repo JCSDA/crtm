@@ -1,0 +1,15 @@
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+ODPS_Binary_IO.o : ODPS_Binary_IO.f90 ODPS_Define.o Binary_File_Utility.o Message_Handler.o Type_Kinds.o 
+ODPS_Define.o : ODPS_Define.f90 Sort_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+ODPS_netCDF_IO.o : ODPS_netCDF_IO.f90 netCDF_Utility.o ODPS_Define.o Message_Handler.o Type_Kinds.o 
+Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 
+Test_ODPS.o : Test_ODPS.f90 ODPS_netCDF_IO.o ODPS_Binary_IO.o ODPS_Define.o Message_Handler.o Type_Kinds.o 
+Type_Kinds.o : Type_Kinds.f90 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 

@@ -1,24 +1,18 @@
 !
-! CRTM_Predictor
+! ODAS_Predictor
 !
-! Module continaing routines to compute the predictors for the gas
-! absorption (AtmAbsorption) model.
-!
-! Combines the functionality of
-!   CRTM_AtmAbsorption_IntAbsorber.f90
-! and
-!   CRTM_AtmAbsorption_Predictor.f90
-! but using the separate CRTM_Predictor_type structure.
-!
-! The Compute_Predictor routines replace the SetUp_AtmAbsorption routines
+! Module continaing routines to compute the predictors for the
+! Optical Depth Absorber Space (ODAS) gas absorption (AtmAbsorption) model.
 !
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 29-Aug-2006
 !                       paul.vandelst@ssec.wisc.edu
 !
+!       Modifed by:     Yong Han, NESDIS/STAR 25-June-2008
+!                       yong.han@noaa.gov
 
-MODULE CRTM_Predictor
+MODULE ODAS_Predictor
 
   ! -----------------
   ! Environment setup
@@ -28,27 +22,20 @@ MODULE CRTM_Predictor
   USE Message_Handler         , ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters         , ONLY: ZERO                       , &
                                       POINT_25, POINT_5, POINT_75, &
-                                      ONE, TWO, THREE            , &
+                                      ONE, TWO, THREE, TEN       , &
                                       TOA_PRESSURE               , &
                                       RECIPROCAL_GRAVITY         , &
-                                      WET_ABSORBER_INDEX         , &
-                                      DRY_ABSORBER_INDEX         , &
-                                      OZO_ABSORBER_INDEX         , &
-                                      MAX_N_LAYERS               , &
-                                      MAX_N_ABSORBERS            , &
-                                      MAX_N_STANDARD_PREDICTORS  , &
-                                      MAX_N_INTEGRATED_PREDICTORS, &
-                                      MINIMUM_ABSORBER_AMOUNT
+                                      MAX_N_LAYERS 
   USE CRTM_Atmosphere_Define  , ONLY: CRTM_Atmosphere_type, &
                                       CRTM_Get_AbsorberIdx, &
                                       H2O_ID, O3_ID
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
-  USE CRTM_Predictor_Define   , ONLY: CRTM_Predictor_type      , &
-                                      CRTM_Associated_Predictor, &
-                                      CRTM_Destroy_Predictor   , &
-                                      CRTM_Allocate_Predictor  , &
-                                      CRTM_Assign_Predictor  , &
-                                      CRTM_Zero_Predictor
+  USE ODAS_Predictor_Define   , ONLY: Predictor_type      , &
+                                      Associated_Predictor, &
+                                      Destroy_Predictor   , &
+                                      Allocate_Predictor  , &
+                                      Assign_Predictor    , &
+                                      Zero_Predictor
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -57,22 +44,23 @@ MODULE CRTM_Predictor
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_Predictor structure data type
-  ! in the CRTM_Predictor_Define module
-  PUBLIC :: CRTM_Predictor_type
-  ! CRTM_Predictor structure routines inherited
-  ! from the CRTM_Predictor_Define module
-  PUBLIC :: CRTM_Associated_Predictor
-  PUBLIC :: CRTM_Destroy_Predictor
-  PUBLIC :: CRTM_Allocate_Predictor
-  PUBLIC :: CRTM_Assign_Predictor
-  PUBLIC :: CRTM_Zero_Predictor
+  ! Predictor structure data type
+  ! in the ODAS_Predictor_Define module
+  PUBLIC :: Predictor_type
+  ! ODAS_Predictor structure routines inherited
+  ! from the ODAS_Predictor_Define module
+  PUBLIC :: Associated_Predictor
+  PUBLIC :: Destroy_Predictor
+  PUBLIC :: Allocate_Predictor
+  PUBLIC :: Assign_Predictor
+  PUBLIC :: Zero_Predictor
   ! Science routines in this module
-  PUBLIC :: CRTM_Compute_Predictors
-  PUBLIC :: CRTM_Compute_Predictors_TL
-  PUBLIC :: CRTM_Compute_Predictors_AD
+  PUBLIC :: Compute_Predictors
+  PUBLIC :: Compute_Predictors_TL
+  PUBLIC :: Compute_Predictors_AD
   ! Internal variable structure
-  PUBLIC :: CRTM_APVariables_type
+  PUBLIC :: APVariables_type
+
 
   ! -----------------
   ! Module parameters
@@ -81,19 +69,60 @@ MODULE CRTM_Predictor
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
 
+  ! Absorbers in the gas absorption model
+  ! -------------------------------------
+  ! The total number
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_ABSORBERS = 3
+  ! The indexing order of the absorbers
+  INTEGER, PUBLIC, PARAMETER :: WET_ABSORBER_INDEX = 1
+  INTEGER, PUBLIC, PARAMETER :: DRY_ABSORBER_INDEX = 2
+  INTEGER, PUBLIC, PARAMETER :: OZO_ABSORBER_INDEX = 3
+  ! The absorber index and name arrays
+  INTEGER, PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
+    ABSORBER_INDEX = (/ WET_ABSORBER_INDEX, &
+                        DRY_ABSORBER_INDEX, &
+                        OZO_ABSORBER_INDEX /)
+  CHARACTER( * ), PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
+    ABSORBER_NAME = (/ 'wet', &
+                       'dry', &
+                       'ozo' /)
+
+  ! Predictors in the gas absorption model
+  ! --------------------------------------
+  ! Standard predictors are absorber independent
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_STANDARD_PREDICTORS   = 11
+  ! Integrated predictors are defined for EACH absoreber
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_INTEGRATED_PREDICTORS = 6
+  ! The total number of predictors
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS = MAX_N_STANDARD_PREDICTORS + &
+                                                   ( MAX_N_ABSORBERS * MAX_N_INTEGRATED_PREDICTORS )
+  ! The number selected from the total to be
+  ! used in the gas absorption algorithm
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS_USED = 6
+
+  ! Maximum number of polynomial orders for
+  ! reconstructing the gas absorption coefficients
+  ! ----------------------------------------------
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_ORDERS = 10
+
+  ! The minimum absorber amount allowed based upon
+  ! the smallest representable numbers.
+  ! This value is equivalent to TINY(ONE)**0.25
+  ! ----------------------------------------------
+  REAL(fp), PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
+
 
   ! -------------------------------------------------
   ! Structure definition to hold integrated predictor
   ! forward variables across FWD, TL, and AD calls
-  ! NOTE: The structure component are NOT initialised
   ! -------------------------------------------------
-  TYPE :: CRTM_APVariables_type
+  TYPE :: APVariables_type
     PRIVATE
-    REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2
-    REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s
-  END TYPE CRTM_APVariables_type
+    REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2 = ZERO
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1 = ZERO
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2 = ZERO
+    REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s = ZERO
+  END TYPE APVariables_type
 
 
 CONTAINS
@@ -114,7 +143,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Compute_IntAbsorber
+!       Compute_IntAbsorber
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber profiles.
@@ -123,8 +152,8 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_IntAbsorber( Atmosphere, &  ! Input
-!                                      Predictor   )  ! Output
+!       CALL Compute_IntAbsorber( Atmosphere, &  ! Input
+!                                 Predictor   )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:   CRTM Atmosphere structure containing the atmospheric
@@ -135,22 +164,22 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:    CRTM Predictor structure containing the calculated
+!       Predictor:    Predictor structure containing the calculated
 !                     integrated absorber profiles
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_Predictor_type)
+!                     TYPE:       TYPE(Predictor_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_IntAbsorber( Atm, &  ! Input
-                                       Pred )  ! Output
+  SUBROUTINE Compute_IntAbsorber( Atm, &  ! Input
+                                  Pred )  ! Output
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Pred
+    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_IntAbsorber'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_IntAbsorber'
     ! Local variables
     INTEGER  :: k, j
     REAL(fp) :: dPonG
@@ -195,21 +224,21 @@ CONTAINS
       END DO
     END DO
 
-  END SUBROUTINE CRTM_Compute_IntAbsorber
+  END SUBROUTINE Compute_IntAbsorber
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Compute_IntAbsorber_TL
+!       Compute_IntAbsorber_TL
 !
 ! PURPOSE:
 !       Subroutine to compute the tangent-linear integrated absorber profiles.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_IntAbsorber_TL( Atmosphere,    &  ! Input
-!                                         Atmosphere_TL, &  ! Input
-!                                         Predictor_TL   )  ! Output
+!       CALL Compute_IntAbsorber_TL( Atmosphere,    &  ! Input
+!                                    Atmosphere_TL, &  ! Input      
+!                                    Predictor_TL   )  ! Output     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
@@ -228,24 +257,24 @@ CONTAINS
 !
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor_TL:   CRTM Predictor structure containing the calculated
+!       Predictor_TL:   Predictor structure containing the calculated
 !                       tangent-linear integrated absorber profiles
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Predictor_type)
+!                       TYPE:       TYPE(Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_IntAbsorber_TL( Atm,    &  ! Input
-                                          Atm_TL, &  ! Input
-                                          Pred_TL )  ! Output
+  SUBROUTINE Compute_IntAbsorber_TL( Atm,    &  ! Input
+                                     Atm_TL, &  ! Input      
+                                     Pred_TL )  ! Output     
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_TL
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Pred_TL
+    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred_TL
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_IntAbsorber_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_IntAbsorber_TL'
     ! Local variables
     INTEGER  :: k, j
     REAL(fp) :: dPonG
@@ -293,21 +322,21 @@ CONTAINS
       END DO
     END DO
 
-  END SUBROUTINE CRTM_Compute_IntAbsorber_TL
+  END SUBROUTINE Compute_IntAbsorber_TL
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Compute_IntAbsorber_AD
+!       Compute_IntAbsorber_AD
 !
 ! PURPOSE:
 !       Subroutine to compute the adjoint of the integrated absorber profiles.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_IntAbsorber_AD( Atmosphere,   &  ! Input
-!                                         Predictor_AD, &  ! Input
-!                                         Atmosphere_AD )  ! Output
+!       CALL Compute_IntAbsorber_AD( Atmosphere,   &  ! Input
+!                                     Predictor_AD, &  ! Input     
+!                                     Atmosphere_AD )  ! Output    
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
@@ -317,11 +346,11 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       Predictor_AD:   CRTM Predictor structure that, on input, contains the
+!       Predictor_AD:   Predictor structure that, on input, contains the
 !                       calculated adjoint integrated absorber profiles.
 !                       These values are set to zero on output.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Predictor_type)
+!                       TYPE:       TYPE(Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -339,12 +368,12 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_IntAbsorber_AD( Atm,     &  ! Input
-                                          Pred_AD, &  ! Input
-                                          Atm_AD   )  ! Output
+  SUBROUTINE Compute_IntAbsorber_AD( Atm,     &  ! Input
+                                     Pred_AD, &  ! Input      
+                                     Atm_AD   )  ! Output     
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Pred_AD
+    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
     ! Local variables
     INTEGER  :: k, j
@@ -411,7 +440,7 @@ CONTAINS
 
     END DO
 
-  END SUBROUTINE CRTM_Compute_IntAbsorber_AD
+  END SUBROUTINE Compute_IntAbsorber_AD
 
 
 
@@ -423,15 +452,15 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Standard_Predictors
+!       Standard_Predictors
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber INDEPENDENT
 !       predictors for the gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Standard_Predictors( Atmosphere, &  ! Input
-!                                      Predictor   )  ! Output
+!       CALL Standard_Predictors( Atmosphere, &  ! Input
+!                                 Predictor   )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:   CRTM Atmosphere structure containing the atmospheric
@@ -442,22 +471,22 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:    CRTM Predictor structure containing the calculated
+!       Predictor:    Predictor structure containing the calculated
 !                     standard predictors.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_Predictor_type)
+!                     TYPE:       TYPE(Predictor_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Standard_Predictors( Atm, &  ! Input
-                                       Pred )  ! Output, Istd x K
+  SUBROUTINE Standard_Predictors( Atm, &  ! Input
+                                  Pred )  ! Output, Istd x K
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Pred
+    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Standard_Predictors'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Standard_Predictors'
     ! Local variables
     INTEGER  :: k
     REAL(fp) :: p2
@@ -489,22 +518,22 @@ CONTAINS
 
     END DO Layer_Loop
 
-  END SUBROUTINE CRTM_Standard_Predictors
+  END SUBROUTINE Standard_Predictors
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Integrated_Predictors
+!       Integrated_Predictors
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber DEPENDENT
 !       predictors for the gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Integrated_Predictors( Atmosphere,  &  ! Input
-!                                        Predictor,   &  ! In/Output
-!                                        APVariables  )  ! Internal variable output
+!       CALL Integrated_Predictors( Atmosphere,  &  ! Input
+!                                   Predictor,   &  ! In/Output                    
+!                                   APVariables  )  ! Internal variable output     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:   CRTM Atmosphere structure containing the atmospheric
@@ -515,33 +544,33 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:    CRTM_Predictor structure containing the calculated
+!       Predictor:    Predictor structure containing the calculated
 !                     integrated predictors.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_Predictor)
+!                     TYPE:       TYPE(Predictor_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 !       APVariables:  Structure containing internal variables required for
 !                     subsequent tangent-linear or adjoint model calls.
 !                     The contents of this structure are NOT accessible
-!                     outside of the CRTM_Predictor module.
+!                     outside of the ODAS_Predictor module.
 !                     UNITS:      N/A
-!                     TYPE:       CRTM_APVariables_type
+!                     TYPE:       APVariables_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Integrated_Predictors( Atm,  &  ! Input
-                                         Pred, &  ! Input/output
-                                         APV   )  ! Internal variable output
+  SUBROUTINE Integrated_Predictors( Atm,  &  ! Input
+                                    Pred, &  ! Input/output                 
+                                    APV   )  ! Internal variable output     
     ! Arguments
-    TYPE(CRTM_Atmosphere_type),  INTENT(IN)      :: Atm
-    TYPE(CRTM_Predictor_type),   INTENT(IN OUT)  :: Pred
-    TYPE(CRTM_APVariables_type), INTENT(OUT)     :: APV
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)      :: Atm
+    TYPE(Predictor_type),       INTENT(IN OUT)  :: Pred
+    TYPE(APVariables_type),     INTENT(OUT)     :: APV
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Integrated_Predictors'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrated_Predictors'
     ! Local variables
     INTEGER :: i, i1, j, k
     REAL(fp) :: Inverse_1
@@ -603,22 +632,22 @@ CONTAINS
       END DO Layer_Loop
     END DO Absorber_Loop
 
-  END SUBROUTINE CRTM_Integrated_Predictors
+  END SUBROUTINE Integrated_Predictors
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Standard_Predictors_TL
+!       Standard_Predictors_TL
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber INDEPENDENT
 !       tangent-linear predictors for the gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Standard_Predictors_TL( Atmosphere,    &  ! Input
-!                                         Atmosphere_TL, &  ! Input
-!                                         Predictor_TL   )  ! Output
+!       CALL Standard_Predictors_TL( Atmosphere,    &  ! Input
+!                                    Atmosphere_TL, &  ! Input      
+!                                    Predictor_TL   )  ! Output     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
@@ -636,24 +665,24 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor_TL:   CRTM Predictor structure containing the calculated
+!       Predictor_TL:   Predictor structure containing the calculated
 !                       tangent-linear standard predictors.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Predictor_type)
+!                       TYPE:       TYPE(Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Standard_Predictors_TL( Atm,    &  ! Input
-                                          Atm_TL, &  ! Input
-                                          Pred_TL )  ! Output
+  SUBROUTINE Standard_Predictors_TL( Atm,    &  ! Input
+                                     Atm_TL, &  ! Input      
+                                     Pred_TL )  ! Output     
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atm
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atm_TL
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT)  :: Pred_TL
+    TYPE(Predictor_type),       INTENT(IN OUT)  :: Pred_TL
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Standard_Predictors_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Standard_Predictors_TL'
     ! Local variables
     INTEGER  :: k
     REAL(fp) :: p2, p2_TL
@@ -694,24 +723,24 @@ CONTAINS
 
     END DO Layer_loop
 
-  END SUBROUTINE CRTM_Standard_Predictors_TL
+  END SUBROUTINE Standard_Predictors_TL
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Integrated_Predictors_TL
+!       Integrated_Predictors_TL
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber amount DEPENDENT
 !       tangent-linear predictors for the gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Integrated_Predictors_TL( Atmosphere,    &  ! Input
-!                                           Predictor,     &  ! Input
-!                                           Atmosphere_TL, &  ! Input
-!                                           Predictor_TL,  &  ! In/Output
-!                                           APVariables    )  ! Internal variable input
+!       CALL Integrated_Predictors_TL( Atmosphere,    &  ! Input
+!                                      Predictor,     &  ! Input                       
+!                                      Atmosphere_TL, &  ! Input                       
+!                                      Predictor_TL,  &  ! In/Output                   
+!                                      APVariables    )  ! Internal variable input     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM Atmosphere structure containing the atmospheric
@@ -721,10 +750,10 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Predictor:       CRTM Predictor structure containing the calculated
+!       Predictor:       Predictor structure containing the calculated
 !                        integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Predictor_type)
+!                        TYPE:       TYPE(Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -738,34 +767,34 @@ CONTAINS
 !       APVariables:     Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
-!                        outside of the CRTM_Predictor module.
+!                        outside of the Predictor module.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_APVariables_type
+!                        TYPE:       APVariables_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 ! OUTPUT ARGUMENTS:
-!       Predictor_TL:    CRTM Predictor structure containing the calculated
+!       Predictor_TL:    Predictor structure containing the calculated
 !                        tangent-linear integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Predictor_type)
+!                        TYPE:       TYPE(Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Integrated_Predictors_TL( Atm,     &  ! Input
-                                            Pred,    &  ! Input
-                                            Atm_TL,  &  ! Input
-                                            Pred_TL, &  ! Output
-                                            APV      )  ! Internal variable input
+  SUBROUTINE Integrated_Predictors_TL( Atm,     &  ! Input
+                                       Pred,    &  ! Input                       
+                                       Atm_TL,  &  ! Input                       
+                                       Pred_TL, &  ! Output                      
+                                       APV      )  ! Internal variable input     
     ! Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)      :: Atm
-    TYPE(CRTM_Predictor_type),   INTENT(IN)      :: Pred
+    TYPE(Predictor_type),        INTENT(IN)      :: Pred
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)      :: Atm_TL
-    TYPE(CRTM_Predictor_type),   INTENT(IN OUT)  :: Pred_TL
-    TYPE(CRTM_APVariables_type), INTENT(IN)      :: APV
+    TYPE(Predictor_type),        INTENT(IN OUT)  :: Pred_TL
+    TYPE(APVariables_type),      INTENT(IN)      :: APV
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Integrated_Predictors_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrated_Predictors_TL'
     ! Local variables
     INTEGER :: i, i1, j, k
     REAL(fp) :: Factor_1_TL
@@ -857,22 +886,22 @@ CONTAINS
       END DO Layer_loop
     END DO Absorber_Loop
 
-  END SUBROUTINE CRTM_Integrated_Predictors_TL
+  END SUBROUTINE Integrated_Predictors_TL
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Standard_Predictors_AD
+!       Standard_Predictors_AD
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber amount INDEPENDENT
 !       predictors for the adjoint gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Standard_Predictors_AD( Atmosphere,   &  ! Input
-!                                         Predictor_AD, &  ! Input
-!                                         Atmosphere_AD )  ! Output
+!       CALL Standard_Predictors_AD( Atmosphere,   &  ! Input
+!                                    Predictor_AD, &  ! Input      
+!                                    Atmosphere_AD )  ! Output     
 !                                         
 !
 ! INPUT ARGUMENTS:
@@ -883,10 +912,10 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       Predictor_AD:   CRTM Predictor structure containing the calculated
+!       Predictor_AD:   Predictor structure containing the calculated
 !                       adjoint integrated predictors.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Predictor_type)
+!                       TYPE:       TYPE(Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -907,15 +936,15 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Standard_Predictors_AD( Atm,     &  ! Input
-                                          Pred_AD, &  ! Input
-                                          Atm_AD   )  ! Output
+  SUBROUTINE Standard_Predictors_AD( Atm,     &  ! Input
+                                     Pred_AD, &  ! Input      
+                                     Atm_AD   )  ! Output     
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(CRTM_Predictor_type),  INTENT(IN OUT) :: Pred_AD
+    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Standard_Predictors_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Standard_Predictors_AD'
     ! Local variables
     INTEGER  :: k
     REAL(fp) :: p2, p2_AD
@@ -968,24 +997,24 @@ CONTAINS
 
     END DO Layer_loop
 
-  END SUBROUTINE CRTM_Standard_Predictors_AD
+  END SUBROUTINE Standard_Predictors_AD
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Integrated_Predictors_AD
+!       Integrated_Predictors_AD
 !
 ! PURPOSE:
 !       Subroutine to compute the integrated absorber amount DEPENDENT
 !       predictors for the adjoint gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Integrated_Predictors_AD( Atmosphere,    &  ! Input
-!                                           Predictor,     &  ! Input
-!                                           Predictor_AD,  &  ! In/Output
-!                                           Atmosphere_AD, &  ! Output
-!                                           APVariables    )  ! Internal variable input
+!       CALL Integrated_Predictors_AD( Atmosphere,    &  ! Input
+!                                      Predictor,     &  ! Input                       
+!                                      Predictor_AD,  &  ! In/Output                   
+!                                      Atmosphere_AD, &  ! Output                      
+!                                      APVariables    )  ! Internal variable input     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM Atmosphere structure containing the atmospheric
@@ -995,25 +1024,25 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Predictor:       CRTM Predictor structure containing the calculated
+!       Predictor:       Predictor structure containing the calculated
 !                        integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Predictor_type)
+!                        TYPE:       TYPE(Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Predictor_AD:    CRTM Predictor structure that, on input, contains
+!       Predictor_AD:    Predictor structure that, on input, contains
 !                        the adjoint integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Predictor_type)
+!                        TYPE:       TYPE(Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor_AD:    CRTM Predictor structure that, on output, contains
+!       Predictor_AD:    Predictor structure that, on output, contains
 !                        the adjoint integrated absorber amounts.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Predictor_type)
+!                        TYPE:       TYPE(Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -1031,19 +1060,19 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Integrated_Predictors_AD( Atm,     &  ! Input
-                                            Pred,    &  ! Input
-                                            Pred_AD, &  ! In/Output
-                                            Atm_AD,  &  ! Output
-                                            APV      )  ! Internal variable input
+  SUBROUTINE Integrated_Predictors_AD( Atm,     &  ! Input
+                                       Pred,    &  ! Input                       
+                                       Pred_AD, &  ! In/Output                   
+                                       Atm_AD,  &  ! Output                      
+                                       APV      )  ! Internal variable input     
     ! Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
-    TYPE(CRTM_Predictor_type),   INTENT(IN)     :: Pred
-    TYPE(CRTM_Predictor_type),   INTENT(IN OUT) :: Pred_AD
+    TYPE(Predictor_type),        INTENT(IN)     :: Pred
+    TYPE(Predictor_type),        INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type),  INTENT(IN OUT) :: Atm_AD
-    TYPE(CRTM_APVariables_type), INTENT(IN)     :: APV
+    TYPE(APVariables_type),      INTENT(IN)     :: APV
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Integrated_Predictors_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrated_Predictors_AD'
     ! Local variables
     INTEGER :: i, i1, j, k
     REAL(fp) :: d_A_AD
@@ -1197,7 +1226,7 @@ CONTAINS
 
     END DO Absorber_Loop
     
-  END SUBROUTINE CRTM_Integrated_Predictors_AD
+  END SUBROUTINE Integrated_Predictors_AD
 
 
 !################################################################################
@@ -1211,16 +1240,16 @@ CONTAINS
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Compute_Predictors
+!       Compute_Predictors
 !
 ! PURPOSE:
 !       Subroutine to calculate the gas absorption model predictors.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_Predictors ( Atmosphere,   &  ! Input
-!                                      GeometryInfo, &  ! Input
-!                                      Predictor,    &  ! Output
-!                                      APVariables   )  ! Internal variable output
+!       CALL Compute_Predictors ( Atmosphere,   &  ! Input
+!                                 GeometryInfo, &  ! Input                        
+!                                 Predictor,    &  ! Output                       
+!                                 APVariables   )  ! Internal variable output     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
@@ -1238,19 +1267,19 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:      CRTM Predictor structure containing the integrated absorber
+!       Predictor:      Predictor structure containing the integrated absorber
 !                       and predictor profiles.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Predictor_type)
+!                       TYPE:       TYPE(Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 !       APVariables:    Structure containing internal variables required for
 !                       subsequent tangent-linear or adjoint model calls.
 !                       The contents of this structure are NOT accessible
-!                       outside of the CRTM_Predictor module.
+!                       outside of the ODAS_Predictor module.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_APVariables_type)
+!                       TYPE:       TYPE(APVariables_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(OUT)
 !
@@ -1276,54 +1305,54 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_Predictors( Atmosphere,   &  ! Input
-                                      GeometryInfo, &  ! Input
-                                      Predictor,    &  ! Output
-                                      APV           )  ! Internal variable output
+  SUBROUTINE Compute_Predictors( Atmosphere,   &  ! Input
+                                 GeometryInfo, &  ! Input                        
+                                 Predictor,    &  ! Output                       
+                                 APV           )  ! Internal variable output     
     ! Arguments
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor
-    TYPE(CRTM_APVariables_type),  INTENT(OUT)    :: APV
+    TYPE(Predictor_type),         INTENT(IN OUT) :: Predictor
+    TYPE(APVariables_type),       INTENT(OUT)    :: APV
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_Predictors'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors'
 
     ! Save the angle information
     Predictor%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
 
     ! Compute the nadir integrated absorber profiles
-    CALL CRTM_Compute_IntAbsorber( Atmosphere, &  ! Input
-                                   Predictor   )  ! Output
+    CALL Compute_IntAbsorber( Atmosphere, &  ! Input
+                              Predictor   )  ! Output
 
     ! Compute the predictors
     !
     ! Standard predictors
-    CALL CRTM_Standard_Predictors( Atmosphere, &
-                                   Predictor   )
+    CALL Standard_Predictors( Atmosphere, &
+                              Predictor   )
     ! Integrated predictors
-    CALL CRTM_Integrated_Predictors( Atmosphere, &
-                                     Predictor,  &
-                                     APV         )
+    CALL Integrated_Predictors( Atmosphere, &
+                                Predictor,  &     
+                                APV         )     
 
-  END SUBROUTINE CRTM_Compute_Predictors
+  END SUBROUTINE Compute_Predictors
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Compute_Predictors_TL
+!       Compute_Predictors_TL
 !
 ! PURPOSE:
 !       Subroutine to calculate the gas absorption model tangent-linear
 !       predictors.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_Predictors_TL ( Atmosphere,    &  ! FWD Input
-!                                         Predictor,     &  ! FWD Input
-!                                         Atmosphere_TL, &  ! TL Input
-!                                         GeometryInfo,  &  ! Input
-!                                         Predictor_TL,  &  ! TL Output
-!                                         APVariables    )  ! Internal variable input
+!       CALL Compute_Predictors_TL ( Atmosphere,    &  ! FWD Input
+!                                    Predictor,     &  ! FWD Input                   
+!                                    Atmosphere_TL, &  ! TL Input                    
+!                                    GeometryInfo,  &  ! Input                       
+!                                    Predictor_TL,  &  ! TL Output                   
+!                                    APVariables    )  ! Internal variable input     
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:        CRTM Atmosphere structure containing the atmospheric
@@ -1333,10 +1362,10 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       Predictor:         CRTM Predictor structure containing the integrated absorber
+!       Predictor:         Predictor structure containing the integrated absorber
 !                          and predictor profiles.
 !                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Predictor_type)
+!                          TYPE:       TYPE(Predictor_type)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
@@ -1357,17 +1386,17 @@ CONTAINS
 !       APVariables:       Structure containing internal variables required for
 !                          subsequent tangent-linear or adjoint model calls.
 !                          The contents of this structure are NOT accessible
-!                          outside of the CRTM_Predictor module.
+!                          outside of the ODAS_Predictor module.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_APVariables_type
+!                          TYPE:       APVariables_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor_TL:      CRTM Predictor structure containing the tangent-linear
+!       Predictor_TL:      Predictor structure containing the tangent-linear
 !                          integrated absorber and predictor profiles.
 !                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Predictor_type)
+!                          TYPE:       TYPE(Predictor_type)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
@@ -1394,61 +1423,61 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_Predictors_TL( Atmosphere,    &  ! FWD Input
-                                         Predictor,     &  ! FWD Input
-                                         Atmosphere_TL, &  ! TL Input
-                                         GeometryInfo,  &  ! Input
-                                         Predictor_TL,  &  ! TL Output
-                                         APV            )  ! Internal variable input
+  SUBROUTINE Compute_Predictors_TL( Atmosphere,    &  ! FWD Input
+                                    Predictor,     &  ! FWD Input                   
+                                    Atmosphere_TL, &  ! TL Input                    
+                                    GeometryInfo,  &  ! Input                       
+                                    Predictor_TL,  &  ! TL Output                   
+                                    APV            )  ! Internal variable input     
     ! Arguments
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_Predictor_type),    INTENT(IN)     :: Predictor
+    TYPE(Predictor_type),         INTENT(IN)     :: Predictor
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere_TL
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor_TL
-    TYPE(CRTM_APVariables_type),  INTENT(IN)     :: APV
+    TYPE(Predictor_type),         INTENT(IN OUT) :: Predictor_TL
+    TYPE(APVariables_type),       INTENT(IN)     :: APV
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_Predictors_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_TL'
 
     ! Save the angle information
     Predictor_TL%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
 
     ! Compute the tangent-linear nadir integrated absorber profiles
-    CALL CRTM_Compute_IntAbsorber_TL( Atmosphere   , &  ! Input
-                                      Atmosphere_TL, &  ! Input
-                                      Predictor_TL   )  ! Output
+    CALL Compute_IntAbsorber_TL( Atmosphere   , &  ! Input
+                                 Atmosphere_TL, &  ! Input     
+                                 Predictor_TL   )  ! Outpu     t
 
     ! Compute the predictors
     !
     ! Standard predictors
-    CALL CRTM_Standard_Predictors_TL( Atmosphere   , &  ! Input
-                                      Atmosphere_TL, &  ! Input
-                                      Predictor_TL   )  ! Output
+    CALL Standard_Predictors_TL( Atmosphere   , &  ! Input
+                                 Atmosphere_TL, &  ! Input      
+                                 Predictor_TL   )  ! Output     
     ! Integrated predictors
-    CALL CRTM_Integrated_Predictors_TL( Atmosphere   , &  ! Input
-                                        Predictor    , &  ! Input
-                                        Atmosphere_TL, &  ! Input
-                                        Predictor_TL , &  ! Output
-                                        APV            )  ! Internal variable input
+    CALL Integrated_Predictors_TL( Atmosphere   , &  ! Input
+                                   Predictor    , &  ! Input                       
+                                   Atmosphere_TL, &  ! Input                       
+                                   Predictor_TL , &  ! Output                      
+                                   APV            )  ! Internal variable input     
 
-  END SUBROUTINE CRTM_Compute_Predictors_TL
+  END SUBROUTINE Compute_Predictors_TL
 
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Compute_Predictors_AD
+!       Compute_Predictors_AD
 !
 ! PURPOSE:
 !       Subroutine to calculate the adjoint gas absorption model predictors.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
-!                                         Predictor,     &  ! FWD Input
-!                                         Predictor_AD,  &  ! AD Input
-!                                         GeometryInfo,  &  ! Input
-!                                         Atmosphere_AD, &  ! AD Output
-!                                         APVariables    )  ! Internal variable input
+!       CALL Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
+!                                    Predictor,     &  ! FWD Input                   
+!                                    Predictor_AD,  &  ! AD Input                    
+!                                    GeometryInfo,  &  ! Input                       
+!                                    Atmosphere_AD, &  ! AD Output                   
+!                                    APVariables    )  ! Internal variable input     
 ! INPUT ARGUMENTS:
 !       Atmosphere:        CRTM Atmosphere structure containing the atmospheric
 !                          state data.
@@ -1457,18 +1486,18 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       Predictor:         CRTM Predictor structure containing the integrated absorber
+!       Predictor:         Predictor structure containing the integrated absorber
 !                          and predictor profiles.
 !                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Predictor_type)
+!                          TYPE:       TYPE(Predictor_type)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       Predictor_AD:      CRTM Predictor structure containing the adjoint
+!       Predictor_AD:      Predictor structure containing the adjoint
 !                          integrated absorber and predictor profiles.
 !                          **NOTE: This structure is zeroed upon output
 !                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Predictor_type)
+!                          TYPE:       TYPE(Predictor_type)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
@@ -1482,9 +1511,9 @@ CONTAINS
 !       APVariables:       Structure containing internal variables required for
 !                          subsequent tangent-linear or adjoint model calls.
 !                          The contents of this structure are NOT accessible
-!                          outside of the CRTM_Predictor module.
+!                          outside of the ODAS_Predictor module.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_APVariables_type
+!                          TYPE:       APVariables_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT)
 !
@@ -1517,21 +1546,21 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
-                                          Predictor,     &  ! FWD Input
-                                          Predictor_AD,  &  ! AD Input
-                                          GeometryInfo,  &  ! Input
-                                          Atmosphere_AD, &  ! AD Output
-                                          APV            )  ! Internal variable input
+  SUBROUTINE Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
+                                     Predictor,     &  ! FWD Input                   
+                                     Predictor_AD,  &  ! AD Input                    
+                                     GeometryInfo,  &  ! Input                       
+                                     Atmosphere_AD, &  ! AD Output                   
+                                     APV            )  ! Internal variable input     
     ! Arguments
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_Predictor_type),    INTENT(IN)     :: Predictor
-    TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor_AD
+    TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atmosphere
+    TYPE(Predictor_type)        , INTENT(IN)     :: Predictor     
+    TYPE(Predictor_type)        , INTENT(IN OUT) :: Predictor_AD  
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN OUT) :: Atmosphere_AD
-    TYPE(CRTM_APVariables_type),  INTENT(IN)     :: APV
+    TYPE(CRTM_Atmosphere_type)  , INTENT(IN OUT) :: Atmosphere_AD
+    TYPE(APVariables_type)      , INTENT(IN)     :: APV
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_Predictors_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_AD'
 
     ! Save the angle information
     Predictor_AD%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
@@ -1539,24 +1568,24 @@ CONTAINS
     ! Calculate the predictor adjoints
     !
     ! Integrated predictors
-    CALL CRTM_Integrated_Predictors_AD( Atmosphere   , &  ! Input
-                                        Predictor    , &  ! Input
-                                        Predictor_AD , &  ! In/Output
-                                        Atmosphere_AD, &  ! Output
-                                        APV            )  ! Internal variable input
+    CALL Integrated_Predictors_AD( Atmosphere   , &  ! Input
+                                   Predictor    , &  ! Input                       
+                                   Predictor_AD , &  ! In/Output                   
+                                   Atmosphere_AD, &  ! Output                      
+                                   APV            )  ! Internal variable input     
     ! Standard predictors
-    CALL CRTM_Standard_Predictors_AD( Atmosphere   , &  ! Input
-                                      Predictor_AD , &  ! Input
-                                      Atmosphere_AD  )  ! Output
+    CALL Standard_Predictors_AD( Atmosphere   , &  ! Input
+                                 Predictor_AD , &  ! Input      
+                                 Atmosphere_AD  )  ! Output     
 
     ! Compute the adjoint nadir integrated absorber profiles
-    CALL CRTM_Compute_IntAbsorber_AD( Atmosphere   , &  ! Input
-                                      Predictor_AD , &  ! Output
-                                      Atmosphere_AD  )  ! Input
+    CALL Compute_IntAbsorber_AD( Atmosphere   , &  ! Input
+                                 Predictor_AD , &  ! Output     
+                                 Atmosphere_AD  )  ! Input      
 
     ! Zero the adjoint predictor structure
-    CALL CRTM_Zero_Predictor( Predictor_AD )
+    CALL Zero_Predictor( Predictor_AD )
     
-  END SUBROUTINE CRTM_Compute_Predictors_AD
+  END SUBROUTINE Compute_Predictors_AD
 
-END MODULE CRTM_Predictor
+END MODULE ODAS_Predictor

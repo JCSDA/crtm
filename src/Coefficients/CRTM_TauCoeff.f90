@@ -5,8 +5,9 @@
 ! and their load/destruction routines. 
 !
 ! PUBLIC DATA:
-!       TC:  Data structure array containing the transmittance model
-!            coefficient data for the requested sensors.
+!       TC:  Data structure containing the transmittance model
+!            coefficient data for one or multiple transmittance 
+!            algorithms for the requested sensors.
 !
 ! SIDE EFFECTS:
 !       Routines in this module modify the contents of the public
@@ -17,25 +18,34 @@
 !       CRTM initialisation.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Yong Han, JCSDA, NOAA/NESDIS 20-Jun-2008
 !
-
 MODULE CRTM_TauCoeff
 
   ! -----------------
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE TauCoeff_Define   , ONLY: TauCoeff_type, Destroy_TauCoeff
-  USE TauCoeff_Binary_IO, ONLY: Read_TauCoeff_Binary
-  USE CRTM_Parameters   , ONLY: MAX_N_SENSORS           , &
-                                CRTM_Set_Max_nChannels  , &
-                                CRTM_Reset_Max_nChannels, &
-                                CRTM_Get_Max_nChannels  , &
-                                CRTM_IsSet_Max_nChannels
-  ! Disable all implicit typing
+  USE Type_Kinds          , ONLY: Long
+  USE File_Utility        , ONLY: File_Exists
+  USE Binary_File_Utility , ONLY: Open_Binary_File
+  USE Message_Handler     , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
+  USE CRTM_Parameters     , ONLY: MAX_N_SENSORS, &
+                                  TAU_ODAS, TAU_ODPS, TAU_ODCAPS
+  USE ODAS_TauCoeff       , ONLY: ODAS_Load_TauCoeff    => Load_TauCoeff   , &
+                                  ODAS_Destroy_TauCoeff => Destroy_TauCoeff, &
+                                  ODAS_TC => TC
+  USE ODAS_Define         , ONLY: ODAS_type
+  USE ODPS_TauCoeff       , ONLY: ODPS_Load_TauCoeff    => Load_TauCoeff   , &
+                                  ODPS_Destroy_TauCoeff => Destroy_TauCoeff, &
+                                  ODPS_TC => TC
+  USE ODPS_Define         , ONLY: ODPS_type
+
+  USE ODCAPS_TauCoeff     , ONLY: ODCAPS_Load_TauCoeff    => Load_TauCoeff,  &
+                                  ODCAPS_Destroy_TauCoeff => Destroy_TauCoeff, &
+                                  ODCAPS_TC => TC
+  USE ODCAPS_Define       , ONLY: ODCAPS_type
+ ! Disable all implicit typing
   IMPLICIT NONE
 
 
@@ -46,10 +56,11 @@ MODULE CRTM_TauCoeff
   PRIVATE
   ! The shared data
   PUBLIC :: TC
+  ! Derived types
+  PUBLIC :: CRTM_TauCoeff_type
   ! Public routines in this module
   PUBLIC :: CRTM_Load_TauCoeff
   PUBLIC :: CRTM_Destroy_TauCoeff
-
 
   ! -----------------
   ! Module parameters
@@ -57,16 +68,46 @@ MODULE CRTM_TauCoeff
   CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
   '$Id$'
 
+  ! Keyword set value
+  INTEGER, PARAMETER :: SET = 1
+
+  ! -----------------------
+  ! Derived type definition
+  ! -----------------------
+
+  TYPE :: CRTM_TauCoeff_type
+
+    ! -- Array dimensions
+    INTEGER( Long ) :: n_Sensors = 0       ! n
+    INTEGER( Long ) :: n_ODAS    = 0       ! I1
+    INTEGER( Long ) :: n_ODPS    = 0       ! I2
+    INTEGER( Long ) :: n_ODCAPS  = 0       ! I3
+!    ### More dimension variables for additional algorithms ###
+
+    ! Algorithm_ID:   Algorithm ID
+    ! Sensor_Index:   Global sensor index
+    ! Sensor_LoIndex: Local sensor index for a collection of sensor using 
+    !                 the same algorithm
+    INTEGER, DIMENSION(:), POINTER       :: Algorithm_ID   =>NULL()  ! n
+    INTEGER, DIMENSION(:), POINTER       :: Sensor_Index   =>NULL()  ! n
+    INTEGER, DIMENSION(:), POINTER       :: Sensor_LoIndex =>NULL()  ! n
+
+    TYPE( ODAS_type ),   DIMENSION(:), POINTER  :: ODAS  =>NULL()  ! I1
+    TYPE( ODPS_type ),   DIMENSION(:), POINTER  :: ODPS  =>NULL()  ! I2
+    TYPE( ODCAPS_type ), DIMENSION(:), POINTER  :: ODCAPS=>NULL()  ! I3
+!    ### More dstructure variables for additional algorithms ###
+
+  END TYPE CRTM_TauCoeff_type
+
 
   ! --------------------------------------
   ! The shared data for the gas absorption
   ! (AtmAbsorption) model
   ! --------------------------------------
-  TYPE(TauCoeff_type), SAVE, ALLOCATABLE :: TC(:)
+  TYPE(CRTM_TauCoeff_type), SAVE :: TC
 
 
 CONTAINS
-
 
 !------------------------------------------------------------------------------
 !
@@ -176,6 +217,7 @@ CONTAINS
                                Output_Process_ID, &  ! Optional input
                                Message_Log      ) &  ! Error messaging
                              RESULT( Error_Status )
+
     ! Arguments
     CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN) :: Sensor_ID
     CHARACTER(*),               OPTIONAL, INTENT(IN) :: File_Path
@@ -191,9 +233,12 @@ CONTAINS
     CHARACTER(256) :: Message
     CHARACTER(256) :: Process_ID_Tag
     CHARACTER(256), DIMENSION(MAX_N_SENSORS) :: TauCoeff_File
-    INTEGER :: Allocate_Status
-    INTEGER :: n, n_Sensors, n_Channels
-    INTEGER :: Max_n_Channels  ! Maximum channels protected variable
+    INTEGER :: Allocate_Status, Deallocate_Status
+    INTEGER :: n, n_Sensors
+    ! Local
+    INTEGER, PARAMETER :: SL = 128
+    INTEGER            :: Algorithm_ID
+    CHARACTER(SL), ALLOCATABLE :: SensorIDs(:)
 
     ! Set up
     Error_Status = SUCCESS
@@ -207,6 +252,7 @@ CONTAINS
 
     ! Determine the number of sensors and construct their filenames
     IF ( PRESENT(Sensor_ID) ) THEN
+
       ! Construct filenames for specified sensors
       n_Sensors = SIZE(Sensor_ID)
       IF ( n_Sensors > MAX_N_SENSORS ) THEN
@@ -234,67 +280,255 @@ CONTAINS
         TauCoeff_File(n) = TRIM(ADJUSTL(File_Path))//TRIM(TauCoeff_File(n))
       END DO
     END IF
-    
-    ! Allocate the TauCoeff shared data structure array
-    ALLOCATE(TC(n_Sensors), STAT=Allocate_Status)
-    IF( Allocate_Status /= 0 )THEN
-      WRITE(Message,'("TauCoeff structure array allocation failed. STAT=",i0)') Allocate_Status
+
+    ! set the sensor dimension for structure TC
+    TC%n_Sensors = n_Sensors
+
+    ! Allocate memory for the SensorIDs array
+    IF ( PRESENT(Sensor_ID) ) THEN
+
+      ! Check string length
+      IF(SL < LEN(Sensor_ID(1)))THEN
+        Error_Status = FAILURE
+        WRITE(Message,'("The string length ", i4, &
+                        &"for the string array SensorIDs is smaller than ", &
+                        &i4, "of the input Sensor_ID.")') &
+                        SL, LEN(Sensor_ID(1))
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message)//TRIM(Process_ID_Tag), &
+                              Error_Status, &
+                              Message_Log=Message_Log)
+        RETURN
+      END IF
+      ALLOCATE( SensorIDs( n_Sensors ),   & 
+                STAT = Allocate_Status )
+      IF ( Allocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        WRITE( Message, '( "Error allocating SensorIDs with an n_Sensors dimension. STAT = ", i5 )' ) &
+                        Allocate_Status
+        CALL Display_Message( ROUTINE_NAME,    &
+                              TRIM( Message ), &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+    END IF
+
+      
+    !---------------------------------------------------------------
+    ! Allocate TC data arrays with n_Sensors dimension 
+    !---------------------------------------------------------------
+    ALLOCATE( TC%Algorithm_ID( n_Sensors ),   & 
+              TC%Sensor_Index( n_Sensors ),   &
+              TC%Sensor_LoIndex( n_Sensors ), &
+              STAT = Allocate_Status )
+
+    IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message)//TRIM(Process_ID_Tag), & 
-                            Error_Status, &
+      WRITE( Message, '( "Error allocating TauCoeff data arrays with the n_Sensors dimension. STAT = ", i5 )' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM( Message ), &
+                            Error_Status,    &
                             Message_Log = Message_Log )
       RETURN
     END IF
-    
-    ! Read the TauCoeff data files
-    DO n = 1, n_Sensors
-      Error_Status = Read_TauCoeff_Binary( TRIM(TauCoeff_File(n))             , &  ! Input
-                                           TC(n)                              , &  ! Output
-                                           Quiet            =Quiet            , &
-                                           Process_ID       =Process_ID       , &
-                                           Output_Process_ID=Output_Process_ID, &
-                                           Message_Log      =Message_Log        )
+
+    !----------------------------------------------------  
+    ! Determine algorithm IDs from the TauCoeff files    
+    !----------------------------------------------------  
+Sensor_Loop: DO n = 1, n_Sensors
+
+      ! set global sensor index
+      TC%Sensor_Index(n) = n
+
+      ! Get the transmittance algorithm ID
+      Error_Status = Inquire_AlgorithmID( TRIM(TauCoeff_File(n)), &
+                                          Algorithm_ID,           &
+                                          Message_Log = Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE(Message,'("Error reading TauCoeff file #",i0,", ",a)') &
-                      n, TRIM(TauCoeff_File(n))
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message)//TRIM(Process_ID_Tag), &
+                              'cannot obtain transmittance algorithm ID from file '//&
+                              TRIM( TauCoeff_File(n) )//TRIM( Process_ID_Tag ), &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+
+      TC%Algorithm_ID(n) = Algorithm_ID
+
+      ! update the sensor counter and sensor (local) index for a specific algorithm
+      SELECT CASE( Algorithm_ID )
+        CASE ( TAU_ODAS )
+
+          TC%n_ODAS = TC%n_ODAS + 1
+          ! local sensor index, which is used within the algorithm
+          TC%Sensor_LoIndex(n) = TC%n_ODAS
+
+        CASE ( TAU_ODPS )
+
+          TC%n_ODPS = TC%n_ODPS + 1
+          ! local sensor index, which is used within the algorithm
+          TC%Sensor_LoIndex(n) = TC%n_ODPS
+
+        CASE ( TAU_ODCAPS )
+
+          TC%n_ODCAPS = TC%n_ODCAPS + 1
+          ! local sensor index, which is used within the algorithm
+          TC%Sensor_LoIndex(n) = TC%n_ODCAPS
+          
+        CASE DEFAULT
+
+          Error_Status = FAILURE
+          
+          IF(Algorithm_ID==10) THEN 
+            Message='The algorithm ID does not exist, TauCoeff file need to be converted to new format'
+          ELSE
+            WRITE( Message, '( "The algorithm ID =  ", i5, " does not exist ")' ) &
+                             Algorithm_ID
+
+          ENDIF
+          CALL Display_Message( ROUTINE_NAME, &
+                            TRIM( Message )//TRIM( Process_ID_Tag ), &
+                            FAILURE, &
+                            Message_Log = Message_Log )
+                            
+          RETURN
+
+      END SELECT
+
+    END DO Sensor_Loop
+
+    !-----------------------------------------------------------
+    !  Load algorithm-specific coefficient data
+    !-----------------------------------------------------------
+
+    ! *** ODAS algorithm (Compact OPTRAN) ***
+
+    n = TC%n_ODAS
+    IF( n > 0 )THEN
+      IF ( PRESENT(Sensor_ID) ) THEN
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODAS)
+        Error_Status = ODAS_Load_TauCoeff( &
+                                       Sensor_ID        =SensorIDs(1:n)   , & 
+                                       File_Path        =File_Path        , & 
+                                       Quiet            =Quiet            , & 
+                                       Process_ID       =Process_ID       , & 
+                                       Output_Process_ID=Output_Process_ID, & 
+                                       Message_Log      =Message_Log        ) 
+      ELSE
+        ! for the case that the Sensor_ID is not present (in this case, 1 sensor only)
+        Error_Status = ODAS_Load_TauCoeff( &
+                                       File_Path        =File_Path        , &
+                                       Quiet            =Quiet            , &
+                                       Process_ID       =Process_ID       , &
+                                       Output_Process_ID=Output_Process_ID, &
+                                       Message_Log      =Message_Log        )
+      END IF
+
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error loading ODAS TauCoeff data', &
                               Error_Status, &
                               Message_Log=Message_Log )
         RETURN
       END IF
-    END DO
 
-    ! Determine the total number of channels
-    n_Channels = SUM(TC%n_Channels)
-    
-    ! Set the protect Max_n_Channels variable
-    !
-    ! Get the current value, if any
-    Max_n_Channels = CRTM_Get_Max_nChannels()
-    ! Has the number of channels been set?
-    IF ( CRTM_IsSet_Max_nChannels() ) THEN
-      ! Yes. Check the value      
-      IF ( Max_n_Channels /= n_Channels ) THEN
-        Error_Status = WARNING
-        WRITE( Message, '( "MAX_N_CHANNELS already set to different value, ", i0, ", ", &
-                          &"than defined by TauCoeff file(s), ", i0, &
-                          &". Overwriting" )' ) &
-                        Max_n_Channels, n_Channels
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message)//TRIM(Process_ID_Tag), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        CALL CRTM_Set_Max_nChannels(n_Channels)
-      END IF
-    ELSE
-      ! No. Set the value
-      CALL CRTM_Set_Max_nChannels(n_Channels)
+      ! set the pointer pointing to the local (algorithm specific) TC array
+      TC%ODAS => ODAS_TC
+        
     END IF
 
-  END FUNCTION CRTM_Load_TauCoeff 
+    ! *** ODPS algorithm  ***
 
+    n = TC%n_ODPS
+    IF( n > 0 )THEN
+      IF ( PRESENT(Sensor_ID) ) THEN
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODPS)
+        Error_Status = ODPS_Load_TauCoeff( &
+                                       Sensor_ID        =SensorIDs(1:n)   , & 
+                                       File_Path        =File_Path        , & 
+                                       Quiet            =Quiet            , & 
+                                       Process_ID       =Process_ID       , & 
+                                       Output_Process_ID=Output_Process_ID, & 
+                                       Message_Log      =Message_Log        ) 
+      ELSE
+        ! for the case that the Sensor_ID is not present (in this case, 1 sensor only)
+        Error_Status = ODPS_Load_TauCoeff( &
+                                       File_Path        =File_Path        , &
+                                       Quiet            =Quiet            , &
+                                       Process_ID       =Process_ID       , &
+                                       Output_Process_ID=Output_Process_ID, &
+                                       Message_Log      =Message_Log        )
+      END IF
+
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error loading ODPS TauCoeff data', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
+
+      ! set the pointer pointing to the local (algorithm specific) TC array
+      TC%ODPS => ODPS_TC
+        
+    END IF
+
+    ! *** ODCAPS algorithm (SARTA) ***
+
+    n = TC%n_ODCAPS
+    IF( n > 0 )THEN
+      IF ( PRESENT(Sensor_ID) ) THEN
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODCAPS)
+        Error_Status = ODCAPS_Load_TauCoeff( &
+                                       Sensor_ID        =SensorIDs(1:n)   , & 
+                                       File_Path        =File_Path        , & 
+                                       Quiet            =Quiet            , & 
+                                       Process_ID       =Process_ID       , & 
+                                       Output_Process_ID=Output_Process_ID, & 
+                                       Message_Log      =Message_Log        ) 
+      ELSE
+        ! for the case that the Sensor_ID is not present (in this case, 1 sensor only)
+        Error_Status = ODCAPS_Load_TauCoeff( &
+                                       File_Path        =File_Path        , &
+                                       Quiet            =Quiet            , &
+                                       Process_ID       =Process_ID       , &
+                                       Output_Process_ID=Output_Process_ID, &
+                                       Message_Log      =Message_Log        )
+      END IF
+
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error loading ODCAPS TauCoeff data', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
+
+      ! set the pointer pointing to the local (algorithm specific) TC array
+      TC%ODCAPS => ODCAPS_TC
+        
+    END IF
+
+    !----------------------------------------------
+    ! deallocate local arrays
+    !----------------------------------------------
+
+    IF ( PRESENT(Sensor_ID) ) THEN
+      DEALLOCATE(SensorIDs, STAT  = Deallocate_Status)
+      IF ( Deallocate_Status /= 0 ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating the SensorIDs array', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
+    ENDIF
+  
+  END FUNCTION CRTM_Load_TauCoeff
 
 !------------------------------------------------------------------------------
 !
@@ -348,7 +582,8 @@ CONTAINS
 
   FUNCTION CRTM_Destroy_TauCoeff( Process_ID,   &  ! Optional input
                                   Message_Log ) &  ! Error messaging
-                                RESULT( Error_Status )
+                                RESULT ( Error_Status )
+
     ! Arguments
     INTEGER,      OPTIONAL, INTENT(IN)  :: Process_ID
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
@@ -371,37 +606,197 @@ CONTAINS
       Process_ID_Tag = ' '
     END IF
 
-    ! Destroy the structure array elements
-    DO n = 1, SIZE(TC)
-      Destroy_Status = Destroy_TauCoeff( TC(n), &
-                                         Message_Log=Message_Log )
+    ! ----------------------------------------------
+    ! Destroy TauCoeff structures
+    ! ---------------------------------------------- 
+
+    IF( TC%n_ODAS > 0 )THEN
+
+      ! disassociate the TC%ODAS pointer (which is pointing to TauCoeff_ODAS)
+      NULLIFY( TC%ODAS )
+
+      ! Destroy local TC, i.e TauCoeff_ODAS
+      Destroy_Status = ODAS_Destroy_TauCoeff( Process_ID =Process_ID , &
+                                              Message_Log=Message_Log  )
       IF ( Destroy_Status /= SUCCESS ) THEN
-        Error_Status = FAILURE
-        WRITE(Message,'("Error destroying TauCoeff structure array element #",i0)') n
+        Error_Status = Destroy_Status
         CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message)//TRIM(Process_ID_Tag), &
+                              'Error deallocating shared TauCoeff_ODAS data structure', &
                               Error_Status, &
                               Message_Log=Message_Log )
-        ! No return here. Continue deallocating
       END IF
-    END DO
 
-    ! Deallocate the structure array
-    DEALLOCATE(TC, STAT=Allocate_Status)
-    IF( Allocate_Status /= 0 )THEN
-      WRITE(Message,'("RTTOV TC structure deallocation failed. STAT=",i0)') Allocate_Status
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message)//TRIM(Process_ID_Tag), &
-                            Error_Status, &
-                            Message_Log=Message_Log)
-      
-      ! Again, no return.
+      TC%n_ODAS     = 0    
+
     END IF
 
-    ! Reset the protected variable Max_n_Channels
-    CALL CRTM_Reset_Max_nChannels()
+    IF( TC%n_ODPS > 0 )THEN
+
+      ! disassociate the TC%ODPS pointer (which is pointing to TauCoeff_ODPS)
+      NULLIFY( TC%ODPS )
+
+      ! Destroy local TC, i.e TauCoeff_ODPS
+      Destroy_Status = ODPS_Destroy_TauCoeff( Process_ID =Process_ID , &
+                                              Message_Log=Message_Log  )
+      IF ( Destroy_Status /= SUCCESS ) THEN
+        Error_Status = Destroy_Status
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating shared TauCoeff_ODPS data structure', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+      END IF
+
+      TC%n_ODPS     = 0    
+
+    END IF
+
+    IF( TC%n_ODCAPS > 0 )THEN
+
+      ! disassociate the TC%ODCAPS pointer (which is pointing to TauCoeff_ODCAPS)
+      NULLIFY( TC%ODCAPS )
+
+      ! Destroy local TC, i.e TauCoeff_ODAS
+      Destroy_Status = ODCAPS_Destroy_TauCoeff( Process_ID =Process_ID , &
+                                                Message_Log=Message_Log  )
+      IF ( Destroy_Status /= SUCCESS ) THEN
+        Error_Status = Destroy_Status
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating shared TauCoeff_ODCAPS data structure', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+      END IF
+
+      TC%n_ODCAPS     = 0    
+
+    END IF
+
+    ! ----------------------------------------------
+    ! Deallocate TauCoeff data arrays
+    ! ----------------------------------------------   
+
+    DEALLOCATE( TC%Algorithm_ID,   &        
+                TC%Sensor_Index,   &        
+                TC%Sensor_LoIndex, & 
+                STAT = Allocate_Status )  
+
+    IF ( Allocate_Status /= 0 ) THEN                                          
+      Error_Status = FAILURE                                                  
+      WRITE( Message, '( "Error deallocating TC data arrays with an n_Sensors dimension"// &        
+                        &"STAT = ", i5 )' ) Allocate_Status                                                               
+      CALL Display_Message( ROUTINE_NAME,    &                                
+                            TRIM( Message ), &                                
+                            Error_Status,    &                                
+                            Message_Log = Message_Log )                       
+    END IF                                                                    
+
+    TC%n_Sensors    = 0       
 
   END FUNCTION CRTM_Destroy_TauCoeff
 
+  FUNCTION Inquire_AlgorithmID(  Filename        , &  ! Input
+                                 Algorithm_ID    , &  ! Output
+                                 RCS_Id          , &  ! Revision control
+                                 Message_Log     ) &  ! Error messaging
+                              RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER,                INTENT(OUT) :: Algorithm_ID
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_AlgorithmID'
+
+    ! Function variables
+    CHARACTER(256) :: Message
+    INTEGER :: IO_Status
+    INTEGER :: FileID
+    INTEGER(Long) :: Algorithm_ID_in
+    INTEGER(Long) :: Release_in
+    INTEGER(Long) :: Version_in
+
+ 
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Check that the file exists
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      Message = 'File '//TRIM(Filename)//' not found.'
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+
+    ! Open the file
+    ! -------------
+    Error_Status = Open_Binary_File( Filename, &
+                                     FileID, &
+                                     Message_Log=Message_Log)
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error opening TauCoeff Binary file '//TRIM(Filename)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+
+    ! Read the Release and Version information
+    ! ----------------------------------------
+    READ( FileID, IOSTAT=IO_Status ) Release_in, Version_in
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading Release/Version values from ",a,&
+                      &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
+
+
+    ! Read the Alorithm ID
+    ! --------------------
+    READ( FileID, IOSTAT=IO_Status ) Algorithm_ID_in
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading Algorithm ID from ",a,&
+                      &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
+
+    ! Assign the return argument
+    Algorithm_ID = Algorithm_ID_in
+
+    ! Close the file
+    ! --------------
+    CLOSE( FileID, IOSTAT=IO_Status )
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0)' ) &
+                    TRIM(Filename), IO_Status
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      CHARACTER(256) :: Close_Message
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          CLOSE( FileID, IOSTAT=IO_Status )
+          IF ( IO_Status /= 0 ) THEN
+            WRITE( Close_Message,'("; Error closing input file during error cleanup. IOSTAT=",i0)') &
+                                 IO_Status
+            Message = TRIM(Message)//TRIM(Close_Message)
+          END IF
+        END IF
+      END IF
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE Inquire_CleanUp
+
+  END FUNCTION Inquire_AlgorithmID
+                               
 END MODULE CRTM_TauCoeff

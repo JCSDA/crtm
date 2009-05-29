@@ -62,7 +62,8 @@ MODULE CRTM_RTSolution
   PUBLIC :: CRTM_Compute_RTSolution_TL
   PUBLIC :: CRTM_Compute_RTSolution_AD
   PUBLIC :: CRTM_Compute_nStreams
-
+  PUBLIC :: CRTM_Destroy_RTV
+  PUBLIC :: CRTM_Allocate_RTV
 
   ! -----------------
   ! Module parameters
@@ -97,13 +98,12 @@ MODULE CRTM_RTSolution
   ! --------------------------------------
 
   TYPE :: CRTM_RTVariables_type
-    PRIVATE
 
     ! Dimension information
     INTEGER :: n_Layers       = 0  ! Total number of atmospheric layers
-    INTEGER :: n_Added_Layers = 0  ! Number of layers appended to TOA
-    INTEGER :: n_Streams      = 0  ! Number of *hemispheric* stream angles used in RT
-    INTEGER :: n_Angles       = 0  ! n_Streams + sensor zenith angle
+    INTEGER :: n_Added_Layers = 0  !  Number of layers appended to TOA
+    INTEGER :: n_Streams      = 0  !  Number of *hemispheric* stream angles used in RT
+    INTEGER :: n_Angles       = 0  !  n_Streams + sensor zenith angle
 
     ! Variable to hold the various portions of the
     ! radiance for emissivity retrieval algorithms
@@ -111,45 +111,18 @@ MODULE CRTM_RTSolution
     REAL(fp) :: Up_Radiance         = ZERO
     REAL(fp) :: Down_Solar_Radiance = ZERO
 
-    REAL(fp)                            :: Secant_Down_Angle = 0
-    REAL(fp), DIMENSION( MAX_N_LAYERS ) :: Delta_Tau         = ZERO
-    INTEGER,  DIMENSION( MAX_N_LAYERS ) :: Number_Doubling   = 0
+    REAL(fp) :: Secant_Down_Angle = 0
+
+    ! Emission model variables
+    REAL(fp) :: Total_OD  = ZERO
+    REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_UP   = ZERO
+    REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_DOWN = ZERO
+    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Rad_UP     = ZERO
+    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Rad_DOWN   = ZERO
 
     ! Planck radiances
     REAL(fp)                               :: Planck_Surface    = ZERO
     REAL(fp), DIMENSION(  0:MAX_N_LAYERS ) :: Planck_Atmosphere = ZERO
-
-    ! Forward and backward scattering phase matrices
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
-                         MAX_N_LAYERS  ) :: Pff = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
-                         MAX_N_LAYERS  ) :: Pbb = ZERO
-
-    ! Positive and negative cosine angle Legendre phase functions
-    REAL(fp), DIMENSION( 0:MAX_N_LEGENDRE_TERMS, &
-                         MAX_N_ANGLES            ) :: Pplus  = ZERO
-    REAL(fp), DIMENSION( 0:MAX_N_LEGENDRE_TERMS, &
-                         MAX_N_ANGLES            ) :: Pminus = ZERO
-
-    ! Original forward and backward scattering phase matrices.
-    ! These may be slightly negative and, if so, need to be made
-    ! positive and thus adjusted to ensure energy conservation
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
-                         MAX_N_LAYERS  ) :: Off = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
-                         MAX_N_LAYERS  ) :: Obb = ZERO
-
-    ! Normalisation factor and intermediate sum used for original
-    ! phase matrix energy conservation.
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_LAYERS  ) :: n_Factor = ZERO
-    REAL(fp), DIMENSION( 0:MAX_N_ANGLES, &
-                         MAX_N_LAYERS    ) :: sum_fac = ZERO
-
 
     ! Quadrature information
     REAL(fp), DIMENSION( MAX_N_ANGLES ) :: COS_Angle  = ZERO  ! Gaussian quadrature abscissa
@@ -159,35 +132,58 @@ MODULE CRTM_RTSolution
     LOGICAL :: Diffuse_Surface = .TRUE.
     LOGICAL :: Scattering_RT   = .FALSE.
 
-    ! Emission model variables
-    REAL(fp) :: Total_OD  = ZERO
-    REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_UP   = ZERO
-    REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_DOWN = ZERO
-    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Rad_UP     = ZERO
-    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Rad_DOWN   = ZERO
+
+    !-------------------------------------------------------
+    ! Variables used in the ADA routines
+    !-------------------------------------------------------
+    ! Flag to indicate the following arrays have all been allocated
+    LOGICAL :: mAllocated = .FALSE.
+     
+    REAL(fp), POINTER :: Delta_Tau(:)        => NULL()
+    INTEGER,  POINTER :: Number_Doubling(:)  => NULL()
+
+    ! Forward and backward scattering phase matrices
+    REAL(fp), POINTER :: Pff(:,:,:) => NULL() 
+    REAL(fp), POINTER :: Pbb(:,:,:) => NULL() 
+
+    ! Positive and negative cosine angle Legendre phase functions
+    REAL(fp), POINTER :: Pplus(:,:)  => NULL() 
+    REAL(fp), POINTER :: Pminus(:,:) => NULL() 
+
+    ! Original forward and backward scattering phase matrices.
+    ! These may be slightly negative and, if so, need to be made
+    ! positive and thus adjusted to ensure energy conservation
+    REAL(fp), POINTER :: Off(:,:,:)  => NULL() 
+    REAL(fp), POINTER :: Obb(:,:,:)  => NULL() 
+    
+    ! Normalisation factor and intermediate sum used for original
+    ! phase matrix energy conservation.
+    REAL(fp), POINTER :: n_Factor(:,:)  => NULL() 
+    REAL(fp), POINTER :: sum_fac(:,:)   => NULL() 
 
     ! Adding-Doubling model variables
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS) :: Inv_Gamma  = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS) :: Inv_GammaT = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS) :: Refl_Trans = ZERO
 
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS) :: s_Layer_Trans = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS) :: s_Layer_Refl  = ZERO
+    REAL(fp), POINTER :: Inv_Gamma(:,:,:)    => NULL() 
+    REAL(fp), POINTER :: Inv_GammaT(:,:,:)   => NULL() 
+    REAL(fp), POINTER :: Refl_Trans(:,:,:)   => NULL() 
 
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_N_LAYERS) :: s_Level_Refl_UP = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, 0:MAX_N_LAYERS )              :: s_Level_Rad_UP  = ZERO
+    REAL(fp), POINTER :: s_Layer_Trans(:,:,:)   => NULL() 
+    REAL(fp), POINTER :: s_Layer_Refl(:,:,:)    => NULL() 
 
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_LAYERS) :: s_Layer_Source_UP   = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_LAYERS) :: s_Layer_Source_DOWN = ZERO
+    REAL(fp), POINTER :: s_Level_Refl_UP(:,:,:)   => NULL() 
+    REAL(fp), POINTER :: s_Level_Rad_UP(:,:)      => NULL()
+     
+    REAL(fp), POINTER :: s_Layer_Source_UP(:,:)     => NULL() 
+    REAL(fp), POINTER :: s_Layer_Source_DOWN(:,:)   => NULL() 
 
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_LAYERS) :: C1 = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_LAYERS) :: C2 = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_LAYERS) :: D1 = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_LAYERS) :: D2 = ZERO
+    REAL(fp), POINTER :: C1(:,:)   => NULL() 
+    REAL(fp), POINTER :: C2(:,:)   => NULL() 
+    REAL(fp), POINTER :: D1(:,:)   => NULL() 
+    REAL(fp), POINTER :: D2(:,:)   => NULL() 
 
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS ) :: Trans   = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS ) :: Refl    = ZERO
-    REAL(fp), DIMENSION( MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS ) :: Inv_BeT = ZERO
+    REAL(fp), POINTER :: Trans(:,:,:,:)     => NULL() 
+    REAL(fp), POINTER :: Refl(:,:,:,:)      => NULL() 
+    REAL(fp), POINTER :: Inv_BeT(:,:,:,:)   => NULL() 
 
     ! The surface optics forward variables
     TYPE(CRTM_SOVariables_type) :: SOV
@@ -206,6 +202,162 @@ CONTAINS
 !##                                                                            ##
 !################################################################################
 !################################################################################
+
+ ! --------------------------------------------------------!
+ !  FUNCTION: deallocate structure RTV pointer arrays.     !
+ ! --------------------------------------------------------
+  FUNCTION CRTM_Destroy_RTV( RTV,              &  ! Output
+                             RCS_Id,           &  ! Revision control           
+                             Message_Log )     &  ! Error messaging            
+                            RESULT( Error_Status )                             
+    TYPE(CRTM_RTVariables_type),   INTENT(IN OUT) :: RTV
+    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTV'
+    ! Local variables
+    CHARACTER(256) :: Message
+    INTEGER :: Allocate_Status
+
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Deallocate the pointer members
+    DEALLOCATE( RTV%Delta_Tau, &
+                RTV%Number_Doubling, &
+                RTV%Pff, &
+                RTV%Pbb, &
+                RTV%Pplus,&
+                RTV%Pminus,&
+                RTV%Off,&
+                RTV%Obb,&
+                RTV%n_Factor,&
+                RTV%sum_fac,&
+                RTV%Inv_Gamma,&
+                RTV%Inv_GammaT,&
+                RTV%Refl_Trans,&
+                RTV%s_Layer_Trans,&
+                RTV%s_Layer_Refl,&
+                RTV%s_Level_Refl_UP,&
+                RTV%s_Level_Rad_UP,&
+                RTV%s_Layer_Source_UP,&
+                RTV%s_Layer_Source_DOWN,&
+                RTV%C1,&
+                RTV%C2,&
+                RTV%D1,&
+                RTV%D2,&
+                RTV%Trans,&
+                RTV%Refl,&
+                RTV%Inv_BeT,&
+                STAT = Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error deallocating RTV structure. STAT = ", i5 )' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,  &
+                            TRIM(Message), &
+                            Error_Status,  &
+                            Message_Log=Message_Log )
+    END IF
+
+    RTV%mAllocated = .FALSE.
+    
+  END FUNCTION CRTM_Destroy_RTV
+  
+ ! --------------------------------------------------------!
+ !  FUNCTION: allocate structure RTV pointer arrays.       !
+ ! --------------------------------------------------------
+  FUNCTION CRTM_Allocate_RTV( RTV,              &  ! Output
+                              RCS_Id,           &  ! Revision control          
+                              Message_Log )     &  ! Error messaging           
+                            RESULT( Error_Status )                             
+    TYPE(CRTM_RTVariables_type),   INTENT(IN OUT) :: RTV
+    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTV'
+    ! Local variables
+    CHARACTER(256) :: Message
+    INTEGER :: Allocate_Status
+
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+
+    ! Perform the allocation
+    ALLOCATE( RTV%Delta_Tau      (MAX_N_LAYERS), &
+              RTV%Number_Doubling(MAX_N_LAYERS), &
+              RTV%Pff(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS), &
+              RTV%Pbb(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS), &
+              RTV%Pplus (0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES),&
+              RTV%Pminus(0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES),&
+              RTV%Off(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%Obb(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%n_Factor (MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%sum_fac(0:MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%Inv_Gamma (MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%Inv_GammaT(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%Refl_Trans(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%s_Layer_Trans(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%s_Layer_Refl (MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%s_Level_Refl_UP(MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_N_LAYERS),&
+              RTV%s_Level_Rad_UP(MAX_N_ANGLES, 0:MAX_N_LAYERS),&
+              RTV%s_Layer_Source_UP  (MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%s_Layer_Source_DOWN(MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%C1(MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%C2(MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%D1(MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%D2(MAX_N_ANGLES, MAX_N_LAYERS),&
+              RTV%Trans  (MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS),&
+              RTV%Refl   (MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS),&
+              RTV%Inv_BeT(MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS),&
+              STAT = Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error allocating RTV data arrays. STAT = ", i5 )' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM( Message ), &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+    RTV%mAllocated = .TRUE.
+    
+!    RTV%Number_Doubling     = 0                 
+!    RTV%Delta_Tau           = ZERO                    
+!    RTV%Pff                 = ZERO                          
+!    RTV%Pbb                 = ZERO                          
+!    RTV%Pplus               = ZERO                        
+!    RTV%Pminus              = ZERO                       
+!    RTV%Off                 = ZERO                          
+!    RTV%Obb                 = ZERO                          
+!    RTV%n_Factor            = ZERO                     
+!    RTV%sum_fac             = ZERO                      
+!    RTV%Inv_Gamma           = ZERO                    
+!    RTV%Inv_GammaT          = ZERO                   
+!    RTV%Refl_Trans          = ZERO                   
+!    RTV%s_Layer_Trans       = ZERO                
+!    RTV%s_Layer_Refl        = ZERO                 
+!    RTV%s_Level_Refl_UP     = ZERO              
+!    RTV%s_Level_Rad_UP      = ZERO               
+!    RTV%s_Layer_Source_UP   = ZERO            
+!    RTV%s_Layer_Source_DOWN = ZERO          
+!    RTV%C1                  = ZERO                           
+!    RTV%C2                  = ZERO                           
+!    RTV%D1                  = ZERO                           
+!    RTV%D2                  = ZERO                           
+!    RTV%Trans               = ZERO                        
+!    RTV%Refl                = ZERO                         
+!    RTV%Inv_BeT             = ZERO                      
+                 
+  END FUNCTION CRTM_Allocate_RTV
 
   SUBROUTINE CRTM_Emission(n_Layers, & ! Input  number of atmospheric layers
                            n_Angles, & ! number angles used in SfcOptics

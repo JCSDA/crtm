@@ -12,8 +12,6 @@ SRC_FILES = Type_Kinds.f90 \
             AntCorr_Binary_IO.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_Binary_IO.f90 \
-            TauCoeff_Define.f90 \
-            TauCoeff_Binary_IO.f90 \
             CloudCoeff_Define.f90 \
             CloudCoeff_Binary_IO.f90 \
             AerosolCoeff_Define.f90 \
@@ -58,8 +56,6 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_GeometryInfo.f90 \
             CRTM_Atmosphere.f90 iAtm_Define.f90 \
             CRTM_Model_Profiles.f90 \
-            CRTM_Predictor_Define.f90 \
-            CRTM_Predictor.f90 \
             CRTM_AtmAbsorption_Define.f90 \
             CRTM_AtmAbsorption.f90 \
             CRTM_AtmScatter_Define.f90 \
@@ -93,7 +89,37 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Tangent_Linear_Module.f90 \
             CRTM_Adjoint_Module.f90 \
             CRTM_K_Matrix_Module.f90 \
-            CRTM_Module.f90
+            CRTM_Module.f90 \
+            ODAS_AtmAbsorption.f90 \
+            ODAS_Predictor.f90 \
+            ODAS_Predictor_Define.f90 \
+            ODAS_Binary_IO.f90 \
+            ODAS_Define.f90 \
+            ODAS_TauCoeff.f90 \
+            ODPS_AtmAbsorption.f90 \
+            ODPS_Predictor.f90 \
+            ODPS_Predictor_Define.f90 \
+            ODPS_Binary_IO.f90 \
+            ODPS_Define.f90 \
+            ODPS_TauCoeff.f90 \
+            ODPS_ZAtmAbsorption.f90 \
+            ODCAPS_AtmAbsorption.f90 \
+            ODCAPS_Predictor.f90 \
+            ODCAPS_Predictor_Define.f90 \
+            CRTM_Profile_Interpolation.f90 \
+            CRTM_GeometryInfo.f90 \
+            Units_Conversion.f90 \
+            ODCAPS_TauCoeff.f90 \
+            ODCAPS_Define.f90 \
+            ODCAPS_Binary_IO.f90 \
+            ODCAPS_ODAS_Define.f90 \
+            ODCAPS_ODAS_Binary_IO.f90 \
+            ODCAPS_Subset_Define.f90 \
+            ODCAPS_Subset_Binary_IO.f90 \
+            ODCAPS_TraceGas_Define.f90 \
+            ODCAPS_TraceGas_Binary_IO.f90 \
+            Profile_Utility_Parameters.f90 \
+            Atmospheric_Properties.f90
             
             #CRTM_ChannelInfo.f90 \
 
