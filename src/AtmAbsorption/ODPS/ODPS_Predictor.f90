@@ -233,7 +233,8 @@ MODULE ODPS_Predictor
   REAL(fp), PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
 
   TYPE :: ODPS_APVariables_type
-    PRIVATE
+    PRIVATE 
+    INTEGER :: dummy
   END TYPE ODPS_APVariables_type
 
 CONTAINS
@@ -1103,7 +1104,7 @@ CONTAINS
         Predictor_TL%X(k, 3, COMP_OZO_IR)  = O3_A_TL*O3*PAFV%GAzp(k,ABS_O3_IR) + O3_A*O3_TL*PAFV%GAzp(k,ABS_O3_IR) &
                                              + O3_A*O3*GAzp_TL(k,ABS_O3_IR)                          
         Predictor_TL%X(k, 4, COMP_OZO_IR)  = TWO*O3_A*O3_A_TL                                
-        Predictor_TL%X(k, 5, COMP_OZO_IR)  = O3_A_TL*PAFV%GAzp(k,ABS_O3_IR) + O3_A*GAzp_TL(k,ABS_O3_IR)                               
+        Predictor_TL%X(k, 5, COMP_OZO_IR)  = O3_A_TL*PAFV%GAzp(k,ABS_O3_IR) + O3_A*GAzp_TL(k,ABS_O3_IR)
         Predictor_TL%X(k, 6, COMP_OZO_IR)  = O3_A_TL*SQRT(SECANG(k)*PAFV%GAzp(k,ABS_O3_IR)) + &
                                              POINT_5*O3_A*SQRT(SECANG(k)/PAFV%GAzp(k,ABS_O3_IR))* &
                                              GAzp_TL(k,ABS_O3_IR)
@@ -1112,7 +1113,7 @@ CONTAINS
         Predictor_TL%X(k, 9, COMP_OZO_IR)  = O3_R_TL*O3/PAFV%GAzp(k,ABS_O3_IR) + O3_R*O3_TL/PAFV%GAzp(k,ABS_O3_IR) &
                                              - O3_R*O3*GAzp_TL(k,ABS_O3_IR)/PAFV%GAzp(k,ABS_O3_IR)**2
         Predictor_TL%X(k,10, COMP_OZO_IR)  = SECANG(k)*GAzp_TL(k,ABS_O3_IR)                          
-        Predictor_TL%X(k,11, COMP_OZO_IR)  = TWO*SECANG(k)**2 * PAFV%GAzp(k,ABS_O3_IR)*GAzp_TL(k,ABS_O3_IR)                  
+        Predictor_TL%X(k,11, COMP_OZO_IR)  = TWO*SECANG(k)**2 * PAFV%GAzp(k,ABS_O3_IR)*GAzp_TL(k,ABS_O3_IR)
 !        Predictor_TL%X(k, 12, COMP_OZO_IR)  = H2O_A_TL                          
 !        Predictor_TL%X(k, 13, COMP_OZO_IR)  = SECANG(k)*GAzp_TL(k,ABS_H2O_IR)                         
 
@@ -1126,9 +1127,9 @@ CONTAINS
         Predictor_TL%X(k, 5, COMP_CO2_IR)  = ZERO                                
         Predictor_TL%X(k, 6, COMP_CO2_IR)  = SECANG(k)*CO2_TL                            
         Predictor_TL%X(k, 7, COMP_CO2_IR)  = SECANG(k)*Tzp_TL(k)                       
-        Predictor_TL%X(k, 8, COMP_CO2_IR)  = TWO*SECANG(k)**2 * PAFV%GAzp(k, ABS_CO2_IR)* GAzp_TL(k, ABS_CO2_IR)           
+        Predictor_TL%X(k, 8, COMP_CO2_IR)  = TWO*SECANG(k)**2 * PAFV%GAzp(k, ABS_CO2_IR)* GAzp_TL(k, ABS_CO2_IR)
         Predictor_TL%X(k, 9, COMP_CO2_IR)  = THREE*PAFV%Tzp(k)**2*Tzp_TL(k)                            
-        Predictor_TL%X(k, 10, COMP_CO2_IR) = SECANG(k)*( SQRT(T)*Tzp_TL(k) + (POINT_5*PAFV%Tzp(k)/SQRT(T))*T_TL )                               
+        Predictor_TL%X(k, 10, COMP_CO2_IR) = SECANG(k)*( SQRT(T)*Tzp_TL(k) + (POINT_5*PAFV%Tzp(k)/SQRT(T))*T_TL )
 
         !  --------------------------                                        
         !  Water-line predictors          
@@ -1206,8 +1207,8 @@ CONTAINS
                                                 N2O_R*N2O_TL / PAFV%GAzp(k, ABS_N2O_IR) - &
                                                 N2O_R*N2O*GAzp_TL(k, ABS_N2O_IR)/PAFV%GAzp(k, ABS_N2O_IR)**2          
           Predictor_TL%X(k,11, COMP_N2O_IR)   = CH4_A_TL                        
-          Predictor_TL%X(k,12, COMP_N2O_IR)   = CH4_A_TL*PAFV%GAzp(k, ABS_CH4_IR) + CH4_A*GAzp_TL(k, ABS_CH4_IR)                     
-          Predictor_TL%X(k,13, COMP_N2O_IR)   = CO_A_TL                        
+          Predictor_TL%X(k,12, COMP_N2O_IR)   = CH4_A_TL*PAFV%GAzp(k, ABS_CH4_IR) + CH4_A*GAzp_TL(k, ABS_CH4_IR)
+          Predictor_TL%X(k,13, COMP_N2O_IR)   = CO_A_TL
           Predictor_TL%X(k,14, COMP_N2O_IR)   = CO_A_TL*SECANG(k)*PAFV%GAzp(k, ABS_CO_IR) + &
                                                 CO_A*SECANG(k)*GAzp_TL(k, ABS_CO_IR)  
 

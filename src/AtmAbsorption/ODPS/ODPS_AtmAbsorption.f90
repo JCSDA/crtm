@@ -101,6 +101,7 @@ MODULE ODPS_AtmAbsorption
   ! ------------------------------------------
   TYPE :: ODPS_AAVariables_type
     PRIVATE
+    INTEGER :: dummy
   END TYPE ODPS_AAVariables_type
 
   ! Maximum allowed layer optical depth
@@ -786,7 +787,7 @@ CONTAINS
                                OD )                        
     TYPE(ODPS_type),      INTENT( IN )    :: TC
     INTEGER,              INTENT( IN )    :: ChannelIndex
-    TYPE(Predictor_type), INTENT( IN )    :: Predictor
+    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor
     REAL(fp),             INTENT( INOUT ) :: OD(:)                                           
   
     ! Local

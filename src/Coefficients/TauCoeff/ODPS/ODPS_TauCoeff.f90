@@ -186,7 +186,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message
     CHARACTER(256) :: Process_ID_Tag
-    CHARACTER(256), DIMENSION(SIZE(Sensor_ID)) :: TauCoeff_File
+    CHARACTER(256) :: TauCoeff_File
     INTEGER :: Allocate_Status
     INTEGER :: n, n_Sensors, n_Channels
 
@@ -204,22 +204,11 @@ CONTAINS
     IF ( PRESENT(Sensor_ID) ) THEN
       ! Construct filenames for specified sensors
       n_Sensors = SIZE(Sensor_ID)
-      DO n=1,n_Sensors
-        TauCoeff_File(n) = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.bin'
-      END DO
     ELSE
       ! No sensors specified. Use default filename.
       n_Sensors=1
-      TauCoeff_File(1) = 'TauCoeff.bin'
     END IF
-    
-    ! Add the file path
-    IF ( PRESENT(File_Path) ) THEN
-      DO n=1,n_Sensors
-        TauCoeff_File(n) = TRIM(ADJUSTL(File_Path))//TRIM(TauCoeff_File(n))
-      END DO
-    END IF
-    
+        
     ! Allocate the TauCoeff shared data structure array
     ALLOCATE(TC(n_Sensors), STAT=Allocate_Status)
     IF( Allocate_Status /= 0 )THEN
@@ -234,7 +223,20 @@ CONTAINS
     
     ! Read the TauCoeff data files
     DO n = 1, n_Sensors
-      Error_Status = Read_TauCoeff_Binary( TRIM(TauCoeff_File(n))             , &  ! Input
+    
+      IF ( PRESENT(Sensor_ID) ) THEN
+          TauCoeff_File = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.bin'
+      ELSE
+        ! No sensors specified. Use default filename.
+        TauCoeff_File = 'TauCoeff.bin'
+      END IF
+    
+      ! Add the file path
+      IF ( PRESENT(File_Path) ) THEN
+        TauCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(TauCoeff_File)
+      END IF
+      
+      Error_Status = Read_TauCoeff_Binary( TRIM(TauCoeff_File)             , &  ! Input
                                            TC(n)                              , &  ! Output
                                            Quiet            =Quiet            , &
                                            Process_ID       =Process_ID       , &
@@ -242,7 +244,7 @@ CONTAINS
                                            Message_Log      =Message_Log        )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE(Message,'("Error reading TauCoeff file #",i0,", ",a)') &
-                      n, TRIM(TauCoeff_File(n))
+                      n, TRIM(TauCoeff_File)
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message)//TRIM(Process_ID_Tag), &
                               Error_Status, &

@@ -39,7 +39,6 @@ MODULE CRTM_AtmAbsorption
                                        ODAS_Allocate_Predictor    => Allocate_Predictor,    &
                                        ODAS_APVariables_type      => APVariables_type,      &
                                        ODAS_Destroy_Predictor     => Destroy_Predictor,     &
-                                       ODAS_Allocate_Predictor    => Allocate_Predictor,    &
                                        ODAS_MAX_N_PREDICTORS      => MAX_N_PREDICTORS,      &
                                        ODAS_MAX_N_ABSORBERS       => MAX_N_ABSORBERS
 
