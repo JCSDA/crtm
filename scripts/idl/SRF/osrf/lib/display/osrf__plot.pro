@@ -56,5 +56,14 @@ PRO OSRF::Plot, $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
+  psave = !P
+  !P.MULTI = [0,self.n_Bands,1]
+  FOR i = 0L, self.n_Bands-1L DO BEGIN
+    PLOT, *(*self.Frequency)[i], *(*self.Response)[i], $
+          TITLE='Band #'+STRTRIM(i+1,2), $
+          XTITLE='Frequency', $
+          YTITLE='Relative response'
+  ENDFOR
+  !P = psave
 
 END ; OSRF::Plot

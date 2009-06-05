@@ -60,7 +60,7 @@ PRO OSRF::Cleanup, Debug=Debug  ; Input keyword
   @srf_parameters
   
   ; ...Set up error handler
-  @osrf_func_err_handler
+  @osrf_pro_err_handler
 
 
   ; Deallocate pointers, and clear scalars
