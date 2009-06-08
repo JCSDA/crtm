@@ -39,6 +39,7 @@ MODULE SRF_Utility
   PRIVATE
   PUBLIC :: Interpolate_SRF
   PUBLIC :: Convolve_with_SRF
+  PUBLIC :: Calc_SRF_First_Mom
 
 
   ! -----------------
