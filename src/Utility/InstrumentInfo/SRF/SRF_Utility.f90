@@ -551,7 +551,173 @@ CONTAINS
     END IF
 
   END FUNCTION Convolve_with_SRF
+  
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Calc_SRF_First_Mom
+!
+! PURPOSE:
+!       Procedure to calculate the first moment of an SRF.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Calc_SRF_First_Mom( SRF                    , &  ! Input
+!                                          First_Moment           , &  ! Output
+!                                          Message_Log=Message_Log  )  ! Error messaging
+!
+! INPUT ARGUMENTS:
+!
+!          SRF:              SRF structure containing the instrument channel   
+!                            response to be used in the convolution.           
+!                            UNITS:      N/A                                   
+!                            TYPE:       SRF_type                              
+!                            DIMENSION:  Scalar                                
+!                            ATTRIBUTES: INTENT(IN)                                            
+!
+! OUTPUT ARGUMENTS:          
+!               
+!          First_Moment:     Calculated first moment of the SRF.
+!                            UNITS:      cm^-1
+!                            TYPE:       REAL(fp)
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!
+!  Message_Log:              Character string specifying a filename in which any  
+!                            msgs will be logged. If not specified, or if an      
+!                            error occurs opening the log file, the default action
+!                            is to output msgs to standard output.                
+!                            UNITS:      None                                     
+!                            TYPE:       Character                                
+!                            DIMENSION:  Scalar, LEN = *                          
+!                            ATTRIBUTES: INTENT(IN), OPTIONAL     
+!
+! FUNCTION RESULT:
+!       
+!       Error_Status:        The return value is an integer defining the error status.
+!                            The error codes are defined in the Message_Handler module.
+!                            If == SUCCESS the spectrum convolution was successful
+!                               == FAILURE an error occurred
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+! CREATION HISTORY:
+!       Written by:    David Groff, SAIC 8-June-2009
+!                      david.groff@noaa.gov 
+!
+!:sdoc-:
+!------------------------------------------------------------------------------  
+    
+  FUNCTION Calc_SRF_First_Mom( SRF               , &  ! Input
+                               First_Moment      , &  ! Output                          
+                               Message_Log) &  ! Error messaging
+                               RESULT( Error_Status )
+    ! Arguments
+    TYPE(SRF_type),           INTENT(IN OUT) :: SRF
+    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
+    REAL(fp),                 INTENT(OUT)    :: First_Moment
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Calc_SRF_First_Mom'
+    INTEGER :: CUBIC_ORDER = 3
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: i1, i2, m, n
+    REAL(fp):: Band_Weight
 
+    ! Setup
+    ! -----
+    Error_Status = SUCCESS
+    
+    ! ALL pointers must be associated
+    IF ( .NOT. Associated_SRF( SRF ) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Some or all INPUT SRF pointer members are NOT associated.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    ! Check the number of bands
+    IF ( SRF%n_Bands < 1 ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'SRF structure must contain at least 1 band', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    ! Check the number of points
+    IF ( SRF%n_Points < 2 ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'SRF structure must contain at least 2 points.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    ! Check the number of points in each band
+    IF ( ANY(SRF%npts_Band < 2) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'SRF must contain at least 2 points for each band.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+    ! Check the total points                                                   
+    IF ( SUM(SRF%npts_Band) /= SRF%n_Points ) THEN                            
+      Error_Status = FAILURE                                             
+      CALL Display_Message( ROUTINE_NAME, &
+                            'SRF must have consistent data points.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END IF
+
+    ! Compute the first moment of the SRF
+    ! -----------------------------------
+    ! Initialize the first moment
+    First_Moment = ZERO
+    Band_Weight = ZERO
+    ! Initialise the offset counter
+    n = 0
+
+    ! Loop over the bands
+    DO m = 1, SRF%n_Bands
+      
+      ! The point limits for this band
+      i1 = n + 1
+      i2 = SRF%npts_Band(m) + n
+      
+      ! Calculate Weight for the band      
+      Error_Status = Simpsons_Integral( SRF%Frequency(i1:i2),                      &         
+                                        SRF%Response(i1:i2)*SRF%Frequency(i1:i2),  &         
+                                        Band_Weight,                               &
+                                        Order = CUBIC_ORDER                        )         
+      IF ( Error_Status /= SUCCESS ) THEN                                                    
+        WRITE( msg,'("Error occurred integrating channel ",i0," SRF")' ) SRF%Channel         
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )  
+        RETURN                                                                               
+      END IF                                                                                 
+      
+      ! Accumulate the band weights                                                                                       
+      First_Moment = First_Moment + Band_Weight                                        
+      
+      ! Update the offset counter
+      n = n + SRF%npts_Band(m)
+    END DO
+    
+    First_Moment = First_Moment/SRF%Integrated_SRF
+
+  END FUNCTION Calc_SRF_First_Mom
 
 !##################################################################################
 !##################################################################################

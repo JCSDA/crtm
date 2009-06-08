@@ -6,12 +6,13 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     David Groff 13-Feb-2009 (Friday 13th!)
+!       Written by:     David Groff 13-Feb-2009 
 !                       david.groff@noaa.gov
 !
+!       Revised by:     David Groff 8-June-2009
+!                       david.groff@noaa.gov
 
 PROGRAM Create_SpcCoeff_from_SRF
-
 
   ! ------------------
   ! Environment set up
@@ -21,6 +22,7 @@ PROGRAM Create_SpcCoeff_from_SRF
   USE File_Utility             , ONLY: Get_Lun, File_Exists
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                        Display_Message, Program_Message
+  USE CRTM_Parameters          , ONLY: ZERO
   USE Fundamental_Constants    , ONLY: C_1, C_2
   USE Planck_Functions         , ONLY: Planck_Radiance, Planck_Temperature
   USE Interpolate_Utility      , ONLY: Spline_Initialize, &
@@ -41,13 +43,14 @@ PROGRAM Create_SpcCoeff_from_SRF
                                        UNPOLARIZED             , &
                                        SensorInfo_type         , &
                                        Destroy_SensorInfo
-  USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type, &
-                                       Count_SensorInfo_Nodes, &
+  USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type,    &
+                                       Count_SensorInfo_Nodes,  &
                                        GetFrom_SensorInfo_List, &
                                        Destroy_SensorInfo_List
   USE SensorInfo_IO            , ONLY: Read_SensorInfo
   USE SRF_Define               , ONLY: SRF_type, &
-                                       Destroy_SRF
+                                       Destroy_SRF, &
+                                       Integrate_SRF
   USE SRF_netCDF_IO            , ONLY: Inquire_SRF_netCDF, &
                                        Read_SRF_netCDF
   USE Solar_Define             , ONLY: Solar_type, &
@@ -66,10 +69,10 @@ PROGRAM Create_SpcCoeff_from_SRF
                                        Allocate_SpcCoeff, &
                                        Destroy_SpcCoeff
   USE SpcCoeff_netCDF_IO       , ONLY: Write_SpcCoeff_netCDF
+  USE SRF_Utility              , ONLY: Calc_SRF_First_Mom
 
   ! Disable all implicit typing
   IMPLICIT NONE
-
 
   ! ----------
   ! Parameters
@@ -80,10 +83,7 @@ PROGRAM Create_SpcCoeff_from_SRF
 
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
-
-  ! Literal constants
-  REAL(fp), PARAMETER :: ZERO = 0.0_fp
-
+  
   ! The following scaling factors are applied to produce radiances in units
   ! of mW/(m^2.sr.cm^-1) when they are used.
   !
@@ -94,10 +94,11 @@ PROGRAM Create_SpcCoeff_from_SRF
   REAL(fp), PARAMETER :: C_1_LENGTH_SCALE_FACTOR = 1.0e+08_fp
   REAL(fp), PARAMETER :: C_1_POWER_SCALE_FACTOR  = 1.0e+03_fp
   REAL(fp), PARAMETER :: C_1_SCALE_FACTOR = C_1_LENGTH_SCALE_FACTOR * C_1_POWER_SCALE_FACTOR
+  
   ! Second Planck function constant (C_2) scale factor. Units of C_2 are K.m,
   ! So to convert to K.cm, a scaling of 100 is applied.
   REAL(fp), PARAMETER :: C_2_SCALE_FACTOR = 100.0_fp
-
+  
   ! The number and range of temperatures used in determining the 
   ! polychromatic correction coefficients
   INTEGER,  PARAMETER :: N_TEMPERATURES = 17
@@ -110,21 +111,9 @@ PROGRAM Create_SpcCoeff_from_SRF
   ! Cosmic background temperature
   REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253
 
-  ! Integration methods
-  INTEGER, PARAMETER :: N_INTEGRATION_METHODS = 2
-  INTEGER, PARAMETER :: SUMMATION_METHOD = 1
-  INTEGER, PARAMETER :: INTEGRATE_METHOD = 2
-  INTEGER, PARAMETER :: INTEGRATION_METHOD(N_INTEGRATION_METHODS) = &
-    (/ SUMMATION_METHOD, &
-       INTEGRATE_METHOD /)
-  CHARACTER(*), PARAMETER :: INTEGRATION_METHOD_NAME(N_INTEGRATION_METHODS) = &
-    (/ 'Summation  ', &
-       'Integration' /)
-
   ! Interpolation order
   INTEGER, PARAMETER :: LINEAR_ORDER = 1
   INTEGER, PARAMETER ::  CUBIC_ORDER = 3
-
 
   ! ---------
   ! Variables
@@ -145,7 +134,6 @@ PROGRAM Create_SpcCoeff_from_SRF
   INTEGER :: ls1, ls2
   INTEGER :: i, n
   INTEGER :: n_FOVs
-  INTEGER :: SRF_Integration_Method
   INTEGER :: SpcCoeff_File_Version
   CHARACTER( 256) :: Title
   CHARACTER(2000) :: SRF_History, Solar_History
@@ -173,7 +161,6 @@ PROGRAM Create_SpcCoeff_from_SRF
   TYPE(SpcCoeff_type)        :: SpcCoeff
   TYPE(MW_SensorData_type)   :: MW_SensorData
   TYPE(AntCorr_type)         :: AntCorr
-
 
   ! Program header
   ! --------------
@@ -208,21 +195,6 @@ PROGRAM Create_SpcCoeff_from_SRF
     STOP
   END IF
 
-  ! Integration method
-  WRITE( *,FMT='(/5x,"Select SRF integration method")' )
-  DO i = 1, N_INTEGRATION_METHODS
-    WRITE( *,FMT='(10x,i1,") ",a)' ) i, INTEGRATION_METHOD_NAME(i)
-  END DO
-  WRITE( *,FMT='(5x,"Enter choice : ")',ADVANCE='NO' )
-  READ( *,* ) SRF_Integration_Method
-  IF ( SRF_Integration_Method < 1                     .OR. &
-       SRF_Integration_Method > N_INTEGRATION_METHODS      ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Invalid integration method. Using summation.', &
-                          INFORMATION )
-    SRF_Integration_Method = SUMMATION_METHOD
-  END IF
-
   ! The SpcCoeff version
   WRITE( *,FMT='(/5x,"Default SpcCoeff file version is: ",i0, &
                &".  Enter value: ")', &
@@ -234,7 +206,6 @@ PROGRAM Create_SpcCoeff_from_SRF
                           INFORMATION )
     SpcCoeff_File_Version = SpcCoeff%Version
   END IF
-
 
   ! Read the netCDF Solar file
   ! --------------------------
@@ -268,12 +239,12 @@ PROGRAM Create_SpcCoeff_from_SRF
   IF ( Allocate_Status /= 0 ) THEN
     WRITE( Message,'("Error allocating solar array for interpolation. STAT = ",i0)' ) &
                     Allocate_Status
-    CALL Display_Message( PROGRAM_NAME, &
+    CALL Display_Message( PROGRAM_NAME,  &
                           TRIM(Message), &
-                          FAILURE )
+                          FAILURE        )
     STOP
   END IF
-
+  
   ! Initialise the spline
   Error_Status = Spline_Initialize( Solar%Frequency , &
                                     Solar%Irradiance, &
@@ -284,38 +255,34 @@ PROGRAM Create_SpcCoeff_from_SRF
                           Error_Status )
     STOP
   END IF
-
-
+  
   ! Generate the monochromatic temperatures
   ! ---------------------------------------
   x_Temperature = (/(REAL(i-1,fp),i=1,N_TEMPERATURES)/) / REAL(N_TEMPERATURES-1,fp)
   x_Temperature = (x_Temperature * ( MAX_TEMPERATURE-MIN_TEMPERATURE )) + MIN_TEMPERATURE
-
-
+  
   ! Begin the main sensor loop
   ! ---------------------------
   Sensor_Loop: DO n = 1, n_Sensors
-
+    
     ! Get the current SensorInfo data from the list
     ! ---------------------------------------------
     Error_Status = GetFrom_SensorInfo_List( SensorInfo_List, &
-                                            n, &
-                                            SensorInfo )
+                                            n,               &
+                                            SensorInfo       )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message,'("Error retrieving SensorInfo data for sensor # ",i0)' ) n
-      CALL Display_Message( PROGRAM_NAME, &
+      CALL Display_Message( PROGRAM_NAME,  &
                             TRIM(Message), &
-                            FAILURE )
+                            FAILURE        )
       STOP
     END IF
-
-
+    
     ! Only operate on sensors with SRF file present
     ! ---------------------------------------------
     SRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.srf.nc'
     IF ( .NOT. File_Exists( SRF_Filename ) ) CYCLE Sensor_Loop
-
-
+    
     ! Output an info message
     ! ----------------------
     WRITE( *,'(//5x,"Creating the SpcCoeff data file for ",a)' ) &
@@ -324,17 +291,17 @@ PROGRAM Create_SpcCoeff_from_SRF
     ! Read MW_SENSORDATA AND ANTCORR data for microwave
     ! -------------------------------------------------
     IF(SensorInfo%Sensor_Type == MICROWAVE_SENSOR) THEN
-    
+      
       ! Load the current microwave sensor data
       ! --------------------------------------
-      Error_Status = Load_MW_SensorData( MW_SensorData, &
-                                         Sensor_ID=SensorInfo%Sensor_ID, &
-                                         RCS_Id   =MW_SensorData_History )
+      Error_Status = Load_MW_SensorData( MW_SensorData,                     &
+                                         Sensor_ID = SensorInfo%Sensor_ID,  &
+                                         RCS_Id    = MW_SensorData_History  )
       IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME, &
+        CALL Display_Message( PROGRAM_NAME,                        &
                               'Error loading MW sensor data for '//&
-                              TRIM(SensorInfo%Sensor_Id), &
-                              FAILURE )
+                              TRIM(SensorInfo%Sensor_Id),          &
+                              FAILURE                              )
         STOP
       END IF
              
@@ -350,15 +317,15 @@ PROGRAM Create_SpcCoeff_from_SRF
       IF ( File_Exists(AntCorr_Filename) ) THEN
         
         ! Read the antenna correction data
-        Error_Status = Read_AntCorr_netCDF( AntCorr_Filename, &
-                                            AntCorr, &
+        Error_Status = Read_AntCorr_netCDF( AntCorr_Filename,        &
+                                            AntCorr,                 &
                                             History=AntCorr_History, &
-                                            Comment=AntCorr_Comment )
+                                            Comment=AntCorr_Comment  )
         IF ( Error_Status /= SUCCESS ) THEN
-          CALL Display_Message( PROGRAM_NAME, &
-                                'Error loading antenna correction data for '//&
-                                TRIM(SensorInfo%Sensor_Id), &
-                                FAILURE )
+          CALL Display_Message( PROGRAM_NAME,                                  &
+                                'Error loading antenna correction data for '// &
+                                TRIM(SensorInfo%Sensor_Id),                    &
+                                FAILURE                                        )
           STOP
         END IF
         
@@ -368,12 +335,58 @@ PROGRAM Create_SpcCoeff_from_SRF
         
         ! Set the FOV dimension for the SpcCoeff allocation
         n_FOVs = AntCorr%n_FOVs
-      END IF
+                
+      END IF      
       
+      ! Allocate the SpcCoeff structure                                                   
+      ! -------------------------------                                                   
+      Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, SpcCoeff, n_FOVs=n_FOVs )  
+      IF ( Error_Status /= SUCCESS ) THEN                                                 
+        CALL Display_Message( PROGRAM_NAME,                                &              
+                              'Error allocating SpcCoeff data structure.', &              
+                              FAILURE                                      )              
+        STOP                                                                              
+      END IF 
+      
+      ! The antenna correction data
+      IF ( SpcCoeff%AC_Present ) THEN
+        ! Copy it
+        Error_Status = Assign_AntCorr( AntCorr, SpcCoeff%AC )
+        IF ( Error_Status /= SUCCESS ) THEN
+          CALL Display_Message( PROGRAM_NAME,                                                         & 
+                                'Error copying antenna correction data into SpcCoeff structure for '//&
+                                TRIM(SensorInfo%Sensor_Id),                                           &
+                                FAILURE                                                               )
+          STOP
+        END IF
+        
+        ! Destroy it
+        Error_Status = Destroy_AntCorr( AntCorr )
+        IF ( Error_Status /= SUCCESS ) THEN
+          CALL Display_Message( PROGRAM_NAME, &
+                                'Error destroying AntCorr structure for '//&
+                                TRIM(SensorInfo%Sensor_Id), &
+                                FAILURE )
+          STOP
+        END IF
+      END IF
+                                                                                   
+    ELSE 
+          
+      ! Allocate the SpcCoeff structure                                      
+      ! -------------------------------                                      
+      Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, SpcCoeff)     
+      IF ( Error_Status /= SUCCESS ) THEN                                    
+        CALL Display_Message( PROGRAM_NAME,                                & 
+                              'Error allocating SpcCoeff data structure.', & 
+                              FAILURE                                      ) 
+        STOP                                                                   
+      END IF
     END IF
+      
     ! Inquire the SRF file for its GAtts
     ! ----------------------------------
-    Error_Status = Inquire_SRF_netCDF( SRF_Filename         , &  ! Input
+    Error_Status = Inquire_SRF_netCDF( SRF_Filename         , & ! Input
                                        Title   = Title      , & ! Optional output
                                        History = SRF_History, & ! Optional output
                                        Comment = Comment      ) ! Optional output
@@ -383,88 +396,46 @@ PROGRAM Create_SpcCoeff_from_SRF
                             Error_Status )
       STOP
     END IF
-    
-    ! Allocate the SpcCoeff structure
-    ! -------------------------------
-    Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, SpcCoeff, n_FOVs=n_FOVs )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error allocating SpcCoeff data structure.', &
-                            FAILURE )
-      STOP
-    END IF
-      
-    ! Assign the sensor-independent data components
-    ! ---------------------------------------------
+          
+    ! Assign fields that are independent of sensor-type 
+    ! -------------------------------------------------
     SpcCoeff%Version          = SpcCoeff_File_Version
     SpcCoeff%Sensor_Id        = SensorInfo%Sensor_Id
     SpcCoeff%Sensor_Type      = SensorInfo%Sensor_Type
     SpcCoeff%WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID
     SpcCoeff%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID
     SpcCoeff%Sensor_Channel   = SensorInfo%Sensor_Channel
+    
     ! Initialise
     SpcCoeff%Solar_Irradiance = ZERO
+    SpcCoeff%Cosmic_Background_Radiance = ZERO
     CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,SOLAR_FLAG)
     CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,ZEEMAN_FLAG)
-
-    ! Assign the simple sensor-dependent data components
-    ! --------------------------------------------------
-    SELECT CASE (SpcCoeff%Sensor_Type)
-      CASE (MICROWAVE_SENSOR)
-        SpcCoeff%Frequency    = MW_SensorData%Central_Frequency
-        SpcCoeff%Polarization = MW_SensorData%Polarization
-        ! The antenna correction data
-        IF ( SpcCoeff%AC_Present ) THEN
-          ! Copy it
-          Error_Status = Assign_AntCorr( AntCorr, SpcCoeff%AC )
-          IF ( Error_Status /= SUCCESS ) THEN
-            CALL Display_Message( PROGRAM_NAME, &
-                                  'Error copying antenna correction data into SpcCoeff structure for '//&
-                                  TRIM(SensorInfo%Sensor_Id), &
-                                  FAILURE )
-            STOP
-          END IF
-          ! Destroy it
-          Error_Status = Destroy_AntCorr( AntCorr )
-          IF ( Error_Status /= SUCCESS ) THEN
-            CALL Display_Message( PROGRAM_NAME, &
-                                  'Error destroying AntCorr structure for '//&
-                                  TRIM(SensorInfo%Sensor_Id), &
-                                  FAILURE )
-            STOP
-          END IF
-        END IF
-        
-      CASE (INFRARED_SENSOR)
-        SpcCoeff%Polarization = UNPOLARIZED
-
-      CASE (VISIBLE_SENSOR)
-        SpcCoeff%Polarization = UNPOLARIZED
-
-      CASE DEFAULT
-        CALL Display_Message( PROGRAM_NAME,'Unsupported sensor type!',FAILURE )
-        STOP
-    END SELECT
     
-
-
+    ! Set Polarization Status
+    IF (SpcCoeff%Sensor_Type==MICROWAVE_SENSOR) THEN 
+      SpcCoeff%Polarization = MW_SensorData%Polarization
+    ELSE
+      SpcCoeff%Polarization = UNPOLARIZED
+    ENDIF 
+     
     ! Open file for band correction fit output
     ! ----------------------------------------
     ASCII_Filename = TRIM(SensorInfo%Sensor_Id)//'.SpcCoeff.asc'
     ASCII_FileID = Get_Lun()
     IF ( ASCII_FileID < 0 ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
+      CALL Display_Message( PROGRAM_NAME,                                      &
                             'Error obtaining file unit number for output to '//&
-                            TRIM(ASCII_Filename), &
-                            FAILURE )
+                            TRIM(ASCII_Filename),                              &
+                            FAILURE                                            )
       STOP
     END IF
     OPEN( ASCII_FileID, FILE  =TRIM(ASCII_Filename), &
-                        ACCESS='SEQUENTIAL', &
-                        FORM  ='FORMATTED', &
-                        STATUS='REPLACE', &
-                        ACTION='WRITE', &
-                        IOSTAT=IO_Status )
+                        ACCESS='SEQUENTIAL',         &
+                        FORM  ='FORMATTED',          &
+                        STATUS='REPLACE',            &
+                        ACTION='WRITE',              &
+                        IOSTAT=IO_Status             )
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error opening statistics output file ",a,". STAT = ",i0)' ) &
                      TRIM(ASCII_Filename), IO_Status
@@ -475,28 +446,15 @@ PROGRAM Create_SpcCoeff_from_SRF
     END IF
     WRITE( ASCII_FileID,'(5x,"SRF data from file: ",a)' ) TRIM(SRF_Filename)
 
-
-
-
     ! Begin loop over channels
     ! ------------------------
-    WRITE( *,'(/,"    CH        V0            ",&
+    WRITE( *,'(/,"    CH        V0            ",                              &
                 &"FK1            FK2            BC1            BC2          ",&
-                &"CBR            F(Solar)       POLARIZATION")' )
+                &"CBR            F(Solar)       POLARIZATION")'               )
 
     Channel_Loop: DO l = 1, SpcCoeff%n_Channels
         
       WRITE( *,FMT='(2x,i4)',ADVANCE='NO') SpcCoeff%Sensor_Channel(l)
-
-      ! Set the Zeeman flag if necessary
-      ! --------------------------------
-      IF ( SpcCoeff%Sensor_Type == MICROWAVE_SENSOR ) THEN
-        ! Compute the MW response
-        Integrated_MW_Response = SUM(MW_SensorData%Response(:,l)) * MW_SensorData%Delta_Frequency(l)
-        IF ( MW_SensorData%Zeeman(l) == SET ) &
-          CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),ZEEMAN_FLAG)
-      END IF
-      
 
       ! Read the current SRF data
       ! -------------------------
@@ -511,39 +469,28 @@ PROGRAM Create_SpcCoeff_from_SRF
                               TRIM(Message), &
                               FAILURE )
         STOP
-      END IF
-
-
-      ! Define the integrated SRF and first moment
-      ! ------------------------------------------
-      IF ( SRF_Integration_Method == SUMMATION_METHOD ) THEN
-        ! via Summation
-        SRF_Integral = SRF%Summation_SRF
-        dFrequency   = SRF%Frequency(2)-SRF%Frequency(1)
-        SRF_First_Moment = SUM(SRF%Response*SRF%Frequency)*dFrequency
-      ELSE
-        ! via Integration
-        SRF_Integral = SRF%Integrated_SRF
-        Error_Status = Simpsons_Integral( SRF%Frequency, &
-                                          SRF%Response * SRF%Frequency, &
-                                          SRF_First_Moment, &
-                                          Order = CUBIC_ORDER )
-        IF ( Error_Status /= SUCCESS ) THEN
-          CALL Display_Message( PROGRAM_NAME, &
-                                'Error occurred calculating SRF first moment by integration.', &
-                                FAILURE )
-          STOP
-        END IF
-      END IF
-
-      ! Determine the SRF centroid and Planck coefficients
-      ! --------------------------------------------------
+      END IF      
+            
+      ! Define the integrated SRF and calculate the first moment                                                                     
+      SRF_Integral = SRF%Integrated_SRF
+      Error_Status = Calc_SRF_First_Mom( SRF,             & 
+                                         SRF_First_Moment )     
+      IF ( Error_Status /= SUCCESS ) THEN                                                      
+        CALL Display_Message( PROGRAM_NAME, &                                                  
+                               'Error occurred calculating SRF first moment by integration.', & 
+                               FAILURE )                                                        
+        STOP                                                                                   
+      END IF 
+         
+      ! Set the SRF centroid and determine the Planck coefficients
+      ! ----------------------------------------------------------
       SELECT CASE (SpcCoeff%Sensor_Type)
         CASE (MICROWAVE_SENSOR)
+          SpcCoeff%Frequency(l)  = SRF_First_Moment 
           SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
-
+          SRF%Frequency = GHz_to_inverse_cm( SRF%Frequency )          
         CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
-          SpcCoeff%Wavenumber(l) = SRF_First_Moment / SRF_Integral
+          SpcCoeff%Wavenumber(l) = SRF_First_Moment 
           SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
       END SELECT
       
@@ -554,7 +501,6 @@ PROGRAM Create_SpcCoeff_from_SRF
       WRITE( *,FMT='(3(2x,es13.6))',ADVANCE='NO' ) SpcCoeff%Wavenumber(l), &
                                                    SpcCoeff%Planck_C1(l), &
                                                    SpcCoeff%Planck_C2(l)
-
 
       ! Allocate the radiance/irradiance spectrum workarray
       ! ---------------------------------------------------
@@ -568,8 +514,6 @@ PROGRAM Create_SpcCoeff_from_SRF
         STOP
       END IF
 
-      
-
       ! Compute the polychromatic correction coefficients
       ! -------------------------------------------------
       Radiance => Spectrum
@@ -578,9 +522,9 @@ PROGRAM Create_SpcCoeff_from_SRF
       Temperature_Loop: DO i = 1, N_TEMPERATURES
       
         ! Calculate monochromatic radiances
-        Error_Status = Planck_Radiance( SRF%Frequency, &
+        Error_Status = Planck_Radiance( SRF%Frequency,    &
                                         x_Temperature(i), &
-                                        Radiance )
+                                        Radiance          )
         IF ( Error_Status /= SUCCESS ) THEN
           WRITE( Message,'("Error calculating radiance at T = ",f5.1," K.")' ) &
                           x_Temperature(i)
@@ -593,14 +537,19 @@ PROGRAM Create_SpcCoeff_from_SRF
         ! Convolved radiance calculations
         ! -------------------------------         
         IF (SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
-          ! Convolve the radiance spectrum with the MW response
-          Convolved_Radiance = SUM(Radiance)*MW_SensorData%Delta_Frequency(l)/Integrated_MW_Response
+          
+          ! Convolve the radiance spectrum with the MW response by summation          
+          Integrated_MW_Response = SUM(SRF%Response*dFrequency)
+          Convolved_Radiance     = SUM(Radiance)*dFrequency/ &
+          Integrated_MW_Response
+                   
         ELSE
-         ! Convolve the radiance spectrum with the SRF
-          Error_Status = Simpsons_Integral( SRF%Frequency, &
+        
+          ! Convolve the radiance spectrum with the SRF by integration
+          Error_Status = Simpsons_Integral( SRF%Frequency,         &
                                             Radiance*SRF%Response, &
-                                            Convolved_Radiance, &
-                                            Order=CUBIC_ORDER )
+                                            Convolved_Radiance,    &
+                                            Order=CUBIC_ORDER      )
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message,'("Error convolving radiance at T = ",f5.1," K.")' ) &
                            x_Temperature(i)
@@ -608,9 +557,11 @@ PROGRAM Create_SpcCoeff_from_SRF
                                   TRIM(Message), &
                                   FAILURE )
             STOP
-          END IF       
+          END IF 
+                
           ! Normalise the convolved radiance
           Convolved_Radiance = Convolved_Radiance/SRF_Integral
+          
         END IF
         
         ! Convert the convolved radiance back into a temperature
@@ -627,7 +578,7 @@ PROGRAM Create_SpcCoeff_from_SRF
         END IF
       END DO Temperature_Loop
       NULLIFY( Radiance )
-
+      
       ! Fit the mono- and polychromatic temperatures
       Error_Status = Least_Squares_Linear_Fit( x_Temperature, &
                                                y_Effective_Temperature, &
@@ -661,11 +612,16 @@ PROGRAM Create_SpcCoeff_from_SRF
                              y_Effective_Temperature(i) - yFit_Effective_Temperature(i)
       END DO
         
-      IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN      
+      IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
+      
+        ! Set the zeeman flag based on MW_SensorData
+        IF ( MW_SensorData%Zeeman(l) == SET ) &
+        CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),ZEEMAN_FLAG)      
+        
         ! Compute the cosmic background radiance
         ! --------------------------------------
-        Error_Status = Planck_Radiance( SpcCoeff%Wavenumber(l), &
-                                        COSMIC_BACKGROUND_TEMPERATURE, &
+        Error_Status = Planck_Radiance( SpcCoeff%Wavenumber(l),                &
+                                        COSMIC_BACKGROUND_TEMPERATURE,         &
                                         SpcCoeff%Cosmic_Background_Radiance(l) )
         IF ( Error_Status /= SUCCESS ) THEN
           WRITE( *,* )
@@ -677,20 +633,13 @@ PROGRAM Create_SpcCoeff_from_SRF
                                 TRIM(Message), &
                                 FAILURE )
           STOP
-        END IF
+        END IF        
+        
       ELSE
-        ! Fill the cosmic background field
-        ! --------------------------------
-        SpcCoeff%Cosmic_Background_Radiance( l ) = ZERO
-      END IF
         
-      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Cosmic_Background_Radiance(l)
-        
-      ! Set the solar fields for visible and infrared
-      ! ---------------------------------------------
-      IF(SpcCoeff%Sensor_Type == INFRARED_SENSOR .OR. &
-      SpcCoeff%Sensor_Type == VISIBLE_SENSOR) THEN
-        
+        ! Set the solar channel flag
+        CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),SOLAR_FLAG)
+            
         ! Interpolate the solar spectrum to the SRF spacing
         Irradiance => Spectrum
         Error_Status = Spline_Interpolate( Solar%Frequency    , &  ! X
@@ -706,38 +655,27 @@ PROGRAM Create_SpcCoeff_from_SRF
                                 FAILURE )
           STOP
         END IF
-        print *, maxval(Solar%Frequency), 'Solar Irradiance'
-        ! Convolve the irradiance witrh the SRF
-        IF ( SRF_Integration_Method == SUMMATION_METHOD ) THEN
-          ! via summation
-          SpcCoeff%Solar_Irradiance(l) = SUM(SRF%Response*Irradiance) * &
-                                         Solar%Frequency_Interval/SRF_Integral
-        ELSE
-          ! via integration
-          Error_Status = Simpsons_Integral( SRF%Frequency, &
-                                            SRF%Response * Irradiance, &
-                                            SpcCoeff%Solar_Irradiance(l), &
-                                            Order=CUBIC_ORDER )
-          IF ( Error_Status /= SUCCESS ) THEN
-            CALL Display_Message( PROGRAM_NAME, &
-                                  'Error occurred convoling solar irradiance with SRF.', &
-                                  FAILURE )
-            STOP
-          END IF
-          SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/SRF_Integral
+             
+        ! via integration
+        Error_Status = Simpsons_Integral( SRF%Frequency, &
+                                          SRF%Response * Irradiance, &
+                                          SpcCoeff%Solar_Irradiance(l), &
+                                          Order=CUBIC_ORDER )
+        IF ( Error_Status /= SUCCESS ) THEN
+          CALL Display_Message( PROGRAM_NAME, &
+                                'Error occurred convoling solar irradiance with SRF.', &
+                                FAILURE )
+          STOP
         END IF
+        
+        SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/SRF_Integral
         NULLIFY( Irradiance )
         
       ENDIF
-
-      ! Set the solar channel flag
-      IF ( SpcCoeff%Wavenumber(l) > SOLAR_CUTOFF_WAVENUMBER ) THEN
-        CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),SOLAR_FLAG)
-      ELSE
-        CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),SOLAR_FLAG)
-      END IF
+      
+      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Cosmic_Background_Radiance(l)
       WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Solar_Irradiance(l)
-
+      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Solar_Irradiance(l)
 
       ! Deallocate the radiance/irradiance spectrum workarray
       ! -----------------------------------------------------
@@ -750,7 +688,6 @@ PROGRAM Create_SpcCoeff_from_SRF
                               FAILURE )
         STOP
       END IF
-
 
       ! Destroy the current channel SRF structure
       ! -----------------------------------------
@@ -766,7 +703,6 @@ PROGRAM Create_SpcCoeff_from_SRF
       
     END DO Channel_Loop
 
-
     ! Close the ASCII output file
     ! ---------------------------
     CLOSE( ASCII_FileID, IOSTAT=IO_Status )
@@ -776,7 +712,6 @@ PROGRAM Create_SpcCoeff_from_SRF
                             TRIM(ASCII_Filename), &
                             WARNING )
     END IF
-
 
     ! Write the SpcCoeff data file
     ! ----------------------------
