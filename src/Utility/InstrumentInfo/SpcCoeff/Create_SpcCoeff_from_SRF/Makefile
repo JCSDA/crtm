@@ -16,6 +16,10 @@ EXE_FILE = Create_SpcCoeff_from_SRF
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
+            CRTM_Parameters.f90 \
+            Sort_Utility.f90 \
+            ODAS_Define.f90 \
+            ODPS_Define.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             Fundamental_Constants.f90 \
@@ -43,6 +47,7 @@ SRC_FILES = Type_Kinds.f90 \
             SensorInfo_IO.f90 \
             SRF_Define.f90 \
             SRF_netCDF_IO.f90 \
+            SRF_Utility.f90 \
             Solar_Define.f90 \
             Solar_netCDF_IO.f90  
             
