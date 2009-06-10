@@ -17,9 +17,13 @@ EXE_FILE = Create_MW_SRF
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             String_Utility.f90 \
+            Sort_Utility.f90 \
+            ODAS_Define.f90 \
+            ODPS_Define.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
             AntCorr_Define.f90 \
+            SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
