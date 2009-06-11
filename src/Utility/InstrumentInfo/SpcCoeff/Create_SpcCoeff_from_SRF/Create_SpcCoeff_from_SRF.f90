@@ -488,7 +488,8 @@ PROGRAM Create_SpcCoeff_from_SRF
         CASE (MICROWAVE_SENSOR)
           SpcCoeff%Frequency(l)  = SRF_First_Moment 
           SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
-          SRF%Frequency = GHz_to_inverse_cm( SRF%Frequency )          
+          SRF%Frequency = GHz_to_inverse_cm( SRF%Frequency )
+          dFrequency = SRF%Frequency(2) - SRF%Frequency(1)          
         CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
           SpcCoeff%Wavenumber(l) = SRF_First_Moment 
           SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
