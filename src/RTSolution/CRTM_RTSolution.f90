@@ -2564,7 +2564,7 @@ CONTAINS
     ! (specular or diffuse)
     ! The surface is specular if microwave sensor
     ! -------------------------------------------
-    IF( SC(SensorIndex)%Sensor_Type == MICROWAVE_SENSOR ) THEN
+    IF( SC(SensorIndex)%Sensor_Type == MICROWAVE_SENSOR .OR. Surface%Water_Coverage > 0.5_fp) THEN
       RTV%Diffuse_Surface = .FALSE.
     ELSE
       RTV%Diffuse_Surface = .TRUE.
