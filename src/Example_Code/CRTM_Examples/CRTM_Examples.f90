@@ -1374,7 +1374,7 @@ CONTAINS
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
-      0.0_fp,   0.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
+      0.0_fp,   0.0_fp,   0.5_fp,   0.4_fp,   0.4_fp,   0.4_fp,   0.4_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp/)   
 
   END SUBROUTINE Get_Cloud_1
@@ -1442,8 +1442,8 @@ CONTAINS
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
-      5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp, &  
-      5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   5.0_fp,   0.0_fp,   0.0_fp/)   
+      1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp, &  
+      1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   1.0_fp,   0.0_fp,   0.0_fp/)   
 
   END SUBROUTINE Get_Cloud_3
 
@@ -1467,7 +1467,7 @@ CONTAINS
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       2.0_fp,   2.0_fp,   2.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp/)   
-    Aerosol%Concentration = & ! units = kg/m^2
+    Aerosol%Concentration = & ! units = g/m^2
     (/0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
@@ -1477,7 +1477,7 @@ CONTAINS
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
-      5.0_fp,   5.0_fp,   5.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp/)   
+      0.01_fp,  0.01_fp,  0.01_fp,  0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp/)   
 
 
   END SUBROUTINE Get_Aerosol_1
@@ -1503,7 +1503,7 @@ CONTAINS
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,  0.15_fp,  0.15_fp,  0.15_fp,  0.15_fp,  0.15_fp, &  
      0.15_fp,  0.15_fp,  0.15_fp,  0.15_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp/)   
-    Aerosol%Concentration = & ! units = kg/m^2
+    Aerosol%Concentration = & ! units = g/m^2
     (/0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
       0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp,   0.0_fp, &  
