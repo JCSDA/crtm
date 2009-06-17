@@ -1,0 +1,93 @@
+#--------------------------------------------------------------
+# function to get parameters from an external file
+#
+# inputs(global)
+#    PARAM_NAME_LIST - list of parameter names. For example:
+#        PARAM_NAME_LIST="BATCH MAX_CPUs EXE_FILE WORK_DIR"
+#    PARAM_FILE - filename containing a list of parameters. 
+#       Example of the file format:
+#
+#         :BATCH:yes
+#         :MAX_CPUs:32          
+#
+# output(global)
+#    The variables with the names in $PARAM_NAME_LIST are assigned with
+#    the values in the file $PARAM_FILE.
+#---------------------------------------------------------------
+
+read_parameters(){
+
+echo "Parameters read in: "
+echo
+
+for ITEM_NAME in ${PARAM_NAME_LIST}; do
+
+  ITEM_VALUE=`grep ":${ITEM_NAME}:" ${PARAM_FILE} | cut -d":" -f3`
+
+  NumOfMatched=`echo ${ITEM_VALUE} | awk '{print NF}'`
+  if [ ${NumOfMatched} -ne 1 ];then
+
+    echo "Unable to determine the value for the item ${ITEM_NAME} in the file ${ITEM_NAME}" 
+    exit 1
+
+  fi
+
+  #--- assign the item value to the corresponding variable
+
+  eval "${ITEM_NAME}=$ITEM_VALUE"
+
+  echo "${ITEM_NAME}: "
+  eval "echo $`echo ${ITEM_NAME}`"
+  
+done
+  
+}
+
+
+#-----------------------------------------------------------
+# function to get sensor's SatName, SenName, Nchan
+# and chan_list from SenInfoFile.
+#
+# inputs(global): 
+#     SatSen - variable containing sensor tag. i.g, hirs_n16
+#     SENSOR_INFO - variable containing sensorInfo filename
+#
+# output(global): 
+#     SatName - hold satellite name
+#     SenName - hold sensor name
+#     Nchan   - hold number of channels  
+#     chan_list - a list of channel index.
+#                 chan_list is a "," delimited channel number list.
+#-----------------------------------------------------------
+
+get_senInfo() {
+
+  SEN_PARAM=`awk '{ 
+    while(getline){
+      if (match($0, "!"))continue
+      if(match($0, SS)){
+        SenName=$1; SatName=$2; Nchan=$8
+        Nchan_used=0
+        for(i=1;i<=Nchan;i++){
+          if(getline == 0)break
+          if($2 == 1){
+            Nchan_used=Nchan_used+1
+            if(i == 1) {
+              chan_list=sprintf("%s",$1)
+              continue
+            }
+            chan_list=sprintf("%s,%s",chan_list,$1) 
+          }
+        }; 
+        print SatName " " SenName " " Nchan_used " " chan_list
+	break
+      }
+    }
+  }' SS=${SatSen} ${SENSOR_INFO}`
+
+  SatName=`echo $SEN_PARAM | cut -d' ' -f 1`
+  SenName=`echo $SEN_PARAM | cut -d' ' -f 2`
+  Nchan=`echo $SEN_PARAM | cut -d' ' -f 3`
+  chan_list=`echo $SEN_PARAM | cut -d' ' -f 4`
+
+}
