@@ -72,6 +72,10 @@ PRO OSRF::Inspect, $
       ENDFOR
     ENDIF
 
+    ; The flag status
+    PRINT, FORMAT='(/,"Flag settings:")'
+    self->Display_Flags, Debug=Debug
+    
   ENDIF 
   
-END ; FUNCTION OSRF::Inspect
+END ; PRO OSRF::Inspect

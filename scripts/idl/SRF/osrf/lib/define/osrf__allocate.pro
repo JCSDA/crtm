@@ -3,13 +3,13 @@
 ;       OSRF::Allocate
 ;
 ; PURPOSE:
-;       The OSRF::Allocate function method allocates the SRF
+;       The OSRF::Allocate procedure method allocates the SRF
 ;       object data arrays.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[OSRF::]Allocate( $
-;                  n_Points       , $  ; Input
-;                  Debug=Debug      )  ; Input keyword
+;       Obj->[OSRF::]Allocate, $
+;         n_Points       , $  ; Input
+;         Debug=Debug         ; Input keyword
 ;
 ; INPUTS:
 ;       n_Points:    The number of SRF data points to which the
@@ -32,21 +32,11 @@
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-; FUNCTION RESULT:
-;       Result:      The return value is an integer defining the error
-;                    status. The error codes are defined in the error_codes
-;                    include file.
-;                    If == SUCCESS the computation was sucessful
-;                       == FAILURE an unrecoverable error occurred
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SRF specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
 ;       After creating a OSRF object,
@@ -57,7 +47,7 @@
 ;       in this example 4:
 ;
 ;         IDL> n_Points = [100,80,81,97]  ; Quadruple band SRF
-;         IDL> Result = Obj->Allocate(n_Points)
+;         IDL> x->Allocate, n_Points
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 20-Apr-2009
@@ -65,16 +55,15 @@
 ;
 ;-
 
-FUNCTION OSRF::Allocate, $
+PRO OSRF::Allocate, $
   n_Points       , $  ; Input
   Debug=Debug         ; Input keyword
 
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
-  @osrf_func_err_handler
+  @osrf_pro_err_handler
  
   ; ...Check dimension input
   n_Bands = N_ELEMENTS(n_Points)
@@ -89,12 +78,8 @@ FUNCTION OSRF::Allocate, $
   
   ; ...Check if ANY pointers are already associated
   ; ...If they are, deallocate them but leave scalars.
-  IF ( self->Associated(/ANY_Test,Debug=Debug) EQ TRUE ) THEN BEGIN
-    Result = self->Destroy(/No_Clear,Debug=Debug)
-    IF ( Result NE SUCCESS ) THEN $
-      MESSAGE, 'Error destroying OSRF object', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ENDIF
+  IF ( self->Associated(/ANY_Test, Debug=Debug) ) THEN $
+    self->Destroy, /No_Clear, Debug=Debug
  
  
   ; Perform the allocations 
@@ -103,9 +88,13 @@ FUNCTION OSRF::Allocate, $
   self.n_Points  = PTR_NEW(DBLARR(n_Bands))
   self.Frequency = PTR_NEW(PTRARR(n_Bands))
   self.Response  = PTR_NEW(PTRARR(n_Bands))
+  self.B         = PTR_NEW(PTRARR(n_Bands))
+  self.R         = PTR_NEW(PTRARR(n_Bands))
   FOR i = 0, n_Bands-1 DO BEGIN
     (*self.Frequency)[i] = PTR_NEW(DBLARR(n_Points[i]))
     (*self.Response)[i]  = PTR_NEW(DBLARR(n_Points[i]))
+    (*self.B)[i]         = PTR_NEW(DBLARR(n_Points[i]))
+    (*self.R)[i]         = PTR_NEW(DBLARR(n_Points[i]))
   ENDFOR
 
  
@@ -122,6 +111,5 @@ FUNCTION OSRF::Allocate, $
  
   ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
  
-END ; FUNCTION OSRF::Allocate
+END ; PRO OSRF::Allocate

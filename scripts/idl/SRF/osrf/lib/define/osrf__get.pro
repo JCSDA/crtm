@@ -3,26 +3,31 @@
 ;       OSRF::Get
 ;
 ; PURPOSE:
-;       The OSRF::Get function method retrieves the value of an
+;       The OSRF::Get procedure method retrieves the value of an
 ;       OSRF component.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[OSRF::]Get( $
-;                  Debug            = Debug           , $  ; Input keyword
-;                  Band             = Band            , $  ; Input keyword
-;                  n_Bands          = n_Bands         , $  ; Output keyword
-;                  Version          = Version         , $  ; Output keyword
-;                  Sensor_Id        = Sensor_Id       , $  ; Output keyword
-;                  WMO_Satellite_ID = WMO_Satellite_ID, $  ; Output keyword
-;                  WMO_Sensor_ID    = WMO_Sensor_ID   , $  ; Output keyword
-;                  Sensor_Type      = Sensor_Type     , $  ; Output keyword
-;                  Channel          = Channel         , $  ; Output keyword
-;                  Integral         = Integral        , $  ; Output keyword
-;                  f1               = f1              , $  ; Output keyword
-;                  f2               = f2              , $  ; Output keyword
-;                  n_Points         = n_Points        , $  ; Output keyword
-;                  Frequency        = Frequency       , $  ; Output keyword
-;                  Response         = Response          )  ; Output keyword
+;       Obj->[OSRF::]Get, $
+;         Debug            = Debug           , $  ; Input keyword
+;         Band             = Band            , $  ; Input keyword
+;         n_Bands          = n_Bands         , $  ; Output keyword
+;         Version          = Version         , $  ; Output keyword
+;         Sensor_Id        = Sensor_Id       , $  ; Output keyword
+;         WMO_Satellite_ID = WMO_Satellite_ID, $  ; Output keyword
+;         WMO_Sensor_ID    = WMO_Sensor_ID   , $  ; Output keyword
+;         Sensor_Type      = Sensor_Type     , $  ; Output keyword
+;         Channel          = Channel         , $  ; Output keyword
+;         Integral         = Integral        , $  ; Output keyword
+;         f0               = f0              , $  ; Output keyword
+;         Planck_C1        = Planck_C1       , $  ; Output keyword
+;         Planck_C2        = Planck_C2       , $  ; Output keyword
+;         Band_C1          = Band_C1         , $  ; Output keyword
+;         Band_C2          = Band_C2         , $  ; Output keyword
+;         f1               = f1              , $  ; Output keyword
+;         f2               = f2              , $  ; Output keyword
+;         n_Points         = n_Points        , $  ; Output keyword
+;         Frequency        = Frequency       , $  ; Output keyword
+;         Response         = Response             ; Output keyword
 ;
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:              Set this keyword for debugging.
@@ -78,7 +83,7 @@
 ;                           DIMENSION:  Scalar
 ;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       Channel:            The sensor channel for the currenobject.
+;       Channel:            The sensor channel for the current object.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
@@ -90,16 +95,46 @@
 ;                           DIMENSION:  Scalar
 ;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       f0:                 The central frequency of the SRF.
+;                           UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+;                           TYPE:       REAL
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       Planck_C1:          The first Planck function coefficient, c1.v^3, for the SRF.
+;                           UNITS:      W.m^2
+;                           TYPE:       REAL
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       Planck_C2:          The second Planck function coefficient, c2.v, for the SRF.
+;                           UNITS:      K.m
+;                           TYPE:       REAL
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       Band_C1:            The offset polychromatic correction coefficient for the SRF.
+;                           UNITS:      Kelvin, K
+;                           TYPE:       REAL
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       Band_C2:            The slope polychromatic correction coefficients for the SRF.
+;                           UNITS:      K/K
+;                           TYPE:       REAL
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ;       f1:                 The begin frequency of the SRF band.
 ;                           Used in conjunction with the Band keyword argument.
-;                           UNITS:      Inverse centimetres (cm^-1)
+;                           UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                           TYPE:       REAL
 ;                           DIMENSION:  Scalar
 ;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       f2:                 The vector of SRF band end frequencies.
 ;                           Used in conjunction with the Band keyword argument.
-;                           UNITS:      Inverse centimetres (cm^-1)
+;                           UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                           TYPE:       REAL
 ;                           DIMENSION:  Scalar
 ;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
@@ -114,7 +149,7 @@
 ;
 ;       Frequency:          The frequency grid for an SRF band.
 ;                           Used in conjunction with the Band keyword argument.
-;                           UNITS:      Inverse centimetres (cm^-1)
+;                           UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                           TYPE:       REAL
 ;                           DIMENSION:  n_Points
 ;                           ATTRIBUTES: INTENT(IN), OPTIONAL
@@ -126,27 +161,17 @@
 ;                           DIMENSION:  n_Points
 ;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-; FUNCTION RESULT:
-;       Result:      The return value is an integer defining the error
-;                    status. The error codes are defined in the error_codes
-;                    include file.
-;                    If == SUCCESS the component retrieval was successful
-;                       == FAILURE an unrecoverable error occurred
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SRF specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
 ;       Given a valid OSRF object, x, obtain various OSRF
 ;       components values like so,
 ;
-;         IDL> Result = x->Get(Sensor_Id=sid, Channel=ch)
+;         IDL> x->Get, Sensor_Id=sid, Channel=ch
 ;         IDL> HELP, sid, ch
 ;         SID             STRING    = 'hirs4_n18           '
 ;         CH              LONG      =            7
@@ -157,7 +182,7 @@
 ;
 ;-
 
-FUNCTION OSRF::Get, $
+PRO OSRF::Get, $
   Debug            = Debug           , $  ; Input keyword
   Band             = Band            , $  ; Input keyword
   n_Bands          = n_Bands         , $  ; Output keyword
@@ -168,6 +193,11 @@ FUNCTION OSRF::Get, $
   Sensor_Type      = Sensor_Type     , $  ; Output keyword
   Channel          = Channel         , $  ; Output keyword
   Integral         = Integral        , $  ; Output keyword
+  f0               = f0              , $  ; Output keyword
+  Planck_C1        = Planck_C1       , $  ; Output keyword
+  Planck_C2        = Planck_C2       , $  ; Output keyword
+  Band_C1          = Band_C1         , $  ; Output keyword
+  Band_C2          = Band_C2         , $  ; Output keyword
   f1               = f1              , $  ; Output keyword
   f2               = f2              , $  ; Output keyword
   n_Points         = n_Points        , $  ; Output keyword
@@ -176,11 +206,10 @@ FUNCTION OSRF::Get, $
 
 
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
-  @osrf_func_err_handler
+  @osrf_pro_err_handler
  
   
   ; Check if structure has been allocated
@@ -207,6 +236,11 @@ FUNCTION OSRF::Get, $
   IF ( ARG_PRESENT(Sensor_Type     ) ) THEN Sensor_Type      = self.Sensor_Type     
   IF ( ARG_PRESENT(Channel         ) ) THEN Channel          = self.Channel         
   IF ( ARG_PRESENT(Integral        ) ) THEN Integral         = self.Integral
+  IF ( ARG_PRESENT(f0              ) ) THEN f0               = self.f0              
+  IF ( ARG_PRESENT(Planck_C1       ) ) THEN Planck_C1        = self.Planck_C1     
+  IF ( ARG_PRESENT(Planck_C2       ) ) THEN Planck_C2        = self.Planck_C2     
+  IF ( ARG_PRESENT(Band_C1         ) ) THEN Band_C1          = self.Band_C1       
+  IF ( ARG_PRESENT(Band_C2         ) ) THEN Band_C2          = self.Band_C2       
   IF ( ARG_PRESENT(f1              ) ) THEN f1               = (*self.f1)[_Band]              
   IF ( ARG_PRESENT(f2              ) ) THEN f2               = (*self.f2)[_Band]             
   IF ( ARG_PRESENT(n_Points        ) ) THEN n_Points         = (*self.n_Points)[_Band]
@@ -216,6 +250,5 @@ FUNCTION OSRF::Get, $
   
   ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
  
-END ; FUNCTION OSRF::Get
+END ; PRO OSRF::Get

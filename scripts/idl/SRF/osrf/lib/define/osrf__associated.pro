@@ -38,14 +38,14 @@
 ;       Result:      The return value is an integer defining the error
 ;                    status. The error codes are defined in the error_codes
 ;                    include file.
-;                    If == SUCCESS the computation was sucessful
-;                       == FAILURE an unrecoverable error occurred
+;                    If == TRUE the object pointer components are associated.
+;                       == FALSE the object pointer components are NOT associated.
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
 ;
 ; INCLUDE FILES:
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       error_codes: Include file containing error code definitions.
 ;
 ; EXAMPLE:
 ;       After creating a OSRF object,
@@ -60,7 +60,7 @@
 ;       Once the object pointer components have been allocated, the associated
 ;       status should be "true",
 ;
-;         IDL> Result = x->Allocate(10)
+;         IDL> x->Allocate,10
 ;         IDL> IF ( x->Associated() ) THEN PRINT,'Associated' ELSE PRINT,'Not Associated'
 ;         Associated
 ;
@@ -71,11 +71,23 @@
 ;-
 
 FUNCTION OSRF::Associated, $
-  ANY_TEST=ANY_Test, $  ; Input keyword
+  ANY_Test=ANY_Test, $  ; Input keyword
   Debug=Debug           ; Input keyword
  
   ; Set up error handler
-  @osrf_func_err_handler
+  @error_codes
+  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
+    MESSAGE, '--> Entered.', /INFORMATIONAL
+    MsgSwitch = 0
+  ENDIF ELSE BEGIN
+    CATCH, Error_Status
+    IF ( Error_Status NE 0 ) THEN BEGIN
+      CATCH, /CANCEL
+      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
+      RETURN, FALSE
+    ENDIF
+    MsgSwitch = 1
+  ENDELSE
 
 
   ; Test association status
@@ -85,13 +97,17 @@ FUNCTION OSRF::Associated, $
          PTR_VALID( self.f2        ) AND $
          PTR_VALID( self.n_Points  ) AND $
          PTR_VALID( self.Frequency ) AND $
-         PTR_VALID( self.Response  )     ) THEN Association_Status = TRUE
+         PTR_VALID( self.Response  ) AND $
+         PTR_VALID( self.B         ) AND $
+         PTR_VALID( self.R         )     ) THEN Association_Status = TRUE
   ENDIF ELSE BEGIN
     IF ( PTR_VALID( self.f1        ) OR $
          PTR_VALID( self.f2        ) OR $
          PTR_VALID( self.n_Points  ) OR $
          PTR_VALID( self.Frequency ) OR $
-         PTR_VALID( self.Response  )    ) THEN Association_Status = TRUE
+         PTR_VALID( self.Response  ) OR $
+         PTR_VALID( self.B         ) OR $
+         PTR_VALID( self.R         )    ) THEN Association_Status = TRUE
   ENDELSE
  
   RETURN, Association_Status

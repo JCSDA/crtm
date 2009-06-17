@@ -3,21 +3,21 @@
 ;       OSRF::Set
 ;
 ; PURPOSE:
-;       The OSRF::Set function method  assigns values to
+;       The OSRF::Set procedure method  assigns values to
 ;       OSRF components.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[OSRF::]Set( $
-;                  Debug           =Debug           , $  ; Input keyword
-;                  Version         =Version         , $  ; Input keyword
-;                  Sensor_Id       =Sensor_Id       , $  ; Input keyword
-;                  WMO_Satellite_ID=WMO_Satellite_ID, $  ; Input keyword
-;                  WMO_Sensor_ID   =WMO_Sensor_ID   , $  ; Input keyword
-;                  Sensor_Type     =Sensor_Type     , $  ; Input keyword
-;                  Channel         =Channel         , $  ; Input keyword
-;                  Frequency       =Frequency       , $  ; Input keyword
-;                  Response        =Response        , $  ; Input keyword
-;                  Band            =Band              )  ; Input keyword
+;       Obj->[OSRF::]Set, $
+;         Debug           =Debug           , $  ; Input keyword
+;         Version         =Version         , $  ; Input keyword
+;         Sensor_Id       =Sensor_Id       , $  ; Input keyword
+;         WMO_Satellite_ID=WMO_Satellite_ID, $  ; Input keyword
+;         WMO_Sensor_ID   =WMO_Sensor_ID   , $  ; Input keyword
+;         Sensor_Type     =Sensor_Type     , $  ; Input keyword
+;         Channel         =Channel         , $  ; Input keyword
+;         Frequency       =Frequency       , $  ; Input keyword
+;         Response        =Response        , $  ; Input keyword
+;         Band            =Band                 ; Input keyword
 ;
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:              Set this keyword for debugging.
@@ -86,27 +86,17 @@
 ;                           DIMENSION:  SCALAR
 ;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-; FUNCTION RESULT:
-;       Result:      The return value is an integer defining the error
-;                    status. The error codes are defined in the error_codes
-;                    include file.
-;                    If == SUCCESS the component retrieval was successful
-;                       == FAILURE an unrecoverable error occurred
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SRF specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
 ;       Given a valid, allocated, OSRF object, x, assign various OSRF
 ;       components values like so,
 ;
-;         IDL> Result = x->Set(Sensor_Id=sid, Channel=ch)
+;         IDL> x->Set, Sensor_Id=sid, Channel=ch
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 20-Apr-2009
@@ -114,7 +104,7 @@
 ;
 ;-
 
-FUNCTION OSRF::Set, $
+PRO OSRF::Set, $
   Debug           =Debug           , $  ; Input keyword
   Version         =Version         , $  ; Input keyword
   Sensor_Id       =Sensor_Id       , $  ; Input keyword
@@ -128,11 +118,10 @@ FUNCTION OSRF::Set, $
 
 
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
-  @osrf_func_err_handler
+  @osrf_pro_err_handler
  
   
   ; Check if structure has been allocated
@@ -189,6 +178,5 @@ FUNCTION OSRF::Set, $
   
   ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
  
-END ; FUNCTION OSRF::Set
+END ; PRO OSRF::Set

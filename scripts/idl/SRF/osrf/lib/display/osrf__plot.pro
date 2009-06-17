@@ -20,8 +20,8 @@
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SRF specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
 ;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
@@ -42,12 +42,13 @@
 ;-
 
 PRO OSRF::Plot, $
+  OverPlot=OverPlot, $
   Debug=Debug ; Input keyword
 
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  @color_db
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
 
@@ -62,8 +63,12 @@ PRO OSRF::Plot, $
     PLOT, *(*self.Frequency)[i], *(*self.Response)[i], $
           TITLE='Band #'+STRTRIM(i+1,2), $
           XTITLE='Frequency', $
-          YTITLE='Relative response'
+          YTITLE='Relative response',yrange=[-0.2,1.2]
+    IF ( N_ELEMENTS(OverPlot) GT 0 ) THEN BEGIN
+      OPLOT, *(*OverPlot.Frequency)[i], *(*OverPlot.Response)[i], $
+             COLOR=RED, PSYM=-4
+    ENDIF
   ENDFOR
   !P = psave
 
-END ; OSRF::Plot
+END ; PRO OSRF::Plot

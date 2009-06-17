@@ -32,16 +32,16 @@
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SensorInfo specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
 ;       After creating and allocating a OSRF object, e.g.
 ;
 ;         IDL> x = OBJ_NEW('OSRF')
-;         IDL> Result = x->Allocate(10)
+;         IDL> x->Allocate, 10
 ;
 ;       the Cleanup method is invoked when the object is destroyed,
 ;
@@ -56,18 +56,14 @@
 PRO OSRF::Cleanup, Debug=Debug  ; Input keyword
  
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
 
 
   ; Deallocate pointers, and clear scalars
-  Result = self->Destroy(Debug=Debug)
-  IF ( Result NE SUCCESS ) THEN $
-    MESSAGE, 'Error destroying OSRF structure', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  self->Destroy, Debug=Debug
 
   ; Done
   Done:

@@ -3,12 +3,12 @@
 ;       OSRF::Assign
 ;
 ; PURPOSE:
-;       The OSRF::Assign function method copies a valid OSRF object.
+;       The OSRF::Assign procedure method copies a valid OSRF object.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[OSRF::]Assign( $
-;                  new        , $  ; Output
-;                  Debug=Debug  )  ; Input keyword
+;       Obj->[OSRF::]Assign, $
+;         new        , $  ; Output
+;         Debug=Debug     ; Input keyword
 ;
 ; OUTPUT:
 ;       new:         A deep copy of the OSRF object.
@@ -27,21 +27,11 @@
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-; FUNCTION RESULT:
-;       Result:      The return value is an integer defining the error
-;                    status. The error codes are defined in the error_codes
-;                    include file.
-;                    If == SUCCESS the computation was sucessful
-;                       == FAILURE an unrecoverable error occurred
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SRF specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
 ;       Given an instance of a OSRF object,
@@ -51,7 +41,7 @@
 ;
 ;       a new instance of the data object is created by:
 ;
-;         IDL> Result = x->Assign(y)
+;         IDL> x->Assign,y
 ;         IDL> help, y
 ;         Y               OBJREF    = <ObjHeapVar12(OSRF)>
 ;
@@ -61,16 +51,15 @@
 ;
 ;-
 
-FUNCTION OSRF::Assign, $
+PRO OSRF::Assign, $
   new, $       ; Output
   Debug=Debug  ; Input keyword
 
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
-  @osrf_func_err_handler
+  @osrf_pro_err_handler
 
   ; ...ALL *input* pointers must be associated
   IF ( self->Associated(Debug=Debug) EQ FALSE ) THEN $
@@ -86,10 +75,7 @@ FUNCTION OSRF::Assign, $
 
 
   ; Allocate the output object
-  Result = new->Allocate( *self.n_Points,Debug=Debug )
-  IF ( Result NE SUCCESS ) THEN $
-    MESSAGE, 'Error allocating output OSRF structure', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  new->Allocate, *self.n_Points, Debug=Debug
 
 
   ; Assign data components
@@ -102,17 +88,24 @@ FUNCTION OSRF::Assign, $
   new.Sensor_Type      = self.Sensor_Type   
   new.Channel          = self.Channel
   new.Integral         = self.Integral
+  new.Planck_C1        = self.Planck_C1
+  new.Planck_C2        = self.Planck_C2
+  new.Band_C1          = self.Band_C1
+  new.Band_C2          = self.Band_C2
+  new.Flags            = self.Flags
+  new.f0               = self.f0
   *new.f1              = *self.f1       
   *new.f2              = *self.f2       
   *new.n_Points        = *self.n_Points  
   FOR i = 0, self.n_Bands-1 DO BEGIN
     *(*new.Frequency)[i] = *(*self.Frequency)[i]
     *(*new.Response)[i]  = *(*self.Response)[i] 
+    *(*new.B)[i]         = *(*self.B)[i]
+    *(*new.R)[i]         = *(*self.R)[i] 
   ENDFOR
 
 
   ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
 
-END ; FUNCTION OSRF::Assign
+END ; PRO OSRF::Assign

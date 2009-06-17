@@ -34,17 +34,18 @@
 ;       Result:      The return value is an integer defining the error
 ;                    status. The error codes are defined in the error_codes
 ;                    include file.
-;                    If == SUCCESS the object creation was sucessful
-;                       == FAILURE an unrecoverable error occurred
+;                    If == TRUE the object creation was sucessful
+;                       == FALSE an unrecoverable error occurred
+;                    
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
 ;
 ; INCLUDE FILES:
-;       srf_parameters: Include file containing SRF specific
-;                       parameter value definitions.
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
 ;
-;       osrf_func_err_handler: Error handler code for OSRF functions.
+;       error_codes: Include file containing error code definitions.
 ;
 ; EXAMPLE:
 ;       The Init method is invoked when an OSRF object is created,
@@ -60,25 +61,41 @@
 FUNCTION OSRF::Init, Debug=Debug  ; Input keyword
 
   ; Set up
-  ; ...Generic SRF parameters
-  @srf_parameters
-  
+  ; ...OSRF parameters
+  @osrf_parameters
   ; ...Set up error handler
-  @osrf_func_err_handler
+  @error_codes
+  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
+    MESSAGE, '--> Entered.', /INFORMATIONAL
+    MsgSwitch = 0
+  ENDIF ELSE BEGIN
+    CATCH, Error_Status
+    IF ( Error_Status NE 0 ) THEN BEGIN
+      CATCH, /CANCEL
+      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
+      RETURN, FALSE
+    ENDIF
+    MsgSwitch = 1
+  ENDELSE
  
 
   ; Set default values
-  self.Release          = SRF_RELEASE
-  self.Version          = SRF_VERSION
+  self.Release          = OSRF_RELEASE
+  self.Version          = OSRF_VERSION
   self.Sensor_Id        = ' '
   self.WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
   self.WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
   self.Sensor_Type      = INVALID_SENSOR
   self.Channel          = INVALID
   self.Integral         = ZERO
-  self.Flags            = 0L  ; Clear all flags
+  self.Flags            = 0L
+  self.f0               = ZERO
+  self.Planck_C1        = ZERO
+  self.Planck_C2        = ZERO
+  self.Band_C1          = ZERO
+  self.Band_C2          = ZERO
 
   CATCH, /CANCEL
-  RETURN, SUCCESS
+  RETURN, TRUE
  
 END ; FUNCTION OSRF::Init
