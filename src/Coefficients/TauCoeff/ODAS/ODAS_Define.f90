@@ -897,6 +897,15 @@ CONTAINS
       RETURN
     END IF
 
+    ! Check the sensor type value
+    IF ( ODAS1%Sensor_Type /= ODAS2%Sensor_Type  ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'ODAS sensor type values are different.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
  
     ! Reallocate the first structure
     ! ------------------------------
@@ -945,6 +954,7 @@ CONTAINS
     ODAS1%Sensor_ID         = ODAS_Tmp%Sensor_ID
     ODAS1%WMO_Satellite_ID  = ODAS_Tmp%WMO_Satellite_ID
     ODAS1%WMO_Sensor_ID     = ODAS_Tmp%WMO_Sensor_ID
+    ODAS1%Sensor_Type       = ODAS_Tmp%Sensor_Type
     ODAS1%Absorber_ID       = ODAS_Tmp%Absorber_ID
     ODAS1%Alpha             = ODAS_Tmp%Alpha
     ODAS1%Alpha_C1          = ODAS_Tmp%Alpha_C1
@@ -1145,6 +1155,16 @@ CONTAINS
       RETURN
     END IF
 
+    ! Check the sensor type value
+    IF ( ODAS1%Sensor_Type /= ODAS2%Sensor_Type  ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'ODAS sensor type values are different.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
     ! Check the channels
     IF ( ANY( ( ODAS1%Sensor_Channel - ODAS2%Sensor_Channel ) /= 0 ) ) THEN
       Error_Status = FAILURE
@@ -1202,6 +1222,7 @@ CONTAINS
     ODAS1%Sensor_ID         = ODAS_Tmp%Sensor_ID
     ODAS1%WMO_Satellite_ID  = ODAS_Tmp%WMO_Satellite_ID
     ODAS1%WMO_Sensor_ID     = ODAS_Tmp%WMO_Sensor_ID
+    ODAS1%Sensor_Type       = ODAS_Tmp%Sensor_Type
     ODAS1%Sensor_Channel    = ODAS_Tmp%Sensor_Channel
 
 
