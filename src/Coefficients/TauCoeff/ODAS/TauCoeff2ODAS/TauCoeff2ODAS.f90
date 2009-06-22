@@ -113,6 +113,9 @@ PROGRAM TauCoeff2ODAS
 
   ! Copy over the data
   ! ------------------
+  ODAS%Release          = TauCoeff%Release + 1
+  ODAS%Version          = TauCoeff%Version
+
   ODAS%Sensor_Id        = Sensor_Id
   ODAS%WMO_Satellite_ID = TauCoeff%WMO_Satellite_ID(1)
   ODAS%WMO_Sensor_ID    = TauCoeff%WMO_Sensor_ID(1)   
@@ -129,7 +132,7 @@ PROGRAM TauCoeff2ODAS
 
   ! Write the new datafile
   ! ----------------------
-  Title = 'ODAS optical depth coefficients for '//TRIM(Sensor_Id)
+  Title = 'ODAS upwelling transmittance coefficients for '//TRIM(Sensor_Id)
   Error_Status = Write_ODAS_netCDF( ODAS_Filename, &
                                     ODAS, &
                                     Title         =TRIM(Title)         , &
