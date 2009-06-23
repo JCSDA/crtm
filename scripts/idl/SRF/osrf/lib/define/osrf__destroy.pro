@@ -74,20 +74,18 @@ PRO OSRF::Destroy, $
  
   ; Initialise the non-pointer members
   IF ( NOT KEYWORD_SET(No_Clear) ) THEN BEGIN
-    self.Release          = OSRF_RELEASE
-    self.Version          = OSRF_VERSION
-    self.Sensor_Id        = ' '
-    self.WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
-    self.WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
-    self.Sensor_Type      = INVALID_SENSOR
-    self.Channel          = INVALID
-    self.Integral         = ZERO
-    self.Flags            = 0L
-    self.f0               = ZERO
-    self.Planck_C1        = ZERO
-    self.Planck_C2        = ZERO
-    self.Band_C1          = ZERO
-    self.Band_C2          = ZERO
+    self.Release              = OSRF_RELEASE
+    self.Version              = OSRF_VERSION
+    self.Sensor_Id            = ' '
+    self.WMO_Satellite_Id     = INVALID_WMO_SATELLITE_ID
+    self.WMO_Sensor_Id        = INVALID_WMO_SENSOR_ID
+    self.Sensor_Type          = INVALID_SENSOR
+    self.Channel              = INVALID
+    self.Integral             = ZERO
+    self.Flags                = 0L
+    self.f0                   = ZERO
+    self.Planck_Coeffs        = ZERO
+    self.Polychromatic_Coeffs = ZERO
   ENDIF
 
 

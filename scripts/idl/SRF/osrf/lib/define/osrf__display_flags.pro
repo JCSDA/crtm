@@ -50,17 +50,17 @@ PRO OSRF::Display_Flags, $
  
   
   ; Display flags
-  PRINT, 'Interpolation status: ', $
+  PRINT, 'Interpolation status : ', $
     OSRF_INTERPOLATED_FLAG_STATUS[self->Flag_Is_Set(INTERPOLATED_FLAG)]
-  PRINT, 'Integration status  : ', $
+  PRINT, 'Integration status   : ', $
     OSRF_INTEGRATED_FLAG_STATUS[self->Flag_Is_Set(INTEGRATED_FLAG)]
-  PRINT, 'f0 computation status  : ', $
+  PRINT, 'f0 computation status: ', $
     OSRF_F0_COMPUTED_FLAG_STATUS[self->Flag_Is_Set(F0_COMPUTED_FLAG)]
-  PRINT, 'Frequency units     : ', $
+  PRINT, 'Frequency units      : ', $
     OSRF_FREQUENCY_UNITS_FLAG_STATUS[self->Flag_Is_Set(FREQUENCY_UNITS_FLAG)]
-  PRINT, 'Interpolation method: ', $
+  PRINT, 'Interpolation method : ', $
     OSRF_INTERPOLATION_METHOD_FLAG_STATUS[self->Flag_Is_Set(INTERPOLATION_METHOD_FLAG)]
-  PRINT, 'Integration method  : ', $
+  PRINT, 'Integration method   : ', $
     OSRF_INTEGRATION_METHOD_FLAG_STATUS[self->Flag_Is_Set(INTEGRATION_METHOD_FLAG)]
 
   

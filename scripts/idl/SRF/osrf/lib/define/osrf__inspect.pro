@@ -47,6 +47,11 @@ PRO OSRF::Inspect, $
 
   IF ( KEYWORD_SET(Verbose) ) THEN BEGIN
 
+    ; Channel coefficients
+    PRINT, FORMAT='(/,"Coefficient data:")'
+    PRINT, FORMAT='("PLANCK_COEFFS:        ",99(1x,e13.6))', self.Planck_Coeffs
+    PRINT, FORMAT='("POLYCHROMATIC_COEFFS: ",99(1x,e13.6))', self.Polychromatic_Coeffs
+    
     ; The band definition data
     IF ( PTR_VALID(self.f1       ) AND $
          PTR_VALID(self.f2       ) AND $

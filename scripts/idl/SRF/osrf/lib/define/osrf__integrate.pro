@@ -11,7 +11,7 @@ PRO OSRF::Integrate, $
   self.Integral = 0.0d0
   FOR i = 0L, self.n_Bands-1L DO $
     self.Integral = self.Integral + Integral(*(*self.Frequency)[i], *(*self.Response)[i])
-  self->Set_Flags, /Integrated
+  self->Set_Flag, /Integrated
 
 
   ; Done

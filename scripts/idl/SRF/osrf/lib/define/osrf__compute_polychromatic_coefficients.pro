@@ -31,7 +31,7 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
     ; ...Recompute central frequency
     new->Compute_Central_Frequency, Debug=Debug
     ; ...Clear the frequency units flag to indicate cm-1
-    new->Clear_Flags, /Frequency_Units, Debug=Debug
+    new->Clear_Flag, /Frequency_Units, Debug=Debug
   ENDIF
   
 
@@ -51,14 +51,13 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   
   
   ; Perform the polynomial fit
-  Degree_of_Fit = 1
+  Degree_of_Fit = N_POLYCHROMATIC_COEFFS-1L
   x = POLY_FIT( T, Teff, Degree_of_Fit, /DOUBLE, STATUS=Status, YFIT=Tfit )
   IF ( Status NE 0 ) THEN $
     MESSAGE, 'Error performing polynomial fit', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Save results in original object
-  self.Band_C1 = x[0]
-  self.Band_C2 = x[1]
+  self.Polychromatic_Coeffs = x
   
 
   ; Cleanup

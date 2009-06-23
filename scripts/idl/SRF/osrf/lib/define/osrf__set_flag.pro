@@ -1,12 +1,13 @@
 ;+
 ; NAME:
-;       OSRF::Set_Flags
+;       OSRF::Set_Flag
 ;
 ; PURPOSE:
-;       The OSRF::Set_Flags procedure method sets the bit flag component.
+;       The OSRF::Set_Flag procedure method sets the bit value(s) of the
+;       flags property for this object.
 ;
 ; CALLING SEQUENCE:
-;       Obj->[OSRF::]Set_Flags, $
+;       Obj->[OSRF::]Set_Flag, $
 ;         Debug                = Debug               , $  ; Input keyword
 ;         Interpolated         = Interpolated        , $  ; Input keyword
 ;         Integrated           = Integrated          , $  ; Input keyword
@@ -55,10 +56,6 @@
 ;       Frequency_Units:       Set this keyword to indicate the SRF frequency units.
 ;                              If NOT SET => Units are inverse centimetres (cm-1) [DEFAULT]
 ;                                 SET     => Units are Gigahertz (GHz). 
-;                              Alternatively, the keyword can be set using the
-;                              parameterised values,
-;                              If OSRF_INVERSE_CM => Units are inverse centimetres (cm-1) [DEFAULT]
-;                                 OSRF_GHZ        => Units are Gigahertz (GHz).
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
@@ -67,10 +64,6 @@
 ;       Interpolation_Method:  Set this keyword to indicate the SRF interpolation method.
 ;                              If NOT SET => Spline interpolation is used [DEFAULT]
 ;                                 SET     => Linear interpolation is used. 
-;                              Alternatively, the keyword can be set using the
-;                              parameterised values,
-;                              If OSRF_SPLINE => Spline interpolation is used [DEFAULT]
-;                                 OSRF_LINEAR => Linear interpolation is used. 
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
@@ -79,10 +72,6 @@
 ;       Integration_Method:    Set this keyword to indicate the SRF integration method.
 ;                              If NOT SET => Simpson's rule is used [DEFAULT]
 ;                                 SET     => Gaussian integration is used. 
-;                              Alternatively, the keyword can be set using the
-;                              parameterised values,
-;                              If OSRF_SIMPSON  => Simpson's rule is used [DEFAULT]
-;                                 OSRF_GAUSSIAN => Gaussian integration is used. 
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
@@ -98,21 +87,11 @@
 ;       Given a valid, allocated, OSRF object, x, the various bit flags can
 ;       be set like so,
 ;
-;         IDL> x->Set_Flags, /Interpolated        , $
-;                            /Integrated          , $
-;                            /Frequency_Units     , $
-;                            /Interpolation_Method, $
-;                            /Integration_Method
-;
-;       Alternatively, for those flags that are used to switch between different
-;       functionality, the parameterised forms can be used,
-;
-;         IDL> @srf_parameters
-;         IDL> x->Set_Flags, Frequency_Units      = OSRF_GHZ     , $
-;                            Interpolation_Method = OSRF_LINEAR  , $
-;                            Integration_Method   = OSRF_GAUSSIAN
-;
-;       where the parameter values are defined in the srf_parameters include file.
+;         IDL> x->Set_Flag, /Interpolated        , $
+;                           /Integrated          , $
+;                           /Frequency_Units     , $
+;                           /Interpolation_Method, $
+;                           /Integration_Method
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 22-May-2009
@@ -120,7 +99,7 @@
 ;
 ;-
 
-PRO OSRF::Set_Flags, $
+PRO OSRF::Set_Flag, $
   Debug                = Debug               , $  ; Input keyword
   Interpolated         = Interpolated        , $  ; Input keyword
   Integrated           = Integrated          , $  ; Input keyword
@@ -149,4 +128,4 @@ PRO OSRF::Set_Flags, $
   ; Done
   CATCH, /CANCEL
  
-END ; PRO OSRF::Set_Flags
+END ; PRO OSRF::Set_Flag

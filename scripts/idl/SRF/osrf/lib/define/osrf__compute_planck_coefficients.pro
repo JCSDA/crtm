@@ -34,11 +34,11 @@ PRO OSRF::Compute_Planck_Coefficients, $
 
 
   ; Comput ethe Planck coefficients
-  self.Planck_C1 = C1_SCALE_FACTOR * C1 * f0^3
-  self.Planck_C2 = C2_SCALE_FACTOR * C2 * f0
+  self.Planck_Coeffs[0] = C1_SCALE_FACTOR * C1 * f0^3
+  self.Planck_Coeffs[1] = C2_SCALE_FACTOR * C2 * f0
   
     
   ; Done
   CATCH, /CANCEL
 
-END ; PRO OSRF::Compute_Polychromatic_Coefficients
+END ; PRO OSRF::Compute_Planck_Coefficients

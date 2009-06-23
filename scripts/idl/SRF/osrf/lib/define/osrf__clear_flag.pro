@@ -1,12 +1,13 @@
 ;+
 ; NAME:
-;       OSRF::Clear_Flags
+;       OSRF::Clear_Flag
 ;
 ; PURPOSE:
-;       The OSRF::Clear_Flags procedure method clears the bit flag component.
+;       The OSRF::Clear_Flag procedure method clears the bit value(s) of the
+;       flags property for this object.
 ;
 ; CALLING SEQUENCE:
-;       Obj->[OSRF::]Clear_Flags, $
+;       Obj->[OSRF::]Clear_Flag, $
 ;         Debug                = Debug               , $  ; Input keyword
 ;         Interpolated         = Interpolated        , $  ; Input keyword
 ;         Integrated           = Integrated          , $  ; Input keyword
@@ -90,12 +91,12 @@
 ;       Given a valid, allocated, OSRF object, x, the various bit flags can
 ;       be cleared individually like so,
 ;
-;         IDL> x->Clear_Flags, /Interpolated        , $
-;                              /Integrated          , $
-;                              /f0_Computed         , $
-;                              /Frequency_Units     , $
-;                              /Interpolation_Method, $
-;                              /Integration_Method
+;         IDL> x->Clear_Flag, /Interpolated        , $
+;                             /Integrated          , $
+;                             /f0_Computed         , $
+;                             /Frequency_Units     , $
+;                             /Interpolation_Method, $
+;                             /Integration_Method
 ;
 ;       Alternatively, the ALL keyword can be used to clear all the flags,
 ;
@@ -107,7 +108,7 @@
 ;
 ;-
 
-PRO OSRF::Clear_Flags, $
+PRO OSRF::Clear_Flag, $
   Debug                = Debug               , $  ; Input keyword
   Interpolated         = Interpolated        , $  ; Input keyword
   Integrated           = Integrated          , $  ; Input keyword
@@ -143,4 +144,4 @@ PRO OSRF::Clear_Flags, $
   ; Done
   CATCH, /CANCEL
  
-END ; PRO OSRF::Clear_Flags
+END ; PRO OSRF::Clear_Flag
