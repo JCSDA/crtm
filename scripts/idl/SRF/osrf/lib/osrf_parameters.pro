@@ -24,6 +24,11 @@
                        'Infrared   ', $
                        'Visible    ', $
                        'Ultraviolet'  ]
+  SENSOR_FREQUENCY_UNITS = [ 'Invalid'                    , $
+                             'Gigahertz (GHz)'            , $
+                             'Inverse centimetres (cm^-1)', $
+                             'Inverse centimetres (cm^-1)', $
+                             'Inverse centimetres (cm^-1)'  ]
 
   ; Bit Flags
   INTERPOLATED_FLAG         =  1L  ; 0==no     , 1==yes
@@ -56,4 +61,12 @@
   OSRF_SIMPSON  = 0L
   OSRF_GAUSSIAN = 1L
   OSRF_INTEGRATION_METHOD_FLAG_STATUS = ['Simpson', 'Gaussian']
+  
+  ; Fixed dimensions
+  N_PLANCK_COEFFS        = 2L
+  N_POLYCHROMATIC_COEFFS = 2L
+  
+  ; Default interpolation frequencies
+  DF_LORES = 0.1d0
+  DF_HIRES = 0.0025d0
 ;-
