@@ -42,7 +42,6 @@
 ;-
 
 PRO OSRF::Plot, $
-  OverPlot=OverPlot, $
   Debug=Debug ; Input keyword
 
   ; Set up
@@ -53,7 +52,7 @@ PRO OSRF::Plot, $
   @osrf_pro_err_handler
 
   ; ...ALL *input* pointers must be associated
-  IF ( self->Associated(Debug=Debug) EQ FALSE ) THEN $
+  IF ( NOT self->Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -64,10 +63,7 @@ PRO OSRF::Plot, $
           TITLE='Band #'+STRTRIM(i+1,2), $
           XTITLE='Frequency', $
           YTITLE='Relative response',yrange=[-0.2,1.2]
-    IF ( N_ELEMENTS(OverPlot) GT 0 ) THEN BEGIN
-      OPLOT, *(*OverPlot.Frequency)[i], *(*OverPlot.Response)[i], $
-             COLOR=RED, PSYM=-4
-    ENDIF
+    self->Save_PlotVars, i
   ENDFOR
   !P = psave
 
