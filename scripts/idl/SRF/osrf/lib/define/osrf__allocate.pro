@@ -96,7 +96,10 @@ PRO OSRF::Allocate, $
     (*self.B)[i]         = PTR_NEW(DBLARR(n_Points[i]))
     (*self.R)[i]         = PTR_NEW(DBLARR(n_Points[i]))
   ENDFOR
-
+  ; ...The plotting structures
+  self.xsysvar = PTR_NEW(REPLICATE(!X,n_Bands))
+  self.ysysvar = PTR_NEW(REPLICATE(!Y,n_Bands))
+  self.psysvar = PTR_NEW(REPLICATE(!P,n_Bands))
  
   ; Assign the dimensions
   self.n_Bands   = n_Bands

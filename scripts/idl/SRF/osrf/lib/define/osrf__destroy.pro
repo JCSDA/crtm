@@ -108,7 +108,10 @@ PRO OSRF::Destroy, $
     self.Frequency, $
     self.Response , $
     self.B        , $
-    self.R 
+    self.R        , $
+    self.psysvar  , $
+    self.xsysvar  , $
+    self.ysysvar     
   self.f1        = PTR_NEW()
   self.f2        = PTR_NEW()
   self.n_Points  = PTR_NEW()
@@ -116,6 +119,9 @@ PRO OSRF::Destroy, $
   self.Response  = PTR_NEW()
   self.B         = PTR_NEW()
   self.R         = PTR_NEW()
+  self.psysvar   = PTR_NEW()
+  self.xsysvar   = PTR_NEW()
+  self.ysysvar   = PTR_NEW()
 
 
   ; Reinitialise the dimensions

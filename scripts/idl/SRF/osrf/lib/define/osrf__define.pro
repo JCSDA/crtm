@@ -28,10 +28,15 @@ PRO OSRF__Define
            Frequency           : PTR_NEW(),                      $  ; SRF band frequencies (nP x nB)
            Response            : PTR_NEW(),                      $  ; SRF band response    (nP x nB)
            B                   : PTR_NEW(),                      $  ; Planck radiance (nP x nB)
-           R                   : PTR_NEW()                       }  ; LBL radiance (nP x nB)
+           R                   : PTR_NEW(),                      $  ; LBL radiance (nP x nB)
+           ; Variables for plotting
+           xsysvar             : PTR_NEW(),                      $  ; X-axis system variable
+           ysysvar             : PTR_NEW(),                      $  ; Y-axis system variable
+           psysvar             : PTR_NEW()                       }  ; Plotting system variable
 
+; There is no expectation that each band will have the same number of points.
 ; How the Frequency, Response, B, and R components are structured for, e.g.,
-; a channel with 4-bands:
+; a channel with 4-bands is shown below.
 ;
 ;               ---------------
 ; Frequency -> | 1 | 2 | 3 | 4 |
