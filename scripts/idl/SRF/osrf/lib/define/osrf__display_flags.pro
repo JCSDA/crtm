@@ -62,6 +62,10 @@ PRO OSRF::Display_Flags, $
     OSRF_INTERPOLATION_METHOD_FLAG_STATUS[self->Flag_Is_Set(INTERPOLATION_METHOD_FLAG)]
   PRINT, 'Integration method   : ', $
     OSRF_INTEGRATION_METHOD_FLAG_STATUS[self->Flag_Is_Set(INTEGRATION_METHOD_FLAG)]
+  PRINT, 'Frequency shift      : ', $
+    OSRF_FREQUENCY_SHIFT_FLAG_STATUS[self->Flag_Is_Set(FREQUENCY_SHIFT_FLAG)]
+  PRINT, 'Sideband reflect     : ', $
+    OSRF_BAND_REFLECT_FLAG_STATUS[self->Flag_Is_Set(BAND_REFLECT_FLAG)]
 
   
   ; Done

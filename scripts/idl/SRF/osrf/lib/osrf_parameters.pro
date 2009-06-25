@@ -31,12 +31,14 @@
                              'Inverse centimetres (cm^-1)'  ]
 
   ; Bit Flags
-  INTERPOLATED_FLAG         =  1L  ; 0==no     , 1==yes
-  INTEGRATED_FLAG           =  2L  ; 0==no     , 1==yes
-  F0_COMPUTED_FLAG          =  4L  ; 0==no     , 1==yes
-  FREQUENCY_UNITS_FLAG      =  8L  ; 0==cm^-1  , 1==GHz
-  INTERPOLATION_METHOD_FLAG = 16L  ; 0==Spline , 1==Linear
-  INTEGRATION_METHOD_FLAG   = 32L  ; 0==Simpson, 1==Gaussian
+  INTERPOLATED_FLAG         =   1L  ; 0==no           , 1==yes
+  INTEGRATED_FLAG           =   2L  ; 0==no           , 1==yes
+  F0_COMPUTED_FLAG          =   4L  ; 0==no           , 1==yes
+  FREQUENCY_UNITS_FLAG      =   8L  ; 0==cm^-1        , 1==GHz
+  INTERPOLATION_METHOD_FLAG =  16L  ; 0==Spline       , 1==Linear
+  INTEGRATION_METHOD_FLAG   =  32L  ; 0==Simpson      , 1==Gaussian
+  FREQUENCY_SHIFT_FLAG      =  64L  ; 0==Not shifted  , 1==Shifted
+  BAND_REFLECT_FLAG         = 128L  ; 0==Not reflected, 1==Reflected
   ;...INTERPOLATED_FLAG parameters
   OSRF_NOT_INTERPOLATED = 0L
   OSRF_INTERPOLATED     = 1L
@@ -61,6 +63,14 @@
   OSRF_SIMPSON  = 0L
   OSRF_GAUSSIAN = 1L
   OSRF_INTEGRATION_METHOD_FLAG_STATUS = ['Simpson', 'Gaussian']
+  ;...FREQUENCY_SHIFT_FLAG parameters
+  OSRF_NOT_FREQUENCY_SHIFTED = 0L
+  OSRF_FREQUENCY_SHIFTED     = 1L
+  OSRF_FREQUENCY_SHIFT_FLAG_STATUS = ['Not shifted', 'Shifted']
+  ;...BAND_RELFECT_FLAG parameters
+  OSRF_NOT_REFLECTED = 0L
+  OSRF_REFLECTED     = 1L
+  OSRF_BAND_REFLECT_FLAG_STATUS = ['Not reflected', 'Reflected']
   
   ; Fixed dimensions
   N_PLANCK_COEFFS        = 2L

@@ -93,6 +93,8 @@ FUNCTION OSRF::Init, Debug=Debug  ; Input keyword
   self.Planck_Coeffs        = ZERO
   self.Polychromatic_Coeffs = ZERO
 
+
+  ; Done
   CATCH, /CANCEL
   RETURN, TRUE
  

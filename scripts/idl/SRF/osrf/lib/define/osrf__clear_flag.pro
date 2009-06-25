@@ -15,6 +15,8 @@
 ;         Frequency_Units      = Frequency_Units     , $  ; Input keyword
 ;         Interpolation_Method = Interpolation_Method, $  ; Input keyword
 ;         Integration_Method   = Integration_Method  , $  ; Input keyword
+;         Frequency_Shift      = Frequency_Shift     , $  ; Input keyword
+;         Band_Reflect         = Band_Reflect        , $  ; Input keyword
 ;         All                  = All                      ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
@@ -75,6 +77,23 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       Frequency_Shift:       Set this keyword to clear the corresponding flag.
+;                              Clearing this flag indicates the SRF frequency data
+;                              has not been shifted.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Band_Reflect:          Set this keyword to clear the corresponding flag.
+;                              Clearing this flag indicates the high frequency
+;                              SRF sidebands have not been reflected about the
+;                              channel central frequency.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       All:                   Set this keyword to clear ALL the OSRF bit flags.
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
@@ -96,7 +115,9 @@
 ;                             /f0_Computed         , $
 ;                             /Frequency_Units     , $
 ;                             /Interpolation_Method, $
-;                             /Integration_Method
+;                             /Integration_Method  , $
+;                             /Frequency_Shift     , $
+;                             /Band_Reflect      
 ;
 ;       Alternatively, the ALL keyword can be used to clear all the flags,
 ;
@@ -116,6 +137,8 @@ PRO OSRF::Clear_Flag, $
   Frequency_Units      = Frequency_Units     , $  ; Input keyword
   Interpolation_Method = Interpolation_Method, $  ; Input keyword
   Integration_Method   = Integration_Method  , $  ; Input keyword
+  Frequency_Shift      = Frequency_Shift     , $  ; Input keyword
+  Band_Reflect         = Band_Reflect        , $  ; Input keyword
   All                  = All                      ; Input keyword
 
 
@@ -139,6 +162,8 @@ PRO OSRF::Clear_Flag, $
   IF ( KEYWORD_SET(Frequency_Units     ) ) THEN self.Flags = self.Flags AND ( NOT FREQUENCY_UNITS_FLAG      )
   IF ( KEYWORD_SET(Interpolation_Method) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATION_METHOD_FLAG )
   IF ( KEYWORD_SET(Integration_Method  ) ) THEN self.Flags = self.Flags AND ( NOT INTEGRATION_METHOD_FLAG   )
+  IF ( KEYWORD_SET(Frequency_Shift     ) ) THEN self.Flags = self.Flags AND ( NOT FREQUENCY_SHIFT_FLAG      )
+  IF ( KEYWORD_SET(Band_Reflect        ) ) THEN self.Flags = self.Flags AND ( NOT BAND_REFLECT_FLAG         )
   IF ( KEYWORD_SET(All                 ) ) THEN self.Flags = 0L
   
   ; Done

@@ -25,7 +25,7 @@
 ; OPTIONAL INPUT ARGUMENTS:
 ;       Filename:    Specify this argument to set the filename
 ;                    associated with the OSRF_File object. If not
-;                    supplied, the default value is "osrf_file.nc"
+;                    supplied, the default value is "osrf_file.srf.nc"
 ;                    UNITS:      N/A
 ;                    TYPE:       CHARACTER
 ;                    DIMENSION:  Scalar
@@ -98,7 +98,7 @@ FUNCTION OSRF_File::Init, $
   IF ( Valid_String(Filename) ) THEN $
     _Filename = Filename $
   ELSE $
-    _Filename = 'osrf_file.nc'
+    _Filename = 'osrf_file.srf.nc'
  
 
   ; Set default values

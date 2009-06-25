@@ -14,7 +14,9 @@
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
 ;         Frequency_Units      = Frequency_Units     , $  ; Input keyword
 ;         Interpolation_Method = Interpolation_Method, $  ; Input keyword
-;         Integration_Method   = Integration_Method       ; Input keyword
+;         Integration_Method   = Integration_Method  , $  ; Input keyword
+;         Frequency_Shift      = Frequency_Shift     , $  ; Input keyword
+;         Band_Reflect         = Band_Reflect             ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:                 Set this keyword for debugging.
@@ -77,6 +79,24 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       Frequency_Shift:       Set this keyword to indicate the SRF frequency data
+;                              has been shifted.
+;                              If NOT SET => SRF frequency has NOT been shifted [DEFAULT]
+;                                 SET     => SRF frequency has been shifted
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Band_Reflect:          Set this keyword to indicate the high frequency SRF
+;                              sidebands have been reflected about the central frequency.
+;                              If NOT SET => SRF sidebands have NOT been reflected [DEFAULT]
+;                                 SET     => SRF sidebands have been reflected
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -91,7 +111,9 @@
 ;                           /Integrated          , $
 ;                           /Frequency_Units     , $
 ;                           /Interpolation_Method, $
-;                           /Integration_Method
+;                           /Integration_Method  , $
+;                           /Frequency_Shift     , $
+;                           /Band_Reflect   
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 22-May-2009
@@ -106,7 +128,9 @@ PRO OSRF::Set_Flag, $
   f0_Computed          = f0_Computed         , $  ; Input keyword
   Frequency_Units      = Frequency_Units     , $  ; Input keyword
   Interpolation_Method = Interpolation_Method, $  ; Input keyword
-  Integration_Method   = Integration_Method       ; Input keyword
+  Integration_Method   = Integration_Method  , $  ; Input keyword
+  Frequency_Shift      = Frequency_Shift     , $  ; Input keyword
+  Band_Reflect         = Band_Reflect             ; Input keyword
 
 
   ; Set up
@@ -123,6 +147,8 @@ PRO OSRF::Set_Flag, $
   IF ( KEYWORD_SET(Frequency_Units     ) ) THEN self.Flags = self.Flags OR FREQUENCY_UNITS_FLAG     
   IF ( KEYWORD_SET(Interpolation_Method) ) THEN self.Flags = self.Flags OR INTERPOLATION_METHOD_FLAG
   IF ( KEYWORD_SET(Integration_Method  ) ) THEN self.Flags = self.Flags OR INTEGRATION_METHOD_FLAG  
+  IF ( KEYWORD_SET(Frequency_Shift     ) ) THEN self.Flags = self.Flags OR FREQUENCY_SHIFT_FLAG
+  IF ( KEYWORD_SET(Band_Reflect        ) ) THEN self.Flags = self.Flags OR BAND_REFLECT_FLAG
 
   
   ; Done

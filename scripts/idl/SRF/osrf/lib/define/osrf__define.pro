@@ -27,9 +27,13 @@ PRO OSRF__Define
            n_Points            : PTR_NEW(),                      $  ; Number of points per band, nP (nB)
            Frequency           : PTR_NEW(),                      $  ; SRF band frequencies (nP x nB)
            Response            : PTR_NEW(),                      $  ; SRF band response    (nP x nB)
+           ; The following components are PRIVATE to the class
+           ; ...Variables for radiometric calculations
            B                   : PTR_NEW(),                      $  ; Planck radiance (nP x nB)
            R                   : PTR_NEW(),                      $  ; LBL radiance (nP x nB)
-           ; Variables for plotting
+           ; ...Variables relating to frequency shifting
+           delta_f             : PTR_NEW(),                      $  ; Frequency shift for each band (if applied)
+           ; ...Variables for plotting
            xsysvar             : PTR_NEW(),                      $  ; X-axis system variable
            ysysvar             : PTR_NEW(),                      $  ; Y-axis system variable
            psysvar             : PTR_NEW()                       }  ; Plotting system variable

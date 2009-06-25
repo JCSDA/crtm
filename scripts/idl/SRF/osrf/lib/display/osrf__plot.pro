@@ -42,7 +42,8 @@
 ;-
 
 PRO OSRF::Plot, $
-  Debug=Debug ; Input keyword
+  Debug = Debug, $ ; Input keyword
+  _EXTRA = Extra
 
   ; Set up
   @color_db
@@ -60,9 +61,10 @@ PRO OSRF::Plot, $
   !P.MULTI = [0,self.n_Bands,1]
   FOR i = 0L, self.n_Bands-1L DO BEGIN
     PLOT, *(*self.Frequency)[i], *(*self.Response)[i], $
-          TITLE='Band #'+STRTRIM(i+1,2), $
+          TITLE='Ch.'+STRTRIM(self.Channel,2)+', band #'+STRTRIM(i+1,2), $
           XTITLE='Frequency', $
-          YTITLE='Relative response',yrange=[-0.2,1.2]
+          YTITLE='Relative response', $
+          _EXTRA = Extra
     self->Save_PlotVars, i
   ENDFOR
   !P = psave
