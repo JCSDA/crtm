@@ -21,6 +21,8 @@
 ;         f0                   = f0                  , $  ; Input keyword
 ;         Planck_Coeffs        = Planck_Coeffs       , $  ; Input keyword
 ;         Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Input keyword
+;         R                    = R                   , $  ; Input keyword
+;         T                    = T                   , $  ; Input keyword
 ;         f1                   = f1                  , $  ; Input keyword
 ;         f2                   = f2                  , $  ; Input keyword
 ;         Frequency            = Frequency           , $  ; Input keyword
@@ -110,6 +112,18 @@
 ;                              DIMENSION:  Rank-1
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       R:                     Convolved radiance from LBL or Planck radiance method (if called)
+;                              UNITS:      mW/(m^2.sr.cm^-1)
+;                              TYPE:       REAL
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       T:                     Brightness temperature corresponding to R.
+;                              UNITS:      Kelvin
+;                              TYPE:       REAL
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       f1:                    The begin frequency of the SRF band.
 ;                              Used in conjunction with the Band keyword argument.
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
@@ -170,6 +184,8 @@ PRO OSRF::Set_Property, $
   f0                   = f0                  , $  ; Input keyword
   Planck_Coeffs        = Planck_Coeffs       , $  ; Input keyword
   Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Input keyword
+  R                    = R                   , $  ; Input keyword
+  T                    = T                   , $  ; Input keyword
   f1                   = f1                  , $  ; Input keyword
   f2                   = f2                  , $  ; Input keyword
   Frequency            = Frequency           , $  ; Input keyword
@@ -205,6 +221,8 @@ PRO OSRF::Set_Property, $
   IF ( N_ELEMENTS(f0                  ) GT 0 ) THEN self.f0                   = f0                  
   IF ( N_ELEMENTS(Planck_Coeffs       ) GT 0 ) THEN self.Planck_Coeffs        = Planck_Coeffs       
   IF ( N_ELEMENTS(Polychromatic_Coeffs) GT 0 ) THEN self.Polychromatic_Coeffs = Polychromatic_Coeffs
+  IF ( N_ELEMENTS(R                   ) GT 0 ) THEN self.R = R
+  IF ( N_ELEMENTS(T                   ) GT 0 ) THEN self.T = T
 
 
   ; Set band limit frequency data

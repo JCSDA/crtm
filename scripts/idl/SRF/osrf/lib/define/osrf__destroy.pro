@@ -86,6 +86,8 @@ PRO OSRF::Destroy, $
     self.f0                   = ZERO
     self.Planck_Coeffs        = ZERO
     self.Polychromatic_Coeffs = ZERO
+    self.R                    = ZERO
+    self.T                    = ZERO
   ENDIF
 
 
@@ -98,8 +100,7 @@ PRO OSRF::Destroy, $
     PTR_FREE, $
       (*self.Frequency)[i], $  
       (*self.Response)[i] , $
-      (*self.B)[i], $  
-      (*self.R)[i]
+      (*self.Radiance)[i]
   ENDFOR
   PTR_FREE, $
     self.f1       , $
@@ -107,8 +108,7 @@ PRO OSRF::Destroy, $
     self.n_Points , $
     self.Frequency, $
     self.Response , $
-    self.B        , $
-    self.R        , $
+    self.Radiance , $
     self.delta_f  , $
     self.psysvar  , $
     self.xsysvar  , $
@@ -118,8 +118,7 @@ PRO OSRF::Destroy, $
   self.n_Points  = PTR_NEW()
   self.Frequency = PTR_NEW()
   self.Response  = PTR_NEW()
-  self.B         = PTR_NEW()
-  self.R         = PTR_NEW()
+  self.Radiance  = PTR_NEW()
   self.delta_f   = PTR_NEW()
   self.psysvar   = PTR_NEW()
   self.xsysvar   = PTR_NEW()

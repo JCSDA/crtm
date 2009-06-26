@@ -88,13 +88,11 @@ PRO OSRF::Allocate, $
   self.n_Points  = PTR_NEW(DBLARR(n_Bands))
   self.Frequency = PTR_NEW(PTRARR(n_Bands))
   self.Response  = PTR_NEW(PTRARR(n_Bands))
-  self.B         = PTR_NEW(PTRARR(n_Bands))
-  self.R         = PTR_NEW(PTRARR(n_Bands))
+  self.Radiance  = PTR_NEW(PTRARR(n_Bands))
   FOR i = 0, n_Bands-1 DO BEGIN
     (*self.Frequency)[i] = PTR_NEW(DBLARR(n_Points[i]))
     (*self.Response)[i]  = PTR_NEW(DBLARR(n_Points[i]))
-    (*self.B)[i]         = PTR_NEW(DBLARR(n_Points[i]))
-    (*self.R)[i]         = PTR_NEW(DBLARR(n_Points[i]))
+    (*self.Radiance)[i]  = PTR_NEW(DBLARR(n_Points[i]))
   ENDFOR
   ; ...The frequency shift array
   self.delta_f = PTR_NEW(DBLARR(n_Bands))

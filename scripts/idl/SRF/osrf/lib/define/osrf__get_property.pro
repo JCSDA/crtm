@@ -22,6 +22,8 @@
 ;         f0                   = f0                  , $  ; Output keyword
 ;         Planck_Coeffs        = Planck_Coeffs       , $  ; Output keyword
 ;         Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Output keyword
+;         R                    = R                   , $  ; Output keyword
+;         T                    = T                   , $  ; Output keyword
 ;         f1                   = f1                  , $  ; Output keyword
 ;         f2                   = f2                  , $  ; Output keyword
 ;         n_Points             = n_Points            , $  ; Output keyword
@@ -120,6 +122,18 @@
 ;                              DIMENSION:  Rank-1
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       R:                     Convolved radiance from LBL or Planck radiance method (if called)
+;                              UNITS:      mW/(m^2.sr.cm^-1)
+;                              TYPE:       REAL
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       T:                     Brightness temperature corresponding to R.
+;                              UNITS:      Kelvin
+;                              TYPE:       REAL
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ;       f1:                    The begin frequency of the SRF band.
 ;                              Used in conjunction with the Band keyword argument.
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
@@ -192,6 +206,8 @@ PRO OSRF::Get_Property, $
   f0                   = f0                  , $  ; Output keyword
   Planck_Coeffs        = Planck_Coeffs       , $  ; Output keyword
   Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Output keyword
+  R                    = R                   , $  ; Output keyword
+  T                    = T                   , $  ; Output keyword
   f1                   = f1                  , $  ; Output keyword
   f2                   = f2                  , $  ; Output keyword
   n_Points             = n_Points            , $  ; Output keyword
@@ -234,6 +250,8 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(f0                  ) ) THEN f0                   = self.f0              
   IF ( ARG_PRESENT(Planck_Coeffs       ) ) THEN Planck_Coeffs        = self.Planck_Coeffs
   IF ( ARG_PRESENT(Polychromatic_Coeffs) ) THEN Polychromatic_Coeffs = self.Polychromatic_Coeffs
+  IF ( ARG_PRESENT(R                   ) ) THEN R                    = self.R
+  IF ( ARG_PRESENT(T                   ) ) THEN T                    = self.T
   IF ( ARG_PRESENT(f1                  ) ) THEN f1                   = (*self.f1)[_Band]         
   IF ( ARG_PRESENT(f2                  ) ) THEN f2                   = (*self.f2)[_Band]         
   IF ( ARG_PRESENT(n_Points            ) ) THEN n_Points             = (*self.n_Points)[_Band]

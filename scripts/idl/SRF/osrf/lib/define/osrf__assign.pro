@@ -98,9 +98,14 @@ PRO OSRF::Assign, $
   FOR i = 0, self.n_Bands-1 DO BEGIN
     *(*new.Frequency)[i] = *(*self.Frequency)[i]
     *(*new.Response)[i]  = *(*self.Response)[i] 
-    *(*new.B)[i]         = *(*self.B)[i]
-    *(*new.R)[i]         = *(*self.R)[i] 
+    *(*new.Radiance)[i]  = *(*self.Radiance)[i] 
   ENDFOR
+  new.R = self.R
+  new.T = self.T
+  *new.delta_f = *self.delta_f
+  *new.xsysvar = *self.xsysvar
+  *new.ysysvar = *self.ysysvar
+  *new.psysvar = *self.psysvar
 
 
   ; Done

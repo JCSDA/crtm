@@ -98,16 +98,22 @@ FUNCTION OSRF::Associated, $
          PTR_VALID( self.n_Points  ) AND $
          PTR_VALID( self.Frequency ) AND $
          PTR_VALID( self.Response  ) AND $
-         PTR_VALID( self.B         ) AND $
-         PTR_VALID( self.R         )     ) THEN Association_Status = TRUE
+         PTR_VALID( self.Radiance  ) AND $
+         PTR_VALID( self.delta_f   ) AND $
+         PTR_VALID( self.xsysvar   ) AND $
+         PTR_VALID( self.ysysvar   ) AND $
+         PTR_VALID( self.psysvar   )     ) THEN Association_Status = TRUE
   ENDIF ELSE BEGIN
     IF ( PTR_VALID( self.f1        ) OR $
          PTR_VALID( self.f2        ) OR $
          PTR_VALID( self.n_Points  ) OR $
          PTR_VALID( self.Frequency ) OR $
          PTR_VALID( self.Response  ) OR $
-         PTR_VALID( self.B         ) OR $
-         PTR_VALID( self.R         )    ) THEN Association_Status = TRUE
+         PTR_VALID( self.Radiance  ) OR $
+         PTR_VALID( self.delta_f   ) OR $
+         PTR_VALID( self.xsysvar   ) OR $
+         PTR_VALID( self.ysysvar   ) OR $
+         PTR_VALID( self.psysvar   )    ) THEN Association_Status = TRUE
   ENDELSE
  
   RETURN, Association_Status

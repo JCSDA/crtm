@@ -22,6 +22,8 @@ PRO OSRF__Define
            f0                  : 0.0d0,                          $  ; Central frequency
            Planck_Coeffs       : DBLARR(N_PLANCK_COEFFS),        $  ; Planck coefficients
            Polychromatic_Coeffs: DBLARR(N_POLYCHROMATIC_COEFFS), $  ; Polychromatic correction coefficients
+           R                   : 0.0d0,                          $  ; Convolved radiance
+           T                   : 0.0d0,                          $  ; "Convolved" brightness temperature radiance
            f1                  : PTR_NEW(),                      $  ; Band begin frequency (nB)
            f2                  : PTR_NEW(),                      $  ; Band end   frequency (nB)
            n_Points            : PTR_NEW(),                      $  ; Number of points per band, nP (nB)
@@ -29,8 +31,7 @@ PRO OSRF__Define
            Response            : PTR_NEW(),                      $  ; SRF band response    (nP x nB)
            ; The following components are PRIVATE to the class
            ; ...Variables for radiometric calculations
-           B                   : PTR_NEW(),                      $  ; Planck radiance (nP x nB)
-           R                   : PTR_NEW(),                      $  ; LBL radiance (nP x nB)
+           Radiance            : PTR_NEW(),                      $  ; Array of radiances (nP x nB)
            ; ...Variables relating to frequency shifting
            delta_f             : PTR_NEW(),                      $  ; Frequency shift for each band (if applied)
            ; ...Variables for plotting

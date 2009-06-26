@@ -40,9 +40,9 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
     ; ...Compute the monochromatic Planck radiances
     new->Compute_Planck_Radiance, T[i], Debug=Debug
     ; ...Convolve Planck radiance with SRF
-    Reff = new->Convolve(*new.B, Debug=Debug) 
+    new.R = new->Convolve(*new.Radiance, Debug=Debug) 
     ; ...Convert convolved radiance back to temperature
-    result = Planck_Temperature(new.f0, Reff, x)
+    result = Planck_Temperature(new.f0, new.R, x)
     IF ( result NE SUCCESS ) THEN $
       MESSAGE, 'Error computing effective temperature at T='+STRING(T[i],FORMAT='(f5.1)'), $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
