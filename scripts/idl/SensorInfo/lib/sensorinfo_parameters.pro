@@ -23,5 +23,5 @@
                        'Ultraviolet'  ]
   ; Input data formats
   SENSORINFO_FORMAT  = '(1x,2(1x,a12),1x,a20,1x,i1,6x,3(1x,i5))'
-  CHANNELINFO_FORMAT = '(i5,3x,i2,5x,es13.6)'
+  CHANNELINFO_FORMAT = '(i5,3x,i2,5x,e13.6)'
 ;-
