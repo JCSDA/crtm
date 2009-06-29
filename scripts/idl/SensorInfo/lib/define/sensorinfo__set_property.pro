@@ -1,25 +1,25 @@
 ;+
 ; NAME:
-;       SensorInfo::Set
+;       SensorInfo::Set_Property
 ;
 ; PURPOSE:
-;       The SensorInfo::Set function method assigns values to
-;       SensorInfo components.
+;       The SensorInfo::Set_Property procedure method sets the value of a property
+;       or group of properties for this object.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[SensorInfo::]Set( Debug           =Debug           , $  ; Input keyword
-;                                        Sensor_Name     =Sensor_Name     , $  ; Input keyword
-;                                        Satellite_Name  =Satellite_Name  , $  ; Input keyword
-;                                        Sensor_Id       =Sensor_Id       , $  ; Input keyword
-;                                        WMO_Satellite_ID=WMO_Satellite_ID, $  ; Input keyword
-;                                        WMO_Sensor_ID   =WMO_Sensor_ID   , $  ; Input keyword
-;                                        Microwave_Flag  =Microwave_Flag  , $  ; Input keyword
-;                                        Sensor_Type     =Sensor_Type     , $  ; Input keyword
-;                                        Sensor_Channel  =Sensor_Channel  , $  ; Input keyword
-;                                        Use_Flag        =Use_Flag        , $  ; Input keyword
-;                                        Noise           =Noise                ; Input keyword
+;       Obj->[SensorInfo::]Set_Property, $
+;         Debug            = Debug           , $  ; Input keyword
+;         Sensor_Name      = Sensor_Name     , $  ; Input keyword
+;         Satellite_Name   = Satellite_Name  , $  ; Input keyword
+;         Sensor_Id        = Sensor_Id       , $  ; Input keyword
+;         WMO_Satellite_ID = WMO_Satellite_ID, $  ; Input keyword
+;         WMO_Sensor_ID    = WMO_Sensor_ID   , $  ; Input keyword
+;         Sensor_Type      = Sensor_Type     , $  ; Input keyword
+;         Sensor_Channel   = Sensor_Channel  , $  ; Input keyword
+;         Use_Flag         = Use_Flag        , $  ; Input keyword
+;         Noise            = Noise                ; Input keyword
 ;
-; INPUT KEYWORD PARAMETERS:
+; KEYWORDS:
 ;       Debug:            Set this keyword for debugging.
 ;                         If NOT SET => Error handler is enabled. (DEFAULT)
 ;                            SET     => Error handler is disabled; Routine
@@ -62,17 +62,6 @@
 ;       WMO_Sensor_Id:    Set this keyword to a named variable to set the
 ;                         WMO sensor Id assigned to the sensor type. A value
 ;                         of 2047 is used to indicate a missing, or unassigned, id.
-;                         UNITS:      N/A
-;                         TYPE:       INTEGER
-;                         DIMENSION:  Scalar
-;                         ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-;       Microwave_Flag:   **DEPRECATED. Use Sensor_Type**
-;                         Set this keyword to a named variable to set the
-;                         flag indicating if the current sensor is a microwave
-;                         instrument.
-;                         If 0 => Sensor is NOT a microwave instrument.
-;                            1 => Sensor is a microwave instrument.
 ;                         UNITS:      N/A
 ;                         TYPE:       INTEGER
 ;                         DIMENSION:  Scalar
@@ -132,26 +121,13 @@
 ;       sensorinfo_parameters: Include file containing SensorInfo specific
 ;                              parameter value definitions.
 ;
-;       error_codes:           Include file containing error code definitions.
+;       sensorinfo_pro_err_handler: Error handler code for SensorInfo procedures.
 ;
 ; EXAMPLE:
-;       Given a valid SensorInfo object, x, allocated for 5 channels,
+;       Given a valid, allocated object, x, assign various property
+;       values like so,
 ;
-;         IDL> x = OBJ_NEW('SensorInfo')
-;         IDL> Result = x->Allocate(5)
-;
-;       the following SensorInfo properties
-;
-;         IDL> sid = 'sensor_platform'
-;         IDL> ch  = [3,4,5,6,7]
-;
-;       are set via,
-;
-;         IDL> Result = x->Set(Sensor_Id=sid, Sensor_Channel=ch)
-;
-;       Inspect the result:
-;
-;         IDL> x->Inspect
+;         IDL> x->Set_Property, Sensor_Id=sid
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 01-Oct-2008
@@ -159,81 +135,44 @@
 ;
 ;-
 
-FUNCTION SensorInfo::Set, Debug           =Debug           , $  ; Input keyword
-                          Sensor_Name     =Sensor_Name     , $  ; Input keyword 
-                          Satellite_Name  =Satellite_Name  , $  ; Input keyword 
-                          Sensor_Id       =Sensor_Id       , $  ; Input keyword 
-                          WMO_Satellite_ID=WMO_Satellite_ID, $  ; Input keyword 
-                          WMO_Sensor_ID   =WMO_Sensor_ID   , $  ; Input keyword 
-                          Microwave_Flag  =Microwave_Flag  , $  ; Input keyword 
-                          Sensor_Type     =Sensor_Type     , $  ; Input keyword 
-                          Sensor_Channel  =Sensor_Channel  , $  ; Input keyword 
-                          Use_Flag        =Use_Flag        , $  ; Input keyword 
-                          Noise           =Noise                ; Input keyword 
+PRO SensorInfo::Set_Property, $
+  Debug           =Debug           , $  ; Input keyword
+  Sensor_Name     =Sensor_Name     , $  ; Input keyword 
+  Satellite_Name  =Satellite_Name  , $  ; Input keyword 
+  Sensor_Id       =Sensor_Id       , $  ; Input keyword 
+  WMO_Satellite_ID=WMO_Satellite_ID, $  ; Input keyword 
+  WMO_Sensor_ID   =WMO_Sensor_ID   , $  ; Input keyword 
+  Sensor_Type     =Sensor_Type     , $  ; Input keyword 
+  Sensor_Channel  =Sensor_Channel  , $  ; Input keyword 
+  Use_Flag        =Use_Flag        , $  ; Input keyword 
+  Noise           =Noise                ; Input keyword 
 
   ; Set up
-  ; ------
-  ; Include SensorInfo parameters
+  ; ...Parameters
   @sensorinfo_parameters
-  
-  ; error handler
-  @error_codes
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    MESSAGE, '--> Entered.', /INFORMATIONAL
-    MsgSwitch = 0
-  ENDIF ELSE BEGIN
-    CATCH, Error_Status
-    IF ( Error_Status NE 0 ) THEN BEGIN
-      CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN, FAILURE
-    ENDIF
-    MsgSwitch = 1
-  ENDELSE
+  ; ...Set up error handler
+  @sensorinfo_pro_err_handler
+
   
   ; Check if structure has been allocated
-  IF ( self.n_Channels EQ 0 ) THEN $
-    MESSAGE, 'n_Channels structure dimension is zero!', $
+  IF ( NOT self->Associated(Debug=Debug) OR self.n_Channels EQ 0 ) THEN $
+    MESSAGE, 'SensorInfo object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  
 
-  ; Add data
-  ; --------
-  ; Scalars
+  ; Set data
   IF ( N_ELEMENTS(Sensor_Name     ) GT 0 ) THEN self.Sensor_Name      = Sensor_Name     
   IF ( N_ELEMENTS(Satellite_Name  ) GT 0 ) THEN self.Satellite_Name   = Satellite_Name  
   IF ( N_ELEMENTS(Sensor_Id       ) GT 0 ) THEN self.Sensor_Id        = Sensor_Id       
   IF ( N_ELEMENTS(WMO_Satellite_ID) GT 0 ) THEN self.WMO_Satellite_ID = WMO_Satellite_ID
   IF ( N_ELEMENTS(WMO_Sensor_ID   ) GT 0 ) THEN self.WMO_Sensor_ID    = WMO_Sensor_ID   
-  IF ( N_ELEMENTS(Microwave_Flag  ) GT 0 ) THEN self.Microwave_Flag   = Microwave_Flag  
   IF ( N_ELEMENTS(Sensor_Type     ) GT 0 ) THEN self.Sensor_Type      = Sensor_Type
+  IF ( N_ELEMENTS(Sensor_Channel  ) GT 0 ) THEN *self.Sensor_Channel  = Sensor_Channel
+  IF ( N_ELEMENTS(Use_Flag        ) GT 0 ) THEN *self.Use_Flag        = Use_Flag
+  IF ( N_ELEMENTS(Noise           ) GT 0 ) THEN *self.Noise           = Noise
   
-  ; Arrays
-  IF ( N_ELEMENTS(Sensor_Channel) GT 0 ) THEN BEGIN
-    IF ( N_ELEMENTS(Sensor_Channel) EQ self.n_Channels ) THEN $
-      *self.Sensor_Channel = Sensor_Channel $
-    ELSE $
-      MESSAGE, 'Size of Sensor_Channel input inconsistent with n_Channels dimension.', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ENDIF
-             
-  IF ( N_ELEMENTS(Use_Flag) GT 0 ) THEN BEGIN
-    IF ( N_ELEMENTS(Use_Flag) EQ self.n_Channels ) THEN $
-      *self.Use_Flag = Use_Flag $
-    ELSE $
-      MESSAGE, 'Size of Use_Flag input inconsistent with n_Channels dimension.', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ENDIF
-             
-  IF ( N_ELEMENTS(Noise) GT 0 ) THEN BEGIN
-    IF ( N_ELEMENTS(Noise) EQ self.n_Channels ) THEN $
-      *self.Noise = Noise $
-    ELSE $
-      MESSAGE, 'Size of Noise input inconsistent with n_Channels dimension.', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ENDIF
   
   ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
  
-END ; FUNCTION SensorInfo::Set
+END ; PRO SensorInfo::Set_Property

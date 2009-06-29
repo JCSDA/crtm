@@ -11,7 +11,6 @@ PRO SensorInfo__Define
            Sensor_Id       : ' ',       $  ; Sensor identifier
            WMO_Satellite_ID: 0L,        $  ; Satellite ID defined by WMO
            WMO_Sensor_ID   : 0L,        $  ; Sensor ID defined by WMO
-           Microwave_Flag  : 0L,        $  ; Flag for microwave sensor (0=IR, 1=MW) **DEPRECATED. Use Sensor_Type**
            Sensor_Type     : 0L,        $  ; Sensor type (MW, IR, etc)
            Sensor_Channel  : PTR_NEW(), $  ; List of sensor channel numbers
            Use_Flag        : PTR_NEW(), $  ; Channel use flag list (0=no use, 1=use)

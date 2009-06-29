@@ -7,10 +7,11 @@
 ;       components of a SensorInfo object are associated with a target.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[SensorInfo::]Associated( ANY_Test=ANY_Test, $  ; Input keyword
-;                                               Debug=Debug        )  ; Input keyword
+;       Result = Obj->[SensorInfo::]Associated( $
+;                  ANY_Test=ANY_Test, $  ; Input keyword
+;                  Debug=Debug        )  ; Input keyword
 ;
-; INPUT KEYWORD PARAMETERS:
+; KEYWORDS:
 ;       ANY_Test:    Set this keyword to test if ANY of the
 ;                    SensorInfo pointer components are associated.
 ;                    The default is to test if ALL the components
@@ -37,8 +38,8 @@
 ;       Result:      The return value is an integer defining the error
 ;                    status. The error codes are defined in the error_codes
 ;                    include file.
-;                    If == SUCCESS the computation was sucessful
-;                       == FAILURE an unrecoverable error occurred
+;                    If == TRUE the object pointer components are associated.
+;                       == FALSE the object pointer components are NOT associated.
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
@@ -59,7 +60,7 @@
 ;       Once the object pointer components have been allocated, the associated
 ;       status should be "true",
 ;
-;         IDL> Result = x->Allocate(10)
+;         IDL> x->Allocate,10
 ;         IDL> IF ( x->Associated() ) THEN PRINT,'Associated' ELSE PRINT,'Not Associated'
 ;         Associated
 ;
@@ -69,8 +70,9 @@
 ;
 ;-
 
-FUNCTION SensorInfo::Associated, ANY_TEST=ANY_Test, $  ; Input keyword
-                                 Debug=Debug           ; Input keyword
+FUNCTION SensorInfo::Associated, $
+  ANY_Test=ANY_Test, $  ; Input keyword
+  Debug=Debug           ; Input keyword
  
   ; Set up error handler
   @error_codes

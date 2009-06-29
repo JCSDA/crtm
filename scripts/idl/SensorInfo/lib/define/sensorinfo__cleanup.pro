@@ -21,7 +21,7 @@
 ;
 ;       Obj->[SensorInfo::]Cleanup, Debug=Debug  (In a lifecycle method only)
 ;
-; INPUT KEYWORD PARAMETERS:
+; KEYWORDS:
 ;       Debug:       Set this keyword for debugging.
 ;                    If NOT SET => Error handler is enabled. (DEFAULT)
 ;                       SET     => Error handler is disabled; Routine
@@ -35,13 +35,13 @@
 ;       sensorinfo_parameters: Include file containing SensorInfo specific
 ;                              parameter value definitions.
 ;
-;       error_codes:           Include file containing error code definitions.
+;       sensorinfo_pro_err_handler: Error handler code for SensorInfo procedures.
 ;
 ; EXAMPLE:
 ;       After creating and allocating a SensorInfo object, e.g.
 ;
 ;         IDL> x = OBJ_NEW('SensorInfo')
-;         IDL> Result = x->Allocate(10)
+;         IDL> x->Allocate,10
 ;
 ;       the Cleanup method is invoked when the object is destroyed,
 ;
@@ -56,34 +56,17 @@
 PRO SensorInfo::Cleanup, Debug=Debug  ; Input keyword
  
   ; Set up
-  ; ------
-  ; Include SensorInfo parameters
+  ; ...Parameters
   @sensorinfo_parameters
-  
-  ; error handler
-  @error_codes
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    MESSAGE, '--> Entered.', /INFORMATIONAL
-    MsgSwitch = 0
-  ENDIF ELSE BEGIN
-    CATCH, Error_Status
-    IF ( Error_Status NE 0 ) THEN BEGIN
-      CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN
-    ENDIF
-    MsgSwitch = 1
-  ENDELSE
+  ; ...Set up error handler
+  @sensorinfo_pro_err_handler
 
 
   ; Deallocate pointers, and clear scalars
-  ; --------------------------------------
-  Result = self->Destroy(Debug=Debug)
-  IF ( Result NE SUCCESS ) THEN $
-    MESSAGE, 'Error destroying SensorInfo structure', NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  self->Destroy, Debug=Debug
+
 
   ; Done
-  Done:
   CATCH, /CANCEL
 
 END ; PRO SensorInfo::Cleanup

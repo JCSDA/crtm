@@ -21,7 +21,7 @@
 ;
 ;       Result = Obj->[SensorInfo::]Init( Debug=Debug )  (In a lifecycle method only)
 ;
-; INPUT KEYWORD PARAMETERS:
+; KEYWORDS:
 ;       Debug:       Set this keyword for debugging.
 ;                    If NOT SET => Error handler is enabled. (DEFAULT)
 ;                       SET     => Error handler is disabled; Routine
@@ -35,8 +35,9 @@
 ;       Result:      The return value is an integer defining the error
 ;                    status. The error codes are defined in the error_codes
 ;                    include file.
-;                    If == SUCCESS the object creation was sucessful
-;                       == FAILURE an unrecoverable error occurred
+;                    If == TRUE the object creation was sucessful
+;                       == FALSE an unrecoverable error occurred
+;                    
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
@@ -61,11 +62,9 @@
 FUNCTION SensorInfo::Init, Debug=Debug  ; Input keyword
 
   ; Set up
-  ; ------
-  ; Include SensorInfo parameters
+  ; ...Parameters
   @sensorinfo_parameters
-  
-  ; error handler
+  ; ...error handler
   @error_codes
   IF ( KEYWORD_SET(Debug) ) THEN BEGIN
     MESSAGE, '--> Entered.', /INFORMATIONAL
@@ -74,21 +73,22 @@ FUNCTION SensorInfo::Init, Debug=Debug  ; Input keyword
     IF ( Error_Status NE 0 ) THEN BEGIN
       CATCH, /CANCEL
       MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN, FAILURE
+      RETURN, FALSE
     ENDIF
   ENDELSE
 
+
   ; Set default values
-  ; ------------------
   self.Sensor_Name      = ' '
   self.Satellite_Name   = ' '
   self.Sensor_Id        = ' '
   self.WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
   self.WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
-  self.Microwave_Flag   = INVALID
   self.Sensor_Type      = INVALID_SENSOR
 
+
+  ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
+  RETURN, TRUE
  
 END ; FUNCTION SensorInfo::Init
