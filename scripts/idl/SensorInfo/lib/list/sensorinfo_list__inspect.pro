@@ -4,16 +4,15 @@
 ;
 ; PURPOSE:
 ;       The SensorInfo_List::Inspect procedure method outputs information
-;       about the current SensorInfo_List object and its nodes.
+;       about the current SensorInfo_List object.
 ;
 ; CALLING SEQUENCE:
-;       Obj->[SensorInfo_List::]Inspect, Verbose=Verbose, &  ; Input keyword
-;                                        Debug  =Debug       ; Input keyword
+;       Obj->[SensorInfo_List::]Inspect, $
+;         Verbose=Verbose, &  ; Input keyword
+;         Debug  =Debug       ; Input keyword
 ;
-; INPUT KEYWORD PARAMETERS:
-;       Verbose:     Set this keyword for more verbose output.Information
-;                    about each node in the list is output if this keyword
-;                    is set.
+; KEYWORDS:
+;       Verbose:     Set this keyword for more verbose output.
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
@@ -39,35 +38,28 @@
 ;
 ;-
 
-PRO SensorInfo_List::Inspect, Verbose=Verbose, $  ; Input keyword
-                              Debug=Debug         ; Input keyword
+PRO SensorInfo_List::Inspect, $
+  Verbose=Verbose, $  ; Input keyword
+  Debug=Debug         ; Input keyword
 
   IF ( KEYWORD_SET(Debug) ) THEN HELP, /ROUTINES
-  ; Dump the object info
   HELP, self, /OBJECTS
-  ; Dump the First component info
-  IF ( PTR_VALID(self.First) ) THEN BEGIN
-    HELP, *self.First, /STRUCTURE, OUTPUT=help_data
-    PRINT, FORMAT='(9x,a)', help_data[0]
-    FOR i=1L,N_ELEMENTS(help_data)-1L DO PRINT, FORMAT='(6x,a)', help_data[i]
-  ENDIF
 
-  ; Dump the help output for each node if required
-  ; ----------------------------------------------
   IF ( KEYWORD_SET(Verbose) ) THEN BEGIN
-    ; Initialise a node counter
-    n = 0L
-    ; Initialise pointer to first node
-    Current = (*self.First).Next
-    ; Traverse the list
-    WHILE ( PTR_VALID(Current) ) DO BEGIN
-      ; Output info
-      ++n
-      PRINT, FORMAT='(/6x,"Node: ",i5,/6x,"-----------")', n
-      (*(*Current).SensorInfo)->Inspect
-      ; Go to next node
-      Current = (*Current).Next
-    ENDWHILE
-  ENDIF
-  
-END ; FUNCTION SensorInfo_List::Inspect
+
+    si = self->Get(/ALL, ISA='SensorInfo', COUNT=n_Sensors)
+    IF ( n_Sensors EQ 0 ) THEN RETURN
+    
+    ; Loop over contained SensorInfo objects
+    FOR n = 0L, n_Sensors-1L DO BEGIN
+      MESSAGE, 'Inspecting SensorInfo element #'+STRTRIM(n,2)+' ******', /INFORMATIONAL
+      si[n]->SensorInfo::Inspect, $
+        Verbose=Verbose, $  ; Input keyword
+        Debug=Debug         ; Input keyword
+      q = GET_KBRD(1)
+      IF ( STRUPCASE(q) EQ 'Q' ) THEN BREAK
+    ENDFOR
+    
+  ENDIF 
+
+END ; PRO SensorInfo_List::Inspect
