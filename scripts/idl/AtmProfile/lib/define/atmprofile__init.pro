@@ -61,6 +61,7 @@
 FUNCTION AtmProfile::Init, Debug=Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...Object parameters
   @atmprofile_parameters
   ; ...Set up error handler
@@ -82,11 +83,10 @@ FUNCTION AtmProfile::Init, Debug=Debug  ; Input keyword
   ; Set scalar values
   self.Release           = ATMPROFILE_RELEASE
   self.Version           = ATMPROFILE_VERSION
-  self.PD_StrLen         = PDSL
-  self.AUN_StrLen        = AUNSL
   self.n_Levels          = 0L
   self.n_Layers          = 0L
   self.n_Absorbers       = 0L
+  self.Profile           = 0L
   self.Description       = ''
   self.Climatology_Model = INVALID_CLIMATOLOGY
   self.Year              = IP_INVALID

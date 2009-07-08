@@ -10,6 +10,7 @@
 ;       Obj->[AtmProfile::]Set_Property, $
 ;         Debug                 = Debug                , $  ; Input keyword
 ;         Version               = Version              , $  ; Input keyword
+;         Profile               = Profile              , $  ; Input keyword
 ;         Description           = Description          , $  ; Input keyword
 ;         Climatology_Model     = Climatology_Model    , $  ; Input keyword
 ;         Year                  = Year                 , $  ; Input keyword
@@ -21,8 +22,6 @@
 ;         Surface_Altitude      = Surface_Altitude     , $  ; Input keyword
 ;         Absorber_ID           = Absorber_ID          , $  ; Input keyword
 ;         Absorber_Units_ID     = Absorber_Units_ID    , $  ; Input keyword
-;         Absorber_Units_Name   = Absorber_Units_Name  , $  ; Input keyword
-;         Absorber_Units_LBLRTM = Absorber_Units_LBLRTM, $  ; Input keyword
 ;         Level_Pressure        = Level_Pressure       , $  ; Input keyword
 ;         Level_Temperature     = Level_Temperature    , $  ; Input keyword
 ;         Level_Absorber        = Level_Absorber       , $  ; Input keyword
@@ -43,6 +42,12 @@
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ;       Version:               The version number of the AtmProfile data.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Profile:               The profile number.
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
@@ -114,18 +119,6 @@
 ;                              DIMENSION:  n_Absorbers
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Absorber_Units_Name:   Atmospheric absorber units name.
-;                              UNITS:      N/A
-;                              TYPE:       CHARACTER
-;                              DIMENSION:  n_Absorbers
-;                              ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-;       Absorber_Units_LBLRTM: Atmospheric absorber units flag used in LBLRTM.
-;                              UNITS:      N/A
-;                              TYPE:       CHARACTER
-;                              DIMENSION:  n_Absorbers
-;                              ATTRIBUTES: INTENT(IN), OPTIONAL
-;
 ;       Level_Pressure:        Profile pressure levels.
 ;                              UNITS:      hPa
 ;                              TYPE:       DOUBLE
@@ -188,29 +181,28 @@
 ;-
 
 PRO AtmProfile::Set_Property, $
-  Debug                 = Debug                , $  ; Input keyword
-  Version               = Version              , $  ; Input keyword
-  Description           = Description          , $  ; Input keyword
-  Climatology_Model     = Climatology_Model    , $  ; Input keyword
-  Year                  = Year                 , $  ; Input keyword
-  Month                 = Month                , $  ; Input keyword
-  Day                   = Day                  , $  ; Input keyword
-  Hour                  = Hour                 , $  ; Input keyword
-  Latitude              = Latitude             , $  ; Input keyword
-  Longitude             = Longitude            , $  ; Input keyword
-  Surface_Altitude      = Surface_Altitude     , $  ; Input keyword
-  Absorber_ID           = Absorber_ID          , $  ; Input keyword
-  Absorber_Units_ID     = Absorber_Units_ID    , $  ; Input keyword
-  Absorber_Units_Name   = Absorber_Units_Name  , $  ; Input keyword
-  Absorber_Units_LBLRTM = Absorber_Units_LBLRTM, $  ; Input keyword
-  Level_Pressure        = Level_Pressure       , $  ; Input keyword
-  Level_Temperature     = Level_Temperature    , $  ; Input keyword
-  Level_Absorber        = Level_Absorber       , $  ; Input keyword
-  Level_Altitude        = Level_Altitude       , $  ; Input keyword
-  Layer_Pressure        = Layer_Pressure       , $  ; Input keyword
-  Layer_Temperature     = Layer_Temperature    , $  ; Input keyword
-  Layer_Absorber        = Layer_Absorber       , $  ; Input keyword
-  Layer_Delta_Z         = Layer_Delta_Z             ; Input keyword
+  Debug             = Debug            , $  ; Input keyword
+  Version           = Version          , $  ; Input keyword
+  Profile           = Profile          , $  ; Input keyword
+  Description       = Description      , $  ; Input keyword
+  Climatology_Model = Climatology_Model, $  ; Input keyword
+  Year              = Year             , $  ; Input keyword
+  Month             = Month            , $  ; Input keyword
+  Day               = Day              , $  ; Input keyword
+  Hour              = Hour             , $  ; Input keyword
+  Latitude          = Latitude         , $  ; Input keyword
+  Longitude         = Longitude        , $  ; Input keyword
+  Surface_Altitude  = Surface_Altitude , $  ; Input keyword
+  Absorber_ID       = Absorber_ID      , $  ; Input keyword
+  Absorber_Units_ID = Absorber_Units_ID, $  ; Input keyword
+  Level_Pressure    = Level_Pressure   , $  ; Input keyword
+  Level_Temperature = Level_Temperature, $  ; Input keyword
+  Level_Absorber    = Level_Absorber   , $  ; Input keyword
+  Level_Altitude    = Level_Altitude   , $  ; Input keyword
+  Layer_Pressure    = Layer_Pressure   , $  ; Input keyword
+  Layer_Temperature = Layer_Temperature, $  ; Input keyword
+  Layer_Absorber    = Layer_Absorber   , $  ; Input keyword
+  Layer_Delta_Z     = Layer_Delta_Z         ; Input keyword
 
   ; Set up
   ; ...AtmProfile parameters
@@ -226,40 +218,44 @@ PRO AtmProfile::Set_Property, $
 
 
   ; Set data
-  IF ( N_ELEMENTS(Version              ) GT 0 ) THEN self.Version           = Version
-  IF ( N_ELEMENTS(Description          ) GT 0 ) THEN self.Description       = Description
-  IF ( N_ELEMENTS(Climatology_Model    ) GT 0 ) THEN self.Climatology_Model = Climatology_Model
-  IF ( N_ELEMENTS(Year                 ) GT 0 ) THEN self.Year              = Year
-  IF ( N_ELEMENTS(Month                ) GT 0 ) THEN self.Month             = Month
-  IF ( N_ELEMENTS(Day                  ) GT 0 ) THEN self.Day               = Day
-  IF ( N_ELEMENTS(Hour                 ) GT 0 ) THEN self.Hour              = Hour
-  IF ( N_ELEMENTS(Latitude             ) GT 0 ) THEN self.Latitude          = Latitude
-  IF ( N_ELEMENTS(Longitude            ) GT 0 ) THEN self.Longitude         = Longitude
-  IF ( N_ELEMENTS(Surface_Altitude     ) GT 0 ) THEN self.Surface_Altitude  = Surface_Altitude
+  IF ( N_ELEMENTS(Version          ) GT 0 ) THEN self.Version           = Version
+  IF ( N_ELEMENTS(Profile          ) GT 0 ) THEN self.Profile           = Profile    
+  IF ( N_ELEMENTS(Description      ) GT 0 ) THEN self.Description       = Description
+  IF ( N_ELEMENTS(Climatology_Model) GT 0 ) THEN self.Climatology_Model = Climatology_Model
+  IF ( N_ELEMENTS(Year             ) GT 0 ) THEN self.Year              = Year
+  IF ( N_ELEMENTS(Month            ) GT 0 ) THEN self.Month             = Month
+  IF ( N_ELEMENTS(Day              ) GT 0 ) THEN self.Day               = Day
+  IF ( N_ELEMENTS(Hour             ) GT 0 ) THEN self.Hour              = Hour
+  IF ( N_ELEMENTS(Latitude         ) GT 0 ) THEN self.Latitude          = Latitude
+  IF ( N_ELEMENTS(Longitude        ) GT 0 ) THEN self.Longitude         = Longitude
+  IF ( N_ELEMENTS(Surface_Altitude ) GT 0 ) THEN self.Surface_Altitude  = Surface_Altitude
   
-  IF ( N_ELEMENTS(Absorber_ID          ) EQ self.n_Absorbers ) THEN *self.Absorber_ID           = Absorber_ID
-  IF ( N_ELEMENTS(Absorber_Units_ID    ) EQ self.n_Absorbers ) THEN *self.Absorber_Units_ID     = Absorber_Units_ID
-  IF ( N_ELEMENTS(Absorber_Units_Name  ) EQ self.n_Absorbers ) THEN *self.Absorber_Units_Name   = Absorber_Units_Name
-  IF ( N_ELEMENTS(Absorber_Units_LBLRTM) EQ self.n_Absorbers ) THEN *self.Absorber_Units_LBLRTM = Absorber_Units_LBLRTM
+  IF ( N_ELEMENTS(Absorber_ID      ) EQ self.n_Absorbers ) THEN *self.Absorber_ID = Absorber_ID
+  IF ( N_ELEMENTS(Absorber_Units_ID) EQ self.n_Absorbers ) THEN BEGIN
+    *self.Absorber_Units_ID = Absorber_Units_ID
+    *self.Absorber_Units_Name = ATMPROFILE_ABSORBER_UNITS_NAME[Absorber_Units_ID]
+    *self.Absorber_Units_LBL  = ATMPROFILE_ABSORBER_UNITS_CHAR[Absorber_Units_ID]
+  ENDIF
 
-  IF ( N_ELEMENTS(Level_Pressure       ) EQ self.n_Levels ) THEN *self.Level_Pressure    = Level_Pressure
-  IF ( N_ELEMENTS(Level_Temperature    ) EQ self.n_Levels ) THEN *self.Level_Temperature = Level_Temperature
-  IF ( N_ELEMENTS(Level_Absorber       ) GT 0 ) THEN BEGIN
+  IF ( N_ELEMENTS(Level_Pressure   ) EQ self.n_Levels ) THEN *self.Level_Pressure    = Level_Pressure
+  IF ( N_ELEMENTS(Level_Temperature) EQ self.n_Levels ) THEN *self.Level_Temperature = Level_Temperature
+  IF ( N_ELEMENTS(Level_Absorber   ) GT 0 ) THEN BEGIN
     info = SIZE(Level_Absorber,/STRUCTURE)
     IF ( info.N_DIMENSIONS EQ 2 ) THEN $
       IF ( info.DIMENSIONS(0) EQ self.n_Levels AND $
            info.DIMENSIONS(1) EQ self.n_Absorbers ) THEN *self.Level_Absorber = Level_Absorber
   ENDIF
-  
-  IF ( N_ELEMENTS(Level_Altitude       ) EQ self.n_Levels ) THEN *self.Level_Altitude    = Level_Altitude
-  IF ( N_ELEMENTS(Layer_Pressure       ) EQ self.n_Layers ) THEN *self.Layer_Pressure    = Layer_Pressure
-  IF ( N_ELEMENTS(Layer_Temperature    ) EQ self.n_Layers ) THEN *self.Layer_Temperature = Layer_Temperature
-  IF ( N_ELEMENTS(Layer_Absorber       ) GT 0 ) THEN BEGIN
+  IF ( N_ELEMENTS(Level_Altitude) EQ self.n_Levels ) THEN *self.Level_Altitude = Level_Altitude
+
+  IF ( N_ELEMENTS(Layer_Pressure   ) EQ self.n_Layers ) THEN *self.Layer_Pressure    = Layer_Pressure
+  IF ( N_ELEMENTS(Layer_Temperature) EQ self.n_Layers ) THEN *self.Layer_Temperature = Layer_Temperature
+  IF ( N_ELEMENTS(Layer_Absorber   ) GT 0 ) THEN BEGIN
     info = SIZE(Layer_Absorber,/STRUCTURE)
     IF ( info.N_DIMENSIONS EQ 2 ) THEN $
       IF ( info.DIMENSIONS(0) EQ self.n_Layers AND $
            info.DIMENSIONS(1) EQ self.n_Absorbers ) THEN *self.Layer_Absorber = Layer_Absorber
-  IF ( N_ELEMENTS(Layer_Delta_Z        ) EQ self.n_Layers ) THEN *self.Layer_Delta_Z = Layer_Delta_Z
+  ENDIF
+  IF ( N_ELEMENTS(Layer_Delta_Z) EQ self.n_Layers ) THEN *self.Layer_Delta_Z = Layer_Delta_Z
 
   
   ; Done

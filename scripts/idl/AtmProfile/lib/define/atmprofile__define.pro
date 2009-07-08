@@ -10,19 +10,18 @@ PRO AtmProfile__Define
            Release     : 0L, $  ; Release: this identified structure and file format
            Version     : 0L, $  ; Version: this is just the data version
            ; Dimensions
-           PD_StrLen       : 0L, $  ; Profile description string length
-           AUN_StrLen      : 0L, $  ; Absorber units name string length
            n_Levels        : 0L, $  ; Number of levels dimensions,   K+1
            n_Layers        : 0L, $  ; Number of layers dimension,    K
            n_Absorbers     : 0L, $  ; Number of absorbers dimension, J
            ; Profile information
+           Profile           : 0L, $  ; Profile number
            Description       : '', $  ; Profile description
            Climatology_Model : 0L, $  ; Climatology model id
            ; Absorber information
-           Absorber_ID           : PTR_NEW(), $  ; Absorber id, J
-           Absorber_Units_ID     : PTR_NEW(), $  ; Absorber units id, J
-           Absorber_Units_Name   : PTR_NEW(), $  ; Absorber units name, J
-           Absorber_Units_LBLRTM : PTR_NEW(), $  ; Absorber units id used in LBLRTM, J
+           Absorber_ID         : PTR_NEW(), $  ; Absorber id, J
+           Absorber_Units_ID   : PTR_NEW(), $  ; Absorber units id, J
+           Absorber_Units_Name : PTR_NEW(), $  ; Absorber units name, J
+           Absorber_Units_LBL  : PTR_NEW(), $  ; Absorber units id used in LBLRTM/MonoRTM, J
            ; Date and time associated with profile data
            Year : 0L, $
            Month: 0L, $

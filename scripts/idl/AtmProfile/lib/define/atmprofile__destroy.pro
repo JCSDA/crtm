@@ -73,8 +73,7 @@ PRO AtmProfile::Destroy, $
   IF ( NOT KEYWORD_SET(No_Clear) ) THEN BEGIN
     self.Release           = ATMPROFILE_RELEASE
     self.Version           = ATMPROFILE_VERSION
-    self.PD_StrLen         = PDSL
-    self.AUN_StrLen        = AUNSL
+    self.Profile           = 0L
     self.Description       = ''
     self.Climatology_Model = INVALID_CLIMATOLOGY
     self.Year              = IP_INVALID
@@ -93,36 +92,36 @@ PRO AtmProfile::Destroy, $
 
   ; Deallocate the pointer members and nullify
   PTR_FREE, $
-    self.Absorber_ID          , $
-    self.Absorber_Units_ID    , $
-    self.Absorber_Units_Name  , $
-    self.Absorber_Units_LBLRTM, $
-    self.Level_Pressure       , $
-    self.Level_Temperature    , $
-    self.Level_Absorber       , $
-    self.Level_Altitude       , $
-    self.Layer_Pressure       , $
-    self.Layer_Temperature    , $
-    self.Layer_Absorber       , $
-    self.Layer_Delta_Z        , $
-    self.psysvar              , $
-    self.xsysvar              , $
+    self.Absorber_ID        , $
+    self.Absorber_Units_ID  , $
+    self.Absorber_Units_Name, $
+    self.Absorber_Units_LBL , $
+    self.Level_Pressure     , $
+    self.Level_Temperature  , $
+    self.Level_Absorber     , $
+    self.Level_Altitude     , $
+    self.Layer_Pressure     , $
+    self.Layer_Temperature  , $
+    self.Layer_Absorber     , $
+    self.Layer_Delta_Z      , $
+    self.psysvar            , $
+    self.xsysvar            , $
     self.ysysvar                
-  self.Absorber_ID           = PTR_NEW()
-  self.Absorber_Units_ID     = PTR_NEW()
-  self.Absorber_Units_Name   = PTR_NEW()
-  self.Absorber_Units_LBLRTM = PTR_NEW()
-  self.Level_Pressure        = PTR_NEW()
-  self.Level_Temperature     = PTR_NEW()
-  self.Level_Absorber        = PTR_NEW()
-  self.Level_Altitude        = PTR_NEW()
-  self.Layer_Pressure        = PTR_NEW()
-  self.Layer_Temperature     = PTR_NEW()
-  self.Layer_Absorber        = PTR_NEW()
-  self.Layer_Delta_Z         = PTR_NEW()
-  self.psysvar               = PTR_NEW()
-  self.xsysvar               = PTR_NEW()
-  self.ysysvar               = PTR_NEW()
+  self.Absorber_ID         = PTR_NEW()
+  self.Absorber_Units_ID   = PTR_NEW()
+  self.Absorber_Units_Name = PTR_NEW()
+  self.Absorber_Units_LBL  = PTR_NEW()
+  self.Level_Pressure      = PTR_NEW()
+  self.Level_Temperature   = PTR_NEW()
+  self.Level_Absorber      = PTR_NEW()
+  self.Level_Altitude      = PTR_NEW()
+  self.Layer_Pressure      = PTR_NEW()
+  self.Layer_Temperature   = PTR_NEW()
+  self.Layer_Absorber      = PTR_NEW()
+  self.Layer_Delta_Z       = PTR_NEW()
+  self.psysvar             = PTR_NEW()
+  self.xsysvar             = PTR_NEW()
+  self.ysysvar             = PTR_NEW()
 
 
   ; Reinitialise the dimensions

@@ -96,37 +96,37 @@ FUNCTION AtmProfile::Associated, $
   ; Test association status
   Association_Status = FALSE
   IF ( ALL_Test ) THEN BEGIN
-    IF ( PTR_VALID( self.Absorber_ID           ) AND $
-         PTR_VALID( self.Absorber_Units_ID     ) AND $
-         PTR_VALID( self.Absorber_Units_Name   ) AND $
-         PTR_VALID( self.Absorber_Units_LBLRTM ) AND $
-         PTR_VALID( self.Level_Pressure        ) AND $
-         PTR_VALID( self.Level_Temperature     ) AND $
-         PTR_VALID( self.Level_Absorber        ) AND $
-         PTR_VALID( self.Level_Altitude        ) AND $
-         PTR_VALID( self.Layer_Pressure        ) AND $
-         PTR_VALID( self.Layer_Temperature     ) AND $
-         PTR_VALID( self.Layer_Absorber        ) AND $
-         PTR_VALID( self.Layer_Delta_Z         ) AND $
-         PTR_VALID( self.xsysvar               ) AND $
-         PTR_VALID( self.ysysvar               ) AND $
-         PTR_VALID( self.psysvar               )     ) THEN Association_Status = TRUE
+    IF ( PTR_VALID( self.Absorber_ID         ) AND $
+         PTR_VALID( self.Absorber_Units_ID   ) AND $
+         PTR_VALID( self.Absorber_Units_Name ) AND $
+         PTR_VALID( self.Absorber_Units_LBL  ) AND $
+         PTR_VALID( self.Level_Pressure      ) AND $
+         PTR_VALID( self.Level_Temperature   ) AND $
+         PTR_VALID( self.Level_Absorber      ) AND $
+         PTR_VALID( self.Level_Altitude      ) AND $
+         PTR_VALID( self.Layer_Pressure      ) AND $
+         PTR_VALID( self.Layer_Temperature   ) AND $
+         PTR_VALID( self.Layer_Absorber      ) AND $
+         PTR_VALID( self.Layer_Delta_Z       ) AND $
+         PTR_VALID( self.xsysvar             ) AND $
+         PTR_VALID( self.ysysvar             ) AND $
+         PTR_VALID( self.psysvar             )     ) THEN Association_Status = TRUE
   ENDIF ELSE BEGIN
-    IF ( PTR_VALID( self.Absorber_ID           ) OR $
-         PTR_VALID( self.Absorber_Units_ID     ) OR $
-         PTR_VALID( self.Absorber_Units_Name   ) OR $
-         PTR_VALID( self.Absorber_Units_LBLRTM ) OR $
-         PTR_VALID( self.Level_Pressure        ) OR $
-         PTR_VALID( self.Level_Temperature     ) OR $
-         PTR_VALID( self.Level_Absorber        ) OR $
-         PTR_VALID( self.Level_Altitude        ) OR $
-         PTR_VALID( self.Layer_Pressure        ) OR $
-         PTR_VALID( self.Layer_Temperature     ) OR $
-         PTR_VALID( self.Layer_Absorber        ) OR $
-         PTR_VALID( self.Layer_Delta_Z         ) OR $
-         PTR_VALID( self.xsysvar               ) OR $
-         PTR_VALID( self.ysysvar               ) OR $
-         PTR_VALID( self.psysvar               )    ) THEN Association_Status = TRUE
+    IF ( PTR_VALID( self.Absorber_ID         ) OR $
+         PTR_VALID( self.Absorber_Units_ID   ) OR $
+         PTR_VALID( self.Absorber_Units_Name ) OR $
+         PTR_VALID( self.Absorber_Units_LBL  ) OR $
+         PTR_VALID( self.Level_Pressure      ) OR $
+         PTR_VALID( self.Level_Temperature   ) OR $
+         PTR_VALID( self.Level_Absorber      ) OR $
+         PTR_VALID( self.Level_Altitude      ) OR $
+         PTR_VALID( self.Layer_Pressure      ) OR $
+         PTR_VALID( self.Layer_Temperature   ) OR $
+         PTR_VALID( self.Layer_Absorber      ) OR $
+         PTR_VALID( self.Layer_Delta_Z       ) OR $
+         PTR_VALID( self.xsysvar             ) OR $
+         PTR_VALID( self.ysysvar             ) OR $
+         PTR_VALID( self.psysvar             )    ) THEN Association_Status = TRUE
   ENDELSE
  
   RETURN, Association_Status

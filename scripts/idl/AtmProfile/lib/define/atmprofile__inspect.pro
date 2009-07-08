@@ -48,15 +48,15 @@ PRO AtmProfile::Inspect, $
   IF ( KEYWORD_SET(Verbose) ) THEN BEGIN
 
     ; Absorber info
-    IF ( PTR_VALID(self.Absorber_ID          ) AND $
-         PTR_VALID(self.Absorber_Units_ID    ) AND $
-         PTR_VALID(self.Absorber_Units_Name  ) AND $
-         PTR_VALID(self.Absorber_Units_LBLRTM)     ) THEN BEGIN
+    IF ( PTR_VALID(self.Absorber_ID        ) AND $
+         PTR_VALID(self.Absorber_Units_ID  ) AND $
+         PTR_VALID(self.Absorber_Units_Name) AND $
+         PTR_VALID(self.Absorber_Units_LBL )     ) THEN BEGIN
       PRINT, FORMAT='(/,"Absorber information:")'
       HELP, *self.Absorber_ID          , $
             *self.Absorber_Units_ID    , $
             *self.Absorber_Units_Name  , $
-            *self.Absorber_Units_LBLRTM
+            *self.Absorber_Units_LBL
     ENDIF
 
     ; Level data

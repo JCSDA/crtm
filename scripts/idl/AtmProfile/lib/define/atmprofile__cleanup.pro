@@ -56,6 +56,7 @@
 PRO AtmProfile::Cleanup, Debug=Debug  ; Input keyword
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...AtmProfile parameters
   @atmprofile_parameters
   ; ...Set up error handler

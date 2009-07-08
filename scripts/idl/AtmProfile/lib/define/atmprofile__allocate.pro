@@ -91,10 +91,10 @@ PRO AtmProfile::Allocate, $
 
 
   ; Perform the allocations 
-  self.Absorber_ID           = PTR_NEW(LONARR(n_Absorbers))
-  self.Absorber_Units_ID     = PTR_NEW(LONARR(n_Absorbers))
-  self.Absorber_Units_Name   = PTR_NEW(STRARR(n_Absorbers))
-  self.Absorber_Units_LBLRTM = PTR_NEW(STRARR(n_Absorbers))
+  self.Absorber_ID         = PTR_NEW(LONARR(n_Absorbers))
+  self.Absorber_Units_ID   = PTR_NEW(LONARR(n_Absorbers))
+  self.Absorber_Units_Name = PTR_NEW(STRARR(n_Absorbers))
+  self.Absorber_Units_LBL  = PTR_NEW(STRARR(n_Absorbers))
 
   self.Level_Pressure    = PTR_NEW(DBLARR(n_Levels))
   self.Level_Temperature = PTR_NEW(DBLARR(n_Levels))
