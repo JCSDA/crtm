@@ -5,20 +5,20 @@
   ZERO = 0.0d0
   ONE  = 1.0d0
   ; Current valid release and version numbers
-  ATMPROFILE_RELEASE = 2L  ; This determines structure and file formats.
+  ATMPROFILE_RELEASE = 1L; 2L  ; This determines structure and file formats.
   ATMPROFILE_VERSION = 1L  ; This is just the data version.
   ; Invalid values
   IP_INVALID = -1L
   FP_INVALID = -999.0d0
   ; The climatology parameters
-  N_CLIMATOLOGIES = 6
-  INVALID_CLIMATOLOGY = 0
-  TROPICAL            = 1
-  MIDLATITUDE_SUMMER  = 2
-  MIDLATITUDE_WINTER  = 3
-  SUBARCTIC_SUMMER    = 4
-  SUBARCTIC_WINTER    = 5
-  US_STD_ATMOSPHERE   = 6
+  N_CLIMATOLOGIES = 6L
+  INVALID_CLIMATOLOGY = 0L
+  TROPICAL            = 1L
+  MIDLATITUDE_SUMMER  = 2L
+  MIDLATITUDE_WINTER  = 3L
+  SUBARCTIC_SUMMER    = 4L
+  SUBARCTIC_WINTER    = 5L
+  US_STD_ATMOSPHERE   = 6L
   CLIMATOLOGY_NAME = [ 'Invalid           ', $
                        'Tropical          ', $
                        'Midlatitude summer', $
@@ -28,8 +28,17 @@
                        'US Std atmosphere '  ]
   ; Maximum number of absorbers
   ATMPROFILE_MAX_N_ABSORBERS = 32
+  ATMPROFILE_ABSORBER_NAME = [ 'Invalid', $
+                               'H2O    ', 'CO2    ', 'O3     ', 'N2O    ', $
+                               'CO     ', 'CH4    ', 'O2     ', 'NO     ', $
+                               'SO2    ', 'NO2    ', 'NH3    ', 'HNO3   ', $
+                               'OH     ', 'HF     ', 'HCl    ', 'HBr    ', $
+                               'HI     ', 'ClO    ', 'OCS    ', 'H2CO   ', $
+                               'HOCl   ', 'N2     ', 'HCN    ', 'CH3Cl  ', $
+                               'H2O2   ', 'C2H2   ', 'C2H6   ', 'PH3    ', $
+                               'COF2   ', 'SF6    ', 'H2S    ', 'HCOOH  '  ]
   ; Absorber units parameters
-  ATMPROFILE_N_ABSORBER_UNITS = 8
+  ATMPROFILE_N_ABSORBER_UNITS = 8L
   ATMPROFILE_ABSORBER_UNITS_ID = LINDGEN(ATMPROFILE_N_ABSORBER_UNITS+1L)
   ATMPROFILE_ABSORBER_UNITS_NAME = [ 'Invalid             ', $
                                      'ppmv                ', $
