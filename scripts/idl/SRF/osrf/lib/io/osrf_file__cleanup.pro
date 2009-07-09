@@ -47,6 +47,7 @@ PRO OSRF_File::Cleanup, $
   Debug=Debug
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_file_parameters
   ; ...Set up error handler
