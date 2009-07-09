@@ -51,22 +51,57 @@ PRO OSRF::Plot, $
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
-
   ; ...ALL *input* pointers must be associated
   IF ( NOT self->Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  ; ...Get the number of SRF bands
+  self->Get_Property, n_Bands=n_Bands, Channel=Channel
 
+  ; Save current plotting sysvars
   psave = !P
-  !P.MULTI = [0,self.n_Bands,1]
-  FOR i = 0L, self.n_Bands-1L DO BEGIN
-    PLOT, *(*self.Frequency)[i], *(*self.Response)[i], $
-          TITLE='Ch.'+STRTRIM(self.Channel,2)+', band #'+STRTRIM(i+1,2), $
+  xsave = !X
+  ysave = !Y
+
+
+  ; Set plotting parameters
+  !P.MULTI = [0,n_Bands,1]
+  !X.OMARGIN = [6,0]
+  charsize = (n_Bands GT 2) ? 2.25 : 1.5
+
+
+  ; Begin band response plots
+  FOR i = 0L, n_Bands-1L DO BEGIN
+    self->Get_Property, $
+      i+1, $
+      Frequency = f, $
+      Response  = r
+    ; Only use a y-axis title for first plot.
+    IF ( i EQ 0 ) THEN BEGIN
+      ytitle = 'Relative response'
+    ENDIF ELSE BEGIN
+      ytitle = ''
+    ENDELSE
+    ; Generate the xrange based on -/+ % of bandwidth
+    fdelta = MAX(f)-MIN(f)
+    df = 0.1*fdelta
+    xrange = [MIN(f)-df,MAX(f)+df]
+    ; Plot the band response
+    PLOT, f, r, $
+          TITLE='Ch.'+STRTRIM(Channel,2)+', band #'+STRTRIM(i+1,2), $
           XTITLE='Frequency', $
-          YTITLE='Relative response', $
+          YTITLE=ytitle, $
+          XMARGIN=[2,3], $
+          XRANGE=xrange,/XSTYLE, $
+          CHARSIZE=charsize, $
           _EXTRA = Extra
     self->Save_PlotVars, i
   ENDFOR
+
+  
+  ; Restore plotting sysvars
   !P = psave
+  !X = xsave
+  !Y = ysave
 
 END ; PRO OSRF::Plot
