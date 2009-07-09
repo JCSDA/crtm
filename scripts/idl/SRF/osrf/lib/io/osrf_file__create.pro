@@ -1,10 +1,14 @@
-;
+;+
 ; NAME:
 ;       OSRF_File::Create
 ;
 ; PURPOSE:
 ;       The OSRF_File::Create procedure method creates an OSRF_File
 ;       for writing.
+;
+;       NOTE: This method should be considered PRIVATE to the class
+;             and should not be invoked outside OSRF_File methods.
+;
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF_File::]Create, $
@@ -36,6 +40,7 @@ PRO OSRF_File::Create, $
   Debug = Debug
   
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...netCDF parameters
   @osrf_file_parameters
   ; ...Set up error handler

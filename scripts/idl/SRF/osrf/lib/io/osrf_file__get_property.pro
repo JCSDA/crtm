@@ -1,13 +1,13 @@
 ;+
 ; NAME:
-;       OSRF_File::Inquire
+;       OSRF_File::Get_Property
 ;
 ; PURPOSE:
-;       The OSRF_File::Inquire procedure method inquires an OSRF_File
-;       file for information.
+;       The OSRF_File::Get_Property procedure method gets the value of a property
+;       or group of properties for this object.
 ;
 ; CALLING SEQUENCE:
-;       Obj->[OSRF_File::]Inquire, $
+;       Obj->[OSRF_File::]Get_Property, $
 ;         Debug            = Debug           , $  ; Input keyword
 ;         n_Channels       = n_Channels      , $  ; Output keyword
 ;         Version          = Version         , $  ; Output keyword
@@ -43,8 +43,7 @@
 ;                           DIMENSION:  Scalar
 ;                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       Sensor_ID:          A character string identifying the sensor and
-;                           satellite platform used to contruct filenames.
+;       Sensor_ID:          Character string sensor/platform identifier.
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER(*)
 ;                           DIMENSION:  Scalar
@@ -100,7 +99,7 @@
 ;                       paul.vandelst@noaa.gov
 ;-
 
-PRO OSRF_File::Inquire, $
+PRO OSRF_File::Get_Property, $
   Debug            = Debug           , $  ; Input keyword
   n_Channels       = n_Channels      , $  ; Output keyword
   Version          = Version         , $  ; Output keyword
@@ -119,31 +118,19 @@ PRO OSRF_File::Inquire, $
   @osrf_pro_err_handler
 
 
-  ; Get the dimensions and data
-  ; ...Open the netCDF SRF file
-  fid = NCDF_OPEN( self.filename, /NOWRITE )
-  NCDF_CONTROL, fid, /VERBOSE
-  ; ...Get the number of channels dimension
-  DimID = NCDF_DIMID( fid, CHANNEL_DIMNAME )
-  NCDF_DIMINQ, fid, DimID, DimName, n_Channels
-  self.n_Channels = n_Channels
-  ; ...Done
-  NCDF_CLOSE, fid
-
-  
-  ; Get the global attributes
-  self->Read_GAtts, Debug = Debug
-  Version          = self.Version
-  Sensor_Id        = self.Sensor_Id
-  WMO_Satellite_Id = self.WMO_Satellite_Id
-  WMO_Sensor_Id    = self.WMO_Sensor_Id
-  Sensor_Type      = self.Sensor_Type
-  Title            = self.Title
-  History          = self.History
-  Comment          = self.Comment
+  ; Get data
+  IF ( ARG_PRESENT(n_Channels      ) ) THEN n_Channels       = self.n_Channels
+  IF ( ARG_PRESENT(Version         ) ) THEN Version          = self.Version         
+  IF ( ARG_PRESENT(WMO_Satellite_ID) ) THEN WMO_Satellite_ID = self.WMO_Satellite_ID
+  IF ( ARG_PRESENT(WMO_Sensor_ID   ) ) THEN WMO_Sensor_ID    = self.WMO_Sensor_ID   
+  IF ( ARG_PRESENT(Sensor_Type     ) ) THEN Sensor_Type      = self.Sensor_Type     
+  IF ( ARG_PRESENT(Sensor_Id       ) ) THEN Sensor_Id        = self.Sensor_Id
+  IF ( ARG_PRESENT(Title           ) ) THEN Title            = self.Title    
+  IF ( ARG_PRESENT(History         ) ) THEN History          = self.History  
+  IF ( ARG_PRESENT(Comment         ) ) THEN Comment          = self.Comment
 
 
   ; Done
   CATCH, /CANCEL
 
-END ; PRO OSRF_File::Inquire
+END ; PRO OSRF_File::Get_Property

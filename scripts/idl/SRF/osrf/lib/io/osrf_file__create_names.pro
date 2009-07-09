@@ -7,6 +7,10 @@
 ;       dimension and variable names based on OSRF channel number and
 ;       the number of bands.
 ;
+;       NOTE: This method should be considered PRIVATE to the class
+;             and should not be invoked outside OSRF_File methods.
+;
+;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF_File::]Create_Names, $
 ;         Channel                              , $  ; Input argument          
@@ -113,6 +117,7 @@ PRO OSRF_File::Create_Names, $
   Response_VarName  = Response_VarName      ; Output keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...netCDF parameters
   @osrf_file_parameters
   ; ...Set up error handler

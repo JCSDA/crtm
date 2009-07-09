@@ -74,10 +74,11 @@
 
 FUNCTION OSRF_File::Init, $
   Filename, $
-  _Extra = Properties, $
-  Debug = Debug  ; Input keyword
+  Debug  = Debug, $    ; Input keyword
+  _EXTRA = Properties  ; Keywords passed onto OSRF_File::Set_Property
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...netCDF parameters
   @osrf_file_parameters
   ; ...Set up error handler
@@ -117,7 +118,7 @@ FUNCTION OSRF_File::Init, $
 
 
   ; Set supplied properties.
-  self->Set_Property, _Extra = Properties
+  self->Set_Property, _EXTRA = Properties
   
   
   

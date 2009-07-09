@@ -6,6 +6,10 @@
 ;       The OSRF_File::Read_GAtts procedure method reads global attributes
 ;       from an OSRF_File
 ;
+;       NOTE: This method should be considered PRIVATE to the class
+;             and should not be invoked outside OSRF_File methods.
+;
+;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF_File::]Read_GAtts, $
 ;         Debug = Debug  ;  Input keyword
@@ -37,6 +41,7 @@ PRO OSRF_File::Read_GAtts, $
   Debug = Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...netCDF parameters
   @osrf_file_parameters
   ; ...Set up error handler
