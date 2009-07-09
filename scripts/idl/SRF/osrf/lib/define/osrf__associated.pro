@@ -74,7 +74,8 @@ FUNCTION OSRF::Associated, $
   ANY_Test=ANY_Test, $  ; Input keyword
   Debug=Debug           ; Input keyword
  
-  ; Set up error handler
+  ; Set up
+  ; ...error handler
   @error_codes
   IF ( KEYWORD_SET(Debug) ) THEN BEGIN
     MESSAGE, '--> Entered.', /INFORMATIONAL
@@ -88,11 +89,13 @@ FUNCTION OSRF::Associated, $
     ENDIF
     MsgSwitch = 1
   ENDELSE
+  ; ...Check keyword
+  ALL_Test = KEYWORD_SET(ANY_Test) ? FALSE : TRUE
 
 
   ; Test association status
   Association_Status = FALSE
-  IF ( KEYWORD_SET( ANY_Test ) ) THEN BEGIN
+  IF ( ALL_Test ) THEN BEGIN
     IF ( PTR_VALID( self.f1        ) AND $
          PTR_VALID( self.f2        ) AND $
          PTR_VALID( self.n_Points  ) AND $
