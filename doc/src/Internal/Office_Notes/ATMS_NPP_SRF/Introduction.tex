@@ -1,0 +1,7 @@
+\section{Introduction}
+%=====================
+
+Typically, when preparing the CRTM for microwave sensors, the only available channel frequency data consists of central frequencies ($f_0$), sideband offsets ($df_1$,$df_2$), and channel bandwidths ($\Delta f$). We start with the instrument specification of those quantities and later, once the instrument has been built and undergone testing, we end up with measured values for those quantities.
+
+In generating CRTM coefficients, these frequency values are used to contruct ``boxcar'' frequency responses. These boxcar responses are then used in the convolution of monochromatic quantities such as Planck radiances or transmittances to produce such things as polychromatic correction coefficients and instrument resolution transmittances. The latter are then regressed against a set of predictors to produce the fast transmittance model coefficients used by the CRTM.
+
