@@ -1,0 +1,175 @@
+\section{Radiative Transfer Calculations}
+%========================================
+
+\subsection{Methodology}
+%-----------------------
+Monochromatic radiative transfer calculations were done at the various tabulated ATMS SRF frequencies using MonoRTM \cite{Payne_2008,Clough_2005} and the ECMWF83 profile set \cite{Matricardi_ECMWF564,ECMWF_profile_set2}. The subsequent spectra were then convolved with the tabulated SRFs using a simple numerical integration routine.
+
+The temperature and water vapour from the ECMWF83 set are shown in figure \ref{fig:ECMWF83.AtmProfile} to provide an indication of the range of inputs. We realise 83 profiles is a small sample and we are looking at repeating the calculations for a larger (1000's of profiles) data set. 
+
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=1]{graphics/atmprofile/ECMWF83.AtmProfile.eps}
+  \caption{The temperature and water vapour profiles from the ECMWF83 profile dataset used in the radiative transfer calculations.}
+  \label{fig:ECMWF83.AtmProfile}
+\end{figure}
+
+
+\subsection{Results}
+%-------------------
+The results for the different digitised, or measured, SRFs are presented here as brightness temperature differences from the boxcar SRF result, that is,
+\begin{equation}
+  \Delta T_B = T_{B,Boxcar} - T_{B,Measured}
+\end{equation}
+The $\Delta T_B$ values are displayed as a function of $T_{B,Boxcar}$ as well as a histogram of the differences. Only the results for those channels for which we have either SDL or NGAS digistised SRFs will be discussed here. Results for all the channels are shown in Appendix \ref{app:dtb}. Since the reference for the brightness temperatures differences is the boxcar SRF, it should also be noted that these comparisons are intended to highlight the impact of the differences between the various digitised SRFs, not necessarily to indicate which is ``better''.
+
+\sububsection{Single passband channels: 1, 4, 5, amd 9}
+%......................................................
+The $\Delta T_B$ scatterplots for the single passband channels 1, 4, 5, and 9 are shown in figure \ref{fig:sp_digitised_dtbs_scatter}, and the corresponding histograms are shown in figure \ref{fig:sp_digitised_dtbs_hist}. In all cases the SDL and NGAS digitisations decreased the $\Delta T_B$ values, although to different degrees.
+
+\begin{figure}[htp]
+  \centering
+  \begin{tabular}{c c}
+    \textsf{\textbf{(a)} Channel 1} &
+    \textsf{\textbf{(b)} Channel 4} \\
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch1.TbStats.eps} &
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch4.TbStats.eps} \\\\
+
+    \textsf{\textbf{(c)} Channel 5} &
+    \textsf{\textbf{(d)} Channel 9} \\
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch5.TbStats.eps} &
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch9.TbStats.eps}
+  \end{tabular}
+  % the hand-crafted legend
+  \setlength{\unitlength}{1cm}
+  \begin{picture}(2.0,1.25)(0.0,0.45)
+    \thicklines
+    \color{blue}
+    \put(0.0,0.7 ){\line(1,0){1}}
+    \put(1.1,0.55){\sffamily NGAS}
+    \color{green}
+    \put(0.0,1.2 ){\line(1,0){1}}
+    \put(1.1,1.05){\sffamily SDL}
+    \color{red}
+    \put(0.0,1.7 ){\line(1,0){1}}
+    \put(1.1,1.55){\sffamily Table 12}
+  \end{picture}
+  \caption{Scatterplots of the calculated brightness temperature differences, $\Delta T_B$, as a function of the boxcar SRF $T_{B,Boxcar}$ for the single passband SDL and NGAS digitised SRFs}
+  \label{fig:sp_digitised_dtbs_scatter}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \begin{tabular}{c c}
+    \textsf{\textbf{(a)} Channel 1} &
+    \textsf{\textbf{(b)} Channel 4} \\
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch1.TbStats.eps} &
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch4.TbStats.eps} \\\\
+
+    \textsf{\textbf{(c)} Channel 5} &
+    \textsf{\textbf{(d)} Channel 9} \\
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch5.TbStats.eps} &
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch9.TbStats.eps}
+  \end{tabular}
+  % the hand-crafted legend
+  \setlength{\unitlength}{1cm}
+  \begin{picture}(2.0,1.25)(0.0,0.45)
+    \thicklines
+    \color{blue}
+    \put(0.0,0.7 ){\line(1,0){1}}
+    \put(1.1,0.55){\sffamily NGAS}
+    \color{green}
+    \put(0.0,1.2 ){\line(1,0){1}}
+    \put(1.1,1.05){\sffamily SDL}
+    \color{red}
+    \put(0.0,1.7 ){\line(1,0){1}}
+    \put(1.1,1.55){\sffamily Table 12}
+  \end{picture}
+  \caption{Histograms of the calculated brightness temperature differences, $\Delta T_B$, for the single passband SDL and NGAS digitised SRFs.}
+  \label{fig:sp_digitised_dtbs_hist}
+\end{figure}
+
+The most striking change is for channel 1 (figs.\ref{fig:sp_digitised_dtbs_scatter}(a) and \ref{fig:sp_digitised_dtbs_hist}(a)) where both the magnitude and spread of the differences decreased markedly with the SDL digitised SRF producing a result much closer to that of a the boxcar response with little dependence on $T_{B,Boxcar}$. For channels 4 and 5 we have NGAS digitised SRF data and, despite the SRF differences being quite profound, the $\Delta T_B$ differences (figs.\ref{fig:sp_digitised_dtbs_scatter}(b),(c) and \ref{fig:sp_digitised_dtbs_hist}(b),(c)) do not really reflect this. The channel 9 radiometric differences (figs.\ref{fig:sp_digitised_dtbs_scatter}(d) and \ref{fig:sp_digitised_dtbs_hist}(d)) do not change too much between the Table 12 and NGAS SRF results despite the large differences in the SRF shape.
+
+To further determine the cause of the $\Delta T_B$ differences in these channels, spectra were generated for a single profile (tropical climatology) for the channel bandwidth. These spectra are shown in figure \ref{fig:ch1_4_5_9.spectra}. Comparison of figure \ref{fig:ch1_4_5_9.spectra} with the SRFs shown in figure \ref{fig:sp_digitised_srfs} do not yield any obvious cause. For
+
+channel 1: the shapes of the Table 12 and SDL SRFs are not \textit{that} dissimilar. Furthermore, the variation of brightness temperature across the channel bandwidth is very small, $\approx$0.05K. Looking closely at figure \ref{fig:sp_digitised_srfs}(a), the only SRF difference that could be construed to cause the brightness temperatures we see are the higher magnitudes of the SDL SRF on the low-frequency band edge at frequencies less than 23.70GHz.
+
+channel 4: Here we have an almost opposite effect compared to channel 1 in that the Table 12 and NGAS SRFs are very different, but the brightness temperatures not so much. There is a 1K variation across the channel spectrum of figure \ref{fig:ch1_4_5_9.spectra}(b) and, somewhat similarly to channel 1, one could theorise that in this case the higher-frequency band edge of the NGAS SRF compensates for the much smaller in-band magnitudes.
+
+channel 5: The results here mirror those of channel 4 but with larger magnitudes most likely due to the larger 4K variation across the channel spectrum of figure \ref{fig:ch1_4_5_9.spectra}(c).
+
+channel 9. Here we see a much larger ($\approx$6K), but also very non-linear, variation across the channel spectrum of figure \ref{fig:ch1_4_5_9.spectra}(d).
+ 
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=1.0]{graphics/spectra/ch1_4_5_9.eps}
+  \caption{Spectra generated using MonoRTM for tropical climatology for the NPP ATMS single passband channels for which there exists SDL and NGAS digitised SRFs.}
+  \label{fig:ch1_4_5_9.spectra}
+\end{figure}
+
+
+\sububsection{Quadruple passband channels: 12, 13, 14, and 15}
+%.............................................................
+\begin{figure}[htp]
+  \centering
+  \begin{tabular}{c c}
+    \textsf{\textbf{(a)} Channel 12} &
+    \textsf{\textbf{(b)} Channel 13} \\
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch12.TbStats.eps} &
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch13.TbStats.eps} \\\\
+
+    \textsf{\textbf{(c)} Channel 14} &
+    \textsf{\textbf{(d)} Channel 15} \\
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch14.TbStats.eps} &
+    \includegraphics[bb=82 289 312 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch15.TbStats.eps}
+  \end{tabular}
+  % the hand-crafted legend
+  \setlength{\unitlength}{1cm}
+  \begin{picture}(2.0,1.25)(0.0,0.45)
+    \thicklines
+    \color{blue}
+    \put(0.0,0.7 ){\line(1,0){1}}
+    \put(1.1,0.55){\sffamily NGAS}
+    \color{green}
+    \put(0.0,1.2 ){\line(1,0){1}}
+    \put(1.1,1.05){\sffamily SDL}
+    \color{red}
+    \put(0.0,1.7 ){\line(1,0){1}}
+    \put(1.1,1.55){\sffamily Table 12}
+  \end{picture}
+  \caption{Scatterplots of the calculated brightness temperature differences, $\Delta T_B$, as a function of the boxcar SRF $T_{B,Boxcar}$ for the quadruple passband SDL and NGAS digitised SRFs}
+  \label{fig:qp_digitised_dtbs_scatter}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \begin{tabular}{c c}
+    \textsf{\textbf{(a)} Channel 12} &
+    \textsf{\textbf{(b)} Channel 13} \\
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch12.TbStats.eps} &
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch13.TbStats.eps} \\\\
+
+    \textsf{\textbf{(c)} Channel 14} &
+    \textsf{\textbf{(d)} Channel 15} \\
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch14.TbStats.eps} &
+    \includegraphics[bb=312 289 538 493,clip,scale=1.0]{graphics/dtb/atms_npp.ch15.TbStats.eps}
+  \end{tabular}
+  % the hand-crafted legend
+  \setlength{\unitlength}{1cm}
+  \begin{picture}(2.0,1.25)(0.0,0.45)
+    \thicklines
+    \color{blue}
+    \put(0.0,0.7 ){\line(1,0){1}}
+    \put(1.1,0.55){\sffamily NGAS}
+    \color{green}
+    \put(0.0,1.2 ){\line(1,0){1}}
+    \put(1.1,1.05){\sffamily SDL}
+    \color{red}
+    \put(0.0,1.7 ){\line(1,0){1}}
+    \put(1.1,1.55){\sffamily Table 12}
+  \end{picture}
+  \caption{Histograms of the calculated brightness temperature differences, $\Delta T_B$, for the quadruple passband SDL and NGAS digitised SRFs}
+  \label{fig:qp_digitised_dtbs_hist}
+\end{figure}
+
