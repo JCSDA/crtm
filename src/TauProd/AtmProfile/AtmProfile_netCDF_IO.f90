@@ -23,7 +23,6 @@ MODULE AtmProfile_netCDF_IO
   USE AtmProfile_Define, ONLY: ATMPROFILE_ABSORBER_UNITS_NAME, &
                                ATMPROFILE_ABSORBER_UNITS_CHAR, &
                                ATMPROFILE_FP_INVALID, &
-                               AtmProfileDateTime_type, &
                                AtmProfile_type, &
                                Associated_AtmProfile, &
                                Destroy_AtmProfile, &
@@ -40,8 +39,8 @@ MODULE AtmProfile_netCDF_IO
   ! ------------
   PRIVATE
   PUBLIC :: Inquire_AtmProfile_netCDF
-  PUBLIC :: Write_AtmProfile_netCDF
-  PUBLIC :: Read_AtmProfile_netCDF
+  !PUBLIC :: Write_AtmProfile_netCDF
+  !PUBLIC :: Read_AtmProfile_netCDF
 
 
   ! -----------------
@@ -590,124 +589,124 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_AtmProfile_netCDF( NC_Filename , &  ! Input
-                                    AtmProfile  , &  ! Input
-                                    Quiet       , &  ! Optional input
-                                    ID_Tag      , &  ! Optional input
-                                    Title       , &  ! Optional input
-                                    History     , &  ! Optional input
-                                    Comment     , &  ! Optional input
-                                    RCS_Id      , &  ! Revision control
-                                    Message_Log ) &  ! Error messaging
-                                  RESULT( Error_Status )
-    ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_AtmProfile_netCDF'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
-    INTEGER :: NC_FileID
-    INTEGER :: NF90_Status
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Output informational msgs....
-    Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
-    END IF
-
-    ! Check structure association
-    IF ( .NOT. Associated_AtmProfile( AtmProfile ) ) THEN
-      msg = 'Some or all INPUT AtmProfile pointer members are NOT associated.'
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
-    ! Create the output data file
-    ! ---------------------------
-    Error_Status = CreateFile( NC_Filename                   , &  ! Input
-                               AtmProfile%n_Layers           , &  ! Input
-                               AtmProfile%n_Absorbers        , &  ! Input
-                               AtmProfile%n_Profiles         , &  ! Input
-                               NC_FileID                     , &  ! Output
-                               Version    =AtmProfile%Version, &  ! Optional input
-                               ID_Tag     =ID_Tag            , &  ! Optional input
-                               Title      =Title             , &  ! Optional input
-                               History    =History           , &  ! Optional input
-                               Comment    =Comment           , &  ! Optional input
-                               Message_Log=Message_Log         )  ! Error messaging
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error creating output file '//TRIM(NC_Filename)
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
-    ! Write the AtmProfile data
-    ! -------------------------
-    Error_Status = WriteVar( NC_Filename            , &
-                             NC_FileID              , &
-                             AtmProfile             , &
-                             Message_Log=Message_Log  )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error writing AtmProfile variables to output file '//TRIM(NC_Filename)
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    
-
-    ! Close the file
-    ! --------------
-    NF90_Status = NF90_CLOSE( NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
-    ! Output an info msg
-    ! ----------------------
-    IF ( Noisy ) THEN
-      CALL Info_AtmProfile( AtmProfile, msg )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
-    END IF
-
-  CONTAINS
-  
-    SUBROUTINE Write_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          NF90_Status = NF90_CLOSE( NC_FileId )
-          IF ( NF90_Status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ))
-        END IF
-      END IF
-      ! Set error status and print error msg
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Write_CleanUp
-
-  END FUNCTION Write_AtmProfile_netCDF
+!  FUNCTION Write_AtmProfile_netCDF( NC_Filename , &  ! Input
+!                                    AtmProfile  , &  ! Input
+!                                    Quiet       , &  ! Optional input
+!                                    ID_Tag      , &  ! Optional input
+!                                    Title       , &  ! Optional input
+!                                    History     , &  ! Optional input
+!                                    Comment     , &  ! Optional input
+!                                    RCS_Id      , &  ! Revision control
+!                                    Message_Log ) &  ! Error messaging
+!                                  RESULT( Error_Status )
+!    ! Arguments
+!    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+!    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
+!    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
+!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
+!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title  
+!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
+!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
+!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+!    ! Function result
+!    INTEGER :: Error_Status
+!    ! Local parameters
+!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_AtmProfile_netCDF'
+!    ! Local variables
+!    CHARACTER(ML) :: msg
+!    LOGICAL :: Noisy
+!    INTEGER :: NC_FileID
+!    INTEGER :: NF90_Status
+!
+!    ! Set up
+!    ! ------
+!    Error_Status = SUCCESS
+!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+!
+!    ! Output informational msgs....
+!    Noisy = .TRUE.
+!    ! ....unless the QUIET keyword is set.
+!    IF ( PRESENT(Quiet) ) THEN
+!      IF ( Quiet == SET ) Noisy = .FALSE.
+!    END IF
+!
+!    ! Check structure association
+!    IF ( .NOT. Associated_AtmProfile( AtmProfile ) ) THEN
+!      msg = 'Some or all INPUT AtmProfile pointer members are NOT associated.'
+!      CALL Write_Cleanup(); RETURN
+!    END IF
+!
+!
+!    ! Create the output data file
+!    ! ---------------------------
+!    Error_Status = CreateFile( NC_Filename                   , &  ! Input
+!                               AtmProfile%n_Layers           , &  ! Input
+!                               AtmProfile%n_Absorbers        , &  ! Input
+!                               AtmProfile%n_Profiles         , &  ! Input
+!                               NC_FileID                     , &  ! Output
+!                               Version    =AtmProfile%Version, &  ! Optional input
+!                               ID_Tag     =ID_Tag            , &  ! Optional input
+!                               Title      =Title             , &  ! Optional input
+!                               History    =History           , &  ! Optional input
+!                               Comment    =Comment           , &  ! Optional input
+!                               Message_Log=Message_Log         )  ! Error messaging
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'Error creating output file '//TRIM(NC_Filename)
+!      CALL Write_Cleanup(); RETURN
+!    END IF
+!
+!
+!    ! Write the AtmProfile data
+!    ! -------------------------
+!    Error_Status = WriteVar( NC_Filename            , &
+!                             NC_FileID              , &
+!                             AtmProfile             , &
+!                             Message_Log=Message_Log  )
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'Error writing AtmProfile variables to output file '//TRIM(NC_Filename)
+!      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+!    END IF
+!    
+!
+!    ! Close the file
+!    ! --------------
+!    NF90_Status = NF90_CLOSE( NC_FileId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL Write_Cleanup(); RETURN
+!    END IF
+!
+!
+!    ! Output an info msg
+!    ! ----------------------
+!    IF ( Noisy ) THEN
+!      CALL Info_AtmProfile( AtmProfile, msg )
+!      CALL Display_Message( ROUTINE_NAME, &
+!                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
+!                            INFORMATION, &
+!                            Message_Log=Message_Log )
+!    END IF
+!
+!  CONTAINS
+!  
+!    SUBROUTINE Write_CleanUp( Close_File )
+!      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+!      ! Close file if necessary
+!      IF ( PRESENT(Close_File) ) THEN
+!        IF ( Close_File ) THEN
+!          NF90_Status = NF90_CLOSE( NC_FileId )
+!          IF ( NF90_Status /= NF90_NOERR ) &
+!            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+!                  TRIM(NF90_STRERROR( NF90_Status ))
+!        END IF
+!      END IF
+!      ! Set error status and print error msg
+!      Error_Status = FAILURE
+!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+!    END SUBROUTINE Write_CleanUp
+!
+!  END FUNCTION Write_AtmProfile_netCDF
 
 
 !------------------------------------------------------------------------------
@@ -836,201 +835,201 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_AtmProfile_netCDF( NC_Filename, &  ! Input
-                                   AtmProfile , &  ! Output
-                                   Quiet      , &  ! Optional input
-                                   Reverse    , &  ! Optional input
-                                   ID_Tag     , &  ! Optional output
-                                   Title      , &  ! Optional output
-                                   History    , &  ! Optional output
-                                   Comment    , &  ! Optional output
-                                   RCS_Id     , &  ! Revision control
-                                   Message_Log) &  ! Error messaging
-                                 RESULT( Error_Status )
-    ! Arguments
-    CHARACTER(*),           INTENT(IN)     :: NC_Filename
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Reverse
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: ID_Tag
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AtmProfile_netCDF'
-    ! Function variables
-    CHARACTER(ML) :: msg
-    LOGICAL :: Noisy, ReverseProfile
-    INTEGER :: NC_FileID
-    INTEGER :: NF90_Status
-    INTEGER :: n_Layers   , k
-    INTEGER :: n_Absorbers, j
-    INTEGER :: n_Profiles 
-
-    
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Output informational msgs....
-    Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
-    END IF
-
-    ! Do NOT reverse profile....
-    ReverseProfile = .FALSE.
-    ! ....unless the REVERSE keyword is set.
-    IF ( PRESENT(Reverse) ) THEN
-      IF ( Reverse == SET ) ReverseProfile = .TRUE.
-    END IF
-
-    
-    ! Allocate the structure for the netCDF read
-    ! ------------------------------------------
-    ! Read the dimension values
-    Error_Status = Inquire_AtmProfile_netCDF( NC_Filename            , &
-                                              n_Layers   =n_Layers   , &
-                                              n_Absorbers=n_Absorbers, &
-                                              n_Profiles =n_Profiles , &
-                                              Message_Log=Message_Log  ) 
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error obtaining AtmProfile dimensions from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(); RETURN
-    END IF
-    ! Allocate the structure
-    Error_Status = Allocate_AtmProfile( n_Layers,n_Absorbers,n_Profiles, &
-                                        AtmProfile,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error occurred allocating AtmProfile structure.'
-      CALL Read_Cleanup(); RETURN
-    END IF
-
-
-    ! Open the netCDF file for reading
-    ! --------------------------------
-    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
-            TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
-    END IF
-
-
-    ! Read the global attributes
-    ! --------------------------
-    Error_Status = ReadGAtts( NC_Filename                   , &
-                              NC_FileID                     , &
-!                              Release    =AtmProfile%Release, &
-!                              Version    =AtmProfile%Version, &
-                              ID_Tag     =ID_Tag            , &
-                              Title      =Title             , &
-                              History    =History           , &
-                              Comment    =Comment           , &
-                              Message_Log=Message_Log         )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
-    END IF
-
-    ! Check the release
-    Error_Status = CheckRelease_AtmProfile( AtmProfile,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'AtmProfile Release check failed for '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
-    END IF
-    
-
-    ! Read the AtmProfile data
-    ! ------------------------
-    Error_Status = ReadVar( NC_Filename            , &
-                            NC_FileID              , &
-                            AtmProfile             , &
-                            Message_Log=Message_Log  )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error reading AtmProfile variables from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
-    END IF
-
-
-    ! Close the file
-    ! --------------
-    NF90_Status = NF90_CLOSE( NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
-    END IF
-
-
-    ! Finish up with the data structure
-    ! ---------------------------------
-    ! Fill the other Absorber_Units structure members
-    DO j = 1, AtmProfile%n_Absorbers
-      AtmProfile%Absorber_Units_Name(j)   = ATMPROFILE_ABSORBER_UNITS_NAME(AtmProfile%Absorber_Units_ID(j))
-      AtmProfile%Absorber_Units_LBLRTM(j) = ATMPROFILE_ABSORBER_UNITS_CHAR(AtmProfile%Absorber_Units_ID(j))
-    END DO
-    ! Reverse the profile data direction if required
-    IF ( ReverseProfile ) THEN
-      ! Level data
-      k = AtmProfile%n_Levels
-      AtmProfile%Level_Pressure(1:k,:)    = AtmProfile%Level_Pressure(k:1:-1,:)
-      AtmProfile%Level_Temperature(1:k,:) = AtmProfile%Level_Temperature(k:1:-1,:)
-      AtmProfile%Level_Absorber(1:k,:,:)  = AtmProfile%Level_Absorber(k:1:-1,:,:)
-      AtmProfile%Level_Altitude(1:k,:)    = AtmProfile%Level_Altitude(k:1:-1,:)
-      ! Layer data
-      k = AtmProfile%n_Layers
-      AtmProfile%Layer_Pressure(1:k,:)    = AtmProfile%Layer_Pressure(k:1:-1,:)
-      AtmProfile%Layer_Temperature(1:k,:) = AtmProfile%Layer_Temperature(k:1:-1,:)
-      AtmProfile%Layer_Absorber(1:k,:,:)  = AtmProfile%Layer_Absorber(k:1:-1,:,:)
-      AtmProfile%Layer_Delta_Z(1:k,:)     = AtmProfile%Layer_Delta_Z(k:1:-1,:)
-    END IF
-
-
-    ! Output an info message
-    ! ----------------------
-    IF ( Noisy ) THEN
-      CALL Info_AtmProfile( AtmProfile, msg )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
-    END IF
-
-  CONTAINS
-  
-    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
-       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          NF90_Status = NF90_CLOSE( NC_FileId )
-          IF ( NF90_Status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ))
-        END IF
-      END IF
-      ! Destroy the structure if necessary
-      IF ( PRESENT(Destroy_Structure) ) THEN
-        IF ( Destroy_Structure ) THEN
-          Error_Status = Destroy_AtmProfile(AtmProfile, Message_Log=Message_Log)
-          IF ( Error_Status /= SUCCESS ) &
-            msg = TRIM(msg)//'; Error destroying AtmProfile during error cleanup.'
-        END IF
-      END IF
-      ! Set error status and print error msg
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Read_CleanUp
-
-  END FUNCTION Read_AtmProfile_netCDF
-
+!  FUNCTION Read_AtmProfile_netCDF( NC_Filename, &  ! Input
+!                                   AtmProfile , &  ! Output
+!                                   Quiet      , &  ! Optional input
+!                                   Reverse    , &  ! Optional input
+!                                   ID_Tag     , &  ! Optional output
+!                                   Title      , &  ! Optional output
+!                                   History    , &  ! Optional output
+!                                   Comment    , &  ! Optional output
+!                                   RCS_Id     , &  ! Revision control
+!                                   Message_Log) &  ! Error messaging
+!                                 RESULT( Error_Status )
+!    ! Arguments
+!    CHARACTER(*),           INTENT(IN)     :: NC_Filename
+!    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
+!    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
+!    INTEGER,      OPTIONAL, INTENT(IN)     :: Reverse
+!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: ID_Tag
+!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
+!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
+!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
+!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+!    ! Function result
+!    INTEGER :: Error_Status
+!    ! Function parameters
+!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AtmProfile_netCDF'
+!    ! Function variables
+!    CHARACTER(ML) :: msg
+!    LOGICAL :: Noisy, ReverseProfile
+!    INTEGER :: NC_FileID
+!    INTEGER :: NF90_Status
+!    INTEGER :: n_Layers   , k
+!    INTEGER :: n_Absorbers, j
+!    INTEGER :: n_Profiles 
+!
+!    
+!    ! Set up
+!    ! ------
+!    Error_Status = SUCCESS
+!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+!
+!    ! Output informational msgs....
+!    Noisy = .TRUE.
+!    ! ....unless the QUIET keyword is set.
+!    IF ( PRESENT(Quiet) ) THEN
+!      IF ( Quiet == SET ) Noisy = .FALSE.
+!    END IF
+!
+!    ! Do NOT reverse profile....
+!    ReverseProfile = .FALSE.
+!    ! ....unless the REVERSE keyword is set.
+!    IF ( PRESENT(Reverse) ) THEN
+!      IF ( Reverse == SET ) ReverseProfile = .TRUE.
+!    END IF
+!
+!    
+!    ! Allocate the structure for the netCDF read
+!    ! ------------------------------------------
+!    ! Read the dimension values
+!    Error_Status = Inquire_AtmProfile_netCDF( NC_Filename            , &
+!                                              n_Layers   =n_Layers   , &
+!                                              n_Absorbers=n_Absorbers, &
+!                                              n_Profiles =n_Profiles , &
+!                                              Message_Log=Message_Log  ) 
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'Error obtaining AtmProfile dimensions from '//TRIM(NC_Filename)
+!      CALL Read_Cleanup(); RETURN
+!    END IF
+!    ! Allocate the structure
+!    Error_Status = Allocate_AtmProfile( n_Layers,n_Absorbers,n_Profiles, &
+!                                        AtmProfile,Message_Log=Message_Log )
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'Error occurred allocating AtmProfile structure.'
+!      CALL Read_Cleanup(); RETURN
+!    END IF
+!
+!
+!    ! Open the netCDF file for reading
+!    ! --------------------------------
+!    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
+!            TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+!    END IF
+!
+!
+!    ! Read the global attributes
+!    ! --------------------------
+!    Error_Status = ReadGAtts( NC_Filename                   , &
+!                              NC_FileID                     , &
+!!                              Release    =AtmProfile%Release, &
+!!                              Version    =AtmProfile%Version, &
+!                              ID_Tag     =ID_Tag            , &
+!                              Title      =Title             , &
+!                              History    =History           , &
+!                              Comment    =Comment           , &
+!                              Message_Log=Message_Log         )
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
+!      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+!    END IF
+!
+!    ! Check the release
+!    Error_Status = CheckRelease_AtmProfile( AtmProfile,Message_Log=Message_Log )
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'AtmProfile Release check failed for '//TRIM(NC_Filename)
+!      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+!    END IF
+!    
+!
+!    ! Read the AtmProfile data
+!    ! ------------------------
+!    Error_Status = ReadVar( NC_Filename            , &
+!                            NC_FileID              , &
+!                            AtmProfile             , &
+!                            Message_Log=Message_Log  )
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      msg = 'Error reading AtmProfile variables from '//TRIM(NC_Filename)
+!      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
+!    END IF
+!
+!
+!    ! Close the file
+!    ! --------------
+!    NF90_Status = NF90_CLOSE( NC_FileId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL Read_Cleanup(Destroy_Structure=.TRUE.); RETURN
+!    END IF
+!
+!
+!    ! Finish up with the data structure
+!    ! ---------------------------------
+!    ! Fill the other Absorber_Units structure members
+!    DO j = 1, AtmProfile%n_Absorbers
+!      AtmProfile%Absorber_Units_Name(j)   = ATMPROFILE_ABSORBER_UNITS_NAME(AtmProfile%Absorber_Units_ID(j))
+!      AtmProfile%Absorber_Units_LBLRTM(j) = ATMPROFILE_ABSORBER_UNITS_CHAR(AtmProfile%Absorber_Units_ID(j))
+!    END DO
+!    ! Reverse the profile data direction if required
+!    IF ( ReverseProfile ) THEN
+!      ! Level data
+!      k = AtmProfile%n_Levels
+!      AtmProfile%Level_Pressure(1:k,:)    = AtmProfile%Level_Pressure(k:1:-1,:)
+!      AtmProfile%Level_Temperature(1:k,:) = AtmProfile%Level_Temperature(k:1:-1,:)
+!      AtmProfile%Level_Absorber(1:k,:,:)  = AtmProfile%Level_Absorber(k:1:-1,:,:)
+!      AtmProfile%Level_Altitude(1:k,:)    = AtmProfile%Level_Altitude(k:1:-1,:)
+!      ! Layer data
+!      k = AtmProfile%n_Layers
+!      AtmProfile%Layer_Pressure(1:k,:)    = AtmProfile%Layer_Pressure(k:1:-1,:)
+!      AtmProfile%Layer_Temperature(1:k,:) = AtmProfile%Layer_Temperature(k:1:-1,:)
+!      AtmProfile%Layer_Absorber(1:k,:,:)  = AtmProfile%Layer_Absorber(k:1:-1,:,:)
+!      AtmProfile%Layer_Delta_Z(1:k,:)     = AtmProfile%Layer_Delta_Z(k:1:-1,:)
+!    END IF
+!
+!
+!    ! Output an info message
+!    ! ----------------------
+!    IF ( Noisy ) THEN
+!      CALL Info_AtmProfile( AtmProfile, msg )
+!      CALL Display_Message( ROUTINE_NAME, &
+!                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
+!                            INFORMATION, &
+!                            Message_Log=Message_Log )
+!    END IF
+!
+!  CONTAINS
+!  
+!    SUBROUTINE Read_CleanUp( Close_File, Destroy_Structure )
+!       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
+!       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Structure
+!      ! Close file if necessary
+!      IF ( PRESENT(Close_File) ) THEN
+!        IF ( Close_File ) THEN
+!          NF90_Status = NF90_CLOSE( NC_FileId )
+!          IF ( NF90_Status /= NF90_NOERR ) &
+!            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+!                  TRIM(NF90_STRERROR( NF90_Status ))
+!        END IF
+!      END IF
+!      ! Destroy the structure if necessary
+!      IF ( PRESENT(Destroy_Structure) ) THEN
+!        IF ( Destroy_Structure ) THEN
+!          Error_Status = Destroy_AtmProfile(AtmProfile, Message_Log=Message_Log)
+!          IF ( Error_Status /= SUCCESS ) &
+!            msg = TRIM(msg)//'; Error destroying AtmProfile during error cleanup.'
+!        END IF
+!      END IF
+!      ! Set error status and print error msg
+!      Error_Status = FAILURE
+!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+!    END SUBROUTINE Read_CleanUp
+!
+!  END FUNCTION Read_AtmProfile_netCDF
+!
 
 !##################################################################################
 !##################################################################################
@@ -1074,15 +1073,15 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Convert_DateTime_to_Double( aDT, dDT )
-    TYPE(AtmProfileDateTime_type), INTENT(IN)  :: aDT(:)
-    REAL(Double),                  INTENT(OUT) :: dDT(:)
-    INTEGER :: n
-    DO n = 1, SIZE(aDT)
-      dDT(n) = REAL((aDT(n)%Year*10000) + (aDT(n)%Month*100) + aDT(n)%Day, Double ) + &
-               REAL(aDT(n)%Hour,Double) / 100.0_Double
-    END DO
-  END SUBROUTINE Convert_DateTime_to_Double
+!  SUBROUTINE Convert_DateTime_to_Double( aDT, dDT )
+!    TYPE(AtmProfileDateTime_type), INTENT(IN)  :: aDT(:)
+!    REAL(Double),                  INTENT(OUT) :: dDT(:)
+!    INTEGER :: n
+!    DO n = 1, SIZE(aDT)
+!      dDT(n) = REAL((aDT(n)%Year*10000) + (aDT(n)%Month*100) + aDT(n)%Day, Double ) + &
+!               REAL(aDT(n)%Hour,Double) / 100.0_Double
+!    END DO
+!  END SUBROUTINE Convert_DateTime_to_Double
 
 
 !------------------------------------------------------------------------------
@@ -1119,24 +1118,24 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Convert_DateTime_to_Type( dDT, aDT )
-    REAL(Double),                  INTENT(IN)  :: dDT(:)
-    TYPE(AtmProfileDateTime_type), INTENT(OUT) :: aDT(:)
-    INTEGER(Long) :: x
-    INTEGER :: n
-    DO n = 1, SIZE( dDT )
-      ! The year
-      x = INT(dDT(n),Long)
-      aDT(n)%Year = ( x - MOD(x,10000_Long) ) / 10000_Long
-      ! The month
-      x = MOD(x,10000_Long)
-      aDT(n)%Month = ( x - MOD(x,100_Long) ) / 100_Long
-      ! The day of the month
-      aDT(n)%Day = MOD(x,100_Long)
-      ! The hour of the day
-      aDT(n)%Hour = NINT(MOD(dDT(n),ONE) * 100.0_Double )
-    END DO
-  END SUBROUTINE Convert_DateTime_to_Type
+!  SUBROUTINE Convert_DateTime_to_Type( dDT, aDT )
+!    REAL(Double),                  INTENT(IN)  :: dDT(:)
+!    TYPE(AtmProfileDateTime_type), INTENT(OUT) :: aDT(:)
+!    INTEGER(Long) :: x
+!    INTEGER :: n
+!    DO n = 1, SIZE( dDT )
+!      ! The year
+!      x = INT(dDT(n),Long)
+!      aDT(n)%Year = ( x - MOD(x,10000_Long) ) / 10000_Long
+!      ! The month
+!      x = MOD(x,10000_Long)
+!      aDT(n)%Month = ( x - MOD(x,100_Long) ) / 100_Long
+!      ! The day of the month
+!      aDT(n)%Day = MOD(x,100_Long)
+!      ! The hour of the day
+!      aDT(n)%Hour = NINT(MOD(dDT(n),ONE) * 100.0_Double )
+!    END DO
+!  END SUBROUTINE Convert_DateTime_to_Type
 
 
 !--------------------------------------------------------------------------------
@@ -2086,260 +2085,260 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION WriteVar( NC_Filename, &  ! Input
-                     NC_FileID  , &  ! Input
-                     AtmProfile , &  ! Input
-                     RCS_Id     , &  ! Revision control
-                     Message_Log) &  ! Error messaging
-                   RESULT( Error_Status )
-    ! Arguments
-    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
-    INTEGER               , INTENT(IN)  :: NC_FileID
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: NF90_Status
-    INTEGER :: VarId
-    REAL(Double) :: DateTime(AtmProfile%n_Profiles)
-                               
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS                                      
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-
-    ! Write the variable data
-    ! -----------------------
-    ! The Absorber_ID
-    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_ID_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_ID_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//ABSORBER_ID_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Absorber_Units_ID
-    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_ID_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_ID_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//ABSORBER_UNITS_ID_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Description
-    NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Description )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//DESCRIPTION_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Climatology_Model
-    NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CLIMATOLOGY_MODEL_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The DateTime
-    NF90_Status = NF90_INQ_VARID( NC_FileId,DATETIME_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DATETIME_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    CALL Convert_DateTime_to_Double( AtmProfile%DateTime, DateTime )
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,DateTime )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//DATETIME_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Latitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LATITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LATITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Latitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LATITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Longitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LONGITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LONGITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Longitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LONGITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Surface_Altitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SURFACE_ALTITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SURFACE_ALTITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Surface_Altitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//SURFACE_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Pressure
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_PRESSURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_PRESSURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LEVEL_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Temperature
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_TEMPERATURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_TEMPERATURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LEVEL_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Absorber
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ABSORBER_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ABSORBER_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LEVEL_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Altitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ALTITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ALTITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LEVEL_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Pressure
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_PRESSURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_PRESSURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LAYER_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Temperature
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_TEMPERATURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_TEMPERATURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LAYER_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Absorber
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_ABSORBER_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_ABSORBER_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LAYER_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Delta_Z
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_DELTA_Z_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_DELTA_Z_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//LAYER_DELTA_Z_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    
-  CONTAINS
-  
-    SUBROUTINE WriteVar_CleanUp()
-      ! Close file
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      IF ( NF90_Status /= NF90_NOERR ) &
-        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-              TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error msg
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE WriteVar_CleanUp
-
-  END FUNCTION WriteVar
+!  FUNCTION WriteVar( NC_Filename, &  ! Input
+!                     NC_FileID  , &  ! Input
+!                     AtmProfile , &  ! Input
+!                     RCS_Id     , &  ! Revision control
+!                     Message_Log) &  ! Error messaging
+!                   RESULT( Error_Status )
+!    ! Arguments
+!    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
+!    INTEGER               , INTENT(IN)  :: NC_FileID
+!    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
+!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+!    ! Function result
+!    INTEGER :: Error_Status
+!    ! Local parameters
+!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar'
+!    ! Local variables
+!    CHARACTER(ML) :: msg
+!    INTEGER :: NF90_Status
+!    INTEGER :: VarId
+!    REAL(Double) :: DateTime(AtmProfile%n_Profiles)
+!                               
+!    ! Set up
+!    ! ------
+!    Error_Status = SUCCESS                                      
+!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+!
+!
+!    ! Write the variable data
+!    ! -----------------------
+!    ! The Absorber_ID
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_ID_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_ID_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//ABSORBER_ID_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Absorber_Units_ID
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_ID_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_ID_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//ABSORBER_UNITS_ID_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Description
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Description )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//DESCRIPTION_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Climatology_Model
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CLIMATOLOGY_MODEL_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The DateTime
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,DATETIME_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DATETIME_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    CALL Convert_DateTime_to_Double( AtmProfile%DateTime, DateTime )
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,DateTime )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//DATETIME_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Latitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LATITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LATITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Latitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LATITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Longitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LONGITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LONGITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Longitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LONGITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Surface_Altitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,SURFACE_ALTITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SURFACE_ALTITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Location%Surface_Altitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//SURFACE_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Pressure
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_PRESSURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_PRESSURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LEVEL_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Temperature
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_TEMPERATURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_TEMPERATURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LEVEL_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Absorber
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ABSORBER_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ABSORBER_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LEVEL_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Altitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ALTITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ALTITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LEVEL_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Pressure
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_PRESSURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_PRESSURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LAYER_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Temperature
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_TEMPERATURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_TEMPERATURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LAYER_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Absorber
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_ABSORBER_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_ABSORBER_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LAYER_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Delta_Z
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_DELTA_Z_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_DELTA_Z_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error writing '//LAYER_DELTA_Z_VARNAME//' to '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL WriteVar_Cleanup(); RETURN
+!    END IF
+!    
+!  CONTAINS
+!  
+!    SUBROUTINE WriteVar_CleanUp()
+!      ! Close file
+!      NF90_Status = NF90_CLOSE( NC_FileID )
+!      IF ( NF90_Status /= NF90_NOERR ) &
+!        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+!              TRIM(NF90_STRERROR( NF90_Status ) )
+!      ! Set error status and print error msg
+!      Error_Status = FAILURE
+!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+!    END SUBROUTINE WriteVar_CleanUp
+!
+!  END FUNCTION WriteVar
 
 
 !------------------------------------------------------------------------------
@@ -2410,260 +2409,260 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION ReadVar( NC_Filename, &  ! Input
-                    NC_FileID  , &  ! Input
-                    AtmProfile , &  ! Output
-                    RCS_Id     , &  ! Revision control
-                    Message_Log) &  ! Error messaging
-                  RESULT( Error_Status )
-    ! Arguments
-    CHARACTER(*)          , INTENT(IN)     :: NC_Filename
-    INTEGER               , INTENT(IN)     :: NC_FileID
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: NF90_Status
-    INTEGER :: VarId
-    REAL(Double) :: DateTime(AtmProfile%n_Profiles)
-                                   
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS                                      
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-
-    ! Read the variable data
-    ! ----------------------
-    ! The Absorber_ID
-    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_ID_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_ID_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//ABSORBER_ID_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Absorber_Units_ID
-    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_ID_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_ID_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//ABSORBER_UNITS_ID_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Description
-    NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Description )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//DESCRIPTION_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Climatology_Model
-    NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CLIMATOLOGY_MODEL_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//CLIMATOLOGY_MODEL_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The DateTime
-    NF90_Status = NF90_INQ_VARID( NC_FileId,DATETIME_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DATETIME_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,DateTime )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//DATETIME_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    CALL Convert_DateTime_to_Type( DateTime, AtmProfile%DateTime )
-    ! The Latitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LATITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LATITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Latitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LATITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Longitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LONGITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LONGITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Longitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LONGITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Surface_Altitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SURFACE_ALTITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SURFACE_ALTITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Surface_Altitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//SURFACE_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Pressure
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_PRESSURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_PRESSURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LEVEL_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Temperature
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_TEMPERATURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_TEMPERATURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LEVEL_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Absorber
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ABSORBER_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ABSORBER_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LEVEL_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Level_Altitude
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ALTITUDE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ALTITUDE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LEVEL_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Pressure
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_PRESSURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_PRESSURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LAYER_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Temperature
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_TEMPERATURE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_TEMPERATURE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LAYER_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Absorber
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_ABSORBER_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_ABSORBER_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LAYER_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    ! The Layer_Delta_Z
-    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_DELTA_Z_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_DELTA_Z_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//LAYER_DELTA_Z_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-
-  CONTAINS
-  
-    SUBROUTINE ReadVar_CleanUp()
-      ! Close file
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      IF ( NF90_Status /= NF90_NOERR ) &
-        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-              TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error msg
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE ReadVar_CleanUp
-
-  END FUNCTION ReadVar
+!  FUNCTION ReadVar( NC_Filename, &  ! Input
+!                    NC_FileID  , &  ! Input
+!                    AtmProfile , &  ! Output
+!                    RCS_Id     , &  ! Revision control
+!                    Message_Log) &  ! Error messaging
+!                  RESULT( Error_Status )
+!    ! Arguments
+!    CHARACTER(*)          , INTENT(IN)     :: NC_Filename
+!    INTEGER               , INTENT(IN)     :: NC_FileID
+!    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
+!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+!    ! Function result
+!    INTEGER :: Error_Status
+!    ! Local parameters
+!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar'
+!    ! Local variables
+!    CHARACTER(ML) :: msg
+!    INTEGER :: NF90_Status
+!    INTEGER :: VarId
+!    REAL(Double) :: DateTime(AtmProfile%n_Profiles)
+!                                   
+!    ! Set up
+!    ! ------
+!    Error_Status = SUCCESS                                      
+!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+!
+!
+!    ! Read the variable data
+!    ! ----------------------
+!    ! The Absorber_ID
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_ID_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_ID_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//ABSORBER_ID_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Absorber_Units_ID
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_ID_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_ID_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//ABSORBER_UNITS_ID_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Description
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Description )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//DESCRIPTION_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Climatology_Model
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CLIMATOLOGY_MODEL_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//CLIMATOLOGY_MODEL_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The DateTime
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,DATETIME_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DATETIME_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,DateTime )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//DATETIME_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    CALL Convert_DateTime_to_Type( DateTime, AtmProfile%DateTime )
+!    ! The Latitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LATITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LATITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Latitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LATITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Longitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LONGITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LONGITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Longitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LONGITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Surface_Altitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,SURFACE_ALTITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SURFACE_ALTITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Location%Surface_Altitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//SURFACE_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Pressure
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_PRESSURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_PRESSURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LEVEL_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Temperature
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_TEMPERATURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_TEMPERATURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LEVEL_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Absorber
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ABSORBER_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ABSORBER_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LEVEL_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Level_Altitude
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LEVEL_ALTITUDE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LEVEL_ALTITUDE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LEVEL_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Pressure
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_PRESSURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_PRESSURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LAYER_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Temperature
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_TEMPERATURE_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_TEMPERATURE_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LAYER_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Absorber
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_ABSORBER_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_ABSORBER_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LAYER_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    ! The Layer_Delta_Z
+!    NF90_Status = NF90_INQ_VARID( NC_FileId,LAYER_DELTA_Z_VARNAME,VarId )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//LAYER_DELTA_Z_VARNAME//&
+!            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z )
+!    IF ( NF90_Status /= NF90_NOERR ) THEN
+!      msg = 'Error reading '//LAYER_DELTA_Z_VARNAME//' from '//TRIM(NC_Filename)//&
+!            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+!      CALL ReadVar_Cleanup(); RETURN
+!    END IF
+!
+!  CONTAINS
+!  
+!    SUBROUTINE ReadVar_CleanUp()
+!      ! Close file
+!      NF90_Status = NF90_CLOSE( NC_FileID )
+!      IF ( NF90_Status /= NF90_NOERR ) &
+!        msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+!              TRIM(NF90_STRERROR( NF90_Status ) )
+!      ! Set error status and print error msg
+!      Error_Status = FAILURE
+!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+!    END SUBROUTINE ReadVar_CleanUp
+!
+!  END FUNCTION ReadVar
 
 
 !------------------------------------------------------------------------------
@@ -2790,7 +2789,6 @@ CONTAINS
   FUNCTION CreateFile( NC_Filename, &  ! Input
                        n_Layers   , &  ! Input
                        n_Absorbers, &  ! Input
-                       n_Profiles , &  ! Input
                        NC_FileID  , &  ! Output
                        Version    , &  ! Optional input
                        ID_Tag     , &  ! Optional input
@@ -2803,7 +2801,6 @@ CONTAINS
     CHARACTER(*)          , INTENT(IN)  :: NC_Filename
     INTEGER               , INTENT(IN)  :: n_Layers     
     INTEGER               , INTENT(IN)  :: n_Absorbers  
-    INTEGER               , INTENT(IN)  :: n_Profiles   
     INTEGER               , INTENT(OUT) :: NC_FileID
     INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
@@ -2833,8 +2830,7 @@ CONTAINS
 
     ! Check input
     IF ( n_Layers    < 1 .OR. &
-         n_Absorbers < 1 .OR. &
-         n_Profiles  < 1      ) THEN
+         n_Absorbers < 1      ) THEN
       msg = 'Invalid dimension input detected.'
       CALL Create_Cleanup(); RETURN
     END IF
@@ -2874,7 +2870,7 @@ CONTAINS
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
     
-    NF90_Status = NF90_DEF_DIM( NC_FileID,PROFILE_DIMNAME,n_Profiles,Profile_DimID )
+    NF90_Status = NF90_DEF_DIM( NC_FileID,PROFILE_DIMNAME,NF90_UNLIMITED,Profile_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//PROFILE_DIMNAME//' dimension in '//&
             TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))

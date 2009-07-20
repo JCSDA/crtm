@@ -16,14 +16,13 @@ MAKE_FILE = Makefile
 EXE_FILE = Test_AtmProfile
 
 # Source files to link
-SRC_FILES = Type_Kinds.f90 \
-            File_Utility.f90 \
-            Message_Handler.f90 \
+SRC_FILES = Type_Kinds.f90            \
+            File_Utility.f90          \
+            Message_Handler.f90       \
             Compare_Float_Numbers.f90 \
-            String_Utility.f90 \
-            AtmProfile_Define.f90
- #            \
- #           AtmProfile_netCDF_IO.f90
+            String_Utility.f90        \
+            AtmProfile_Define.f90     \
+            AtmProfile_netCDF_IO.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
