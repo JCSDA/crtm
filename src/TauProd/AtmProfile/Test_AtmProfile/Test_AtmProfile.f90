@@ -27,7 +27,7 @@ PROGRAM Test_AtmProfile
                                   Equal_AtmProfile,        &
                                   CheckRelease_AtmProfile, &
                                   Info_AtmProfile
-!  USE AtmProfile_netCDF_IO, ONLY: Inquire_AtmProfile_netCDF, &
+  USE AtmProfile_netCDF_IO, ONLY: Inquire_AtmProfile_netCDF
 !                                  Write_AtmProfile_netCDF, &
 !                                  Read_AtmProfile_netCDF
   ! Disable all implicit typing
@@ -46,9 +46,9 @@ PROGRAM Test_AtmProfile
   INTEGER, PARAMETER :: SET = 1
   INTEGER, PARAMETER :: MAX_N_LOOPS  = 1000
   INTEGER, PARAMETER :: INFO_N_LOOPS = 100
-  INTEGER, PARAMETER :: N_PROFILES = 3
-  INTEGER, PARAMETER :: N_LAYERS = 100
-  INTEGER, PARAMETER :: N_ABSORBERS = 2
+ ! INTEGER, PARAMETER :: N_PROFILES = 3
+ ! INTEGER, PARAMETER :: N_LAYERS = 100
+ ! INTEGER, PARAMETER :: N_ABSORBERS = 2
   
   ! ---------
   ! Variables
@@ -58,9 +58,9 @@ PROGRAM Test_AtmProfile
   CHARACTER(256) :: AtmProfile_Filename
   INTEGER :: Error_Status
   LOGICAL :: Association_Status
-  !INTEGER :: n_Layers   
-  !INTEGER :: n_Absorbers
-  !INTEGER :: n_Profiles 
+  INTEGER :: n_Layers   
+  INTEGER :: n_Absorbers
+  INTEGER :: n_Profiles 
   INTEGER :: Allocate_Status
   INTEGER :: n, m
   TYPE(AtmProfile_type), DIMENSION(:), ALLOCATABLE :: AtmProfile1
@@ -73,8 +73,33 @@ PROGRAM Test_AtmProfile
                         'Program to test all the AtmProfile structure '//&
                         'manipulation and netCDF I/O functions.', &
                         '$Revision$' )
+  
+  ! Get an input netCDF file
+  ! ------------------------
+  WRITE( *,FMT='(/5x,"Enter an netCDF AtmProfile filename: ")',ADVANCE='NO' )
+  READ( *,'(a)' ) AtmProfile_Filename
+  AtmProfile_Filename = ADJUSTL(AtmProfile_Filename)
+  IF ( .NOT. File_Exists( TRIM(AtmProfile_Filename) ) ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'File '//TRIM(AtmProfile_Filename)//' not found.', &
+                          FAILURE )
+    STOP
+  END IF
                         
-  ALLOCATE( AtmProfile1(N_PROFILES)      , &
+  WRITE( *,'(10x,"Inquiring...")' )
+  Error_Status = Inquire_AtmProfile_netCDF( AtmProfile_Filename, &
+                                            n_Layers    = n_Layers, &
+                                            n_Absorbers = n_Absorbers, &
+                                            n_Profiles  = n_Profiles )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error inquiring the netCDF AtmProfile file '//&
+                          TRIM(AtmProfile_Filename), &
+                          FAILURE )
+    STOP
+  END IF
+                        
+  ALLOCATE( AtmProfile1(n_Profiles)      , &
             STAT = Allocate_Status         )
   IF ( Allocate_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,  &
@@ -83,7 +108,7 @@ PROGRAM Test_AtmProfile
     STOP
   ENDIF
   
-  ALLOCATE( AtmProfile2(N_PROFILES)      , &
+  ALLOCATE( AtmProfile2(n_Profiles)      , &
              STAT = Allocate_Status        )
   IF ( Allocate_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,  &
@@ -92,10 +117,10 @@ PROGRAM Test_AtmProfile
     STOP
   ENDIF
   
-  DO m=1, N_PROFILES
+  DO m=1, n_Profiles
   
-    Error_Status = Allocate_AtmProfile( N_LAYERS      ,   &  
-                                        N_ABSORBERS   ,   &  
+    Error_Status = Allocate_AtmProfile( n_Layers      ,   &  
+                                        n_Absorbers   ,   &  
                                         AtmProfile1(m)    )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME,  &
@@ -175,35 +200,14 @@ PROGRAM Test_AtmProfile
                                              
   ! Loop over 
 
-!  ! Get an input netCDF file
-!  ! ------------------------
-!  WRITE( *,FMT='(/5x,"Enter an netCDF AtmProfile filename: ")',ADVANCE='NO' )
-!  READ( *,'(a)' ) AtmProfile_Filename
-!  AtmProfile_Filename = ADJUSTL(AtmProfile_Filename)
-!  IF ( .NOT. File_Exists( TRIM(AtmProfile_Filename) ) ) THEN
-!    CALL Display_Message( PROGRAM_NAME, &
-!                          'File '//TRIM(AtmProfile_Filename)//' not found.', &
-!                          FAILURE )
-!    STOP
-!  END IF
+
 !
 !
 !  ! Test the netCDF I/O routines
 !  ! ----------------------------
 !  WRITE( *,'(/5x,"Testing AtmProfile netCDF I/O functions ...")' )
 !  ! Inquire the netCDF datafile
-!  WRITE( *,'(10x,"Inquiring...")' )
-!  Error_Status = Inquire_AtmProfile_netCDF( AtmProfile_Filename, &
-!                                            n_Layers    = n_Layers, &
-!                                            n_Absorbers = n_Absorbers, &
-!                                            n_Profiles  = n_Profiles )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME, &
-!                          'Error inquiring the netCDF AtmProfile file '//&
-!                          TRIM(AtmProfile_Filename), &
-!                          FAILURE )
-!    STOP
-!  END IF
+
   
   
 !  WRITE( *,'(/5x,a," file dimensions:",&
