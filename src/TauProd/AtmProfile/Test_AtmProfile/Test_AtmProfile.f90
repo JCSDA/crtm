@@ -27,7 +27,8 @@ PROGRAM Test_AtmProfile
                                   Equal_AtmProfile,        &
                                   CheckRelease_AtmProfile, &
                                   Info_AtmProfile
-  USE AtmProfile_netCDF_IO, ONLY: Inquire_AtmProfile_netCDF
+  USE AtmProfile_netCDF_IO, ONLY: Inquire_AtmProfile_netCDF, &
+                                  Read_AtmProfile_netCDF
 !                                  Write_AtmProfile_netCDF, &
 !                                  Read_AtmProfile_netCDF
   ! Disable all implicit typing
@@ -98,7 +99,7 @@ PROGRAM Test_AtmProfile
                           FAILURE )
     STOP
   END IF
-                        
+                          
   ALLOCATE( AtmProfile1(n_Profiles)      , &
             STAT = Allocate_Status         )
   IF ( Allocate_Status /= SUCCESS ) THEN
@@ -116,6 +117,28 @@ PROGRAM Test_AtmProfile
                           FAILURE )
     STOP
   ENDIF
+  
+  WRITE( *,'(/5x,a," file dimensions:",&                                  
+        &/10x,"n_Layers    = ",i0,&                                     
+         &/10x,"n_Absorbers = ",i0,&                                    
+         &/10x,"n_Profiles  = ",i0,/)' ) &                              
+         TRIM(AtmProfile_Filename), n_Layers, n_Absorbers, n_Profiles   
+  ! Read the netCDF data file
+  WRITE( *,'(10x,"Reading...")' )
+  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename, &
+                                         n_Layers           , &
+                                         n_Absorbers        , &
+                                         n_Profiles         , &
+                                         AtmProfile1          )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error reading the netCDF AtmProfile file '//&
+                          TRIM(AtmProfile_Filename), &
+                          FAILURE )
+    STOP
+  END IF
+  
+  print *, AtmProfile1(2)%Year
   
   DO m=1, n_Profiles
   
@@ -210,21 +233,7 @@ PROGRAM Test_AtmProfile
 
   
   
-!  WRITE( *,'(/5x,a," file dimensions:",&
-!            &/10x,"n_Layers    = ",i0,&
-!            &/10x,"n_Absorbers = ",i0,&
-!            &/10x,"n_Profiles  = ",i0,/)' ) &
-!            TRIM(AtmProfile_Filename), n_Layers, n_Absorbers, n_Profiles
-!  ! Read the netCDF data file
-!  WRITE( *,'(10x,"Reading...")' )
-!  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename, AtmProfile1 )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME, &
-!                          'Error reading the netCDF AtmProfile file '//&
-!                          TRIM(AtmProfile_Filename), &
-!                          FAILURE )
-!    STOP
-!  END IF
+
 !  CALL Info_AtmProfile( AtmProfile1, Message )
 !  CALL Display_Message( PROGRAM_NAME, &
 !                        'FILE: '//TRIM(AtmProfile_Filename)//'; '//TRIM(Message), &
