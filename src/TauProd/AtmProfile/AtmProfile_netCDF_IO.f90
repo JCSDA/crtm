@@ -724,6 +724,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !     Error_Status = Read_AtmProfile_netCDF( NC_Filename            , &  ! Input
 !                                            AtmProfile             , &  ! Output
+!                                            Profile_Set=Profile_Set, &  ! Optional Input 
 !                                            Quiet      =Quiet      , &  ! Optional input
 !                                            Reverse    =Reverse    , &  ! Optional input
 !                                            ID_Tag     =ID_Tag     , &  ! Optional output
@@ -739,17 +740,15 @@ CONTAINS
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)                   
-! 
+!                     ATTRIBUTES: INTENT(IN)
+!
 ! OUTPUT ARGUMENTS:
 !       AtmProfile:   Structure to contain the AtmProfile data
 !                     read from file.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(AtmProfile_type)
-!                     DIMENSION:  Scalar
+!                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(OUT)
-!
-!
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Quiet:        Set this keyword to suppress information messages being
@@ -784,6 +783,13 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
+!
+!       Profile_Set:  Integer array specifying the profiles to be read                    
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Rank-1
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       ID_Tag:       Character string written into the ID_TAG global
 !                     attribute field of the netCDF AtmProfile file.
 !                     Identifies the dependent profile set.
@@ -841,7 +847,8 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Read_AtmProfile_netCDF( NC_Filename, &  ! Input
-                                   AtmProfile , &  ! Output 
+                                   AtmProfile , &  ! Output
+                                   Profile_Set, &  ! Optional Input 
                                    Quiet      , &  ! Optional input
                                    Reverse    , &  ! Optional input
                                    ID_Tag     , &  ! Optional output
@@ -852,8 +859,9 @@ CONTAINS
                                    Message_Log) &  ! Error messaging
                                  RESULT( Error_Status )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)     :: NC_Filename    
+    CHARACTER(*),           INTENT(IN)     :: NC_Filename   
     TYPE(AtmProfile_type),  INTENT(IN OUT) :: AtmProfile(:)
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Profile_Set(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
     INTEGER,      OPTIONAL, INTENT(IN)     :: Reverse
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: ID_Tag
@@ -867,6 +875,7 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_AtmProfile_netCDF'
     ! Function variables
+    INTEGER , DIMENSION(SIZE(AtmProfile)) :: Local_Profile_Set
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy, ReverseProfile
     INTEGER :: NC_FileID
@@ -916,7 +925,24 @@ CONTAINS
       n_Profiles = n_File_Profiles
     ENDIF
     
+    ! Assign the set of profiles to read
+    IF ( PRESENT(Profile_Set) ) THEN
+      Local_Profile_Set=Profile_Set
+    ELSE
+      Local_Profile_Set=(/(m,m=1,n_Profiles)/)
+    ENDIF
+    
+    ! Check that SIZE(AtmProfile) = SIZE(Local_Profile_Set)
+    IF ( SIZE(AtmProfile) /= SIZE(Local_Profile_Set) ) THEN
+      CALL Display_Message(  ROUTINE_NAME, &
+                             'SIZE of AtmProfile inconsistent with profile set '//&
+                             TRIM(NC_Filename), &
+                             FAILURE )
+      STOP
+    END IF    
+    
     DO m = 1, n_Profiles
+    
       ! Allocate the structure
       Error_Status = Allocate_AtmProfile( n_Layers,n_Absorbers,                 &
                                           AtmProfile(m),Message_Log=Message_Log )
@@ -957,12 +983,11 @@ CONTAINS
         CALL Read_Cleanup(AtmProfile(m),Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
       END IF
     
-
       ! Read the AtmProfile data
       ! ------------------------
       Error_Status = ReadVar( NC_Filename               , &
                               NC_FileID                 , &
-                              m                         , &
+                              Local_Profile_Set(m)      , &
                               AtmProfile(m)             , &
                               Message_Log=Message_Log     )
       IF ( Error_Status /= SUCCESS ) THEN

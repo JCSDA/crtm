@@ -65,6 +65,7 @@ PROGRAM Test_AtmProfile
   TYPE(AtmProfile_type), DIMENSION(N_FILE_PROFILES)   :: AtmProfile1
   TYPE(AtmProfile_type), DIMENSION(N_FILE_PROFILES)   :: AtmProfile2
   TYPE(AtmProfile_type), DIMENSION(N_FILE_PROFILES+1) :: AtmProfile3
+  INTEGER, DIMENSION(N_FILE_PROFILES) :: Profile_Set = (/1,2,3/)
 
   ! Output header
   ! -------------
@@ -102,8 +103,9 @@ PROGRAM Test_AtmProfile
   ! Read 1 profile at a time
   DO m = 1, N_FILE_PROFILES
     
-    Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename, &
-                                           AtmProfile1(m:m)     )
+    Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename,          &
+                                           AtmProfile1(m:m),             &
+                                           Profile_Set=Profile_Set(m:m)  )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error reading into the 1 element array '//&
@@ -116,8 +118,9 @@ PROGRAM Test_AtmProfile
   
   ! Read Into an array that is the 
   ! same size as N_FILE_PROFILES  
-  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename,  &
-                                         AtmProfile2           )
+  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename,    &
+                                         AtmProfile2,            &
+                                         Profile_Set=Profile_Set )
   IF ( Error_Status /= SUCCESS ) THEN                              
     CALL Display_Message( PROGRAM_NAME,                                           &                         
                           'Error reading into the array of size N_FILE_PROFILES'//& 
