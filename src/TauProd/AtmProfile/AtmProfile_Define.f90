@@ -111,16 +111,16 @@ MODULE AtmProfile_Define
     CHARACTER(AL), POINTER :: Absorber_Units_Name(:)   => NULL() ! Dimension J
     CHARACTER( 1), POINTER :: Absorber_Units_LBL(:)    => NULL() ! Dimension J
     ! Profile metadata 
-    INTEGER(Long) :: Profile   
-    CHARACTER(PL) :: Description      
-    INTEGER(Long) :: Climatology_Model 
-    INTEGER(Long) :: Year
-    INTEGER(Long) :: Month
-    INTEGER(Long) :: Day
-    INTEGER(Long) :: Hour
-    REAL(Double) :: Latitude
-    REAL(Double) :: Longitude
-    REAL(Double) :: Surface_Altitude    
+    INTEGER(Long) :: Profile            = 0 
+    CHARACTER(PL) :: Description        = ''
+    INTEGER(Long) :: Climatology_Model  = 0
+    INTEGER(Long) :: Year               = 0
+    INTEGER(Long) :: Month              = 0
+    INTEGER(Long) :: Day                = 0
+    INTEGER(Long) :: Hour               = 0
+    REAL(Double) :: Latitude            = 0.00_Double
+    REAL(Double) :: Longitude           = 0.00_Double
+    REAL(Double) :: Surface_Altitude    = 0.00_Double
     ! Profile LEVEL data
     REAL(Double), POINTER :: Level_Pressure(:)    => NULL() ! Dimension K+1
     REAL(Double), POINTER :: Level_Temperature(:) => NULL() ! Dimension K+1 
@@ -352,9 +352,9 @@ CONTAINS
     AtmProfile%Month             = 0
     AtmProfile%Day               = 0
     AtmProfile%Hour              = 0
-    AtmProfile%Latitude          = ATMPROFILE_FP_INVALID
-    AtmProfile%Longitude         = ATMPROFILE_FP_INVALID
-    AtmProfile%Surface_Altitude  = ATMPROFILE_FP_INVALID
+    AtmProfile%Latitude          = 0.00_Double
+    AtmProfile%Longitude         = 0.00_Double
+    AtmProfile%Surface_Altitude  = 0.00_Double
             
     ! Default is to clear scalar members...
     Clear = .TRUE.
@@ -591,9 +591,9 @@ CONTAINS
     AtmProfile%Month             = 0
     AtmProfile%Day               = 0
     AtmProfile%Hour              = 0
-    AtmProfile%Latitude          = ATMPROFILE_FP_INVALID
-    AtmProfile%Longitude         = ATMPROFILE_FP_INVALID
-    AtmProfile%Surface_Altitude  = ATMPROFILE_FP_INVALID
+    AtmProfile%Latitude          = 0.00_Double
+    AtmProfile%Longitude         = 0.00_Double
+    AtmProfile%Surface_Altitude  = 0.00_Double
     
     AtmProfile%Level_Pressure    = ATMPROFILE_FP_INVALID
     AtmProfile%Level_Temperature = ATMPROFILE_FP_INVALID
@@ -795,7 +795,7 @@ CONTAINS
 !                          IF ( AtmProfile_LHS == AtmProfile_RHS ).
 !                        UNITS:      N/A
 !                        TYPE:       AtmProfile_type
-!                        DIMENSION:  Scalar
+!                        DIMENSION:  Rank-1
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       AtmProfile_RHS:  AtmProfile structure to be compared to; equivalent to
@@ -803,7 +803,7 @@ CONTAINS
 !                          IF ( AtmProfile_LHS == AtmProfile_RHS ).
 !                        UNITS:      N/A
 !                        TYPE:       AtmProfile_type
-!                        DIMENSION:  Scalar
+!                        DIMENSION:  Rank-1
 !                        ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -872,8 +872,8 @@ CONTAINS
                              Message_Log   ) &  ! Error messaging
                            RESULT( Error_Status )
     ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_LHS
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_RHS
+    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_LHS(:)
+    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_RHS(:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
     INTEGER     , OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
@@ -886,7 +886,8 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: j, k
+    INTEGER :: n_Profiles, n_Left_Profiles, n_Right_Profiles
+    INTEGER :: j, k, m
 
     ! Set up
     ! ------
@@ -906,231 +907,249 @@ CONTAINS
     IF ( PRESENT( Check_All ) ) THEN
       IF ( Check_All == SET ) Check_Once = .FALSE.
     END IF
-
-    ! Check the structure association status
-    IF ( .NOT. Associated_AtmProfile( AtmProfile_LHS ) ) THEN
+    
+    ! Get the number of profiles
+    n_Left_Profiles  = SIZE(AtmProfile_LHS)
+    n_Right_Profiles = SIZE(AtmProfile_RHS)
+        
+    ! Check to see if size of input arrays are equal
+    IF ( n_Left_Profiles /= n_Right_Profiles ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT AtmProfile_LHS pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( .NOT. Associated_AtmProfile( AtmProfile_RHS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT AtmProfile_RHS pointer members are NOT associated.', &
+                            'Size of profile arrays being compared are not the same', &
                             Error_Status, &
                             Message_Log=Message_Log )
       RETURN
     END IF
     
-    ! Check dimensions
-    IF ( AtmProfile_LHS%n_Levels    /= AtmProfile_RHS%n_Levels    .OR. &
-         AtmProfile_LHS%n_Layers    /= AtmProfile_RHS%n_Layers    .OR. &
-         AtmProfile_LHS%n_Absorbers /= AtmProfile_RHS%n_Absorbers      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Structure dimensions are different', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
+    n_Profiles = n_Left_Profiles
+    
+    DO m = 1, n_Profiles
 
-    ! Check the array components
-    ! --------------------------
-    ! The absorber Ids
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_ID(j) /= AtmProfile_RHS%Absorber_ID(j) ) THEN
-        WRITE(Message,'("AtmProfile component Absorber_Id values ",&
-                       &"are different at index (",1(1x,i0),")")') &
-                       j
+      ! Check the structure association status
+      IF ( .NOT. Associated_AtmProfile( AtmProfile_LHS(m) ) ) THEN
         Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Some or all INPUT AtmProfile_LHS pointer members are NOT associated.', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
       END IF
-    END DO
-    ! The absorber unit Ids
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_Units_ID(j) /= AtmProfile_RHS%Absorber_Units_ID(j) ) THEN
-        WRITE(Message,'("AtmProfile component Absorber_Units_ID values ",&
-                       &"are different at index (",1(1x,i0),")")') &
-                       j
+      IF ( .NOT. Associated_AtmProfile( AtmProfile_RHS(m) ) ) THEN
         Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Some or all INPUT AtmProfile_RHS pointer members are NOT associated.', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
       END IF
-    END DO
-    ! The absorber unit names
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_Units_Name(j) /= AtmProfile_RHS%Absorber_Units_Name(j) ) THEN
-        WRITE(Message,'("AtmProfile component Absorber_Units_Name values ",&
-                       &"are different at index (",1(1x,i0),")")') &
-                       j
+
+      ! Check dimensions
+      IF ( AtmProfile_LHS(m)%n_Levels    /= AtmProfile_RHS(m)%n_Levels    .OR. &
+           AtmProfile_LHS(m)%n_Layers    /= AtmProfile_RHS(m)%n_Layers    .OR. &
+           AtmProfile_LHS(m)%n_Absorbers /= AtmProfile_RHS(m)%n_Absorbers      ) THEN
         Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Structure dimensions are different', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
       END IF
-    END DO
-    ! The LBL absorber unit identifiers
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_Units_LBL(j) /= AtmProfile_RHS%Absorber_Units_LBL(j) ) THEN
-        WRITE(Message,'("AtmProfile component Absorber_Units_LBL values ",&
-                       &"are different at index (",1(1x,i0),")")') &
-                       j
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! Profile descriptor string    
-    IF ( AtmProfile_LHS%Description /= AtmProfile_RHS%Description ) THEN                       
-      WRITE(Message,'("AtmProfile component Description values are different")')
-      Error_Status = FAILURE                                                                   
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-      IF ( Check_Once ) RETURN                                                                 
-    END IF                                                                                         
-    ! Profile climatology model ID    
-    IF ( AtmProfile_LHS%Climatology_Model /= AtmProfile_RHS%Climatology_Model ) THEN           
-      WRITE(Message,'("AtmProfile component Climatology_Model values are different")')
-      Error_Status = FAILURE                                                                   
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-      IF ( Check_Once ) RETURN                                                                 
-    END IF                                                                                     
-    ! Profile Time information
-    IF ( AtmProfile_LHS%Year  /= AtmProfile_RHS%Year  .OR. &                                   
-         AtmProfile_LHS%Month /= AtmProfile_RHS%Month .OR. &                                   
-         AtmProfile_LHS%Day   /= AtmProfile_RHS%Day   .OR. &                                   
-         AtmProfile_LHS%Hour  /= AtmProfile_RHS%Hour       ) THEN                              
-      WRITE(Message,'("AtmProfile component time information is different")')
-      Error_Status = FAILURE                                                                   
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-      IF ( Check_Once ) RETURN                                                                 
-    END IF
-    ! Profile location   
-    IF ( .NOT. Compare_Float( AtmProfile_LHS%Latitude, &                                       
-                              AtmProfile_RHS%Latitude, &                                       
-                              ULP=ULP ) .OR. &                                                 
-         .NOT. Compare_Float( AtmProfile_LHS%Longitude, &                                      
-                              AtmProfile_RHS%Longitude, &                                      
-                              ULP=ULP ) .OR. &                                                 
-         .NOT. Compare_Float( AtmProfile_LHS%Surface_Altitude, &                               
-                              AtmProfile_RHS%Surface_Altitude, &                               
-                              ULP=ULP ) ) THEN                                                 
-      WRITE(Message,'("AtmProfile component Location values are different")') 
-      Error_Status = FAILURE                                                                   
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-      IF ( Check_Once ) RETURN                                                                 
-    END IF                                                                                     
-    ! Level pressures
-    DO k = 1, AtmProfile_LHS%n_Levels                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Pressure(k), &                            
-                                AtmProfile_RHS%Level_Pressure(k), &                            
-                                ULP=ULP ) ) THEN                                                 
-        WRITE(Message,'("AtmProfile array component Level_Pressure values ",&                    
-                       &"are different at indices (",(1x,i0),")")') &                           
-                       k                                                                      
-        Error_Status = FAILURE                                                                   
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-        IF ( Check_Once ) RETURN                                                                 
-      END IF                                                                                     
-    END DO 
-    ! Level temperatures    
-    DO k = 1, AtmProfile_LHS%n_Levels                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Temperature(k), &                         
-                                AtmProfile_RHS%Level_Temperature(k), &                         
-                                ULP=ULP ) ) THEN                                                 
-        WRITE(Message,'("AtmProfile array component Level_Temperature values ",&                 
-                       &"are different at indices (",(1x,i0),")")') &                           
-                       k                                                                      
-        Error_Status = FAILURE                                                                   
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-        IF ( Check_Once ) RETURN                                                                 
-      END IF                                                                                     
-    END DO                                                                                       
-    ! Level absorbers
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      DO k = 1, AtmProfile_LHS%n_Levels
-        IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Absorber(k,j), &
-                                  AtmProfile_RHS%Level_Absorber(k,j), &
-                                  ULP=ULP ) ) THEN
-          WRITE(Message,'("AtmProfile array component Level_Absorber values ",&
-                         &"are different at indices (",2(1x,i0),")")') &
-                         k, j
+
+      ! Check the array components
+      ! --------------------------
+      ! The absorber Ids
+      DO j = 1, AtmProfile_LHS(m)%n_Absorbers
+        IF ( AtmProfile_LHS(m)%Absorber_ID(j) /= AtmProfile_RHS(m)%Absorber_ID(j) ) THEN
+          WRITE(Message,'("AtmProfile component Absorber_Id values ",&
+                         &"are different at index (",1(1x,i0),")")') &
+                         j
           Error_Status = FAILURE
           CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
           IF ( Check_Once ) RETURN
         END IF
       END DO
-    END DO    
-    ! Level altitudes    
-    DO k = 1, AtmProfile_LHS%n_Levels                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Altitude(k), &                            
-                                AtmProfile_RHS%Level_Altitude(k), &                            
-                                ULP=ULP ) ) THEN                                                 
-        WRITE(Message,'("AtmProfile array component Level_Altitude values ",&                    
-                       &"are different at indices (",(1x,i0),")")') &                           
-                       k                                                                      
+      ! The absorber unit Ids
+      DO j = 1, AtmProfile_LHS(m)%n_Absorbers
+        IF ( AtmProfile_LHS(m)%Absorber_Units_ID(j) /= AtmProfile_RHS(m)%Absorber_Units_ID(j) ) THEN
+          WRITE(Message,'("AtmProfile component Absorber_Units_ID values ",&
+                         &"are different at index (",1(1x,i0),")")') &
+                         j
+          Error_Status = FAILURE
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+          IF ( Check_Once ) RETURN
+        END IF
+      END DO
+      ! The absorber unit names
+      DO j = 1, AtmProfile_LHS(m)%n_Absorbers
+        IF ( AtmProfile_LHS(m)%Absorber_Units_Name(j) /= AtmProfile_RHS(m)%Absorber_Units_Name(j) ) THEN
+          WRITE(Message,'("AtmProfile component Absorber_Units_Name values ",&
+                         &"are different at index (",1(1x,i0),")")') &
+                         j
+          Error_Status = FAILURE
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+          IF ( Check_Once ) RETURN
+        END IF
+      END DO
+      ! The LBL absorber unit identifiers
+      DO j = 1, AtmProfile_LHS(m)%n_Absorbers
+        IF ( AtmProfile_LHS(m)%Absorber_Units_LBL(j) /= AtmProfile_RHS(m)%Absorber_Units_LBL(j) ) THEN
+          WRITE(Message,'("AtmProfile component Absorber_Units_LBL values ",&
+                         &"are different at index (",1(1x,i0),")")') &
+                         j
+          Error_Status = FAILURE
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+          IF ( Check_Once ) RETURN
+        END IF
+      END DO
+      ! Profile descriptor string    
+      IF ( AtmProfile_LHS(m)%Description /= AtmProfile_RHS(m)%Description ) THEN                       
+        WRITE(Message,'("AtmProfile component Description values are different")')
+        Error_Status = FAILURE                                                                   
+        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+        IF ( Check_Once ) RETURN                                                                 
+      END IF                                                                                         
+      ! Profile climatology model ID    
+      IF ( AtmProfile_LHS(m)%Climatology_Model /= AtmProfile_RHS(m)%Climatology_Model ) THEN           
+        WRITE(Message,'("AtmProfile component Climatology_Model values are different")')
         Error_Status = FAILURE                                                                   
         CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
         IF ( Check_Once ) RETURN                                                                 
       END IF                                                                                     
-    END DO                                                                                           
-    ! Layer pressures
-    DO k = 1, AtmProfile_LHS%n_Layers                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Pressure(k), &                            
-                                AtmProfile_RHS%Layer_Pressure(k), &                            
+      ! Profile Time information
+      IF ( AtmProfile_LHS(m)%Year  /= AtmProfile_RHS(m)%Year  .OR. &                                   
+           AtmProfile_LHS(m)%Month /= AtmProfile_RHS(m)%Month .OR. &                                   
+           AtmProfile_LHS(m)%Day   /= AtmProfile_RHS(m)%Day   .OR. &                                   
+           AtmProfile_LHS(m)%Hour  /= AtmProfile_RHS(m)%Hour       ) THEN                              
+        WRITE(Message,'("AtmProfile component time information is different")')
+        Error_Status = FAILURE                                                                   
+        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+        IF ( Check_Once ) RETURN                                                                 
+      END IF
+      ! Profile location   
+      IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Latitude, &                                       
+                                AtmProfile_RHS(m)%Latitude, &                                       
+                                ULP=ULP ) .OR. &                                                 
+           .NOT. Compare_Float( AtmProfile_LHS(m)%Longitude, &                                      
+                                AtmProfile_RHS(m)%Longitude, &                                      
+                                ULP=ULP ) .OR. &                                                 
+           .NOT. Compare_Float( AtmProfile_LHS(m)%Surface_Altitude, &                               
+                                AtmProfile_RHS(m)%Surface_Altitude, &                               
                                 ULP=ULP ) ) THEN                                                 
-        WRITE(Message,'("AtmProfile array component Layer_Pressure values ",&                    
-                       &"are different at indices (",(1x,i0),")")') &                           
-                       k                                                                      
+        WRITE(Message,'("AtmProfile component Location values are different")') 
         Error_Status = FAILURE                                                                   
         CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
         IF ( Check_Once ) RETURN                                                                 
       END IF                                                                                     
-    END DO                                                                                       
-    ! Layer temperatures    
-    DO k = 1, AtmProfile_LHS%n_Layers                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Temperature(k), &                         
-                                AtmProfile_RHS%Layer_Temperature(k), &                         
-                                ULP=ULP ) ) THEN                                                 
-        WRITE(Message,'("AtmProfile array component Layer_Temperature values ",&                 
-                       &"are different at indices (",(1x,i0),")")') &                           
-                       k                                                                      
-        Error_Status = FAILURE                                                                   
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-        IF ( Check_Once ) RETURN                                                                 
-      END IF                                                                                     
-    END DO
-    ! Layer absorbers    
-    DO j = 1, AtmProfile_LHS%n_Absorbers                                                           
-      DO k = 1, AtmProfile_LHS%n_Layers                                                            
-        IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Absorber(k,j), &                          
-                                  AtmProfile_RHS%Layer_Absorber(k,j), &                          
+      ! Level pressures
+      DO k = 1, AtmProfile_LHS(m)%n_Levels                                                            
+        IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Level_Pressure(k), &                            
+                                  AtmProfile_RHS(m)%Level_Pressure(k), &                            
                                   ULP=ULP ) ) THEN                                                 
-          WRITE(Message,'("AtmProfile array component Layer_Absorber values ",&                    
-                         &"are different at indices (",2(1x,i0),")")') &                           
-                         k, j                                                                   
+          WRITE(Message,'("AtmProfile array component Level_Pressure values ",&                    
+                         &"are different at indices (",(1x,i0),")")') &                           
+                         k                                                                      
+          Error_Status = FAILURE                                                                   
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+          IF ( Check_Once ) RETURN                                                                 
+        END IF                                                                                     
+      END DO 
+      ! Level temperatures    
+      DO k = 1, AtmProfile_LHS(m)%n_Levels                                                            
+        IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Level_Temperature(k), &                         
+                                  AtmProfile_RHS(m)%Level_Temperature(k), &                         
+                                  ULP=ULP ) ) THEN                                                 
+          WRITE(Message,'("AtmProfile array component Level_Temperature values ",&                 
+                         &"are different at indices (",(1x,i0),")")') &                           
+                         k                                                                      
+          Error_Status = FAILURE                                                                   
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+          IF ( Check_Once ) RETURN                                                                 
+        END IF                                                                                     
+      END DO                                                                                       
+      ! Level absorbers
+      DO j = 1, AtmProfile_LHS(m)%n_Absorbers
+        DO k = 1, AtmProfile_LHS(m)%n_Levels
+          IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Level_Absorber(k,j), &
+                                    AtmProfile_RHS(m)%Level_Absorber(k,j), &
+                                    ULP=ULP ) ) THEN
+            WRITE(Message,'("AtmProfile array component Level_Absorber values ",&
+                           &"are different at indices (",2(1x,i0),")")') &
+                           k, j
+            Error_Status = FAILURE
+            CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+            IF ( Check_Once ) RETURN
+          END IF
+        END DO
+      END DO    
+      ! Level altitudes    
+      DO k = 1, AtmProfile_LHS(m)%n_Levels                                                            
+        IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Level_Altitude(k), &                            
+                                  AtmProfile_RHS(m)%Level_Altitude(k), &                            
+                                  ULP=ULP ) ) THEN                                                 
+          WRITE(Message,'("AtmProfile array component Level_Altitude values ",&                    
+                         &"are different at indices (",(1x,i0),")")') &                           
+                         k                                                                      
+          Error_Status = FAILURE                                                                   
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+          IF ( Check_Once ) RETURN                                                                 
+        END IF                                                                                     
+      END DO                                                                                           
+      ! Layer pressures
+      DO k = 1, AtmProfile_LHS(m)%n_Layers                                                            
+        IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Layer_Pressure(k), &                            
+                                  AtmProfile_RHS(m)%Layer_Pressure(k), &                            
+                                  ULP=ULP ) ) THEN                                                 
+          WRITE(Message,'("AtmProfile array component Layer_Pressure values ",&                    
+                         &"are different at indices (",(1x,i0),")")') &                           
+                         k                                                                      
+          Error_Status = FAILURE                                                                   
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+          IF ( Check_Once ) RETURN                                                                 
+        END IF                                                                                     
+      END DO                                                                                       
+      ! Layer temperatures    
+      DO k = 1, AtmProfile_LHS(m)%n_Layers                                                            
+        IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Layer_Temperature(k), &                         
+                                  AtmProfile_RHS(m)%Layer_Temperature(k), &                         
+                                  ULP=ULP ) ) THEN                                                 
+          WRITE(Message,'("AtmProfile array component Layer_Temperature values ",&                 
+                         &"are different at indices (",(1x,i0),")")') &                           
+                         k                                                                      
+          Error_Status = FAILURE                                                                   
+          CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+          IF ( Check_Once ) RETURN                                                                 
+        END IF                                                                                     
+      END DO
+      ! Layer absorbers    
+      DO j = 1, AtmProfile_LHS(m)%n_Absorbers                                                           
+        DO k = 1, AtmProfile_LHS(m)%n_Layers                                                            
+          IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Layer_Absorber(k,j), &                          
+                                    AtmProfile_RHS(m)%Layer_Absorber(k,j), &                          
+                                    ULP=ULP ) ) THEN                                                 
+            WRITE(Message,'("AtmProfile array component Layer_Absorber values ",&                    
+                           &"are different at indices (",2(1x,i0),")")') &                           
+                           k, j                                                                   
+            Error_Status = FAILURE                                                                   
+            CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
+            IF ( Check_Once ) RETURN                                                                 
+          END IF                                                                                     
+        END DO                                                                                       
+      END DO
+      ! Layer thickness    
+      DO k = 1, AtmProfile_LHS(m)%n_Layers                                                            
+        IF ( .NOT. Compare_Float( AtmProfile_LHS(m)%Layer_Delta_Z(k), &                             
+                                  AtmProfile_RHS(m)%Layer_Delta_Z(k), &                             
+                                  ULP=ULP ) ) THEN                                                 
+          WRITE(Message,'("AtmProfile array component Layer_Delta_Z values ",&                     
+                         &"are different at indices (",(1x,i0),")")') &                           
+                         k                                                                      
           Error_Status = FAILURE                                                                   
           CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
           IF ( Check_Once ) RETURN                                                                 
         END IF                                                                                     
       END DO                                                                                       
     END DO
-    ! Layer thickness    
-    DO k = 1, AtmProfile_LHS%n_Layers                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Delta_Z(k), &                             
-                                AtmProfile_RHS%Layer_Delta_Z(k), &                             
-                                ULP=ULP ) ) THEN                                                 
-        WRITE(Message,'("AtmProfile array component Layer_Delta_Z values ",&                     
-                       &"are different at indices (",(1x,i0),")")') &                           
-                       k                                                                      
-        Error_Status = FAILURE                                                                   
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )  
-        IF ( Check_Once ) RETURN                                                                 
-      END IF                                                                                     
-    END DO                                                                                       
-    
   END FUNCTION Equal_AtmProfile
 !----------------------------------------------------------------------------------
 !:sdoc+:
