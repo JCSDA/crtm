@@ -10,7 +10,7 @@
 !
 
 PROGRAM Test_AtmProfile
-
+  
   ! -----------------
   ! Environment setup
   ! -----------------
@@ -28,9 +28,9 @@ PROGRAM Test_AtmProfile
                                   CheckRelease_AtmProfile, &
                                   Info_AtmProfile
   USE AtmProfile_netCDF_IO, ONLY: Inquire_AtmProfile_netCDF, &
-                                  Read_AtmProfile_netCDF
-!                                  Write_AtmProfile_netCDF, &
-!                                  Read_AtmProfile_netCDF
+                                  Read_AtmProfile_netCDF,    &
+                                  Write_AtmProfile_netCDF
+
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -152,6 +152,8 @@ PROGRAM Test_AtmProfile
     STOP                                                          
   END IF
  
+  ! Compare the AtmProfile structure arrays where data is read in one profile
+  ! at a time and where data is read in N_FILE_PROFILES at a time
   Error_Status = Equal_AtmProfile( AtmProfile1              , &  ! Input
                                    AtmProfile2                )
   IF ( Error_Status /= SUCCESS ) THEN                              
@@ -161,7 +163,39 @@ PROGRAM Test_AtmProfile
                             FAILURE                )                               
     STOP                                                          
   END IF
-                          
+  
+  ! Write an AtmProfile structure array to file
+  Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename,  &
+                                          AtmProfile1           )
+  IF ( Error_Status /= SUCCESS ) THEN                              
+    CALL Display_Message( PROGRAM_NAME, &                          
+                           'Error writing AtmProfile structure array to file ',&
+                            FAILURE                )                               
+    STOP                                                          
+  END IF
+  
+  ! Read the file written into an AtmProfile structure array
+  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename,  &
+                                         AtmProfile2           )
+  IF ( Error_Status /= SUCCESS ) THEN                              
+    CALL Display_Message( PROGRAM_NAME, &                          
+                           'Error writing AtmProfile structure array to file ',&
+                            FAILURE                )                               
+    STOP                                                          
+  END IF
+  
+  ! Compare the file written in this test 
+  ! program to the original file that was read
+  Error_Status = Equal_AtmProfile( AtmProfile1              , &  ! Input
+                                   AtmProfile2                )
+  IF ( Error_Status /= SUCCESS ) THEN                              
+    CALL Display_Message( PROGRAM_NAME, &                          
+                           'Structure Array read in one profile at a time is different '//&
+                            &'from structure array that was read in N_FILE_PROFILES at a time',&             
+                            FAILURE                )                               
+    STOP                                                          
+  END IF
+                            
 !  ALLOCATE( AtmProfile1(n_Profiles)      , &
 !            STAT = Allocate_Status         )
 !  IF ( Allocate_Status /= SUCCESS ) THEN
