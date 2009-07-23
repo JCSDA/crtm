@@ -33,7 +33,6 @@ MODULE AtmProfile_netCDF_IO
   ! Disable implicit typing
   IMPLICIT NONE
 
-
   ! ------------
   ! Visibilities
   ! ------------
@@ -41,7 +40,6 @@ MODULE AtmProfile_netCDF_IO
   PUBLIC :: Inquire_AtmProfile_netCDF
   PUBLIC :: Read_AtmProfile_netCDF
   PUBLIC :: Write_AtmProfile_netCDF
-
 
   ! -----------------
   ! Module parameters
@@ -98,7 +96,6 @@ MODULE AtmProfile_netCDF_IO
 
   CHARACTER(*), PARAMETER :: DESCRIPTION_LONGNAME       = 'Profile Description'
   CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_LONGNAME = 'Climatology Model'
-  CHARACTER(*), PARAMETER :: DATETIME_LONGNAME          = 'Date/Time'
   CHARACTER(*), PARAMETER :: YEAR_LONGNAME              = 'Year'
   CHARACTER(*), PARAMETER :: MONTH_LONGNAME             = 'Month'
   CHARACTER(*), PARAMETER :: DAY_LONGNAME               = 'Day'
@@ -122,7 +119,6 @@ MODULE AtmProfile_netCDF_IO
 
   CHARACTER(*), PARAMETER :: DESCRIPTION_DESCRIPTION       = 'Description of atmospheric profile and modification'
   CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_DESCRIPTION = 'Climatology model associated with profile date/time/location.'
-  CHARACTER(*), PARAMETER :: DATETIME_DESCRIPTION          = 'Date/Time at which profile was measured(sonde) or generated(model)'
   CHARACTER(*), PARAMETER :: YEAR_DESCRIPTION              = 'Year'
   CHARACTER(*), PARAMETER :: MONTH_DESCRIPTION             = 'Month'
   CHARACTER(*), PARAMETER :: HOUR_DESCRIPTION              = 'Hour'
@@ -146,7 +142,6 @@ MODULE AtmProfile_netCDF_IO
 
   CHARACTER(*), PARAMETER :: DESCRIPTION_UNITS       = 'N/A'
   CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_UNITS = 'N/A'
-  CHARACTER(*), PARAMETER :: DATETIME_UNITS          = 'YYYYMMDD.HH'
   CHARACTER(*), PARAMETER :: YEAR_UNITS              = 'YYYY'
   CHARACTER(*), PARAMETER :: MONTH_UNITS             = 'MM'
   CHARACTER(*), PARAMETER :: DAY_UNITS               = 'DD'
@@ -170,7 +165,6 @@ MODULE AtmProfile_netCDF_IO
 
   CHARACTER(*) , PARAMETER :: DESCRIPTION_FILLVALUE        = NF90_FILL_CHAR
   INTEGER(Long), PARAMETER :: CLIMATOLOGY_MODEL_FILLVALUE  = 0
-  REAL(Double) , PARAMETER :: DATETIME_FILLVALUE           = ZERO
   INTEGER(Long), PARAMETER :: YEAR_FILLVALUE               = 0
   INTEGER(Long), PARAMETER :: MONTH_FILLVALUE              = 0
   INTEGER(Long), PARAMETER :: DAY_FILLVALUE                = 0
@@ -192,7 +186,6 @@ MODULE AtmProfile_netCDF_IO
   ! Variable  datatypes
   INTEGER, PARAMETER :: DESCRIPTION_TYPE        = NF90_CHAR
   INTEGER, PARAMETER :: CLIMATOLOGY_MODEL_TYPE  = NF90_INT
-  INTEGER, PARAMETER :: DATETIME_TYPE           = NF90_DOUBLE
   INTEGER, PARAMETER :: YEAR_TYPE               = NF90_INT
   INTEGER, PARAMETER :: MONTH_TYPE              = NF90_INT
   INTEGER, PARAMETER :: DAY_TYPE                = NF90_INT
@@ -211,9 +204,7 @@ MODULE AtmProfile_netCDF_IO
   INTEGER, PARAMETER :: LAYER_ABSORBER_TYPE     = NF90_DOUBLE
   INTEGER, PARAMETER :: LAYER_DELTA_Z_TYPE      = NF90_DOUBLE
 
-
 CONTAINS
-
 
 !##################################################################################
 !##################################################################################
@@ -392,7 +383,6 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
 
     ! Open the file
     ! -------------
@@ -715,7 +705,7 @@ CONTAINS
       ! -------------------------
       Error_Status = WriteVar( NC_Filename             , &
                                NC_FileID               , &
-                               m                       , &
+                               Local_Profile_Set(m)    , &
                                AtmProfile(m)           , &
                                Message_Log=Message_Log   )
       IF ( Error_Status /= SUCCESS ) THEN
@@ -742,7 +732,7 @@ CONTAINS
       msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    STOP
+    
   CONTAINS
   
     SUBROUTINE Write_CleanUp( Close_File )
@@ -1122,7 +1112,6 @@ CONTAINS
     END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_AtmProfile_netCDF
-!
 
 !##################################################################################
 !##################################################################################
@@ -1131,105 +1120,6 @@ CONTAINS
 !##                                                                              ##
 !##################################################################################
 !##################################################################################
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Convert_DateTime_to_Double
-!
-! PURPOSE:
-!       Subroutine to convert the data in the AtmProfileDateTime structure
-!       to a double precision value of YYYYMMDD.HH
-!
-! CALLING SEQUENCE:
-!       CALL Convert_DateTime_to_Double( AtmProfileDateTime, &  ! Input
-!                                        DoubleDateTime      )  ! Output
-!
-! INPUT ARGUMENTS:
-!       AtmProfileDateTime:   Structure containing data and time information.
-!                             UNITS:      N/A
-!                             TYPE:       AtmPRofileDateTime_type
-!                             DIMENSION:  Rank-1
-!                             ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       DoubleDateTime:       Double precision floating point array holding
-!                             the converted time in the format YYYYMMDD.HH
-!                             where YYYY = year
-!                                   MM   = month
-!                                   DD   = day of month
-!                                   HH   = hour of day (0-23)
-!                             UNITS:      N/A
-!                             TYPE:       REAL(Double)
-!                             DIMENSION:  Scalar
-!                             ATTRIBUTES: INTENT(OUT)
-!
-!------------------------------------------------------------------------------
-
-!  SUBROUTINE Convert_DateTime_to_Double( aDT, dDT )
-!    TYPE(AtmProfileDateTime_type), INTENT(IN)  :: aDT(:)
-!    REAL(Double),                  INTENT(OUT) :: dDT(:)
-!    INTEGER :: n
-!    DO n = 1, SIZE(aDT)
-!      dDT(n) = REAL((aDT(n)%Year*10000) + (aDT(n)%Month*100) + aDT(n)%Day, Double ) + &
-!               REAL(aDT(n)%Hour,Double) / 100.0_Double
-!    END DO
-!  END SUBROUTINE Convert_DateTime_to_Double
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Convert_DateTime_to_Type
-!
-! PURPOSE:
-!       Sub routine to convert a double precision date/time to an
-!       AtmProfileDateTime data type
-!
-! CALLING SEQUENCE:
-!       CALL Convert_DateTime_to_Type( DoubleDateTime    , &  ! Input
-!                                      AtmProfileDateTime  )  ! Output
-!
-! INPUT ARGUMENTS:
-!       DoubleDateTime:       Double precision floating point array holding
-!                             the data and time time in the format YYYYMMDD.HH
-!                             where YYYY = year
-!                                   MM   = month
-!                                   DD   = day of month
-!                                   HH   = hour of day (0-23)
-!                             UNITS:      N/A
-!                             TYPE:       REAL(Double)
-!                             DIMENSION:  Scalar
-!                             ATTRIBUTES: INTENT(IN)
-! OUTPUT ARGUMENTS:
-!       AtmProfileDateTime:   Structure containing data and time information.
-!                             UNITS:      N/A
-!                             TYPE:       AtmPRofileDateTime_type
-!                             DIMENSION:  Rank-1
-!                             ATTRIBUTES: INTENT(OUT)
-!
-!
-!------------------------------------------------------------------------------
-
-!  SUBROUTINE Convert_DateTime_to_Type( dDT, aDT )
-!    REAL(Double),                  INTENT(IN)  :: dDT(:)
-!    TYPE(AtmProfileDateTime_type), INTENT(OUT) :: aDT(:)
-!    INTEGER(Long) :: x
-!    INTEGER :: n
-!    DO n = 1, SIZE( dDT )
-!      ! The year
-!      x = INT(dDT(n),Long)
-!      aDT(n)%Year = ( x - MOD(x,10000_Long) ) / 10000_Long
-!      ! The month
-!      x = MOD(x,10000_Long)
-!      aDT(n)%Month = ( x - MOD(x,100_Long) ) / 100_Long
-!      ! The day of the month
-!      aDT(n)%Day = MOD(x,100_Long)
-!      ! The hour of the day
-!      aDT(n)%Hour = NINT(MOD(dDT(n),ONE) * 100.0_Double )
-!    END DO
-!  END SUBROUTINE Convert_DateTime_to_Type
-
 
 !--------------------------------------------------------------------------------
 !
@@ -2176,6 +2066,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = WriteVar( NC_Filename            , &  ! Input
 !                                NC_FileID              , &  ! Input
+!                                Profile                , &  ! Input
 !                                AtmProfile             , &  ! Input
 !                                RCS_Id     =RCS_Id     , &  ! Revision control
 !                                Message_Log=Message_Log  )  ! Error messaging
@@ -2190,6 +2081,12 @@ CONTAINS
 !
 !       NC_FileID:          NetCDF file ID number of the file in which
 !                           the variables are to be written.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       Profile:            Profile number to be written
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -2564,6 +2461,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = ReadVar( NC_Filename            , &  ! Input
 !                               NC_FileID              , &  ! Input
+!                               Profile                , &  ! Input
 !                               AtmProfile             , &  ! Output
 !                               RCS_Id     =RCS_Id     , &  ! Revision control
 !                               Message_Log=Message_Log  )  ! Error messaging
@@ -2582,6 +2480,12 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
+!         
+!       Profile:            Profile number to be read
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)       
 !
 ! OUTPUT ARGUMENTS:
 !       AtmProfile:         Structure containing the data that was read
@@ -2630,10 +2534,10 @@ CONTAINS
     ! Arguments
     CHARACTER(*)          , INTENT(IN)     :: NC_Filename
     INTEGER               , INTENT(IN)     :: NC_FileID
+    INTEGER               , INTENT(IN)     :: Profile
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    INTEGER :: Profile
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -3097,7 +3001,6 @@ CONTAINS
     INTEGER :: PL_DimID
     TYPE(AtmProfile_type) :: Dummy
     
-
     ! Set up
     ! ------
     Error_Status = SUCCESS
@@ -3109,7 +3012,6 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
     n_Levels = n_Layers+1
-
 
     ! Create the data file
     ! --------------------
