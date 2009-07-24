@@ -44,6 +44,7 @@ remove_links:
 
 # Squeaky clean target
 realclean: clean remove_links
+	$(REMOVE) $(EXE_FILE) Out.Test.AtmProfile.nc
 
 # Source dependency lists
 include make.dependencies

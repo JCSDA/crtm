@@ -50,6 +50,11 @@ MODULE AtmProfile_Define
   ! -------------------
   ! Procedure overloads
   ! -------------------
+  INTERFACE Destroy_AtmProfile
+    MODULE PROCEDURE Destroy_Scalar
+    MODULE PROCEDURE Destroy_Rank1
+  END INTERFACE Destroy_AtmProfile
+
   INTERFACE Equal_AtmProfile
     MODULE PROCEDURE Equal_Scalar
     MODULE PROCEDURE Equal_Rank1
@@ -324,20 +329,20 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_AtmProfile( AtmProfile   , &  ! Output
+  FUNCTION Destroy_Scalar( AtmProfile   , &  ! Output
                              No_Clear   , &  ! Optional input
                              RCS_Id     , &  ! Revision control
                              Message_Log) &  ! Error messaging
                            RESULT(Error_Status)
     ! Arguments
-    TYPE(AtmProfile_type)   , INTENT(IN OUT) :: AtmProfile
+    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AtmProfile'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AtmProfile(Scalar)'
     ! Local variables
     CHARACTER(ML)  :: Message
     LOGICAL :: Clear
@@ -353,53 +358,38 @@ CONTAINS
     AtmProfile%n_Layers    = 0
     AtmProfile%n_Absorbers = 0
     
-    ! Reset the scalar data
-    AtmProfile%Description       = ' '
-    AtmProfile%Climatology_Model = 0
-    AtmProfile%Profile           = 0
-    AtmProfile%Year              = 0
-    AtmProfile%Month             = 0
-    AtmProfile%Day               = 0
-    AtmProfile%Hour              = 0
-    AtmProfile%Latitude          = 0.00_Double
-    AtmProfile%Longitude         = 0.00_Double
-    AtmProfile%Surface_Altitude  = 0.00_Double
-            
+
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == 1 ) Clear = .FALSE.
+      IF ( No_Clear == SET ) Clear = .FALSE.
     END IF
     IF ( Clear ) CALL Clear_AtmProfile(AtmProfile)
     
     ! If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. Associated_AtmProfile(AtmProfile) ) RETURN
+
     
     ! Deallocate the pointer members
     ! ------------------------------
-    DEALLOCATE( AtmProfile%Absorber_ID          , &
-                AtmProfile%Absorber_Units_ID    , &
-                AtmProfile%Absorber_Units_Name  , &
-                AtmProfile%Absorber_Units_LBL   , &
-                AtmProfile%Level_Pressure       , &
-                AtmProfile%Level_Temperature    , &
-                AtmProfile%Level_Absorber       , &
-                AtmProfile%Level_Altitude       , &
-                AtmProfile%Layer_Pressure       , &
-                AtmProfile%Layer_Temperature    , &
-                AtmProfile%Layer_Absorber       , &
-                AtmProfile%Layer_Delta_Z        , &
+    DEALLOCATE( AtmProfile%Absorber_ID        , &
+                AtmProfile%Absorber_Units_ID  , &
+                AtmProfile%Absorber_Units_Name, &
+                AtmProfile%Absorber_Units_LBL , &
+                AtmProfile%Level_Pressure     , &
+                AtmProfile%Level_Temperature  , &
+                AtmProfile%Level_Absorber     , &
+                AtmProfile%Level_Altitude     , &
+                AtmProfile%Layer_Pressure     , &
+                AtmProfile%Layer_Temperature  , &
+                AtmProfile%Layer_Absorber     , &
+                AtmProfile%Layer_Delta_Z      , &
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       WRITE( Message, '("Error deallocating AtmProfile. STAT = ",i0)') &
                       Allocate_Status
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      CALL Destroy_CleanUp(); RETURN
     END IF
 
 
@@ -409,15 +399,56 @@ CONTAINS
     IF ( AtmProfile%n_Allocates /= 0 ) THEN
       WRITE( Message, '("Allocation counter /= 0, Value = ",i0)') &
                       AtmProfile%n_Allocates
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      CALL Destroy_CleanUp(); RETURN
     END IF
+    
+  CONTAINS
+  
+    SUBROUTINE Destroy_CleanUp()
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE Destroy_CleanUp
 
-  END FUNCTION Destroy_AtmProfile
+  END FUNCTION Destroy_Scalar
+
+  FUNCTION Destroy_Rank1( AtmProfile , &  ! Output
+                          No_Clear   , &  ! Optional input
+                          RCS_Id     , &  ! Revision control
+                          Message_Log) &  ! Error messaging
+                        RESULT(Error_Status)
+    ! Arguments
+    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
+    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AtmProfile(Rank-1)'
+    ! Local variables
+    CHARACTER(ML)  :: Message
+    INTEGER :: Scalar_Status
+    INTEGER :: m
+    
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    
+    ! Loop over scalar function
+    DO m = 1, SIZE(AtmProfile)
+      Scalar_Status = Destroy_Scalar( AtmProfile(m), &
+                                      No_Clear    = No_Clear, &
+                                      Message_Log = Message_Log  )
+      IF ( Scalar_Status /= SUCCESS ) THEN
+        WRITE( Message,'("Error destroying AtmProfile array element at index ",i0)') m
+        Error_Status = Scalar_Status
+        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+        RETURN                                                                 
+      END IF                            
+    END DO
+    
+  END FUNCTION Destroy_Rank1
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1354,6 +1385,18 @@ CONTAINS
     TYPE(AtmProfile_type), INTENT(IN OUT) :: AtmProfile
     AtmProfile%Release = ATMPROFILE_RELEASE
     AtmProfile%Version = ATMPROFILE_VERSION
+
+    AtmProfile%Description       = ' '
+    AtmProfile%Climatology_Model = 0
+    AtmProfile%Profile           = 0
+    AtmProfile%Year              = 0
+    AtmProfile%Month             = 0
+    AtmProfile%Day               = 0
+    AtmProfile%Hour              = 0
+    AtmProfile%Latitude          = ZERO
+    AtmProfile%Longitude         = ZERO
+    AtmProfile%Surface_Altitude  = ZERO
+            
   END SUBROUTINE Clear_AtmProfile
 
  END MODULE AtmProfile_Define
