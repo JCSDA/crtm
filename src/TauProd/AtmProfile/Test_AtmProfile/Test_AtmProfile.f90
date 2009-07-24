@@ -52,7 +52,6 @@ PROGRAM Test_AtmProfile
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER(256) :: Message
   INTEGER :: Error_Status
   INTEGER :: n_Layers   
   INTEGER :: n_Absorbers
@@ -253,46 +252,48 @@ PROGRAM Test_AtmProfile
   
     WRITE( *,'(7x,"Profile #: ",i0)' ) m
     
-    ! Test Assign routine
+    ! Test scalar assign routine
     Error_Status = Assign_AtmProfile( AtmProfile1(m), AtmProfile2(m) )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME,                     &
-                            'Not able to assign'&
-                            &'AtmProfile2 from AtmProfile1',  &
-                            FAILURE                           )
+      CALL Display_Message( PROGRAM_NAME,'Scalar Assign failed.',FAILURE )
       STOP
     ENDIF
     
     ! Test CheckRelease    
     Error_Status = CheckRelease_AtmProfile( AtmProfile1(m) )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME,                       &
-                            'Release number is not consistent', &
-                            FAILURE                             )
+      CALL Display_Message( PROGRAM_NAME, 'CheckRelease failed', FAILURE )
       STOP
     ENDIF
     
     ! Test Scalar Destroy routine
     Error_Status = Destroy_AtmProfile( AtmProfile1(m) )
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME,                        &
-                            'Error re-initializing AtmProfile1', &
-                            FAILURE                              )
+      CALL Display_Message( PROGRAM_NAME,'Scalar Destroy failed.',FAILURE )
       STOP
     ENDIF
 
   END DO
+
   
+  ! Test rank-1 assign routine
+  Error_Status = Assign_AtmProfile( AtmProfile2, AtmProfile3(1:n_Profiles) )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME,'Rank-1 Assign failed.',FAILURE )
+    STOP
+  ENDIF
+
+    
   ! Test rank-1 Destroy functions
   Error_Status = Destroy_AtmProfile( AtmProfile2 )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, 'Error destroying #2', FAILURE )
+    CALL Display_Message( PROGRAM_NAME, 'Rank-1 Destroy(2) failed.', FAILURE )
     STOP
   ENDIF
   
   Error_Status = Destroy_AtmProfile( AtmProfile3 )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, 'Error destroying #3', FAILURE )
+    CALL Display_Message( PROGRAM_NAME, 'Rank-1 Destroy(3) failed.', FAILURE )
     STOP
   ENDIF
 
@@ -304,10 +305,6 @@ PROGRAM Test_AtmProfile
               Profile_Set  )   
 
 
-  CALL Display_Message( PROGRAM_NAME,                        &
-                        'Test of AtmProfile_netCDF_IO and '//&
-                        &'AtmProfile_Define routines was'//&
-                        &'succesful',                      &
-                        SUCCESS                              )
+  CALL Display_Message( PROGRAM_NAME, 'AtmProfile tests passed', SUCCESS )
 
 END PROGRAM Test_AtmProfile
