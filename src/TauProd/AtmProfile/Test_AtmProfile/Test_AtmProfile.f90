@@ -66,7 +66,7 @@ PROGRAM Test_AtmProfile
   TYPE(AtmProfile_type), DIMENSION(N_FILE_PROFILES)   :: AtmProfile2
   TYPE(AtmProfile_type), DIMENSION(N_FILE_PROFILES+1) :: AtmProfile3
   INTEGER, DIMENSION(N_FILE_PROFILES) :: Profile_Set = (/1,2,3/)
-
+  
   ! Output header
   ! -------------
   CALL Program_Message( PROGRAM_NAME, &
@@ -163,10 +163,11 @@ PROGRAM Test_AtmProfile
                             FAILURE                )                               
     STOP                                                          
   END IF
-  
-  ! Write an AtmProfile structure array to file
+                                             
+  ! Write an AtmProfile structure array 
+  ! to file without passing a profile_set
   Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename,  &
-                                          AtmProfile1           )
+                                          AtmProfile2           )
   IF ( Error_Status /= SUCCESS ) THEN                              
     CALL Display_Message( PROGRAM_NAME, &                          
                            'Error writing AtmProfile structure array to file ',&
@@ -195,66 +196,45 @@ PROGRAM Test_AtmProfile
                             FAILURE                )                               
     STOP                                                          
   END IF
-                            
-!  ALLOCATE( AtmProfile1(n_Profiles)      , &
-!            STAT = Allocate_Status         )
-!  IF ( Allocate_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME,  &
-!                          'Error allocating AtmProfile structure array', &
-!                          FAILURE )
-!    STOP
-!  ENDIF
-!  
-!  ALLOCATE( AtmProfile2(n_Profiles)      , &
-!             STAT = Allocate_Status        )
-!  IF ( Allocate_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME,  &
-!                          'Error allocating AtmProfile2 structure array', &
-!                          FAILURE )
-!    STOP
-!  ENDIF
-    
-  WRITE( *,'(/5x,a," file dimensions:",&                                  
-        &/10x,"n_Layers    = ",i0,&                                     
-         &/10x,"n_Absorbers = ",i0,&                                    
-         &/10x,"n_Profiles  = ",i0,/)' ) &                              
-         TRIM(AtmProfile_Filename), n_Layers, n_Absorbers, n_Profiles   
-
-!  ! Write the netCDF data file
-!  WRITE( *,'(10x,"Writing...")' )
-!  Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename, &
-!                                          n_Layers           , &
-!                                          n_Absorbers        , &
-!                                          n_Profiles         , &
-!                                          AtmProfile1          )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME, &
-!                          'Error writing the netCDF AtmProfile file '//&
-!                          TRIM(AtmProfile_Filename), &
-!                          FAILURE )
-!    STOP
-!  END IF                                         
+  
+  ! Write an AtmProfile structure array
+  ! to file using a profile_set argument
+  Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename,  &
+                                          AtmProfile2,          &
+                                          Profile_Set           )                                          
+  IF ( Error_Status /= SUCCESS ) THEN                              
+    CALL Display_Message( PROGRAM_NAME, &                          
+                           'Error writing AtmProfile structure array to file '//&
+                           &'when passing a Profile_Set argument' ,&
+                           FAILURE                   )                               
+    STOP                                                          
+  END IF
+  
+  ! Read the file written into an AtmProfile structure array
+  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename,  &
+                                         AtmProfile2           )
+  IF ( Error_Status /= SUCCESS ) THEN                              
+    CALL Display_Message( PROGRAM_NAME, &                          
+                           'Error writing AtmProfile structure array to file ',&
+                            FAILURE                )                               
+    STOP                                                          
+  END IF
+  
+  ! Compare the file written in this test 
+  ! program to the original file that was read
+  Error_Status = Equal_AtmProfile( AtmProfile1              , &  ! Input
+                                   AtmProfile2                )
+  IF ( Error_Status /= SUCCESS ) THEN                              
+    CALL Display_Message( PROGRAM_NAME, &                          
+                           'Structure Array read in one profile at a time is different '//&
+                            &'from structure array that was read in N_FILE_PROFILES at a time',&             
+                            FAILURE                )                               
+    STOP                                                          
+  END IF    
   
   DO m=1, n_Profiles
   
-    Error_Status = Allocate_AtmProfile( n_Layers      ,   &  
-                                        n_Absorbers   ,   &  
-                                        AtmProfile1(m)    )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME,  &
-                            'Error allocating for AtmProfile1 fields', &
-                            FAILURE )
-      STOP
-    ENDIF
-    
-    Association_Status = Associated_AtmProfile( AtmProfile1(m) )
-    IF (.NOT. Association_Status) THEN
-      CALL Display_Message( PROGRAM_NAME,  &
-                            'Pointer member/s not associated for AtmProfile1', &
-                            FAILURE )
-      STOP
-    ENDIF
-    
+    ! Test Assign routine
     Error_Status = Assign_AtmProfile( AtmProfile1(m),  &
                                       AtmProfile2(m)   )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -265,15 +245,7 @@ PROGRAM Test_AtmProfile
       STOP
     ENDIF
     
-   ! Error_Status = Equal_AtmProfile( AtmProfile1(m),   &
-!                                     AtmProfile2(m)    )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( PROGRAM_NAME,                     &
-!                            'AtmProfile1 NE to AtmProfile2',  &
-!                            FAILURE                           )
-!      STOP
-!    ENDIF
-    
+    ! Test CheckRelease    
     Error_Status = CheckRelease_AtmProfile( AtmProfile1(m) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME,                       &
@@ -282,6 +254,7 @@ PROGRAM Test_AtmProfile
       STOP
     ENDIF
     
+    ! Test Destroy routine
     Error_Status = Destroy_AtmProfile( AtmProfile1(m) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME,                        &
@@ -298,105 +271,20 @@ PROGRAM Test_AtmProfile
       STOP
     ENDIF
     
-    CALL Display_Message( PROGRAM_NAME,                          &
-                          'Succesful test of AtmProfile_Define', &
-                          SUCCESS                                )
-    
+    Error_Status = Destroy_AtmProfile( AtmProfile3(m) )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( PROGRAM_NAME,                        &
+                            'Error re-initializing AtmProfile2', &
+                            FAILURE                              )
+      STOP
+    ENDIF
+       
   END DO 
- 
-!  DEALLOCATE( AtmProfile1,           &
-!              AtmProfile2,           &
-!              STAT = Allocate_Status )
-!  IF ( Allocate_Status /= 0 ) THEN
-!    Error_Status=FAILURE
-!    CALL Display_Message( PROGRAM_NAME, &
-!                          'Failure in deallocation of '&
-!                          &'AtmProfile1/AtmProfile2 arrays', &
-!                          Error_Status )
-!    RETURN
-!  END IF 
-                                             
-  ! Loop over 
-
-
-!
-!
-!  ! Test the netCDF I/O routines
-!  ! ----------------------------
-!  WRITE( *,'(/5x,"Testing AtmProfile netCDF I/O functions ...")' )
-!  ! Inquire the netCDF datafile
-
   
-  
-
-!  CALL Info_AtmProfile( AtmProfile1, Message )
-!  CALL Display_Message( PROGRAM_NAME, &
-!                        'FILE: '//TRIM(AtmProfile_Filename)//'; '//TRIM(Message), &
-!                        INFORMATION )
-!  ! Write a test netCDF data file
-!  WRITE( *,'(10x,"Writing...")' )
-!  Error_Status = Write_AtmProfile_netCDF( NC_FILENAME, &
-!                                          AtmProfile1, &
-!                                          Title = 'This is the title attribute', &
-!                                          History = 'This is the history attribute', &
-!                                          Comment = 'This is the comment attribute', &
-!                                          ID_Tag = 'This is the id_tag attribute' )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME, &
-!                          'Error writing the netCDF AtmProfile file '//NC_FILENAME, &
-!                          FAILURE )
-!    STOP
-!  END IF
-!  ! Test the netCDF reader for memory leaks
-!  WRITE( *,'(10x,"Testing reader for memory leaks...")' )
-!  DO n = 1, MAX_N_LOOPS
-!    Error_Status = Read_AtmProfile_netCDF( NC_FILENAME,AtmProfile1,Quiet=SET )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      WRITE( Message,'("Error reading AtmProfile datafile on attempt # ",i0)' ) n
-!      CALL Display_Message( PROGRAM_NAME,TRIM(Message),FAILURE )
-!      STOP
-!    END IF
-!    IF ( MOD( n, INFO_N_LOOPS ) == 0 ) THEN
-!      WRITE( Message,'("Completed loop #",i0," of ",i0)' ) n, MAX_N_LOOPS
-!      CALL Display_Message( PROGRAM_NAME,TRIM(Message),INFORMATION )
-!    END IF
-!  END DO
-!
-!
-!  ! Loop for assign leak test
-!  ! -------------------------
-!  WRITE( *,'(/5x,"Looping for AtmProfile structure copy memory leak test ...")' )
-!  DO n = 1, MAX_N_LOOPS
-!    Error_Status = Assign_AtmProfile( AtmProfile1, AtmProfile2 )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      WRITE( Message,'("Error copying AtmProfile structure array on attempt # ",i0)' ) n
-!      CALL Display_Message( PROGRAM_NAME, &
-!                            TRIM( Message ), &
-!                            FAILURE )
-!      STOP
-!    END IF
-!    IF ( MOD( n, INFO_N_LOOPS ) == 0 ) THEN
-!      WRITE( Message,'("Completed loop #",i0," of ",i0)' ) n, MAX_N_LOOPS
-!      CALL Display_Message( PROGRAM_NAME, &
-!                            TRIM( Message ), &
-!                            INFORMATION )
-!    END IF
-!  END DO
-!
-!
-!  ! Destroy the structure arrays
-!  ! ----------------------------
-!  Error_Status = Destroy_AtmProfile( AtmProfile3 )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME,'Error destroying AtmProfile3 structure.',Error_Status )
-!  END IF
-!  Error_Status = Destroy_AtmProfile( AtmProfile2 )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME,'Error destroying AtmProfile2 structure.',Error_Status )
-!  END IF
-!  Error_Status = Destroy_AtmProfile( AtmProfile1 )
-!  IF ( Error_Status /= SUCCESS ) THEN
-!    CALL Display_Message( PROGRAM_NAME,'Error destroying AtmProfile1 structure.',Error_Status )
-!  END IF
+  CALL Display_Message( PROGRAM_NAME,                        &
+                        'Test of AtmProfile_netCDF_IO and '//&
+                        &'AtmProfile_Define routines was'//&
+                        &'succesful',                      &
+                        SUCCESS                              )
 
 END PROGRAM Test_AtmProfile
