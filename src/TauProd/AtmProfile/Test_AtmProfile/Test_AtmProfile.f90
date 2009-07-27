@@ -284,6 +284,13 @@ PROGRAM Test_AtmProfile
   ENDIF
 
     
+  ! Test rank-1 Allocate functions
+  Error_Status = Allocate_AtmProfile( 20, 4, AtmProfile2 )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, 'Rank-1 Allocate failed.', FAILURE )
+    STOP
+  ENDIF
+  
   ! Test rank-1 Destroy functions
   Error_Status = Destroy_AtmProfile( AtmProfile2 )
   IF ( Error_Status /= SUCCESS ) THEN

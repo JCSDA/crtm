@@ -55,6 +55,11 @@ MODULE AtmProfile_Define
     MODULE PROCEDURE Destroy_Rank1
   END INTERFACE Destroy_AtmProfile
 
+  INTERFACE Allocate_AtmProfile
+    MODULE PROCEDURE Allocate_Scalar
+    MODULE PROCEDURE Allocate_Rank1
+  END INTERFACE Allocate_AtmProfile
+
   INTERFACE Assign_AtmProfile
     MODULE PROCEDURE Assign_Scalar
     MODULE PROCEDURE Assign_Rank1
@@ -124,11 +129,6 @@ MODULE AtmProfile_Define
     INTEGER(Long) :: n_Levels    = 0 ! K+1
     INTEGER(Long) :: n_Layers    = 0 ! K
     INTEGER(Long) :: n_Absorbers = 0 ! J
-    ! Absorber information
-    INTEGER(Long), POINTER :: Absorber_ID(:)         => NULL() ! Dimension J
-    INTEGER(Long), POINTER :: Absorber_Units_ID(:)   => NULL() ! Dimension J
-    CHARACTER(AL), POINTER :: Absorber_Units_Name(:) => NULL() ! Dimension J
-    CHARACTER( 1), POINTER :: Absorber_Units_LBL(:)  => NULL() ! Dimension J
     ! Profile metadata 
     INTEGER(Long) :: Profile            = 0 
     CHARACTER(PL) :: Description        = ''
@@ -137,9 +137,14 @@ MODULE AtmProfile_Define
     INTEGER(Long) :: Month              = 0
     INTEGER(Long) :: Day                = 0
     INTEGER(Long) :: Hour               = 0
-    REAL(Double) :: Latitude            = ZERO
-    REAL(Double) :: Longitude           = ZERO
-    REAL(Double) :: Surface_Altitude    = ZERO
+    REAL(Double)  :: Latitude           = ZERO
+    REAL(Double)  :: Longitude          = ZERO
+    REAL(Double)  :: Surface_Altitude   = ZERO
+    ! Absorber information
+    INTEGER(Long), POINTER :: Absorber_ID(:)         => NULL() ! Dimension J
+    INTEGER(Long), POINTER :: Absorber_Units_ID(:)   => NULL() ! Dimension J
+    CHARACTER(AL), POINTER :: Absorber_Units_Name(:) => NULL() ! Dimension J
+    CHARACTER( 1), POINTER :: Absorber_Units_LBL(:)  => NULL() ! Dimension J
     ! Profile LEVEL data
     REAL(Double), POINTER :: Level_Pressure(:)    => NULL() ! Dimension K+1
     REAL(Double), POINTER :: Level_Temperature(:) => NULL() ! Dimension K+1 
@@ -490,7 +495,7 @@ CONTAINS
 !       AtmProfile:   AtmProfile structure with allocated pointer members
 !                     UNITS:      N/A
 !                     TYPE:       AtmProfile_type
-!                     DIMENSION:  Scalar
+!                     DIMENSION:  Scalar or Rank-1
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -534,12 +539,13 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_AtmProfile( n_Layers   , &  ! Input
-                                n_Absorbers, &  ! Input
-                                AtmProfile , &  ! Output
-                                RCS_Id     , &  ! Revision control
-                                Message_Log) &  ! Error messaging
-                              RESULT( Error_Status )
+  FUNCTION Allocate_Scalar( &
+    n_Layers   , &  ! Input
+    n_Absorbers, &  ! Input
+    AtmProfile , &  ! Output
+    RCS_Id     , &  ! Revision control
+    Message_Log) &  ! Error messaging
+  RESULT( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: n_Layers
     INTEGER,                INTENT(IN)     :: n_Absorbers
@@ -549,97 +555,79 @@ CONTAINS
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AtmProfile'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AtmProfile(Scalar)'
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     INTEGER :: n_Levels
+    TYPE(AtmProfile_type) :: dummy
     
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Check dimensions
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    ! ...Check dimensions
     IF ( n_Layers    < 1 .OR. &
          n_Absorbers < 1      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input AtmProfile dimensions must all be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      Message = 'Input AtmProfile dimensions must all be > 0.'
+      CALL Allocate_CleanUp(); RETURN
     END IF
     n_Levels = n_Layers + 1
-
-    ! Check if ANY pointers are already associated.
-    ! If they are, deallocate them but leave scalars.
+    ! ...Check if ANY pointers are already associated.
     IF ( Associated_AtmProfile( AtmProfile, ANY_Test=SET ) ) THEN
       Error_Status = Destroy_AtmProfile( AtmProfile, &               
                                          No_Clear=SET, &            
                                          Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating AtmProfile prior to allocation.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+        Message = 'Error deallocating AtmProfile prior to allocation.'
+        CALL Allocate_CleanUp(); RETURN
       END IF
     END IF
 
     
     ! Perform the pointer allocation
-    ! ------------------------------
-    ALLOCATE( AtmProfile%Absorber_ID(1:n_Absorbers)                           , &
-              AtmProfile%Absorber_Units_ID(1:n_Absorbers)                     , &
-              AtmProfile%Absorber_Units_Name(1:n_Absorbers)                   , &
-              AtmProfile%Absorber_Units_LBL(1:n_Absorbers)                    , &
-              AtmProfile%Level_Pressure(1:n_Levels)                           , &
-              AtmProfile%Level_Temperature(1:n_Levels)                        , &
-              AtmProfile%Level_Absorber(1:n_Levels,1:n_Absorbers)             , &
-              AtmProfile%Level_Altitude(1:n_Levels)                           , &
-              AtmProfile%Layer_Pressure(1:n_Layers)                           , &
-              AtmProfile%Layer_Temperature(1:n_Layers)                        , &
-              AtmProfile%Layer_Absorber(1:n_Layers,1:n_Absorbers)             , &
-              AtmProfile%Layer_Delta_Z(1:n_Layers)                            , &
+    ALLOCATE( AtmProfile%Absorber_ID(1:n_Absorbers)              , &
+              AtmProfile%Absorber_Units_ID(1:n_Absorbers)        , &
+              AtmProfile%Absorber_Units_Name(1:n_Absorbers)      , &
+              AtmProfile%Absorber_Units_LBL(1:n_Absorbers)       , &
+              AtmProfile%Level_Pressure(1:n_Levels)              , &
+              AtmProfile%Level_Temperature(1:n_Levels)           , &
+              AtmProfile%Level_Absorber(1:n_Levels,1:n_Absorbers), &
+              AtmProfile%Level_Altitude(1:n_Levels)              , &
+              AtmProfile%Layer_Pressure(1:n_Layers)              , &
+              AtmProfile%Layer_Temperature(1:n_Layers)           , &
+              AtmProfile%Layer_Absorber(1:n_Layers,1:n_Absorbers), &
+              AtmProfile%Layer_Delta_Z(1:n_Layers)               , &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
-      WRITE(Message,'("Error allocating AtmProfile data arrays. STAT = ",i0)') &
-                    Allocate_Status
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      WRITE(Message,'("Error allocating AtmProfile data arrays. STAT = ",i0)') Allocate_Status
+      CALL Allocate_CleanUp(); RETURN
     END IF
 
+
     ! Assign the dimensions
-    ! ---------------------
     AtmProfile%n_Levels    = n_Levels
     AtmProfile%n_Layers    = n_Layers
     AtmProfile%n_Absorbers = n_Absorbers
 
+
+    ! Initialise scalars
+    AtmProfile%Profile            = dummy%Profile          
+    AtmProfile%Description        = dummy%Description      
+    AtmProfile%Climatology_Model  = dummy%Climatology_Model
+    AtmProfile%Year               = dummy%Year             
+    AtmProfile%Month              = dummy%Month            
+    AtmProfile%Day                = dummy%Day              
+    AtmProfile%Hour               = dummy%Hour             
+    AtmProfile%Latitude           = dummy%Latitude         
+    AtmProfile%Longitude          = dummy%Longitude        
+    AtmProfile%Surface_Altitude   = dummy%Surface_Altitude 
+
+
     ! Initialise the arrays
-    ! ---------------------
     AtmProfile%Absorber_ID           = 0
     AtmProfile%Absorber_Units_ID     = 0
     AtmProfile%Absorber_Units_Name   = ATMPROFILE_ABSORBER_UNITS_NAME(0)
     AtmProfile%Absorber_Units_LBL    = ATMPROFILE_ABSORBER_UNITS_CHAR(0)
-    
-    ! Initialise scalars
-    ! ------------------
-    AtmProfile%Description       = ' '
-    AtmProfile%Climatology_Model = 0
-    AtmProfile%Profile           = 0
-    AtmProfile%Year              = 0
-    AtmProfile%Month             = 0
-    AtmProfile%Day               = 0
-    AtmProfile%Hour              = 0
-    AtmProfile%Latitude          = 0.00_Double
-    AtmProfile%Longitude         = 0.00_Double
-    AtmProfile%Surface_Altitude  = 0.00_Double
     
     AtmProfile%Level_Pressure    = ATMPROFILE_FP_INVALID
     AtmProfile%Level_Temperature = ATMPROFILE_FP_INVALID
@@ -650,21 +638,64 @@ CONTAINS
     AtmProfile%Layer_Absorber    = ATMPROFILE_FP_INVALID
     AtmProfile%Layer_Delta_Z     = ATMPROFILE_FP_INVALID
 
+
     ! Increment and test the allocation counter
-    ! -----------------------------------------
     AtmProfile%n_Allocates = AtmProfile%n_Allocates + 1
     IF ( AtmProfile%n_Allocates /= 1 ) THEN
-      WRITE( Message, '("Allocation counter /= 1, Value = ",i0)') &
-                      AtmProfile%n_Allocates
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      WRITE( Message, '("Allocation counter /= 1, Value = ",i0)') AtmProfile%n_Allocates
+      CALL Allocate_CleanUp(); RETURN
     END IF
 
-  END FUNCTION Allocate_AtmProfile
+  CONTAINS
+  
+    SUBROUTINE Allocate_CleanUp()
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+    END SUBROUTINE Allocate_CleanUp
+
+  END FUNCTION Allocate_Scalar
+
+
+  FUNCTION Allocate_Rank1( &
+    n_Layers   , &  ! Input
+    n_Absorbers, &  ! Input
+    AtmProfile , &  ! Output
+    RCS_Id     , &  ! Revision control
+    Message_Log) &  ! Error messaging
+  RESULT( Error_Status )
+    ! Arguments
+    INTEGER,                INTENT(IN)     :: n_Layers
+    INTEGER,                INTENT(IN)     :: n_Absorbers
+    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AtmProfile(Rank-1)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: m
+    
+    ! Set up
+    Error_Status = SUCCESS
+    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    
+    
+    ! Loop over scalar function
+    DO m = 1, SIZE(AtmProfile)
+      Error_Status = Allocate_Scalar( n_Layers, n_Absorbers, &
+                                      AtmProfile(m), &
+                                      Message_Log = Message_Log  )
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( msg,'("AtmProfile array element allocate failed at index ",i0)') m
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+        RETURN                                                                 
+      END IF                            
+    END DO
+    
+  END FUNCTION Allocate_Rank1
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1430,19 +1461,20 @@ CONTAINS
 
   SUBROUTINE Clear_AtmProfile( AtmProfile )
     TYPE(AtmProfile_type), INTENT(IN OUT) :: AtmProfile
+
     AtmProfile%Release = ATMPROFILE_RELEASE
     AtmProfile%Version = ATMPROFILE_VERSION
 
-    AtmProfile%Description       = ' '
-    AtmProfile%Climatology_Model = 0
-    AtmProfile%Profile           = 0
-    AtmProfile%Year              = 0
-    AtmProfile%Month             = 0
-    AtmProfile%Day               = 0
-    AtmProfile%Hour              = 0
-    AtmProfile%Latitude          = ZERO
-    AtmProfile%Longitude         = ZERO
-    AtmProfile%Surface_Altitude  = ZERO
+    AtmProfile%Profile            = 0 
+    AtmProfile%Description        = ''
+    AtmProfile%Climatology_Model  = 0
+    AtmProfile%Year               = 0
+    AtmProfile%Month              = 0
+    AtmProfile%Day                = 0
+    AtmProfile%Hour               = 0
+    AtmProfile%Latitude           = ZERO
+    AtmProfile%Longitude          = ZERO
+    AtmProfile%Surface_Altitude   = ZERO
             
   END SUBROUTINE Clear_AtmProfile
 
