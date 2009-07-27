@@ -339,11 +339,12 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( AtmProfile   , &  ! Output
-                             No_Clear   , &  ! Optional input
-                             RCS_Id     , &  ! Revision control
-                             Message_Log) &  ! Error messaging
-                           RESULT(Error_Status)
+  FUNCTION Destroy_Scalar( &
+    AtmProfile , &  ! Output
+    No_Clear   , &  ! Optional input
+    RCS_Id     , &  ! Revision control
+    Message_Log) &  ! Error messaging
+  RESULT(Error_Status)
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
@@ -421,11 +422,12 @@ CONTAINS
 
   END FUNCTION Destroy_Scalar
 
-  FUNCTION Destroy_Rank1( AtmProfile , &  ! Output
-                          No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
-                          Message_Log) &  ! Error messaging
-                        RESULT(Error_Status)
+  FUNCTION Destroy_Rank1( &
+    AtmProfile , &  ! Output
+    No_Clear   , &  ! Optional input
+    RCS_Id     , &  ! Revision control
+    Message_Log) &  ! Error messaging
+  RESULT(Error_Status)
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
@@ -560,7 +562,6 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     INTEGER :: n_Levels
-    TYPE(AtmProfile_type) :: dummy
     
     ! Set up
     Error_Status = SUCCESS
@@ -608,19 +609,6 @@ CONTAINS
     AtmProfile%n_Levels    = n_Levels
     AtmProfile%n_Layers    = n_Layers
     AtmProfile%n_Absorbers = n_Absorbers
-
-
-    ! Initialise scalars
-    AtmProfile%Profile            = dummy%Profile          
-    AtmProfile%Description        = dummy%Description      
-    AtmProfile%Climatology_Model  = dummy%Climatology_Model
-    AtmProfile%Year               = dummy%Year             
-    AtmProfile%Month              = dummy%Month            
-    AtmProfile%Day                = dummy%Day              
-    AtmProfile%Hour               = dummy%Hour             
-    AtmProfile%Latitude           = dummy%Latitude         
-    AtmProfile%Longitude          = dummy%Longitude        
-    AtmProfile%Surface_Altitude   = dummy%Surface_Altitude 
 
 
     ! Initialise the arrays
@@ -1463,21 +1451,21 @@ CONTAINS
 
   SUBROUTINE Clear_AtmProfile( AtmProfile )
     TYPE(AtmProfile_type), INTENT(IN OUT) :: AtmProfile
+    TYPE(AtmProfile_type) :: dummy
 
-    AtmProfile%Release = ATMPROFILE_RELEASE
-    AtmProfile%Version = ATMPROFILE_VERSION
+    AtmProfile%Release            = dummy%Release
+    AtmProfile%Version            = dummy%Version
+    AtmProfile%Profile            = dummy%Profile          
+    AtmProfile%Description        = dummy%Description      
+    AtmProfile%Climatology_Model  = dummy%Climatology_Model
+    AtmProfile%Year               = dummy%Year             
+    AtmProfile%Month              = dummy%Month            
+    AtmProfile%Day                = dummy%Day              
+    AtmProfile%Hour               = dummy%Hour             
+    AtmProfile%Latitude           = dummy%Latitude         
+    AtmProfile%Longitude          = dummy%Longitude        
+    AtmProfile%Surface_Altitude   = dummy%Surface_Altitude 
 
-    AtmProfile%Profile            = 0 
-    AtmProfile%Description        = ''
-    AtmProfile%Climatology_Model  = 0
-    AtmProfile%Year               = 0
-    AtmProfile%Month              = 0
-    AtmProfile%Day                = 0
-    AtmProfile%Hour               = 0
-    AtmProfile%Latitude           = ZERO
-    AtmProfile%Longitude          = ZERO
-    AtmProfile%Surface_Altitude   = ZERO
-            
   END SUBROUTINE Clear_AtmProfile
 
- END MODULE AtmProfile_Define
+END MODULE AtmProfile_Define
