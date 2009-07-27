@@ -808,6 +808,8 @@ CONTAINS
     ! Copy scalar data
     AtmProfile_out%Release           = AtmProfile_in%Release
     AtmProfile_out%Version           = AtmProfile_in%Version
+    
+    AtmProfile_out%Profile           = AtmProfile_in%Profile
     AtmProfile_out%Description       = AtmProfile_in%Description
     AtmProfile_out%Climatology_Model = AtmProfile_in%Climatology_Model
     AtmProfile_out%Year              = AtmProfile_in%Year
