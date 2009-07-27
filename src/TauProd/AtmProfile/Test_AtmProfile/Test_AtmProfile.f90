@@ -250,13 +250,20 @@ PROGRAM Test_AtmProfile
   
   DO m = 1, n_Profiles
   
-    WRITE( *,'(7x,"Profile #: ",i0)' ) m
+    WRITE( *,'(7x,"Profile #: ",i0)', ADVANCE='NO' ) m
     
     ! Test scalar assign routine
     Error_Status = Assign_AtmProfile( AtmProfile1(m), AtmProfile2(m) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME,'Scalar Assign failed.',FAILURE )
       STOP
+    ENDIF
+    
+    ! Test scalar association routine
+    IF ( Associated_AtmProfile( AtmProfile1(m) ) ) THEN
+      WRITE( *,'("; AtmProfile1 Associated")' )
+    ELSE
+      WRITE( *,'("; AtmProfile1 Not Associated")' )
     ENDIF
     
     ! Test CheckRelease    
@@ -290,6 +297,7 @@ PROGRAM Test_AtmProfile
     CALL Display_Message( PROGRAM_NAME, 'Rank-1 Allocate failed.', FAILURE )
     STOP
   ENDIF
+
   
   ! Test rank-1 Destroy functions
   Error_Status = Destroy_AtmProfile( AtmProfile2 )
