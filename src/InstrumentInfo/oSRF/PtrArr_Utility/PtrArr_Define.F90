@@ -3,8 +3,9 @@ MODULE PtrArr_Define
   ! -----------------
   ! Environment setup
   ! -----------------
-  USE Type_Kinds     , ONLY: fp
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Compare_Float_Numbers, ONLY: Compare_Float
   IMPLICIT NONE
 
 
@@ -21,14 +22,17 @@ MODULE PtrArr_Define
   PRIVATE
   PUBLIC :: PtrArr_type
   PUBLIC :: PTRARR_TYPE_COMPONENT
+  PUBLIC :: Allocated_PtrArr
   PUBLIC :: Create_PtrArr
   PUBLIC :: Destroy_PtrArr
+  PUBLIC :: Assign_PtrArr
+  PUBLIC :: Equal_PtrArr
+
+
 #if defined ALLOC
   ! *********************************************
   ! **** START OF ALLOCATABLE COMPONENT CODE ****
   ! *********************************************
-  PUBLIC :: Allocated_PtrArr
-
 
   ! ---------------
   ! Type definition
@@ -97,8 +101,6 @@ CONTAINS
   ! *****************************************
   ! **** START OF POINTER COMPONENT CODE ****
   ! *****************************************
-  PUBLIC :: Associated_PtrArr
-
 
   ! ---------------
   ! Type definition
@@ -114,15 +116,15 @@ CONTAINS
 CONTAINS
 
 
-  FUNCTION Associated_PtrArr( p )
+  FUNCTION Allocated_PtrArr( p )
     TYPE(PtrArr_type), INTENT(IN) :: p
-    LOGICAL :: Associated_PtrArr
+    LOGICAL :: Allocated_PtrArr
     IF ( ASSOCIATED( p%Arr ) ) THEN
-        Associated_PtrArr = .TRUE.
+        Allocated_PtrArr = .TRUE.
     ELSE
-        Associated_PtrArr = .FALSE.
+        Allocated_PtrArr = .FALSE.
     END IF
-  END FUNCTION Associated_PtrArr
+  END FUNCTION Allocated_PtrArr
 
 
   FUNCTION Destroy_PtrArr(p) RESULT(err_status)
@@ -171,7 +173,7 @@ CONTAINS
     ! Set up
     err_status = SUCCESS
     ! Destroy if associated
-    IF ( Associated_PtrArr(p) ) THEN
+    IF ( Allocated_PtrArr(p) ) THEN
       err_status = Destroy_PtrArr(p)
       IF ( err_status /= SUCCESS ) THEN
         CALL Display_Message(ROUTINE_NAME, 'Error deallocating', err_status)
@@ -197,182 +199,87 @@ CONTAINS
       CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
     END IF
   END FUNCTION Create_PtrArr
+  
 #endif /* Not ALLOC */
 
 
-!  SUBROUTINE Create(Obj, n)
-!    TYPE(PtrArr_type), INTENT(OUT) :: Obj
-!    INTEGER, INTENT(IN) :: n
-!    IF ( .NOT. ALLOCATED(Obj%Arr) ) THEN
-!      ALLOCATE( Obj%Arr(n) )
-!      Obj%n = n
-!    END IF
-!  END SUBROUTINE Create
-!  
-!  
-!  SUBROUTINE Destroy(Obj)
-!    TYPE(PtrArr_type) :: Obj
-!    IF ( ALLOCATED(Obj%Arr) ) THEN
-!      DEALLOCATE(Obj%Arr)
-!      Obj%n = 0
-!    END IF
-!  END SUBROUTINE Destroy
-!
-!
-!  FUNCTION Assign(Obj) RESULT(Copy)
-!    TYPE(PtrArr_type), INTENT(IN) :: Obj
-!    TYPE(PtrArr_type) :: Copy
-!    CALL Create(Copy, Obj%n)
-!    Copy%Arr = Obj%Arr
-!  END FUNCTION Assign
+  ! **************************************************
+  ! **** START OF COMPONENT TYPE INDEPENDENT CODE ****
+  ! **************************************************
+  
+  FUNCTION Assign_PtrArr(p_in, p_out) RESULT(err_Status)
+    ! Arguments
+    TYPE(PtrArr_type), INTENT(IN)     :: p_in
+    TYPE(PtrArr_type), INTENT(IN OUT) :: p_out
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Assign_PtrArr'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    ! Set up
+    err_status = SUCCESS
+    ! ...ALL *input* pointers must be allocated
+    IF ( .NOT. Allocated_PtrArr(p_in) ) THEN
+      err_status = FAILURE; msg = 'Input PtrArr not allocated'
+      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+      RETURN
+    END IF
+    ! Allocate the structure
+    err_status = Create_PtrArr(p_in%n, p_out)
+    IF ( err_status /= SUCCESS ) THEN
+      err_status = FAILURE; msg = 'Error allocating output PtrArr'
+      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+      RETURN
+    END IF
+    ! Assign data
+    p_out%Arr = p_in%Arr
+  END FUNCTION Assign_PtrArr
 
 
-!  ELEMENTAL FUNCTION Allocated_PtrArr( Ptr )
-!    TYPE(PtrArr_type), INTENT(IN) :: Ptr
-!    LOGICAL :: Allocated_PtrArr
-!    Allocated_PtrArr = .FALSE.
-!    IF ( ALLOCATED(Ptr%Arr) ) THEN 
-!      Allocated_PtrArr = .TRUE.
-!    ELSE
-!      Allocated_PtrArr = .FALSE.
-!    END IF
-!  END FUNCTION Allocated_PtrArr
-!
-!
-!  FUNCTION Destroy_PtrArr( Ptr ) RESULT( Error_Status )
-!    TYPE(PtrArr_type), INTENT(IN OUT) :: Ptr
-!    INTEGER :: Error_Status
-!    INTEGER :: Destroy_Status
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    ! ...Reinitialise the dimensions
-!    Ptr%n = 0
-!    ! ...If members are NOT allocated, do nothing
-!    IF ( .NOT. Allocated_PtrArr( Ptr ) ) RETURN
-!
-!
-!    ! Deallocate the components
-!    DEALLOCATE( Ptr%Arr, STAT=Destroy_Status )
-!    IF ( Destroy_Status /= 0 ) THEN
-!      Error_Status = FAILURE
-!      RETURN
-!    END IF
-! 
-! 
-!    ! Decrement and test allocation counter
-!    Ptr%n_Allocates = Ptr%n_Allocates - 1
-!    IF ( Ptr%n_Allocates /= 0 ) Error_Status = FAILURE
-!
-!  END FUNCTION Destroy_PtrArr
-!
-!
-!
-!  FUNCTION Allocate_PtrArr( n, Ptr ) RESULT( Error_Status )
-!    INTEGER,           INTENT(IN)     :: n
-!    TYPE(PtrArr_type), INTENT(IN OUT) :: Ptr
-!    INTEGER :: Error_Status
-!    INTEGER :: Allocate_Status
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    ! ...Check dimension inputs
-!    IF ( n < 1 ) THEN
-!      Error_Status = FAILURE
-!      RETURN
-!    END IF
-!    ! ...Check if ANY pointers are already allocated
-!    IF ( Allocated_PtrArr( Ptr ) ) THEN
-!      Error_Status = Destroy_PtrArr( PtrArr )
-!      IF ( Error_Status /= SUCCESS ) RETURN
-!    END IF
-!
-!
-!    ! Perform allocations
-!    ALLOCATE( Ptr%Arr(n), STAT=Allocate_Status )
-!    IF ( Allocate_Status /= 0 ) THEN
-!      Error_Status = FAILURE
-!      RETURN
-!    END IF
-!
-!
-!    ! Assign the dimensions and initialise arrays
-!    Ptr%n   = n
-!    Ptr%Arr = ZERO
-! 
-! 
-!    ! Increment and test allocation counter
-!    Ptr%n_Allocates = Ptr%n_Allocates + 1
-!    IF ( Ptr%n_Allocates /= 1 ) Error_Status = FAILURE
-!
-!  END FUNCTION Allocate_PtrArr
-!
-!
-!
-!  FUNCTION Assign_PtrArr( Ptr_in, Ptr_out ) RESULT( Error_Status )
-!    TYPE(PtrArr_type), INTENT(IN)     :: Ptr_in
-!    TYPE(PtrArr_type), INTENT(IN OUT) :: Ptr_out
-!    INTEGER :: Error_Status
-!
-!    ! Setup
-!    Error_Status = SUCCESS
-!    ! ...ALL *input* pointers must be allocated
-!    IF ( .NOT. Allocated_Ptr( Ptr_In ) ) THEN
-!      Error_Status = FAILURE
-!      RETURN
-!    END IF
-!
-!
-!    ! Allocate the structure
-!    Error_Status = Allocate_SRF( Ptr_In%n, Ptr_Out )
-!    IF ( Error_Status /= SUCCESS ) RETURN
-!
-!
-!    ! Assign data
-!    Ptr_out%Arr = Ptr_in%Arr
-!
-!  END FUNCTION Assign_PtrArr
-!
-!
-!
-!  FUNCTION Equal_PtrArr( Ptr_LHS  , &  ! Input
-!                         Ptr_RHS  , &  ! Input
-!                         ULP_Scale, &  ! Optional input
-!                         Check_All) &  ! Optional input
-!                    RESULT( Error_Status )
-!    TYPE(PtrArr_type)     , INTENT(IN)  :: Ptr_LHS
-!    TYPE(PtrArr_type)     , INTENT(IN)  :: Ptr_RHS
-!    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-!    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
-!    INTEGER :: Error_Status
-!    INTEGER :: ULP
-!    LOGICAL :: Check_Once
-!    INTEGER :: n
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    ! ...Default precision is a single unit in last place
-!    ULP = 1
-!    IF ( PRESENT(ULP_Scale) ) ULP = ABS(ULP_Scale)
-!    ! ...Default action is to return on ANY difference...
-!    Check_Once = .TRUE.
-!    IF ( PRESENT(Check_All) ) Check_Once = .NOT. Check_All
-!    ! ...Check the structure allocation status
-!    IF ( .NOT. Allocated_PtrArr( Ptr_LHS ) .OR. &
-!         .NOT. Allocated_PtrArr( Ptr_RHS ) ) THEN
-!      Error_Status = FAILURE
-!      RETURN
-!    END IF
-!
-!
-!    ! Compare the values
-!    DO n = 1, Ptr_RHS%n
-!      IF ( .NOT. Compare_Float( Ptr_LHS%Arr(n),Ptr_RHS%Arr(n),ULP=ULP ) ) THEN
-!        Error_Status = FAILURE
-!        IF ( Check_Once ) RETURN
-!      END IF
-!    END DO
-!  
-!  END FUNCTION Equal_SRF
+  FUNCTION Equal_PtrArr( p_LHS    , &  ! Input
+                         p_RHS    , &  ! Input
+                         ULP_Scale, &  ! Optional input
+                         Check_All) &  ! Optional input
+                       RESULT( err_status )
+    ! Arguments
+    TYPE(PtrArr_type)     , INTENT(IN)  :: p_LHS
+    TYPE(PtrArr_type)     , INTENT(IN)  :: p_RHS
+    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
+    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Equal_PtrArr'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: ULP
+    LOGICAL :: Check_Once
+    INTEGER :: n
+    ! Set up
+    err_status = SUCCESS
+    ! ...Default precision is a single unit in last place
+    ULP = 1
+    IF ( PRESENT(ULP_Scale) ) ULP = ABS(ULP_Scale)
+    ! ...Default action is to return on ANY difference...
+    Check_Once = .TRUE.
+    IF ( PRESENT(Check_All) ) Check_Once = .NOT. Check_All
+    ! ...Check the structure allocation status
+    IF ( .NOT. Allocated_PtrArr( p_LHS ) .OR. &
+         .NOT. Allocated_PtrArr( p_RHS )      ) THEN
+      err_status = FAILURE; msg = 'Input PtrArr not allocated'
+      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+      RETURN
+    END IF
+    ! Compare the values
+    DO n = 1, p_RHS%n
+      IF ( .NOT. Compare_Float( p_LHS%Arr(n),p_RHS%Arr(n),ULP=ULP ) ) THEN
+        err_status = FAILURE
+        WRITE( msg,'("Arr component different at index #",i0)' ) n
+        CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+        IF ( Check_Once ) RETURN
+      END IF
+    END DO
+  END FUNCTION Equal_PtrArr
 
 END MODULE PtrArr_Define

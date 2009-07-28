@@ -36,7 +36,8 @@ PROGRAM Test_PtrArr
   ! ---------
   CHARACTER(256) :: msg
   INTEGER :: err_status
-  TYPE(PtrArr_type) :: p
+  INTEGER :: i
+  TYPE(PtrArr_type) :: p, p_copy
 
 
   ! Output header
@@ -49,11 +50,7 @@ PROGRAM Test_PtrArr
   
   
   ! Test initial status
-#if defined ALLOC
   WRITE( *,'( 5x,"PtrArr allocation status: ",l5)' ) Allocated_PtrArr(p)
-#else
-  WRITE( *,'( 5x,"PtrArr association status: ",l5)' ) Associated_PtrArr(p)
-#endif
 
 
   ! Test creation
@@ -61,22 +58,36 @@ PROGRAM Test_PtrArr
   err_status = Create_PtrArr(N, p)
   CALL Display_Message('Create_PtrArr','',err_status)
   IF ( err_status /= SUCCESS ) STOP
-#if defined ALLOC
   WRITE( *,'( 5x,"PtrArr allocation status: ",l5)' ) Allocated_PtrArr(p)
-#else
-  WRITE( *,'( 5x,"PtrArr association status: ",l5)' ) Associated_PtrArr(p)
-#endif
 
+
+  ! Test assignment
+  WRITE( *,'(/5x,"Testing assignment routines...")' )
+  p%Arr = 3.1415927_fp
+  DO i = 1, 5
+    err_status = Assign_PtrArr(p, p_copy)
+    CALL Display_Message('Assign_PtrArr','',err_status)
+  END DO
+  IF ( err_status /= SUCCESS ) STOP
+  WRITE( *,'( 5x,"PtrArr allocation status:",2(1x,l5))' ) Allocated_PtrArr(p), &
+                                                          Allocated_PtrArr(p_copy)
+
+
+  ! Test equality
+  WRITE( *,'(/5x,"Testing equality routines...")' )
+  err_status = Equal_PtrArr(p, p_copy)
+  CALL Display_Message('Equal_PtrArr','',err_status)
+  IF ( err_status /= SUCCESS ) STOP
+  WRITE( *,'( 5x,"PtrArr structures are equal")' )
+  WRITE( *,'( 5x,"PtrArr allocation status:",2(1x,l5))' ) Allocated_PtrArr(p), &
+                                                          Allocated_PtrArr(p_copy)
+  
 
   ! Test destruction
   WRITE( *,'(/5x,"Testing destruction routines...")' )
   err_status = Destroy_PtrArr(p)
   CALL Display_Message('Destroy_PtrArr','',err_status)
   IF ( err_status /= SUCCESS ) STOP
-#if defined ALLOC
   WRITE( *,'( 5x,"PtrArr allocation status: ",l5)' ) Allocated_PtrArr(p)
-#else
-  WRITE( *,'( 5x,"PtrArr association status: ",l5)' ) Associated_PtrArr(p)
-#endif
 
 END PROGRAM Test_PtrArr
