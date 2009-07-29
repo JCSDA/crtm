@@ -21,18 +21,12 @@ MODULE PtrArr_Define
   ! ------------
   PRIVATE
   PUBLIC :: PtrArr_type
-  PUBLIC :: PTRARR_TYPE_COMPONENT
   PUBLIC :: Allocated_PtrArr
   PUBLIC :: Create_PtrArr
   PUBLIC :: Destroy_PtrArr
   PUBLIC :: Assign_PtrArr
   PUBLIC :: Equal_PtrArr
 
-
-#if defined ALLOC
-  ! *********************************************
-  ! **** START OF ALLOCATABLE COMPONENT CODE ****
-  ! *********************************************
 
   ! ---------------
   ! Type definition
@@ -41,13 +35,12 @@ MODULE PtrArr_Define
     INTEGER :: n = 0
     REAL(fp), ALLOCATABLE :: Arr(:)
   END TYPE PtrArr_type
-  CHARACTER(*), PARAMETER :: PTRARR_TYPE_COMPONENT = 'ALLOCATABLE'
 
 
 CONTAINS
 
 
-  FUNCTION Allocated_PtrArr( p )
+  ELEMENTAL FUNCTION Allocated_PtrArr( p )
     TYPE(PtrArr_type), INTENT(IN) :: p
     LOGICAL :: Allocated_PtrArr
     IF ( ALLOCATED( p%Arr ) ) THEN
@@ -97,120 +90,10 @@ CONTAINS
   END FUNCTION Create_PtrArr
 
 
-#else /* Not ALLOC */
-  ! *****************************************
-  ! **** START OF POINTER COMPONENT CODE ****
-  ! *****************************************
-
-  ! ---------------
-  ! Type definition
-  ! ---------------
-  TYPE :: PtrArr_type
-    INTEGER :: n_Allocates = 0
-    INTEGER :: n = 0
-    REAL(fp), POINTER :: Arr(:) => NULL()
-  END TYPE PtrArr_type
-  CHARACTER(*), PARAMETER :: PTRARR_TYPE_COMPONENT = 'POINTER'
-
-
-CONTAINS
-
-
-  FUNCTION Allocated_PtrArr( p )
-    TYPE(PtrArr_type), INTENT(IN) :: p
-    LOGICAL :: Allocated_PtrArr
-    IF ( ASSOCIATED( p%Arr ) ) THEN
-        Allocated_PtrArr = .TRUE.
-    ELSE
-        Allocated_PtrArr = .FALSE.
-    END IF
-  END FUNCTION Allocated_PtrArr
-
-
-  FUNCTION Destroy_PtrArr(p) RESULT(err_status)
-    ! Arguments
-    TYPE(PtrArr_type), INTENT(IN OUT) :: p
-    ! Function result
-    INTEGER :: err_status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Destroy_PtrArr'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: alloc_status
-    ! Set up
-    err_status = SUCCESS
-    ! Reinitialise
-    p%n = 0
-    ! Deallocate
-    DEALLOCATE( p%Arr, STAT=alloc_status )
-    IF ( alloc_status /= 0 ) THEN
-      err_status = FAILURE
-      WRITE( msg,'("Error deallocating. STAT = ",i0)' ) alloc_status
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
-    ! Test allocation counter
-    p%n_Allocates = p%n_Allocates - 1
-    IF ( p%n_Allocates /= 0 ) THEN
-      err_status = FAILURE
-      WRITE( msg,'("Allocation counter /= 0, Value = ",i0)' ) p%n_Allocates
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-    END IF
-  END FUNCTION Destroy_PtrArr
-
-
-  FUNCTION Create_PtrArr(n, p) RESULT(err_status)
-    ! Arguments
-    INTEGER,           INTENT(IN)     :: n
-    TYPE(PtrArr_type), INTENT(IN OUT) :: p
-    ! Function result
-    INTEGER :: err_status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Create_PtrArr'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: alloc_status
-    ! Set up
-    err_status = SUCCESS
-    ! Destroy if associated
-    IF ( Allocated_PtrArr(p) ) THEN
-      err_status = Destroy_PtrArr(p)
-      IF ( err_status /= SUCCESS ) THEN
-        CALL Display_Message(ROUTINE_NAME, 'Error deallocating', err_status)
-        RETURN
-      END IF
-    END IF
-    ! Allocate
-    ALLOCATE( p%Arr(n), STAT=alloc_status )
-    IF ( alloc_status /= 0 ) THEN
-      err_status = FAILURE
-      WRITE( msg,'("Error allocating. STAT = ",i0)' ) alloc_status
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
-    ! Initialise
-    p%n = n
-    p%Arr = ZERO
-    ! Test allocation counter
-    p%n_Allocates = p%n_Allocates + 1
-    IF ( p%n_Allocates /= 1 ) THEN
-      err_status = FAILURE
-      WRITE( msg,'("Allocation counter /= 1, Value = ",i0)' ) p%n_Allocates
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-    END IF
-  END FUNCTION Create_PtrArr
-  
-#endif /* Not ALLOC */
-
-
-  ! **************************************************
-  ! **** START OF COMPONENT TYPE INDEPENDENT CODE ****
-  ! **************************************************
-  
   FUNCTION Assign_PtrArr(p_in, p_out) RESULT(err_Status)
     ! Arguments
-    TYPE(PtrArr_type), INTENT(IN)     :: p_in
-    TYPE(PtrArr_type), INTENT(IN OUT) :: p_out
+    TYPE(PtrArr_type), INTENT(IN)  :: p_in
+    TYPE(PtrArr_type), INTENT(OUT) :: p_out
     ! Function result
     INTEGER :: err_status
     ! Local parameters

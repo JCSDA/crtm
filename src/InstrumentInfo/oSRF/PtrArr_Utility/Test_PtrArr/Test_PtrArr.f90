@@ -45,12 +45,9 @@ PROGRAM Test_PtrArr
                         'Program to test the PtrArr modules.', &
                         '$Revision: $' )
 
-  ! Specify what type of derived type
-  WRITE( *,'(/5x,"PtrArr type component: ",a)' ) PTRARR_TYPE_COMPONENT
-  
-  
+
   ! Test initial status
-  WRITE( *,'( 5x,"PtrArr allocation status: ",l5)' ) Allocated_PtrArr(p)
+  WRITE( *,'( 5x,"PtrArr allocation status: ",2(1x,l5))' ) Allocated_PtrArr((/p, p_copy/))
 
 
   ! Test creation
@@ -69,8 +66,7 @@ PROGRAM Test_PtrArr
     CALL Display_Message('Assign_PtrArr','',err_status)
   END DO
   IF ( err_status /= SUCCESS ) STOP
-  WRITE( *,'( 5x,"PtrArr allocation status:",2(1x,l5))' ) Allocated_PtrArr(p), &
-                                                          Allocated_PtrArr(p_copy)
+  WRITE( *,'( 5x,"PtrArr allocation status:",2(1x,l5))' ) Allocated_PtrArr((/p, p_copy/))
 
 
   ! Test equality
@@ -79,8 +75,7 @@ PROGRAM Test_PtrArr
   CALL Display_Message('Equal_PtrArr','',err_status)
   IF ( err_status /= SUCCESS ) STOP
   WRITE( *,'( 5x,"PtrArr structures are equal")' )
-  WRITE( *,'( 5x,"PtrArr allocation status:",2(1x,l5))' ) Allocated_PtrArr(p), &
-                                                          Allocated_PtrArr(p_copy)
+  WRITE( *,'( 5x,"PtrArr allocation status:",2(1x,l5))' ) Allocated_PtrArr((/p, p_copy/))
   
 
   ! Test destruction
@@ -88,6 +83,9 @@ PROGRAM Test_PtrArr
   err_status = Destroy_PtrArr(p)
   CALL Display_Message('Destroy_PtrArr','',err_status)
   IF ( err_status /= SUCCESS ) STOP
-  WRITE( *,'( 5x,"PtrArr allocation status: ",l5)' ) Allocated_PtrArr(p)
+  err_status = Destroy_PtrArr(p_copy)
+  CALL Display_Message('Destroy_PtrArr','',err_status)
+  IF ( err_status /= SUCCESS ) STOP
+  WRITE( *,'( 5x,"PtrArr allocation status: ",2(1x,l5))' ) Allocated_PtrArr((/p, p_copy/))
 
 END PROGRAM Test_PtrArr
