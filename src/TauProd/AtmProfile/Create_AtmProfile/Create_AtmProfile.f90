@@ -13,7 +13,7 @@
 !
 
 PROGRAM Create_AtmProfile
-
+  
   ! ------------------
   ! Environment set up
   ! ------------------
@@ -54,7 +54,6 @@ PROGRAM Create_AtmProfile
   ! Disable implicit typing
   IMPLICIT NONE
 
-
   ! ----------
   ! Parameters
   ! ----------
@@ -88,7 +87,7 @@ PROGRAM Create_AtmProfile
   CHARACTER(256) :: Comment
   CHARACTER(256) :: Interpolation_RCS_Id
   CHARACTER(256) :: Profile_Set_RCS_Id
-  TYPE(AtmProfile_type) :: AtmProfile
+  TYPE(AtmProfile_type), DIMENSION(:), ALLOCATABLE :: AtmProfile
 
   ! Output descriuptive header
   ! --------------------------
@@ -98,7 +97,6 @@ PROGRAM Create_AtmProfile
     'with different layering between profiles are interpolated to the AIRS '//&
     'set of levels.', &
     '$Revision$' )
-
 
   ! Setup for processing data
   ! -------------------------
@@ -160,14 +158,20 @@ PROGRAM Create_AtmProfile
                     N_ATMPROFILES( Profile_Set )
     CALL Display_Message( PROGRAM_NAME,TRIM(Message),FAILURE ); STOP
   END IF
+  
+  ! Allocate the AtmProfile structure
+  ALLOCATE( AtmProfile(n_Profiles), &
+            STAT = Error_Status  )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME,'Error allocating AtmProfile structure array.',FAILURE ); STOP
+  END IF
 
   ! Allocate the AtmProfile structure
   Error_Status = Allocate_AtmProfile( n_Layers, &
                                       n_Absorbers, &
-                                      n_Profiles, &
                                       AtmProfile )
   IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME,'Error allocating AtmProfile.',FAILURE ); STOP
+    CALL Display_Message( PROGRAM_NAME,'Error allocating AtmProfile pointer members.',FAILURE ); STOP
   END IF
 
 
@@ -186,85 +190,85 @@ PROGRAM Create_AtmProfile
                                           Pressure, &
                                           Temperature, &
                                           Absorber, &
-                                          Absorber_ID       = AtmProfile%Absorber_ID, &
-                                          Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
-                                          Description       = AtmProfile%Description(m), &
-                                          Climatology_Model = AtmProfile%Climatology_Model(m), &
-                                          Year              = AtmProfile%DateTime(m)%Year, &
-                                          Month             = AtmProfile%DateTime(m)%Month, &
-                                          Day               = AtmProfile%DateTime(m)%Day, &
-                                          Hour              = AtmProfile%DateTime(m)%Hour, &
-                                          Latitude          = AtmProfile%Location(m)%Latitude, &
-                                          Longitude         = AtmProfile%Location(m)%Longitude, &
-                                          Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
+                                          Absorber_ID       = AtmProfile(m)%Absorber_ID, &
+                                          Absorber_Units_ID = AtmProfile(m)%Absorber_Units_ID, &
+                                          Description       = AtmProfile(m)%Description, &
+                                          Climatology_Model = AtmProfile(m)%Climatology_Model, &
+                                          Year              = AtmProfile(m)%Year, &
+                                          Month             = AtmProfile(m)%Month, &
+                                          Day               = AtmProfile(m)%Day, &
+                                          Hour              = AtmProfile(m)%Hour, &
+                                          Latitude          = AtmProfile(m)%Latitude, &
+                                          Longitude         = AtmProfile(m)%Longitude, &
+                                          Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
                                           RCS_Id = Profile_Set_RCS_Id )
       CASE ( 'CIMSS32' )
         Error_Status = Load_CIMSS_Profile( m, &
                                            Pressure, &
                                            Temperature, &
                                            Absorber, &
-                                           Absorber_ID       = AtmProfile%Absorber_ID, &
-                                           Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
-                                           Description       = AtmProfile%Description(m), &
-                                           Climatology_Model = AtmProfile%Climatology_Model(m), &
-                                           Year              = AtmProfile%DateTime(m)%Year, &
-                                           Month             = AtmProfile%DateTime(m)%Month, &
-                                           Day               = AtmProfile%DateTime(m)%Day, &
-                                           Hour              = AtmProfile%DateTime(m)%Hour, &
-                                           Latitude          = AtmProfile%Location(m)%Latitude, &
-                                           Longitude         = AtmProfile%Location(m)%Longitude, &
-                                           Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
+                                           Absorber_ID       = AtmProfile(m)%Absorber_ID, &
+                                           Absorber_Units_ID = AtmProfile(m)%Absorber_Units_ID, &
+                                           Description       = AtmProfile(m)%Description, &
+                                           Climatology_Model = AtmProfile(m)%Climatology_Model, &
+                                           Year              = AtmProfile(m)%Year, &
+                                           Month             = AtmProfile(m)%Month, &
+                                           Day               = AtmProfile(m)%Day, &
+                                           Hour              = AtmProfile(m)%Hour, &
+                                           Latitude          = AtmProfile(m)%Latitude, &
+                                           Longitude         = AtmProfile(m)%Longitude, &
+                                           Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
                                            RCS_Id = Profile_Set_RCS_Id )
       CASE ( 'ECMWF52' )
         Error_Status = Load_ECMWF52_Profile( m, &
                                              Pressure, &
                                              Temperature, &
                                              Absorber, &
-                                             Absorber_ID       = AtmProfile%Absorber_ID, &
-                                             Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
-                                             Description       = AtmProfile%Description(m), &
-                                             Climatology_Model = AtmProfile%Climatology_Model(m), &
-                                             Year              = AtmProfile%DateTime(m)%Year, &
-                                             Month             = AtmProfile%DateTime(m)%Month, &
-                                             Day               = AtmProfile%DateTime(m)%Day, &
-                                             Hour              = AtmProfile%DateTime(m)%Hour, &
-                                             Latitude          = AtmProfile%Location(m)%Latitude, &
-                                             Longitude         = AtmProfile%Location(m)%Longitude, &
-                                             Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
+                                             Absorber_ID       = AtmProfile(m)%Absorber_ID, &
+                                             Absorber_Units_ID = AtmProfile(m)%Absorber_Units_ID, &
+                                             Description       = AtmProfile(m)%Description, &
+                                             Climatology_Model = AtmProfile(m)%Climatology_Model, &
+                                             Year              = AtmProfile(m)%Year, &
+                                             Month             = AtmProfile(m)%Month, &
+                                             Day               = AtmProfile(m)%Day, &
+                                             Hour              = AtmProfile(m)%Hour, &
+                                             Latitude          = AtmProfile(m)%Latitude, &
+                                             Longitude         = AtmProfile(m)%Longitude, &
+                                             Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
                                              RCS_Id = Profile_Set_RCS_Id )
       CASE ( 'ECMWF83' )
         Error_Status = Load_ECMWF83_Profile( m, &
                                              Pressure, &
                                              Temperature, &
                                              Absorber, &
-                                             Absorber_ID       = AtmProfile%Absorber_ID, &
-                                             Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
-                                             Description       = AtmProfile%Description(m), &
-                                             Climatology_Model = AtmProfile%Climatology_Model(m), &
-                                             Year              = AtmProfile%DateTime(m)%Year, &
-                                             Month             = AtmProfile%DateTime(m)%Month, &
-                                             Day               = AtmProfile%DateTime(m)%Day, &
-                                             Hour              = AtmProfile%DateTime(m)%Hour, &
-                                             Latitude          = AtmProfile%Location(m)%Latitude, &
-                                             Longitude         = AtmProfile%Location(m)%Longitude, &
-                                             Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
+                                             Absorber_ID       = AtmProfile(m)%Absorber_ID, &
+                                             Absorber_Units_ID = AtmProfile(m)%Absorber_Units_ID, &
+                                             Description       = AtmProfile(m)%Description, &
+                                             Climatology_Model = AtmProfile(m)%Climatology_Model, &
+                                             Year              = AtmProfile(m)%Year, &
+                                             Month             = AtmProfile(m)%Month, &
+                                             Day               = AtmProfile(m)%Day, &
+                                             Hour              = AtmProfile(m)%Hour, &
+                                             Latitude          = AtmProfile(m)%Latitude, &
+                                             Longitude         = AtmProfile(m)%Longitude, &
+                                             Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
                                              RCS_Id = Profile_Set_RCS_Id )
       CASE ( 'Model6' )
         Error_Status = Load_Model_Profile( m, &
                                            Pressure, &
                                            Temperature, &
                                            Absorber, &
-                                           Absorber_ID       = AtmProfile%Absorber_ID, &
-                                           Absorber_Units_ID = AtmProfile%Absorber_Units_ID, &
-                                           Description       = AtmProfile%Description(m), &
-                                           Climatology_Model = AtmProfile%Climatology_Model(m), &
-                                           Year              = AtmProfile%DateTime(m)%Year, &
-                                           Month             = AtmProfile%DateTime(m)%Month, &
-                                           Day               = AtmProfile%DateTime(m)%Day, &
-                                           Hour              = AtmProfile%DateTime(m)%Hour, &
-                                           Latitude          = AtmProfile%Location(m)%Latitude, &
-                                           Longitude         = AtmProfile%Location(m)%Longitude, &
-                                           Surface_Altitude  = AtmProfile%Location(m)%Surface_Altitude, &
+                                           Absorber_ID       = AtmProfile(m)%Absorber_ID, &
+                                           Absorber_Units_ID = AtmProfile(m)%Absorber_Units_ID, &
+                                           Description       = AtmProfile(m)%Description, &
+                                           Climatology_Model = AtmProfile(m)%Climatology_Model, &
+                                           Year              = AtmProfile(m)%Year, &
+                                           Month             = AtmProfile(m)%Month, &
+                                           Day               = AtmProfile(m)%Day, &
+                                           Hour              = AtmProfile(m)%Hour, &
+                                           Latitude          = AtmProfile(m)%Latitude, &
+                                           Longitude         = AtmProfile(m)%Longitude, &
+                                           Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
                                            RCS_Id = Profile_Set_RCS_Id )
       CASE DEFAULT
         CALL Display_Message( PROGRAM_NAME,'Invalid option.',FAILURE )
@@ -279,8 +283,8 @@ PROGRAM Create_AtmProfile
     END IF
 
     ! Fill the pressure array with the required pressure levels/layers
-    AtmProfile%Level_Pressure(:,m) = ATMPROFILE_LEVEL_PRESSURE
-    AtmProfile%Layer_Pressure(:,m) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
+    AtmProfile(m)%Level_Pressure(:) = ATMPROFILE_LEVEL_PRESSURE
+    AtmProfile(m)%Layer_Pressure(:) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
                                        ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
     !                                 -------------------------------------------------
                                       LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
@@ -296,11 +300,11 @@ PROGRAM Create_AtmProfile
       Comment = 'Original profiles interpolated to the 101 AIRS pressure levels.'
 
       ! Interpolate the temperature
-      Error_Status = Polynomial_Interpolate( LOG(Pressure),                       &  ! X
-                                             Temperature,                         &  ! Y
-                                             LOG(AtmProfile%Level_Pressure(:,m)), &  ! XINT
-                                             AtmProfile%Level_Temperature(:,m),   &  ! YINT
-                                             Order  = 1,                          &  ! Linear
+      Error_Status = Polynomial_Interpolate( LOG(Pressure),                        &  ! X
+                                             Temperature,                          &  ! Y
+                                             LOG(AtmProfile(m)%Level_Pressure(:)), &  ! XINT
+                                             AtmProfile(m)%Level_Temperature(:),   &  ! YINT
+                                             Order  = 1,                           &  ! Linear
                                              RCS_Id = Interpolation_RCS_Id )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message,'("Error interpolating temperature for profile #",i0,".")' ) m
@@ -309,24 +313,24 @@ PROGRAM Create_AtmProfile
 
       ! Interpolate the absorber amounts
       Absorber_Interpolation_Loop: DO j = 1, n_Absorbers
-        Error_Status = Polynomial_Interpolate( LOG(Pressure),                       &  ! X
-                                               Absorber(:,j),                       &  ! Y
-                                               LOG(AtmProfile%Level_Pressure(:,m)), &  ! XINT
-                                               AtmProfile%Level_Absorber(:,j,m),    &  ! YINT
-                                               Order = 1                            )  ! Linear
+        Error_Status = Polynomial_Interpolate( LOG(Pressure),                        &  ! X
+                                               Absorber(:,j),                        &  ! Y
+                                               LOG(AtmProfile(m)%Level_Pressure(:)), &  ! XINT
+                                               AtmProfile(m)%Level_Absorber(:,j),    &  ! YINT
+                                               Order = 1                             )  ! Linear
         IF ( Error_Status /= SUCCESS ) THEN
           WRITE( Message,'("Error interpolating absorber#",i0," amount, profile #",i0,".")' ) j, m
           CALL Display_Message( PROGRAM_NAME,TRIM(Message),FAILURE ); STOP
         END IF
 
         ! Check the interpolation result and correct if necessary
-        Negative_Absorber: IF ( ANY(AtmProfile%Level_Absorber(:,j,m) < ZERO) ) THEN
+        Negative_Absorber: IF ( ANY(AtmProfile(m)%Level_Absorber(:,j) < ZERO) ) THEN
           ! Output warning message
           WRITE( Message,'("Correcting interpolated amount for absorber #",i0, &
                           &", profile #",i0," is < 0. Inspect result.")' ) j, m
           CALL Display_Message( PROGRAM_NAME,TRIM(Message),WARNING )
           ! Load data into correction array
-          acorr(1:n_Levels) = AtmProfile%Level_Absorber(:,j,m)
+          acorr(1:n_Levels) = AtmProfile(m)%Level_Absorber(:,j)
           acorr(n_Levels+1) = acorr(n_Levels)
           ! Loop over all levels
           Correction_Check_Loop: DO k = 1, n_Levels
@@ -349,7 +353,7 @@ PROGRAM Create_AtmProfile
             END IF Correct_Absorber
           END DO Correction_Check_Loop
           ! Restore the corrected profile
-          AtmProfile%Level_Absorber(:,j,m) = acorr(1:n_Levels)
+          AtmProfile(m)%Level_Absorber(:,j) = acorr(1:n_Levels)
         END IF Negative_Absorber
       END DO Absorber_Interpolation_Loop
     ELSE Perform_Interpolation
@@ -357,59 +361,58 @@ PROGRAM Create_AtmProfile
       ! Set the AtmProfile file COMMENT attribute
       Comment = 'No interpolation performed.'
       ! Copy the temperature and absorber data
-      AtmProfile%Level_Temperature(:,m) = Temperature
-      AtmProfile%Level_Absorber(:,:,m)  = Absorber
+      AtmProfile(m)%Level_Temperature(:) = Temperature
+      AtmProfile(m)%Level_Absorber(:,:)  = Absorber
     END IF Perform_Interpolation
 
 
     ! Compute geopotential height and thicknesses
     ! -------------------------------------------
     ! Is water vapor present?
-    IF ( COUNT(AtmProfile%Absorber_ID == ID_H2O) /= 1 ) THEN
+    IF ( COUNT(AtmProfile(m)%Absorber_ID == ID_H2O) /= 1 ) THEN
       CALL Display_Message( PROGRAM_NAME,'No water vapor data.',FAILURE ); STOP
     END IF
     ! Find the water vapor index
-    j_idx = PACK((/ ( j, j = 1, AtmProfile%n_Absorbers ) /), &
-                 AtmProfile%Absorber_ID == ID_H2O)
+    j_idx = PACK((/ ( j, j = 1, AtmProfile(m)%n_Absorbers ) /), &
+                 AtmProfile(m)%Absorber_ID == ID_H2O)
     ! Convert from mixing ratio
     H2O_Pressure = MR_to_PP( ATMPROFILE_LEVEL_PRESSURE, &
-                             AtmProfile%Level_Absorber(:,j_idx(1),m) )
+                             AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
     ! Check the result
     IF ( ANY(H2O_Pressure < ZERO) ) THEN
       CALL Display_Message( PROGRAM_NAME,'Water vapor unit conversion failed.',FAILURE ); STOP
     END IF
 
     ! Compute the geopotential height profile
-    Error_Status = Geopotential_Height( AtmProfile%Level_Pressure(:,m),    &  ! Input
-                                        AtmProfile%Level_Temperature(:,m), &  ! Input
-                                        H2O_Pressure,                      &  ! Input
-                                        AtmProfile%Level_Altitude(:,m),    &  ! Output
-                                        Gravity_Correction = 1,                    &  ! Optional Input
-                                        Latitude = AtmProfile%Location(m)%Latitude )  ! Optional Input
+    Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
+                                        AtmProfile(m)%Level_Temperature(:), &  ! Input
+                                        H2O_Pressure,                       &  ! Input
+                                        AtmProfile(m)%Level_Altitude(:),    &  ! Output
+                                        Gravity_Correction = 1,             &  ! Optional Input
+                                        Latitude = AtmProfile(m)%Latitude )    ! Optional Input
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
     END IF
 
     ! Calculate the thicknesses
-    AtmProfile%Layer_Delta_Z(:,m) = ABS(AtmProfile%Level_Altitude(1:n_Levels-1,m) - &
-                                        AtmProfile%Level_Altitude(2:n_Levels,  m)   )
+    AtmProfile(m)%Layer_Delta_Z(:) = ABS(AtmProfile(m)%Level_Altitude(1:n_Levels-1) - &
+                                        AtmProfile(m)%Level_Altitude(2:n_Levels)   )
 
     ! Average the temperature
     Temperature_Average_loop: DO k = 1, n_Layers
-      AtmProfile%Layer_Temperature(k,m) = ZEROpointFIVE * &
-                                          ( AtmProfile%Level_Temperature( k,  m ) + &
-                                            AtmProfile%Level_Temperature( k+1,m )   )
+      AtmProfile(m)%Layer_Temperature(k) = ZEROpointFIVE * &
+                                          ( AtmProfile(m)%Level_Temperature( k ) + &
+                                            AtmProfile(m)%Level_Temperature( k+1 )   )
     END DO Temperature_Average_loop
 
     ! Average the absorbers
     j_Absorber_Average_loop: DO j = 1, n_Absorbers
       k_Absorber_Average_loop: DO k = 1, n_Layers
-        AtmProfile%Layer_Absorber(k,j,m) = ZEROpointFIVE * &
-                                           ( AtmProfile%Level_Absorber( k,  j,m ) + &
-                                             AtmProfile%Level_Absorber( k+1,j,m )   )
+        AtmProfile(m)%Layer_Absorber(k,j) = ZEROpointFIVE * &
+                                           ( AtmProfile(m)%Level_Absorber( k,  j ) + &
+                                             AtmProfile(m)%Level_Absorber( k+1,j )   )
       END DO k_Absorber_Average_loop
     END DO j_Absorber_Average_loop
-
 
     ! ------------------------------------
     ! Deallocate pointers for next profile
@@ -441,18 +444,17 @@ PROGRAM Create_AtmProfile
         CALL Display_Message( PROGRAM_NAME,TRIM(Message),WARNING )
       END IF
     END IF
-
+        
   END DO Profile_Loop
 
   ! Set dummy lat/lon before write
-  WHERE( ABS(AtmProfile%Location%Longitude) > 360.0_fp )
-    AtmProfile%Location%Longitude = -999.0_fp
+  WHERE( ABS(AtmProfile%Longitude) > 360.0_fp )
+    AtmProfile%Longitude = -999.0_fp
   END WHERE
 
-  WHERE( ABS(AtmProfile%Location%Latitude) > 90.0_fp )
-    AtmProfile%Location%Latitude = -999.0_fp
+  WHERE( ABS(AtmProfile%Latitude) > 90.0_fp )
+    AtmProfile%Latitude = -999.0_fp
   END WHERE
-
 
   ! Write the AtmProfile data file
   ! ------------------------------
@@ -470,7 +472,7 @@ PROGRAM Create_AtmProfile
     History = PROGRAM_RCS_ID//'; '//&
               TRIM(Profile_Set_RCS_Id)
   END IF
-
+ 
   ! Write the interpolated data to file
   Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename, &
                                           AtmProfile, &
@@ -482,7 +484,6 @@ PROGRAM Create_AtmProfile
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,'Error writing '//TRIM(AtmProfile_Filename),FAILURE ); STOP
   END IF
-
 
   ! Test read the AtmProfile data file
   ! ----------------------------------
@@ -500,26 +501,33 @@ PROGRAM Create_AtmProfile
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,'Error reading '//TRIM(AtmProfile_Filename),FAILURE ); STOP
   END IF
-
+   
   ! Print out some data
-  m = MIN(23,AtmProfile%n_Profiles)
+  m = MIN(6,SIZE(AtmProfile))
   WRITE( *,'(/5x,"Description for profile#",i0," read:")' ) m
-  WRITE( *,'(7x,a)' ) TRIM(AtmProfile%Description(m))
+  WRITE( *,'(7x,a)' ) TRIM(AtmProfile(m)%Description)
   WRITE( *,'(5x, "Date/Time for profile#",i0," read:")' ) m
   WRITE( *,'(7x,i2.2,"/",i2.2,"/",i4.4," at ",i2.2,"00UTC")' ) &
-           AtmProfile%DateTime(m)%Day, &
-           AtmProfile%DateTime(m)%Month, &
-           AtmProfile%DateTime(m)%Year, &
-           AtmProfile%DateTime(m)%Hour
+           AtmProfile(m)%Day, &
+           AtmProfile(m)%Month, &
+           AtmProfile(m)%Year, &
+           AtmProfile(m)%Hour
   WRITE( *,'(5x,"Location for profile#",i0," read:")' ) m
   WRITE( *,'(7x,"Lat: ",f8.3,", Lon: ",f8.3)' ) &
-           AtmProfile%Location(m)%Latitude, &
-           AtmProfile%Location(m)%Longitude
+           AtmProfile(m)%Latitude, &
+           AtmProfile(m)%Longitude
 
   ! Cleanup
   Error_Status = Destroy_AtmProfile( AtmProfile )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,'Error destroying AtmProfile',WARNING )
   END IF
+  
+  ! DEALLOCATE structure array
+  DEALLOCATE( AtmProfile,         &
+              STAT = Error_Status )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME,'Error deallocating AtmProfile',WARNING )
+  END IF            
 
 END PROGRAM Create_AtmProfile
