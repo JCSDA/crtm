@@ -14,18 +14,15 @@ MAKE_FILE = Makefile
 EXE_FILE = Test_PtrArr
 
 # Source files to link
-F90_FILES = Type_Kinds.f90 \
+SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
-            Unit_Test.f90
-FPP_FILES = PtrArr_Define.F90
+            Unit_Test.f90 \
+            PtrArr_Define.f90
 
-SRC_FILES = $(F90_FILES) $(FPP_FILES)
-            
 # Obj files used in link phase
-OBJ_FILES = ${F90_FILES:.f90=.o} \
-            ${FPP_FILES:.F90=.o} \
+OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Define common make targets (all, build, clean, install)
