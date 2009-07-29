@@ -2151,18 +2151,6 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS                                      
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Get the pdsl dimension 
-    NF90_Status = NF90_INQ_DIMID( NC_FileId,DESCRIPTION_DIMNAME,DimId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_DIMNAME//&
-            ' dimension ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,pdsl_name,pdsl )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error obtaining dimension length of description '
-    END IF
 
     ! Write the variable data
     ! -----------------------
@@ -2195,6 +2183,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     ! The Description
+    pdsl = LEN_TRIM(AtmProfile%Description)    
     NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
@@ -2610,6 +2599,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
+    AtmProfile%Description = TRIM(AtmProfile%Description)
     ! The Climatology_Model
     NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
