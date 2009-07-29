@@ -2142,14 +2142,12 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteVar'
     ! Local variables
     CHARACTER(ML) :: msg
-    CHARACTER(ML) :: pdsl_name
     INTEGER :: NF90_Status
     INTEGER :: VarId, DimId
-    INTEGER :: pdsl
                                
     ! Set up
     ! ------
-    Error_Status = SUCCESS                                      
+    Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Write the variable data
@@ -2161,8 +2159,7 @@ CONTAINS
             ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID,&
-    start=(/1/),count=(/AtmProfile%n_Absorbers/))
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_ID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//ABSORBER_ID_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2175,15 +2172,13 @@ CONTAINS
             ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID,&
-    start=(/1/),count=(/AtmProfile%n_Absorbers/) )
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//ABSORBER_UNITS_ID_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
     ! The Description
-    pdsl = LEN_TRIM(AtmProfile%Description)    
     NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_VARNAME//&
@@ -2191,7 +2186,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Description,&
-    start=(/1,Profile/),count=(/pdsl,1/) )
+                                start=(/1,Profile/))
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//DESCRIPTION_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2205,7 +2200,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//CLIMATOLOGY_MODEL_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2219,7 +2214,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Year,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//YEAR_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2233,7 +2228,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Month,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//MONTH_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2247,7 +2242,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Day,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//DAY_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2261,7 +2256,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Hour,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//HOUR_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2275,7 +2270,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Latitude,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LATITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2289,7 +2284,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Longitude,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LONGITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2303,7 +2298,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Surface_Altitude,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//SURFACE_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2317,7 +2312,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Levels,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LEVEL_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2331,7 +2326,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Levels,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LEVEL_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2345,7 +2340,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber,&
-    start=(/1,1,Profile/), count=(/AtmProfile%n_Levels,AtmProfile%n_Absorbers,1/) )
+                                start=(/1,1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LEVEL_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2359,7 +2354,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Levels,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LEVEL_ALTITUDE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2373,7 +2368,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Layers,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LAYER_PRESSURE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2387,7 +2382,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Layers,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LAYER_TEMPERATURE_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2401,7 +2396,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber,&
-    start=(/1,1,Profile/),count=(/AtmProfile%n_Layers,AtmProfile%n_Absorbers,1/) )
+                                start=(/1,1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LAYER_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2415,7 +2410,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Layers,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//LAYER_DELTA_Z_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2533,28 +2528,14 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadVar'
     ! Local variables
     CHARACTER(ML) :: msg
-    CHARACTER(ML) :: pdsl_name
     INTEGER :: NF90_Status
     INTEGER :: VarId, DimId
-    INTEGER :: pdsl
                                        
     ! Set up
     ! ------
     Error_Status = SUCCESS                                      
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
-    ! Get the pdsl dimension 
-    NF90_Status = NF90_INQ_DIMID( NC_FileId,DESCRIPTION_DIMNAME,DimId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//DESCRIPTION_DIMNAME//&
-            ' dimension ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,pdsl_name,pdsl )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error obtaining dimension length of description '
-    END IF
-
     ! Read the variable data
     ! ----------------------
     ! The Absorber_ID
@@ -2578,8 +2559,7 @@ CONTAINS
             ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID,&
-    start=(/1/),count=(/AtmProfile%n_Absorbers/))
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_ID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//ABSORBER_UNITS_ID_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2593,13 +2573,12 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Description,&
-    start=(/1,Profile/),count=(/pdsl,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//DESCRIPTION_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL ReadVar_Cleanup(); RETURN
     END IF
-    AtmProfile%Description = TRIM(AtmProfile%Description)
     ! The Climatology_Model
     NF90_Status = NF90_INQ_VARID( NC_FileId,CLIMATOLOGY_MODEL_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -2608,7 +2587,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Climatology_Model,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//CLIMATOLOGY_MODEL_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2622,7 +2601,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Year,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//YEAR_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2636,7 +2615,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Month,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//YEAR_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2650,7 +2629,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Day,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//DAY_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2664,7 +2643,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Hour,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//HOUR_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2678,7 +2657,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Latitude,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LATITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2692,7 +2671,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Longitude,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LONGITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2706,7 +2685,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Surface_Altitude,&
-    start=(/Profile/) )
+                                start=(/Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//SURFACE_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2720,7 +2699,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Pressure, &
-    start=(/ 1,Profile /),count=(/ AtmProfile%n_Levels,1 /) ) 
+                                start=(/ 1,Profile /) ) 
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LEVEL_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2734,7 +2713,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Temperature, &
-    start=(/ 1,Profile /),count=(/ AtmProfile%n_Levels,1 /) )  
+                                start=(/ 1,Profile /) )  
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LEVEL_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2748,7 +2727,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Absorber,&
-    start=(/1,1,Profile/), count=(/AtmProfile%n_Levels,AtmProfile%n_Absorbers,1/) )
+                                start=(/1,1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LEVEL_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2762,7 +2741,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Level_Altitude,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Levels,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LEVEL_ALTITUDE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2776,7 +2755,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Pressure,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Layers,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LAYER_PRESSURE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2790,7 +2769,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Temperature,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Layers,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LAYER_TEMPERATURE_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2804,7 +2783,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Absorber,&
-    start=(/1,1,Profile/),count=(/AtmProfile%n_Layers,AtmProfile%n_Absorbers,1/) )
+                                start=(/1,1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LAYER_ABSORBER_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2818,7 +2797,7 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_GET_VAR( NC_FileId,VarID,AtmProfile%Layer_Delta_Z,&
-    start=(/1,Profile/),count=(/AtmProfile%n_Layers,1/) )
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error reading '//LAYER_DELTA_Z_VARNAME//' from '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
