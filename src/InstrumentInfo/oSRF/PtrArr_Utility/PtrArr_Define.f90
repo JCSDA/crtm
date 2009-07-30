@@ -26,6 +26,9 @@ MODULE PtrArr_Define
   PUBLIC :: Destroy_PtrArr
   PUBLIC :: Assign_PtrArr
   PUBLIC :: Equal_PtrArr
+  PUBLIC :: Set_PtrArr
+  PUBLIC :: Get_PtrArr
+  PUBLIC :: Inspect_PtrArr
 
 
   ! ---------------
@@ -126,10 +129,10 @@ CONTAINS
                          Check_All) &  ! Optional input
                        RESULT( err_status )
     ! Arguments
-    TYPE(PtrArr_type)     , INTENT(IN)  :: p_LHS
-    TYPE(PtrArr_type)     , INTENT(IN)  :: p_RHS
-    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
+    TYPE(PtrArr_type), INTENT(IN) :: p_LHS
+    TYPE(PtrArr_type), INTENT(IN) :: p_RHS
+    INTEGER, OPTIONAL, INTENT(IN) :: ULP_Scale
+    LOGICAL, OPTIONAL, INTENT(IN) :: Check_All
     ! Function result
     INTEGER :: err_status
     ! Local parameters
@@ -165,4 +168,71 @@ CONTAINS
     END DO
   END FUNCTION Equal_PtrArr
 
+
+  FUNCTION Set_PtrArr( p, Arr ) RESULT( err_status )
+    ! Arguments
+    TYPE(PtrArr_type),  INTENT(IN OUT) :: p
+    REAL(fp), OPTIONAL, INTENT(IN)     :: Arr(:)
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_PtrArr'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: n
+    ! Set up
+    err_status = SUCCESS
+    ! Set array data
+    IF ( PRESENT(Arr) ) THEN
+      n = SIZE(Arr)
+      ! ...Check sizes are consistent
+      IF ( p%n /= n) THEN
+        err_status = FAILURE
+        WRITE( msg, '("Input array has different size, ",i0,&
+                     &", from structure, ",i0)' ) n, p%n
+        CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+        RETURN
+      END IF
+      ! ...Assign data
+      p%Arr = Arr
+    END IF
+  END FUNCTION Set_PtrArr
+  
+  
+  FUNCTION Get_PtrArr( p, Arr ) RESULT( err_status )
+    ! Arguments
+    TYPE(PtrArr_type),  INTENT(IN)  :: p
+    REAL(fp), OPTIONAL, INTENT(OUT) :: Arr(:)
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_PtrArr'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: n
+    ! Set up
+    err_status = SUCCESS
+    ! Get array data
+    IF ( PRESENT(Arr) ) THEN
+      n = SIZE(Arr)
+      ! ...Check sizes are consistent
+      IF ( p%n /= n) THEN
+        err_status = FAILURE
+        WRITE( msg, '("Output array has different size, ",i0,&
+                     &", from structure, ",i0)' ) n, p%n
+        CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+        RETURN
+      END IF
+      ! ...Assign data
+      Arr = p%Arr
+    END IF
+  END FUNCTION Get_PtrArr
+  
+  
+  SUBROUTINE Inspect_PtrArr( p )
+    TYPE(PtrArr_type), INTENT(IN) :: p
+    WRITE( *,'(4x,"n_Points : ", i0)' ) p%n
+    WRITE( *,'(4x,"Data : ", /,5(1x,es13.6))' ) p%Arr
+  END SUBROUTINE Inspect_PtrArr
+  
 END MODULE PtrArr_Define

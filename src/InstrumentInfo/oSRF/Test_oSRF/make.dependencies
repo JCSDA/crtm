@@ -5,5 +5,5 @@ PtrArr_Define.o : PtrArr_Define.f90 Compare_Float_Numbers.o Message_Handler.o Ty
 Test_oSRF.o : Test_oSRF.f90 oSRF_Define.o Unit_Test.o Message_Handler.o Type_Kinds.o 
 Type_Kinds.o : Type_Kinds.f90 
 Unit_Test.o : Unit_Test.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-oSRF_Define.o : oSRF_Define.f90 PtrArr_Define.o Message_Handler.o Type_Kinds.o 
+oSRF_Define.o : oSRF_Define.f90 PtrArr_Define.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 test_pa.o : test_pa.f90 

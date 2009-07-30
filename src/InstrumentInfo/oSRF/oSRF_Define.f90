@@ -14,14 +14,18 @@ MODULE oSRF_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds     , ONLY: fp
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE PtrArr_Define  , ONLY: PtrArr_type     , &
-                             Allocated_PtrArr, &
-                             Destroy_PtrArr  , &
-                             Create_PtrArr   , &
-                             Assign_PtrArr   , &
-                             Equal_PtrArr
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
+  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE PtrArr_Define        , ONLY: PtrArr_type     , &
+                                   Allocated_PtrArr, &
+                                   Destroy_PtrArr  , &
+                                   Create_PtrArr   , &
+                                   Assign_PtrArr   , &
+                                   Equal_PtrArr    , &
+                                   Set_PtrArr      , &
+                                   Get_PtrArr      , &
+                                   Inspect_PtrArr
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -38,7 +42,10 @@ MODULE oSRF_Define
   PUBLIC :: Destroy_oSRF
   PUBLIC :: Create_oSRF
   PUBLIC :: Assign_oSRF
-!  PUBLIC :: Equal_oSRF
+  PUBLIC :: Equal_oSRF
+  PUBLIC :: Set_oSRF
+  PUBLIC :: Get_oSRF
+  PUBLIC :: Inspect_oSRF
 !  PUBLIC :: CheckRelease_oSRF
 !  PUBLIC :: Info_oSRF
   ! Public parameters
@@ -101,6 +108,7 @@ MODULE oSRF_Define
   ! Some internal dimensions
   INTEGER, PARAMETER :: N_PLANCK_COEFFS = 2
   INTEGER, PARAMETER :: N_POLYCHROMATIC_COEFFS = 2
+
 
   ! --------------------------
   ! oSRF data type definitions
@@ -488,306 +496,860 @@ CONTAINS
   END FUNCTION Assign_oSRF
 
 
-!!--------------------------------------------------------------------------------
-!!:sdoc+:
-!!
-!! NAME:
-!!       Equal_oSRF
-!!
-!! PURPOSE:
-!!       Function to test if two oSRF structures are equal.
-!!
-!! CALLING SEQUENCE:
-!!       Error_Status = Equal_oSRF( oSRF_LHS                , &  ! Input
-!!                                 oSRF_RHS                , &  ! Input
-!!                                 ULP_Scale  =ULP_Scale  , &  ! Optional input
-!!                                 Check_All  =Check_All  , &  ! Optional input
-!!                                 RCS_Id     =RCS_Id     , &  ! Revision control
-!!                                 Message_Log=Message_Log  )  ! Error messaging
-!!
-!! INPUT ARGUMENTS:
-!!       oSRF_LHS:       oSRF structure to be compared; equivalent to the
-!!                      left-hand side of a lexical comparison, e.g.
-!!                        IF ( oSRF_LHS == oSRF_RHS ).
-!!                      UNITS:      N/A
-!!                      TYPE:       TYPE(oSRF_type)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN)
-!!
-!!       oSRF_RHS:       oSRF structure to be compared to; equivalent to
-!!                      right-hand side of a lexical comparison, e.g.
-!!                        IF ( oSRF_LHS == oSRF_RHS ).
-!!                      UNITS:      N/A
-!!                      TYPE:       Same as oSRF_LHS
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN)
-!!
-!! OPTIONAL INPUT ARGUMENTS:
-!!       ULP_Scale:     Unit of data precision used to scale the floating
-!!                      point comparison. ULP stands for "Unit in the Last Place,"
-!!                      the smallest possible increment or decrement that can be
-!!                      made using a machine's floating point arithmetic.
-!!                      Value must be positive - if a negative value is supplied,
-!!                      the absolute value is used. If not specified, the default
-!!                      value is 1.
-!!                      UNITS:      N/A
-!!                      TYPE:       INTEGER
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!!       Check_All:     Set this argument to check ALL the floating point
-!!                      channel data of the oSRF structures. The default
-!!                      action is return with a FAILURE status as soon as
-!!                      any difference is found. This optional argument can
-!!                      be used to get a listing of ALL the differences
-!!                      between data in oSRF structures.
-!!                      If == 0, Return with FAILURE status as soon as
-!!                               ANY difference is found  *DEFAULT*
-!!                         == 1, Set FAILURE status if ANY difference is
-!!                               found, but continue to check ALL data.
-!!                      UNITS:      N/A
-!!                      TYPE:       INTEGER
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!!       Message_Log:   Character string specifying a filename in which any
-!!                      messages will be logged. If not specified, or if an
-!!                      error occurs opening the log file, the default action
-!!                      is to output messages to standard output.
-!!                      UNITS:      N/A
-!!                      TYPE:       CHARACTER(*)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!! OPTIONAL OUTPUT ARGUMENTS:
-!!       RCS_Id:        Character string containing the Revision Control
-!!                      System Id field for the module.
-!!                      UNITS:      N/A
-!!                      TYPE:       CHARACTER(*)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!!
-!! FUNCTION RESULT:
-!!       Error_Status:  The return value is an integer defining the error status.
-!!                      The error codes are defined in the Message_Handler module.
-!!                      If == SUCCESS the structures were equal
-!!                         == FAILURE - an error occurred, or
-!!                                    - the structures were different.
-!!                      UNITS:      N/A
-!!                      TYPE:       INTEGER
-!!                      DIMENSION:  Scalar
-!!
-!!:sdoc-:
-!!--------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+!:sdoc+:
 !
-!  FUNCTION Equal_oSRF( oSRF_LHS, &  ! Input
-!                      oSRF_RHS, &  ! Input
-!                      ULP_Scale   , &  ! Optional input
-!                      Check_All   , &  ! Optional input
-!                      RCS_Id      , &  ! Revision control
-!                      Message_Log ) &  ! Error messaging
-!                    RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(oSRF_type)        , INTENT(IN)  :: oSRF_LHS
-!    TYPE(oSRF_type)        , INTENT(IN)  :: oSRF_RHS
-!    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-!    INTEGER     , OPTIONAL, INTENT(IN)  :: Check_All
-!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_oSRF'
-!    ! Local variables
-!    CHARACTER(ML) :: msg
-!    INTEGER :: ULP
-!    LOGICAL :: Check_Once
-!    INTEGER :: n
+! NAME:
+!       Equal_oSRF
 !
-!    ! Set up
-!    ! ------
-!    Error_Status = SUCCESS
-!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+! PURPOSE:
+!       Function to test if two oSRF structures are equal.
 !
-!    ! Default precision is a single unit in last place
-!    ULP = 1
-!    ! ... unless the ULP_Scale argument is set and positive
-!    IF ( PRESENT( ULP_Scale ) ) THEN
-!      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-!    END IF
+! CALLING SEQUENCE:
+!       Error_Status = Equal_oSRF( oSRF_LHS             , &  ! Input
+!                                  oSRF_RHS             , &  ! Input
+!                                  ULP_Scale  =ULP_Scale, &  ! Optional input
+!                                  Check_All  =Check_All  )  ! Optional input
 !
-!    ! Default action is to return on ANY difference...
-!    Check_Once = .TRUE.
-!    ! ...unless the Check_All argument is set
-!    IF ( PRESENT( Check_All ) ) THEN
-!      IF ( Check_All == SET ) Check_Once = .FALSE.
-!    END IF
+! INPUT ARGUMENTS:
+!       oSRF_LHS:      oSRF structure to be compared; equivalent to the
+!                      left-hand side of a lexical comparison, e.g.
+!                        IF ( oSRF_LHS == oSRF_RHS ).
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
-!    ! Check the structure association status
-!    IF ( .NOT. Associated_oSRF( oSRF_LHS ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Some or all INPUT oSRF_LHS pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!    IF ( .NOT. Associated_oSRF( oSRF_RHS ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT oSRF_RHS pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
+!       oSRF_RHS:      oSRF structure to be compared to; equivalent to
+!                      right-hand side of a lexical comparison, e.g.
+!                        IF ( oSRF_LHS == oSRF_RHS ).
+!                      UNITS:      N/A
+!                      TYPE:       Same as oSRF_LHS
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
-!    ! Check Release/Version info
-!    ! --------------------------
-!    IF ( ( oSRF_LHS%Release /= oSRF_RHS%Release ) .OR. &
-!         ( oSRF_LHS%Version /= oSRF_RHS%Version )      ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("Release/Version numbers are different : ",&
-!                 &i2,".",i2.2," vs. ",i2,".",i2.2)' ) &
-!                      oSRF_LHS%Release, oSRF_LHS%Version, &
-!                      oSRF_RHS%Release, oSRF_RHS%Version
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
+! OPTIONAL INPUT ARGUMENTS:
+!       ULP_Scale:     Unit of data precision used to scale the floating
+!                      point comparison. ULP stands for "Unit in the Last Place,"
+!                      the smallest possible increment or decrement that can be
+!                      made using a machine's floating point arithmetic.
+!                      Value must be positive - if a negative value is supplied,
+!                      the absolute value is used. If not specified, the default
+!                      value is 1.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       Check_All:     Set this argument to check ALL the floating point
+!                      channel data of the oSRF structures. The default
+!                      action is return with a FAILURE status as soon as
+!                      any difference is found. This optional argument can
+!                      be used to get a listing of ALL the differences
+!                      between data in oSRF structures.
+!                      If .FALSE., Return with FAILURE status as soon as
+!                                  ANY difference is found  [*DEFAULT*]
+!                         .TRUE.,  Set FAILURE status if ANY difference is
+!                                  found, but continue to check ALL data.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!    ! Check dimensions
-!    ! ----------------
-!    IF ( oSRF_LHS%n_Points /= oSRF_RHS%n_Points ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("n_Points dimensions are different : ",i0," vs. ",i0)' ) &
-!                 oSRF_LHS%n_Points, oSRF_RHS%n_Points
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!    IF ( oSRF_LHS%n_Bands /= oSRF_RHS%n_Bands ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("n_Bands dimensions are different : ",i0," vs. ",i0)' ) &
-!                 oSRF_LHS%n_Bands, oSRF_RHS%n_Bands
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      RETURN
-!    END IF
+! FUNCTION RESULT:
+!       Error_Status:  The return value is an integer defining the error status.
+!                      The error codes are defined in the Message_Handler module.
+!                      If == SUCCESS the structures were equal
+!                         == FAILURE - an error occurred, or
+!                                    - the structures were different.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
 !
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION Equal_oSRF( &
+    oSRF_LHS , &
+    oSRF_RHS , &
+    ULP_Scale, &
+    Check_All) &
+  RESULT( err_status )
+    ! Arguments
+    TYPE(oSRF_type)  , INTENT(IN)  :: oSRF_LHS
+    TYPE(oSRF_type)  , INTENT(IN)  :: oSRF_RHS
+    INTEGER, OPTIONAL, INTENT(IN)  :: ULP_Scale
+    LOGICAL, OPTIONAL, INTENT(IN)  :: Check_All
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_oSRF'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: ULP
+    LOGICAL :: Check_Once
+    INTEGER :: n
+    INTEGER :: equal_status
+
+    ! Set up
+    err_status = SUCCESS
+    ! ...Default precision is a single unit in last place
+    ULP = 1
+    IF ( PRESENT(ULP_Scale) ) ULP = ABS(ULP_Scale)
+    ! ...Default action is to return on ANY difference
+    Check_Once = .TRUE.
+    IF ( PRESENT(Check_All) ) Check_Once = .NOT. Check_All
+    ! ...Check the structure association status
+    IF ( .NOT. Allocated_oSRF( oSRF_LHS ) .OR. &
+         .NOT. Allocated_oSRF( oSRF_RHS )      ) THEN
+      msg = 'Input oSRF arguments are NOT allocated'
+      CALL Equal_CleanUp(); RETURN
+    END IF
+
+
+    ! Check Release/Version info
+    IF ( ( oSRF_LHS%Release /= oSRF_RHS%Release ) .OR. &
+         ( oSRF_LHS%Version /= oSRF_RHS%Version )      ) THEN
+      WRITE( msg,'("Release/Version numbers are different : ",&
+                 &i2,".",i2.2," vs. ",i2,".",i2.2)' ) &
+                 oSRF_LHS%Release, oSRF_LHS%Version, &
+                 oSRF_RHS%Release, oSRF_RHS%Version
+      CALL Equal_CleanUp(); RETURN
+    END IF
+
+
+    ! Check dimensions
+    IF ( oSRF_LHS%n_Bands /= oSRF_RHS%n_Bands ) THEN
+      WRITE( msg,'("n_Bands dimensions are different : ",i0," vs. ",i0)' ) &
+                 oSRF_LHS%n_Bands, oSRF_RHS%n_Bands
+      CALL Equal_CleanUp(); RETURN
+    END IF
+
+
+    ! Compare the values
+    ! ...The Sensor_ID
+    IF ( oSRF_LHS%Sensor_Id /= oSRF_RHS%Sensor_Id ) THEN
+      WRITE( msg,'("Sensor_ID values are different, ",a," vs. ",a)' ) &
+                 TRIM( oSRF_LHS%Sensor_Id), TRIM( oSRF_RHS%Sensor_Id)
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The WMO Satellite ID
+    IF ( oSRF_LHS%WMO_Satellite_ID /= oSRF_RHS%WMO_Satellite_ID ) THEN
+      WRITE( msg,'("WMO_Satellite_ID values are different, ",i0," vs. ",i0 )' ) &
+                 oSRF_LHS%WMO_Satellite_ID, oSRF_RHS%WMO_Satellite_ID
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The WMO Sensor ID
+    IF ( oSRF_LHS%WMO_Sensor_ID /= oSRF_RHS%WMO_Sensor_ID ) THEN
+      WRITE( msg,'("WMO_Sensor_ID values are different, ",i0," vs. ",i0 )' ) &
+                 oSRF_LHS%WMO_Sensor_ID, oSRF_RHS%WMO_Sensor_ID
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The Sensor_Type
+    IF ( oSRF_LHS%Sensor_Type /= oSRF_RHS%Sensor_Type ) THEN
+      WRITE( msg,'("Sensor types are different, ",i0,"(",a,") vs. ",i0,"(",a,")")' ) &
+                 oSRF_LHS%Sensor_Type, TRIM(SENSOR_TYPE_NAME(oSRF_LHS%Sensor_Type)), &
+                 oSRF_RHS%Sensor_Type, TRIM(SENSOR_TYPE_NAME(oSRF_RHS%Sensor_Type))
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The Channel
+    IF ( oSRF_LHS%Channel /= oSRF_RHS%Channel ) THEN
+      WRITE( msg,'("Channel values are different, ",i0," vs. ",i0 )' ) &
+                 oSRF_LHS%Channel, oSRF_RHS%Channel
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The Integral
+    IF ( .NOT. Compare_Float( oSRF_LHS%Integral,oSRF_RHS%Integral,ULP=ULP ) ) THEN
+      WRITE( msg,'("Integral values are different, ",es13.6," vs. ",es13.6)' ) &
+                 oSRF_LHS%Integral,oSRF_RHS%Integral
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The flags
+    IF ( oSRF_LHS%Flags /= oSRF_RHS%Flags ) THEN
+      WRITE( msg,'("Flags values are different : ",i0," vs. ",i0)' ) &
+                 oSRF_LHS%Flags, oSRF_RHS%Flags
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The central frequency
+    IF ( .NOT. Compare_Float( oSRF_LHS%f0,oSRF_RHS%f0,ULP=ULP ) ) THEN
+      WRITE( msg,'("f0 values are different, ",es13.6," vs. ",es13.6)' ) &
+                 oSRF_LHS%f0,oSRF_RHS%f0
+      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+    END IF
+    ! ...The Planck_Coeffs
+    DO n = 1, N_PLANCK_COEFFS
+      IF ( .NOT. Compare_Float( oSRF_LHS%Planck_Coeffs(n), &
+                                oSRF_RHS%Planck_Coeffs(n), &
+                                ULP=ULP ) ) THEN
+        WRITE( msg,'("Planck_Coeffs ",i0," values are different, ",es13.6," vs. ",es13.6)' ) &
+                   n, oSRF_LHS%Planck_Coeffs(n),oSRF_RHS%Planck_Coeffs(n)
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    ! ...The Polychromatic_Coeffs
+    DO n = 1, N_POLYCHROMATIC_COEFFS
+      IF ( .NOT. Compare_Float( oSRF_LHS%Polychromatic_Coeffs(n), &
+                                oSRF_RHS%Polychromatic_Coeffs(n), &
+                                ULP=ULP ) ) THEN
+        WRITE( msg,'("Polychromatic_Coeffs ",i0," values are different, ",es13.6," vs. ",es13.6)' ) &
+                   n, oSRF_LHS%Polychromatic_Coeffs(n),oSRF_RHS%Polychromatic_Coeffs(n)
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    ! ...The n_Points values
+    DO n = 1, oSRF_RHS%n_Bands
+      IF ( oSRF_LHS%n_Points(n) /= oSRF_RHS%n_Points(n) ) THEN
+        WRITE( msg,'("n_Points ",i0," values are different, ",i0," vs. ",i0)' ) &
+                   n, oSRF_LHS%n_Points(n),oSRF_RHS%n_Points(n)
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    ! ...The f1 values
+    DO n = 1, oSRF_RHS%n_Bands
+      IF ( .NOT. Compare_Float( oSRF_LHS%f1(n),oSRF_RHS%f1(n),ULP=ULP ) ) THEN
+        WRITE( msg,'("f1 ",i0," values are different, ",es13.6," vs. ",es13.6)' ) &
+                   n, oSRF_LHS%f1(n),oSRF_RHS%f1(n)
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    ! ...The f2 values
+    DO n = 1, oSRF_RHS%n_Bands
+      IF ( .NOT. Compare_Float( oSRF_LHS%f2(n),oSRF_RHS%f2(n),ULP=ULP ) ) THEN
+        WRITE( msg,'("f2 ",i0," values are different, ",es13.6," vs. ",es13.6)' ) &
+                   n, oSRF_LHS%f2(n),oSRF_RHS%f2(n)
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    ! ...The Frequency values
+    DO n = 1, oSRF_RHS%n_Bands
+      equal_status = Equal_PtrArr( oSRF_LHS%Frequency(n), &
+                                   oSRF_RHS%Frequency(n), &
+                                   ULP_Scale=ULP_Scale, &
+                                   Check_All=Check_All )
+      IF ( equal_status /= SUCCESS ) THEN
+        WRITE( msg,'("Frequency ",i0," values are different")' ) n
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+    ! ...The Response values
+    DO n = 1, oSRF_RHS%n_Bands
+      equal_status = Equal_PtrArr( oSRF_LHS%Response(n), &
+                                   oSRF_RHS%Response(n), &
+                                   ULP_Scale=ULP_Scale, &
+                                   Check_All=Check_All )
+      IF ( equal_status /= SUCCESS ) THEN
+        WRITE( msg,'("Response ",i0," values are different")' ) n
+        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
+      END IF
+    END DO
+  
+  CONTAINS
+  
+    SUBROUTINE Equal_CleanUp()
+      err_status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
+    END SUBROUTINE Equal_CleanUp
+    
+  END FUNCTION Equal_oSRF
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
 !
-!    ! Compare the values
-!    ! ------------------
-!    ! The Sensor_ID
-!    IF ( oSRF_LHS%Sensor_Id /= oSRF_RHS%Sensor_Id ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("Sensor_ID values are different, ",a," vs. ",a)' ) &
-!                 TRIM( oSRF_LHS%Sensor_Id), TRIM( oSRF_RHS%Sensor_Id)
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
+! NAME:
+!       Set_oSRF
 !
-!    ! The WMO Satellite ID
-!    IF ( oSRF_LHS%WMO_Satellite_ID /= oSRF_RHS%WMO_Satellite_ID ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("WMO_Satellite_ID values are different, ",i0," vs. ",i0 )' ) &
-!                 oSRF_LHS%WMO_Satellite_ID, oSRF_RHS%WMO_Satellite_ID
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
+! PURPOSE:
+!       Function to sets the value of a property or a group of properties for
+!       an oSRF structure.
 !
-!    ! The WMO Sensor ID
-!    IF ( oSRF_LHS%WMO_Sensor_ID /= oSRF_RHS%WMO_Sensor_ID ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("WMO_Sensor_ID values are different, ",i0," vs. ",i0 )' ) &
-!                 oSRF_LHS%WMO_Sensor_ID, oSRF_RHS%WMO_Sensor_ID
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
+! CALLING SEQUENCE:
+!       Error_Status = Set_oSRF( &
+!         oSRF                                       , &  ! Output
+!         Band                 = Band                , &  ! Optional input
+!         Version              = Version             , &  ! Optional input
+!         Sensor_Id            = Sensor_Id           , &  ! Optional input
+!         WMO_Satellite_Id     = WMO_Satellite_Id    , &  ! Optional input
+!         WMO_Sensor_Id        = WMO_Sensor_Id       , &  ! Optional input
+!         Sensor_Type          = Sensor_Type         , &  ! Optional input
+!         Channel              = Channel             , &  ! Optional input
+!         Integral             = Integral            , &  ! Optional input
+!         Flags                = Flags               , &  ! Optional input
+!         f0                   = f0                  , &  ! Optional input
+!         Planck_Coeffs        = Planck_Coeffs       , &  ! Optional input
+!         Polychromatic_Coeffs = Polychromatic_Coeffs, &  ! Optional input
+!         R                    = R                   , &  ! Optional input
+!         T                    = T                   , &  ! Optional input
+!         f1                   = f1                  , &  ! Optional input
+!         f2                   = f2                  , &  ! Optional input
+!         Frequency            = Frequency           , &  ! Optional input
+!         Response             = Response            )    ! Optional input
 !
-!    ! The Sensor_Type
-!    IF ( oSRF_LHS%Sensor_Type /= oSRF_RHS%Sensor_Type ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("Sensor types are different, ",i0,"(",a,") vs. ",i0,"(",a,")")' ) &
-!                 oSRF_LHS%Sensor_Type, TRIM(SENSOR_TYPE_NAME(oSRF_LHS%Sensor_Type)), &
-!                 oSRF_RHS%Sensor_Type, TRIM(SENSOR_TYPE_NAME(oSRF_RHS%Sensor_Type))
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
-!
-!    ! The Channel
-!    IF ( oSRF_LHS%Channel /= oSRF_RHS%Channel ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("Channel values are different, ",i0," vs. ",i0 )' ) &
-!                 oSRF_LHS%Channel, oSRF_RHS%Channel
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
-!
-!    ! The Integrated_oSRF
-!    IF ( .NOT. Compare_Float( oSRF_LHS%Integrated_oSRF,oSRF_RHS%Integrated_oSRF,ULP=ULP ) ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("Integrated_oSRF values are different, ",es13.6," vs. ",es13.6)' ) &
-!                 oSRF_LHS%Integrated_oSRF,oSRF_RHS%Integrated_oSRF
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
-!
-!    ! The Summation_oSRF
-!    IF ( .NOT. Compare_Float( oSRF_LHS%Summation_oSRF,oSRF_RHS%Summation_oSRF,ULP=ULP ) ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("Summation_oSRF values are different, ",es13.6," vs. ",es13.6)' ) &
-!                 oSRF_LHS%Summation_oSRF,oSRF_RHS%Summation_oSRF
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
-!
-!    ! The f1_Band values
-!    DO n = 1, oSRF_RHS%n_Bands
-!      IF ( .NOT. Compare_Float( oSRF_LHS%f1_Band(n),oSRF_RHS%f1_Band(n),ULP=ULP ) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( msg,'("f1_Band ",i0," values are different, ",es13.6," vs. ",es13.6)' ) &
-!                   n, oSRF_LHS%f1_Band(n),oSRF_RHS%f1_Band(n)
-!        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!    END DO
-!
-!    ! The f2_Band values
-!    DO n = 1, oSRF_RHS%n_Bands
-!      IF ( .NOT. Compare_Float( oSRF_LHS%f2_Band(n),oSRF_RHS%f2_Band(n),ULP=ULP ) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( msg,'("f2_Band ",i0," values are different, ",es13.6," vs. ",es13.6)' ) &
-!                   n, oSRF_LHS%f2_Band(n),oSRF_RHS%f2_Band(n)
-!        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!    END DO
-!
-!    ! The npts_Band values
-!    DO n = 1, oSRF_RHS%n_Bands
-!      IF ( oSRF_LHS%npts_Band(n) /= oSRF_RHS%npts_Band(n) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( msg,'("npts_Band ",i0," values are different, ",i0," vs. ",i0)' ) &
-!                   n, oSRF_LHS%npts_Band(n),oSRF_RHS%npts_Band(n)
-!        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!    END DO
-!
-!    ! The Frequency values
-!    DO n = 1, oSRF_RHS%n_Points
-!      IF ( .NOT. Compare_Float( oSRF_LHS%Frequency(n),oSRF_RHS%Frequency(n),ULP=ULP ) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( msg,'("Frequency values are different, ",es13.6," vs. ",es13.6," at point ",i0)' ) &
-!                   oSRF_LHS%Frequency(n),oSRF_RHS%Frequency(n), n
-!        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!    END DO
-!  
-!  END FUNCTION Equal_oSRF
+! OUTPUT ARGUMENTS:
+!       oSRF:          oSRF structure that is to have it properties modified.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
 !
+! OPTIONAL INPUT ARGUMENTS:
+!       Band:                  The band number to which the frequency and
+!                              response data refer.
+!                              If not specified, default value is 1.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  SCALAR
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Version:               The version number of the SRF data.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Sensor_ID:             A character string identifying the sensor and
+!                              satellite platform used to contruct filenames.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       WMO_Satellite_ID:      The WMO code used to identify satellite platforms.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       WMO_Sensor_ID:         The WMO code used to identify sensors.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Sensor_Type:           The flag indicating the type of sensor (IR, MW, etc)
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Channel:               The sensor channel for the currenobject.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Integral:              The integrated SRF value.
+!                              UNITS:      N/A
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Flags:                 Bit flags set/cleared during SRF processing.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       f0:                    The central frequency of the SRF.
+!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Planck_Coeffs:         Vector of Planck function coefficients for the SRF.
+!                              UNITS:      Variable
+!                              TYPE:       REAL
+!                              DIMENSION:  Rank-1
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Polychromatic_Coeffs:  Vector of polychromatic correction coefficient for the SRF.
+!                              UNITS:      Variable
+!                              TYPE:       REAL
+!                              DIMENSION:  Rank-1
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       f1:                    The begin frequency of the SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       f2:                    The end frequency of the SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Frequency:             The frequency grid for an SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      Inverse centimetres (cm^-1)
+!                              TYPE:       REAL
+!                              DIMENSION:  n_Points
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Response:              The response data for an SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      N/A
+!                              TYPE:       REAL
+!                              DIMENSION:  n_Points
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:  The return value is an integer defining the error status.
+!                      The error codes are defined in the Message_Handler module.
+!                      If == SUCCESS the property set succeeded
+!                         == FAILURE an error occurred
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION Set_oSRF( &
+    oSRF                , &  ! In/output
+    Band                , &  ! Optional input
+    Version             , &  ! Optional input
+    Sensor_Id           , &  ! Optional input
+    WMO_Satellite_Id    , &  ! Optional input
+    WMO_Sensor_Id       , &  ! Optional input
+    Sensor_Type         , &  ! Optional input
+    Channel             , &  ! Optional input
+    Integral            , &  ! Optional input
+    Flags               , &  ! Optional input
+    f0                  , &  ! Optional input
+    Planck_Coeffs       , &  ! Optional input
+    Polychromatic_Coeffs, &  ! Optional input
+    f1                  , &  ! Optional input
+    f2                  , &  ! Optional input
+    Frequency           , &  ! Optional input
+    Response            ) &  ! Optional input
+  RESULT( err_status )
+    ! Arguments
+    TYPE(oSRF_type),        INTENT(IN OUT) :: oSRF
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Band                
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Version             
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Sensor_Id           
+    INTEGER,      OPTIONAL, INTENT(IN)     :: WMO_Satellite_Id    
+    INTEGER,      OPTIONAL, INTENT(IN)     :: WMO_Sensor_Id       
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Sensor_Type         
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Channel             
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Integral            
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Flags               
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: f0                  
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Planck_Coeffs(SIZE(oSRF%Planck_Coeffs))       
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Polychromatic_Coeffs(SIZE(oSRF%Polychromatic_Coeffs))
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: f1                  
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: f2                  
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Frequency(:)           
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Response(:)            
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_oSRF'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: l_Band
+    
+    ! Set up
+    err_status = SUCCESS
+    
+    
+    ! Check band argument
+    l_Band = 1
+    IF ( PRESENT(Band) ) THEN
+      l_Band = Band
+      IF ( l_Band < 1 .OR. l_Band > oSRF%n_Bands ) THEN
+        WRITE( msg, '("Invalid band, ",i0,", specified for input oSRF")' ) l_Band
+        CALL Set_CleanUp(); RETURN
+      END IF
+    END IF
+
+
+    ! Set data with defined sizes
+    IF ( PRESENT(Version             ) ) oSRF%Version              = Version  
+    IF ( PRESENT(Sensor_Id           ) ) oSRF%Sensor_Id            = Sensor_Id       
+    IF ( PRESENT(WMO_Satellite_Id    ) ) oSRF%WMO_Satellite_Id     = WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id       ) ) oSRF%WMO_Sensor_Id        = WMO_Sensor_Id   
+    IF ( PRESENT(Sensor_Type         ) ) oSRF%Sensor_Type          = Sensor_Type     
+    IF ( PRESENT(Channel             ) ) oSRF%Channel              = Channel         
+    IF ( PRESENT(Integral            ) ) oSRF%Integral             = Integral        
+    IF ( PRESENT(Flags               ) ) oSRF%Flags                = Flags           
+    IF ( PRESENT(f0                  ) ) oSRF%f0                   = f0              
+    IF ( PRESENT(Planck_Coeffs       ) ) oSRF%Planck_Coeffs        = Planck_Coeffs                       
+    IF ( PRESENT(Polychromatic_Coeffs) ) oSRF%Polychromatic_Coeffs = Polychromatic_Coeffs                
+    IF ( PRESENT(f1                  ) ) oSRF%f1(l_Band)           = f1            
+    IF ( PRESENT(f2                  ) ) oSRF%f2(l_Band)           = f2            
+
+
+    ! Set frequency data
+    IF ( PRESENT(Frequency) ) THEN
+      err_status = Set_PtrArr( oSRF%Frequency(l_Band), Frequency )
+      IF ( err_status /= SUCCESS ) THEN
+        WRITE( msg, '("Error setting frequency for band ",i0)' ) l_Band
+        CALL Set_CleanUp(); RETURN
+      END IF
+      ! ...Set the frequency limits
+      oSRF%f1(l_Band) = Frequency(1)
+      oSRF%f2(l_Band) = Frequency(SIZE(Frequency))
+    END IF
+    
+    
+    ! Set Response data
+    IF ( PRESENT(Response) ) THEN
+      err_status = Set_PtrArr( oSRF%Response(l_Band), Response )
+      IF ( err_status /= SUCCESS ) THEN
+        WRITE( msg, '("Error setting Response for band ",i0)' ) l_Band
+        CALL Set_CleanUp(); RETURN
+      END IF
+    END IF
+    
+  CONTAINS
+  
+    SUBROUTINE Set_CleanUp()
+      err_status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
+    END SUBROUTINE Set_CleanUp
+    
+    
+  END FUNCTION Set_oSRF
+  
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Get_oSRF
+!
+! PURPOSE:
+!       Function to get the value of a property or a group of properties for
+!       an oSRF structure.
+!
+! CALLING SEQUENCE:
+!       Error_Status = get_oSRF( &
+!         oSRF                                       , &  ! Output
+!         Band                 = Band                , &  ! Optional input
+!         Version              = Version             , &  ! Optional output
+!         Sensor_Id            = Sensor_Id           , &  ! Optional output
+!         WMO_Satellite_Id     = WMO_Satellite_Id    , &  ! Optional output
+!         WMO_Sensor_Id        = WMO_Sensor_Id       , &  ! Optional output
+!         Sensor_Type          = Sensor_Type         , &  ! Optional output
+!         Channel              = Channel             , &  ! Optional output
+!         Integral             = Integral            , &  ! Optional output
+!         Flags                = Flags               , &  ! Optional output
+!         f0                   = f0                  , &  ! Optional output
+!         Planck_Coeffs        = Planck_Coeffs       , &  ! Optional output
+!         Polychromatic_Coeffs = Polychromatic_Coeffs, &  ! Optional output
+!         f1                   = f1                  , &  ! Optional output
+!         f2                   = f2                  , &  ! Optional output
+!         Frequency            = Frequency           , &  ! Optional output
+!         Response             = Response            )    ! Optional output
+!
+! OUTPUT ARGUMENTS:
+!       oSRF:          oSRF structure that is to have it properties modified.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Band:                  The band number to which the frequency and
+!                              response data refer.
+!                              If not specified, default value is 1.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  SCALAR
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       Version:               The version number of the SRF data.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Sensor_ID:             A character string identifying the sensor and
+!                              satellite platform used to contruct filenames.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       WMO_Satellite_ID:      The WMO code used to identify satellite platforms.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       WMO_Sensor_ID:         The WMO code used to identify sensors.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Sensor_Type:           The flag indicating the type of sensor (IR, MW, etc)
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Channel:               The sensor channel for the currenobject.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Integral:              The integrated SRF value.
+!                              UNITS:      N/A
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Flags:                 Bit flags set/cleared during SRF processing.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       f0:                    The central frequency of the SRF.
+!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Planck_Coeffs:         Vector of Planck function coefficients for the SRF.
+!                              UNITS:      Variable
+!                              TYPE:       REAL
+!                              DIMENSION:  Rank-1
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Polychromatic_Coeffs:  Vector of polychromatic correction coefficient for the SRF.
+!                              UNITS:      Variable
+!                              TYPE:       REAL
+!                              DIMENSION:  Rank-1
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Points:              The number of points that specify the band frequency
+!                              and responmse data.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       f1:                    The begin frequency of the SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       f2:                    The end frequency of the SRF bands.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                              TYPE:       REAL
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Frequency:             The frequency grid for an SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      Inverse centimetres (cm^-1)
+!                              TYPE:       REAL
+!                              DIMENSION:  n_Points
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Response:              The response data for an SRF band.
+!                              Used in conjunction with the Band keyword argument.
+!                              UNITS:      N/A
+!                              TYPE:       REAL
+!                              DIMENSION:  n_Points
+!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:  The return value is an integer defining the error status.
+!                      The error codes are defined in the Message_Handler module.
+!                      If == SUCCESS the property get succeeded
+!                         == FAILURE an error occurred
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION Get_oSRF( &
+    oSRF                , &  ! Input
+    Band                , &  ! Optional input
+    Version             , &  ! Optional output
+    Sensor_Id           , &  ! Optional output
+    WMO_Satellite_Id    , &  ! Optional output
+    WMO_Sensor_Id       , &  ! Optional output
+    Sensor_Type         , &  ! Optional output
+    Channel             , &  ! Optional output
+    Integral            , &  ! Optional output
+    Flags               , &  ! Optional output
+    f0                  , &  ! Optional output
+    Planck_Coeffs       , &  ! Optional output
+    Polychromatic_Coeffs, &  ! Optional output
+    n_Points            , &  ! Optional output
+    f1                  , &  ! Optional output
+    f2                  , &  ! Optional output
+    Frequency           , &  ! Optional output
+    Response            ) &  ! Optional output
+  RESULT( err_status )
+    ! Arguments
+    TYPE(oSRF_type),        INTENT(IN)  :: oSRF
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Band                
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version             
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id           
+    INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id       
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Sensor_Type         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Channel             
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Integral            
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Flags               
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: f0                  
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(oSRF%Planck_Coeffs))       
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(oSRF%Polychromatic_Coeffs))
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Points
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: f1                  
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: f2                  
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Frequency(:)           
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Response(:)            
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_oSRF'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: l_Band
+    
+    ! Set up
+    err_status = SUCCESS
+    
+    
+    ! Check band argument
+    l_Band = 1
+    IF ( PRESENT(Band) ) THEN
+      l_Band = Band
+      IF ( l_Band < 1 .OR. l_Band > oSRF%n_Bands ) THEN
+        WRITE( msg, '("Invalid band, ",i0,", specified for input oSRF")' ) l_Band
+        CALL Set_CleanUp(); RETURN
+      END IF
+    END IF
+
+
+    ! Get data with defined sizes
+    IF ( PRESENT(Version             ) ) Version              = oSRF%Version  
+    IF ( PRESENT(Sensor_Id           ) ) Sensor_Id            = oSRF%Sensor_Id       
+    IF ( PRESENT(WMO_Satellite_Id    ) ) WMO_Satellite_Id     = oSRF%WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id       ) ) WMO_Sensor_Id        = oSRF%WMO_Sensor_Id   
+    IF ( PRESENT(Sensor_Type         ) ) Sensor_Type          = oSRF%Sensor_Type     
+    IF ( PRESENT(Channel             ) ) Channel              = oSRF%Channel         
+    IF ( PRESENT(Integral            ) ) Integral             = oSRF%Integral        
+    IF ( PRESENT(Flags               ) ) Flags                = oSRF%Flags           
+    IF ( PRESENT(f0                  ) ) f0                   = oSRF%f0              
+    IF ( PRESENT(Planck_Coeffs       ) ) Planck_Coeffs        = oSRF%Planck_Coeffs                       
+    IF ( PRESENT(Polychromatic_Coeffs) ) Polychromatic_Coeffs = oSRF%Polychromatic_Coeffs                
+    IF ( PRESENT(n_Points            ) ) n_Points             = oSRF%n_Points(l_Band)    
+    IF ( PRESENT(f1                  ) ) f1                   = oSRF%f1(l_Band)    
+    IF ( PRESENT(f2                  ) ) f2                   = oSRF%f2(l_Band)    
+
+
+    ! Get frequency data
+    IF ( PRESENT(Frequency) ) THEN
+      err_status = Get_PtrArr( oSRF%Frequency(l_Band), Frequency )
+      IF ( err_status /= SUCCESS ) THEN
+        WRITE( msg, '("Error getting frequency for band ",i0)' ) l_Band
+        CALL Set_CleanUp(); RETURN
+      END IF
+    END IF
+    
+    
+    ! Get Response data
+    IF ( PRESENT(Response) ) THEN
+      err_status = Get_PtrArr( oSRF%Response(l_Band), Response )
+      IF ( err_status /= SUCCESS ) THEN
+        WRITE( msg, '("Error Getting Response for band ",i0)' ) l_Band
+        CALL Set_CleanUp(); RETURN
+      END IF
+    END IF
+    
+  CONTAINS
+  
+    SUBROUTINE Set_CleanUp()
+      err_status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
+    END SUBROUTINE Set_CleanUp
+    
+    
+  END FUNCTION Get_oSRF
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Inspect_oSRF
+!
+! PURPOSE:
+!       Function to view the contents of an oSRF structure.
+!
+! CALLING SEQUENCE:
+!       CALL Inspect_oSRF( oSRF )
+!
+! INPUT ARGUMENTS:
+!       oSRF:          oSRF structure to inspect.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Inspect_oSRF( oSRF )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    ! Local arguments
+    INTEGER :: n
+    ! Output the oSRF components     
+    WRITE( *,'(/2x,"oSRF INSPECT")' )
+    WRITE( *,'( 2x,"============")' )
+    WRITE( *,'(2x,"Release              : ", i0)'             ) oSRF%Release
+    WRITE( *,'(2x,"Version              : ", i0)'             ) oSRF%Version  
+    WRITE( *,'(2x,"Sensor_Id            : ",  a)'             ) oSRF%Sensor_Id       
+    WRITE( *,'(2x,"WMO_Satellite_Id     : ", i0)'             ) oSRF%WMO_Satellite_Id
+    WRITE( *,'(2x,"WMO_Sensor_Id        : ", i0)'             ) oSRF%WMO_Sensor_Id   
+    WRITE( *,'(2x,"Sensor_Type          : ",  a)'             ) SENSOR_TYPE_NAME(oSRF%Sensor_Type)
+    WRITE( *,'(2x,"Channel              : ", i0)'             ) oSRF%Channel         
+    WRITE( *,'(2x,"Integral             : ", es13.6)'         ) oSRF%Integral        
+    WRITE( *,'(2x,"Flags                : ", i0)'             ) oSRF%Flags           
+    WRITE( *,'(2x,"f0                   : ", es13.6)'         ) oSRF%f0              
+    WRITE( *,'(2x,"Planck_Coeffs        : ", 2(es13.6,1x))'   ) oSRF%Planck_Coeffs       
+    WRITE( *,'(2x,"Polychromatic_Coeffs : ", 3(es13.6,:,1x))' ) oSRF%Polychromatic_Coeffs
+    WRITE( *,'(2x,"n_Bands              : ", i0)'             ) oSRF%n_Bands
+    IF ( oSRF%n_Bands == 0 ) THEN
+      WRITE( *,'(10x,"Press <ENTER> to continue...")', ADVANCE='NO' )
+      READ(*,*)
+    END IF
+    DO n = 1, oSRF%n_Bands
+      WRITE( *,'(/2x,"BAND NUMBER ",i0)' ) n
+      WRITE( *,'(4x,"n_Points             : ", i0)'             ) oSRF%n_Points(n)
+      WRITE( *,'(4x,"f1                   : ", es13.6)'         ) oSRF%f1(n)
+      WRITE( *,'(4x,"f2                   : ", es13.6)'         ) oSRF%f2(n)
+      WRITE( *,'(/4x,"FREQUENCY")' )
+      CALL Inspect_PtrArr( oSRF%Frequency(n) )
+      WRITE( *,'(/4x,"RESPONSE")' )
+      CALL Inspect_PtrArr( oSRF%Response(n) )
+      WRITE( *,'(10x,"Press <ENTER> to continue...")', ADVANCE='NO' ); READ(*,*)
+    END DO
+  END SUBROUTINE Inspect_oSRF
+
+
 !!----------------------------------------------------------------------------------
 !!:sdoc+:
 !!
