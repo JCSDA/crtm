@@ -19,7 +19,8 @@ PROGRAM Test_oSRF
   USE oSRF_Define, ONLY: oSRF_type, &
                          Allocated_oSRF, &
                          Create_oSRF   , &
-                         Destroy_oSRF
+                         Destroy_oSRF  , &
+                         Assign_oSRF
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -40,7 +41,8 @@ PROGRAM Test_oSRF
   ! Variables
   ! ---------
   INTEGER :: err_status
-  TYPE(oSRF_type) :: osrf1, osrf2
+  INTEGER :: i
+  TYPE(oSRF_type) :: osrf1, osrf2, osrf2_copy
 
 
   ! Output header
@@ -66,6 +68,18 @@ PROGRAM Test_oSRF
   WRITE( *,'( 5x,"oSRF allocation status: ",2(1x,l5))' ) Allocated_oSRF((/osrf1,osrf2/))
 
 
+  ! Test assignment
+  WRITE( *,'(/5x,"Testing assignment routines...")' )
+!  osrf2%f1 = 0.693147181_fp
+!  osrf2%f2 = 3.141592653_fp
+  DO i = 1, 5
+    err_status = Assign_oSRF(osrf2, osrf2_copy)
+    CALL Display_Message('Assign_oSRF','',err_status)
+  END DO
+  IF ( err_status /= SUCCESS ) STOP
+  WRITE( *,'( 5x,"oSRF allocation status:",2(1x,l5))' ) Allocated_oSRF((/osrf2,osrf2_copy/))
+
+
   ! Test destruction
   WRITE( *,'(/5x,"Testing destruction routines...")' )
   err_status = Destroy_oSRF(osrf1)
@@ -74,6 +88,9 @@ PROGRAM Test_oSRF
   err_status = Destroy_oSRF(osrf2)
   CALL Display_Message('Destroy_oSRF','Multiple band',err_status)
   IF ( err_status /= SUCCESS ) STOP
-  WRITE( *,'( 5x,"oSRF allocation status: ",2(1x,l5))' ) Allocated_oSRF((/osrf1,osrf2/))
+  err_status = Destroy_oSRF(osrf2_copy)
+  CALL Display_Message('Destroy_oSRF','Multiple band copy',err_status)
+  IF ( err_status /= SUCCESS ) STOP
+  WRITE( *,'( 5x,"oSRF allocation status: ",3(1x,l5))' ) Allocated_oSRF((/osrf1,osrf2,osrf2_copy/))
 
 END PROGRAM Test_oSRF

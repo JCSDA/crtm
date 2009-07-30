@@ -37,7 +37,7 @@ MODULE oSRF_Define
   PUBLIC :: Allocated_oSRF
   PUBLIC :: Destroy_oSRF
   PUBLIC :: Create_oSRF
-!  PUBLIC :: Assign_oSRF
+  PUBLIC :: Assign_oSRF
 !  PUBLIC :: Equal_oSRF
 !  PUBLIC :: CheckRelease_oSRF
 !  PUBLIC :: Info_oSRF
@@ -66,7 +66,7 @@ MODULE oSRF_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id:$'
+    '$Id$'
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! msg length
   INTEGER,  PARAMETER :: SL = 20  ! Sensor Id length
@@ -123,9 +123,9 @@ MODULE oSRF_Define
     REAL(fp) :: Planck_Coeffs(N_PLANCK_COEFFS)               = ZERO
     REAL(fp) :: Polychromatic_Coeffs(N_POLYCHROMATIC_COEFFS) = ZERO
     ! Pointer components
+    INTEGER,           ALLOCATABLE :: n_Points(:)  ! nB
     REAL(fp),          ALLOCATABLE :: f1(:)        ! nB
     REAL(fp),          ALLOCATABLE :: f2(:)        ! nB
-    INTEGER,           ALLOCATABLE :: n_Points(:)  ! nB
     TYPE(PtrArr_type), ALLOCATABLE :: Frequency(:) ! nB
     TYPE(PtrArr_type), ALLOCATABLE :: Response(:)  ! nB
   END TYPE oSRF_type
@@ -235,7 +235,7 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Destroy_scalar( &
-    oSRF ) &  ! Output
+    oSRF ) &
   RESULT( err_status )
     ! Arguments
     TYPE(oSRF_type), INTENT(OUT) :: oSRF
@@ -249,7 +249,7 @@ CONTAINS
 
 
   FUNCTION Destroy_rank1( &
-    oSRF ) &  ! Output
+    oSRF ) &
   RESULT( err_status )
     ! Arguments
     TYPE(oSRF_type), INTENT(OUT) :: oSRF(:)
@@ -308,8 +308,8 @@ CONTAINS
     oSRF       ) &  ! Output
   RESULT( err_status )
     ! Arguments
-    INTEGER,                INTENT(IN)  :: n_Points(:)
-    TYPE(oSRF_type),        INTENT(OUT) :: oSRF
+    INTEGER,         INTENT(IN)  :: n_Points(:)
+    TYPE(oSRF_type), INTENT(OUT) :: oSRF
     ! Function result
     INTEGER :: err_status
     ! Local parameters
@@ -332,19 +332,20 @@ CONTAINS
     n_Bands = SIZE(n_Points)
 
 
-    ! Perform the allocations
-    ! ...The main arrays
-    ALLOCATE(  oSRF%f1( n_Bands )       , &
-               oSRF%f2( n_Bands )       , &
-               oSRF%n_Points( n_Bands ) , &
-               oSRF%Frequency( n_Bands ), &
-               oSRF%Response( n_Bands ) , &
-               STAT = alloc_status        )
+    ! Perform the main array allocations
+    ALLOCATE( oSRF%n_Points( n_Bands ) , &
+              oSRF%f1( n_Bands )       , &
+              oSRF%f2( n_Bands )       , &
+              oSRF%Frequency( n_Bands ), &
+              oSRF%Response( n_Bands ) , &
+              STAT = alloc_status        )
     IF ( alloc_status /= 0 ) THEN
       WRITE( msg,'("Error allocating oSRF data arrays. STAT = ",i0)' ) alloc_status
       CALL Create_CleanUp(); RETURN
     END IF
-    ! ...The individual band elements
+
+
+    ! Allocate the individual band elements
     DO i = 1, n_Bands
       ! Frequency arrays
       alloc_status = Create_PtrArr( n_Points(i), oSRF%Frequency(i) )
@@ -378,140 +379,115 @@ CONTAINS
   END FUNCTION Create_oSRF
 
 
-!!------------------------------------------------------------------------------
-!!:sdoc+:
-!!
-!! NAME:
-!!       Assign_oSRF
-!!
-!! PURPOSE:
-!!       Function to copy valid oSRF structures.
-!!
-!! CALLING SEQUENCE:
-!!       Error_Status = Assign_oSRF( oSRF_in                 , &  ! Input
-!!                                  oSRF_out                , &  ! Output
-!!                                  RCS_Id     =RCS_Id     , &  ! Revision control
-!!                                  Message_Log=Message_Log  )  ! Error messaging
-!!
-!! INPUT ARGUMENTS:
-!!       oSRF_in:       oSRF structure which is to be copied.
-!!                     UNITS:      N/A
-!!                     TYPE:       TYPE(oSRF_type)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN)
-!!
-!! OUTPUT ARGUMENTS:
-!!       oSRF_out:      Copy of the input structure, oSRF_in.
-!!                     UNITS:      N/A
-!!                     TYPE:       TYPE(oSRF_type)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN OUT)
-!!
-!! OPTIONAL INPUT ARGUMENTS:
-!!       Message_Log:  Character string specifying a filename in which any
-!!                     messages will be logged. If not specified, or if an
-!!                     error occurs opening the log file, the default action
-!!                     is to output messages to standard output.
-!!                     UNITS:      N/A
-!!                     TYPE:       CHARACTER(*)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!!
-!! OPTIONAL OUTPUT ARGUMENTS:
-!!       RCS_Id:       Character string containing the Revision Control
-!!                     System Id field for the module.
-!!                     UNITS:      None
-!!                     TYPE:       CHARACTER(*)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!!
-!! FUNCTION RESULT:
-!!       Error_Status: The return value is an integer defining the error status.
-!!                     The error codes are defined in the Message_Handler module.
-!!                     If == SUCCESS the structure assignment was successful
-!!                        == FAILURE an error occurred
-!!                     UNITS:      N/A
-!!                     TYPE:       INTEGER
-!!                     DIMENSION:  Scalar
-!!
-!! COMMENTS:
-!!       Note the INTENT on the output oSRF argument is IN OUT rather than
-!!       just OUT. This is necessary because the argument may be defined upon
-!!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!!
-!!:sdoc-:
-!!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+!:sdoc+:
 !
-!  FUNCTION Assign_oSRF( oSRF_in     , &  ! Input
-!                       oSRF_out    , &  ! Output
-!                       RCS_Id     , &  ! Revision control
-!                       Message_Log) &  ! Error messaging
-!                     RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(oSRF_type),         INTENT(IN)     :: oSRF_in
-!    TYPE(oSRF_type),         INTENT(IN OUT) :: oSRF_out
-!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_oSRF'
-!    ! Local variables
+! NAME:
+!       Assign_oSRF
 !
-!    ! Setup
-!    ! -----
-!    Error_Status = SUCCESS
-!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+! PURPOSE:
+!       Function to copy valid oSRF structures.
 !
-!    ! ALL *input* pointers must be associated
-!    IF ( .NOT. Associated_oSRF( oSRF_In ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT oSRF pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
+! CALLING SEQUENCE:
+!       Error_Status = Assign_oSRF( oSRF_in, oSRF_out )
 !
+! INPUT ARGUMENTS:
+!       oSRF_in:      oSRF structure which is to be copied.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(oSRF_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
 !
-!    ! Allocate the structure
-!    ! ----------------------
-!    Error_Status = Allocate_oSRF( oSRF_In%n_Points, &
-!                                 oSRF_Out, &
-!                                 n_Bands=oSRF_In%n_Bands, &
-!                                 Message_Log=Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error allocating output oSRF arrays.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
+! OUTPUT ARGUMENTS:
+!       oSRF_out:     Copy of the input structure, oSRF_in.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(oSRF_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
 !
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the structure assignment was successful
+!                        == FAILURE an error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
 !
-!    ! Assign intrinsic data types
-!    ! ---------------------------
-!    oSRF_out%Release = oSRF_in%Release
-!    oSRF_out%Version = oSRF_in%Version
-!    
-!    oSRF_out%Sensor_ID        = oSRF_in%Sensor_ID  
-!    oSRF_out%WMO_Satellite_Id = oSRF_in%WMO_Satellite_Id
-!    oSRF_out%WMO_Sensor_Id    = oSRF_in%WMO_Sensor_Id
-!    oSRF_out%Sensor_Type      = oSRF_in%Sensor_Type   
-!    oSRF_out%Channel          = oSRF_in%Channel
-!    oSRF_out%Integrated_oSRF   = oSRF_in%Integrated_oSRF
-!    oSRF_out%Summation_oSRF    = oSRF_in%Summation_oSRF
-!    oSRF_out%f1_Band          = oSRF_in%f1_Band 
-!    oSRF_out%f2_Band          = oSRF_in%f2_Band 
-!    oSRF_out%npts_Band        = oSRF_in%npts_Band 
-!    oSRF_out%Frequency        = oSRF_in%Frequency
-!    oSRF_out%Response         = oSRF_in%Response
-!
-!  END FUNCTION Assign_oSRF
-!
-!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION Assign_oSRF( &
+    oSRF_in , &  ! Input
+    oSRF_out) &  ! Output
+  RESULT( err_status )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN)  :: oSRF_in
+    TYPE(oSRF_type), INTENT(OUT) :: oSRF_out
+    ! Function result
+    INTEGER :: err_status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_oSRF'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: i
+    
+    ! Setup
+    err_status = SUCCESS
+    ! ...ALL *input* components must be allocated
+    IF ( .NOT. Allocated_oSRF( oSRF_In ) ) THEN
+      msg = 'Some or all INPUT oSRF pointer members are NOT allocated.'
+      CALL Assign_CleanUp(); RETURN
+    END IF
+
+
+    ! Allocate the structure
+    err_status = Create_oSRF( oSRF_In%n_Points, oSRF_Out )
+    IF ( err_status /= SUCCESS ) THEN
+      msg = 'Error allocating output oSRF arrays.'
+      CALL Assign_CleanUp(); RETURN
+    END IF
+
+
+    ! Copy data
+    oSRF_out%Sensor_ID            = oSRF_in%Sensor_ID  
+    oSRF_out%WMO_Satellite_Id     = oSRF_in%WMO_Satellite_Id    
+    oSRF_out%WMO_Sensor_Id        = oSRF_in%WMO_Sensor_Id       
+    oSRF_out%Sensor_Type          = oSRF_in%Sensor_Type         
+    oSRF_out%Channel              = oSRF_in%Channel             
+    oSRF_out%Integral             = oSRF_in%Integral            
+    oSRF_out%Flags                = oSRF_in%Flags               
+    oSRF_out%f0                   = oSRF_in%f0                  
+    oSRF_out%Planck_Coeffs        = oSRF_in%Planck_Coeffs       
+    oSRF_out%Polychromatic_Coeffs = oSRF_in%Polychromatic_Coeffs
+    oSRF_out%n_Points             = oSRF_in%n_Points
+    oSRF_out%f1                   = oSRF_in%f1
+    oSRF_out%f2                   = oSRF_in%f2
+    DO i = 1, oSRF_in%n_Bands
+      ! Copy the frequency data
+      err_status = Assign_PtrArr(oSRF_in%Frequency(i), oSRF_out%Frequency(i) )
+      IF ( err_status /= SUCCESS ) THEN
+        WRITE( msg, '("Error assigning output frequency for band #",i0)' ) i
+        CALL Assign_CleanUp(); RETURN
+      END IF
+      ! Copy the response data
+      err_status = Assign_PtrArr(oSRF_in%Response(i), oSRF_out%Response(i) )
+      IF ( err_status /= SUCCESS ) THEN
+        WRITE( msg, '("Error assigning output frequency for band #",i0)' ) i
+        CALL Assign_CleanUp(); RETURN
+      END IF
+    END DO
+ 
+  CONTAINS
+  
+    SUBROUTINE Assign_CleanUp()
+      err_status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
+    END SUBROUTINE Assign_CleanUp
+    
+  END FUNCTION Assign_oSRF
+
+
 !!--------------------------------------------------------------------------------
 !!:sdoc+:
 !!
