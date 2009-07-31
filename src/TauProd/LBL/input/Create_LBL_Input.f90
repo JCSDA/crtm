@@ -21,7 +21,10 @@ PROGRAM Create_LBL_Input
   USE AtmProfile_Define
   USE AtmProfile_netCDF_IO
 
-  USE LBLRTM_Input
+  USE LBLRTM_Input, ONLY: Create_LBLRTM_TAPE5
+  USE MONORTM_Input, ONLY:  Calculation_Flags_Type, &
+                            Create_MONORTM_TAPE5
+                            
 
 
   ! -----------------------
@@ -50,7 +53,6 @@ PROGRAM Create_LBL_Input
   ! Default climatology model
   INTEGER, PARAMETER :: US_STD_ATM = 6
 
-
   ! ---------
   ! Variables
   ! ---------
@@ -63,7 +65,9 @@ PROGRAM Create_LBL_Input
   CHARACTER( 78) :: TAPE5_Header
   INTEGER :: j, m, n, n_Profiles
   INTEGER, DIMENSION(2) :: j_idx
+  INTEGER :: File_Type
   TYPE(AtmProfile_type), ALLOCATABLE :: ap(:)
+  TYPE(Calculation_Flags_type) :: calculation_flags
 
 
   ! Output header
@@ -87,6 +91,11 @@ PROGRAM Create_LBL_Input
                           FAILURE )
     STOP
   END IF
+  ! Read the specified input file type (MONORTM or LBLRTM)
+  WRITE( *, FMT = '( /5x, "Enter 1 for LBLRTM or 2 for MONORTM: " )', &
+            ADVANCE = 'NO' )
+  READ( *,* ) File_Type
+  
   ! ...Allocate the output array
   ALLOCATE( ap(n_Profiles), STAT=alloc_status )
   IF ( alloc_status /= 0 ) THEN
@@ -105,6 +114,7 @@ PROGRAM Create_LBL_Input
     STOP
   END IF
 
+  calculation_flags%emit=1
 
   ! Loop over profile
   DO m = 1, n_Profiles
@@ -124,29 +134,42 @@ PROGRAM Create_LBL_Input
     ! Construct TAPE5 filename and header
     WRITE( TAPE5_Header, '( a, " profile #", i3.3, "; ", a )' ) TRIM(Profile_Set_Id_Tag), m
     WRITE( TAPE5_File, '( "./TAPE5_files/TAPE5.", a, "_profile", i2.2 )' ) TRIM(Profile_Set_Id_Tag), m
-
-
-    ! Create the TAPE5 file
-    Error_Status = Create_LBLRTM_TAPE5( ap(m)%Level_Pressure, &
-                                        ap(m)%Level_Temperature, &
-                                        ap(m)%Level_Absorber( :, j_idx ), &
-                                        ap(m)%Absorber_Units_LBL( j_idx ), &
-                                        ap(m)%Absorber_ID( j_idx ), &
-                                        ZERO,         &    ! Surface altitude
-                                        ONE, ONE+ONE, &    ! Dummy frequencies
-                                        Climatology_model = US_STD_ATM, &
-                                        Header   = TRIM(TAPE5_Header), &
-                                        Filename = TRIM(TAPE5_File),   &
-                                        Placeholder   = 1, &  ! Frequency/angle placeholder
-                                        No_Terminator = 1  )  ! Do not output input terminator
-    IF ( Error_Status /= 0 ) THEN
-      WRITE( msg, '( "Error writing TAPE5 file for ", a, " profile #", i2, "." )' ) &
-                  TRIM( Profile_Set_Id_Tag ), m
-      CALL display_message( PROGRAM_NAME, TRIM(msg), FAILURE )
-      STOP
-    END IF
+    
+    IF ( File_Type == 1 ) THEN
+      ! Create the TAPE5 file
+      Error_Status = Create_LBLRTM_TAPE5( ap(m)%Level_Pressure, &
+                                          ap(m)%Level_Temperature, &
+                                          ap(m)%Level_Absorber( :, j_idx ), &
+                                          ap(m)%Absorber_Units_LBL( j_idx ), &
+                                          ap(m)%Absorber_ID( j_idx ), &
+                                          ZERO,         &    ! Surface altitude
+                                          ONE, ONE+ONE, &    ! Dummy frequencies
+                                          Climatology_model = US_STD_ATM, &
+                                          Header   = TRIM(TAPE5_Header), &
+                                          Filename = TRIM(TAPE5_File),   &
+                                          Placeholder   = 1, &  ! Frequency/angle placeholder
+                                          No_Terminator = 1  )  ! Do not output input terminator
+      IF ( Error_Status /= 0 ) THEN
+        WRITE( msg, '( "Error writing TAPE5 file for ", a, " profile #", i2, "." )' ) &
+                    TRIM( Profile_Set_Id_Tag ), m
+        CALL display_message( PROGRAM_NAME, TRIM(msg), FAILURE )
+        STOP
+      END IF
+    ELSE
+      Error_Status = Create_MONORTM_TAPE5( ap(m)%Level_Pressure( : ), &
+                                           ap(m)%Level_Temperature( : ), &
+                                           ap(m)%Level_Absorber( :, j_idx ), &
+                                           ap(m)%Absorber_Units_LBL( j_idx ), &
+                                           ap(m)%Absorber_ID( j_idx ), &
+                                           ZERO,         &    ! Surface altitude
+                                           -ONE, -ONE, &      ! Dummy frequencies
+                                           calculation_flags=calculation_flags, &
+                                           boundary_temperature = ap(m)%Layer_Temperature(1), &
+                                           Climatology_model = US_STD_ATM, &
+                                           Filename = TRIM( TAPE5_File ),   &
+                                           No_Terminator = 1 )
+    ENDIF
   END DO
-
 
   ! Clean up
   Error_Status = Destroy_AtmProfile( ap )
