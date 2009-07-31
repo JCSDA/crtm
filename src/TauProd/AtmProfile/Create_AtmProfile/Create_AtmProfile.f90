@@ -37,10 +37,14 @@ PROGRAM Create_AtmProfile
   USE ECMWF83_Profile_Set  , ONLY: N_ECMWF83_PROFILES, &
                                    N_ECMWF83_ABSORBERS, &
                                    Load_ECMWF83_Profile
-  USE Model_Profile_Set    , ONLY: N_MODEL_PROFILES, &
+  USE ECMWF5K_Profile_Set  , ONLY: N_ECMWF5K_PROFILES,  &
+                                   N_ECMWF5K_ABSORBERS, &
+                                   N_ECMWF5k_LAYERS,    &
+                                   Load_ECMWF5K_Profile
+  USE Model_Profile_Set    , ONLY: N_MODEL_PROFILES,  &
                                    N_MODEL_ABSORBERS, &
                                    Load_Model_Profile
-  USE AtmProfile_Parameters, ONLY: N_ATMPROFILE_SETS, &
+  USE AtmProfile_Parameters, ONLY: N_ATMPROFILE_SETS,     &
                                    ATMPROFILE_SET_ID_TAG, &
                                    N_ATMPROFILES, & 
                                    N_ATMPROFILE_LEVELS, &
@@ -64,7 +68,6 @@ PROGRAM Create_AtmProfile
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ZEROpointFIVE = 0.5_fp
 
-
   ! ---------
   ! Variables
   ! ---------
@@ -77,6 +80,7 @@ PROGRAM Create_AtmProfile
   REAL(fp), POINTER :: Absorber(:,:)  => NULL()
   REAL(fp) :: acorr(N_ATMPROFILE_LEVELS+1)
   REAL(fp) :: H2O_Pressure(N_ATMPROFILE_LEVELS)
+  REAL(fp) :: H2O_5K_Pressure(N_ECMWF5k_LAYERS+1)
   LOGICAL :: Profile_Interpolate
   INTEGER :: n_Layers, k, ik
   INTEGER :: n_Levels
@@ -139,6 +143,12 @@ PROGRAM Create_AtmProfile
       n_Absorbers = N_ECMWF83_ABSORBERS
       n_Profiles  = N_ECMWF83_PROFILES
       Profile_Interpolate = .FALSE.  ! Already at 101 levels
+    CASE ( 'ECMWF5K' )
+      n_Layers    = N_ECMWF5K_LAYERS
+      n_Levels    = n_Layers + 1
+      n_Absorbers = N_ECMWF5K_ABSORBERS
+      n_Profiles  = N_ECMWF5K_PROFILES
+      Profile_Interpolate = .FALSE.  ! Leave at 91 Levels
     CASE ( 'Model6' )
       n_Layers    = N_ATMPROFILE_LAYERS
       n_Levels    = n_Layers + 1
@@ -253,6 +263,23 @@ PROGRAM Create_AtmProfile
                                              Longitude         = AtmProfile(m)%Longitude, &
                                              Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
                                              RCS_Id = Profile_Set_RCS_Id )
+      CASE ( 'ECMWF5K' )
+        Error_Status = Load_ECMWF5K_Profile( m, &
+                                             Pressure, &
+                                             Temperature, &
+                                             Absorber, &
+                                             Absorber_ID       = AtmProfile(m)%Absorber_ID, &
+                                             Absorber_Units_ID = AtmProfile(m)%Absorber_Units_ID, &
+                                             Description       = AtmProfile(m)%Description, &
+                                             Climatology_Model = AtmProfile(m)%Climatology_Model, &
+                                             Year              = AtmProfile(m)%Year, &
+                                             Month             = AtmProfile(m)%Month, &
+                                             Day               = AtmProfile(m)%Day, &
+                                             Hour              = AtmProfile(m)%Hour, &
+                                             Latitude          = AtmProfile(m)%Latitude, &
+                                             Longitude         = AtmProfile(m)%Longitude, &
+                                             Surface_Altitude  = AtmProfile(m)%Surface_Altitude, &
+                                             RCS_Id = Profile_Set_RCS_Id )
       CASE ( 'Model6' )
         Error_Status = Load_Model_Profile( m, &
                                            Pressure, &
@@ -281,16 +308,24 @@ PROGRAM Create_AtmProfile
                       TRIM(ATMPROFILE_SET_ID_TAG( Profile_Set )), m
       CALL Display_Message( PROGRAM_NAME,TRIM(Message),FAILURE ); STOP
     END IF
-
+    
     ! Fill the pressure array with the required pressure levels/layers
-    AtmProfile(m)%Level_Pressure(:) = ATMPROFILE_LEVEL_PRESSURE
-    AtmProfile(m)%Layer_Pressure(:) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-                                       ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-    !                                 -------------------------------------------------
-                                      LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-                                           ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
-
-
+    IF (ATMPROFILE_SET_ID_TAG(Profile_Set)=='ECMWF5K') THEN
+      AtmProfile(m)%Level_Pressure = Pressure
+      AtmProfile(m)%Layer_Pressure(:) = ( AtmProfile(m)%Level_Pressure(1:n_Levels-1) - &
+                                          AtmProfile(m)%Level_Pressure(2:n_Levels) ) / &
+      !                                 -------------------------------------------------
+                                      LOG( AtmProfile(m)%Level_Pressure(1:n_Levels-1) / &
+                                           AtmProfile(m)%Level_Pressure(2:n_Levels) )       
+    ELSE 
+      AtmProfile(m)%Level_Pressure(:) = ATMPROFILE_LEVEL_PRESSURE
+      AtmProfile(m)%Layer_Pressure(:) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
+                                          ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
+      !                                 -------------------------------------------------
+                                        LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
+                                             ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
+    ENDIF
+    
     ! Interpolate the profile as necessary
     ! ------------------------------------
     Perform_Interpolation: IF ( Profile_Interpolate ) THEN
@@ -376,22 +411,38 @@ PROGRAM Create_AtmProfile
     j_idx = PACK((/ ( j, j = 1, AtmProfile(m)%n_Absorbers ) /), &
                  AtmProfile(m)%Absorber_ID == ID_H2O)
     ! Convert from mixing ratio
-    H2O_Pressure = MR_to_PP( ATMPROFILE_LEVEL_PRESSURE, &
-                             AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
+    IF (ATMPROFILE_SET_ID_TAG(Profile_Set)=='ECMWF5K') THEN 
+      
+      H2O_5K_Pressure = MR_to_PP( AtmProfile(m)%Level_Pressure(:), &
+                                  AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
+      ! Compute the geopotential height profile
+      Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
+                                        AtmProfile(m)%Level_Temperature(:),   &  ! Input
+                                        H2O_5K_Pressure,                      &  ! Input
+                                        AtmProfile(m)%Level_Altitude(:),      &  ! Output
+                                        Gravity_Correction = 1,               &  ! Optional Input
+                                        Latitude = AtmProfile(m)%Latitude )      ! Optional Input
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
+      END IF
+    ELSE
+      H2O_Pressure = MR_to_PP( ATMPROFILE_LEVEL_PRESSURE, &
+                               AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
+      ! Compute the geopotential height profile
+      Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
+                                          AtmProfile(m)%Level_Temperature(:), &  ! Input
+                                          H2O_Pressure,                       &  ! Input
+                                          AtmProfile(m)%Level_Altitude(:),    &  ! Output
+                                          Gravity_Correction = 1,             &  ! Optional Input
+                                          Latitude = AtmProfile(m)%Latitude )    ! Optional Input
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
+      END IF
+    ENDIF
+    
     ! Check the result
     IF ( ANY(H2O_Pressure < ZERO) ) THEN
       CALL Display_Message( PROGRAM_NAME,'Water vapor unit conversion failed.',FAILURE ); STOP
-    END IF
-
-    ! Compute the geopotential height profile
-    Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
-                                        AtmProfile(m)%Level_Temperature(:), &  ! Input
-                                        H2O_Pressure,                       &  ! Input
-                                        AtmProfile(m)%Level_Altitude(:),    &  ! Output
-                                        Gravity_Correction = 1,             &  ! Optional Input
-                                        Latitude = AtmProfile(m)%Latitude )    ! Optional Input
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
     END IF
 
     ! Calculate the thicknesses
