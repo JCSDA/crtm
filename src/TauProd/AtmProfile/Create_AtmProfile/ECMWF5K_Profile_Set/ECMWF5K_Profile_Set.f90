@@ -44,12 +44,9 @@ MODULE ECMWF5K_Profile_Set
   '$Id:$'
   ! Message string length
   INTEGER,  PARAMETER :: ML = 512
-  ! Invalid flag
-  INTEGER,  PARAMETER :: INVALID = -1
   ! Literal constants
-  REAL(fp), PARAMETER :: ZERO = 0.0_fp
-  REAL(fp), PARAMETER :: ONE  = 1.0_fp
   REAL(fp), PARAMETER :: THOUSAND = 1000.0_fp
+  REAL(fp), PARAMETER :: HUNDRED  = 100.0_fp
   ! The ECMWF data file name
   CHARACTER(*), PARAMETER :: ECMWF_DATA_FILE = './ECMWF5K_Profile_Set/nwp_saf_t_sampled.atm'  
   ! The number of levels, layers, absorbers, and profiles
@@ -263,7 +260,6 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Load_ECMWF5K_Profile'
-    INTEGER, PARAMETER :: N_LEVELS = 91
     
     ! Local variables
     CHARACTER(ML) :: Message
@@ -282,8 +278,8 @@ CONTAINS
     INTEGER  :: ECMWF_Day
     INTEGER  :: ECMWF_Hour 
     
-    REAL(fp), dimension(N_LEVELS) :: temp, hum, ozo, cc, clw, ciw
-    REAL(fp), dimension(N_LEVELS) :: rain, snow, w, Pressure
+    REAL(fp), dimension(N_ECMWF5K_LEVELS) :: temp, hum, ozo, cc, clw, ciw
+    REAL(fp), dimension(N_ECMWF5K_LEVELS) :: rain, snow, w, Pressure
     REAL(fp) :: lsm, t2m, td2m, hum2m, u10, v10
     REAL(fp) :: stratrsrf, convrsrf, snowsurf, NLog_Surface_Pressure, Surface_Pressure
     REAL(fp) :: tsurf, z0
@@ -370,7 +366,7 @@ CONTAINS
 
     ! Open the data file
     FileID = Get_Lun()
-    OPEN(FileID,file=ECMWF_DATA_FILE,status='OLD',ACCESS='SEQUENTIAL',form='formatted',action='read',IOSTAT=IO_Status)
+    OPEN(FileID,file=ECMWF_DATA_FILE,status='OLD',ACCESS='SEQUENTIAL',FORM='formatted',ACTION='read',IOSTAT=IO_Status)
     IF ( IO_Status /= 0 ) THEN
       Error_Status = FAILURE
       WRITE( Message,'("Error opening ",a," file in comment skip. IOSTAT = ",i0)' ) &
@@ -405,8 +401,8 @@ CONTAINS
            convrsrf,                 &!19) Convective rain at surface [kg/(m2 *s)]  (829)
            snowsurf,                 &!20) Snow at surface [kg/(m2 *s)]             (830)
            lsm,                      &!21) Land/sea Mask [0-1]                      (831)
-           ECMWF_Latitude,                      &!22) Latitude [deg]                           (832)
-           ECMWF_Longitude,                     &!23) Longitude [deg]                          (833)
+           ECMWF_Latitude,           &!22) Latitude [deg]                           (832)
+           ECMWF_Longitude,          &!23) Longitude [deg]                          (833)
            ECMWF_Year,               &!24) Year                                     (834)      
            ECMWF_Month,              &!25) Month                                    (835)      
            ECMWF_Day,                &!26) Day                                      (836)      
@@ -425,33 +421,57 @@ CONTAINS
       ! compute surface pressure [Pa]
       Surface_Pressure = exp(NLog_Surface_Pressure)
       
-      ! compute full-level pressure (pap) and half-level pressures (paph) [Pa]
+      ! compute full-level pressure and half-level pressures [Pa]
       ! note that all profile variables above are given at full levels
       call ec_p91l(Surface_Pressure,Level_Pressure,Half_Level_Pressure)
        
     END DO Profile_Read_Loop
-    CLOSE( FileID )    
+    CLOSE( FileID )
+    
+    ! convert Level_Pressure from Pa to hPa
+    Level_Pressure=Level_Pressure/HUNDRED   
+    
+    ! Reverse level pressure array
     Level_Pressure=Level_Pressure(N_ECMWF5K_LEVELS:1:-1)
+    
+    ! Convert specific amounts to g/Kg
     hum = hum(N_ECMWF5K_LEVELS:1:-1)*THOUSAND
     ozo = ozo(N_ECMWF5K_LEVELS:1:-1)*THOUSAND
-    ozo = SA_to_MR( ozo ,           &
-                    Water_Vapor=hum )                           
+    
+    ! Convert the specific amount
+    ! of water vapor to mixing ratio
+    Level_Absorber(:,1) = SA_to_MR( hum )
+    
+    ! Convert the specific amount 
+    ! of ozone to mixing ratio
+    ozo = SA_to_MR( ozo , &
+                    Water_Vapor=Level_Absorber(:,1) )                           
+    
+    ! Convert ozone as 
+    ! mixing ratio to ppmv
     Level_Absorber(:,3) = MR_to_PPMV( ozo,        &
                                       Molecule_ID=3)
     
-    Level_Absorber(:,1) = SA_to_MR( hum )
-
     ! compute the surface altitude
     Surface_Altitude = z0 / 9.80665
+    
+    ! Reverse temp and assign to Level_Temperature
     Level_Temperature = temp(N_ECMWF5K_LEVELS:1:-1)
+    
+    ! Set Climatology model to invalid
     Climatology_Model = 0
     
+    ! Set the profile description
     IF ( PRESENT(Description) ) THEN
       Description = ' '
       WRITE( Description,'("ECMWF 5000 profiles on 91L. Profile #",i0)' ) Profile
     END IF
+    
+    ! Set the absorber id's and absorber units
     IF (PRESENT(Absorber_ID)) Absorber_ID = ECMWF_ABSORBER_ID
     IF (PRESENT(Absorber_Units_ID)) Absorber_Units_ID = ECMWF_ABSORBER_UNITS_ID
+    
+    ! Set Locations and Times for the profile
     Longitude = ECMWF_Longitude
     Latitude = ECMWF_Latitude
     Year  = ECMWF_Year
