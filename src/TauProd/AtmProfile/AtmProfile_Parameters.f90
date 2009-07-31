@@ -43,18 +43,20 @@ MODULE AtmProfile_Parameters
     '$Id$'
 
   ! The current number of profile sets and their ID tag
-  INTEGER,      PARAMETER :: N_ATMPROFILE_SETS = 5
+  INTEGER,      PARAMETER :: N_ATMPROFILE_SETS = 6
   CHARACTER(*), PARAMETER :: ATMPROFILE_SET_ID_TAG( N_ATMPROFILE_SETS ) = (/ 'UMBC48 ', &
                                                                              'CIMSS32', &
                                                                              'ECMWF52', &
                                                                              'ECMWF83', &
+                                                                             'ECMWF5K', &
                                                                              'Model6 ' /)
   ! The number of profiles in each set
-  INTEGER, PARAMETER :: N_ATMPROFILES(N_ATMPROFILE_SETS) = (/ 48, &
-                                                              32, &
-                                                              52, &
-                                                              83, &
-                                                               6 /)
+  INTEGER, PARAMETER :: N_ATMPROFILES(N_ATMPROFILE_SETS) = (/ 48,   &
+                                                              32,   &
+                                                              52,   &
+                                                              83,   &
+                                                              5000, &
+                                                              6    /)
   INTEGER, PARAMETER :: ATMPROFILE_BEGIN = 1
 
 
