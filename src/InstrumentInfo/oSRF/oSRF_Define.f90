@@ -46,8 +46,7 @@ MODULE oSRF_Define
   PUBLIC :: Set_oSRF
   PUBLIC :: Get_oSRF
   PUBLIC :: Inspect_oSRF
-!  PUBLIC :: CheckRelease_oSRF
-!  PUBLIC :: Info_oSRF
+  PUBLIC :: Info_oSRF
   ! Public parameters
   PUBLIC :: INVALID_WMO_SATELLITE_ID
   PUBLIC :: INVALID_WMO_SENSOR_ID
@@ -163,7 +162,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Allocation_Status = Allocated_oSRF( oSRF )
 !
-! INPUT ARGUMENTS:
+! OBJECT:
 !       oSRF:                oSRF structure which is to have its allocatable
 !                            member's status tested.
 !                            UNITS:      N/A
@@ -185,9 +184,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Allocated_oSRF( oSRF ) RESULT( alloc_status )
+  ELEMENTAL FUNCTION Allocated_oSRF(self) RESULT(alloc_status)
     ! Arguments
-    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    TYPE(oSRF_type), INTENT(IN) :: self
     ! Function result
     LOGICAL :: alloc_status
     ! Set up
@@ -196,13 +195,13 @@ CONTAINS
 
     ! Test the members
     alloc_status = .FALSE.
-    IF ( ALLOCATED( oSRF%f1        ) .AND. &
-         ALLOCATED( oSRF%f2        ) .AND. &
-         ALLOCATED( oSRF%n_Points  ) .AND. &
-         ALLOCATED( oSRF%Frequency ) .AND. &
-         ALLOCATED( oSRF%Response  )       ) THEN
-      IF ( ALL(Allocated_PtrArr(oSRF%Frequency)) .AND. &
-           ALL(Allocated_PtrArr(oSRF%Response ))       ) THEN
+    IF ( ALLOCATED( self%f1        ) .AND. &
+         ALLOCATED( self%f2        ) .AND. &
+         ALLOCATED( self%n_Points  ) .AND. &
+         ALLOCATED( self%Frequency ) .AND. &
+         ALLOCATED( self%Response  )       ) THEN
+      IF ( ALL(Allocated_PtrArr(self%Frequency)) .AND. &
+           ALL(Allocated_PtrArr(self%Response ))       ) THEN
         alloc_status = .TRUE.
       END IF
     END IF
@@ -223,7 +222,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Destroy_oSRF( oSRF )
 !
-! OUTPUT ARGUMENTS:
+! OBJECT:
 !       oSRF:         Re-initialised oSRF structure.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_type)
@@ -242,31 +241,27 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Destroy_scalar( &
-    oSRF ) &
-  RESULT( err_status )
+  FUNCTION Destroy_scalar(self) RESULT(err_status)
     ! Arguments
-    TYPE(oSRF_type), INTENT(OUT) :: oSRF
+    TYPE(oSRF_type), INTENT(OUT) :: self
     ! Function result
     INTEGER :: err_status
     ! Set up
     err_status = SUCCESS
     ! Do something with the structure
-    oSRF%n_Bands = 0
+    self%n_Bands = 0
   END FUNCTION Destroy_scalar
 
 
-  FUNCTION Destroy_rank1( &
-    oSRF ) &
-  RESULT( err_status )
+  FUNCTION Destroy_rank1(self) RESULT(err_status)
     ! Arguments
-    TYPE(oSRF_type), INTENT(OUT) :: oSRF(:)
+    TYPE(oSRF_type), INTENT(OUT) :: self(:)
     ! Function result
     INTEGER :: err_status
     ! Set up
     err_status = SUCCESS
     ! Do something with the structure
-    oSRF%n_Bands = 0
+    self%n_Bands = 0
   END FUNCTION Destroy_rank1
 
 
@@ -280,7 +275,14 @@ CONTAINS
 !       Function to create an oSRF structure by allocating its array members.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Create_oSRF( n_Points, oSRF )
+!       Error_Status = Create_oSRF(oSRF, n_Points)
+!
+! OBJECT:
+!       oSRF:         oSRF structure with allocated members
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(oSRF_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
 !
 ! INPUT ARGUMENTS:
 !       n_Points:     The array of the number of data points to which the
@@ -291,13 +293,6 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       oSRF:         oSRF structure with allocated members
-!                     UNITS:      N/A
-!                     TYPE:       TYPE(oSRF_type)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -312,12 +307,12 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Create_oSRF( &
-    n_Points   , &  ! Input
-    oSRF       ) &  ! Output
+    self    , &  ! Input
+    n_Points) &  ! Output
   RESULT( err_status )
     ! Arguments
+    TYPE(oSRF_type), INTENT(OUT) :: self
     INTEGER,         INTENT(IN)  :: n_Points(:)
-    TYPE(oSRF_type), INTENT(OUT) :: oSRF
     ! Function result
     INTEGER :: err_status
     ! Local parameters
@@ -341,11 +336,11 @@ CONTAINS
 
 
     ! Perform the main array allocations
-    ALLOCATE( oSRF%n_Points( n_Bands ) , &
-              oSRF%f1( n_Bands )       , &
-              oSRF%f2( n_Bands )       , &
-              oSRF%Frequency( n_Bands ), &
-              oSRF%Response( n_Bands ) , &
+    ALLOCATE( self%n_Points( n_Bands ) , &
+              self%f1( n_Bands )       , &
+              self%f2( n_Bands )       , &
+              self%Frequency( n_Bands ), &
+              self%Response( n_Bands ) , &
               STAT = alloc_status        )
     IF ( alloc_status /= 0 ) THEN
       WRITE( msg,'("Error allocating oSRF data arrays. STAT = ",i0)' ) alloc_status
@@ -356,26 +351,26 @@ CONTAINS
     ! Allocate the individual band elements
     DO i = 1, n_Bands
       ! Frequency arrays
-      alloc_status = Create_PtrArr( n_Points(i), oSRF%Frequency(i) )
+      alloc_status = Create_PtrArr( self%Frequency(i), n_Points(i) )
       IF ( alloc_status /= 0 ) THEN
         WRITE( msg,'("Error allocating Frequency band ",i0," component. STAT = ",i0)' ) i, alloc_status
         CALL Create_CleanUp(); RETURN
       END IF
       ! Response array
-      alloc_status = Create_PtrArr( n_Points(i), oSRF%Response(i) )
+      alloc_status = Create_PtrArr( self%Response(i), n_Points(i) )
       IF ( alloc_status /= 0 ) THEN
         WRITE( msg,'("Error allocating Response band ",i0," component. STAT = ",i0)' ) i, alloc_status
         CALL Create_CleanUp(); RETURN
       END IF
       ! Assign the n_Points value
-      oSRF%n_Points(i) = n_Points(i)
+      self%n_Points(i) = n_Points(i)
     END DO
 
 
     ! Assign the band dimension and initialise arrays
-    oSRF%n_Bands = n_Bands
-    oSRF%f1 = ZERO
-    oSRF%f2 = ZERO
+    self%n_Bands = n_Bands
+    self%f1 = ZERO
+    self%f2 = ZERO
  
   CONTAINS
   
@@ -397,17 +392,17 @@ CONTAINS
 !       Function to copy valid oSRF structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_oSRF( oSRF_in, oSRF_out )
+!       Error_Status = Assign_oSRF(oSRF, copy)
 !
-! INPUT ARGUMENTS:
-!       oSRF_in:      oSRF structure which is to be copied.
+! OBJECT:
+!       oSRF:         oSRF structure which is to be copied.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       oSRF_out:     Copy of the input structure, oSRF_in.
+!       copy:         Copy of the oSRF structure.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_type)
 !                     DIMENSION:  Scalar
@@ -425,13 +420,10 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Assign_oSRF( &
-    oSRF_in , &  ! Input
-    oSRF_out) &  ! Output
-  RESULT( err_status )
+  FUNCTION Assign_oSRF(self, copy) RESULT( err_status )
     ! Arguments
-    TYPE(oSRF_type), INTENT(IN)  :: oSRF_in
-    TYPE(oSRF_type), INTENT(OUT) :: oSRF_out
+    TYPE(oSRF_type), INTENT(IN)  :: self
+    TYPE(oSRF_type), INTENT(OUT) :: copy
     ! Function result
     INTEGER :: err_status
     ! Local parameters
@@ -443,14 +435,14 @@ CONTAINS
     ! Setup
     err_status = SUCCESS
     ! ...ALL *input* components must be allocated
-    IF ( .NOT. Allocated_oSRF( oSRF_In ) ) THEN
+    IF ( .NOT. Allocated_oSRF( self ) ) THEN
       msg = 'Some or all INPUT oSRF pointer members are NOT allocated.'
       CALL Assign_CleanUp(); RETURN
     END IF
 
 
     ! Allocate the structure
-    err_status = Create_oSRF( oSRF_In%n_Points, oSRF_Out )
+    err_status = Create_oSRF( copy, self%n_Points )
     IF ( err_status /= SUCCESS ) THEN
       msg = 'Error allocating output oSRF arrays.'
       CALL Assign_CleanUp(); RETURN
@@ -458,28 +450,28 @@ CONTAINS
 
 
     ! Copy data
-    oSRF_out%Sensor_ID            = oSRF_in%Sensor_ID  
-    oSRF_out%WMO_Satellite_Id     = oSRF_in%WMO_Satellite_Id    
-    oSRF_out%WMO_Sensor_Id        = oSRF_in%WMO_Sensor_Id       
-    oSRF_out%Sensor_Type          = oSRF_in%Sensor_Type         
-    oSRF_out%Channel              = oSRF_in%Channel             
-    oSRF_out%Integral             = oSRF_in%Integral            
-    oSRF_out%Flags                = oSRF_in%Flags               
-    oSRF_out%f0                   = oSRF_in%f0                  
-    oSRF_out%Planck_Coeffs        = oSRF_in%Planck_Coeffs       
-    oSRF_out%Polychromatic_Coeffs = oSRF_in%Polychromatic_Coeffs
-    oSRF_out%n_Points             = oSRF_in%n_Points
-    oSRF_out%f1                   = oSRF_in%f1
-    oSRF_out%f2                   = oSRF_in%f2
-    DO i = 1, oSRF_in%n_Bands
+    copy%Sensor_ID            = self%Sensor_ID  
+    copy%WMO_Satellite_Id     = self%WMO_Satellite_Id    
+    copy%WMO_Sensor_Id        = self%WMO_Sensor_Id       
+    copy%Sensor_Type          = self%Sensor_Type         
+    copy%Channel              = self%Channel             
+    copy%Integral             = self%Integral            
+    copy%Flags                = self%Flags               
+    copy%f0                   = self%f0                  
+    copy%Planck_Coeffs        = self%Planck_Coeffs       
+    copy%Polychromatic_Coeffs = self%Polychromatic_Coeffs
+    copy%n_Points             = self%n_Points
+    copy%f1                   = self%f1
+    copy%f2                   = self%f2
+    DO i = 1, self%n_Bands
       ! Copy the frequency data
-      err_status = Assign_PtrArr(oSRF_in%Frequency(i), oSRF_out%Frequency(i) )
+      err_status = Assign_PtrArr( self%Frequency(i), copy%Frequency(i) )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error assigning output frequency for band #",i0)' ) i
         CALL Assign_CleanUp(); RETURN
       END IF
       ! Copy the response data
-      err_status = Assign_PtrArr(oSRF_in%Response(i), oSRF_out%Response(i) )
+      err_status = Assign_PtrArr( self%Response(i), copy%Response(i) )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error assigning output frequency for band #",i0)' ) i
         CALL Assign_CleanUp(); RETURN
@@ -785,7 +777,7 @@ CONTAINS
 !         Frequency            = Frequency           , &  ! Optional input
 !         Response             = Response            )    ! Optional input
 !
-! OUTPUT ARGUMENTS:
+! OBJECT:
 !       oSRF:          oSRF structure that is to have it properties modified.
 !                      UNITS:      N/A
 !                      TYPE:       TYPE(oSRF_type)
@@ -909,7 +901,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION Set_oSRF( &
-    oSRF                , &  ! In/output
+    self                , &  ! In/output
     Band                , &  ! Optional input
     Version             , &  ! Optional input
     Sensor_Id           , &  ! Optional input
@@ -928,7 +920,7 @@ CONTAINS
     Response            ) &  ! Optional input
   RESULT( err_status )
     ! Arguments
-    TYPE(oSRF_type),        INTENT(IN OUT) :: oSRF
+    TYPE(oSRF_type),        INTENT(IN OUT) :: self
     INTEGER,      OPTIONAL, INTENT(IN)     :: Band                
     INTEGER,      OPTIONAL, INTENT(IN)     :: Version             
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Sensor_Id           
@@ -939,8 +931,8 @@ CONTAINS
     REAL(fp),     OPTIONAL, INTENT(IN)     :: Integral            
     INTEGER,      OPTIONAL, INTENT(IN)     :: Flags               
     REAL(fp),     OPTIONAL, INTENT(IN)     :: f0                  
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Planck_Coeffs(SIZE(oSRF%Planck_Coeffs))       
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Polychromatic_Coeffs(SIZE(oSRF%Polychromatic_Coeffs))
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Planck_Coeffs(SIZE(self%Planck_Coeffs))       
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
     REAL(fp),     OPTIONAL, INTENT(IN)     :: f1                  
     REAL(fp),     OPTIONAL, INTENT(IN)     :: f2                  
     REAL(fp),     OPTIONAL, INTENT(IN)     :: Frequency(:)           
@@ -961,7 +953,7 @@ CONTAINS
     l_Band = 1
     IF ( PRESENT(Band) ) THEN
       l_Band = Band
-      IF ( l_Band < 1 .OR. l_Band > oSRF%n_Bands ) THEN
+      IF ( l_Band < 1 .OR. l_Band > self%n_Bands ) THEN
         WRITE( msg, '("Invalid band, ",i0,", specified for input oSRF")' ) l_Band
         CALL Set_CleanUp(); RETURN
       END IF
@@ -969,37 +961,37 @@ CONTAINS
 
 
     ! Set data with defined sizes
-    IF ( PRESENT(Version             ) ) oSRF%Version              = Version  
-    IF ( PRESENT(Sensor_Id           ) ) oSRF%Sensor_Id            = Sensor_Id       
-    IF ( PRESENT(WMO_Satellite_Id    ) ) oSRF%WMO_Satellite_Id     = WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id       ) ) oSRF%WMO_Sensor_Id        = WMO_Sensor_Id   
-    IF ( PRESENT(Sensor_Type         ) ) oSRF%Sensor_Type          = Sensor_Type     
-    IF ( PRESENT(Channel             ) ) oSRF%Channel              = Channel         
-    IF ( PRESENT(Integral            ) ) oSRF%Integral             = Integral        
-    IF ( PRESENT(Flags               ) ) oSRF%Flags                = Flags           
-    IF ( PRESENT(f0                  ) ) oSRF%f0                   = f0              
-    IF ( PRESENT(Planck_Coeffs       ) ) oSRF%Planck_Coeffs        = Planck_Coeffs                       
-    IF ( PRESENT(Polychromatic_Coeffs) ) oSRF%Polychromatic_Coeffs = Polychromatic_Coeffs                
-    IF ( PRESENT(f1                  ) ) oSRF%f1(l_Band)           = f1            
-    IF ( PRESENT(f2                  ) ) oSRF%f2(l_Band)           = f2            
+    IF ( PRESENT(Version             ) ) self%Version              = Version  
+    IF ( PRESENT(Sensor_Id           ) ) self%Sensor_Id            = Sensor_Id       
+    IF ( PRESENT(WMO_Satellite_Id    ) ) self%WMO_Satellite_Id     = WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id       ) ) self%WMO_Sensor_Id        = WMO_Sensor_Id   
+    IF ( PRESENT(Sensor_Type         ) ) self%Sensor_Type          = Sensor_Type     
+    IF ( PRESENT(Channel             ) ) self%Channel              = Channel         
+    IF ( PRESENT(Integral            ) ) self%Integral             = Integral        
+    IF ( PRESENT(Flags               ) ) self%Flags                = Flags           
+    IF ( PRESENT(f0                  ) ) self%f0                   = f0              
+    IF ( PRESENT(Planck_Coeffs       ) ) self%Planck_Coeffs        = Planck_Coeffs                       
+    IF ( PRESENT(Polychromatic_Coeffs) ) self%Polychromatic_Coeffs = Polychromatic_Coeffs                
+    IF ( PRESENT(f1                  ) ) self%f1(l_Band)           = f1            
+    IF ( PRESENT(f2                  ) ) self%f2(l_Band)           = f2            
 
 
     ! Set frequency data
     IF ( PRESENT(Frequency) ) THEN
-      err_status = Set_PtrArr( oSRF%Frequency(l_Band), Frequency )
+      err_status = Set_PtrArr( self%Frequency(l_Band), Arr=Frequency )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error setting frequency for band ",i0)' ) l_Band
         CALL Set_CleanUp(); RETURN
       END IF
       ! ...Set the frequency limits
-      oSRF%f1(l_Band) = Frequency(1)
-      oSRF%f2(l_Band) = Frequency(SIZE(Frequency))
+      self%f1(l_Band) = Frequency(1)
+      self%f2(l_Band) = Frequency(SIZE(Frequency))
     END IF
     
     
     ! Set Response data
     IF ( PRESENT(Response) ) THEN
-      err_status = Set_PtrArr( oSRF%Response(l_Band), Response )
+      err_status = Set_PtrArr( self%Response(l_Band), Arr=Response )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error setting Response for band ",i0)' ) l_Band
         CALL Set_CleanUp(); RETURN
@@ -1030,7 +1022,7 @@ CONTAINS
 !       an oSRF structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = get_oSRF( &
+!       Error_Status = Get_oSRF( &
 !         oSRF                                       , &  ! Output
 !         Band                 = Band                , &  ! Optional input
 !         Version              = Version             , &  ! Optional output
@@ -1049,12 +1041,12 @@ CONTAINS
 !         Frequency            = Frequency           , &  ! Optional output
 !         Response             = Response            )    ! Optional output
 !
-! OUTPUT ARGUMENTS:
-!       oSRF:          oSRF structure that is to have it properties modified.
+! OBJECT:
+!       oSRF:          oSRF structure that is to have it properties obtained.
 !                      UNITS:      N/A
 !                      TYPE:       TYPE(oSRF_type)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!                      ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Band:                  The band number to which the frequency and
@@ -1181,7 +1173,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION Get_oSRF( &
-    oSRF                , &  ! Input
+    self                , &  ! Input
     Band                , &  ! Optional input
     Version             , &  ! Optional output
     Sensor_Id           , &  ! Optional output
@@ -1201,7 +1193,7 @@ CONTAINS
     Response            ) &  ! Optional output
   RESULT( err_status )
     ! Arguments
-    TYPE(oSRF_type),        INTENT(IN)  :: oSRF
+    TYPE(oSRF_type),        INTENT(IN)  :: self
     INTEGER,      OPTIONAL, INTENT(IN)  :: Band                
     INTEGER,      OPTIONAL, INTENT(OUT) :: Version             
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id           
@@ -1212,8 +1204,8 @@ CONTAINS
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Integral            
     INTEGER,      OPTIONAL, INTENT(OUT) :: Flags               
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f0                  
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(oSRF%Planck_Coeffs))       
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(oSRF%Polychromatic_Coeffs))
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(self%Planck_Coeffs))       
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Points
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f1                  
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f2                  
@@ -1235,7 +1227,7 @@ CONTAINS
     l_Band = 1
     IF ( PRESENT(Band) ) THEN
       l_Band = Band
-      IF ( l_Band < 1 .OR. l_Band > oSRF%n_Bands ) THEN
+      IF ( l_Band < 1 .OR. l_Band > self%n_Bands ) THEN
         WRITE( msg, '("Invalid band, ",i0,", specified for input oSRF")' ) l_Band
         CALL Set_CleanUp(); RETURN
       END IF
@@ -1243,25 +1235,25 @@ CONTAINS
 
 
     ! Get data with defined sizes
-    IF ( PRESENT(Version             ) ) Version              = oSRF%Version  
-    IF ( PRESENT(Sensor_Id           ) ) Sensor_Id            = oSRF%Sensor_Id       
-    IF ( PRESENT(WMO_Satellite_Id    ) ) WMO_Satellite_Id     = oSRF%WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id       ) ) WMO_Sensor_Id        = oSRF%WMO_Sensor_Id   
-    IF ( PRESENT(Sensor_Type         ) ) Sensor_Type          = oSRF%Sensor_Type     
-    IF ( PRESENT(Channel             ) ) Channel              = oSRF%Channel         
-    IF ( PRESENT(Integral            ) ) Integral             = oSRF%Integral        
-    IF ( PRESENT(Flags               ) ) Flags                = oSRF%Flags           
-    IF ( PRESENT(f0                  ) ) f0                   = oSRF%f0              
-    IF ( PRESENT(Planck_Coeffs       ) ) Planck_Coeffs        = oSRF%Planck_Coeffs                       
-    IF ( PRESENT(Polychromatic_Coeffs) ) Polychromatic_Coeffs = oSRF%Polychromatic_Coeffs                
-    IF ( PRESENT(n_Points            ) ) n_Points             = oSRF%n_Points(l_Band)    
-    IF ( PRESENT(f1                  ) ) f1                   = oSRF%f1(l_Band)    
-    IF ( PRESENT(f2                  ) ) f2                   = oSRF%f2(l_Band)    
+    IF ( PRESENT(Version             ) ) Version              = self%Version  
+    IF ( PRESENT(Sensor_Id           ) ) Sensor_Id            = self%Sensor_Id       
+    IF ( PRESENT(WMO_Satellite_Id    ) ) WMO_Satellite_Id     = self%WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id       ) ) WMO_Sensor_Id        = self%WMO_Sensor_Id   
+    IF ( PRESENT(Sensor_Type         ) ) Sensor_Type          = self%Sensor_Type     
+    IF ( PRESENT(Channel             ) ) Channel              = self%Channel         
+    IF ( PRESENT(Integral            ) ) Integral             = self%Integral        
+    IF ( PRESENT(Flags               ) ) Flags                = self%Flags           
+    IF ( PRESENT(f0                  ) ) f0                   = self%f0              
+    IF ( PRESENT(Planck_Coeffs       ) ) Planck_Coeffs        = self%Planck_Coeffs                       
+    IF ( PRESENT(Polychromatic_Coeffs) ) Polychromatic_Coeffs = self%Polychromatic_Coeffs                
+    IF ( PRESENT(n_Points            ) ) n_Points             = self%n_Points(l_Band)    
+    IF ( PRESENT(f1                  ) ) f1                   = self%f1(l_Band)    
+    IF ( PRESENT(f2                  ) ) f2                   = self%f2(l_Band)    
 
 
     ! Get frequency data
     IF ( PRESENT(Frequency) ) THEN
-      err_status = Get_PtrArr( oSRF%Frequency(l_Band), Frequency )
+      err_status = Get_PtrArr( self%Frequency(l_Band), Arr=Frequency )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error getting frequency for band ",i0)' ) l_Band
         CALL Set_CleanUp(); RETURN
@@ -1271,7 +1263,7 @@ CONTAINS
     
     ! Get Response data
     IF ( PRESENT(Response) ) THEN
-      err_status = Get_PtrArr( oSRF%Response(l_Band), Response )
+      err_status = Get_PtrArr( self%Response(l_Band), Arr=Response )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error Getting Response for band ",i0)' ) l_Band
         CALL Set_CleanUp(); RETURN
@@ -1301,7 +1293,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL Inspect_oSRF( oSRF )
 !
-! INPUT ARGUMENTS:
+! OBJECT:
 !       oSRF:          oSRF structure to inspect.
 !                      UNITS:      N/A
 !                      TYPE:       TYPE(oSRF_type)
@@ -1311,591 +1303,106 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Inspect_oSRF( oSRF )
+  SUBROUTINE Inspect_oSRF( self )
     ! Arguments
-    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    TYPE(oSRF_type), INTENT(IN) :: self
     ! Local arguments
     INTEGER :: n
     ! Output the oSRF components     
     WRITE( *,'(/2x,"oSRF INSPECT")' )
     WRITE( *,'( 2x,"============")' )
-    WRITE( *,'(2x,"Release              : ", i0)'             ) oSRF%Release
-    WRITE( *,'(2x,"Version              : ", i0)'             ) oSRF%Version  
-    WRITE( *,'(2x,"Sensor_Id            : ",  a)'             ) oSRF%Sensor_Id       
-    WRITE( *,'(2x,"WMO_Satellite_Id     : ", i0)'             ) oSRF%WMO_Satellite_Id
-    WRITE( *,'(2x,"WMO_Sensor_Id        : ", i0)'             ) oSRF%WMO_Sensor_Id   
-    WRITE( *,'(2x,"Sensor_Type          : ",  a)'             ) SENSOR_TYPE_NAME(oSRF%Sensor_Type)
-    WRITE( *,'(2x,"Channel              : ", i0)'             ) oSRF%Channel         
-    WRITE( *,'(2x,"Integral             : ", es13.6)'         ) oSRF%Integral        
-    WRITE( *,'(2x,"Flags                : ", i0)'             ) oSRF%Flags           
-    WRITE( *,'(2x,"f0                   : ", es13.6)'         ) oSRF%f0              
-    WRITE( *,'(2x,"Planck_Coeffs        : ", 2(es13.6,1x))'   ) oSRF%Planck_Coeffs       
-    WRITE( *,'(2x,"Polychromatic_Coeffs : ", 3(es13.6,:,1x))' ) oSRF%Polychromatic_Coeffs
-    WRITE( *,'(2x,"n_Bands              : ", i0)'             ) oSRF%n_Bands
-    IF ( oSRF%n_Bands == 0 ) THEN
+    WRITE( *,'(2x,"Release              : ", i0)'             ) self%Release
+    WRITE( *,'(2x,"Version              : ", i0)'             ) self%Version  
+    WRITE( *,'(2x,"Sensor_Id            : ",  a)'             ) self%Sensor_Id       
+    WRITE( *,'(2x,"WMO_Satellite_Id     : ", i0)'             ) self%WMO_Satellite_Id
+    WRITE( *,'(2x,"WMO_Sensor_Id        : ", i0)'             ) self%WMO_Sensor_Id   
+    WRITE( *,'(2x,"Sensor_Type          : ",  a)'             ) SENSOR_TYPE_NAME(self%Sensor_Type)
+    WRITE( *,'(2x,"Channel              : ", i0)'             ) self%Channel         
+    WRITE( *,'(2x,"Integral             : ", es13.6)'         ) self%Integral        
+    WRITE( *,'(2x,"Flags                : ", i0)'             ) self%Flags           
+    WRITE( *,'(2x,"f0                   : ", es13.6)'         ) self%f0              
+    WRITE( *,'(2x,"Planck_Coeffs        : ", 2(es13.6,1x))'   ) self%Planck_Coeffs       
+    WRITE( *,'(2x,"Polychromatic_Coeffs : ", 3(es13.6,:,1x))' ) self%Polychromatic_Coeffs
+    WRITE( *,'(2x,"n_Bands              : ", i0)'             ) self%n_Bands
+    IF ( self%n_Bands == 0 ) THEN
       WRITE( *,'(10x,"Press <ENTER> to continue...")', ADVANCE='NO' )
       READ(*,*)
     END IF
-    DO n = 1, oSRF%n_Bands
+    DO n = 1, self%n_Bands
       WRITE( *,'(/2x,"BAND NUMBER ",i0)' ) n
-      WRITE( *,'(4x,"n_Points             : ", i0)'             ) oSRF%n_Points(n)
-      WRITE( *,'(4x,"f1                   : ", es13.6)'         ) oSRF%f1(n)
-      WRITE( *,'(4x,"f2                   : ", es13.6)'         ) oSRF%f2(n)
+      WRITE( *,'(4x,"n_Points : ", i0)'     ) self%n_Points(n)
+      WRITE( *,'(4x,"f1       : ", es13.6)' ) self%f1(n)
+      WRITE( *,'(4x,"f2       : ", es13.6)' ) self%f2(n)
       WRITE( *,'(/4x,"FREQUENCY")' )
-      CALL Inspect_PtrArr( oSRF%Frequency(n) )
+      CALL Inspect_PtrArr( self%Frequency(n) )
       WRITE( *,'(/4x,"RESPONSE")' )
-      CALL Inspect_PtrArr( oSRF%Response(n) )
+      CALL Inspect_PtrArr( self%Response(n) )
       WRITE( *,'(10x,"Press <ENTER> to continue...")', ADVANCE='NO' ); READ(*,*)
     END DO
   END SUBROUTINE Inspect_oSRF
 
 
-!!----------------------------------------------------------------------------------
-!!:sdoc+:
-!!
-!! NAME:
-!!       CheckRelease_oSRF
-!!
-!! PURPOSE:
-!!       Function to check the oSRF Release value.
-!!
-!! CALLING SEQUENCE:
-!!       Error_Status = CheckRelease_oSRF( oSRF                    , &  ! Input
-!!                                        RCS_Id     =RCS_Id     , &  ! Revision control
-!!                                        Message_Log=Message_Log  )  ! Error messaging
-!!
-!! INPUT ARGUMENTS:
-!!       oSRF:           oSRF structure for which the Release member
-!!                      is to be checked.
-!!                      UNITS:      N/A
-!!                      TYPE:       TYPE(oSRF_type)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(OUT)
-!!
-!! OPTIONAL INPUT ARGUMENTS:
-!!       Message_Log:   Character string specifying a filename in which any
-!!                      messages will be logged. If not specified, or if an
-!!                      error occurs opening the log file, the default action
-!!                      is to output messages to standard output.
-!!                      UNITS:      N/A
-!!                      TYPE:       CHARACTER(*)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!! OPTIONAL OUTPUT ARGUMENTS:
-!!       RCS_Id:        Character string containing the Revision Control
-!!                      System Id field for the module.
-!!                      UNITS:      N/A
-!!                      TYPE:       CHARACTER(*)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!!
-!! FUNCTION RESULT:
-!!       Error_Status:  The return value is an integer defining the error status.
-!!                      The error codes are defined in the Message_Handler module.
-!!                      If == SUCCESS the structure Release value is valid.
-!!                         == FAILURE the structure Release value is NOT valid
-!!                                    and either a data file file or software
-!!                                    update is required.
-!!                      UNITS:      N/A
-!!                      TYPE:       INTEGER
-!!                      DIMENSION:  Scalar
-!!
-!!:sdoc-:
-!!----------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+!:sdoc+:
 !
-!  FUNCTION CheckRelease_oSRF( oSRF        , &  ! Input
-!                             RCS_Id     , &  ! Revision control
-!                             Message_Log) &  ! Error messaging
-!                           RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(oSRF_type)        , INTENT(IN)  :: oSRF
-!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CheckRelease_oSRF'
-!    ! Local variables
-!    CHARACTER(ML) :: msg
+! NAME:
+!       Info_oSRF
 !
-!    ! Set up
-!    ! ------
-!    Error_Status = SUCCESS
-!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+! PURPOSE:
+!       Subroutine to return a string containing version and dimension
+!       information about the oSRF data structure.
 !
+! CALLING SEQUENCE:
+!       CALL Info_oSRF( oSRF, Info )
 !
-!    ! Check the release
-!    ! -----------------
-!    ! Check that release is not too old
-!    IF ( oSRF%Release < oSRF_RELEASE ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("An oSRF data update is needed. oSRF release is ",i2,". Valid release is ",i2)' ) &
-!                 oSRF%Release, oSRF_RELEASE
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      RETURN
-!    END IF
+! OBJECT:
+!       oSRF:          oSRF structure.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
-!    ! Check that release is not too new
-!    IF ( oSRF%Release > oSRF_RELEASE ) THEN
-!      Error_Status = FAILURE
-!      WRITE( msg,'("An oSRF software update is needed. oSRF release is ",i2,". Valid release is ",i2)' ) &
-!                 oSRF%Release, oSRF_RELEASE
-!      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!      RETURN
-!    END IF
+! OUTPUT ARGUMENTS:
+!       Info:          String containing version and dimension information
+!                      about the passed oSRF data structure.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
 !
-!  END FUNCTION CheckRelease_oSRF
-!
-!
-!!--------------------------------------------------------------------------------
-!!:sdoc+:
-!!
-!! NAME:
-!!       Info_oSRF
-!!
-!! PURPOSE:
-!!       Subroutine to return a string containing version and dimension
-!!       information about the oSRF data structure.
-!!
-!! CALLING SEQUENCE:
-!!       CALL Info_oSRF( oSRF          , &  ! Input
-!!                      Info         , &  ! Output
-!!                      RCS_Id=RCS_Id  )  ! Revision control
-!!
-!! INPUT ARGUMENTS:
-!!       oSRF:           oSRF structure.
-!!                      UNITS:      N/A
-!!                      TYPE:       TYPE(oSRF_type)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(IN)
-!!
-!! OUTPUT ARGUMENTS:
-!!       Info:          String containing version and dimension information
-!!                      about the passed oSRF data structure.
-!!                      UNITS:      N/A
-!!                      TYPE:       CHARACTER(*)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(OUT)
-!!
-!! OPTIONAL OUTPUT ARGUMENTS:
-!!       RCS_Id:        Character string containing the Revision Control
-!!                      System Id field for the module.
-!!                      UNITS:      N/A
-!!                      TYPE:       CHARACTER(*)
-!!                      DIMENSION:  Scalar
-!!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!!
-!!:sdoc-:
-!!--------------------------------------------------------------------------------
-!
-!  SUBROUTINE Info_oSRF( oSRF   , &  ! Input
-!                       Info  , &  ! Output
-!                       RCS_Id  )  ! Revision control
-!    ! Arguments
-!    TYPE(oSRF_type)        , INTENT(IN)  :: oSRF
-!    CHARACTER(*)          , INTENT(OUT) :: Info
-!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-!    ! Local variables
-!    CHARACTER(2000) :: LongString
-!
-!    ! Set up
-!    ! ------
-!    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Write the required data to the local string
-!    ! -------------------------------------------
-!    WRITE( LongString,'(a,1x,"oSRF RELEASE.VERSION: ",i0,".",i2.2,2x,&
-!                       &a," CHANNEL:",i0,2x,&
-!                       &"N_BANDS=",i0,2x,&
-!                       &"N_POINTS=",i0)' ) &
-!                       ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-!                       oSRF%Release, oSRF%Version, &
-!                       TRIM(oSRF%Sensor_ID), oSRF%Channel, &
-!                       oSRF%n_Bands, oSRF%n_Points
-!
-!    ! Trim the output based on the
-!    ! dummy argument string length
-!    ! ----------------------------
-!    Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
-!
-!  END SUBROUTINE Info_oSRF
-!
-!
-!!------------------------------------------------------------------------------
-!!:sdoc+:
-!!
-!! NAME:
-!!       Frequency_oSRF
-!!
-!! PURPOSE:
-!!       Function to compute the frequency grid for a supplied oSRF data
-!!       structure.
-!!
-!! CALLING SEQUENCE:
-!!       Error_Status = Frequency_oSRF( oSRF                    , &  ! In/Output
-!!                                     Message_Log=Message_Log  )  ! Error messaging
-!!
-!! INPUT ARGUMENTS:
-!!       oSRF:          oSRF structure with fields containing the begin and
-!!                     end frequencies of the frequency grid to compute.
-!!                     UNITS:      N/A
-!!                     TYPE:       TYPE(oSRF_type)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN OUT)
-!!
-!! OUTPUT ARGUMENTS:
-!!       oSRF:          oSRF structure with the frequency component filled.
-!!                     UNITS:      N/A
-!!                     TYPE:       TYPE(oSRF_type)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN OUT)
-!!
-!! OPTIONAL INPUT ARGUMENTS:
-!!       Message_Log:  Character string specifying a filename in which any
-!!                     messages will be logged. If not specified, or if an
-!!                     error occurs opening the log file, the default action
-!!                     is to output messages to standard output.
-!!                     UNITS:      None
-!!                     TYPE:       CHARACTER(*)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!! FUNCTION RESULT:
-!!       Error_Status: The return value is an integer defining the error status.
-!!                     The error codes are defined in the Message_Handler module.
-!!                     If == SUCCESS the frequency grid calculation was successful
-!!                        == FAILURE an error occurred processing the input
-!!                     UNITS:      N/A
-!!                     TYPE:       INTEGER
-!!                     DIMENSION:  Scalar
-!!
-!! SIDE EFFECTS:
-!!       The FREQUENCY field of the input oSRF structure is filled.
-!!
-!! RESTRICTIONS:
-!!       oSRF structure must contain at least 2 points of frequency and response
-!!       data.
-!!
-!!:sdoc-:
-!!------------------------------------------------------------------------------
-!
-!  FUNCTION Frequency_oSRF( oSRF        , &  ! In/Output
-!                          Message_Log) &  ! Error messaging
-!                        RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(oSRF_type),         INTENT(IN OUT) :: oSRF
-!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Frequency_oSRF'
-!    ! Local variables
-!    INTEGER :: i1, i2, i, m, n
-!
-!    ! Setup
-!    ! -----
-!    Error_Status = SUCCESS
-!
-!    ! ALL pointers must be associated
-!    IF ( .NOT. Associated_oSRF( oSRF ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Some or all INPUT oSRF pointer members are NOT associated.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the number of bands
-!    IF ( oSRF%n_Bands < 1 ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF structure must contain at least 1 band', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the number of points
-!    IF ( oSRF%n_Points < 2 ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF structure must contain at least 2 points.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the number of points in each band
-!    IF ( ANY(oSRF%npts_Band < 2) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF must contain at least 2 points for each band.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the total points                                                   
-!    IF ( SUM(oSRF%npts_Band) /= oSRF%n_Points ) THEN                            
-!      Error_Status = FAILURE                                             
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF must have consistent data points.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!    END IF                                                               
-!
-!
-!    ! Compute the oSRF frequency grid
-!    ! ------------------------------
-!    ! Initialise the offset counter
-!    n = 0
-!    ! Loop over the number of bands
-!    DO m = 1, oSRF%n_Bands
-!      ! The point limits for this band
-!      i1 = n + 1
-!      i2 = oSRF%npts_Band(m) + n
-!      ! Construct a frequency grid of 0->1 for this band
-!      oSRF%Frequency(i1:i2) = (/(REAL(i-1,fp),i=1,oSRF%npts_Band(m))/) / REAL(oSRF%npts_Band(m)-1,fp)
-!      oSRF%Frequency(i1:i2) = oSRF%f1_Band(m) + &
-!                             ( oSRF%Frequency(i1:i2) * (oSRF%f2_Band(m)-oSRF%f1_Band(m)) )
-!      ! Update the offset counter
-!      n = n + oSRF%npts_Band(m)
-!    END DO
-!
-!  END FUNCTION Frequency_oSRF
-!
-!
-!!------------------------------------------------------------------------------
-!!:sdoc+:
-!!
-!! NAME:
-!!       Integrate_oSRF
-!!
-!! PURPOSE:
-!!       Function to integrate the response supplied in an oSRF data
-!!       structure.
-!!
-!! CALLING SEQUENCE:
-!!       Error_Status = Integrate_oSRF( oSRF                    , &  ! In/Output
-!!                                     Message_Log=Message_Log  )  ! Error messaging
-!!
-!! INPUT ARGUMENTS:
-!!       oSRF:          oSRF structure with fields containing the frequency
-!!                     and response arrays.
-!!                     UNITS:      N/A
-!!                     TYPE:       TYPE(oSRF_type)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN OUT)
-!!
-!! OUTPUT ARGUMENTS:
-!!       oSRF:          oSRF structure with the integration components filled.
-!!                     UNITS:      N/A
-!!                     TYPE:       TYPE(oSRF_type)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN OUT)
-!!
-!! OPTIONAL INPUT ARGUMENTS:
-!!       Message_Log:  Character string specifying a filename in which any
-!!                     messages will be logged. If not specified, or if an
-!!                     error occurs opening the log file, the default action
-!!                     is to output messages to standard output.
-!!                     UNITS:      None
-!!                     TYPE:       CHARACTER(*)
-!!                     DIMENSION:  Scalar
-!!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!!
-!! FUNCTION RESULT:
-!!       Error_Status: The return value is an integer defining the error status.
-!!                     The error codes are defined in the Message_Handler module.
-!!                     If == SUCCESS the integration was successful
-!!                        == FAILURE an error occurred processing the input
-!!                     UNITS:      N/A
-!!                     TYPE:       INTEGER
-!!                     DIMENSION:  Scalar
-!!
-!! SIDE EFFECTS:
-!!       The INTEGRATED_oSRF and SUMMATION_oSRF fields of the input oSRF structure
-!!       are filled.
-!!
-!! RESTRICTIONS:
-!!       oSRF structure must contain at least 2 points of frequency and response
-!!       data.
-!!
-!!:sdoc-:
-!!------------------------------------------------------------------------------
-!
-!  FUNCTION Integrate_oSRF( oSRF        , &  ! In/Output
-!                          Message_Log) &  ! Error messaging
-!                        RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(oSRF_type),         INTENT(IN OUT) :: oSRF
-!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrate_oSRF'
-!    ! Local variables
-!    CHARACTER(ML) :: msg
-!    REAL(fp) :: dF
-!    INTEGER :: i1, i2, m, n
-!    REAL(fp):: Int_oSRF, Sum_oSRF
-!
-!    ! Setup
-!    ! -----
-!    Error_Status = SUCCESS
-!    
-!    ! ALL pointers must be associated
-!    IF ( .NOT. Associated_oSRF( oSRF ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Some or all INPUT oSRF pointer members are NOT associated.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the number of bands
-!    IF ( oSRF%n_Bands < 1 ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF structure must contain at least 1 band', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the number of points
-!    IF ( oSRF%n_Points < 2 ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF structure must contain at least 2 points.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the number of points in each band
-!    IF ( ANY(oSRF%npts_Band < 2) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF must contain at least 2 points for each band.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the total points                                                   
-!    IF ( SUM(oSRF%npts_Band) /= oSRF%n_Points ) THEN                            
-!      Error_Status = FAILURE                                             
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'oSRF must have consistent data points.', &
-!                            Error_Status, &
-!                            Message_Log=Message_Log )
-!    END IF
-!
-!
-!    ! Check the number of points
-!    n = oSRF%n_Points
-!    m = oSRF%n_Bands
-!
-!
-!    ! Compute the oSRF integrals
-!    ! -------------------------
-!    ! Initialisation of sums
-!    oSRF%Integrated_oSRF = ZERO
-!    oSRF%Summation_oSRF  = ZERO
-!    ! Initialise the offset counter
-!    n = 0
-!
-!    ! Loop over the bands
-!    DO m = 1, oSRF%n_Bands
-!    
-!      ! The point limits for this band
-!      i1 = n + 1
-!      i2 = oSRF%npts_Band(m) + n
-!      
-!      ! Integration using Simpson's rule
-!      ! --------------------------------                                            
-!      Error_Status = Simpsons_Integral( oSRF%Frequency(i1:i2), &
-!                                        oSRF%Response(i1:i2), &
-!                                        Int_oSRF )
-!      IF ( Error_Status /= SUCCESS ) THEN
-!        WRITE( msg,'("Error occurred integrating channel ",i0," oSRF")' ) oSRF%Channel
-!        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-!        RETURN
-!      END IF
-!      
-!      ! Integration by simple summation
-!      ! -------------------------------
-!      ! Compute the average frequency grid interval
-!      dF = SUM(oSRF%Frequency(i1+1:i2 ) - oSRF%Frequency(i1:i2-1)) / REAL(oSRF%npts_Band(m)-1,fp)
-!      ! Do the summation
-!      Sum_oSRF = SUM(oSRF%Response(i1:i2)) * dF
-!      
-!      ! Accumulate the band sums                                                                        
-!      oSRF%Integrated_oSRF = oSRF%Integrated_oSRF + Int_oSRF
-!      oSRF%Summation_oSRF  = oSRF%Summation_oSRF  + Sum_oSRF
-!
-!      ! Update the offset counter
-!      n = n + oSRF%npts_Band(m)
-!    END DO
-!
-!  END FUNCTION Integrate_oSRF
-!
-!
-!!##################################################################################
-!!##################################################################################
-!!##                                                                              ##
-!!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!!##                                                                              ##
-!!##################################################################################
-!!##################################################################################
-!
-!!------------------------------------------------------------------------------------
-!!
-!! NAME:
-!!       Clear_oSRF
-!!
-!! PURPOSE:
-!!       Subroutine to clear the scalar members of an oSRF structure.
-!!
-!! CALLING SEQUENCE:
-!!       CALL Clear_oSRF( oSRF )
-!!
-!! OUTPUT ARGUMENTS:
-!!       oSRF:         oSRF structure for which the scalar members have
-!!                    been cleared.
-!!                    UNITS:      N/A
-!!                    TYPE:       TYPE(oSRF_type)
-!!                    DIMENSION:  Scalar
-!!                    ATTRIBUTES: INTENT(IN OUT)
-!!
-!! COMMENTS:
-!!       Note the INTENT on the output oSRF argument is IN OUT rather than
-!!       just OUT. This is necessary because the argument may be defined upon
-!!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!!
-!!------------------------------------------------------------------------------------
-!
-!  SUBROUTINE Clear_oSRF( oSRF )
-!    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
-!    
-!    oSRF%Release = oSRF_RELEASE
-!    oSRF%Version = oSRF_VERSION
-!
-!    oSRF%Sensor_ID        = ' '
-!    oSRF%WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
-!    oSRF%WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
-!    oSRF%Sensor_Type      = INVALID_SENSOR
-!    
-!    oSRF%Channel      = INVALID
-!
-!    oSRF%Integrated_oSRF = ZERO
-!    oSRF%Summation_oSRF  = ZERO
-! 
-!  END SUBROUTINE Clear_oSRF
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Info_oSRF( self, Info )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN)  :: self
+    CHARACTER(*)   , INTENT(OUT) :: Info
+    ! Local variables
+    CHARACTER(2000) :: LongString
+
+    ! Setup
+    Info = ' '
+    IF ( .NOT. Allocated_oSRF(self) ) RETURN
+    
+    
+    ! Write the required data to the local string
+    WRITE( LongString,'(a,1x,"oSRF RELEASE.VERSION: ",i0,".",i2.2,2x,a,1x,&
+                       &"CHANNEL:",i0,2x,&
+                       &"N_BANDS=",i0,2x,&
+                       &"N_POINTS=",99(i0,:,","))' ) &
+                       ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                       self%Release, self%Version, &
+                       TRIM(self%Sensor_ID), &
+                       self%Channel, &
+                       self%n_Bands, &
+                       self%n_Points
+
+
+    ! Trim the output based on the
+    ! dummy argument string length
+    Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
+
+  END SUBROUTINE Info_oSRF
 
 END MODULE oSRF_Define
 

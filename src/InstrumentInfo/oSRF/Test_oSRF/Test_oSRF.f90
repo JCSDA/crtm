@@ -25,6 +25,7 @@ PROGRAM Test_oSRF
                          Set_oSRF      , &
                          Get_oSRF      , &
                          Inspect_oSRF  , &
+                         Info_oSRF     , &
                          N_SENSOR_TYPES    , & 
                          MICROWAVE_SENSOR  , &
                          INFRARED_SENSOR   , &
@@ -52,11 +53,11 @@ PROGRAM Test_oSRF
   ! ---------
   INTEGER :: err_status
   INTEGER :: i, n
-  TYPE(oSRF_type) :: osrf1, osrf2, osrf2_copy
-  CHARACTER(256) :: Sensor_Id
+  CHARACTER(256) :: Sensor_Id, Info
   INTEGER :: Sensor_Type
   INTEGER :: n_Points
   REAL(fp), ALLOCATABLE :: frequency(:)
+  TYPE(oSRF_type) :: osrf1, osrf2, osrf2_copy
 
   ! Output header
   CALL Program_Message( PROGRAM_NAME, &
@@ -68,19 +69,22 @@ PROGRAM Test_oSRF
   WRITE( *,'( 5x,"oSRF allocation status: ",2(1x,l5))' ) Allocated_oSRF((/osrf1,osrf2/))
 
 
-  ! Test inspect routines
+  ! Test inspect and Info routines
   WRITE( *,'(/5x,"Inspecting unallocated oSRF...")' )
   CALL Inspect_oSRF( osrf2 )
+  CALL Info_oSRF( osrf2, Info )
+  PRINT *, TRIM(Info)
+  
 
 
   ! Test creation
   WRITE( *,'(/5x,"Testing creation routines...")' )
   WRITE( *,'( 7x,"Single band creation...")' )
-  err_status = Create_oSRF(N1_POINTS, osrf1)
+  err_status = Create_oSRF(osrf1, N1_POINTS)
   CALL Display_Message('Create_oSRF','Single band',err_status)
   IF ( err_status /= SUCCESS ) STOP
   WRITE( *,'( 7x,"Multiple band creation...")' )
-  err_status = Create_oSRF(N2_POINTS, osrf2)
+  err_status = Create_oSRF(osrf2, N2_POINTS)
   CALL Display_Message('Create_oSRF','Multiple band',err_status)
   IF ( err_status /= SUCCESS ) STOP
   WRITE( *,'( 5x,"oSRF allocation status: ",2(1x,l5))' ) Allocated_oSRF((/osrf1,osrf2/))
@@ -149,6 +153,8 @@ PROGRAM Test_oSRF
   ! Test inspect routines
   WRITE( *,'(/5x,"Inspecting copied oSRF...")' )
   CALL Inspect_oSRF( osrf2_copy )
+  CALL Info_oSRF( osrf2_copy, Info )
+  PRINT *, TRIM(Info)
   
   
   ! Test equality
