@@ -17,10 +17,12 @@ EXE_FILE = Test_oSRF
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
+            String_Utility.f90 \
             Compare_Float_Numbers.f90 \
             Unit_Test.f90 \
+            PtrArr_Define.f90 \
             oSRF_Define.f90 \
-            PtrArr_Define.f90
+            oSRF_File_Define.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

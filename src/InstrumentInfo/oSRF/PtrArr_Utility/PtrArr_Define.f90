@@ -26,8 +26,8 @@ MODULE PtrArr_Define
   PUBLIC :: Destroy_PtrArr
   PUBLIC :: Assign_PtrArr
   PUBLIC :: Equal_PtrArr
-  PUBLIC :: Set_PtrArr
-  PUBLIC :: Get_PtrArr
+  PUBLIC :: Set_Property_PtrArr
+  PUBLIC :: Get_Property_PtrArr
   PUBLIC :: Inspect_PtrArr
 
 
@@ -169,14 +169,14 @@ CONTAINS
   END FUNCTION Equal_PtrArr
 
 
-  FUNCTION Set_PtrArr(self,Arr) RESULT(err_status)
+  FUNCTION Set_Property_PtrArr(self,Arr) RESULT(err_status)
     ! Arguments
     TYPE(PtrArr_type),  INTENT(IN OUT) :: self
     REAL(fp), OPTIONAL, INTENT(IN)     :: Arr(:)
     ! Function result
     INTEGER :: err_status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_PtrArr'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_Property_PtrArr'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n
@@ -196,10 +196,10 @@ CONTAINS
       ! ...Assign data
       self%Arr = Arr
     END IF
-  END FUNCTION Set_PtrArr
+  END FUNCTION Set_Property_PtrArr
   
   
-  FUNCTION Get_PtrArr(self,n_Points,Arr) RESULT(err_status)
+  FUNCTION Get_Property_PtrArr(self,n_Points,Arr) RESULT(err_status)
     ! Arguments
     TYPE(PtrArr_type),  INTENT(IN)  :: self
     INTEGER,  OPTIONAL, INTENT(OUT) :: n_Points
@@ -207,7 +207,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_PtrArr'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_Property_PtrArr'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n
@@ -229,7 +229,7 @@ CONTAINS
       ! ...Assign data
       Arr = self%Arr
     END IF
-  END FUNCTION Get_PtrArr
+  END FUNCTION Get_Property_PtrArr
   
   
   SUBROUTINE Inspect_PtrArr(self)

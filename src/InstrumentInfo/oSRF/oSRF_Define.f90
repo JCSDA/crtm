@@ -17,14 +17,14 @@ MODULE oSRF_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE PtrArr_Define        , ONLY: PtrArr_type     , &
-                                   Allocated_PtrArr, &
-                                   Destroy_PtrArr  , &
-                                   Create_PtrArr   , &
-                                   Assign_PtrArr   , &
-                                   Equal_PtrArr    , &
-                                   Set_PtrArr      , &
-                                   Get_PtrArr      , &
+  USE PtrArr_Define        , ONLY: PtrArr_type        , &
+                                   Allocated_PtrArr   , &
+                                   Destroy_PtrArr     , &
+                                   Create_PtrArr      , &
+                                   Assign_PtrArr      , &
+                                   Equal_PtrArr       , &
+                                   Set_Property_PtrArr, &
+                                   Get_Property_PtrArr, &
                                    Inspect_PtrArr
   ! Disable implicit typing
   IMPLICIT NONE
@@ -43,11 +43,13 @@ MODULE oSRF_Define
   PUBLIC :: Create_oSRF
   PUBLIC :: Assign_oSRF
   PUBLIC :: Equal_oSRF
-  PUBLIC :: Set_oSRF
-  PUBLIC :: Get_oSRF
+  PUBLIC :: Set_Property_oSRF
+  PUBLIC :: Get_Property_oSRF
   PUBLIC :: Inspect_oSRF
   PUBLIC :: Info_oSRF
   ! Public parameters
+  PUBLIC :: OSRF_RELEASE
+  PUBLIC :: OSRF_VERSION
   PUBLIC :: INVALID_WMO_SATELLITE_ID
   PUBLIC :: INVALID_WMO_SENSOR_ID
   PUBLIC :: N_SENSOR_TYPES
@@ -105,8 +107,8 @@ MODULE oSRF_Define
                                                                      'Visible    ', &
                                                                      'Ultraviolet' /)
   ! Some internal dimensions
-  INTEGER, PARAMETER :: N_PLANCK_COEFFS = 2
-  INTEGER, PARAMETER :: N_POLYCHROMATIC_COEFFS = 2
+  INTEGER, PARAMETER :: MAX_N_PLANCK_COEFFS = 2
+  INTEGER, PARAMETER :: MAX_N_POLYCHROMATIC_COEFFS = 2
 
 
   ! --------------------------
@@ -127,8 +129,8 @@ MODULE oSRF_Define
     REAL(fp) :: Integral        = ZERO
     INTEGER  :: Flags           = 0
     REAL(fp) :: f0              = ZERO
-    REAL(fp) :: Planck_Coeffs(N_PLANCK_COEFFS)               = ZERO
-    REAL(fp) :: Polychromatic_Coeffs(N_POLYCHROMATIC_COEFFS) = ZERO
+    REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)               = ZERO
+    REAL(fp) :: Polychromatic_Coeffs(MAX_N_POLYCHROMATIC_COEFFS) = ZERO
     ! Pointer components
     INTEGER,           ALLOCATABLE :: n_Points(:)  ! nB
     REAL(fp),          ALLOCATABLE :: f1(:)        ! nB
@@ -306,10 +308,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Create_oSRF( &
-    self    , &  ! Input
-    n_Points) &  ! Output
-  RESULT( err_status )
+  FUNCTION Create_oSRF( self, n_Points ) RESULT( err_status )
     ! Arguments
     TYPE(oSRF_type), INTENT(OUT) :: self
     INTEGER,         INTENT(IN)  :: n_Points(:)
@@ -669,7 +668,7 @@ CONTAINS
       CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
     END IF
     ! ...The Planck_Coeffs
-    DO n = 1, N_PLANCK_COEFFS
+    DO n = 1, MAX_N_PLANCK_COEFFS
       IF ( .NOT. Compare_Float( oSRF_LHS%Planck_Coeffs(n), &
                                 oSRF_RHS%Planck_Coeffs(n), &
                                 ULP=ULP ) ) THEN
@@ -679,7 +678,7 @@ CONTAINS
       END IF
     END DO
     ! ...The Polychromatic_Coeffs
-    DO n = 1, N_POLYCHROMATIC_COEFFS
+    DO n = 1, MAX_N_POLYCHROMATIC_COEFFS
       IF ( .NOT. Compare_Float( oSRF_LHS%Polychromatic_Coeffs(n), &
                                 oSRF_RHS%Polychromatic_Coeffs(n), &
                                 ULP=ULP ) ) THEN
@@ -749,14 +748,14 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Set_oSRF
+!       Set_Property_oSRF
 !
 ! PURPOSE:
 !       Function to sets the value of a property or a group of properties for
 !       an oSRF structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Set_oSRF( &
+!       Error_Status = Set_Property_oSRF( &
 !         oSRF                                       , &  ! Output
 !         Band                 = Band                , &  ! Optional input
 !         Version              = Version             , &  ! Optional input
@@ -770,8 +769,6 @@ CONTAINS
 !         f0                   = f0                  , &  ! Optional input
 !         Planck_Coeffs        = Planck_Coeffs       , &  ! Optional input
 !         Polychromatic_Coeffs = Polychromatic_Coeffs, &  ! Optional input
-!         R                    = R                   , &  ! Optional input
-!         T                    = T                   , &  ! Optional input
 !         f1                   = f1                  , &  ! Optional input
 !         f2                   = f2                  , &  ! Optional input
 !         Frequency            = Frequency           , &  ! Optional input
@@ -900,7 +897,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Set_oSRF( &
+  FUNCTION Set_Property_oSRF( &
     self                , &  ! In/output
     Band                , &  ! Optional input
     Version             , &  ! Optional input
@@ -940,7 +937,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_oSRF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_Property_oSRF'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: l_Band
@@ -955,7 +952,7 @@ CONTAINS
       l_Band = Band
       IF ( l_Band < 1 .OR. l_Band > self%n_Bands ) THEN
         WRITE( msg, '("Invalid band, ",i0,", specified for input oSRF")' ) l_Band
-        CALL Set_CleanUp(); RETURN
+        CALL Set_Property_CleanUp(); RETURN
       END IF
     END IF
 
@@ -978,10 +975,10 @@ CONTAINS
 
     ! Set frequency data
     IF ( PRESENT(Frequency) ) THEN
-      err_status = Set_PtrArr( self%Frequency(l_Band), Arr=Frequency )
+      err_status = Set_Property_PtrArr( self%Frequency(l_Band), Arr=Frequency )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error setting frequency for band ",i0)' ) l_Band
-        CALL Set_CleanUp(); RETURN
+        CALL Set_Property_CleanUp(); RETURN
       END IF
       ! ...Set the frequency limits
       self%f1(l_Band) = Frequency(1)
@@ -991,22 +988,22 @@ CONTAINS
     
     ! Set Response data
     IF ( PRESENT(Response) ) THEN
-      err_status = Set_PtrArr( self%Response(l_Band), Arr=Response )
+      err_status = Set_Property_PtrArr( self%Response(l_Band), Arr=Response )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error setting Response for band ",i0)' ) l_Band
-        CALL Set_CleanUp(); RETURN
+        CALL Set_Property_CleanUp(); RETURN
       END IF
     END IF
     
   CONTAINS
   
-    SUBROUTINE Set_CleanUp()
+    SUBROUTINE Set_Property_CleanUp()
       err_status = FAILURE
       CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
-    END SUBROUTINE Set_CleanUp
+    END SUBROUTINE Set_Property_CleanUp
     
     
-  END FUNCTION Set_oSRF
+  END FUNCTION Set_Property_oSRF
   
 
 
@@ -1015,150 +1012,165 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Get_oSRF
+!       Get_Property_oSRF
 !
 ! PURPOSE:
 !       Function to get the value of a property or a group of properties for
 !       an oSRF structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Get_oSRF( &
+!       Error_Status = Get_Property_oSRF( &
 !         oSRF                                       , &  ! Output
-!         Band                 = Band                , &  ! Optional input
-!         Version              = Version             , &  ! Optional output
-!         Sensor_Id            = Sensor_Id           , &  ! Optional output
-!         WMO_Satellite_Id     = WMO_Satellite_Id    , &  ! Optional output
-!         WMO_Sensor_Id        = WMO_Sensor_Id       , &  ! Optional output
-!         Sensor_Type          = Sensor_Type         , &  ! Optional output
-!         Channel              = Channel             , &  ! Optional output
-!         Integral             = Integral            , &  ! Optional output
-!         Flags                = Flags               , &  ! Optional output
-!         f0                   = f0                  , &  ! Optional output
-!         Planck_Coeffs        = Planck_Coeffs       , &  ! Optional output
-!         Polychromatic_Coeffs = Polychromatic_Coeffs, &  ! Optional output
-!         f1                   = f1                  , &  ! Optional output
-!         f2                   = f2                  , &  ! Optional output
-!         Frequency            = Frequency           , &  ! Optional output
-!         Response             = Response            )    ! Optional output
+!         Band                   = Band                  , &  ! Optional input
+!         Version                = Version               , &  ! Optional output
+!         Sensor_Id              = Sensor_Id             , &  ! Optional output
+!         WMO_Satellite_Id       = WMO_Satellite_Id      , &  ! Optional output
+!         WMO_Sensor_Id          = WMO_Sensor_Id         , &  ! Optional output
+!         Sensor_Type            = Sensor_Type           , &  ! Optional output
+!         Channel                = Channel               , &  ! Optional output
+!         Integral               = Integral              , &  ! Optional output
+!         Flags                  = Flags                 , &  ! Optional output
+!         f0                     = f0                    , &  ! Optional output
+!         n_Planck_Coeffs        = n_Planck_Coeffs       , &  ! Optional output
+!         n_Polychromatic_Coeffs = n_Polychromatic_Coeffs, &  ! Optional output
+!         Planck_Coeffs          = Planck_Coeffs         , &  ! Optional output
+!         Polychromatic_Coeffs   = Polychromatic_Coeffs  , &  ! Optional output
+!         n_Points               = n_Points              , &  ! Optional output
+!         f1                     = f1                    , &  ! Optional output
+!         f2                     = f2                    , &  ! Optional output
+!         Frequency              = Frequency             , &  ! Optional output
+!         Response               = Response              )    ! Optional output
 !
 ! OBJECT:
-!       oSRF:          oSRF structure that is to have it properties obtained.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(oSRF_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!       oSRF:                   oSRF structure that is to have it properties obtained.
+!                               UNITS:      N/A
+!                               TYPE:       TYPE(oSRF_type)
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Band:                  The band number to which the frequency and
-!                              response data refer.
-!                              If not specified, default value is 1.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  SCALAR
-!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Band:                   The band number to which the frequency and
+!                               response data refer.
+!                               If not specified, default value is 1.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  SCALAR
+!                               ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       Version:               The version number of the SRF data.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Version:                The version number of the SRF data.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Sensor_ID:             A character string identifying the sensor and
-!                              satellite platform used to contruct filenames.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Sensor_ID:              A character string identifying the sensor and
+!                               satellite platform used to contruct filenames.
+!                               UNITS:      N/A
+!                               TYPE:       CHARACTER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       WMO_Satellite_ID:      The WMO code used to identify satellite platforms.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       WMO_Satellite_ID:       The WMO code used to identify satellite platforms.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       WMO_Sensor_ID:         The WMO code used to identify sensors.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
-!       Sensor_Type:           The flag indicating the type of sensor (IR, MW, etc)
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       WMO_Sensor_ID:          The WMO code used to identify sensors.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Sensor_Type:            The flag indicating the type of sensor (IR, MW, etc)
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Channel:               The sensor channel for the currenobject.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Channel:                The sensor channel for the currenobject.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Integral:              The integrated SRF value.
-!                              UNITS:      N/A
-!                              TYPE:       REAL
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Integral:               The integrated SRF value.
+!                               UNITS:      N/A
+!                               TYPE:       REAL
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Flags:                 Bit flags set/cleared during SRF processing.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Flags:                  Bit flags set/cleared during SRF processing.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       f0:                    The central frequency of the SRF.
-!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
-!                              TYPE:       REAL
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       f0:                     The central frequency of the SRF.
+!                               UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                               TYPE:       REAL
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Planck_Coeffs:         Vector of Planck function coefficients for the SRF.
-!                              UNITS:      Variable
-!                              TYPE:       REAL
-!                              DIMENSION:  Rank-1
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       n_Planck_Coeffs:        Number of Planck function coefficients for the SRF.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Polychromatic_Coeffs:  Vector of polychromatic correction coefficient for the SRF.
-!                              UNITS:      Variable
-!                              TYPE:       REAL
-!                              DIMENSION:  Rank-1
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       n_Polychromatic_Coeffs: Number of polychromatic correction coefficient for the SRF.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Points:              The number of points that specify the band frequency
-!                              and responmse data.
-!                              Used in conjunction with the Band keyword argument.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Planck_Coeffs:          Vector of Planck function coefficients for the SRF.
+!                               UNITS:      Variable
+!                               TYPE:       REAL
+!                               DIMENSION:  Rank-1
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       f1:                    The begin frequency of the SRF band.
-!                              Used in conjunction with the Band keyword argument.
-!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
-!                              TYPE:       REAL
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Polychromatic_Coeffs:   Vector of polychromatic correction coefficient for the SRF.
+!                               UNITS:      Variable
+!                               TYPE:       REAL
+!                               DIMENSION:  Rank-1
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       f2:                    The end frequency of the SRF bands.
-!                              Used in conjunction with the Band keyword argument.
-!                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
-!                              TYPE:       REAL
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       n_Points:               The number of points that specify the band frequency
+!                               and responmse data.
+!                               Used in conjunction with the Band keyword argument.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Frequency:             The frequency grid for an SRF band.
-!                              Used in conjunction with the Band keyword argument.
-!                              UNITS:      Inverse centimetres (cm^-1)
-!                              TYPE:       REAL
-!                              DIMENSION:  n_Points
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       f1:                     The begin frequency of the SRF band.
+!                               Used in conjunction with the Band keyword argument.
+!                               UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                               TYPE:       REAL
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Response:              The response data for an SRF band.
-!                              Used in conjunction with the Band keyword argument.
-!                              UNITS:      N/A
-!                              TYPE:       REAL
-!                              DIMENSION:  n_Points
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       f2:                     The end frequency of the SRF bands.
+!                               Used in conjunction with the Band keyword argument.
+!                               UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+!                               TYPE:       REAL
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Frequency:              The frequency grid for an SRF band.
+!                               Used in conjunction with the Band keyword argument.
+!                               UNITS:      Inverse centimetres (cm^-1)
+!                               TYPE:       REAL
+!                               DIMENSION:  n_Points
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Response:               The response data for an SRF band.
+!                               Used in conjunction with the Band keyword argument.
+!                               UNITS:      N/A
+!                               TYPE:       REAL
+!                               DIMENSION:  n_Points
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
@@ -1172,25 +1184,27 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Get_oSRF( &
-    self                , &  ! Input
-    Band                , &  ! Optional input
-    Version             , &  ! Optional output
-    Sensor_Id           , &  ! Optional output
-    WMO_Satellite_Id    , &  ! Optional output
-    WMO_Sensor_Id       , &  ! Optional output
-    Sensor_Type         , &  ! Optional output
-    Channel             , &  ! Optional output
-    Integral            , &  ! Optional output
-    Flags               , &  ! Optional output
-    f0                  , &  ! Optional output
-    Planck_Coeffs       , &  ! Optional output
-    Polychromatic_Coeffs, &  ! Optional output
-    n_Points            , &  ! Optional output
-    f1                  , &  ! Optional output
-    f2                  , &  ! Optional output
-    Frequency           , &  ! Optional output
-    Response            ) &  ! Optional output
+  FUNCTION Get_Property_oSRF( &
+    self                  , &  ! Input
+    Band                  , &  ! Optional input
+    Version               , &  ! Optional output
+    Sensor_Id             , &  ! Optional output
+    WMO_Satellite_Id      , &  ! Optional output
+    WMO_Sensor_Id         , &  ! Optional output
+    Sensor_Type           , &  ! Optional output
+    Channel               , &  ! Optional output
+    Integral              , &  ! Optional output
+    Flags                 , &  ! Optional output
+    f0                    , &  ! Optional output
+    n_Planck_Coeffs       , &  ! Optional output
+    n_Polychromatic_Coeffs, &  ! Optional output
+    Planck_Coeffs         , &  ! Optional output
+    Polychromatic_Coeffs  , &  ! Optional output
+    n_Points              , &  ! Optional output
+    f1                    , &  ! Optional output
+    f2                    , &  ! Optional output
+    Frequency             , &  ! Optional output
+    Response              ) &  ! Optional output
   RESULT( err_status )
     ! Arguments
     TYPE(oSRF_type),        INTENT(IN)  :: self
@@ -1204,6 +1218,8 @@ CONTAINS
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Integral            
     INTEGER,      OPTIONAL, INTENT(OUT) :: Flags               
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f0                  
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: n_Planck_Coeffs
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: n_Polychromatic_Coeffs
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(self%Planck_Coeffs))       
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Points
@@ -1214,7 +1230,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_oSRF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_Property_oSRF'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: l_Band
@@ -1229,56 +1245,57 @@ CONTAINS
       l_Band = Band
       IF ( l_Band < 1 .OR. l_Band > self%n_Bands ) THEN
         WRITE( msg, '("Invalid band, ",i0,", specified for input oSRF")' ) l_Band
-        CALL Set_CleanUp(); RETURN
+        CALL Get_Property_CleanUp(); RETURN
       END IF
     END IF
 
 
     ! Get data with defined sizes
-    IF ( PRESENT(Version             ) ) Version              = self%Version  
-    IF ( PRESENT(Sensor_Id           ) ) Sensor_Id            = self%Sensor_Id       
-    IF ( PRESENT(WMO_Satellite_Id    ) ) WMO_Satellite_Id     = self%WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id       ) ) WMO_Sensor_Id        = self%WMO_Sensor_Id   
-    IF ( PRESENT(Sensor_Type         ) ) Sensor_Type          = self%Sensor_Type     
-    IF ( PRESENT(Channel             ) ) Channel              = self%Channel         
-    IF ( PRESENT(Integral            ) ) Integral             = self%Integral        
-    IF ( PRESENT(Flags               ) ) Flags                = self%Flags           
-    IF ( PRESENT(f0                  ) ) f0                   = self%f0              
-    IF ( PRESENT(Planck_Coeffs       ) ) Planck_Coeffs        = self%Planck_Coeffs                       
-    IF ( PRESENT(Polychromatic_Coeffs) ) Polychromatic_Coeffs = self%Polychromatic_Coeffs                
-    IF ( PRESENT(n_Points            ) ) n_Points             = self%n_Points(l_Band)    
-    IF ( PRESENT(f1                  ) ) f1                   = self%f1(l_Band)    
-    IF ( PRESENT(f2                  ) ) f2                   = self%f2(l_Band)    
+    IF ( PRESENT(Version               ) ) Version                = self%Version  
+    IF ( PRESENT(Sensor_Id             ) ) Sensor_Id              = self%Sensor_Id       
+    IF ( PRESENT(WMO_Satellite_Id      ) ) WMO_Satellite_Id       = self%WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id         ) ) WMO_Sensor_Id          = self%WMO_Sensor_Id   
+    IF ( PRESENT(Sensor_Type           ) ) Sensor_Type            = self%Sensor_Type     
+    IF ( PRESENT(Channel               ) ) Channel                = self%Channel         
+    IF ( PRESENT(Integral              ) ) Integral               = self%Integral        
+    IF ( PRESENT(Flags                 ) ) Flags                  = self%Flags           
+    IF ( PRESENT(f0                    ) ) f0                     = self%f0              
+    IF ( PRESENT(n_Planck_Coeffs       ) ) n_Planck_Coeffs        = MAX_N_PLANCK_COEFFS                       
+    IF ( PRESENT(n_Polychromatic_Coeffs) ) n_Polychromatic_Coeffs = MAX_N_POLYCHROMATIC_COEFFS                
+    IF ( PRESENT(Planck_Coeffs         ) ) Planck_Coeffs          = self%Planck_Coeffs                   
+    IF ( PRESENT(Polychromatic_Coeffs  ) ) Polychromatic_Coeffs   = self%Polychromatic_Coeffs            
+    IF ( PRESENT(n_Points              ) ) n_Points               = self%n_Points(l_Band)    
+    IF ( PRESENT(f1                    ) ) f1                     = self%f1(l_Band)    
+    IF ( PRESENT(f2                    ) ) f2                     = self%f2(l_Band)    
 
 
     ! Get frequency data
     IF ( PRESENT(Frequency) ) THEN
-      err_status = Get_PtrArr( self%Frequency(l_Band), Arr=Frequency )
+      err_status = Get_Property_PtrArr( self%Frequency(l_Band), Arr=Frequency )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error getting frequency for band ",i0)' ) l_Band
-        CALL Set_CleanUp(); RETURN
+        CALL Get_Property_CleanUp(); RETURN
       END IF
     END IF
     
     
     ! Get Response data
     IF ( PRESENT(Response) ) THEN
-      err_status = Get_PtrArr( self%Response(l_Band), Arr=Response )
+      err_status = Get_Property_PtrArr( self%Response(l_Band), Arr=Response )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error Getting Response for band ",i0)' ) l_Band
-        CALL Set_CleanUp(); RETURN
+        CALL Get_Property_CleanUp(); RETURN
       END IF
     END IF
     
   CONTAINS
   
-    SUBROUTINE Set_CleanUp()
+    SUBROUTINE Get_Property_CleanUp()
       err_status = FAILURE
       CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
-    END SUBROUTINE Set_CleanUp
+    END SUBROUTINE Get_Property_CleanUp
     
-    
-  END FUNCTION Get_oSRF
+  END FUNCTION Get_Property_oSRF
   
 
 !--------------------------------------------------------------------------------
