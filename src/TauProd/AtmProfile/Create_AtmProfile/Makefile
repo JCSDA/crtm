@@ -40,6 +40,7 @@ SRC_FILES = Type_Kinds.f90 \
             CIMSS_Profile_Set.f90 \
             ECMWF52_Profile_Set.f90 \
             ECMWF83_Profile_Set.f90 \
+            ECMWF5K_Profile_Set.f90 ECMWF5K_Parameters.f90 \
             Model_Profile_Set.f90
 
 # Obj files used in link phase

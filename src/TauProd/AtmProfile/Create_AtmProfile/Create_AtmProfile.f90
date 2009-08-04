@@ -39,7 +39,7 @@ PROGRAM Create_AtmProfile
                                    Load_ECMWF83_Profile
   USE ECMWF5K_Profile_Set  , ONLY: N_ECMWF5K_PROFILES,  &
                                    N_ECMWF5K_ABSORBERS, &
-                                   N_ECMWF5k_LAYERS,    &
+                                   N_ECMWF5K_LAYERS,    &
                                    Load_ECMWF5K_Profile
   USE Model_Profile_Set    , ONLY: N_MODEL_PROFILES,  &
                                    N_MODEL_ABSORBERS, &
@@ -67,6 +67,10 @@ PROGRAM Create_AtmProfile
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ZEROpointFIVE = 0.5_fp
+  ! Keyword status
+  INTEGER, PARAMETER :: UNSET = 0
+  INTEGER, PARAMETER :: SET   = 1
+
 
   ! ---------
   ! Variables
@@ -80,13 +84,13 @@ PROGRAM Create_AtmProfile
   REAL(fp), POINTER :: Absorber(:,:)  => NULL()
   REAL(fp) :: acorr(N_ATMPROFILE_LEVELS+1)
   REAL(fp) :: H2O_Pressure(N_ATMPROFILE_LEVELS)
-  REAL(fp) :: H2O_5K_Pressure(N_ECMWF5k_LAYERS+1)
   LOGICAL :: Profile_Interpolate
   INTEGER :: n_Layers, k, ik
   INTEGER :: n_Levels
   INTEGER :: n_Absorbers, j, j_idx(1)
   INTEGER :: n_Profiles, m
   INTEGER :: Profile_Set
+  INTEGER :: Quiet
   CHARACTER(512) :: History
   CHARACTER(256) :: Comment
   CHARACTER(256) :: Interpolation_RCS_Id
@@ -189,7 +193,14 @@ PROGRAM Create_AtmProfile
   ! --------------------------
   WRITE( *, * )
   Profile_Loop: DO m = 1, n_Profiles
-    WRITE( *,'(5x,"Processing ",a," profile #",i0)' ) TRIM(ATMPROFILE_SET_ID_TAG( Profile_Set )), m
+  
+    IF ( n_Profiles < 100 ) THEN
+      WRITE( *,'(5x,"Processing ",a," profile #",i0)' ) TRIM(ATMPROFILE_SET_ID_TAG(Profile_Set)), m
+    ELSE
+      IF ( MOD(m,100) == 0 ) THEN
+        WRITE( *,'(5x,"Processing ",a," profile #",i0)' ) TRIM(ATMPROFILE_SET_ID_TAG(Profile_Set)), m
+      END IF
+    END IF
 
 
     ! Load the profile data
@@ -310,26 +321,23 @@ PROGRAM Create_AtmProfile
     END IF
     
     ! Fill the pressure array with the required pressure levels/layers
-    IF (ATMPROFILE_SET_ID_TAG(Profile_Set)=='ECMWF5K') THEN
-      AtmProfile(m)%Level_Pressure = Pressure
-      AtmProfile(m)%Layer_Pressure(:) = ( AtmProfile(m)%Level_Pressure(1:n_Levels-1) - &
-                                          AtmProfile(m)%Level_Pressure(2:n_Levels) ) / &
-      !                                 -------------------------------------------------
+    AtmProfile(m)%Level_Pressure = Pressure
+    AtmProfile(m)%Layer_Pressure(:) = ( AtmProfile(m)%Level_Pressure(1:n_Levels-1) - &
+                                        AtmProfile(m)%Level_Pressure(2:n_Levels) ) / &
+    !                                 -------------------------------------------------
                                       LOG( AtmProfile(m)%Level_Pressure(1:n_Levels-1) / &
                                            AtmProfile(m)%Level_Pressure(2:n_Levels) )       
-    ELSE 
-      AtmProfile(m)%Level_Pressure(:) = ATMPROFILE_LEVEL_PRESSURE
-      AtmProfile(m)%Layer_Pressure(:) = ( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) - &
-                                          ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     ) / &
-      !                                 -------------------------------------------------
-                                        LOG( ATMPROFILE_LEVEL_PRESSURE(1:n_Levels-1) / &
-                                             ATMPROFILE_LEVEL_PRESSURE(2:n_Levels)     )
-    ENDIF
     
     ! Interpolate the profile as necessary
     ! ------------------------------------
     Perform_Interpolation: IF ( Profile_Interpolate ) THEN
-      WRITE( *,'(10x,"Interpolating...")' )
+      IF ( n_Profiles < 100 ) THEN
+        WRITE( *,'(10x,"Interpolating...")' )
+      ELSE
+        IF ( MOD(m,100) == 0 ) THEN
+          WRITE( *,'(10x,"Interpolating...")' )
+        END IF
+      END IF
       
       ! Set the AtmProfile file COMMENT attribute
       Comment = 'Original profiles interpolated to the 101 AIRS pressure levels.'
@@ -376,7 +384,7 @@ PROGRAM Create_AtmProfile
             ELSE Correct_Absorber
               ! Output some info
               WRITE( Message,'("Absorber #",i0," amount for level ",i0," (",es9.3,"hPa) : ",es13.6)' ) &
-                              j, k, ATMPROFILE_LEVEL_PRESSURE(k), acorr(k)
+                              j, k, AtmProfile(m)%Level_Pressure(k), acorr(k)
               CALL Display_Message( PROGRAM_NAME,TRIM(Message),WARNING )
               ! Set invalid value equal to next non-negative value
               Correction_Loop: DO ik = k+1, n_Levels+1
@@ -407,47 +415,32 @@ PROGRAM Create_AtmProfile
     IF ( COUNT(AtmProfile(m)%Absorber_ID == ID_H2O) /= 1 ) THEN
       CALL Display_Message( PROGRAM_NAME,'No water vapor data.',FAILURE ); STOP
     END IF
+
     ! Find the water vapor index
     j_idx = PACK((/ ( j, j = 1, AtmProfile(m)%n_Absorbers ) /), &
                  AtmProfile(m)%Absorber_ID == ID_H2O)
+
     ! Convert from mixing ratio
-    IF (ATMPROFILE_SET_ID_TAG(Profile_Set)=='ECMWF5K') THEN 
-      
-      H2O_5K_Pressure = MR_to_PP( AtmProfile(m)%Level_Pressure(:), &
-                                  AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
-      ! Compute the geopotential height profile
-      Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
-                                        AtmProfile(m)%Level_Temperature(:),   &  ! Input
-                                        H2O_5K_Pressure,                      &  ! Input
-                                        AtmProfile(m)%Level_Altitude(:),      &  ! Output
-                                        Gravity_Correction = 1,               &  ! Optional Input
-                                        Latitude = AtmProfile(m)%Latitude )      ! Optional Input
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
-      END IF
-    ELSE
-      H2O_Pressure = MR_to_PP( ATMPROFILE_LEVEL_PRESSURE, &
-                               AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
-      ! Compute the geopotential height profile
-      Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
-                                          AtmProfile(m)%Level_Temperature(:), &  ! Input
-                                          H2O_Pressure,                       &  ! Input
-                                          AtmProfile(m)%Level_Altitude(:),    &  ! Output
-                                          Gravity_Correction = 1,             &  ! Optional Input
-                                          Latitude = AtmProfile(m)%Latitude )    ! Optional Input
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
-      END IF
-    ENDIF
-    
-    ! Check the result
-    IF ( ANY(H2O_Pressure < ZERO) ) THEN
+    H2O_Pressure(1:n_Levels) = MR_to_PP( AtmProfile(m)%Level_Pressure(:), &
+                                         AtmProfile(m)%Level_Absorber(:,j_idx(1)) )
+    IF ( ANY(H2O_Pressure(1:n_Levels) < ZERO) ) THEN
       CALL Display_Message( PROGRAM_NAME,'Water vapor unit conversion failed.',FAILURE ); STOP
     END IF
 
+    ! Compute the geopotential height profile
+    Error_Status = Geopotential_Height( AtmProfile(m)%Level_Pressure(:),    &  ! Input
+                                        AtmProfile(m)%Level_Temperature(:), &  ! Input
+                                        H2O_Pressure(1:n_Levels),           &  ! Input
+                                        AtmProfile(m)%Level_Altitude(:),    &  ! Output
+                                        Gravity_Correction = 1,             &  ! Optional Input
+                                        Latitude = AtmProfile(m)%Latitude )    ! Optional Input
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( PROGRAM_NAME,'Error calculating geopotentials.',Error_Status ); STOP
+    END IF
+    
     ! Calculate the thicknesses
     AtmProfile(m)%Layer_Delta_Z(:) = ABS(AtmProfile(m)%Level_Altitude(1:n_Levels-1) - &
-                                        AtmProfile(m)%Level_Altitude(2:n_Levels)   )
+                                         AtmProfile(m)%Level_Altitude(2:n_Levels)   )
 
     ! Average the temperature
     Temperature_Average_loop: DO k = 1, n_Layers
@@ -498,6 +491,7 @@ PROGRAM Create_AtmProfile
         
   END DO Profile_Loop
 
+
   ! Set dummy lat/lon before write
   WHERE( ABS(AtmProfile%Longitude) > 360.0_fp )
     AtmProfile%Longitude = -999.0_fp
@@ -506,6 +500,7 @@ PROGRAM Create_AtmProfile
   WHERE( ABS(AtmProfile%Latitude) > 90.0_fp )
     AtmProfile%Latitude = -999.0_fp
   END WHERE
+
 
   ! Write the AtmProfile data file
   ! ------------------------------
@@ -524,9 +519,17 @@ PROGRAM Create_AtmProfile
               TRIM(Profile_Set_RCS_Id)
   END IF
  
+  ! Set the quiet flag for large data sets
+  IF ( n_Profiles > 100 ) THEN
+    Quiet = SET
+  ELSE
+    Quiet = UNSET
+  END IF
+  
   ! Write the interpolated data to file
   Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename, &
                                           AtmProfile, &
+                                          Quiet   = Quiet, &
                                           Title   = TRIM(ATMPROFILE_SET_ID_TAG( Profile_Set ))//&
                                                     ' atmospheric profile set.', &
                                           History = TRIM(History), &
@@ -535,6 +538,7 @@ PROGRAM Create_AtmProfile
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,'Error writing '//TRIM(AtmProfile_Filename),FAILURE ); STOP
   END IF
+
 
   ! Test read the AtmProfile data file
   ! ----------------------------------
@@ -548,7 +552,8 @@ PROGRAM Create_AtmProfile
 
   ! Read the data
   Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename, &
-                                         AtmProfile )
+                                         AtmProfile, &
+                                         Quiet = Quiet )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME,'Error reading '//TRIM(AtmProfile_Filename),FAILURE ); STOP
   END IF
