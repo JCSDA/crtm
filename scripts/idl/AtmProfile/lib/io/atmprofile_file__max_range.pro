@@ -7,8 +7,9 @@ FUNCTION AtmProfile_File::Max_Range, $
   @atmprofile_func_err_handler
 
   
-  ; Get the nunmber of profiles
+  ; Get the profile set dimensions
   self->Get_Property, $
+    Debug = Debug, $
     n_Absorbers = n_Absorbers, $
     n_Profiles  = n_Profiles
 
@@ -19,13 +20,16 @@ FUNCTION AtmProfile_File::Max_Range, $
   max_range.a[0,*] =  1.0d+10
   max_range.a[1,*] = -1.0d+10
   
-  
+
+  ; Get the object references
+  p = self->Get(/ALL, ISA='AtmProfile', Debug = Debug)
+
+    
   ; Loop over profiles
-  FOR m = 1, n_Profiles DO BEGIN
-    ; Extract the profile
-    p = self->Get(Profile = m)
-    ; Get the data
-    p->Get_Property, $
+  FOR m = 0L, n_Profiles-1L DO BEGIN
+    ; Extract the profile data
+    p[m]->Get_Property, $
+      Debug = Debug, $
       n_Absorbers = n_Absorbers, $
       Absorber_Id = Absorber_Id, $
       Level_Temperature = t, $

@@ -5,7 +5,7 @@
   ZERO = 0.0d0
   ONE  = 1.0d0
   ; Current valid release and version numbers
-  ATMPROFILE_RELEASE = 1L; 2L  ; This determines structure and file formats.
+  ATMPROFILE_RELEASE = 2L  ; This determines structure and file formats.
   ATMPROFILE_VERSION = 1L  ; This is just the data version.
   ; Invalid values
   IP_INVALID = -1L

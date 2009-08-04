@@ -56,7 +56,7 @@ PRO AtmProfile_File::Plot, $
   
   ; Compute the maximum ranges
   max_range = self->Max_Range(Debug = Debug)
-    
+
     
   ; Get the number of profiles
   self->Get_Property, $
@@ -64,9 +64,12 @@ PRO AtmProfile_File::Plot, $
     n_Profiles = n_Profiles
 
 
+  ; Get all the object references
+  p = self->Get(/ALL, ISA='AtmProfile', Debug = Debug)
+
+
   ; Plot the first profile to set the range
-  root_p = self->Get(Profile = 1, Debug = Debug)
-  root_p->Plot, $
+  p[0]->Plot, $
     Debug = Debug, $
     /NODATA, $
     Absorber_Id = Absorber_Id, $
@@ -75,9 +78,8 @@ PRO AtmProfile_File::Plot, $
 
 
   ; Plot all the profiles
-  FOR m = 1, n_Profiles DO BEGIN
-    p = self->Get(Profile = m, Debug = Debug)
-    root_p->OPlot, p, $
+  FOR m = 0L, n_Profiles-1L DO BEGIN
+    p[0]->OPlot, p[m], $
       Debug = Debug, $
       Absorber_Id = Absorber_Id, $
       _EXTRA = OPlot_Extra

@@ -89,17 +89,20 @@ FUNCTION AtmProfile_File::Get, $
       Profile_List[i] = pr
     ENDFOR
     ; Pick out the matching profiles
-    ; ...Initialise return count
+    ; ...Initialise return count and array
     Count = 0L
+    n_Profiles = N_ELEMENTS(Profile)
+    objref = OBJARR(n_Profiles)
     ; ...Loop over requested profiles
-    FOR i = 0L, N_ELEMENTS(Profile)-1 DO BEGIN
+    FOR i = 0L, n_Profiles-1 DO BEGIN
       loc = WHERE(Profile_List EQ Profile[i], n )
       IF ( n GT 0 ) THEN BEGIN
-        IF ( Count EQ 0 ) THEN objref = atmprofile[loc] ELSE objref = [objref, atmprofile[loc]]
+        objref[i] = atmprofile[loc]
         Count++
       ENDIF
     ENDFOR
-  
+    objref = objref[0:Count-1]
+    
   ENDIF ELSE BEGIN
   
     ; Just get the requested object reference
