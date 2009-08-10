@@ -462,10 +462,11 @@ CONTAINS
     ! ...Convert Level_Pressure from Pa to hPa
     CALL Convert_Pa_to_hPA( Level_Pressure )
     ! ...Convert specific amounts from g/g to g/Kg
-    CALL Convert_g_to_kg( hum )
-    CALL Convert_g_to_kg( ozo )
+    CALL Convert_GpG_TO_GpKG( hum )
+    CALL Convert_GpG_TO_GpKG( ozo )
     ! ...Convert the specific amount of water vapor to mixing ratio
     Level_Absorber(:,H2O_Idx) = SA_to_MR( hum )
+    
     ! ...Convert the specific amount of ozone to mixing ratio
     ozo = SA_to_MR( ozo, Water_Vapor=Level_Absorber(:,H2O_Idx) )                           
     ! ...and now convert ozone from mixing ratio to ppmv
@@ -601,11 +602,11 @@ CONTAINS
   END SUBROUTINE Convert_Pa_to_hPa
 
 
-  SUBROUTINE Convert_g_to_kg( Absorber )
+  SUBROUTINE Convert_GpG_TO_GpKG( Absorber )
     REAL(fp), INTENT(IN OUT) :: Absorber(:)
-    REAL(fp), PARAMETER :: GRAMS_TO_KILOGRAMS = 1.0e-03_fp
-    Absorber = Absorber * GRAMS_TO_KILOGRAMS
-  END SUBROUTINE Convert_g_to_kg
+    REAL(fp), PARAMETER :: GpG_TO_GpKG = 1000.0_fp
+    Absorber = Absorber * GpG_TO_GpKG
+  END SUBROUTINE Convert_GpG_TO_GpKG
 
   
   FUNCTION Geopotential_to_Altitude( Geopotential ) RESULT( Altitude )
