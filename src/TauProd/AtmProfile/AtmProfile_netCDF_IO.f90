@@ -49,160 +49,168 @@ MODULE AtmProfile_netCDF_IO
     '$Id$'
   ! Keyword set value
   INTEGER,      PARAMETER :: SET = 1
-  ! msg string length
-  INTEGER,      PARAMETER :: ML = 512
+  ! String lengths
+  INTEGER,      PARAMETER :: ML    = 512
+  INTEGER,      PARAMETER :: PDSL  = 512
+  INTEGER,      PARAMETER :: AUNSL =  32
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
 
   ! Global attribute names. Case sensitive
-  CHARACTER(*), PARAMETER :: TITLE_GATTNAME   = 'title' 
-  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME = 'history' 
-  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME = 'comment' 
-  CHARACTER(*), PARAMETER :: ID_TAG_GATTNAME  = 'id_tag' 
-  CHARACTER(*), PARAMETER :: RELEASE_GATTNAME = 'Release'
-  CHARACTER(*), PARAMETER :: VERSION_GATTNAME = 'Version'
-
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME          = 'title' 
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME        = 'history'
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME        = 'comment'
+  CHARACTER(*), PARAMETER :: RELEASE_GATTNAME        = 'Release'
+  CHARACTER(*), PARAMETER :: VERSION_GATTNAME        = 'Version'
+  CHARACTER(*), PARAMETER :: PROFILE_SET_ID_GATTNAME = 'Profile_Set_Id'
   ! Dimension names
-  CHARACTER(*), PARAMETER :: LEVEL_DIMNAME       = 'n_levels'
-  CHARACTER(*), PARAMETER :: LAYER_DIMNAME       = 'n_layers'
-  CHARACTER(*), PARAMETER :: ABSORBER_DIMNAME    = 'n_absorbers'
-  CHARACTER(*), PARAMETER :: PROFILE_DIMNAME     = 'n_profiles'
-  CHARACTER(*), PARAMETER :: DESCRIPTION_DIMNAME = 'pdsl'
-
+  CHARACTER(*), PARAMETER :: LEVEL_DIMNAME          = 'n_levels'
+  CHARACTER(*), PARAMETER :: LAYER_DIMNAME          = 'n_layers'
+  CHARACTER(*), PARAMETER :: ABSORBER_DIMNAME       = 'n_absorbers'
+  CHARACTER(*), PARAMETER :: PROFILE_DIMNAME        = 'n_profiles'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_DIMNAME    = 'pdsl'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_DIMNAME = 'aunsl'
+  
   ! Variable names
-  CHARACTER(*), PARAMETER :: DESCRIPTION_VARNAME        = 'profile_description'
-  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_VARNAME  = 'climatology_model'
-  CHARACTER(*), PARAMETER :: YEAR_VARNAME               = 'year'
-  CHARACTER(*), PARAMETER :: MONTH_VARNAME              = 'month'
-  CHARACTER(*), PARAMETER :: DAY_VARNAME                = 'day'
-  CHARACTER(*), PARAMETER :: HOUR_VARNAME               = 'hour'
-  CHARACTER(*), PARAMETER :: LATITUDE_VARNAME           = 'latitude'
-  CHARACTER(*), PARAMETER :: LONGITUDE_VARNAME          = 'longitude'
-  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_VARNAME   = 'surface_altitude'
-  CHARACTER(*), PARAMETER :: ABSORBER_ID_VARNAME        = 'absorber_id'
-  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_VARNAME  = 'absorber_units_id'
-  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_VARNAME     = 'level_pressure'
-  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_VARNAME  = 'level_temperature'
-  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_VARNAME     = 'level_absorber'
-  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_VARNAME     = 'level_altitude'
-  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_VARNAME     = 'layer_pressure'
-  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_VARNAME  = 'layer_temperature'
-  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_VARNAME     = 'layer_absorber'
-  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_VARNAME      = 'layer_delta_z'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_VARNAME         = 'profile_description'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_VARNAME   = 'climatology_model'
+  CHARACTER(*), PARAMETER :: YEAR_VARNAME                = 'year'
+  CHARACTER(*), PARAMETER :: MONTH_VARNAME               = 'month'
+  CHARACTER(*), PARAMETER :: DAY_VARNAME                 = 'day'
+  CHARACTER(*), PARAMETER :: HOUR_VARNAME                = 'hour'
+  CHARACTER(*), PARAMETER :: LATITUDE_VARNAME            = 'latitude'
+  CHARACTER(*), PARAMETER :: LONGITUDE_VARNAME           = 'longitude'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_VARNAME    = 'surface_altitude'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_VARNAME         = 'absorber_id'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_VARNAME   = 'absorber_units_id'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_NAME_VARNAME = 'absorber_units_name'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_VARNAME      = 'level_pressure'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_VARNAME   = 'level_temperature'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_VARNAME      = 'level_absorber'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_VARNAME      = 'level_altitude'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_VARNAME      = 'layer_pressure'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_VARNAME   = 'layer_temperature'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_VARNAME      = 'layer_absorber'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_VARNAME       = 'layer_delta_z'
 
   ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
-  CHARACTER(*), PARAMETER :: DESCRIPTION_LONGNAME       = 'Profile Description'
-  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_LONGNAME = 'Climatology Model'
-  CHARACTER(*), PARAMETER :: YEAR_LONGNAME              = 'Year'
-  CHARACTER(*), PARAMETER :: MONTH_LONGNAME             = 'Month'
-  CHARACTER(*), PARAMETER :: DAY_LONGNAME               = 'Day'
-  CHARACTER(*), PARAMETER :: HOUR_LONGNAME              = 'Hour'  
-  CHARACTER(*), PARAMETER :: LATITUDE_LONGNAME          = 'Latitude'
-  CHARACTER(*), PARAMETER :: LONGITUDE_LONGNAME         = 'Longitude'
-  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_LONGNAME  = 'Surface Altitude'
-  CHARACTER(*), PARAMETER :: ABSORBER_ID_LONGNAME       = 'Absorber ID'
-  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_LONGNAME = 'Absorber Units ID'
-  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_LONGNAME    = 'Level pressure'
-  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_LONGNAME = 'Level temperature'
-  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_LONGNAME    = 'Level absorber'
-  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_LONGNAME    = 'Level altitude'
-  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_LONGNAME    = 'Layer pressure'
-  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_LONGNAME = 'Layer temperature'
-  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_LONGNAME    = 'Layer absorber'
-  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_LONGNAME     = 'Layer thickness'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_LONGNAME         = 'Profile Description'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_LONGNAME   = 'Climatology Model'
+  CHARACTER(*), PARAMETER :: YEAR_LONGNAME                = 'Year'
+  CHARACTER(*), PARAMETER :: MONTH_LONGNAME               = 'Month'
+  CHARACTER(*), PARAMETER :: DAY_LONGNAME                 = 'Day'
+  CHARACTER(*), PARAMETER :: HOUR_LONGNAME                = 'Hour'  
+  CHARACTER(*), PARAMETER :: LATITUDE_LONGNAME            = 'Latitude'
+  CHARACTER(*), PARAMETER :: LONGITUDE_LONGNAME           = 'Longitude'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_LONGNAME    = 'Surface Altitude'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_LONGNAME         = 'Absorber ID'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_LONGNAME   = 'Absorber Units ID'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_NAME_LONGNAME = 'Absorber Units Name'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_LONGNAME      = 'Level pressure'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_LONGNAME   = 'Level temperature'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_LONGNAME      = 'Level absorber'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_LONGNAME      = 'Level altitude'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_LONGNAME      = 'Layer pressure'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_LONGNAME   = 'Layer temperature'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_LONGNAME      = 'Layer absorber'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_LONGNAME       = 'Layer thickness'
 
   ! Variable description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
 
-  CHARACTER(*), PARAMETER :: DESCRIPTION_DESCRIPTION       = 'Description of atmospheric profile and modification'
-  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_DESCRIPTION = 'Climatology model associated with profile date/time/location.'
-  CHARACTER(*), PARAMETER :: YEAR_DESCRIPTION              = 'Year'
-  CHARACTER(*), PARAMETER :: MONTH_DESCRIPTION             = 'Month'
-  CHARACTER(*), PARAMETER :: HOUR_DESCRIPTION              = 'Hour'
-  CHARACTER(*), PARAMETER :: DAY_DESCRIPTION               = 'Day'
-  CHARACTER(*), PARAMETER :: LATITUDE_DESCRIPTION          = 'Latitude of profile location'
-  CHARACTER(*), PARAMETER :: LONGITUDE_DESCRIPTION         = 'Longitude of profile location'
-  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_DESCRIPTION  = 'Surface altitude of profile'
-  CHARACTER(*), PARAMETER :: ABSORBER_ID_DESCRIPTION       = 'HITRAN/LBLRTM absorber ID number for atmospheric absorbers'
-  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_DESCRIPTION = 'LBLRTM absorber units ID number'
-  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_DESCRIPTION    = 'Level pressure'
-  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_DESCRIPTION = 'Level temperature'
-  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_DESCRIPTION    = 'Level absorber amount'
-  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_DESCRIPTION    = 'Level geopotential altitude'
-  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_DESCRIPTION    = 'Average layer pressure'
-  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_DESCRIPTION = 'Average layer temperature'
-  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_DESCRIPTION    = 'Average layer absorber amount'
-  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_DESCRIPTION     = 'Layer thickness'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_DESCRIPTION         = 'Description of atmospheric profile and modification'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_DESCRIPTION   = 'Climatology model associated with profile date/time/location.'
+  CHARACTER(*), PARAMETER :: YEAR_DESCRIPTION                = 'Year'
+  CHARACTER(*), PARAMETER :: MONTH_DESCRIPTION               = 'Month'
+  CHARACTER(*), PARAMETER :: HOUR_DESCRIPTION                = 'Hour'
+  CHARACTER(*), PARAMETER :: DAY_DESCRIPTION                 = 'Day'
+  CHARACTER(*), PARAMETER :: LATITUDE_DESCRIPTION            = 'Latitude of profile location'
+  CHARACTER(*), PARAMETER :: LONGITUDE_DESCRIPTION           = 'Longitude of profile location'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_DESCRIPTION    = 'Surface altitude of profile'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_DESCRIPTION         = 'HITRAN/LBLRTM absorber ID number for atmospheric absorbers'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_DESCRIPTION   = 'LBLRTM/MonoRTM absorber units ID number'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_NAME_DESCRIPTION = 'Absorber Units Name'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_DESCRIPTION      = 'Level pressure'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_DESCRIPTION   = 'Level temperature'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_DESCRIPTION      = 'Level absorber amount'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_DESCRIPTION      = 'Level geopotential altitude'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_DESCRIPTION      = 'Average layer pressure'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_DESCRIPTION   = 'Average layer temperature'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_DESCRIPTION      = 'Average layer absorber amount'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_DESCRIPTION       = 'Layer thickness'
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
 
-  CHARACTER(*), PARAMETER :: DESCRIPTION_UNITS       = 'N/A'
-  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_UNITS = 'N/A'
-  CHARACTER(*), PARAMETER :: YEAR_UNITS              = 'YYYY'
-  CHARACTER(*), PARAMETER :: MONTH_UNITS             = 'MM'
-  CHARACTER(*), PARAMETER :: DAY_UNITS               = 'DD'
-  CHARACTER(*), PARAMETER :: HOUR_UNITS              = 'HH'
-  CHARACTER(*), PARAMETER :: LATITUDE_UNITS          = 'degress North (-90->+90)'
-  CHARACTER(*), PARAMETER :: LONGITUDE_UNITS         = 'degress East (0->360)'
-  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_UNITS  = 'metres (m)'
-  CHARACTER(*), PARAMETER :: ABSORBER_ID_UNITS       = 'N/A'
-  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_UNITS = 'N/A'
-  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_UNITS    = 'hectoPascals (hPa)'
-  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_UNITS = 'Kelvin (K)'
-  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_UNITS    = 'Variable (see Absorber_Units_ID)'
-  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_UNITS    = 'metres (m)'
-  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_UNITS    = 'hectoPascals (hPa)'
-  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_UNITS = 'Kelvin (K)'
-  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_UNITS    = 'Variable (see Absorber_Units_ID)'
-  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_UNITS     = 'metres (m)'
+  CHARACTER(*), PARAMETER :: DESCRIPTION_UNITS         = 'N/A'
+  CHARACTER(*), PARAMETER :: CLIMATOLOGY_MODEL_UNITS   = 'N/A'
+  CHARACTER(*), PARAMETER :: YEAR_UNITS                = 'Year (C.E.)'
+  CHARACTER(*), PARAMETER :: MONTH_UNITS               = 'Month of year'
+  CHARACTER(*), PARAMETER :: DAY_UNITS                 = 'Day of month'
+  CHARACTER(*), PARAMETER :: HOUR_UNITS                = 'Hour of day'
+  CHARACTER(*), PARAMETER :: LATITUDE_UNITS            = 'degress North (-90->+90)'
+  CHARACTER(*), PARAMETER :: LONGITUDE_UNITS           = 'degress East (0->360)'
+  CHARACTER(*), PARAMETER :: SURFACE_ALTITUDE_UNITS    = 'metres (m)'
+  CHARACTER(*), PARAMETER :: ABSORBER_ID_UNITS         = 'N/A'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_ID_UNITS   = 'N/A'
+  CHARACTER(*), PARAMETER :: ABSORBER_UNITS_NAME_UNITS = 'N/A'
+  CHARACTER(*), PARAMETER :: LEVEL_PRESSURE_UNITS      = 'hectoPascals (hPa)'
+  CHARACTER(*), PARAMETER :: LEVEL_TEMPERATURE_UNITS   = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: LEVEL_ABSORBER_UNITS      = 'Variable (see Absorber_Units_Name)'
+  CHARACTER(*), PARAMETER :: LEVEL_ALTITUDE_UNITS      = 'metres (m)'
+  CHARACTER(*), PARAMETER :: LAYER_PRESSURE_UNITS      = 'hectoPascals (hPa)'
+  CHARACTER(*), PARAMETER :: LAYER_TEMPERATURE_UNITS   = 'Kelvin (K)'
+  CHARACTER(*), PARAMETER :: LAYER_ABSORBER_UNITS      = 'Variable (see Absorber_Units_Name)'
+  CHARACTER(*), PARAMETER :: LAYER_DELTA_Z_UNITS       = 'metres (m)'
 
   ! Variable fill value attribute
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
 
-  CHARACTER(*) , PARAMETER :: DESCRIPTION_FILLVALUE        = NF90_FILL_CHAR
-  INTEGER(Long), PARAMETER :: CLIMATOLOGY_MODEL_FILLVALUE  = 0
-  INTEGER(Long), PARAMETER :: YEAR_FILLVALUE               = 0
-  INTEGER(Long), PARAMETER :: MONTH_FILLVALUE              = 0
-  INTEGER(Long), PARAMETER :: DAY_FILLVALUE                = 0
-  INTEGER(Long), PARAMETER :: HOUR_FILLVALUE               = 0
-  REAL(Double) , PARAMETER :: LATITUDE_FILLVALUE           = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LONGITUDE_FILLVALUE          = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: SURFACE_ALTITUDE_FILLVALUE   = ATMPROFILE_FP_INVALID
-  INTEGER(Long), PARAMETER :: ABSORBER_ID_FILLVALUE        = 0
-  INTEGER(Long), PARAMETER :: ABSORBER_UNITS_ID_FILLVALUE  = 0
-  REAL(Double) , PARAMETER :: LEVEL_PRESSURE_FILLVALUE     = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LEVEL_TEMPERATURE_FILLVALUE  = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LEVEL_ABSORBER_FILLVALUE     = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LEVEL_ALTITUDE_FILLVALUE     = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LAYER_PRESSURE_FILLVALUE     = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LAYER_TEMPERATURE_FILLVALUE  = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LAYER_ABSORBER_FILLVALUE     = ATMPROFILE_FP_INVALID
-  REAL(Double) , PARAMETER :: LAYER_DELTA_Z_FILLVALUE      = ATMPROFILE_FP_INVALID
+  CHARACTER(*) , PARAMETER :: DESCRIPTION_FILLVALUE          = NF90_FILL_CHAR
+  INTEGER(Long), PARAMETER :: CLIMATOLOGY_MODEL_FILLVALUE    = 0
+  INTEGER(Long), PARAMETER :: YEAR_FILLVALUE                 = 0
+  INTEGER(Long), PARAMETER :: MONTH_FILLVALUE                = 0
+  INTEGER(Long), PARAMETER :: DAY_FILLVALUE                  = 0
+  INTEGER(Long), PARAMETER :: HOUR_FILLVALUE                 = 0
+  REAL(Double) , PARAMETER :: LATITUDE_FILLVALUE             = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LONGITUDE_FILLVALUE            = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: SURFACE_ALTITUDE_FILLVALUE     = ATMPROFILE_FP_INVALID
+  INTEGER(Long), PARAMETER :: ABSORBER_ID_FILLVALUE          = 0
+  INTEGER(Long), PARAMETER :: ABSORBER_UNITS_ID_FILLVALUE    = 0
+  CHARACTER(*) , PARAMETER :: ABSORBER_UNITS_NAME_FILLVALUE  = NF90_FILL_CHAR
+  REAL(Double) , PARAMETER :: LEVEL_PRESSURE_FILLVALUE       = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LEVEL_TEMPERATURE_FILLVALUE    = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LEVEL_ABSORBER_FILLVALUE       = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LEVEL_ALTITUDE_FILLVALUE       = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_PRESSURE_FILLVALUE       = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_TEMPERATURE_FILLVALUE    = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_ABSORBER_FILLVALUE       = ATMPROFILE_FP_INVALID
+  REAL(Double) , PARAMETER :: LAYER_DELTA_Z_FILLVALUE        = ATMPROFILE_FP_INVALID
 
   ! Variable  datatypes
-  INTEGER, PARAMETER :: DESCRIPTION_TYPE        = NF90_CHAR
-  INTEGER, PARAMETER :: CLIMATOLOGY_MODEL_TYPE  = NF90_INT
-  INTEGER, PARAMETER :: YEAR_TYPE               = NF90_INT
-  INTEGER, PARAMETER :: MONTH_TYPE              = NF90_INT
-  INTEGER, PARAMETER :: DAY_TYPE                = NF90_INT
-  INTEGER, PARAMETER :: HOUR_TYPE               = NF90_INT
-  INTEGER, PARAMETER :: LATITUDE_TYPE           = NF90_DOUBLE
-  INTEGER, PARAMETER :: LONGITUDE_TYPE          = NF90_DOUBLE
-  INTEGER, PARAMETER :: SURFACE_ALTITUDE_TYPE   = NF90_DOUBLE
-  INTEGER, PARAMETER :: ABSORBER_ID_TYPE        = NF90_INT
-  INTEGER, PARAMETER :: ABSORBER_UNITS_ID_TYPE  = NF90_INT
-  INTEGER, PARAMETER :: LEVEL_PRESSURE_TYPE     = NF90_DOUBLE
-  INTEGER, PARAMETER :: LEVEL_TEMPERATURE_TYPE  = NF90_DOUBLE
-  INTEGER, PARAMETER :: LEVEL_ABSORBER_TYPE     = NF90_DOUBLE
-  INTEGER, PARAMETER :: LEVEL_ALTITUDE_TYPE     = NF90_DOUBLE
-  INTEGER, PARAMETER :: LAYER_PRESSURE_TYPE     = NF90_DOUBLE
-  INTEGER, PARAMETER :: LAYER_TEMPERATURE_TYPE  = NF90_DOUBLE
-  INTEGER, PARAMETER :: LAYER_ABSORBER_TYPE     = NF90_DOUBLE
-  INTEGER, PARAMETER :: LAYER_DELTA_Z_TYPE      = NF90_DOUBLE
+  INTEGER, PARAMETER :: DESCRIPTION_TYPE          = NF90_CHAR
+  INTEGER, PARAMETER :: CLIMATOLOGY_MODEL_TYPE    = NF90_INT
+  INTEGER, PARAMETER :: YEAR_TYPE                 = NF90_INT
+  INTEGER, PARAMETER :: MONTH_TYPE                = NF90_INT
+  INTEGER, PARAMETER :: DAY_TYPE                  = NF90_INT
+  INTEGER, PARAMETER :: HOUR_TYPE                 = NF90_INT
+  INTEGER, PARAMETER :: LATITUDE_TYPE             = NF90_DOUBLE
+  INTEGER, PARAMETER :: LONGITUDE_TYPE            = NF90_DOUBLE
+  INTEGER, PARAMETER :: SURFACE_ALTITUDE_TYPE     = NF90_DOUBLE
+  INTEGER, PARAMETER :: ABSORBER_ID_TYPE          = NF90_INT
+  INTEGER, PARAMETER :: ABSORBER_UNITS_ID_TYPE    = NF90_INT
+  INTEGER, PARAMETER :: ABSORBER_UNITS_NAME_TYPE  = NF90_CHAR
+  INTEGER, PARAMETER :: LEVEL_PRESSURE_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: LEVEL_TEMPERATURE_TYPE    = NF90_DOUBLE
+  INTEGER, PARAMETER :: LEVEL_ABSORBER_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: LEVEL_ALTITUDE_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_PRESSURE_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_TEMPERATURE_TYPE    = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_ABSORBER_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: LAYER_DELTA_Z_TYPE        = NF90_DOUBLE
 
 CONTAINS
 
@@ -226,18 +234,19 @@ CONTAINS
 !       dimensions and global attributes.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_AtmProfile_netCDF( NC_Filename            , &  ! Input
-!                                                 n_Layers   =n_Layers   , &  ! Optional output
-!                                                 n_Absorbers=n_Absorbers, &  ! Optional output
-!                                                 n_Profiles =n_Profiles , &  ! Optional output
-!                                                 Release    =Release    , &  ! Optional output
-!                                                 Version    =Version    , &  ! Optional output
-!                                                 ID_Tag     =ID_Tag     , &  ! Optional output
-!                                                 Title      =Title      , &  ! Optional output
-!                                                 History    =History    , &  ! Optional output
-!                                                 Comment    =Comment    , &  ! Optional output
-!                                                 RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                 Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Inquire_AtmProfile_netCDF( &
+!         NC_Filename                    , &  ! Input
+!         n_Layers       = n_Layers      , &  ! Optional output
+!         n_Absorbers    = n_Absorbers   , &  ! Optional output
+!         n_Profiles     = n_Profiles    , &  ! Optional output
+!         Release        = Release       , &  ! Optional output
+!         Version        = Version       , &  ! Optional output
+!         Profile_Set_Id = Profile_Set_Id, &  ! Optional output
+!         Title          = Title         , &  ! Optional output
+!         History        = History       , &  ! Optional output
+!         Comment        = Comment       , &  ! Optional output
+!         RCS_Id         = RCS_Id        , &  ! Revision control
+!         Message_Log    = Message_Log     )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the netCDF
@@ -291,7 +300,7 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       ID_Tag:             Character string written into the ID_TAG global
+!       Profile_Set_Id:     Character string written into the PROFILE_SET_ID global
 !                           attribute field of the netCDF AtmProfile file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
@@ -343,19 +352,20 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_AtmProfile_netCDF( NC_Filename, &  ! Input
-                                      n_Layers   , &  ! Optional output
-                                      n_Absorbers, &  ! Optional output
-                                      n_Profiles , &  ! Optional output
-                                      Release    , &  ! Optional output
-                                      Version    , &  ! Optional output
-                                      ID_Tag     , &  ! Optional output
-                                      Title      , &  ! Optional output
-                                      History    , &  ! Optional output
-                                      Comment    , &  ! Optional output
-                                      RCS_Id     , &  ! Revision control
-                                      Message_Log) &  ! Error messaging
-                                    RESULT( Error_Status )
+  FUNCTION Inquire_AtmProfile_netCDF( &
+    NC_Filename   , &  ! Input
+    n_Layers      , &  ! Optional output
+    n_Absorbers   , &  ! Optional output
+    n_Profiles    , &  ! Optional output
+    Release       , &  ! Optional output
+    Version       , &  ! Optional output
+    Profile_Set_Id, &  ! Optional output
+    Title         , &  ! Optional output
+    History       , &  ! Optional output
+    Comment       , &  ! Optional output
+    RCS_Id        , &  ! Revision control
+    Message_Log   ) &  ! Error messaging
+  RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Layers
@@ -363,7 +373,7 @@ CONTAINS
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Profiles
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
@@ -453,15 +463,15 @@ CONTAINS
 
     ! Get the global attributes
     ! -------------------------
-    Error_Status = ReadGAtts( NC_Filename            , &
-                              NC_FileID              , &
-                              Release    =Release    , &
-                              Version    =Version    , &
-                              ID_Tag     =ID_Tag     , &
-                              Title      =Title      , &
-                              History    =History    , &
-                              Comment    =Comment    , &
-                              Message_Log=Message_Log  )
+    Error_Status = ReadGAtts( NC_Filename                  , &
+                              NC_FileID                    , &
+                              Release       =Release       , &
+                              Version       =Version       , &
+                              Profile_Set_Id=Profile_Set_Id, &
+                              Title         =Title         , &
+                              History       =History       , &
+                              Comment       =Comment       , &
+                              Message_Log   =Message_Log     )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error reading global attributes from '//TRIM(NC_Filename)
       CALL Inquire_Cleanup(); RETURN
@@ -507,126 +517,127 @@ CONTAINS
 !       Function to write AtmProfile data to a netCDF format AtmProfile file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_AtmProfile_netCDF( NC_Filename            , &  ! Input
-!                                               AtmProfile             , &  ! Input
-!                                               Profile_Set            , &  ! Optional input
-!                                               Quiet      =Quiet      , &  ! Optional input
-!                                               ID_Tag     =ID_Tag     , &  ! Optional input
-!                                               Title      =Title      , &  ! Optional input
-!                                               History    =History    , &  ! Optional input
-!                                               Comment    =Comment    , &  ! Optional input
-!                                               RCS_Id     =RCS_Id     , &  ! Revision control
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Write_AtmProfile_netCDF( &
+!         NC_Filename                    , &  ! Input
+!         AtmProfile                     , &  ! Input
+!         Profile_Set                    , &  ! Optional input
+!         Quiet          = Quiet         , &  ! Optional input
+!         Profile_Set_Id = Profile_Set_Id, &  ! Optional input
+!         Title          = Title         , &  ! Optional input
+!         History        = History       , &  ! Optional input
+!         Comment        = Comment       , &  ! Optional input
+!         RCS_Id         = RCS_Id        , &  ! Revision control
+!         Message_Log    = Message_Log     )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       NC_Filename:  Character string specifying the name of the netCDF
-!                     format AtmProfile data file to write data into.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+!       NC_Filename:    Character string specifying the name of the netCDF
+!                       format AtmProfile data file to write data into.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-!       AtmProfile:   Structure containing the AtmProfile data
-!                     to write to file.
-!                     UNITS:      N/A
-!                     TYPE:       TYPE(AtmProfile_type)
-!                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(IN)
+!       AtmProfile:     Structure containing the AtmProfile data
+!                       to write to file.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(AtmProfile_type)
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !
-!       Profile_Set:  Integer array specifying the profiles to be written
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Profile_Set:    Integer array specifying the profiles to be written
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Quiet:        Set this keyword to suppress information msgs being
-!                     printed to standard output (or the msg log file if
-!                     the Message_Log optional argument is used.) By default,
-!                     information msgs are printed.
-!                     If QUIET = 0, information msgs are OUTPUT.
-!                        QUIET = 1, information msgs are SUPPRESSED.
-!                     UNITS:      N/A
-!                     TYPE:       Integer
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Quiet:          Set this keyword to suppress information msgs being
+!                       printed to standard output (or the msg log file if
+!                       the Message_Log optional argument is used.) By default,
+!                       information msgs are printed.
+!                       If QUIET = 0, information msgs are OUTPUT.
+!                          QUIET = 1, information msgs are SUPPRESSED.
+!                       UNITS:      N/A
+!                       TYPE:       Integer
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       ID_Tag:       Character string written into the ID_TAG global
-!                     attribute field of the netCDF AtmProfile file.
-!                     Identifies the dependent profile set.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Profile_Set_Id: Character string written into the PROFILE_SET_ID global
+!                       attribute field of the netCDF AtmProfile file.
+!                       Identifies the dependent profile set.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Title:        Character string written into the TITLE global
-!                     attribute field of the netCDF AtmProfile file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Title:          Character string written into the TITLE global
+!                       attribute field of the netCDF AtmProfile file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       History:      Character string written into the HISTORY global
-!                     attribute field of the netCDF AtmProfile file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       History:        Character string written into the HISTORY global
+!                       attribute field of the netCDF AtmProfile file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Comment:      Character string written into the COMMENT global
-!                     attribute field of the netCDF AtmProfile file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Comment:        Character string written into the COMMENT global
+!                       attribute field of the netCDF AtmProfile file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:  Character string specifying a filename in which any
-!                     msgs will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output msgs to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Message_Log:    Character string specifying a filename in which any
+!                       msgs will be logged. If not specified, or if an
+!                       error occurs opening the log file, the default action
+!                       is to output msgs to standard output.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       RCS_Id:         Character string containing the Revision Control
+!                       System Id field for the module.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF data write was successful
-!                        == FAILURE an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the netCDF data write was successful
+!                          == FAILURE an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_AtmProfile_netCDF( NC_Filename , &  ! Input
-                                    AtmProfile  , &  ! Input
-                                    Profile_Set , &  ! Optional input
-                                    Quiet       , &  ! Optional input
-                                    ID_Tag      , &  ! Optional input
-                                    Title       , &  ! Optional input
-                                    History     , &  ! Optional input
-                                    Comment     , &  ! Optional input
-                                    RCS_Id      , &  ! Revision control
-                                    Message_Log ) &  ! Error messaging
+  FUNCTION Write_AtmProfile_netCDF( NC_Filename   , &  ! Input
+                                    AtmProfile    , &  ! Input
+                                    Profile_Set   , &  ! Optional input
+                                    Quiet         , &  ! Optional input
+                                    Profile_Set_Id, &  ! Optional input
+                                    Title         , &  ! Optional input
+                                    History       , &  ! Optional input
+                                    Comment       , &  ! Optional input
+                                    RCS_Id        , &  ! Revision control
+                                    Message_Log   ) &  ! Error messaging
                                   RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: NC_Filename
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: Profile_Set(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Title  
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: History
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Comment
@@ -659,16 +670,16 @@ CONTAINS
 
     ! Create the output data file
     ! ---------------------------
-    Error_Status = CreateFile( NC_Filename                      , &  ! Input
-                               AtmProfile(1)%n_Layers           , &  ! Input
-                               AtmProfile(1)%n_Absorbers        , &  ! Input
-                               NC_FileID                        , &  ! Output
-                               Version    =AtmProfile(1)%Version, &  ! Optional input
-                               ID_Tag     =ID_Tag               , &  ! Optional input
-                               Title      =Title                , &  ! Optional input
-                               History    =History              , &  ! Optional input
-                               Comment    =Comment              , &  ! Optional input
-                               Message_Log=Message_Log            )  ! Error messaging
+    Error_Status = CreateFile( NC_Filename                           , &  ! Input
+                               AtmProfile(1)%n_Layers                , &  ! Input
+                               AtmProfile(1)%n_Absorbers             , &  ! Input
+                               NC_FileID                             , &  ! Output
+                               Version        = AtmProfile(1)%Version, &  ! Optional input
+                               Profile_Set_Id = Profile_Set_Id       , &  ! Optional input
+                               Title          = Title                , &  ! Optional input
+                               History        = History              , &  ! Optional input
+                               Comment        = Comment              , &  ! Optional input
+                               Message_Log    = Message_Log            )  ! Error messaging
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error creating output file '//TRIM(NC_Filename)
       CALL Write_Cleanup(); RETURN
@@ -764,109 +775,110 @@ CONTAINS
 !       Function to read data from a netCDF format AtmProfile file.
 !
 ! CALLING SEQUENCE:
-!     Error_Status = Read_AtmProfile_netCDF( NC_Filename            , &  ! Input
-!                                            AtmProfile             , &  ! Output
-!                                            Profile_Set=Profile_Set, &  ! Optional Input 
-!                                            Quiet      =Quiet      , &  ! Optional input
-!                                            Reverse    =Reverse    , &  ! Optional input
-!                                            ID_Tag     =ID_Tag     , &  ! Optional output
-!                                            Title      =Title      , &  ! Optional output
-!                                            History    =History    , &  ! Optional output
-!                                            Comment    =Comment    , &  ! Optional output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!     Error_Status = Read_AtmProfile_netCDF( &
+!       NC_Filename                    , &  ! Input
+!       AtmProfile                     , &  ! Output
+!       Profile_Set    = Profile_Set   , &  ! Optional Input 
+!       Quiet          = Quiet         , &  ! Optional input
+!       Reverse        = Reverse       , &  ! Optional input
+!       Profile_Set_Id = Profile_Set_Id, &  ! Optional output
+!       Title          = Title         , &  ! Optional output
+!       History        = History       , &  ! Optional output
+!       Comment        = Comment       , &  ! Optional output
+!       RCS_Id         = RCS_Id        , &  ! Revision control
+!       Message_Log    = Message_Log     )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       NC_Filename:  Character string specifying the name of the
-!                     netCDF format AtmProfile data file to read.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+!       NC_Filename:    Character string specifying the name of the
+!                       netCDF format AtmProfile data file to read.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       AtmProfile:   Structure to contain the AtmProfile data
-!                     read from file.
-!                     UNITS:      N/A
-!                     TYPE:       TYPE(AtmProfile_type)
-!                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(OUT)
+!       AtmProfile:     Structure to contain the AtmProfile data
+!                       read from file.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(AtmProfile_type)
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information messages being
-!                     printed to standard output (or the msg log file if
-!                     the Message_Log optional argument is used.) By default,
-!                     information messages are printed.
-!                     If QUIET = 0, information messages are OUTPUT.
-!                        QUIET = 1, information messages are SUPPRESSED.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Quiet:          Set this keyword to suppress information messages being
+!                       printed to standard output (or the msg log file if
+!                       the Message_Log optional argument is used.) By default,
+!                       information messages are printed.
+!                       If QUIET = 0, information messages are OUTPUT.
+!                          QUIET = 1, information messages are SUPPRESSED.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Reverse:      Set this keyword to reverse the order of the profile data
-!                     arrays in the K index (vertical) dimension.
-!                     If REVERSE = 0, arrays are returned as they are stored in
-!                                     the netCDF input file (DEFAULT)
-!                        REVERSE = 1, arrays are returned in reverse order to how
-!                                     they are stored in the netCDF input file.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Reverse:        Set this keyword to reverse the order of the profile data
+!                       arrays in the K index (vertical) dimension.
+!                       If REVERSE = 0, arrays are returned as they are stored in
+!                                       the netCDF input file (DEFAULT)
+!                          REVERSE = 1, arrays are returned in reverse order to how
+!                                       they are stored in the netCDF input file.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:  Character string specifying a filename in which any
-!                     msgs will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output msgs to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Message_Log:    Character string specifying a filename in which any
+!                       msgs will be logged. If not specified, or if an
+!                       error occurs opening the log file, the default action
+!                       is to output msgs to standard output.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
 !
-!       Profile_Set:  Integer array specifying the profiles to be read                    
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Profile_Set:    Integer array specifying the profiles to be read                  
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       ID_Tag:       Character string written into the ID_TAG global
-!                     attribute field of the netCDF AtmProfile file.
-!                     Identifies the dependent profile set.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Profile_Set_Id: Character string written into the PROFILE_SET_ID global
+!                       attribute field of the netCDF AtmProfile file.
+!                       Identifies the dependent profile set.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Title:        Character string written into the TITLE global
-!                     attribute field of the netCDF AtmProfile file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Title:          Character string written into the TITLE global
+!                       attribute field of the netCDF AtmProfile file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       History:      Character string written into the HISTORY global
-!                     attribute field of the netCDF AtmProfile file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       History:        Character string written into the HISTORY global
+!                       attribute field of the netCDF AtmProfile file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Comment:      Character string written into the COMMENT global
-!                     attribute field of the netCDF AtmProfile file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       Comment:        Character string written into the COMMENT global
+!                       attribute field of the netCDF AtmProfile file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       RCS_Id:         Character string containing the Revision Control
+!                       System Id field for the module.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -888,17 +900,17 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_AtmProfile_netCDF( NC_Filename, &  ! Input
-                                   AtmProfile , &  ! Output
-                                   Profile_Set, &  ! Optional Input 
-                                   Quiet      , &  ! Optional input
-                                   Reverse    , &  ! Optional input
-                                   ID_Tag     , &  ! Optional output
-                                   Title      , &  ! Optional output
-                                   History    , &  ! Optional output
-                                   Comment    , &  ! Optional output
-                                   RCS_Id     , &  ! Revision control
-                                   Message_Log) &  ! Error messaging
+  FUNCTION Read_AtmProfile_netCDF( NC_Filename   , &  ! Input
+                                   AtmProfile    , &  ! Output
+                                   Profile_Set   , &  ! Optional Input
+                                   Quiet         , &  ! Optional input
+                                   Reverse       , &  ! Optional input
+                                   Profile_Set_Id, &  ! Optional output
+                                   Title         , &  ! Optional output
+                                   History       , &  ! Optional output
+                                   Comment       , &  ! Optional output
+                                   RCS_Id        , &  ! Revision control
+                                   Message_Log   ) &  ! Error messaging
                                  RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)     :: NC_Filename   
@@ -906,7 +918,7 @@ CONTAINS
     INTEGER,      OPTIONAL, INTENT(IN)     :: Profile_Set(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
     INTEGER,      OPTIONAL, INTENT(IN)     :: Reverse
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
@@ -1004,15 +1016,15 @@ CONTAINS
 
       ! Read the global attributes
       ! --------------------------
-      Error_Status = ReadGAtts( NC_Filename                   , &
-                                NC_FileID                     , &
-!                                Release    =AtmProfile%Release, &
-!                                Version    =AtmProfile%Version, &
-                                ID_Tag     =ID_Tag            , &
-                                Title      =Title             , &
-                                History    =History           , &
-                                Comment    =Comment           , &
-                                Message_Log=Message_Log         )
+      Error_Status = ReadGAtts( NC_Filename                    , &
+                                NC_FileID                      , &
+!                                Release        = AtmProfile%Release, &
+!                                Version        = AtmProfile%Version, &
+                                Profile_Set_Id = Profile_Set_Id, &
+                                Title          = Title         , &
+                                History        = History       , &
+                                Comment        = Comment       , &
+                                Message_Log    = Message_Log     )
       IF ( Error_Status /= SUCCESS ) THEN
         msg = 'Error reading global attribute from '//TRIM(NC_Filename)
         CALL Read_Cleanup(AtmProfile(m),Close_File=.TRUE.,Destroy_Structure=.TRUE.); RETURN
@@ -1113,6 +1125,7 @@ CONTAINS
 
   END FUNCTION Read_AtmProfile_netCDF
 
+
 !##################################################################################
 !##################################################################################
 !##                                                                              ##
@@ -1131,14 +1144,14 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = WriteGAtts( NC_Filename            , &  ! Input
-!                                  NC_FileID              , &  ! Input
-!                                  Version    =Version    , &  ! Optional input
-!                                  Title      =Title      , &  ! Optional input
-!                                  History    =History    , &  ! Optional input
-!                                  Comment    =Comment    , &  ! Optional input
-!                                  ID_Tag     =ID_Tag     , &  ! Optional input
-!                                  Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = WriteGAtts( NC_Filename                  , &  ! Input
+!                                  NC_FileID                    , &  ! Input
+!                                  Version       =Version       , &  ! Optional input
+!                                  Title         =Title         , &  ! Optional input
+!                                  History       =History       , &  ! Optional input
+!                                  Comment       =Comment       , &  ! Optional input
+!                                  Profile_Set_Id=Profile_Set_Id, &  ! Optional input
+!                                  Message_Log   =Message_Log     )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -1186,7 +1199,7 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       ID_Tag:           Character string written into the ID_TAG global
+!       Profile_Set_Id:   Character string written into the PROFILE_SET_ID global
 !                         attribute field of the netCDF AtmProfile file.
 !                         Should contain a short tag used to identify the
 !                         profile set.
@@ -1217,14 +1230,14 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION WriteGAtts( NC_Filename, &  ! Input
-                       NC_FileID  , &  ! Input
-                       Version    , &  ! Optional input
-                       Title      , &  ! Optional input
-                       History    , &  ! Optional input
-                       Comment    , &  ! Optional input
-                       ID_Tag     , &  ! Optional input
-                       Message_Log) &  ! Error messaging
+  FUNCTION WriteGAtts( NC_Filename   , &  ! Input
+                       NC_FileID     , &  ! Input
+                       Version       , &  ! Optional input
+                       Title         , &  ! Optional input
+                       History       , &  ! Optional input
+                       Comment       , &  ! Optional input
+                       Profile_Set_Id, &  ! Optional input
+                       Message_Log   ) &  ! Error messaging
                      RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: NC_Filename
@@ -1233,7 +1246,7 @@ CONTAINS
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN) :: History
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1309,13 +1322,13 @@ CONTAINS
       CALL WriteGAtts_Cleanup(); RETURN
     END IF
 
-    ! The ID_Tag
-    IF ( PRESENT(ID_Tag) ) THEN
-      GAttName = ID_TAG_GATTNAME
+    ! The Profile_Set_Id
+    IF ( PRESENT(Profile_Set_Id) ) THEN
+      GAttName = PROFILE_SET_ID_GATTNAME
       NF90_Status = NF90_PUT_ATT( NC_FileID, &
                                   NF90_GLOBAL, &
                                   TRIM(GAttName), &
-                                  ID_Tag )
+                                  Profile_Set_Id )
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
@@ -1388,15 +1401,15 @@ CONTAINS
 !       data file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = ReadGAtts( NC_Filename                 , &  ! Input
-!                                 NC_FileID                   , &  ! Input
-!                                 Release    =Release         , &  ! Optional output
-!                                 Version    =Version         , &  ! Optional output
-!                                 ID_Tag     =ID_Tag          , &  ! Optional output
-!                                 Title      =Title           , &  ! Optional output
-!                                 History    =History         , &  ! Optional output
-!                                 Comment    =Comment         , &  ! Optional output
-!                                 Message_Log=Message_Log       )  ! Error messaging
+!       Error_Status = ReadGAtts( NC_Filename                  , &  ! Input
+!                                 NC_FileID                    , &  ! Input
+!                                 Release       =Release       , &  ! Optional output
+!                                 Version       =Version       , &  ! Optional output
+!                                 Profile_Set_Id=Profile_Set_Id, &  ! Optional output
+!                                 Title         =Title         , &  ! Optional output
+!                                 History       =History       , &  ! Optional output
+!                                 Comment       =Comment       , &  ! Optional output
+!                                 Message_Log   =Message_Log     )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:      Character string specifying the name of the
@@ -1437,7 +1450,7 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       ID_Tag:           Character string written into the ID_TAG global
+!       Profile_Set_Id:   Character string written into the PROFILE_SET_ID global
 !                         attribute field of the netCDF AtmProfile file.
 !                         Should contain a short tag used to identify the
 !                         dependent profile set.
@@ -1484,7 +1497,7 @@ CONTAINS
                       NC_FileID       , &  ! Input
                       Release         , &  ! Optional output
                       Version         , &  ! Optional output
-                      ID_Tag          , &  ! Optional output
+                      Profile_Set_Id  , &  ! Optional output
                       Title           , &  ! Optional output
                       History         , &  ! Optional output
                       Comment         , &  ! Optional output
@@ -1495,7 +1508,7 @@ CONTAINS
     INTEGER,                INTENT(IN)  :: NC_FileID
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
@@ -1545,10 +1558,10 @@ CONTAINS
       END IF
     END IF
 
-    ! The ID_Tag
-    IF ( PRESENT(ID_Tag) ) THEN
-      GAttString = ' '; ID_Tag = ' '
-      GAttName = ID_TAG_GATTNAME
+    ! The Profile_Set_Id
+    IF ( PRESENT(Profile_Set_Id) ) THEN
+      GAttString = ' '; Profile_Set_Id = ' '
+      GAttName = PROFILE_SET_ID_GATTNAME
       NF90_Status = NF90_GET_ATT( NC_FileID, &
                                   NF90_GLOBAL, &
                                   TRIM(GAttName), &
@@ -1557,7 +1570,7 @@ CONTAINS
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
       CALL StrClean( GAttString )
-      ID_Tag = GAttString(1:MIN( LEN(ID_Tag), LEN_TRIM(GAttString) ))
+      Profile_Set_Id = GAttString(1:MIN( LEN(Profile_Set_Id), LEN_TRIM(GAttString) ))
     END IF
 
     ! The Title
@@ -2143,7 +2156,7 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
-    INTEGER :: VarId, DimId
+    INTEGER :: VarId
                                
     ! Set up
     ! ------
@@ -2529,7 +2542,7 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: NF90_Status
-    INTEGER :: VarId, DimId
+    INTEGER :: VarId
                                        
     ! Set up
     ! ------
@@ -2829,16 +2842,16 @@ CONTAINS
 !       Function to create a netCDF AtmProfile data file for writing.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CreateFile( NC_Filename            , &  ! Input
-!                                  n_Layers               , &  ! Input
-!                                  n_Absorbers            , &  ! Input
-!                                  NC_FileID              , &  ! Output
-!                                  Version    =Version    , &  ! Optional input
-!                                  ID_Tag     =ID_Tag     , &  ! Optional input
-!                                  Title      =Title      , &  ! Optional input
-!                                  History    =History    , &  ! Optional input
-!                                  Comment    =Comment    , &  ! Optional input
-!                                  Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CreateFile( NC_Filename                    , &  ! Input
+!                                  n_Layers                       , &  ! Input
+!                                  n_Absorbers                    , &  ! Input
+!                                  NC_FileID                      , &  ! Output
+!                                  Version        = Version       , &  ! Optional input
+!                                  Profile_Set_Id = Profile_Set_Id, &  ! Optional input
+!                                  Title          = Title         , &  ! Optional input
+!                                  History        = History       , &  ! Optional input
+!                                  Comment        = Comment       , &  ! Optional input
+!                                  Message_Log    = Message_Log     )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
 !       NC_Filename:        Character string specifying the name of the
@@ -2877,7 +2890,7 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       ID_Tag:             Character string written into the ID_TAG global
+!       Profile_Set_Id:     Character string written into the PROFILE_SET_ID global
 !                           attribute field of the netCDF AtmProfile file.
 !                           Should contain a short tag used to identify the
 !                           dependent profile set.
@@ -2933,16 +2946,16 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CreateFile( NC_Filename, &  ! Input
-                       n_Layers   , &  ! Input
-                       n_Absorbers, &  ! Input
-                       NC_FileID  , &  ! Output
-                       Version    , &  ! Optional input
-                       ID_Tag     , &  ! Optional input
-                       Title      , &  ! Optional input
-                       History    , &  ! Optional input
-                       Comment    , &  ! Optional input
-                       Message_Log) &  ! Error messaging
+  FUNCTION CreateFile( NC_Filename   , &  ! Input
+                       n_Layers      , &  ! Input
+                       n_Absorbers   , &  ! Input
+                       NC_FileID     , &  ! Output
+                       Version       , &  ! Optional input
+                       Profile_Set_Id, &  ! Optional input
+                       Title         , &  ! Optional input
+                       History       , &  ! Optional input
+                       Comment       , &  ! Optional input
+                       Message_Log   ) &  ! Error messaging
                      RESULT( Error_Status )
     ! Arguments
     CHARACTER(*)          , INTENT(IN)  :: NC_Filename
@@ -2950,7 +2963,7 @@ CONTAINS
     INTEGER               , INTENT(IN)  :: n_Absorbers  
     INTEGER               , INTENT(OUT) :: NC_FileID
     INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
@@ -3031,14 +3044,14 @@ CONTAINS
 
     ! Write the global attributes
     ! ---------------------------
-    Error_Status = WriteGAtts( NC_Filename                      , &
-                               NC_FileID                        , &
-                               Version         =Version         , &
-                               ID_Tag          =ID_Tag          , &
-                               Title           =Title           , &
-                               History         =History         , &
-                               Comment         =Comment         , &
-                               Message_Log     =Message_Log       )
+    Error_Status = WriteGAtts( NC_Filename                    , &
+                               NC_FileID                      , &
+                               Version        = Version       , &
+                               Profile_Set_Id = Profile_Set_Id, &
+                               Title          = Title         , &
+                               History        = History       , &
+                               Comment        = Comment       , &
+                               Message_Log    = Message_Log     )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error writing global attributes to '//TRIM(NC_Filename)
       CALL Create_Cleanup(); RETURN
