@@ -460,7 +460,6 @@ CONTAINS
     ! Keep it if necessary
     IF ( PRESENT(n_Profiles) ) n_Profiles = n
 
-
     ! Get the global attributes
     ! -------------------------
     Error_Status = ReadGAtts( NC_Filename                  , &
@@ -520,7 +519,7 @@ CONTAINS
 !       Error_Status = Write_AtmProfile_netCDF( &
 !         NC_Filename                    , &  ! Input
 !         AtmProfile                     , &  ! Input
-!         Profile_Set                    , &  ! Optional input
+!         Profile_Set    = Profile_Set   , &  ! Optional input
 !         Quiet          = Quiet         , &  ! Optional input
 !         Profile_Set_Id = Profile_Set_Id, &  ! Optional input
 !         Title          = Title         , &  ! Optional input
@@ -1062,7 +1061,7 @@ CONTAINS
       ! ---------------------------------
       ! Fill the other Absorber_Units structure members
       DO j = 1, AtmProfile(m)%n_Absorbers
-        AtmProfile(m)%Absorber_Units_Name(j)   = ATMPROFILE_ABSORBER_UNITS_NAME(AtmProfile(m)%Absorber_Units_ID(j))
+        AtmProfile(m)%Absorber_Units_Name(j) = ATMPROFILE_ABSORBER_UNITS_NAME(AtmProfile(m)%Absorber_Units_ID(j))
         AtmProfile(m)%Absorber_Units_LBL(j) = ATMPROFILE_ABSORBER_UNITS_CHAR(AtmProfile(m)%Absorber_Units_ID(j))
       END DO
       ! Reverse the profile data direction if required
@@ -1650,6 +1649,7 @@ CONTAINS
 !                                 Absorber_DimID         , &  ! Input
 !                                 Profile_DimID          , &  ! Input
 !                                 PL_DimID               , &  ! Input
+!                                 AUL_DimID              , &  ! Input
 !                                 Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS
@@ -1702,6 +1702,13 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
+!       AUL_DimID:          NetCDF dimension ID for the string length of
+!                           the absorber units description.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN) 
+!
 ! OPTIONAL INPUT ARGUMENTS
 !       Message_Log:        Character string specifying a filename in which any
 !                           messages will be logged. If not specified, or if an
@@ -1721,6 +1728,7 @@ CONTAINS
                       Absorber_DimID, &  ! Input
                       Profile_DimID , &  ! Input
                       PL_DimID      , &  ! Input
+                      AUL_DimID     , &  ! Input
                       Message_Log   ) &  ! Error messaging
                     RESULT( Error_Status )
     ! Arguments
@@ -1730,7 +1738,8 @@ CONTAINS
     INTEGER     ,           INTENT(IN)  :: Layer_DimID   
     INTEGER     ,           INTENT(IN)  :: Absorber_DimID
     INTEGER     ,           INTENT(IN)  :: Profile_DimID 
-    INTEGER     ,           INTENT(IN)  :: PL_DimID 
+    INTEGER     ,           INTENT(IN)  :: PL_DimID
+    INTEGER     ,           INTENT(IN)  :: AUL_DimID 
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1920,6 +1929,22 @@ CONTAINS
     NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,ABSORBER_UNITS_ID_FILLVALUE )
     IF ( ANY(NF90_Status /= SUCCESS) ) THEN
       msg = 'Error writing '//ABSORBER_UNITS_ID_VARNAME//' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    
+    NF90_Status(1) = NF90_DEF_VAR( NC_FileID,ABSORBER_UNITS_NAME_VARNAME,ABSORBER_UNITS_NAME_TYPE, &
+                                   dimIDs=(/AUL_DimID,Absorber_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//ABSORBER_UNITS_NAME_VARNAME//' variable in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME,ABSORBER_UNITS_NAME_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,ABSORBER_UNITS_NAME_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME,ABSORBER_UNITS_NAME_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME,ABSORBER_UNITS_NAME_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//ABSORBER_UNITS_NAME_VARNAME//' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
@@ -2191,6 +2216,19 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL WriteVar_Cleanup(); RETURN
     END IF
+    ! The Absorber_Units_Name
+    NF90_Status = NF90_INQ_VARID( NC_FileId,ABSORBER_UNITS_NAME_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//ABSORBER_UNITS_NAME_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Absorber_Units_Name )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//ABSORBER_UNITS_NAME_VARNAME//' to '//TRIM(NC_Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
     ! The Description
     NF90_Status = NF90_INQ_VARID( NC_FileId,DESCRIPTION_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -2199,7 +2237,7 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,AtmProfile%Description,&
-                                start=(/1,Profile/))
+                                start=(/1,Profile/) )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//DESCRIPTION_VARNAME//' to '//TRIM(NC_Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -2981,6 +3019,7 @@ CONTAINS
     INTEGER :: Absorber_DimID
     INTEGER :: Profile_DimID
     INTEGER :: PL_DimID
+    INTEGER :: AUL_DimID
     TYPE(AtmProfile_type) :: Dummy
     
     ! Set up
@@ -3034,13 +3073,19 @@ CONTAINS
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
     
-    NF90_Status = NF90_DEF_DIM( NC_FileID,DESCRIPTION_DIMNAME,LEN(Dummy%Description),PL_DimID )
+    NF90_Status = NF90_DEF_DIM( NC_FileID,DESCRIPTION_DIMNAME,PDSL,PL_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//DESCRIPTION_DIMNAME//' dimension in '//&
             TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(Close_File=.TRUE.); RETURN
     END IF
-
+    
+    NF90_Status = NF90_DEF_DIM( NC_FileID,ABSORBER_UNITS_DIMNAME,AUNSL,AUL_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//ABSORBER_UNITS_DIMNAME//' dimension in '//&
+            TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    END IF
 
     ! Write the global attributes
     ! ---------------------------
@@ -3057,7 +3102,6 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
 
-
     ! Define the AtmProfile variables
     ! -------------------------------
     Error_Status = DefineVar( NC_Filename            , &  ! Input
@@ -3067,6 +3111,7 @@ CONTAINS
                               Absorber_DimID         , &  ! Input
                               Profile_DimID          , &  ! Input
                               PL_DimID               , &  ! Input
+                              AUL_DimID              , &  ! Input
                               Message_Log=Message_Log  )  ! Error messaging
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error defining variables in '//TRIM(NC_Filename)
