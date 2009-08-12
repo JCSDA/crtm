@@ -127,6 +127,16 @@ MODULE MONORTM_Input
   ! -----------------
   ! Module parameters
   ! -----------------
+  
+  ! -- Integer definitions for record 1.2
+  INTEGER, PRIVATE, PARAMETER :: IHIRAC = 1
+  INTEGER, PRIVATE, PARAMETER :: ICNTNM = 1
+  INTEGER, PRIVATE, PARAMETER :: IATM   = 1
+  INTEGER, PRIVATE, PARAMETER :: IXSECT = 0
+  INTEGER, PRIVATE, PARAMETER :: ISPD   = 0
+  
+  ! -- Record 1.3 definition
+  REAL( fp_kind ), PARAMETER :: DVSET = -1.0_fp_kind
 
   ! -- Floating point definitions for common constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO    =    0.0_fp_kind
@@ -245,7 +255,6 @@ MODULE MONORTM_Input
   INTEGER,         PRIVATE, PARAMETER :: MIN_VALID_ABSORBER_UNIT = MIXING_RATIO_UNITS
   INTEGER,         PRIVATE, PARAMETER :: MAX_VALID_ABSORBER_UNIT = MOLECULES_PER_CM3_UNITS
 
-
   ! ----------------
   ! Module variables
   ! ----------------
@@ -253,11 +262,7 @@ MODULE MONORTM_Input
   ! -- No place holder output
   LOGICAL, PRIVATE :: no_placeholder
 
-
 CONTAINS
-
-
-
 !--------------------------------------------------------------------------------
 !S+
 ! NAME:
@@ -685,7 +690,6 @@ CONTAINS
                                 surface_altitude,     &  ! Input
                                 begin_frequency,      &  ! Input
                                 end_frequency,        &  ! Input
-
                                 calculation_flags,    &  ! Optional input
                                 absorber_format,      &  ! Optional input
                                 co2ppmv,              &  ! Optional input
@@ -1506,16 +1510,16 @@ logical :: terminator
     ! Header string
     ! -------------
 
-!    IF ( PRESENT( header ) ) THEN
-!      user_header = TRIM( header )
-!    ELSE
-!      CALL DATE_AND_TIME( values = date_and_time_values )
-!      WRITE( user_header, FMT = '( "MONORTM TAPE5. Created on ", &
-!                                  &i4,"/",i2.2,"/",i2.2," at ", &
-!                                  &i2.2,":",i2.2,":",i2.2 )' ) &
-!                          date_and_time_values( 1 : 3 ), &  ! Date
-!                          date_and_time_values( 5 : 7 )     ! Time
-!    END IF
+    IF ( PRESENT( header ) ) THEN
+      user_header = TRIM( header )
+    ELSE
+      CALL DATE_AND_TIME( values = date_and_time_values )
+      WRITE( user_header, FMT = '( "MONORTM TAPE5. Created on ", &
+                                  &i4,"/",i2.2,"/",i2.2," at ", &
+                                  &i2.2,":",i2.2,":",i2.2 )' ) &
+                          date_and_time_values( 1 : 3 ), &  ! Date
+                          date_and_time_values( 5 : 7 )     ! Time
+    END IF
 
 
     ! ---------------
@@ -1600,15 +1604,22 @@ logical :: terminator
     ! --------------------------
 
     record_number = '1.1'
-   ! WRITE( file_id, FMT    = '( "$ ", a )', &
-!                    IOSTAT = io_status      ) &
-!                    user_header
+    WRITE( file_id, FMT    = '( "$ ", a )', &
+                    IOSTAT = io_status      ) &
+                    user_header
     IF ( io_status /= 0 ) GOTO 1000
-
-
-    ! ------------------------------
-    ! Calculation flags (record 1.2)
-    ! ------------------------------
+    
+    ! write record 1.2
+    record_number = '1.2'
+    WRITE( file_id, FMT = '(I5,I10,I35,2I20)', &
+                    IOSTAT = io_status    ) &
+                    IHIRAC, ICNTNM, IATM, IXSECT, ISPD
+                    
+    ! write record 1.3
+    record_number = '1.3'
+    WRITE( file_id, FMT = '(E10.3)', &
+                    IOSTAT = io_status ) &
+                    DVSET
 
     error_status = Write_Record_1p2( file_id, &
                                      user_calculation_flags, &
