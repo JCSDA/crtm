@@ -4,11 +4,11 @@ This sections details the environment setup to enable the CRTM library, or any s
 \begin{ttfamily}
   \begin{verbatim}
      cd $HOME/CRTM
-     svn checkout https://svn.ncep.noaa.gov/emc/crtm/trunk trunk\end{verbatim}
+     svn checkout https://svnemc.ncep.noaa.gov/projects/crtm/trunk trunk\end{verbatim}
 \end{ttfamily}
 where a user's home directory is referred to by the environment variable \f{\$HOME}, and the root directory of a user's working copy of the CRTM is \f{\$HOME/CRTM} and reflects the same directory structure as the repository.
 
-Additionally, it is assumed there exists a user directory, \f{\$HOME/bin}, which is defined in a user's \f{\$PATH}. Compiled executables and scripts will be placed in this directory.
+Additionally, it is assumed there exists a user directory, \f{\$HOME/bin}, which is defined in a user's \f{\$PATH}. Compiled executables and scripts will be placed in this directory by the \f{install} target common to all makefiles.
 
 
 \section{Macro Definitions}
@@ -17,17 +17,18 @@ All of the makefiles in the CRTM repository use environment variables as require
 
 \begin{table}[htb]
   \centering
-  \begin{tabular}{p{4.5cm} p{9.5cm}}
+  \begin{tabular}{p{6.5cm} p{7.5cm}}
     \hline
     \sffamily\textbf{Environment Variable Name} & \sffamily\textbf{Example Definition} \\
     \hline\hline
-                                & \f{\$HOME/CRTM/trunk/src}, or \\
-    \rb{\f{CRTM\_SOURCE\_ROOT}} & \f{\$HOME/CRTM/branches/src/RB-1.2}\\
-    \f{CRTM\_FIXFILE\_ROOT}     & \f{\$HOME/CRTM/trunk/fix} \\
-    \f{CRTM\_TEST\_ROOT}        & \f{\$HOME/CRTM/trunk/test} \\
-    \f{CRTM\_SCRIPTS\_ROOT}     & \f{\$HOME/CRTM/trunk/scripts} \\
-    \f{CRTM\_EXTERNALS\_ROOT}   & \f{\$HOME/CRTM/trunk/externals} \\
-    \f{CRTM\_DOC\_ROOT}         & \f{\$HOME/CRTM/trunk/doc} \\
+    \f{CRTM\_ROOT}              & \f{\$HOME/CRTM/trunk} \\
+    \f{CRTM\_SOURCE\_ROOT}      & \f{\$CRTM\_ROOT/src}\\
+    \f{CRTM\_FIXFILE\_ROOT}     & \f{\$CRTM\_ROOT/fix} \\
+    \f{CRTM\_TEST\_ROOT}        & \f{\$CRTM\_ROOT/test} \\
+    \f{CRTM\_SCRIPTS\_ROOT}     & \f{\$CRTM\_ROOT/scripts} \\
+    \f{CRTM\_EXTERNALS\_ROOT}   & \f{\$CRTM\_ROOT/externals} \\
+    \f{CRTM\_DOC\_ROOT}         & \f{\$CRTM\_ROOT/doc} \\
+    \f{CRTM\_VALIDATION\_ROOT}  & \f{\$CRTM\_ROOT/validation} \\
     \hline
   \end{tabular}
   \caption{Environment variables used by CRTM makefiles.}
