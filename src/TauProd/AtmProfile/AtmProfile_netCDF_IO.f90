@@ -2983,7 +2983,7 @@ CONTAINS
 !                           DIMENSION:  Scalar                                         
 !
 !------------------------------------------------------------------------------
-
+  
   FUNCTION CreateFile( NC_Filename   , &  ! Input
                        n_Layers      , &  ! Input
                        n_Absorbers   , &  ! Input
@@ -3020,7 +3020,6 @@ CONTAINS
     INTEGER :: Profile_DimID
     INTEGER :: PL_DimID
     INTEGER :: AUL_DimID
-    TYPE(AtmProfile_type) :: Dummy
     
     ! Set up
     ! ------
