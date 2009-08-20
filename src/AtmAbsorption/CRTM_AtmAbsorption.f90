@@ -546,16 +546,21 @@ CONTAINS
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
     TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor
     TYPE(CRTM_APVariables_type),  INTENT(IN OUT) :: APV
+    ! Local
+    INTEGER :: SLoIndex
 
+    SLoIndex = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
       CASE( TAU_ODAS )
-         CALL ODAS_Compute_Predictors(Atmosphere,        &  ! Input
-                                      GeometryInfo,      &  ! Input        
-                                      Predictor%ODAS,    &  ! Output  
+         CALL ODAS_Compute_Predictors(Atmosphere,                  &  ! Input
+                                      GeometryInfo,                &  ! Input        
+                                      TC%ODAS(SLoIndex)%Max_Order, &  ! Input
+                                      TC%ODAS(SLoIndex)%Alpha,     &  ! Input
+                                      Predictor%ODAS,              &  ! Output
                                       APV%ODAS   )                  
 
       CASE( TAU_ODPS )
-         CALL ODPS_Compute_Predictors(TC%Sensor_LoIndex(SensorIndex), &  ! Input
+         CALL ODPS_Compute_Predictors(SLoIndex,          &  ! Input
                                       Atmosphere,        &  ! Input
                                       GeometryInfo,      &  ! Input        
                                       Predictor%ODPS)       ! Output  
@@ -654,18 +659,23 @@ CONTAINS
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
     TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor_TL
     TYPE(CRTM_APVariables_type),  INTENT(IN OUT) :: APV
+    ! Local
+    INTEGER :: SLoIndex
 
+    SLoIndex = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
       CASE( TAU_ODAS )
-         CALL ODAS_Compute_Predictors_TL(Atmosphere,        &  ! FWD Input
-                                         Predictor%ODAS,    &  ! FWD Input
-                                         Atmosphere_TL,     &  ! TL Input
-                                         GeometryInfo,      &  ! Input     
-                                         Predictor_TL%ODAS, &  ! TL Output
+         CALL ODAS_Compute_Predictors_TL(Atmosphere,                  &  ! FWD Input
+                                         Predictor%ODAS,              &  ! FWD Input
+                                         Atmosphere_TL,               &  ! TL Input
+                                         GeometryInfo,                &  ! Input    
+                                         TC%ODAS(SLoIndex)%Max_Order, &  ! Input
+                                         TC%ODAS(SLoIndex)%Alpha,     &  ! Input
+                                         Predictor_TL%ODAS,           &  ! TL Output
                                          APV%ODAS   )                  
 
       CASE( TAU_ODPS )
-         CALL ODPS_Compute_Predictors_TL(TC%Sensor_LoIndex(SensorIndex),       &  ! Input
+         CALL ODPS_Compute_Predictors_TL(SLoIndex,           &  ! Input
                                          Atmosphere,         &  ! FWD Input
                                          GeometryInfo,       &  ! Input
                                          Predictor%ODPS,     &  ! FWD Input
@@ -770,18 +780,23 @@ CONTAINS
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
     TYPE(CRTM_Atmosphere_type),   INTENT(IN OUT) :: Atmosphere_AD
     TYPE(CRTM_APVariables_type),  INTENT(IN OUT) :: APV
+    ! Local
+    INTEGER :: SLoIndex
 
+    SLoIndex = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
       CASE( TAU_ODAS )
-         CALL ODAS_Compute_Predictors_AD(Atmosphere,        &  ! FWD Input
-                                         Predictor%ODAS,    &  ! FWD Input
-                                         Predictor_AD%ODAS, &  ! AD Intput
-                                         GeometryInfo,      &  ! Input     
-                                         Atmosphere_AD,     &  ! AD Output
+         CALL ODAS_Compute_Predictors_AD(Atmosphere,                  &  ! FWD Input
+                                         Predictor%ODAS,              &  ! FWD Input
+                                         Predictor_AD%ODAS,           &  ! AD Intput
+                                         GeometryInfo,                &  ! Input    
+                                         TC%ODAS(SLoIndex)%Max_Order, &  ! Input
+                                         TC%ODAS(SLoIndex)%Alpha,     &  ! Input
+                                         Atmosphere_AD,               &  ! AD Output
                                          APV%ODAS   )
 
       CASE( TAU_ODPS )
-         CALL ODPS_Compute_Predictors_AD(TC%Sensor_LoIndex(SensorIndex),         &  ! Input
+         CALL ODPS_Compute_Predictors_AD(SLoIndex,            &  ! Input
                                          Atmosphere,          &  ! FWD Input
                                          GeometryInfo,        &  ! Input     
                                          Predictor%ODPS,      &  ! FWD Input
@@ -1035,28 +1050,29 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
-    INTEGER :: i, LoIndex
+    INTEGER :: i, SLoIndex
     LOGICAL :: Calc_Sun_Angle_Secant
     
     Error_Status=SUCCESS
 
+    SLoIndex = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
       CASE( TAU_ODAS )
          Allocate_Status = ODAS_Allocate_Predictor( &
-                               n_Layers ,               &  ! Input
-                               ODAS_MAX_N_PREDICTORS,   &  ! Input
-                               ODAS_MAX_N_ABSORBERS,    &  ! Input
-                               Predictor%ODAS   ,       &  ! Output
-                               RCS_Id = RCS_Id,         &  ! Revision control               
-                               Message_Log=Message_Log  )  ! Error messaging 
+                               n_Layers ,                   &  ! Input
+                               ODAS_MAX_N_PREDICTORS,       &  ! Input
+                               ODAS_MAX_N_ABSORBERS,        &  ! Input
+                               MAXVAL(TC%ODAS(SLoIndex)%Max_Order), &  ! Input
+                               Predictor%ODAS   ,           &  ! Output
+                               RCS_Id = RCS_Id,             &  ! Revision control               
+                               Message_Log=Message_Log  )      ! Error messaging 
       CASE( TAU_ODPS )
-         LoIndex = TC%Sensor_LoIndex(SensorIndex)
-         i = TC%ODPS(LoIndex)%Group_Index
-         IF(TC%ODPS(LoIndex)%n_OCoeffs > 0 .AND. ALLOW_OPTRAN)THEN  
+         i = TC%ODPS(SLoIndex)%Group_Index
+         IF(TC%ODPS(SLoIndex)%n_OCoeffs > 0 .AND. ALLOW_OPTRAN)THEN  
            Predictor%ODPS%OPTRAN = .TRUE.                      
          END IF                                                              
          Allocate_Status = ODPS_Allocate_Predictor( &
-                               TC%ODPS(LoIndex)%n_Layers,   & ! input  - n internal layers
+                               TC%ODPS(SLoIndex)%n_Layers,  & ! input  - n internal layers
                                ODPS_Get_n_Components(i),    & ! Input
                                ODPS_Get_max_n_Predicotrs(i),& ! Input                              
                                Predictor%ODPS   ,           & ! Output            
@@ -1068,7 +1084,7 @@ CONTAINS
          ! used in the TL and AD routines
          IF(PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag(i))THEN
            Allocate_Status = ODPS_Allocate_PAFV( &
-                                          TC%ODPS(LoIndex)%n_Layers,  & ! Input
+                                          TC%ODPS(SLoIndex)%n_Layers, & ! Input
                                           ODPS_Get_n_Absorbers(i),    & ! Input
                                           n_Layers,                   & ! Input
                                           Predictor%ODPS%OPTRAN,      & ! Input
