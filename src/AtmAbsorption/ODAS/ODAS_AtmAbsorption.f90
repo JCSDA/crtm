@@ -38,7 +38,8 @@ MODULE ODAS_AtmAbsorption
                                        MAX_N_ORDERS,          & 
                                        MAX_N_PREDICTORS_USED, &
                                        MAX_N_ORDERS
-  USE ODAS_TauCoeff,             ONLY: TC
+  USE ODAS_TauCoeff,             ONLY: TC, &
+                                       ODAS_type
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -78,11 +79,10 @@ MODULE ODAS_AtmAbsorption
   ! ------------------------------------------
   TYPE :: AAVariables_type
     PRIVATE
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_Level = ZERO
-    REAL(fp), DIMENSION(0:MAX_N_ORDERS,0:MAX_N_PREDICTORS_USED,&
-                        MAX_N_LAYERS,MAX_N_ABSORBERS) :: b = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: LN_Chi = ZERO
-    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Chi    = ZERO
+    REAL(fp), DIMENSION(MAX_N_LAYERS, 0:MAX_N_PREDICTORS_USED,&
+                        MAX_N_ABSORBERS)              :: b
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: LN_Chi
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Chi   
   END TYPE AAVariables_type
 
 CONTAINS
@@ -177,12 +177,18 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_AtmAbsorption'
     ! Local variables
-    INTEGER :: n       ! Sensor index
-    INTEGER :: l       ! Channel index
-    INTEGER :: k       ! Layer index
-    INTEGER :: j       ! Absorber index
-    INTEGER :: i, ip   ! Predictor index
-    INTEGER :: np      ! Polynomial index
+    INTEGER  :: n       ! Sensor index
+    INTEGER  :: l       ! Channel index
+    INTEGER  :: k       ! Layer index
+    INTEGER  :: j       ! Absorber index
+    INTEGER  :: i, ip   ! Predictor index
+    INTEGER  :: np      ! # of predictors
+    INTEGER  :: ps      ! starting position of the coefficient subset for given j and l
+    INTEGER  :: n_Orders ! order of the polynomial function
+    INTEGER  :: ic_0    ! the index of the first coefficient in the C coeff subset for deriving the B coeff.
+    INTEGER  :: ic      ! the index of the coefficients
+    REAL(fp) :: c       ! a coefficient
+    INTEGER  :: n_Layers
 
     ! ------
     ! Set up
@@ -190,6 +196,7 @@ CONTAINS
     ! Assign the indices to a short name
     n = SensorIndex
     l = ChannelIndex
+    n_Layers = Predictor%n_Layers
     ! Initilise the optical depth
     AtmAbsorption%Optical_Depth = ZERO
 
@@ -204,40 +211,10 @@ CONTAINS
       ! Check if there is any absorption for this
       ! absorber/channel combination.
       !
-      ! This check is the reason why all channels
-      ! cannot be processed at once and why the
-      ! layer loop is within the absorber loop.
       ! -----------------------------------------
-      IF ( TC(n)%Predictor_Index(0,j,l) <= 0 ) CYCLE Absorber_Loop
+      np = TC(n)%Pre_Index(0,j,l)
 
- 
-      ! ----------------
-      ! Loop over layers
-      ! ----------------
-      Layer_Loop: DO k = 1, AtmAbsorption%n_Layers
-
-
-        ! ----------------------------------------------------------
-        ! Calculate absorber space level associated with the average
-        ! absorber amount
-        ! 
-        ! Absorber level, k, to amount 
-        ! 
-        !     A(k) = C1.exp(Alpha * k) + C2
-        ! 
-        ! Absorber amount to level 
-        ! 
-        !           1      A - C2
-        !     k = ----- LN ------
-        !         Alpha      C1
-        ! 
-        !   Alpha : absorber amount-level coordinate constant
-        !   C1,C2 : scaling factors for level in the range of 0 to 1
-        ! ----------------------------------------------------------
-        AAV%A_Level(k,j) = LOG((Predictor%aveA(k,j) - TC(n)%Alpha_C2(j)) / TC(n)%Alpha_C1(j)) / &
-        !                  ------------------------------------------------------------------
-                                                  TC(n)%Alpha(j)
-
+      IF ( np < 0 ) CYCLE Absorber_Loop
 
         ! ----------------------------------------------------------------
         ! Compute the coefficients for use with the atmospheric predictors
@@ -252,40 +229,23 @@ CONTAINS
         !          /__
         !             np=0
         !
-        ! NOTE:
-        ! 1) The coefficient array, c(np,i), corresponds to the array
-        !    TC(n)%C(np,i,j,l) for the given absorber, j, channel, l,
-        !    and sensor, n.
-        !
-        ! 2) The summation maximum, N, corresponds to the value in
-        !    TC(n)%Order_Index(i,j,l) for the given absorber, j, 
-        !    channel, l, and sensor, n. If
-        !      TC(n)%Order_Index(i,j,l) = 0
-        !    then
-        !      b(i) = c(0,i)
-        !
-        ! 3) TC(n)%Order_Index( i, j, l ) contains the polynomial
-        !    order to be used in reconstructing the b(i) coefficients
-        !    for the current predictor, i, for absorber j, channel l,
-        !    and sensor, n. This value is used to access the coefficient
-        !    array, TC(n)%C.
-        !
-        ! 4) Note that if
-        !      TC(n)%Order_Index( 0, j, l ) == 0
-        !    then the inner loop below is not entered. If your compiler
-        !    has a "zero trip" loop option where DO loops are *always*
-        !    executed at least once, regardless of the loop indices,
-        !    make sure it's not on by default!
         ! ----------------------------------------------------------------
-        DO i = 0, TC(n)%Predictor_Index(0,j,l)
-          AAV%b(TC(n)%Order_Index(i,j,l),i,k,j) = TC(n)%C( TC(n)%Order_Index(i,j,l),i,j,l )
-          DO np = TC(n)%Order_Index(i,j,l) - 1, 0, -1
-            AAV%b(np,i,k,j) = ( AAV%b(np+1,i,k,j) * AAV%A_Level(k,j) ) + TC(n)%C(np,i,j,l)
-          END DO
-        END DO
 
+        ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset for given j and l
+        n_orders = TC(n)%Order(j,l)
+
+        ! compute b(0)
+        ic_0 = ps                                   
+        AAV%b(1:n_Layers,0,j) = TC(n)%C(ic_0)                       
+        DO ic = 1, n_Orders                                         
+          c = TC(n)%C(ic_0 + ic)                                    
+          DO k = 1, n_Layers                                            
+            AAV%b(k,0,j) = AAV%b(k,0,j) + c*Predictor%Ap(k, ic, j)    
+          END DO                                                        
+        END DO                                                      
 
         ! ---------------------------------------------------------
+        ! compute B(i) coefficients (i > 0)
         ! Compute the logarithm of the absorption coefficient
         !
         ! The logarithm of the absorption coefficient, LN(chi), is
@@ -298,33 +258,41 @@ CONTAINS
         !                       i=1
         !
         ! ---------------------------------------------------------
-        AAV%LN_Chi(k,j) = AAV%b(0,0,k,j)
-        DO i = 1, TC(n)%Predictor_Index(0,j,l)
-          ip = TC(n)%Predictor_Index(i,j,l)
-          AAV%LN_Chi(k,j) = AAV%LN_Chi(k,j) + ( AAV%b(0,i,k,j) * Predictor%X(ip,k) )
-        END DO 
-
+        AAV%LN_Chi(1:n_Layers, j) = AAV%b(1:n_Layers,0,j)   ! the b(0) contribution
+        DO i = 1, np
+          ! b(i) term, i > 0
+          ic_0 = ps + i*(n_orders+1)
+          AAV%b(1:n_Layers,i,j) = TC(n)%C(ic_0)
+          DO ic = 1, n_Orders    
+            c = TC(n)%C(ic_0 + ic)
+            DO k = 1, n_Layers                                          
+              AAV%b(k,i,j) = AAV%b(k,i,j) + c*Predictor%Ap(k, ic, j)  
+            END DO                                                      
+          END DO
+          ! b(i) term contribution
+          ip = TC(n)%Pre_Index(i,j,l)                                                
+          DO k = 1, n_Layers                                                       
+            AAV%LN_Chi(k,j) = AAV%LN_Chi(k,j) + AAV%b(k, i, j)* Predictor%X(k,ip)  
+          END DO                                                                   
+        END DO
 
         ! --------------------------------
         ! Check the value of the logarithm
         ! of the absorption coefficient 
+        ! Compute the optical depth profile
         ! --------------------------------
-        IF( AAV%LN_Chi(k,j) > LIMIT_EXP ) THEN
-          AAV%Chi(k,j) = LIMIT_LOG
-        ELSE IF( AAV%LN_Chi(k,j) < -LIMIT_EXP ) THEN
-          AAV%Chi(k,j) = ZERO
-        ELSE
-          AAV%Chi(k,j) = EXP(AAV%LN_Chi(k,j))
-        ENDIF
+        DO k = 1, n_Layers
+          IF( AAV%LN_Chi(k,j) > LIMIT_EXP ) THEN
+            AAV%Chi(k,j) = LIMIT_LOG
+          ELSE IF( AAV%LN_Chi(k,j) < -LIMIT_EXP ) THEN
+            AAV%Chi(k,j) = ZERO
+          ELSE
+            AAV%Chi(k,j) = EXP(AAV%LN_Chi(k,j))
+          ENDIF
+          
+          AtmAbsorption%Optical_Depth(k) = AtmAbsorption%Optical_Depth(k) + AAV%Chi(k,j)*Predictor%dA(k,j)
 
-
-        ! -----------------------
-        ! Calculate optical_depth
-        ! -----------------------
-        AtmAbsorption%Optical_Depth(k) = AtmAbsorption%Optical_Depth(k) + &
-                                         ( AAV%Chi(k,j) * Predictor%dA(k,j) )
-
-      END DO Layer_Loop
+        END DO
 
     END DO Absorber_Loop
 
@@ -435,13 +403,16 @@ CONTAINS
     INTEGER :: k       ! Layer index
     INTEGER :: j       ! Absorber index
     INTEGER :: i, ip   ! Predictor index
-    INTEGER :: np      ! Polynomial index
-    REAL(fp) :: A_Level_TL
-    REAL(fp) :: LN_Chi_TL
+    INTEGER  :: np      ! # of predictors
+    INTEGER  :: ps      ! starting position of the coefficient subset for given j and l
+    INTEGER  :: n_Orders ! order of the polynomial function
+    INTEGER  :: ic_0    ! the index of the first coefficient in the C coeff subset for deriving the B coeff.
+    INTEGER  :: ic      ! the index of the coefficients
+    REAL(fp) :: c       ! a coefficient
+    REAL(fp) :: b_TL(Predictor%n_layers)
+    REAL(fp) :: LN_Chi_TL(Predictor%n_layers)
     REAL(fp) :: Chi_TL
-    ! Polynomial derived coefficients
-    REAL(fp), DIMENSION( 0:MAX_N_PREDICTORS_USED ) :: b_TL
-
+    INTEGER  :: n_Layers
 
     ! ------
     ! Set up
@@ -449,6 +420,7 @@ CONTAINS
     ! Assign the indices to a short name
     n = SensorIndex
     l = ChannelIndex
+    n_Layers = Predictor%n_Layers
     ! Initilise the tangent-linear optical depth
     AtmAbsorption_TL%Optical_Depth = ZERO
 
@@ -463,181 +435,112 @@ CONTAINS
       ! Check if there is any absorption for this
       ! absorber/channel combination.
       !
-      ! This check is the reason why all channels
-      ! cannot be processed at once and why the
-      ! layer loop is within the absorber loop.
       ! -----------------------------------------
-      IF ( TC(n)%Predictor_Index(0,j,l) <= 0 ) CYCLE Absorber_Loop
+      np = TC(n)%Pre_Index(0,j,l)
+
+      IF ( np < 0 ) CYCLE Absorber_Loop
 
 
-      ! ----------------
-      ! Loop over layers
-      ! ----------------
-      Layer_Loop: DO k = 1, AtmAbsorption_TL%n_Layers
+      ! ----------------------------------------------------------                
+      ! Calculate absorber space level associated with the average                
+      ! absorber amount                                                           
+      !                                                                           
+      ! Absorber level, k, to amount                                              
+      !                                                                           
+      !     A(k) = C1.exp(Alpha * k) + C2                                         
+      !                                                                           
+      ! Absorber amount to level                                                  
+      !                                                                           
+      !           1      A - C2                                                   
+      !     k = ----- LN ------                                                   
+      !         Alpha      C1                                                     
+      !                                                                           
+      !   Alpha : absorber amount-level coordinate constant                       
+      !   C1,C2 : scaling factors for level in the range of 0 to 1                
+      ! ----------------------------------------------------------                
+
+      ! ----------------------------------------------------------------          
+      ! Compute the coefficients for use with the atmospheric predictors          
+      !                                                                           
+      ! For every atmospheric predictor, Pred(i), the coefficient                 
+      ! associated with it, b(i), at a particular absorber amount                 
+      ! level, k, is given by an N'th order polynomial,                           
+      !                                                                           
+      !           __ N                                                            
+      !          \          np                                                    
+      !   b(i) =  > c(np,i).k                                                     
+      !          /__                                                              
+      !             np=0                                                          
+      !                                                                           
+      ! ----------------------------------------------------------------          
+
+      ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
+      n_orders = TC(n)%Order(j,l)                                                 
+                                                                                  
+      ! compute b(0)                                                              
+      ic_0 = ps                                                                   
+      b_TL(1:n_Layers) = ZERO                                                     
+      DO ic = 1, n_Orders                                                         
+        c = TC(n)%C(ic_0 + ic)                                                    
+        DO k = 1, n_Layers                                                        
+          b_TL(k) = b_TL(k) + c*Predictor_TL%Ap(k, ic, j)                            
+        END DO                                                                    
+      END DO                                                                      
+
+      ! ---------------------------------------------------------                 
+      ! compute B(i) coefficients (i > 0)                                         
+      ! Compute the logarithm of the absorption coefficient                       
+      !                                                                           
+      ! The logarithm of the absorption coefficient, LN(chi), is                  
+      ! determined from the regression equation,                                  
+      !                                                                           
+      !                     __Iuse                                                
+      !                    \                                                      
+      !   LN(chi) = b(0) +  > b(i).X(i)                                           
+      !                    /__                                                    
+      !                       i=1                                                 
+      !                                                                           
+      ! ---------------------------------------------------------                 
+      LN_Chi_TL(1:n_Layers) = b_TL(1:n_Layers)  ! b(0) term contribution          
+      DO i = 1, np                                                                
+        ! b(i) term, i > 0                                                        
+        ic_0 = ps + i*(n_orders+1)                                                
+        b_TL(1:n_Layers) = ZERO                                                   
+        DO ic = 1, n_Orders                                                       
+          c = TC(n)%C(ic_0 + ic)                                                  
+          DO k = 1, n_Layers                                                      
+            b_TL(k) = b_TL(k) + c*Predictor_TL%Ap(k, ic, j)                       
+          END DO                                                                  
+        END DO                                                                    
+        ! b(i) term contribution                                                  
+        ip = TC(n)%Pre_Index(i,j,l)                                                 
+        DO k = 1, n_Layers                                                        
+          LN_Chi_TL(k) = LN_Chi_TL(k) + b_TL(k)* Predictor%X(k,ip) &              
+                                      + AAV%b(k,i,j)*Predictor_TL%X(k,ip)         
+        END DO                                                                    
+      END DO                                                                      
 
 
-        ! ----------------------------------------------------------
-        ! Calculate absorber space level associated with the average
-        ! absorber amount
-        ! 
-        ! Absorber level, k, to amount 
-        ! 
-        !     A(k) = C1.exp(Alpha * k) + C2
-        ! 
-        ! Absorber amount to level 
-        ! 
-        !           1      A - C2
-        !     k = ----- LN ------
-        !         Alpha      C1
-        ! 
-        !   Alpha : absorber amount-level coordinate constant
-        !   C1,C2 : scaling factors for level in the range of 0 to 1
-        !
-        ! The tangent-linear equation is
-        !
-        !                   dA
-        !     dk(A) = ----------------
-        !             Alpha.( A - C2 )
-        !
-        ! ----------------------------------------------------------
-        A_Level_TL =                  Predictor_TL%aveA(k,j) / &
-        !             ---------------------------------------------------------------
-                      ( TC(n)%Alpha(j) * (Predictor%aveA(k,j) - TC(n)%Alpha_C2(j) ) )
+      ! --------------------------------                                          
+      ! Check the value of the logarithm                                          
+      ! of the absorption coefficient                                             
+      ! --------------------------------                                          
+      DO k = 1, n_Layers                                                          
+        IF( AAV%LN_Chi(k,j) > LIMIT_EXP ) THEN                                    
+          Chi_TL = ZERO                                                           
+        ELSE IF( AAV%LN_Chi(k,j) < -LIMIT_EXP ) THEN                              
+          Chi_TL = ZERO                                                           
+        ELSE                                                                      
+          Chi_TL = AAV%Chi(k,j) * LN_Chi_TL(k)                                    
+        ENDIF                                                                     
 
-
-
-        ! ----------------------------------------------------------------
-        ! Compute the coefficients for use with the atmospheric predictors
-        !
-        ! For every atmospheric predictor, Pred(i), the coefficient
-        ! associated with it, b(i), at a particular absorber amount
-        ! level, k, is given by an N'th order polynomial,
-        !
-        !           __ N
-        !          \          np
-        !   b(i) =  > c(np,i).k
-        !          /__
-        !             np=0
-        !
-        ! The tangent-linear form is thus
-        !
-        !            __ N
-        !           \              np-1
-        !   db(i) =  > c(np,i).np.k    dk
-        !           /__
-        !              np=0
-        !
-        ! NOTE:
-        ! 1) Note the actual computation of the b(i) and db(i) use a 
-        !    recurrance relation, Horner's method, starting at the
-        !    maximum polynomial order, N, to minimise round off error.
-        !    So for a given predictor index i, we accumulate the value
-        !    of b for successive orders of the N'th degree polynomial:
-        !
-        !      N:   b[N]   = c[N]
-        !      N-1: b[N-1] = b[N].k + c[N-1]
-        !                  = c[N].k + c[N-1]
-        !      N-2: b[N-2] = b[N-1].k + c[N-2]
-        !                  = (c[N].k + c[N-1]).k + c[N-1]
-        !      N-3: b[N-3] = b[N-2].k + c[N-3]
-        !                  = ((c[N].k + c[N-1]).k + c[N-1]).k + c[N-3]
-        !    etc.
-        !
-        !    So for any polynomial order, np,
-        !
-        !      b[np] = b[np-1].k + c(np)
-        !
-        !    Thus the tangent linear form for db[np] is,
-        !
-        !     db[np] = b[np-1].dk  +  db[np-1].k
-        !
-        !    This means the tangent linear form, db[np] must be computed
-        !    BEFORE the b[np-1] is updated to the b[np] value. This is
-        !    noted in the code below also.
-        !
-        ! 2) The coefficient array, c(np,i), corresponds to the array
-        !    TC(n)%C(np,i,j,l) for the given absorber, j, channel, l,
-        !    and sensor, n
-        !
-        ! 3) The summation maximum, N, corresponds to the value in
-        !    TC(n)%Order_Index(i,j,l) for the given absorber, j, 
-        !    channel, l, and sensor, n. If
-        !      TC(n)%Order_Index(i,j,l) = 0
-        !    then
-        !      b(i)    = c(0,i)
-        !    and
-        !      b_TL(i) = 0.0
-        !
-        ! 4) TC(n)%Order_Index( i, j, l ) contains the polynomial
-        !    order to be used in reconstructing the b(i) coefficients
-        !    for the current predictor, i, for absorber, j, channel, l,
-        !    and sensor, n. This value is used to access the coefficient
-        !    array, TC(n)%C.
-        !
-        ! 5) Note that if
-        !      TC(n)%Order_Index( 0, j, l ) == 0
-        !    then the inner loop below is not entered. If your compiler
-        !    has a "zero trip" loop option where DO loops are *always*
-        !    executed at least once, regardless of the loop indices,
-        !    make sure it's not on by default!
-        ! ----------------------------------------------------------------
-        DO i = 0, TC(n)%Predictor_Index(0,j,l)
-          b_TL(i) = ZERO
-          DO np = TC(n)%Order_Index(i,j,l) - 1, 0, -1
-            b_TL(i) = ( AAV%b(np+1,i,k,j) * A_Level_TL ) + ( b_TL(i) * AAV%A_Level(k,j) )
-          END DO
-        END DO
-
-        ! ---------------------------------------------------------
-        ! Compute the logarithm of the absorption coefficient
-        !
-        ! The logarithm of the absorption coefficient, LN(chi), is
-        ! determined from the regression equation,
-        !
-        !                     __Iuse
-        !                    \
-        !   LN(chi) = b(0) +  > b(i).X(i)
-        !                    /__
-        !                       i=1
-        !
-        ! The tangent-linear form is
-        !
-        !               __Iuse
-        !              \
-        !   dLN(chi) =  >  (b(i).dX(i)) + (db(i).X(i)) 
-        !              /__
-        !                 i=1
-        !
-        ! ---------------------------------------------------------
-        LN_Chi_TL = b_TL(0)
-        DO i = 1, TC(n)%Predictor_Index(0,j,l)
-          ip = TC(n)%Predictor_Index(i,j,l)
-          LN_Chi_TL = LN_Chi_TL + ( AAV%b(0,i,k,j) * Predictor_TL%X(ip,k) ) + &
-                                  ( b_TL(i)        * Predictor%X(   ip,k) )
-        END DO 
-
-
-        ! --------------------------------
-        ! Check the value of the logarithm
-        ! of the absorption coefficient 
-        ! --------------------------------
-        IF( AAV%LN_Chi(k,j) > LIMIT_EXP ) THEN
-          Chi_TL = ZERO
-        ELSE IF( AAV%LN_Chi(k,j) < -LIMIT_EXP ) THEN
-          Chi_TL = ZERO
-        ELSE
-          Chi_TL = AAV%Chi(k,j) * LN_Chi_TL
-        ENDIF
-
-
-        ! ------------------------------------------
-        ! Calculate the tangent-linear optical depth
-        ! ------------------------------------------
-        AtmAbsorption_TL%Optical_Depth(k) = AtmAbsorption_TL%Optical_Depth(k) + &
-                                            ( Chi_TL       * Predictor%dA(k,j)    ) + &
-                                            ( AAV%Chi(k,j) * Predictor_TL%dA(k,j) )
-
-      END DO Layer_Loop
+        ! ------------------------------------------                              
+        ! Calculate the tangent-linear optical depth                              
+        ! ------------------------------------------                              
+        AtmAbsorption_TL%Optical_Depth(k) = AtmAbsorption_TL%Optical_Depth(k) &   
+                                          + Chi_TL*Predictor%dA(k,j) &            
+                                          + AAV%Chi(k,j)*Predictor_TL%dA(k,j)     
+      END DO                                                                      
 
     END DO Absorber_Loop
 
@@ -748,12 +651,16 @@ CONTAINS
     INTEGER :: k       ! Layer index
     INTEGER :: j       ! Absorber index
     INTEGER :: i, ip   ! Predictor index
-    INTEGER :: np      ! Polynomial index
-    REAL(fp) :: A_Level_AD
-    REAL(fp) :: LN_Chi_AD
+    INTEGER  :: np      ! # of predictors
+    INTEGER  :: ps      ! starting position of the coefficient subset for given j and l
+    INTEGER  :: n_Orders ! order of the polynomial function
+    INTEGER  :: ic_0    ! the index of the first coefficient in the C coeff subset for deriving the B coeff.
+    INTEGER  :: ic      ! the index of the coefficients
+    REAL(fp) :: c       ! a coefficient
+    REAL(fp) :: b_AD(Predictor%n_layers)
+    REAL(fp) :: LN_Chi_AD(Predictor%n_layers)
     REAL(fp) :: Chi_AD
-    ! Polynomial derived coefficients
-    REAL(fp), DIMENSION(0:MAX_N_PREDICTORS_USED) :: b_AD
+    INTEGER  :: n_Layers
 
 
     ! ------
@@ -762,8 +669,7 @@ CONTAINS
     ! Assign the indices to a short name
     n = SensorIndex
     l = ChannelIndex
-    ! Initilise the local adjoint variables
-    A_Level_AD = ZERO
+    n_Layers = Predictor%n_Layers
 
 
     ! -------------------------------------------
@@ -783,18 +689,16 @@ CONTAINS
       ! Check if there is any absorption for this
       ! absorber/channel combination.
       !
-      ! This check is the reason why all channels
-      ! cannot be processed at once and why the
-      ! layer loop is within the Absorber loop.
       ! -----------------------------------------
-      IF ( TC(n)%Predictor_index(0,j,l) == 0 ) CYCLE Absorber_loop
+      np = TC(n)%Pre_Index(0,j,l)
 
+      IF ( np < 0 ) CYCLE Absorber_Loop
 
-      ! ----------------
-      ! Loop over layers
-      ! ----------------
-      Layer_Loop: DO k = AtmAbsorption_AD%n_Layers, 1, -1
+      ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
+      n_orders = TC(n)%Order(j,l)                                                 
 
+      LN_Chi_AD = ZERO
+      DO k = n_Layers, 1, -1
 
         ! -----------------------------
         ! Adjoints of the optical depth
@@ -814,151 +718,44 @@ CONTAINS
         ! reassigned in the preceding line of code
         ! ----------------------------------------
         IF( ABS( AAV%LN_Chi(k,j) ) > LIMIT_EXP ) THEN
-          LN_Chi_AD = ZERO
-        ELSE
-          LN_Chi_AD = AAV%Chi(k,j) * Chi_AD
+          Chi_AD = ZERO
+        ELSE IF( AAV%LN_Chi(k,j) < -LIMIT_EXP ) THEN                              
+          Chi_AD = ZERO                                                           
+        ELSE                                                                      
+          LN_Chi_AD(k) = AAV%Chi(k,j) * Chi_AD
         ENDIF
+      END DO
 
-
-        ! ---------------------------------------------------------
-        ! Compute the adjoint of the logarithm of the absorption
-        ! coefficient
-        !
-        ! The logarithm of the absorption coefficient, LN(chi), is
-        ! determined from the regression equation,
-        !
-        !                     __Iuse
-        !                    \
-        !   LN(chi) = b(0) +  > b(i).X(i)
-        !                    /__
-        !                       i=1
-        !
-        ! The tangent-linear form is
-        !
-        !               __Iuse
-        !              \
-        !   dLN(chi) =  >  (b(i).dX(i)) + (db(i).X(i)) 
-        !              /__
-        !                 i=1
-        !
-        ! So the adjoint forms are for each predictor index i,
-        !               
-        !    *        *             *
-        !   d X(i) = d X(i) + b(i).d LN(chi)
-        !
-        !
-        ! and,
-        !
-        !
-        !    *             *
-        !   d b(i) = X(i).d LN(chi)
-        !
-        !            *
-        ! where the d  indicates an adjoint variable. Note two
-        ! things:
-        ! 1) the order of the loop is not important.
-        ! 2) the b coefficient adjoints are local adjoint variables
-        !    and are thus initialised to their value on each
-        !    iteration. I.e. no b_AD = ZERO before the loop.
-        !
-        ! ---------------------------------------------------------
-        DO i = 1, TC(n)%Predictor_Index(0,j,l)
-          ip = TC(n)%Predictor_Index(i,j,l)
-          Predictor_AD%X(ip,k) = Predictor_AD%X(ip,k) + ( AAV%b(0,i,k,j)*LN_Chi_AD )
-          b_AD(i) = Predictor%X(ip,k) * LN_Chi_AD
-        END DO 
-        b_AD(0) = LN_Chi_AD
-        LN_Chi_AD = ZERO
-
-
-        ! ----------------------------------------------------------------
-        ! Compute the adjoints of the coefficients use with the
-        ! atmospheric predictors.
-        !
-        ! For every atmospheric predictor, Pred(i), the coefficient
-        ! associated with it, b(i), at a particular absorber amount
-        ! level, k, is given by an N'th order polynomial,
-        !
-        !                    __ N
-        !                   \         np
-        !   b(i) = c(0,i) +  > c(np,i)  . k
-        !                   /__
-        !                      np=1
-        !
-        ! The tangent-linear form is thus
-        !
-        !            __ N
-        !           \              np-1
-        !   db(i) =  > c(np,i).np.k    dk
-        !           /__
-        !              np=1
-        !
-        ! and the adjoint forms are,
-        !
-        !
-        !             __ 1
-        !    *       \           *
-        !   d k(i) =  > b(np,i).d b
-        !            /__
-        !               np=N
-        !
-        ! and
-        !
-        !    *           *
-        !   d b(i) = k.d b(i)
-        !
-        ! ----------------------------------------------------------------
-        DO i = 0, TC(n)%Predictor_Index(0,j,l)
-          ! Note that the order of the A_Level_AD and b_AD
-          ! calculation are important
-          DO np = 0, TC(n)%Order_Index(i,j,l) - 1
-            A_Level_AD = A_Level_AD + ( AAV%b(np+1,i,k,j) * b_AD(i) )
-            b_AD(i) = AAV%A_Level(k,j) * b_AD(i)
-          END DO
-          b_AD(i) = ZERO
+      DO i = np, 1, -1
+        ! b(i) term contribution                                                  
+        ip = TC(n)%Pre_Index(i,j,l)                                                 
+        DO k = n_Layers, 1, -1 
+          b_AD(k) = b_AD(k) + LN_Chi_AD(k)*Predictor%X(k,ip)
+          Predictor_AD%X(k,ip) = Predictor_AD%X(k,ip) + AAV%b(k,i,j)*LN_Chi_AD(k)
         END DO
+        
+        ! b(i) term, i > 0                                                        
+        ic_0 = ps + i*(n_orders+1)                                                
+        DO ic = n_Orders, 1, -1                                                       
+          c = TC(n)%C(ic_0 + ic)                                                  
+          DO k = n_Layers, 1, -1
+            Predictor_AD%Ap(k, ic, j) = Predictor_AD%Ap(k, ic, j) + c*b_AD(k)                                                  
+          END DO                                                                  
+        END DO                                                                    
+        b_AD(1:n_Layers) = ZERO                                                   
+                                                                            
+      END DO                                                                      
+      b_AD(1:n_Layers) = b_AD(1:n_Layers) + LN_Chi_AD(1:n_Layers)
 
-
-        ! ----------------------------------------------------------
-        ! Calculate the adjoint of the absorber space level
-        ! associated with average absorber amount
-        !
-        ! Absorber level to amount
-        !
-        !     A(k) = C1 exp(Alpha * k) + C2
-        !
-        ! Absorber amount to level
-        !
-        !              1      A - C2
-        !     k(A) = ----- ln ------
-        !            Alpha      C1
-        !
-        !   Alpha : absorber amount-level coordinate constant
-        !   C1,C2 : scaling factors for level in the range of 0 to 1
-        !
-        ! The tangent-linear equation is
-        !
-        !                   dA
-        !     dk(A) = ----------------
-        !             Alpha.( A - C2 )
-        !
-        ! and the adjoint form is
-        !
-        !                *
-        !    *          d k
-        !   d A = ----------------
-        !         Alpha.( A - C2 )
-        !
-        ! ----------------------------------------------------------
-        Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &
-                                       A_Level_AD / &
-        !          --------------------------------------------------------------
-                   ( TC(n)%Alpha(j) * (Predictor%aveA(k,j) - TC(n)%Alpha_C2(j) ))
-
-        A_Level_AD = ZERO
-
-      END DO Layer_Loop
-
+      ic_0 = ps                                                                   
+      DO ic = n_Orders, 1, -1                                                         
+        c = TC(n)%C(ic_0 + ic)                                                    
+        DO k = n_Layers, 1, -1 
+          Predictor_AD%Ap(k, ic, j) = Predictor_AD%Ap(k, ic, j) + c*b_AD(k)                                                       
+        END DO                                                                    
+      END DO                                                                      
+      b_AD(1:n_Layers) = ZERO
+      
     END DO Absorber_Loop
 
   END SUBROUTINE Compute_AtmAbsorption_AD

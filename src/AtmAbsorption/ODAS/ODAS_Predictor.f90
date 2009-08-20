@@ -121,7 +121,9 @@ MODULE ODAS_Predictor
     REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2 = ZERO
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1 = ZERO
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2 = ZERO
-    REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s = ZERO
+    REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s ! no need to initialized it to zero
+    REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_Level ! no need to initialized it to zero
+
   END TYPE APVariables_type
 
 
@@ -504,17 +506,17 @@ CONTAINS
       t2 = Atm%Temperature(k) * Atm%Temperature(k)
 
       ! Calculate the standard predictors
-      Pred%X( 1,k) = Atm%Temperature(k)
-      Pred%X( 2,k) = Atm%Pressure(k)
-      Pred%X( 3,k) = t2
-      Pred%X( 4,k) = p2
-      Pred%X( 5,k) = Atm%Temperature(k) * Atm%Pressure(k)
-      Pred%X( 6,k) = t2 * Atm%Pressure(k)
-      Pred%X( 7,k) = Atm%Temperature(k) * p2
-      Pred%X( 8,k) = t2 * p2
-      Pred%X( 9,k) = Atm%Pressure(k)**POINT_25
-      Pred%X(10,k) = Atm%Absorber(k,H2O_Idx)
-      Pred%X(11,k) = Atm%Absorber(k,H2O_Idx) / t2
+      Pred%X(k, 1) = Atm%Temperature(k)
+      Pred%X(k, 2) = Atm%Pressure(k)
+      Pred%X(k, 3) = t2
+      Pred%X(k, 4) = p2
+      Pred%X(k, 5) = Atm%Temperature(k) * Atm%Pressure(k)
+      Pred%X(k, 6) = t2 * Atm%Pressure(k)
+      Pred%X(k, 7) = Atm%Temperature(k) * p2
+      Pred%X(k, 8) = t2 * p2
+      Pred%X(k, 9) = Atm%Pressure(k)**POINT_25
+      Pred%X(k,10) = Atm%Absorber(k,H2O_Idx)
+      Pred%X(k,11) = Atm%Absorber(k,H2O_Idx) / t2
 
     END DO Layer_Loop
 
@@ -626,7 +628,7 @@ CONTAINS
 
         ! Sum predictors for current absorber across layers
         DO i = 1, MAX_N_INTEGRATED_PREDICTORS
-          Pred%X(i1+i-1,k) = xL(i,k) + xL(i,k-1)
+          Pred%X(k,i1+i-1) = xL(i,k) + xL(i,k-1)
         END DO
 
       END DO Layer_Loop
@@ -704,21 +706,21 @@ CONTAINS
       t2_TL = TWO * Atm%Temperature(k) * Atm_TL%Temperature(k)
       
       ! Calculate and assign the integrated absorber independent predictors
-      Pred_TL%X( 1,k) = Atm_TL%Temperature(k)
-      Pred_TL%X( 2,k) = Atm_TL%Pressure(k)
-      Pred_TL%X( 3,k) = t2_TL
-      Pred_TL%X( 4,k) = p2_TL
-      Pred_TL%X( 5,k) = ( Atm%Temperature(k) * Atm_TL%Pressure(k)    ) + &
-                        ( Atm%Pressure(k)    * Atm_TL%Temperature(k) )
-      Pred_TL%X( 6,k) = ( Atm%Pressure(k) * t2_TL ) + &
-                        ( t2 * Atm_TL%Pressure(k) )
-      Pred_TL%X( 7,k) = ( Atm%Temperature(k) * p2_TL ) + &
-                        ( p2 * Atm_TL%Temperature(k) )
-      Pred_TL%X( 8,k) = ( t2 * p2_TL ) + &
-                        ( p2 * t2_TL )
-      Pred_TL%X( 9,k) = POINT_25 * (Atm%Pressure(k)**(-POINT_75)) * Atm_TL%Pressure(k)
-      Pred_TL%X(10,k) = Atm_TL%Absorber(k,H2O_Idx)
-      Pred_TL%X(11,k) = ( Atm_TL%Absorber(k,H2O_Idx) - &
+      Pred_TL%X(k, 1) = Atm_TL%Temperature(k)
+      Pred_TL%X(k, 2) = Atm_TL%Pressure(k)
+      Pred_TL%X(k, 3) = t2_TL
+      Pred_TL%X(k, 4) = p2_TL
+      Pred_TL%X(k, 5) = ( Atm%Temperature(k) * Atm_TL%Pressure(k)    ) + &
+                      ( Atm%Pressure(k)    * Atm_TL%Temperature(k) )
+      Pred_TL%X(k, 6) = ( Atm%Pressure(k) * t2_TL ) + &
+                      ( t2 * Atm_TL%Pressure(k) )
+      Pred_TL%X(k, 7) = ( Atm%Temperature(k) * p2_TL ) + &
+                      ( p2 * Atm_TL%Temperature(k) )
+      Pred_TL%X(k, 8) = ( t2 * p2_TL ) + &
+                      ( p2 * t2_TL )
+      Pred_TL%X(k, 9) = POINT_25 * (Atm%Pressure(k)**(-POINT_75)) * Atm_TL%Pressure(k)
+      Pred_TL%X(k,10) = Atm_TL%Absorber(k,H2O_Idx)
+      Pred_TL%X(k,11) = ( Atm_TL%Absorber(k,H2O_Idx) - &
                         ( Atm%Absorber(k,H2O_Idx) * t2_TL / t2 ) ) / t2
 
     END DO Layer_loop
@@ -880,7 +882,7 @@ CONTAINS
 
         ! Sum predictors across layers
         DO i = 1, MAX_N_INTEGRATED_PREDICTORS
-          Pred_TL%X(i1+i-1,k) = xL_TL(i,k) + xL_TL(i,k-1)
+          Pred_TL%X(k,i1+i-1) = xL_TL(i,k) + xL_TL(i,k-1)
         END DO
 
       END DO Layer_loop
@@ -965,35 +967,35 @@ CONTAINS
       t4 = t2 * t2
 
       ! Pressure squared adjoint
-      p2_AD =                        Pred_AD%X(4,k)   + &   ! Predictor #4, P^2
-              ( Atm%Temperature(k) * Pred_AD%X(7,k) ) + &   ! Predictor #7, T.P^2
-              ( t2                 * Pred_AD%X(8,k) )       ! Predictor #8, T^2.P^2
+      p2_AD =                        Pred_AD%X(k,4)   + &   ! Predictor #4, P^2
+              ( Atm%Temperature(k) * Pred_AD%X(k,7) ) + &   ! Predictor #7, T.P^2
+              ( t2                 * Pred_AD%X(k,8) )       ! Predictor #8, T^2.P^2
 
       ! Temperature squared adjoint
-      t2_AD =                             Pred_AD%X(3,k)     + &  ! Predictor #3, T^2
-              ( Atm%Pressure(k)         * Pred_AD%X(6,k) )   + &  ! Predictor #6, T^2.P
-              ( p2                      * Pred_AD%X(8,k) )   + &  ! Predictor #8, T^2.P^2
-              (-Atm%Absorber(k,H2O_Idx) * Pred_AD%X(11,k) / t4 )  ! Predictor #11, W/T^2
+      t2_AD =                             Pred_AD%X(k,3)     + &  ! Predictor #3, T^2
+              ( Atm%Pressure(k)         * Pred_AD%X(k,6) )   + &  ! Predictor #6, T^2.P
+              ( p2                      * Pred_AD%X(k,8) )   + &  ! Predictor #8, T^2.P^2
+              (-Atm%Absorber(k,H2O_Idx) * Pred_AD%X(k,11) / t4 )  ! Predictor #11, W/T^2
 
       ! Water vapor adjoint
       Atm_AD%Absorber(k,H2O_Idx) = Atm_AD%Absorber(k,H2O_Idx) + &
-          Pred_AD%X(10,k) + &     ! Predictor #10, W
-        ( Pred_AD%X(11,k) / t2 )  ! Predictor #11, W/T^2
+          Pred_AD%X(k,10) + &     ! Predictor #10, W
+        ( Pred_AD%X(k,11) / t2 )  ! Predictor #11, W/T^2
 
       ! Temperature adjoint
       Atm_AD%Temperature(k) = Atm_AD%Temperature(k) + &
         ( TWO * Atm%Temperature(k) * t2_AD ) + &  ! T^2 term
-                            Pred_AD%X(1,k)   + &  ! Predictor #1, T
-        ( Atm%Pressure(k) * Pred_AD%X(5,k) ) + &  ! Predictor #5, T.P
-        ( p2              * Pred_AD%X(7,k) )      ! Predictor #7, T.P^2
+                            Pred_AD%X(k,1)   + &  ! Predictor #1, T
+        ( Atm%Pressure(k) * Pred_AD%X(k,5) ) + &  ! Predictor #5, T.P
+        ( p2              * Pred_AD%X(k,7) )      ! Predictor #7, T.P^2
 
       ! Pressure adjoint
       Atm_AD%Pressure(k) = Atm_AD%Pressure(k) + &
         ( TWO * Atm%Pressure(k) * p2_AD )       + &                     ! P^2 term
-                               Pred_AD%X(2,k)   + &                     ! Predictor #2, P
-        ( Atm%Temperature(k) * Pred_AD%X(5,k) ) + &                     ! Predictor #5, T.P
-        ( t2                 * Pred_AD%X(6,k) ) + &                     ! Predictor #6, T^2.P
-        ( POINT_25 * (Atm%Pressure(k)**(-POINT_75)) * Pred_AD%X(9,k) )  ! Predictor #9, P^1/4
+                               Pred_AD%X(k,2)   + &                     ! Predictor #2, P
+        ( Atm%Temperature(k) * Pred_AD%X(k,5) ) + &                     ! Predictor #5, T.P
+        ( t2                 * Pred_AD%X(k,6) ) + &                     ! Predictor #6, T^2.P
+        ( POINT_25 * (Atm%Pressure(k)**(-POINT_75)) * Pred_AD%X(k,9) )  ! Predictor #9, P^1/4
 
     END DO Layer_loop
 
@@ -1122,8 +1124,8 @@ CONTAINS
 
         ! Adjoint of predictor summation across layers
         DO i = 1, MAX_N_INTEGRATED_PREDICTORS
-          xL_AD(i,k)   = xL_AD(i,k) + Pred_AD%X(i1+i-1,k)
-          xL_AD(i,k-1) = Pred_AD%X(i1+i-1,k)
+          xL_AD(i,k)   = xL_AD(i,k) + Pred_AD%X(k,i1+i-1)
+          xL_AD(i,k-1) = Pred_AD%X(k,i1+i-1)
         END DO
 
         ! Adjoint of the LEVEL integrated predictors intermediate sums
@@ -1247,7 +1249,9 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Compute_Predictors ( Atmosphere,   &  ! Input
-!                                 GeometryInfo, &  ! Input                        
+!                                 GeometryInfo, &  ! Input
+!                                 POrder,       &  ! Input                        
+!                                 Alpha,        &  ! Input                        
 !                                 Predictor,    &  ! Output                       
 !                                 APVariables   )  ! Internal variable output     
 !
@@ -1264,6 +1268,18 @@ CONTAINS
 !                       UNITS:      N/A
 !                       TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!      Max_Order:          The maximum order of the polynomial function for each absorber 
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  1D array (n_Absorbers)
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       Alpha:          The alpha coefficients for absorber level calculations 
+!                       UNITS:      depends on the units of the absorber
+!                       TYPE:       INTEGER
+!                       DIMENSION:  2D array (n_Alphas x n_Absorbers)
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
@@ -1306,16 +1322,21 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Compute_Predictors( Atmosphere,   &  ! Input
-                                 GeometryInfo, &  ! Input                        
+                                 GeometryInfo, &  ! Input 
+                                 Max_Order,    &  ! Input
+                                 Alpha,        &  ! Input                       
                                  Predictor,    &  ! Output                       
                                  APV           )  ! Internal variable output     
     ! Arguments
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: Max_Order(:)
+    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
     TYPE(Predictor_type),         INTENT(IN OUT) :: Predictor
     TYPE(APVariables_type),       INTENT(OUT)    :: APV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors'
+    INTEGER :: i,j,k,n_Layers
 
     ! Save the angle information
     Predictor%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
@@ -1333,6 +1354,46 @@ CONTAINS
     CALL Integrated_Predictors( Atmosphere, &
                                 Predictor,  &     
                                 APV         )     
+        ! ----------------------------------------------------------
+        ! Calculate absorber space level associated with the average
+        ! absorber amount
+        ! 
+        ! Absorber level, k, to amount 
+        ! 
+        !     A(k) = C1.exp(Alpha * k) + C2
+        ! 
+        ! Absorber amount to level 
+        ! 
+        !           1      A - C2
+        !     k = ----- LN ------
+        !         Alpha      C1
+        ! 
+        !     AP(k, i) = A(k)**(i), i = 1, Max_Order(j)
+        ! 
+        !   Alpha : absorber amount-level coordinate constant
+        !   C1,C2 : scaling factors for level in the range of 0 to 1
+        ! ----------------------------------------------------------
+
+    n_Layers = Atmosphere%n_Layers
+    DO j = 1, Predictor%n_Absorbers                                                    
+
+      IF( Max_Order(j) < 0 )CYCLE
+
+      DO k = 1, n_Layers                                                       
+
+        APV%A_Level(k,j) = LOG((Predictor%aveA(k,j) - Alpha(3, j)) / Alpha(2, j)) / &    
+        !                 ------------------------------------------------------------    
+                                           Alpha(1, j)                                    
+      END DO
+
+      Predictor%Ap(1:n_Layers, 1, j) = APV%A_Level(1:n_Layers,j)                                                    
+      DO i = 2, Max_Order(j)                                               
+        DO k = 1, n_Layers     
+          Predictor%Ap(k, i, j) = Predictor%Ap(k, i-1, j) * APV%A_Level(k,j)                        
+        END DO                                                                                       
+      END DO                                                                           
+    END DO                                                                             
+
 
   END SUBROUTINE Compute_Predictors
 
@@ -1351,6 +1412,8 @@ CONTAINS
 !                                    Predictor,     &  ! FWD Input                   
 !                                    Atmosphere_TL, &  ! TL Input                    
 !                                    GeometryInfo,  &  ! Input                       
+!                                    POrder,        &  ! Input                        
+!                                    Alpha,         &  ! Input                        
 !                                    Predictor_TL,  &  ! TL Output                   
 !                                    APVariables    )  ! Internal variable input     
 !
@@ -1381,6 +1444,18 @@ CONTAINS
 !                          UNITS:      N/A
 !                          TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!      Max_Order:          The maximum order of the polynomial function for each absorber 
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  1D array (n_Absorbers)
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       Alpha:             The alpha coefficients for absorber level calculations 
+!                          UNITS:      depends on the units of the absorber
+!                          TYPE:       INTEGER
+!                          DIMENSION:  2D array (n_Alphas x n_Absorbers)
 !                          ATTRIBUTES: INTENT(IN)
 !
 !       APVariables:       Structure containing internal variables required for
@@ -1426,7 +1501,9 @@ CONTAINS
   SUBROUTINE Compute_Predictors_TL( Atmosphere,    &  ! FWD Input
                                     Predictor,     &  ! FWD Input                   
                                     Atmosphere_TL, &  ! TL Input                    
-                                    GeometryInfo,  &  ! Input                       
+                                    GeometryInfo,  &  ! Input 
+                                    Max_Order,     &  ! Input
+                                    Alpha,         &  ! Input                       
                                     Predictor_TL,  &  ! TL Output                   
                                     APV            )  ! Internal variable input     
     ! Arguments
@@ -1434,10 +1511,14 @@ CONTAINS
     TYPE(Predictor_type),         INTENT(IN)     :: Predictor
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere_TL
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: Max_Order(:)
+    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
     TYPE(Predictor_type),         INTENT(IN OUT) :: Predictor_TL
     TYPE(APVariables_type),       INTENT(IN)     :: APV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_TL'
+    REAL(fp):: A_Level_TL(Atmosphere%n_Layers)
+    INTEGER :: i,j,k,n_Layers
 
     ! Save the angle information
     Predictor_TL%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
@@ -1460,6 +1541,28 @@ CONTAINS
                                    Predictor_TL , &  ! Output                      
                                    APV            )  ! Internal variable input     
 
+
+    n_Layers = Atmosphere%n_Layers
+    DO j = 1, Predictor%n_Absorbers 
+
+      IF( Max_Order(j) < 0 )CYCLE
+                                                       
+      DO k = 1, n_Layers                                                       
+
+        A_Level_TL(k) =                      Predictor_TL%aveA(k,j)  /&   
+        !            ------------------------------------------------------------------    
+                       ( Alpha(1, j) * (Predictor%aveA(k,j) - Alpha(3, j) ) )                                   
+      END DO
+      
+      Predictor_TL%Ap(1:n_layers, 1, j) = A_Level_TL(1:n_layers)                                                    
+      DO i = 2, Max_Order(j)                                               
+        DO k = 1, n_Layers                                                       
+          Predictor_TL%Ap(k, i, j) = Predictor_TL%Ap(k, i-1, j)*APV%A_Level(k,j) &
+                                   + Predictor%Ap(k, i-1, j)*A_Level_TL(k)                     
+        END DO                                                                         
+      END DO                                                                           
+    END DO                                                                             
+
   END SUBROUTINE Compute_Predictors_TL
 
 
@@ -1476,6 +1579,8 @@ CONTAINS
 !                                    Predictor,     &  ! FWD Input                   
 !                                    Predictor_AD,  &  ! AD Input                    
 !                                    GeometryInfo,  &  ! Input                       
+!                                    POrder,        &  ! Input                        
+!                                    Alpha,         &  ! Input                        
 !                                    Atmosphere_AD, &  ! AD Output                   
 !                                    APVariables    )  ! Internal variable input     
 ! INPUT ARGUMENTS:
@@ -1506,6 +1611,18 @@ CONTAINS
 !                          UNITS:      N/A
 !                          TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!      Max_Order:          The maximum order of the polynomial function for each absorber 
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  1D array (n_Absorbers)
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       Alpha:             The alpha coefficients for absorber level calculations 
+!                          UNITS:      depends on the units of the absorber
+!                          TYPE:       INTEGER
+!                          DIMENSION:  2D array (n_Alphas x n_Absorbers)
 !                          ATTRIBUTES: INTENT(IN)
 !
 !       APVariables:       Structure containing internal variables required for
@@ -1550,6 +1667,8 @@ CONTAINS
                                      Predictor,     &  ! FWD Input                   
                                      Predictor_AD,  &  ! AD Input                    
                                      GeometryInfo,  &  ! Input                       
+                                     Max_Order,     &  ! Input
+                                     Alpha,         &  ! Input                       
                                      Atmosphere_AD, &  ! AD Output                   
                                      APV            )  ! Internal variable input     
     ! Arguments
@@ -1557,13 +1676,48 @@ CONTAINS
     TYPE(Predictor_type)        , INTENT(IN)     :: Predictor     
     TYPE(Predictor_type)        , INTENT(IN OUT) :: Predictor_AD  
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: Max_Order(:)
+    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
     TYPE(CRTM_Atmosphere_type)  , INTENT(IN OUT) :: Atmosphere_AD
     TYPE(APVariables_type)      , INTENT(IN)     :: APV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_AD'
+    REAL(fp):: A_Level_AD(Atmosphere%n_Layers)
+    INTEGER :: i, j, k, n_Layers
 
     ! Save the angle information
     Predictor_AD%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
+
+    ! Compute aveA AD
+    A_Level_AD = ZERO
+
+    n_Layers = Atmosphere%n_Layers
+    DO j = 1, Predictor%n_Absorbers                                                    
+
+      IF( Max_Order(j) < 0 )CYCLE
+
+      DO i = Max_Order(j), 2, -1 
+ 
+
+        DO k = n_Layers, 1, -1                                                      
+
+           Predictor_AD%Ap(k, i-1, j) = Predictor_AD%Ap(k, i-1, j) &
+                                      + Predictor_AD%Ap(k, i, j) *APV%A_Level(k,j)
+           A_LEVEL_AD(k) = A_LEVEL_AD(k) + Predictor%Ap(k, i-1, j)*Predictor_AD%Ap(k, i, j)
+           Predictor_AD%Ap(k, i, j) = ZERO
+        END DO
+        A_Level_AD(1:n_Layers) = A_Level_AD(1:n_Layers) + Predictor_AD%Ap(1:n_layers, 1, j)
+        Predictor_AD%Ap(1:n_Layers, 1, j) = ZERO
+        
+        DO k = n_Layers, 1, -1
+          Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &                      
+                                         A_Level_AD(k) / &                            
+          !          --------------------------------------------------------------
+                     ( Alpha(1, j) * (Predictor%aveA(k,j) - Alpha(3, j) ))
+          A_Level_AD(k) = ZERO
+        END DO
+      END DO
+    END DO
 
     ! Calculate the predictor adjoints
     !

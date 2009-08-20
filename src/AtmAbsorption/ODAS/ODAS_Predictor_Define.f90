@@ -61,13 +61,16 @@ MODULE ODAS_Predictor_Define
     INTEGER :: n_Layers    =0  ! K
     INTEGER :: n_Predictors=0  ! I
     INTEGER :: n_Absorbers =0  ! J
+    INTEGER :: n_Orders    =0  ! IO
     ! Scalars
     REAL(fp) :: Secant_Sensor_Zenith = ZERO
     ! Arrays
-    REAL(fp), DIMENSION(:,:), POINTER :: A   =>NULL() ! 0:K x J, Integrated absorber
-    REAL(fp), DIMENSION(:,:), POINTER :: dA  =>NULL() ! K x J, Integrated absorber level difference
-    REAL(fp), DIMENSION(:,:), POINTER :: aveA=>NULL() ! K x J, Integrated absorber layer average
-    REAL(fp), DIMENSION(:,:), POINTER :: X   =>NULL() ! I x K, Predictors
+    REAL(fp), DIMENSION(:,:),   POINTER :: A   =>NULL() ! 0:K x J, Integrated absorber
+    REAL(fp), DIMENSION(:,:),   POINTER :: dA  =>NULL() ! K x J, Integrated absorber level difference
+    REAL(fp), DIMENSION(:,:),   POINTER :: aveA=>NULL() ! K x J, Integrated absorber layer average
+    REAL(fp), DIMENSION(:,:,:), POINTER :: Ap  =>NULL() ! K x IO x J, Power of absorber level
+    REAL(fp), DIMENSION(:,:),   POINTER :: X   =>NULL() ! K x I, Predictors
+    
   END TYPE Predictor_type
 
 
@@ -202,6 +205,7 @@ CONTAINS
       IF ( ASSOCIATED(Predictor%A   ) .AND. &
            ASSOCIATED(Predictor%dA  ) .AND. &
            ASSOCIATED(Predictor%aveA) .AND. &
+           ASSOCIATED(Predictor%AP)   .AND. &
            ASSOCIATED(Predictor%X   ) ) THEN
         Association_Status = .TRUE.
       END IF
@@ -209,6 +213,7 @@ CONTAINS
       IF ( ASSOCIATED(Predictor%A   ) .OR. &
            ASSOCIATED(Predictor%dA  ) .OR. &
            ASSOCIATED(Predictor%aveA) .OR. &
+           ASSOCIATED(Predictor%Ap)   .OR. &
            ASSOCIATED(Predictor%X   ) ) THEN
         Association_Status = .TRUE.
       END IF
@@ -318,6 +323,7 @@ CONTAINS
     DEALLOCATE( Predictor%A   , &
                 Predictor%dA  , &
                 Predictor%aveA, &
+                Predictor%Ap  , &
                 Predictor%X   , &
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
@@ -336,6 +342,7 @@ CONTAINS
     Predictor%n_Layers    =0
     Predictor%n_Predictors=0
     Predictor%n_Absorbers =0
+    Predictor%n_Orders    =0
     
     ! Decrement and test allocation counter
     Predictor%n_Allocates = Predictor%n_Allocates - 1
@@ -366,7 +373,8 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Allocate_Predictor( n_Layers               , &  ! Input
 !                                          n_Predictors           , &  ! Input                
-!                                          n_Absorbers            , &  ! Input                
+!                                          n_Absorbers            , &  ! Input 
+!                                          n_Orders               , &  ! Input               
 !                                          Predictor              , &  ! Output               
 !                                          RCS_Id     =RCS_Id     , &  ! Revision control     
 !                                          Message_Log=Message_Log  )  ! Error messaging      
@@ -393,6 +401,12 @@ CONTAINS
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN)
 !
+!         n_orders:          Number of the polynormial function orders for all absorbers
+!                            Must be > 0
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!                            ATTRIBUTES: INTENT(IN)
 ! OPTIONAL INPUT ARGUMENTS:
 !       Message_Log:         Character string specifying a filename in which any
 !                            messages will be logged. If not specified, or if an
@@ -442,7 +456,8 @@ CONTAINS
 
   FUNCTION Allocate_Predictor( n_Layers     , &  ! Input            
                                n_Predictors , &  ! Input                 
-                               n_Absorbers  , &  ! Input                 
+                               n_Absorbers  , &  ! Input 
+                               n_Orders     , &  ! Input                
                                Predictor    , &  ! Output                
                                RCS_Id       , &  ! Revision control      
                                Message_Log  ) &  ! Error messaging       
@@ -451,6 +466,7 @@ CONTAINS
     INTEGER               , INTENT(IN)     :: n_Layers
     INTEGER               , INTENT(IN)     :: n_Predictors
     INTEGER               , INTENT(IN)     :: n_Absorbers
+    INTEGER               , INTENT(IN)     :: n_Orders
     TYPE(Predictor_type)  , INTENT(IN OUT) :: Predictor
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -469,7 +485,8 @@ CONTAINS
     ! Check dimensions
     IF ( n_Layers     < 1 .OR. &
          n_Predictors < 1 .OR. &
-         n_Absorbers  < 1 ) THEN
+         n_Absorbers  < 1 .OR. &
+         n_Orders     < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( &
              ROUTINE_NAME, &
@@ -502,7 +519,8 @@ CONTAINS
       Predictor%A(0:n_Layers,1:n_Absorbers), &
       Predictor%dA(1:n_Layers,1:n_Absorbers), &
       Predictor%aveA(1:n_Layers,1:n_Absorbers), &
-      Predictor%X(1:n_Predictors,1:n_Layers), &
+      Predictor%Ap(1:n_Layers,1:n_Orders,1:n_Absorbers), &
+      Predictor%X(1:n_Layers,1:n_Predictors), &
       STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       WRITE( Message, '( "Error allocating Predictor data arrays. STAT = ", i5 )' ) &
@@ -520,12 +538,12 @@ CONTAINS
     Predictor%n_Layers     = n_Layers
     Predictor%n_Predictors = n_Predictors
     Predictor%n_Absorbers  = n_Absorbers
+    Predictor%n_Orders     = n_Orders
 
-    ! Initialise the arrays
+    ! Initialise some of the arrays
     Predictor%A    = ZERO
     Predictor%dA   = ZERO
     Predictor%aveA = ZERO
-    Predictor%X    = ZERO
 
     ! Increment and test the allocation counter
     Predictor%n_Allocates = Predictor%n_Allocates + 1
@@ -640,6 +658,7 @@ CONTAINS
     Error_Status = Allocate_Predictor( Predictor_in%n_Layers    , &
                                        Predictor_in%n_Predictors, &
                                        Predictor_in%n_Absorbers , &
+                                       Predictor_in%n_Orders    , &
                                        Predictor_out            , &
                                        Message_Log=Message_Log    )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -660,6 +679,7 @@ CONTAINS
     Predictor_out%dA   = Predictor_in%dA
     Predictor_out%aveA = Predictor_in%aveA
     Predictor_out%X    = Predictor_in%X
+    Predictor_out%Ap   = Predictor_in%Ap
 
   END FUNCTION Assign_Predictor
 
@@ -704,6 +724,7 @@ CONTAINS
     Predictor%A    = ZERO
     Predictor%dA   = ZERO
     Predictor%aveA = ZERO
+    Predictor%Ap    = ZERO
     Predictor%X    = ZERO
   END SUBROUTINE Zero_Predictor
   
