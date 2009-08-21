@@ -63,23 +63,24 @@ PRO OSRF::Apply_to_LBL, $
   IF ( NOT fInfo.EXISTS ) THEN $
     MESSAGE, 'Generic TAPE5 filename '+STRTRIM(gt5_File,2)+' not found', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-
+  
+  f0=self.f0 
+  T=0.0d0          
+  ; Compute the Planck temperature
+  IF ( self->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
   
   ; Loop over bands
   FOR i = 0, self.n_Bands-1 DO BEGIN
-
+    
     CASE 1 OF
 
       ; MW sensor - set up for MonoRTM
       (self.Sensor_Type EQ MICROWAVE_SENSOR): BEGIN
       
-        ; Create MonoRTM input file for current band
-        
-        ; Spawn run of MonoRTM for current band
-        
-        ; Read MonoRTM output into OSRF self.Radiance
+      ; Calculate monortm radiances for osrf
+      *(*Self.Radiance)[i]=monortm_radiances(*(*Self.Frequency)[i])
       
-      END
+    END
       
       ; IR/Vis sensor - set up for LBLRTM
       (self.Sensor_Type EQ INFRARED_SENSOR OR $
@@ -100,14 +101,14 @@ PRO OSRF::Apply_to_LBL, $
     ENDCASE
   ENDFOR
 
-
   ; Convolve LBL radiances with OSRF
   self.R = self->Convolve(*self.Radiance)
- 
-  ; Convert convolved radiances to temperature
-  result = Compute_Planck_Temperature( self.f0, self.R, T )
-  self.T = T
- 
+  
+  ; Compute the planck temperature
+  result = Planck_Temperature(f0, self.R, T)
+  
+  ; Assign T to the osrf object
+  self.T=T
  
   ; Done
   CATCH, /CANCEL
