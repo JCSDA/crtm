@@ -40,8 +40,6 @@ MODULE ODAS_Define
   PUBLIC :: Destroy_ODAS
   PUBLIC :: Allocate_ODAS
   PUBLIC :: Assign_ODAS
-  PUBLIC :: Concatenate_Channel_ODAS
-  PUBLIC :: Concatenate_Absorber_ODAS
   PUBLIC :: Equal_ODAS
   PUBLIC :: CheckRelease_ODAS
   PUBLIC :: CheckAlgorithm_ODAS
@@ -114,10 +112,11 @@ MODULE ODAS_Define
     ! Algorithm identifer
     INTEGER(Long) :: Algorithm = ODAS_ALGORITHM
     ! Dimensions
-    INTEGER(Long) :: n_Orders     = 0    ! Iorder
     INTEGER(Long) :: n_Predictors = 0    ! Iuse
     INTEGER(Long) :: n_Absorbers  = 0    ! J
     INTEGER(Long) :: n_Channels   = 0    ! L
+    INTEGER(Long) :: n_Alphas     = 0    ! Ia
+    INTEGER(Long) :: n_Coeffs     = 0    ! Co  dimension of the C array
     ! Scalar components
     CHARACTER(SL) :: Sensor_Id        = ' '
     INTEGER(Long) :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
@@ -127,24 +126,39 @@ MODULE ODAS_Define
     INTEGER(Long), POINTER :: Sensor_Channel(:)      => NULL() ! L
     ! The absorber ID and absorber space values
     INTEGER(Long), POINTER :: Absorber_ID(:)         => NULL() ! J
-    REAL(Double),  POINTER :: Alpha(:)               => NULL() ! J
-    REAL(Double),  POINTER :: Alpha_C1(:)            => NULL() ! J
-    REAL(Double),  POINTER :: Alpha_C2(:)            => NULL() ! J
-    ! The polynomial order index array.
-    ! This array identifies the order of the polynomial used to
-    ! reconstruct the regression coefficients. For each predictor
-    ! (Iuse), each absorber (J) and each channel (L) a different
-    ! order of polynomial can be specified.
-    INTEGER(Long), POINTER :: Order_Index(:,:,:)     => NULL() ! 0:Iuse x J x L
-    ! The predictor index array.
-    ! This array identifies which subset (Iuse) of the total number
-    ! number of predictors are used to compute the absorption coefficient
-    ! for absorber (J) and each channel (L). If Predictor_Index(0,:,:) is
-    ! less than 0, this is an indication that there is NO absorption for
-    ! the selected absorber in the current channel.
-    INTEGER(Long), POINTER :: Predictor_Index(:,:,:) => NULL() ! 0:Iuse x J x L
-    ! The array of coefficients
-    REAL(Double),  POINTER :: C(:,:,:,:)             => NULL() ! 0:Iorder x 0:Iuse x J x L
+    ! maximum order of the polynomial function for each absorber, independent channel
+    INTEGER(Long), POINTER :: Max_Order(:)           => NULL() ! J  
+
+    ! Coefficients for computing absorber level
+    ! Alpha(1, j) - the original alpha
+    ! Alpha(2, j) - the original alpha_C1
+    ! Alpha(3, j) - the original alpha_C2
+    REAL(Double),  POINTER :: Alpha(:,:)         => NULL()  ! Ia x J
+    
+    
+    !-----------------------------------------------------------------------------------
+    ! Order - used maximum order of the polynomial function, given absorber and channel
+    ! Pre_Index - Predict index. Pre_Index(0, j, l) is the numberof used predictors
+    !                                                  for absorber j and channel l
+    ! Pos_Index - starting position of a coefficient subset
+    ! C - tau coefficient
+    !
+    ! The C array is one-dimesional and its internal structure is given by the Order,
+    ! Pre_index and the Pos_index arrays. Let j and l be the array indexes along
+    ! the absorber and channel dimensions:
+    !    ps = Pos_Index(j, l) and n = Pre_Index(0, j l)*Order(j,l) are the starting  
+    ! position and size of the coefficient sub-set in array C at absorber j and         
+    ! channel l. The coefficient sub-set is equally divided into np+1 segments,         
+    ! where np = Pre_Index(0, j, l) is the number of predictors. The np+1  segments     
+    ! are used to compute the set of np+1 B coefficiets. The B coefficents are then     
+    ! used to compute the absorption coefficients.                                      
+    !------------------------------------------------------------------------------------
+    INTEGER(LONG), POINTER :: Order(:,:)         => NULL()  ! J x L
+    INTEGER(Long), POINTER :: Pre_Index(:,:,:)   => NULL()  ! 0:Iuse x J x L
+    INTEGER(Long), POINTER :: Pos_Index(:,:)     => NULL()  ! J x L
+    REAL(Double),  POINTER :: C(:)               => NULL()  ! Co   ! tau coefficient array
+
+
   END TYPE ODAS_type
 
 
@@ -232,23 +246,23 @@ CONTAINS
     IF ( ALL_Test ) THEN
       IF ( ASSOCIATED( ODAS%Sensor_Channel    ) .AND. &
            ASSOCIATED( ODAS%Absorber_ID       ) .AND. &
+           ASSOCIATED( ODAS%Max_Order         ) .AND. &
            ASSOCIATED( ODAS%Alpha             ) .AND. &
-           ASSOCIATED( ODAS%Alpha_C1          ) .AND. &
-           ASSOCIATED( ODAS%Alpha_C2          ) .AND. &
-           ASSOCIATED( ODAS%Order_Index       ) .AND. &
-           ASSOCIATED( ODAS%Predictor_Index   ) .AND. &
+           ASSOCIATED( ODAS%Order             ) .AND. &
+           ASSOCIATED( ODAS%Pre_Index         ) .AND. &
+           ASSOCIATED( ODAS%Pos_Index         ) .AND. &
            ASSOCIATED( ODAS%C                 )       ) THEN
         Association_Status = .TRUE.
       END IF
     ELSE
       IF ( ASSOCIATED( ODAS%Sensor_Channel    ) .OR. &
            ASSOCIATED( ODAS%Absorber_ID       ) .OR. &
+           ASSOCIATED( ODAS%Max_Order         ) .OR. &
            ASSOCIATED( ODAS%Alpha             ) .OR. &
-           ASSOCIATED( ODAS%Alpha_C1          ) .OR. &
-           ASSOCIATED( ODAS%Alpha_C2          ) .OR. &
-           ASSOCIATED( ODAS%Order_Index       ) .OR. &
-           ASSOCIATED( ODAS%Predictor_Index   ) .OR. &
-           ASSOCIATED( ODAS%C                 )      ) THEN
+           ASSOCIATED( ODAS%Order             ) .OR. &
+           ASSOCIATED( ODAS%Pre_Index         ) .OR. &
+           ASSOCIATED( ODAS%Pos_Index         ) .OR. &
+           ASSOCIATED( ODAS%C                 )       ) THEN
         Association_Status = .TRUE.
       END IF
     END IF
@@ -341,10 +355,11 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Reinitialise the dimensions
-    ODAS%n_Orders     = 0
     ODAS%n_Predictors = 0
     ODAS%n_Absorbers  = 0
     ODAS%n_Channels   = 0
+    ODAS%n_Alphas     = 0
+    ODAS%n_Coeffs     = 0
 
     ! Default is to clear scalar members...
     Clear = .TRUE.
@@ -362,11 +377,11 @@ CONTAINS
     ! ----------------------------------------
     DEALLOCATE( ODAS%Sensor_Channel  , &
                 ODAS%Absorber_ID     , &
+                ODAS%Max_Order       , &
                 ODAS%Alpha           , &
-                ODAS%Alpha_C1        , &
-                ODAS%Alpha_C2        , &
-                ODAS%Order_Index     , &
-                ODAS%Predictor_Index , &
+                ODAS%Order           , &
+                ODAS%Pre_Index       , &
+                ODAS%Pos_Index       , &
                 ODAS%C               , &
                 STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
@@ -405,22 +420,16 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_ODAS( n_Orders               , &  ! Input
-!                                     n_Predictors           , &  ! Input
+!       Error_Status = Allocate_ODAS( n_Predictors           , &  ! Input
 !                                     n_Absorbers            , &  ! Input
 !                                     n_Channels             , &  ! Input
+!                                     n_Alphas               , &  ! Input
+!                                     n_Coeffs               , &  ! Input
 !                                     ODAS                   , &  ! Output
 !                                     RCS_Id     =RCS_Id     , &  ! Revision control
 !                                     Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       n_Orders:     Maximum polynomial order used to reconstruct
-!                     the prediction coefficients.
-!                     Must be > 0.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
 !
 !       n_Predictors: Maximum number of predictors dimension.
 !                     Must be > 0.
@@ -437,6 +446,20 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN)
 !
 !       n_Channels:   Number of channels dimension.
+!                     Must be > 0.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       n_Alphas:    Number of Alpha dimension.
+!                     Must be > 0.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       n_Coeffs:     Number of coefficient dimension.
 !                     Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
@@ -491,19 +514,21 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Allocate_ODAS( n_Orders    , &  ! Input
-                          n_Predictors, &  ! Input
+  FUNCTION Allocate_ODAS( n_Predictors, &  ! Input
                           n_Absorbers , &  ! Input
                           n_Channels  , &  ! Input
+                          n_Alphas    , &  ! Input
+                          n_Coeffs    , &  ! Input
                           ODAS        , &  ! Output
                           RCS_Id      , &  ! Revision control
                           Message_Log ) &  ! Error messaging
                         RESULT( Error_Status )
     ! Arguments
-    INTEGER               , INTENT(IN)     :: n_Orders
     INTEGER               , INTENT(IN)     :: n_Predictors
     INTEGER               , INTENT(IN)     :: n_Absorbers
     INTEGER               , INTENT(IN)     :: n_Channels
+    INTEGER               , INTENT(IN)     :: n_Alphas
+    INTEGER               , INTENT(IN)     :: n_Coeffs
     TYPE(ODAS_type)       , INTENT(IN OUT) :: ODAS
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
@@ -521,10 +546,11 @@ CONTAINS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check dimension input
-    IF ( n_Orders     < 1 .OR. &
-         n_Predictors < 1 .OR. &
+    IF ( n_Predictors < 1 .OR. &
          n_Absorbers  < 1 .OR. &
-         n_Channels   < 1      ) THEN
+         n_Channels   < 1 .OR. &  
+         n_Alphas     < 1 .OR. &
+         n_Coeffs     < 1    ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input ODAS dimensions must all be > 0.', &
@@ -552,12 +578,12 @@ CONTAINS
     ! ------------------------
     ALLOCATE( ODAS%Sensor_Channel( n_Channels ), &
               ODAS%Absorber_ID( n_Absorbers ), &
-              ODAS%Alpha( n_Absorbers ), &
-              ODAS%Alpha_c1( n_Absorbers ), &
-              ODAS%Alpha_c2( n_Absorbers ), &
-              ODAS%Order_Index( 0:n_Predictors, n_Absorbers, n_Channels ), &
-              ODAS%Predictor_Index( 0:n_Predictors, n_Absorbers, n_Channels ), &
-              ODAS%C( 0:n_Orders, 0:n_Predictors, n_Absorbers, n_Channels ), &
+              ODAS%Max_Order( n_Absorbers ), &
+              ODAS%Alpha( n_Alphas, n_Absorbers ), &
+              ODAS%Order( n_Absorbers, n_Channels ), &
+              ODAS%Pre_Index( 0:n_Predictors, n_Absorbers, n_Channels ), &
+              ODAS%Pos_Index( n_Absorbers, n_Channels ), &
+              ODAS%C( n_Coeffs ), &
               STAT=Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -571,18 +597,19 @@ CONTAINS
     END IF
 
     ! Assign the dimensions and initialise arrays
-    ODAS%n_Orders     = n_Orders
     ODAS%n_Predictors = n_Predictors
     ODAS%n_Absorbers  = n_Absorbers
     ODAS%n_Channels   = n_Channels
+    ODAS%n_Alphas     = n_Alphas
+    ODAS%n_Coeffs     = n_Coeffs
 
     ODAS%Sensor_Channel    = 0
     ODAS%Absorber_ID       = IP_INVALID
+    ODAS%Max_Order         = IP_INVALID
     ODAS%Alpha             = FP_INVALID
-    ODAS%Alpha_c1          = FP_INVALID
-    ODAS%Alpha_c2          = FP_INVALID
-    ODAS%Order_Index       = IP_INVALID
-    ODAS%Predictor_Index   = IP_INVALID
+    ODAS%Order             = IP_INVALID
+    ODAS%Pre_Index         = IP_INVALID
+    ODAS%Pos_Index         = IP_INVALID
     ODAS%C                 = FP_INVALID
 
 
@@ -601,7 +628,6 @@ CONTAINS
     END IF
 
   END FUNCTION Allocate_ODAS
-
 
 !------------------------------------------------------------------------------
 !
@@ -698,10 +724,11 @@ CONTAINS
 
     ! Allocate the structure
     ! ----------------------
-    Error_Status = Allocate_ODAS( ODAS_in%n_Orders    , &
-                                  ODAS_in%n_Predictors, &
+    Error_Status = Allocate_ODAS( ODAS_in%n_Predictors, &
                                   ODAS_in%n_Absorbers , &
                                   ODAS_in%n_Channels  , &
+                                  ODAS_in%n_Alphas    , &
+                                  ODAS_in%n_Coeffs    , &
                                   ODAS_out, &
                                   Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -724,546 +751,14 @@ CONTAINS
     ODAS_out%WMO_Sensor_ID     = ODAS_in%WMO_Sensor_ID
     ODAS_out%Sensor_Channel    = ODAS_in%Sensor_Channel
     ODAS_out%Absorber_ID       = ODAS_in%Absorber_ID
+    ODAS_out%Max_Order         = ODAS_in%Max_Order
     ODAS_out%Alpha             = ODAS_in%Alpha
-    ODAS_out%Alpha_C1          = ODAS_in%Alpha_C1
-    ODAS_out%Alpha_C2          = ODAS_in%Alpha_C2
-    ODAS_out%Order_Index       = ODAS_in%Order_Index
-    ODAS_out%Predictor_Index   = ODAS_in%Predictor_Index
+    ODAS_out%Order             = ODAS_in%Order
+    ODAS_out%Pre_Index         = ODAS_in%Pre_Index
+    ODAS_out%Pos_Index         = ODAS_in%Pos_Index
     ODAS_out%C                 = ODAS_in%C
 
   END FUNCTION Assign_ODAS
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Concatenate_Channel_ODAS
-!
-! PURPOSE:
-!       Function to concatenate two valid ODAS structures along
-!       the channel dimension.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Concatenate_Channel_ODAS( ODAS1                  , &  ! Input/Output
-!                                                ODAS2                  , &  ! Input
-!                                                RCS_Id     = RCS_Id    , &  ! Revision control
-!                                                Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       ODAS1:         First ODAS structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       ODAS_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-!       ODAS2:         Second ODAS structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       ODAS_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       ODAS1:         The concatenated ODAS structure. The order of
-!                      concatenation is ODAS1,ODAS2 along the 
-!                      channel dimension.
-!                      UNITS:      N/A
-!                      TYPE:       ODAS_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure concatenation was successful
-!                         == FAILURE an error occurred
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The input ODAS1 argument contains the concatenated structure
-!       data (in character-speak: ODAS1//ODAS2) on output. It is
-!       reallocated within this routine so if an error occurs during the
-!       reallocation, the contents of the input ODAS1 structure will
-!       be lost.
-!
-!       Because of the structure reallocation there is a potential that 
-!       available memory will become fragmented. Use this routine in a
-!       manner that will minimise this effect (e.g. destroying structures or
-!       allocatable arrays in the opposite order in which they were created). 
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Concatenate_Channel_ODAS( ODAS1      , &  ! Input/Output
-                                     ODAS2      , &  ! Input
-                                     RCS_Id     , &  ! Revision control
-                                     Message_Log) &  ! Error messaging
-                                   RESULT( Error_Status )
-    ! Arguments
-    TYPE(ODAS_type)       , INTENT(IN OUT)  :: ODAS1
-    TYPE(ODAS_type)       , INTENT(IN)      :: ODAS2
-    CHARACTER(*), OPTIONAL, INTENT(OUT)     :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)      :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Concatenate_Channel_ODAS'
-    ! Local variables
-    INTEGER :: Destroy_Status
-    INTEGER :: n_Channels, l1, l2
-    TYPE(ODAS_type) :: ODAS_Tmp
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check structures
-    IF ( .NOT. Associated_ODAS( ODAS1 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT ODAS1 pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( .NOT. Associated_ODAS( ODAS2 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT ODAS2 pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Compare structure release/version
-    IF ( ODAS1%Release /= ODAS2%Release ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input ODAS Release values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( ODAS1%Version /= ODAS2%Version ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input ODAS Version values are different.', &
-                            WARNING, &
-                            Message_Log=Message_Log )
-
-    END IF
-
-    ! Check non-channel dimensions
-    IF ( ODAS1%n_Orders     /= ODAS2%n_Orders     .OR. &
-         ODAS1%n_Predictors /= ODAS2%n_Predictors .OR. &
-         ODAS1%n_Absorbers  /= ODAS2%n_Absorbers       ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Non-channel ODAS dimensions are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check the sensor ID values
-    IF ( ODAS1%Sensor_ID        /= ODAS2%Sensor_ID        .OR. &
-         ODAS1%WMO_Satellite_ID /= ODAS2%WMO_Satellite_ID .OR. &
-         ODAS1%WMO_Sensor_ID    /= ODAS2%WMO_Sensor_ID         ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'ODAS sensor ID values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check the sensor type value
-    IF ( ODAS1%Sensor_Type /= ODAS2%Sensor_Type  ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'ODAS sensor type values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
- 
-    ! Reallocate the first structure
-    ! ------------------------------
-    ! Copy it...
-    Error_Status = Assign_ODAS( ODAS1, ODAS_Tmp, &
-                                Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error copying ODAS1 structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! ... now destroy it ...
-    Error_Status = Destroy_ODAS( ODAS1, &
-                                 Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying ODAS1 structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! ... and now re-allocate it for all channels
-    n_Channels   = ODAS_Tmp%n_Channels + ODAS2%n_Channels
-    Error_Status = Allocate_ODAS( ODAS_Tmp%n_Orders, &
-                                  ODAS_Tmp%n_Predictors, &
-                                  ODAS_Tmp%n_Absorbers, &
-                                  n_Channels, &
-                                  ODAS1, &
-                                  Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reallocating ODAS1 structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Assign the non-channel array data
-    ! ---------------------------------
-    ODAS1%Version           = MAX(ODAS_Tmp%Version, ODAS2%Version)
-    ODAS1%Sensor_ID         = ODAS_Tmp%Sensor_ID
-    ODAS1%WMO_Satellite_ID  = ODAS_Tmp%WMO_Satellite_ID
-    ODAS1%WMO_Sensor_ID     = ODAS_Tmp%WMO_Sensor_ID
-    ODAS1%Sensor_Type       = ODAS_Tmp%Sensor_Type
-    ODAS1%Absorber_ID       = ODAS_Tmp%Absorber_ID
-    ODAS1%Alpha             = ODAS_Tmp%Alpha
-    ODAS1%Alpha_C1          = ODAS_Tmp%Alpha_C1
-    ODAS1%Alpha_C2          = ODAS_Tmp%Alpha_C2
-
-
-    ! Concatenate the channel array data
-    ! ----------------------------------
-    ! The first part...
-    l1 = 1
-    l2 = ODAS_Tmp%n_Channels
-    ODAS1%Sensor_Channel(l1:l2)      = ODAS_Tmp%Sensor_Channel
-    ODAS1%Order_Index(:,:,l1:l2)     = ODAS_Tmp%Order_Index
-    ODAS1%Predictor_Index(:,:,l1:l2) = ODAS_Tmp%Predictor_Index
-    ODAS1%C(:,:,:,l1:l2)             = ODAS_Tmp%C
-    ! ...and the second part
-    l1 = l2 + 1
-    l2 = n_Channels
-    ODAS1%Sensor_Channel(l1:l2)      = ODAS2%Sensor_Channel
-    ODAS1%Order_Index(:,:,l1:l2)     = ODAS2%Order_Index
-    ODAS1%Predictor_Index(:,:,l1:l2) = ODAS2%Predictor_Index
-    ODAS1%C(:,:,:,l1:l2)             = ODAS2%C
-
-
-    ! Destroy the temporary structure
-    ! -------------------------------
-    Destroy_Status = Destroy_ODAS( ODAS_Tmp, &
-                                   Message_Log=Message_Log )
-    IF ( Destroy_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying ODAS_Tmp structure.', &
-                            WARNING, &
-                            Message_Log=Message_Log )
-    END IF
-
-  END FUNCTION Concatenate_Channel_ODAS
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Concatenate_Absorber_ODAS
-!
-! PURPOSE:
-!       Function to concatenate two valid ODAS structures along
-!       the absorber dimension.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Concatenate_Absorber_ODAS( ODAS1                  , &  ! Input/Output
-!                                                 ODAS2                  , &  ! Input
-!                                                 RCS_Id     = RCS_Id    , &  ! Revision control
-!                                                 Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       ODAS1:         First ODAS structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       ODAS_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-!       ODAS2:         Second ODAS structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       ODAS_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       ODAS1:         The concatenated ODAS structure. The order of
-!                      concatenation is ODAS1,ODAS2 along the 
-!                      absorber dimension.
-!                      UNITS:      N/A
-!                      TYPE:       ODAS_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure concatenation was successful
-!                         == FAILURE an error occurred.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The input ODAS1 argument contains the concatenated structure
-!       data (in character-speak: ODAS1//ODAS2) on output. It is
-!       reallocated within this routine so if an error occurs during the
-!       reallocation, the contents of the input ODAS1 structure will
-!       be lost.
-!
-!       Because of the structure reallocation there is a potential that 
-!       available memory will become fragmented. Use this routine in a
-!       manner that will minimise this effect (e.g. destroying structures or
-!       allocatable arrays in the opposite order in which they were created). 
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Concatenate_Absorber_ODAS( ODAS1      , &  ! Input/Output
-                                      ODAS2      , &  ! Input
-                                      RCS_Id     , &  ! Revision control
-                                      Message_Log) &  ! Error messaging
-                                    RESULT( Error_Status )
-    ! Arguments
-    TYPE(ODAS_type)       , INTENT(IN OUT) :: ODAS1
-    TYPE(ODAS_type)       , INTENT(IN)     :: ODAS2
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Concatenate_Absorber_ODAS'
-    ! Local variables
-    INTEGER :: Destroy_Status
-    INTEGER :: n_Absorbers, j1, j2
-    TYPE(ODAS_type) :: ODAS_Tmp
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check structures
-    IF ( .NOT. Associated_ODAS( ODAS1 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT ODAS1 pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( .NOT. Associated_ODAS( ODAS2 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT ODAS2 pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Compare structure release/version
-    IF ( ODAS1%Release /= ODAS2%Release ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input ODAS Release values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( ODAS1%Version /= ODAS2%Version ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input ODAS Version values are different.', &
-                            WARNING, &
-                            Message_Log=Message_Log )
-    END IF
-
-    ! Check the non-absorber dimensions
-    IF ( ODAS1%n_Orders     /= ODAS2%n_Orders     .OR. &
-         ODAS1%n_Predictors /= ODAS2%n_Predictors .OR. &
-         ODAS1%n_Channels   /= ODAS2%n_Channels        ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Non-absorber ODAS dimensions are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check the sensor ID values
-    IF ( ODAS1%Sensor_ID        /= ODAS2%Sensor_ID        .OR. &
-         ODAS1%WMO_Satellite_ID /= ODAS2%WMO_Satellite_ID .OR. &
-         ODAS1%WMO_Sensor_ID    /= ODAS2%WMO_Sensor_ID         ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'ODAS sensor ID values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check the sensor type value
-    IF ( ODAS1%Sensor_Type /= ODAS2%Sensor_Type  ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'ODAS sensor type values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check the channels
-    IF ( ANY( ( ODAS1%Sensor_Channel - ODAS2%Sensor_Channel ) /= 0 ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'ODAS channel values are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Reallocate the first structure
-    ! ------------------------------
-    ! Copy it...
-    Error_Status = Assign_ODAS( ODAS1, ODAS_Tmp, &
-                                Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error copying ODAS1 structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-   
-    ! ... now destroy it ...
-    Error_Status = Destroy_ODAS( ODAS1, &
-                                 Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying ODAS1 structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! ... and now re-allocate it for all absorbers
-    n_Absorbers = ODAS_Tmp%n_Absorbers + ODAS2%n_Absorbers
-    Error_Status = Allocate_ODAS( ODAS_Tmp%n_Orders, &
-                                  ODAS_Tmp%n_Predictors, &
-                                  n_Absorbers, &
-                                  ODAS_Tmp%n_Channels, &
-                                  ODAS1, &
-                                  Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reallocating ODAS1 structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Assign the non-absorber array data
-    ! ----------------------------------
-    ODAS1%Version           = MAX( ODAS_Tmp%Version, ODAS2%Version )
-    ODAS1%Sensor_ID         = ODAS_Tmp%Sensor_ID
-    ODAS1%WMO_Satellite_ID  = ODAS_Tmp%WMO_Satellite_ID
-    ODAS1%WMO_Sensor_ID     = ODAS_Tmp%WMO_Sensor_ID
-    ODAS1%Sensor_Type       = ODAS_Tmp%Sensor_Type
-    ODAS1%Sensor_Channel    = ODAS_Tmp%Sensor_Channel
-
-
-    ! Concatenate absorber array data
-    ! -------------------------------
-    ! The first part...
-    j1 = 1
-    j2 = ODAS_Tmp%n_Absorbers
-    ODAS1%Absorber_ID(j1:j2)         = ODAS_Tmp%Absorber_ID
-    ODAS1%Alpha(j1:j2)               = ODAS_Tmp%Alpha
-    ODAS1%Alpha_C1(j1:j2)            = ODAS_Tmp%Alpha_C1
-    ODAS1%Alpha_C2(j1:j2)            = ODAS_Tmp%Alpha_C2
-    ODAS1%Order_Index(:,j1:j2,:)     = ODAS_Tmp%Order_Index
-    ODAS1%Predictor_Index(:,j1:j2,:) = ODAS_Tmp%Predictor_Index
-    ODAS1%C(:,:,j1:j2,:)             = ODAS_Tmp%C
-
-    ! ...the second part
-    j1 = j2 + 1
-    j2 = n_Absorbers
-    ODAS1%Absorber_ID(j1:j2)         = ODAS2%Absorber_ID
-    ODAS1%Alpha(j1:j2)               = ODAS2%Alpha
-    ODAS1%Alpha_C1(j1:j2)            = ODAS2%Alpha_C1
-    ODAS1%Alpha_C2(j1:j2)            = ODAS2%Alpha_C2
-    ODAS1%Order_Index(:,j1:j2,:)     = ODAS2%Order_Index
-    ODAS1%Predictor_Index(:,j1:j2,:) = ODAS2%Predictor_Index
-    ODAS1%C(:,:,j1:j2,:)             = ODAS2%C
-
-
-    ! Destroy the temporary structure
-    ! -------------------------------
-    Destroy_Status = Destroy_ODAS( ODAS_Tmp, &
-                                 Message_Log=Message_Log )
-    IF ( Destroy_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying ODAS_Tmp structure.', &
-                            WARNING, &
-                            Message_Log=Message_Log )
-    END IF
-
-  END FUNCTION Concatenate_Absorber_ODAS
-
 
 !------------------------------------------------------------------------------
 !
@@ -1387,7 +882,7 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: ULP
     LOGICAL :: Check_Once
-    INTEGER :: io, ip, j, l
+    INTEGER(LONG) :: i, j, l, ip
 
     ! Set up
     ! ------
@@ -1448,10 +943,11 @@ CONTAINS
 
     ! Check dimensions
     ! ----------------
-    IF ( ODAS_LHS%n_Orders     /= ODAS_RHS%n_Orders     .OR. &
-         ODAS_LHS%n_Predictors /= ODAS_RHS%n_Predictors .OR. &
+    IF ( ODAS_LHS%n_Predictors /= ODAS_RHS%n_Predictors .OR. &
          ODAS_LHS%n_Absorbers  /= ODAS_RHS%n_Absorbers  .OR. &
-         ODAS_LHS%n_Channels   /= ODAS_RHS%n_Channels        ) THEN
+         ODAS_LHS%n_Channels   /= ODAS_RHS%n_Channels   .OR. &
+         ODAS_LHS%n_Alphas     /= ODAS_RHS%n_Alphas     .OR. &
+         ODAS_LHS%n_Coeffs     /= ODAS_RHS%n_Coeffs    ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Structure dimensions are different', &
@@ -1553,73 +1049,74 @@ CONTAINS
       END IF
     END DO
 
+    ! The Max Order array
+    DO j = 1, ODAS_RHS%n_Absorbers                                             
+      IF ( ODAS_LHS%Max_Order(j) /= ODAS_RHS%Max_Order(j) ) THEN                   
+        Error_Status = FAILURE                                                  
+        WRITE( Message,'("Order values are different, ",i0,&                    
+                        &" vs. ",i0,", for index (",i0,")")' ) &    
+                        ODAS_LHS%Max_Order(j), &                         
+                        ODAS_RHS%Max_Order(j), &                         
+                        j                                                  
+        CALL Display_Message( ROUTINE_NAME, &                                   
+                              TRIM(Message), &                                  
+                              Error_Status, &                                   
+                              Message_Log=Message_Log )                         
+        IF ( Check_Once ) RETURN                                                
+      END IF                                                                    
+    END DO                                                                     
+
     ! The Alpha value
     DO j = 1, ODAS_RHS%n_Absorbers
-      IF ( .NOT. ( Compare_Float( ODAS_LHS%Alpha(j), &
-                                  ODAS_RHS%Alpha(j), &
-                                  ULP = ULP                  ) ) ) THEN
-        Error_Status = FAILURE
-        WRITE( Message,'("Alpha values are different, ",es13.6,&
-                        &" vs. ",es13.6,", for absorber index # ",i0)' ) &
-                        ODAS_LHS%Alpha(j), &
-                        ODAS_RHS%Alpha(j), &
-                        j
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
+      DO i = 1, ODAS_RHS%n_Alphas
+        IF ( .NOT. ( Compare_Float( ODAS_LHS%Alpha(i,j), &
+                                    ODAS_RHS%Alpha(i,j), &
+                                    ULP = ULP                  ) ) ) THEN
+          Error_Status = FAILURE
+          WRITE( Message,'("Alpha values are different, ",es13.6,&
+                          &" vs. ",es13.6,", for alpha index # ",i0,&
+                          &" and absorber index #",i0 )' ) &
+                          ODAS_LHS%Alpha(i,j), &
+                          ODAS_RHS%Alpha(i,j), &
+                          i,j
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(Message), &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          IF ( Check_Once ) RETURN
+        END IF
+      END DO
     END DO
 
-    ! The Alpha_C1 value
-    DO j = 1, ODAS_RHS%n_Absorbers
-      IF ( .NOT. ( Compare_Float( ODAS_LHS%Alpha_C1(j), &
-                                  ODAS_RHS%Alpha_C1(j), &
-                                  ULP = ULP                  ) ) ) THEN
-        Error_Status = FAILURE
-        WRITE( Message,'("Alpha_C1 values are different, ",es13.6,&
-                        &" vs. ",es13.6,", for absorber index # ",i0)' ) &
-                        ODAS_LHS%Alpha_C1(j), &
-                        ODAS_RHS%Alpha_C1(j), &
-                        j
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
+    ! The Order array
+    DO l = 1, ODAS_RHS%n_Channels
+      DO j = 1, ODAS_RHS%n_Absorbers
+        IF ( ODAS_LHS%Order(j,l) /= ODAS_RHS%Order(j,l) ) THEN      
+          Error_Status = FAILURE                                                
+          WRITE( Message,'("Order values are different, ",i0,&                  
+                          &" vs. ",i0,", for index (",i0,1x,i0,")")' ) &  
+                          ODAS_LHS%Order(j,l), &                       
+                          ODAS_RHS%Order(j,l), &                       
+                          j,l                                                
+          CALL Display_Message( ROUTINE_NAME, &                                 
+                                TRIM(Message), &                                
+                                Error_Status, &                                 
+                                Message_Log=Message_Log )                       
+          IF ( Check_Once ) RETURN                                              
+        END IF                                                                  
+      END DO
     END DO
 
-    ! The Alpha_C2 value
-    DO j = 1, ODAS_RHS%n_Absorbers
-      IF ( .NOT. ( Compare_Float( ODAS_LHS%Alpha_C2(j), &
-                                  ODAS_RHS%Alpha_C2(j), &
-                                  ULP = ULP                  ) ) ) THEN
-        Error_Status = FAILURE
-        WRITE( Message,'("Alpha_C2 values are different, ",es13.6,&
-                        &" vs. ",es13.6,", for absorber index # ",i0)' ) &
-                        ODAS_LHS%Alpha_C2(j), &
-                        ODAS_RHS%Alpha_C2(j), &
-                        j
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-    ! The Order_Index
+    ! The Pre_Index
     DO l = 1, ODAS_RHS%n_Channels
       DO j = 1, ODAS_RHS%n_Absorbers
         DO ip = 0, ODAS_RHS%n_Predictors
-          IF ( ODAS_LHS%Order_Index(ip,j,l) /= ODAS_RHS%Order_Index(ip,j,l) ) THEN
+          IF ( ODAS_LHS%Pre_Index(ip,j,l) /= ODAS_RHS%Pre_Index(ip,j,l) ) THEN
             Error_Status = FAILURE
-            WRITE( Message,'("Order_Index values are different, ",i0,&
+            WRITE( Message,'("Predictor_Index values are different, ",i0,&
                             &" vs. ",i0,", for index (",i0,1x,i0,1x,i0,")")' ) &
-                            ODAS_LHS%Order_Index(ip,j,l), &
-                            ODAS_RHS%Order_Index(ip,j,l), &
+                            ODAS_LHS%Pre_Index(ip,j,l), &
+                            ODAS_RHS%Pre_Index(ip,j,l), &
                             ip,j,l
             CALL Display_Message( ROUTINE_NAME, &
                                   TRIM(Message), &
@@ -1631,52 +1128,43 @@ CONTAINS
       END DO
     END DO
 
-    ! The Predictor_Index
+    ! The Pos_Index
     DO l = 1, ODAS_RHS%n_Channels
       DO j = 1, ODAS_RHS%n_Absorbers
-        DO ip = 0, ODAS_RHS%n_Predictors
-          IF ( ODAS_LHS%Predictor_Index(ip,j,l) /= ODAS_RHS%Predictor_Index(ip,j,l) ) THEN
-            Error_Status = FAILURE
-            WRITE( Message,'("Predictor_Index values are different, ",i0,&
-                            &" vs. ",i0,", for index (",i0,1x,i0,1x,i0,")")' ) &
-                            ODAS_LHS%Predictor_Index(ip,j,l), &
-                            ODAS_RHS%Predictor_Index(ip,j,l), &
-                            ip,j,l
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-        END DO
+        IF ( ODAS_LHS%Pos_Index(j,l) /= ODAS_RHS%Pos_Index(j,l) ) THEN    
+          Error_Status = FAILURE                                          
+          WRITE( Message,'("Predictor_Index values are different, ",i0,&  
+                          &" vs. ",i0,", for index (",i0,1x,i0,")")' ) &  
+                          ODAS_LHS%Pos_Index(j,l), &                      
+                          ODAS_RHS%Pos_Index(j,l), &                      
+                          j,l                                             
+          CALL Display_Message( ROUTINE_NAME, &                           
+                                TRIM(Message), &                          
+                                Error_Status, &                           
+                                Message_Log=Message_Log )                 
+          IF ( Check_Once ) RETURN                                        
+        END IF                                                            
       END DO
     END DO
 
     ! The Coefficients
-    DO l = 1, ODAS_RHS%n_Channels
-      DO j = 1, ODAS_RHS%n_Absorbers
-        DO ip = 0, ODAS_RHS%n_Predictors
-          DO io = 0, ODAS_RHS%n_Orders
-            IF ( ODAS_LHS%C(io,ip,j,l) /= ODAS_RHS%C(io,ip,j,l) ) THEN
-              Error_Status = FAILURE
-              WRITE( Message,'("C values are different, ",i0,&
-                              &" vs. ",i0,", for index (",i0,1x,i0,1x,i0,1x,i0,")")' ) &
-                              ODAS_LHS%C(io,ip,j,l), &
-                              ODAS_RHS%C(io,ip,j,l), &
-                              io,ip,j,l
-              CALL Display_Message( ROUTINE_NAME, &
-                                    TRIM(Message), &
-                                    Error_Status, &
-                                    Message_Log=Message_Log )
-              IF ( Check_Once ) RETURN
-            END IF
-          END DO
-        END DO
-      END DO
+    DO i = 1, ODAS_RHS%n_Coeffs
+      IF ( ODAS_LHS%C(i) /= ODAS_RHS%C(i) ) THEN                        
+        Error_Status = FAILURE                                                          
+        WRITE( Message,'("C values are different, ",i0,&                                
+                        &" vs. ",i0,", for index (",i0,")")' ) &      
+                        ODAS_LHS%C(i), &                                        
+                        ODAS_RHS%C(i), &                                        
+                        i                                                    
+        CALL Display_Message( ROUTINE_NAME, &                                           
+                              TRIM(Message), &                                          
+                              Error_Status, &                                           
+                              Message_Log=Message_Log )                                 
+        IF ( Check_Once ) RETURN                                                        
+      END IF                                                                            
     END DO
 
   END FUNCTION Equal_ODAS
-
 
 !----------------------------------------------------------------------------------
 !
@@ -1922,16 +1410,18 @@ CONTAINS
     ! Write the required data to the local string
     ! -------------------------------------------
     WRITE( LongString,'( a,3x,"ODAS RELEASE.VERSION: ",i2,".",i2.2,2x,&
-                      &"N_ORDERS=",i2,2x,&
                       &"N_PREDICTORS=",i2,2x,&
                       &"N_ABSORBERS=",i2,2x,&
-                      &"N_CHANNELS=",i0)' ) &
+                      &"N_CHANNELS=",i0,2x, &
+                      &"N_Alphas=",i2,2x, &
+                      &"N_Coeffs=",i0)' ) &
                       ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
                       ODAS%Release, ODAS%Version, &
-                      ODAS%n_Orders, &
                       ODAS%n_Predictors, &
                       ODAS%n_Absorbers, &
-                      ODAS%n_Channels
+                      ODAS%n_Channels, &
+                      ODAS%n_Alphas, &
+                      ODAS%n_Coeffs
 
     ! Trim the output based on the
     ! dummy argument string length

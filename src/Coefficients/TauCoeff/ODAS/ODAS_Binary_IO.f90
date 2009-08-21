@@ -74,10 +74,11 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Inquire_ODAS_Binary( Filename                           , &  ! Input
-!                                           n_Orders         = n_Orders        , &  ! Optional output
 !                                           n_Predictors     = n_Predictors    , &  ! Optional output
 !                                           n_Absorbers      = n_Absorbers     , &  ! Optional output
 !                                           n_Channels       = n_Channels      , &  ! Optional output
+!                                           n_Alphas         = n_Alphas        , &  ! Optional output
+!                                           n_Coeffs         = n_Coeffs        , &  ! Optional output
 !                                           Release          = Release         , &  ! Optional Output
 !                                           Version          = Version         , &  ! Optional Output
 !                                           Sensor_Id        = Sensor_Id       , &  ! Optional output
@@ -105,18 +106,6 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Orders:           The maximum polynomial order used to reconstruct the
-!                           transmittance coefficients.
-!                           NOTE: The data arrays using this dimension value are
-!                                 dimensioned as 0:n_Orders, where the
-!                                 0'th term is the offset. Therefore the actual
-!                                 number of array elements along this dimension
-!                                 is n_Orders+1
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 !       n_Predictors:       The number of predictor functions used in generating
 !                           the ODAS data.
 !                           NOTE: The data arrays using this dimension value are
@@ -136,6 +125,18 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Channels:         The number of channels dimension of the ODAS data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Alphas:           The number of alpha coefficients used to compute the absorber level.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Coeffs:           The number of the C coeffcients.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -193,10 +194,11 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Inquire_ODAS_Binary( Filename        , &  ! Input
-                                n_Orders        , &  ! Optional output
                                 n_Predictors    , &  ! Optional output
                                 n_Absorbers     , &  ! Optional output
                                 n_Channels      , &  ! Optional output
+                                n_Alphas        , &  ! Optional output  
+                                n_Coeffs        , &  ! Optional output  
                                 Release         , &  ! Optional Output
                                 Version         , &  ! Optional Output
                                 Sensor_Id       , &  ! Optional Output
@@ -207,10 +209,11 @@ CONTAINS
                               RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Orders
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Predictors
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Absorbers
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Alphas
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Coeffs
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
@@ -276,10 +279,11 @@ CONTAINS
 
     ! Read the data dimensions
     ! ------------------------
-    READ( FileID, IOSTAT=IO_Status ) ODAS%n_Orders    , &
-                                     ODAS%n_Predictors, &
+    READ( FileID, IOSTAT=IO_Status ) ODAS%n_Predictors, &
                                      ODAS%n_Absorbers , &
-                                     ODAS%n_Channels
+                                     ODAS%n_Channels  , &
+                                     ODAS%n_Alphas    , &
+                                     ODAS%n_Coeffs
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error reading dimension values from ",a,&
                       &". IOSTAT = ",i0)' ) &
@@ -314,10 +318,11 @@ CONTAINS
     ! Assign the return arguments
     ! ---------------------------
     ! Dimensions
-    IF ( PRESENT(n_Orders    ) ) n_Orders     = ODAS%n_Orders    
     IF ( PRESENT(n_Predictors) ) n_Predictors = ODAS%n_Predictors
     IF ( PRESENT(n_Absorbers ) ) n_Absorbers  = ODAS%n_Absorbers 
     IF ( PRESENT(n_Channels  ) ) n_Channels   = ODAS%n_Channels
+    IF ( PRESENT(n_Alphas    ) ) n_Alphas     = ODAS%n_Alphas    
+    IF ( PRESENT(n_Coeffs    ) ) n_Coeffs     = ODAS%n_Coeffs    
 
     ! Release/Version information
     IF ( PRESENT(Release) ) Release = ODAS%Release
@@ -489,10 +494,11 @@ CONTAINS
     INTEGER :: FileID
     INTEGER(Long) :: Version
     INTEGER(Long) :: Algorithm
-    INTEGER(Long) :: n_Orders
     INTEGER(Long) :: n_Predictors
     INTEGER(Long) :: n_Absorbers
     INTEGER(Long) :: n_Channels
+    INTEGER(Long) :: n_Alphas
+    INTEGER(Long) :: n_Coeffs
  
     ! Set up
     ! ------
@@ -575,10 +581,11 @@ CONTAINS
 
     ! Read the data dimensions
     ! ------------------------
-    READ( FileID, IOSTAT=IO_Status ) n_Orders    , &
-                                     n_Predictors, &
+    READ( FileID, IOSTAT=IO_Status ) n_Predictors, &
                                      n_Absorbers , &
-                                     n_Channels
+                                     n_Channels  , &
+                                     n_Alphas    , &
+                                     n_Coeffs
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error reading dimension values from ",a,&
                       &". IOSTAT = ",i0)' ) &
@@ -589,10 +596,11 @@ CONTAINS
 
     ! Allocate the output structure
     ! -----------------------------
-    Error_Status = Allocate_ODAS( n_Orders    , &
-                                  n_Predictors, &
+    Error_Status = Allocate_ODAS( n_Predictors, &
                                   n_Absorbers , &
                                   n_Channels  , &
+                                  n_Alphas    , &
+                                  n_Coeffs    , &
                                   ODAS        , &
                                   Message_Log=Message_Log)
     IF ( Error_Status /= SUCCESS ) THEN
@@ -629,12 +637,11 @@ CONTAINS
     END IF
 
 
-    ! Read the absorber ID and absorber space values
+    ! Read the max order, absorber ID and absorber space values
     ! ----------------------------------------------
     READ( FileID, IOSTAT=IO_Status ) ODAS%Absorber_ID, &
-                                     ODAS%Alpha      , &
-                                     ODAS%Alpha_C1   , &
-                                     ODAS%Alpha_C2
+                                     ODAS%Max_Order,   &
+                                     ODAS%Alpha     
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error reading absorber information from ",a,&
                       &". IOSTAT = ",i0)' ) &
@@ -643,12 +650,13 @@ CONTAINS
     END IF
 
 
-    ! Read the polynomial order and predictor index arrays
-    ! ----------------------------------------------------
-    READ( FileID, IOSTAT=IO_Status ) ODAS%Order_Index, &
-                                     ODAS%Predictor_Index
+    ! Read the polynomial order, predictor index and position index arrays
+    ! --------------------------------------------------------------------
+    READ( FileID, IOSTAT=IO_Status ) ODAS%Order,     &
+                                     ODAS%Pre_Index, &
+                                     ODAS%Pos_Index
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading index arrays from ",a,&
+      WRITE( Message,'("Error reading order and index arrays from ",a,&
                       &". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
       CALL Read_Cleanup(); RETURN
@@ -846,10 +854,11 @@ CONTAINS
 
 
     ! Check the ODAS structure dimensions
-    IF ( ODAS%n_Orders     < 1 .OR. &
-         ODAS%n_Predictors < 1 .OR. &
+    IF ( ODAS%n_Predictors < 1 .OR. &
          ODAS%n_Absorbers  < 1 .OR. &
-         ODAS%n_Channels   < 1      ) THEN
+         ODAS%n_Channels   < 1 .OR. &
+         ODAS%n_Alphas     < 1 .OR. &
+         ODAS%n_Coeffs     < 1  ) THEN
       Message = 'One or more dimensions of ODAS structure are < or = 0.'
       CALL Write_Cleanup(); RETURN
     END IF
@@ -898,10 +907,11 @@ CONTAINS
 
     ! Write the data dimensions
     ! -------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) ODAS%n_Orders    , &
-                                      ODAS%n_Predictors, &
+    WRITE( FileID, IOSTAT=IO_Status ) ODAS%n_Predictors, &
                                       ODAS%n_Absorbers , &
-                                      ODAS%n_Channels
+                                      ODAS%n_Channels  , &
+                                      ODAS%n_Alphas    , &
+                                      ODAS%n_Coeffs
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error writing dimension values to ",a,&
                       &". IOSTAT = ",i0)' ) &
@@ -938,9 +948,8 @@ CONTAINS
     ! Write the absorber ID and absorber space values
     ! -----------------------------------------------
     WRITE( FileID, IOSTAT=IO_Status ) ODAS%Absorber_ID, &
-                                      ODAS%Alpha      , &
-                                      ODAS%Alpha_C1   , &
-                                      ODAS%Alpha_C2
+                                      ODAS%Max_Order  , &
+                                      ODAS%Alpha
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error writing absorber information to ",a,&
                       &". IOSTAT = ",i0)' ) &
@@ -949,12 +958,13 @@ CONTAINS
     END IF
 
 
-    ! Write the polynomial order and predictor index arrays
-    ! -----------------------------------------------------
-    WRITE( FileID, IOSTAT=IO_Status ) ODAS%Order_Index, &
-                                      ODAS%Predictor_Index
+    ! Write the polynomial order, predictor index and position index arrays
+    ! ----------------------------------------------------------------------
+    WRITE( FileID, IOSTAT=IO_Status ) ODAS%Order    , &
+                                      ODAS%Pre_Index, &
+                                      ODAS%Pos_Index
     IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error writing index arrays to ",a,&
+      WRITE( Message,'("Error writing order and index arrays to ",a,&
                       &". IOSTAT = ",i0)' ) &
                       TRIM(Filename), IO_Status
       CALL Write_Cleanup(); RETURN

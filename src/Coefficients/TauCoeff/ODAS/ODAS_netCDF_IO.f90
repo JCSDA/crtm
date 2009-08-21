@@ -68,21 +68,22 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: PROFILE_SET_ID_GATTNAME   = 'Profile_Set_Id' 
 
   ! Dimension names
-  CHARACTER(*), PARAMETER :: ORDER_DIMNAME      = 'n_Orders'
   CHARACTER(*), PARAMETER :: PREDICTOR_DIMNAME  = 'n_Predictors'
   CHARACTER(*), PARAMETER :: ABSORBER_DIMNAME   = 'n_Absorbers'
   CHARACTER(*), PARAMETER :: CHANNEL_DIMNAME    = 'n_Channels'
+  CHARACTER(*), PARAMETER :: ALPHA_DIMNAME      = 'n_Alphas'
+  CHARACTER(*), PARAMETER :: COEFF_DIMNAME      = 'n_Coeffs'
 
   ! Variable names. Case sensitive.
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_VARNAME       = 'Sensor_Type'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_VARNAME    = 'Sensor_Channel'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_VARNAME       = 'Absorber_ID'
+  CHARACTER(*), PARAMETER :: MAX_ORDER_VARNAME         = 'Maximum_Order'
   CHARACTER(*), PARAMETER :: ALPHA_VARNAME             = 'Alpha'
-  CHARACTER(*), PARAMETER :: ALPHA_C1_VARNAME          = 'Alpha_C1'
-  CHARACTER(*), PARAMETER :: ALPHA_C2_VARNAME          = 'Alpha_C2'
-  CHARACTER(*), PARAMETER :: ORDER_INDEX_VARNAME       = 'Order_Index'
-  CHARACTER(*), PARAMETER :: PREDICTOR_INDEX_VARNAME   = 'Predictor_Index'
-  CHARACTER(*), PARAMETER :: TAU_COEFFICIENTS_VARNAME  = 'Tau_Coefficients'
+  CHARACTER(*), PARAMETER :: ORDER_VARNAME             = 'Order'
+  CHARACTER(*), PARAMETER :: PRE_INDEX_VARNAME         = 'Predictor_Index'
+  CHARACTER(*), PARAMETER :: POS_INDEX_VARNAME         = 'Position_Index'
+  CHARACTER(*), PARAMETER :: COEFF_VARNAME             = 'Tau_Coefficients'
 
   ! Description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
@@ -90,12 +91,12 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_DESCRIPTION      = 'Sensor type to identify uW, IR, VIS, UV, etc sensor channels'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_DESCRIPTION   = 'List of sensor channel numbers'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_DESCRIPTION      = 'List of absorber ID values'
+  CHARACTER(*), PARAMETER :: MAX_ORDER_DESCRIPTION        = 'Maximum order of the polynomial functions for all absorbers.'
   CHARACTER(*), PARAMETER :: ALPHA_DESCRIPTION            = 'Alpha values used to generate the absorber space levels.'
-  CHARACTER(*), PARAMETER :: ALPHA_C1_DESCRIPTION         = 'First constant (slope) for Alpha to absorber space.'
-  CHARACTER(*), PARAMETER :: ALPHA_C2_DESCRIPTION         = 'Second constant (offset) for Alpha to absorber space.'
-  CHARACTER(*), PARAMETER :: ORDER_INDEX_DESCRIPTION      = 'List of polynomial orders.'
-  CHARACTER(*), PARAMETER :: PREDICTOR_INDEX_DESCRIPTION  = 'List of predictors.'
-  CHARACTER(*), PARAMETER :: TAU_COEFFICIENTS_DESCRIPTION = 'Regression model gas absorption coefficients.'
+  CHARACTER(*), PARAMETER :: ORDER_DESCRIPTION            = 'List of polynomial orders.'
+  CHARACTER(*), PARAMETER :: PRE_INDEX_DESCRIPTION        = 'List of predictors.'
+  CHARACTER(*), PARAMETER :: POS_INDEX_DESCRIPTION        = 'List of starting position indexes for the tau coeff. array, given abosrber and channel .'
+  CHARACTER(*), PARAMETER :: COEFF_DESCRIPTION            = 'Regression model gas absorption coefficients.'
 
   ! Long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
@@ -103,12 +104,12 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_LONGNAME      = 'Sensor Type'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_LONGNAME   = 'Sensor Channel'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_LONGNAME      = 'Absorber Id'
-  CHARACTER(*), PARAMETER :: ALPHA_LONGNAME            = 'Alpha'
-  CHARACTER(*), PARAMETER :: ALPHA_C1_LONGNAME         = 'ALpha Slope'
-  CHARACTER(*), PARAMETER :: ALPHA_C2_LONGNAME         = 'Alpha Offset'
-  CHARACTER(*), PARAMETER :: ORDER_INDEX_LONGNAME      = 'Polynomial Order Index'
-  CHARACTER(*), PARAMETER :: PREDICTOR_INDEX_LONGNAME  = 'Predictor Index'
-  CHARACTER(*), PARAMETER :: TAU_COEFFICIENTS_LONGNAME = 'Regression coefficients.'
+  CHARACTER(*), PARAMETER :: MAX_ORDER_LONGNAME        = 'Maximum polynomial order'
+  CHARACTER(*), PARAMETER :: ALPHA_LONGNAME            = 'Alpha coefficients'
+  CHARACTER(*), PARAMETER :: ORDER_LONGNAME            = 'Polynomial Order'
+  CHARACTER(*), PARAMETER :: PRE_INDEX_LONGNAME        = 'Predictor Index'
+  CHARACTER(*), PARAMETER :: POS_INDEX_LONGNAME        = 'Index of starting position index for the C array'
+  CHARACTER(*), PARAMETER :: COEFF_LONGNAME            = 'Regression coefficients.'
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
@@ -116,12 +117,12 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_UNITS   = 'N/A'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_UNITS      = 'N/A'
+  CHARACTER(*), PARAMETER :: MAX_ORDER_UNITS        = 'N/A'
   CHARACTER(*), PARAMETER :: ALPHA_UNITS            = 'Absorber dependent.'
-  CHARACTER(*), PARAMETER :: ALPHA_C1_UNITS         = 'Absorber dependent.'
-  CHARACTER(*), PARAMETER :: ALPHA_C2_UNITS         = 'Absorber dependent.'
-  CHARACTER(*), PARAMETER :: ORDER_INDEX_UNITS      = 'N/A'
-  CHARACTER(*), PARAMETER :: PREDICTOR_INDEX_UNITS  = 'N/A'
-  CHARACTER(*), PARAMETER :: TAU_COEFFICIENTS_UNITS = 'Absorber and predictor dependent.'
+  CHARACTER(*), PARAMETER :: ORDER_UNITS            = 'N/A'
+  CHARACTER(*), PARAMETER :: PRE_INDEX_UNITS        = 'N/A'
+  CHARACTER(*), PARAMETER :: POS_INDEX_UNITS        = 'N/A'
+  CHARACTER(*), PARAMETER :: COEFF_UNITS            = 'Absorber and predictor dependent.'
 
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
@@ -129,24 +130,24 @@ MODULE ODAS_netCDF_IO
   INTEGER(Long), PARAMETER :: SENSOR_TYPE_FILLVALUE      = INVALID_SENSOR
   INTEGER(Long), PARAMETER :: SENSOR_CHANNEL_FILLVALUE   = 0
   INTEGER(Long), PARAMETER :: ABSORBER_ID_FILLVALUE      = 0
+  INTEGER(Long), PARAMETER :: MAX_ORDER_FILLVALUE        = 0
   REAL(Double),  PARAMETER :: ALPHA_FILLVALUE            = ZERO
-  REAL(Double),  PARAMETER :: ALPHA_C1_FILLVALUE         = ZERO
-  REAL(Double),  PARAMETER :: ALPHA_C2_FILLVALUE         = ZERO
-  INTEGER(Long), PARAMETER :: ORDER_INDEX_FILLVALUE      = 0
-  INTEGER(Long), PARAMETER :: PREDICTOR_INDEX_FILLVALUE  = 0
-  REAL(Double),  PARAMETER :: TAU_COEFFICIENTS_FILLVALUE = ZERO
+  INTEGER(Long), PARAMETER :: ORDER_FILLVALUE            = 0
+  INTEGER(Long), PARAMETER :: PRE_INDEX_FILLVALUE        = -1
+  INTEGER(Long), PARAMETER :: POS_INDEX_FILLVALUE        = -1
+  REAL(Double),  PARAMETER :: COEFF_FILLVALUE            = ZERO
 
 
   ! Variable netCDF datatypes
   INTEGER, PARAMETER :: SENSOR_TYPE_TYPE      = NF90_INT
   INTEGER, PARAMETER :: SENSOR_CHANNEL_TYPE   = NF90_INT
   INTEGER, PARAMETER :: ABSORBER_ID_TYPE      = NF90_INT
+  INTEGER, PARAMETER :: MAX_ORDER_TYPE        = NF90_INT
   INTEGER, PARAMETER :: ALPHA_TYPE            = NF90_DOUBLE
-  INTEGER, PARAMETER :: ALPHA_C1_TYPE         = NF90_DOUBLE
-  INTEGER, PARAMETER :: ALPHA_C2_TYPE         = NF90_DOUBLE
-  INTEGER, PARAMETER :: ORDER_INDEX_TYPE      = NF90_INT
-  INTEGER, PARAMETER :: PREDICTOR_INDEX_TYPE  = NF90_INT
-  INTEGER, PARAMETER :: TAU_COEFFICIENTS_TYPE = NF90_DOUBLE
+  INTEGER, PARAMETER :: ORDER_TYPE            = NF90_INT
+  INTEGER, PARAMETER :: PRE_INDEX_TYPE        = NF90_INT
+  INTEGER, PARAMETER :: POS_INDEX_TYPE        = NF90_INT
+  INTEGER, PARAMETER :: COEFF_TYPE            = NF90_DOUBLE
 
 
 CONTAINS
@@ -171,10 +172,11 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Inquire_ODAS_netCDF( NC_Filename                        , &  ! Input
-!                                           n_Orders         = n_Orders        , &  ! Optional output
 !                                           n_Predictors     = n_Predictors    , &  ! Optional output
 !                                           n_Absorbers      = n_Absorbers     , &  ! Optional output
 !                                           n_Channels       = n_Channels      , &  ! Optional output
+!                                           n_Alphas         = n_Alphas        , &  ! Optional output
+!                                           n_Coeffs         = n_Coeffs        , &  ! Optional output
 !                                           Release          = Release         , &  ! Optional Output
 !                                           Version          = Version         , &  ! Optional Output
 !                                           Sensor_Id        = Sensor_Id       , &  ! Optional output
@@ -206,17 +208,6 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Orders:           The maximum polynomial order used in reconstructing
-!                           the gas absorption coefficients.
-!                           NOTE: The data arrays using this dimension value are
-!                                 dimensioned as 0:n_Orders, where the
-!                                 0'th term is the offset. Therefore the actual
-!                                 number of array elements along this dimension
-!                                 is n_Orders+1
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Predictors:       The number of predictor functions used in generating
 !                           the ODAS data.
@@ -237,6 +228,18 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Channels:         The number of channels dimension of the ODAS data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Alphas:           The number of alpha coefficients used to compute the absorber level.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Coeffs:           The number of the C coeffcients.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -328,10 +331,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION Inquire_ODAS_netCDF( NC_Filename     , &  ! Input
-                                n_Orders        , &  ! Optional output
                                 n_Predictors    , &  ! Optional output
                                 n_Absorbers     , &  ! Optional output
                                 n_Channels      , &  ! Optional output
+                                n_Alphas        , &  ! Optional output  
+                                n_Coeffs        , &  ! Optional output  
                                 Release         , &  ! Optional Output
                                 Version         , &  ! Optional Output
                                 Sensor_Id       , &  ! Optional output
@@ -346,10 +350,11 @@ CONTAINS
                               RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Orders         
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Predictors     
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Absorbers      
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels       
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Alphas
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Coeffs
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release          
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version          
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id        
@@ -391,14 +396,6 @@ CONTAINS
     ! Get the dimensions
     ! ------------------
     Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         ORDER_DIMNAME, &
-                                         ODAS%n_Orders, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//ORDER_DIMNAME//' dimension from '//TRIM(NC_Filename)
-      CALL Inquire_Cleanup(Close_File=SET); RETURN
-    END IF
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
                                          PREDICTOR_DIMNAME, &
                                          ODAS%n_Predictors, &
                                          Message_Log=Message_Log )
@@ -420,6 +417,22 @@ CONTAINS
                                          Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error obtaining '//CHANNEL_DIMNAME//' dimension from '//TRIM(NC_Filename)
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
+    Error_Status = Get_netCDF_Dimension( NC_FileID, &
+                                         ALPHA_DIMNAME, &
+                                         ODAS%n_Alphas, &
+                                         Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error obtaining '//ALPHA_DIMNAME//' dimension from '//TRIM(NC_Filename)
+      CALL Inquire_Cleanup(Close_File=SET); RETURN
+    END IF
+    Error_Status = Get_netCDF_Dimension( NC_FileID, &
+                                         COEFF_DIMNAME, &
+                                         ODAS%n_Coeffs, &
+                                         Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error obtaining '//COEFF_DIMNAME//' dimension from '//TRIM(NC_Filename)
       CALL Inquire_Cleanup(Close_File=SET); RETURN
     END IF
 
@@ -455,10 +468,11 @@ CONTAINS
     ! Set the return values
     ! ---------------------
     ! Dimensions
-    IF ( PRESENT(n_Orders    ) ) n_Orders     = ODAS%n_Orders-1
     IF ( PRESENT(n_Predictors) ) n_Predictors = ODAS%n_Predictors-1
     IF ( PRESENT(n_Absorbers ) ) n_Absorbers  = ODAS%n_Absorbers    
     IF ( PRESENT(n_Channels  ) ) n_Channels   = ODAS%n_Channels  
+    IF ( PRESENT(n_Alphas  ) )   n_Alphas     = ODAS%n_Alphas  
+    IF ( PRESENT(n_Coeffs  ) )   n_Coeffs     = ODAS%n_Coeffs  
     
     ! Release/Version information
     IF ( PRESENT(Release) ) Release = ODAS%Release
@@ -654,10 +668,11 @@ CONTAINS
     ! Create the output data file
     ! ---------------------------
     Error_Status = CreateFile( NC_Filename                           , &  ! Input
-                               ODAS%n_Orders                         , &  ! Input
                                ODAS%n_Predictors                     , &  ! Input
                                ODAS%n_Absorbers                      , &  ! Input
                                ODAS%n_Channels                       , &  ! Input
+                               ODAS%n_Alphas                         , &  ! Input
+                               ODAS%n_Coeffs                         , &  ! Input
                                NC_FileID                             , &  ! Output
                                Version         =ODAS%Version         , &  ! Optional input
                                Sensor_Id       =ODAS%Sensor_Id       , &  ! Optional input
@@ -880,10 +895,11 @@ CONTAINS
     INTEGER :: Destroy_Status
     INTEGER :: Close_Status
     INTEGER :: NC_FileID
-    INTEGER :: n_Orders
     INTEGER :: n_Predictors
     INTEGER :: n_Absorbers
     INTEGER :: n_Channels
+    INTEGER :: n_Alphas
+    INTEGER :: n_Coeffs
 
     ! Set up
     ! ------
@@ -901,10 +917,11 @@ CONTAINS
     ! ------------------------------------------
     ! Read the dimension values
     Error_Status = Inquire_ODAS_netCDF( NC_Filename, &
-                                        n_Orders       = n_Orders      , &
                                         n_Predictors   = n_Predictors  , &
                                         n_Absorbers    = n_Absorbers   , &
                                         n_Channels     = n_Channels    , &
+                                        n_Alphas       = n_Alphas      , &
+                                        n_Coeffs       = n_Coeffs      , &
                                         Release        = ODAS%Release  , &
                                         Version        = ODAS%Version  , &
                                         Title          = Title         , &
@@ -918,10 +935,11 @@ CONTAINS
     END IF
 
     ! Allocate the structure
-    Error_Status = Allocate_ODAS( n_Orders    , &
-                                  n_Predictors, &
+    Error_Status = Allocate_ODAS( n_Predictors, &
                                   n_Absorbers , &
                                   n_Channels  , &
+                                  n_Alphas    , &
+                                  n_Coeffs    , &
                                   ODAS        , &
                                   Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -1073,18 +1091,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       n_Orders:           The maximum order of polynomial used to reconstruct 
-!                           the gas absorption coefficients.
-!                           NOTE: The data arrays using this dimension value are
-!                                 dimensioned as 0:n_Orders, where the
-!                                 0'th term is the offset. Therefore the actual
-!                                 number of array elements along this dimension
-!                                 is n_Orders+1
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
 !       n_Predictors:       The number of predictor functions used in generating
 !                           the ODAS data.
 !                           NOTE: The data arrays using this dimension value are
@@ -1108,6 +1114,18 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Alphas:           The number of alpha coefficients used to compute the absorber level.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Coeffs:           The number of the C coeffcients.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !       NC_FileID:          NetCDF file ID number to be used for subsequent
@@ -1204,10 +1222,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CreateFile( NC_Filename     , &  ! Input
-                       n_Orders        , &  ! Input
                        n_Predictors    , &  ! Input
                        n_Absorbers     , &  ! Input
                        n_Channels      , &  ! Input
+                       n_Alphas        , &  ! Input
+                       n_Coeffs        , &  ! Input
                        NC_FileID       , &  ! Output
                        Version         , &  ! Optional input
                        Sensor_Id       , &  ! Optional input
@@ -1221,10 +1240,11 @@ CONTAINS
                      RESULT( Error_Status )
     ! Arguments
     CHARACTER(*)          , INTENT(IN)  :: NC_Filename     
-    INTEGER               , INTENT(IN)  :: n_Orders        
     INTEGER               , INTENT(IN)  :: n_Predictors    
     INTEGER               , INTENT(IN)  :: n_Absorbers     
     INTEGER               , INTENT(IN)  :: n_Channels      
+    INTEGER               , INTENT(IN)  :: n_Alphas        
+    INTEGER               , INTENT(IN)  :: n_Coeffs        
     INTEGER               , INTENT(OUT) :: NC_FileID       
     INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Id       
@@ -1244,24 +1264,25 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: Define_Status
     INTEGER :: Write_Status
-    INTEGER :: n_Orders_DimID    
     INTEGER :: n_Predictors_DimID
     INTEGER :: n_Absorbers_DimID 
     INTEGER :: n_Channels_DimID  
+    INTEGER :: n_Alphas_DimID    
+    INTEGER :: n_Coeffs_DimID    
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
 
     ! Check dimensions
-    IF ( n_Orders     < 1 .OR. &
-         n_Predictors < 1 .OR. &
+    IF ( n_Predictors < 1 .OR. &
          n_Absorbers  < 1 .OR. &
-         n_Channels   < 1      ) THEN
+         n_Channels   < 1 .OR. &
+         n_Alphas     < 1 .OR. &
+         n_Coeffs     < 1 ) THEN
       Message = 'Invalid dimension input detected.'
       CALL Create_Cleanup(); RETURN
     END IF
-
 
     ! Create the data file
     ! --------------------
@@ -1278,15 +1299,6 @@ CONTAINS
     ! Define the dimensions
     ! ---------------------
     Message = 'Error defining dimensions in '//TRIM(NC_Filename)
-    ! The maximum polynomial order. Note that the defined
-    ! dimension value is "n + 1" as the array elements for
-    ! this dimension ranges from 0 -> n.
-    Define_Status = DefineDim( NC_Filename, NC_FileID, &
-                               ORDER_DIMNAME, n_Orders+1, n_Orders_DimID, &
-                               Message_Log=Message_Log )
-    IF ( Define_Status /= SUCCESS ) THEN
-      CALL Create_Cleanup(); RETURN
-    END IF
 
     ! The number of predictors. Note that the defined
     ! dimension value is "n + 1" as the array elements for
@@ -1314,6 +1326,21 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
 
+    ! The number of alphas
+    Define_Status = DefineDim( NC_Filename, NC_FileID, &
+                               ALPHA_DIMNAME, n_Alphas, n_Alphas_DimID, &
+                               Message_Log=Message_Log )
+    IF ( Define_Status /= SUCCESS ) THEN 
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+    ! The number of C coefficients
+    Define_Status = DefineDim( NC_Filename, NC_FileID, &
+                               COEFF_DIMNAME, n_Coeffs, n_Coeffs_DimID, &
+                               Message_Log=Message_Log )
+    IF ( Define_Status /= SUCCESS ) THEN 
+      CALL Create_Cleanup(); RETURN
+    END IF
 
     ! Write the global attributes
     ! ---------------------------
@@ -1342,16 +1369,16 @@ CONTAINS
     ! --------------------
     Define_Status = DefineVar( NC_Filename            , &  ! Input
                                NC_FileID              , &  ! Input
-                               n_Orders_DimID         , &  ! Input
                                n_Predictors_DimID     , &  ! Input
                                n_Absorbers_DimID      , &  ! Input
                                n_Channels_DimID       , &  ! Input
+                               n_Alphas_DimID         , &  ! Input
+                               n_Coeffs_DimID         , &  ! Input
                                Message_Log=Message_Log  )  ! Error messaging
     IF ( Define_Status /= SUCCESS ) THEN
       Message = 'Error defining variables in '//TRIM(NC_Filename)
       CALL Create_Cleanup(); RETURN
     END IF
-
 
     ! Take netCDF file out of define mode
     ! -----------------------------------
@@ -1361,6 +1388,9 @@ CONTAINS
       Message = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
       CALL Create_Cleanup(); RETURN
     END IF
+    
+NF90_Status=close_netCDF(NC_FileID)
+stop
 
   CONTAINS
   
@@ -2155,13 +2185,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       n_Orders_DimID:     NetCDF dimension ID of the polynomial orders
-!                           plus one - since all the order index arrays are
-!                           are dimensioned (0:n_Orders).
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
 !
 !       n_Predictors_DimID: NetCDF dimension ID of the number of predictors
 !                           plus one - since all the predictor arrays are
@@ -2185,6 +2208,18 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
+!       n_Alphas_DimID:     NetCDF dimension ID of the number of Alpha coefficients
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Coeffs_DimID:     NetCDF dimension ID of the number of C coefficients
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
 ! OPTIONAL INPUT ARGUMENTS
 !       Message_Log:        Character string specifying a filename in which any
 !                           messages will be logged. If not specified, or if an
@@ -2199,19 +2234,21 @@ CONTAINS
 
   FUNCTION DefineVar( NC_Filename       , &  ! Input
                       NC_FileID         , &  ! Input
-                      n_Orders_DimID    , &  ! Input
                       n_Predictors_DimID, &  ! Input
                       n_Absorbers_DimID , &  ! Input
                       n_Channels_DimID  , &  ! Input
+                      n_Alphas_DimID    , &  ! Input
+                      n_Coeffs_DimID    , &  ! Input
                       Message_Log       ) &  ! Error messaging
                     RESULT( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
     INTEGER     ,           INTENT(IN)  :: NC_FileID
-    INTEGER     ,           INTENT(IN)  :: n_Orders_DimID    
     INTEGER     ,           INTENT(IN)  :: n_Predictors_DimID
     INTEGER     ,           INTENT(IN)  :: n_Absorbers_DimID 
     INTEGER     ,           INTENT(IN)  :: n_Channels_DimID  
+    INTEGER     ,           INTENT(IN)  :: n_Alphas_DimID    
+    INTEGER     ,           INTENT(IN)  :: n_Coeffs_DimID    
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -2334,13 +2371,47 @@ CONTAINS
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
+    ! Define the max order variable
+    ! ----------------------
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                MAX_ORDER_VARNAME, &
+                                MAX_ORDER_TYPE, &
+                                dimIDs=(/n_Absorbers_DimID/), &
+                                varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//MAX_ORDER_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  MAX_ORDER_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  MAX_ORDER_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  MAX_ORDER_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  MAX_ORDER_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//MAX_ORDER_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
 
     ! Define Alpha
     ! ------------
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
                                 ALPHA_VARNAME, &
                                 ALPHA_TYPE, &
-                                dimIDs=(/n_Absorbers_DimID/), &
+                                dimIDs=(/n_Alphas_DimID, n_Absorbers_DimID/), &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       Message = 'Error defining '//ALPHA_VARNAME//' variable in '//&
@@ -2371,89 +2442,17 @@ CONTAINS
     END IF
 
 
-    ! Define Alpha_C1
-    ! ---------------
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                ALPHA_C1_VARNAME, &
-                                ALPHA_C1_TYPE, &
-                                dimIDs=(/n_Absorbers_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//ALPHA_C1_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL DefineVar_Cleanup(); RETURN
-    END IF
 
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  ALPHA_C1_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  ALPHA_C1_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  ALPHA_C1_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  ALPHA_C1_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//ALPHA_C1_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
-      CALL DefineVar_Cleanup(); RETURN
-    END IF
-
-
-    ! Define Alpha_C2
-    ! ---------------
-    NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                ALPHA_C2_VARNAME, &
-                                ALPHA_C2_TYPE, &
-                                dimIDs=(/n_Absorbers_DimID/), &
-                                varID =VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//ALPHA_C2_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL DefineVar_Cleanup(); RETURN
-    END IF
-
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  LONGNAME_ATTNAME, &
-                                  ALPHA_C2_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  DESCRIPTION_ATTNAME, &
-                                  ALPHA_C2_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  UNITS_ATTNAME, &
-                                  ALPHA_C2_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
-                                  VarID, &
-                                  FILLVALUE_ATTNAME, &
-                                  ALPHA_C2_FILLVALUE )
-    IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//ALPHA_C2_VARNAME//&
-                ' variable attributes to '//TRIM(NC_Filename)
-      CALL DefineVar_Cleanup(); RETURN
-    END IF
-
-
-    ! Define Order_Index
+    ! Define Order
     ! ------------------
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                ORDER_INDEX_VARNAME, &
-                                ORDER_INDEX_TYPE, &
-                                dimIDs=(/n_Predictors_DimID, &
-                                         n_Absorbers_DimID , &
+                                ORDER_VARNAME, &
+                                ORDER_TYPE, &
+                                dimIDs=(/n_Absorbers_DimID , &
                                          n_Channels_DimID   /), &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//ORDER_INDEX_VARNAME//' variable in '//&
+      Message = 'Error defining '//ORDER_VARNAME//' variable in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
@@ -2461,37 +2460,37 @@ CONTAINS
     Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   LONGNAME_ATTNAME, &
-                                  ORDER_INDEX_LONGNAME )
+                                  ORDER_LONGNAME )
     Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   DESCRIPTION_ATTNAME, &
-                                  ORDER_INDEX_DESCRIPTION )
+                                  ORDER_DESCRIPTION )
     Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   UNITS_ATTNAME, &
-                                  ORDER_INDEX_UNITS )
+                                  ORDER_UNITS )
     Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   FILLVALUE_ATTNAME, &
-                                  ORDER_INDEX_FILLVALUE )
+                                  ORDER_FILLVALUE )
     IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//ORDER_INDEX_VARNAME//&
+      Message = 'Error writing '//ORDER_VARNAME//&
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
 
-    ! Define Predictor_Index
+    ! Define Pre_Index
     ! ----------------------
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                PREDICTOR_INDEX_VARNAME, &
-                                PREDICTOR_INDEX_TYPE, &
+                                PRE_INDEX_VARNAME, &
+                                PRE_INDEX_TYPE, &
                                 dimIDs=(/n_Predictors_DimID, &
                                          n_Absorbers_DimID , &
                                          n_Channels_DimID   /), &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//PREDICTOR_INDEX_VARNAME//' variable in '//&
+      Message = 'Error defining '//PRE_INDEX_VARNAME//' variable in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
@@ -2499,38 +2498,70 @@ CONTAINS
     Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   LONGNAME_ATTNAME, &
-                                  PREDICTOR_INDEX_LONGNAME )
+                                  PRE_INDEX_LONGNAME )
     Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   DESCRIPTION_ATTNAME, &
-                                  PREDICTOR_INDEX_DESCRIPTION )
+                                  PRE_INDEX_DESCRIPTION )
     Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   UNITS_ATTNAME, &
-                                  PREDICTOR_INDEX_UNITS )
+                                  PRE_INDEX_UNITS )
     Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   FILLVALUE_ATTNAME, &
-                                  PREDICTOR_INDEX_FILLVALUE )
+                                  PRE_INDEX_FILLVALUE )
     IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//PREDICTOR_INDEX_VARNAME//&
+      Message = 'Error writing '//PRE_INDEX_VARNAME//&
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
 
+    ! Define Pos_Index
+    ! ----------------------
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                POS_INDEX_VARNAME, &
+                                POS_INDEX_TYPE, &
+                                dimIDs=(/n_Absorbers_DimID , &
+                                         n_Channels_DimID   /), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//POS_INDEX_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  POS_INDEX_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  POS_INDEX_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  POS_INDEX_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  POS_INDEX_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//POS_INDEX_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
 
     ! Define Tau_Coefficients
     ! -----------------------
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TAU_COEFFICIENTS_VARNAME, &
-                                TAU_COEFFICIENTS_TYPE, &
-                                dimIDs=(/n_Orders_DimID    , &
-                                         n_Predictors_DimID, &
-                                         n_Absorbers_DimID , &
-                                         n_Channels_DimID   /), &
+                                COEFF_VARNAME, &
+                                COEFF_TYPE, &
+                                dimIDs=(/n_Coeffs_DimID/) , &
                                 varID =VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      Message = 'Error defining '//TAU_COEFFICIENTS_VARNAME//' variable in '//&
+      Message = 'Error defining '//COEFF_VARNAME//' variable in '//&
                 TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL DefineVar_Cleanup(); RETURN
     END IF
@@ -2538,21 +2569,21 @@ CONTAINS
     Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   LONGNAME_ATTNAME, &
-                                  TAU_COEFFICIENTS_LONGNAME )
+                                  COEFF_LONGNAME )
     Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   DESCRIPTION_ATTNAME, &
-                                  TAU_COEFFICIENTS_DESCRIPTION )
+                                  COEFF_DESCRIPTION )
     Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   UNITS_ATTNAME, &
-                                  TAU_COEFFICIENTS_UNITS )
+                                  COEFF_UNITS )
     Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
                                   VarID, &
                                   FILLVALUE_ATTNAME, &
-                                  TAU_COEFFICIENTS_FILLVALUE )
+                                  COEFF_FILLVALUE )
     IF ( ANY(Put_Status /= SUCCESS) ) THEN
-      Message = 'Error writing '//TAU_COEFFICIENTS_VARNAME//&
+      Message = 'Error writing '//COEFF_VARNAME//&
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
@@ -2682,6 +2713,15 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
     
+    ! Write the absorber id data
+    ! --------------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        MAX_ORDER_VARNAME, &
+                                        ODAS%Max_Order )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//MAX_ORDER_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
 
     ! Write the Alpha data
     ! --------------------
@@ -2691,60 +2731,46 @@ CONTAINS
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error writing '//ALPHA_VARNAME//' to '//TRIM(NC_Filename)
       CALL WriteVar_Cleanup(); RETURN
-    END IF
-    
+    END IF    
 
-    ! Write the Alpha_C1 data
-    ! -----------------------
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        ALPHA_C1_VARNAME, &
-                                        ODAS%Alpha_C1 )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//ALPHA_C1_VARNAME//' to '//TRIM(NC_Filename)
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    
-
-    ! Write the Alpha_C2 data
-    ! -----------------------
-    Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        ALPHA_C2_VARNAME, &
-                                        ODAS%Alpha_C2 )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//ALPHA_C2_VARNAME//' to '//TRIM(NC_Filename)
-      CALL WriteVar_Cleanup(); RETURN
-    END IF
-    
-
-    ! Write the Order_Index data
+    ! Write the Order data
     ! --------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        ORDER_INDEX_VARNAME, &
-                                        ODAS%Order_Index )
+                                        ORDER_VARNAME, &
+                                        ODAS%Order )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//ORDER_INDEX_VARNAME//' to '//TRIM(NC_Filename)
+      Message = 'Error writing '//ORDER_VARNAME//' to '//TRIM(NC_Filename)
       CALL WriteVar_Cleanup(); RETURN
     END IF
     
 
-    ! Write the Predictor_Index data
+    ! Write the Pre_Index data
     ! ------------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        PREDICTOR_INDEX_VARNAME, &
-                                        ODAS%Predictor_Index )
+                                        PRE_INDEX_VARNAME, &
+                                        ODAS%Pre_Index )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//PREDICTOR_INDEX_VARNAME//' to '//TRIM(NC_Filename)
+      Message = 'Error writing '//PRE_INDEX_VARNAME//' to '//TRIM(NC_Filename)
       CALL WriteVar_Cleanup(); RETURN
     END IF
     
-
+    ! Write the Pre_Index data
+    ! ------------------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        POS_INDEX_VARNAME, &
+                                        ODAS%Pos_Index )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//POS_INDEX_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+print *, "?????????? ********************", ODAS%Alpha
     ! Write the Tau_Coefficients data
     ! -------------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TAU_COEFFICIENTS_VARNAME, &
+                                        COEFF_VARNAME, &
                                         ODAS%C )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing '//TAU_COEFFICIENTS_VARNAME//' to '//TRIM(NC_Filename)
+      Message = 'Error writing '//COEFF_VARNAME//' to '//TRIM(NC_Filename)
       CALL WriteVar_Cleanup(); RETURN
     END IF
 
@@ -2880,6 +2906,15 @@ CONTAINS
       CALL ReadVar_Cleanup(); RETURN
     END IF
     
+    ! Read the Max_Order data
+    ! --------------------------
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        MAX_ORDER_VARNAME, &
+                                        ODAS%Max_Order )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//MAX_ORDER_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
 
     ! Read the Alpha data
     ! --------------------
@@ -2890,59 +2925,46 @@ CONTAINS
       Message = 'Error reading '//ALPHA_VARNAME//' from '//TRIM(NC_Filename)
       CALL ReadVar_Cleanup(); RETURN
     END IF
-    
+        
 
-    ! Read the Alpha_C1 data
-    ! -----------------------
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        ALPHA_C1_VARNAME, &
-                                        ODAS%Alpha_C1 )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//ALPHA_C1_VARNAME//' from '//TRIM(NC_Filename)
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    
-
-    ! Read the Alpha_C2 data
-    ! -----------------------
-    Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        ALPHA_C2_VARNAME, &
-                                        ODAS%Alpha_C2 )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//ALPHA_C2_VARNAME//' from '//TRIM(NC_Filename)
-      CALL ReadVar_Cleanup(); RETURN
-    END IF
-    
-
-    ! Read the Order_Index data
+    ! Read the Order data
     ! --------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        ORDER_INDEX_VARNAME, &
-                                        ODAS%Order_Index )
+                                        ORDER_VARNAME, &
+                                        ODAS%Order )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//ORDER_INDEX_VARNAME//' from '//TRIM(NC_Filename)
+      Message = 'Error reading '//ORDER_VARNAME//' from '//TRIM(NC_Filename)
       CALL ReadVar_Cleanup(); RETURN
     END IF
     
 
-    ! Read the Predictor_Index data
+    ! Read the Pre_Index data
     ! ------------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        PREDICTOR_INDEX_VARNAME, &
-                                        ODAS%Predictor_Index )
+                                        PRE_INDEX_VARNAME, &
+                                        ODAS%Pre_Index )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//PREDICTOR_INDEX_VARNAME//' from '//TRIM(NC_Filename)
+      Message = 'Error reading '//PRE_INDEX_VARNAME//' from '//TRIM(NC_Filename)
       CALL ReadVar_Cleanup(); RETURN
     END IF
     
+    ! Read the Pos_Index data
+    ! ------------------------------
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        POS_INDEX_VARNAME, &
+                                        ODAS%Pos_Index )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//POS_INDEX_VARNAME//' from '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
 
     ! Read the Tau_Coefficients data
     ! -------------------------------
     Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TAU_COEFFICIENTS_VARNAME, &
+                                        COEFF_VARNAME, &
                                         ODAS%C )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading '//TAU_COEFFICIENTS_VARNAME//' from '//TRIM(NC_Filename)
+      Message = 'Error reading '//COEFF_VARNAME//' from '//TRIM(NC_Filename)
       CALL ReadVar_Cleanup(); RETURN
     END IF
 
