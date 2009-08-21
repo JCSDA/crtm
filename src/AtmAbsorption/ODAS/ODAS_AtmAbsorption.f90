@@ -38,8 +38,7 @@ MODULE ODAS_AtmAbsorption
                                        MAX_N_ORDERS,          & 
                                        MAX_N_PREDICTORS_USED, &
                                        MAX_N_ORDERS
-  USE ODAS_TauCoeff,             ONLY: TC, &
-                                       ODAS_type
+  USE ODAS_TauCoeff,             ONLY: TC
 
   ! Disable implicit typing
   IMPLICIT NONE
