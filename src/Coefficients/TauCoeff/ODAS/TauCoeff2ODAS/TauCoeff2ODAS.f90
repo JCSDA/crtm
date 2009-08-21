@@ -49,7 +49,8 @@ PROGRAM TauCoeff2ODAS
   CHARACTER(2000) :: Profile_ID_Tag  
   TYPE(TauCoeff_type) :: TauCoeff
   TYPE(ODAS_type) :: ODAS
-  INTEGER :: i
+  INTEGER, PARAMETER :: n_Alphas = 3  ! number of alpha coefficients, fixed
+  INTEGER :: i, j, l, m, io, ip, no, np, ps, n_Coeffs
 
 
   ! Output prgram header
@@ -95,13 +96,30 @@ PROGRAM TauCoeff2ODAS
     STOP
   END IF
 
-
+  n_Coeffs = 0
+  DO l = 1, TauCoeff%n_Channels
+    DO j = 1, TauCoeff%n_Absorbers
+      np = TauCoeff%Predictor_Index(0, j, l)
+      IF( np > 0 )THEN
+        IF(MAXVAL(TauCoeff%Order_Index(:, j, l)) /= MINVAL(TauCoeff%Order_Index(:, j, l)))THEN
+          CALL Display_Message( PROGRAM_NAME, &
+                            'Error: the polynomial orders for each C coeffs are not equal. '//&
+                            TRIM(TauCoeff_Filename), &
+                            Error_Status )
+          STOP
+        END IF
+        no = TauCoeff%Order_Index(0, j, l)  ! the polynomial order
+        n_Coeffs = n_Coeffs + (no+1)*(np+1) 
+      END IF
+    END DO
+  END DO
   ! Allocate the ODAS structure
   ! ---------------------------
-  Error_Status = Allocate_ODAS( TauCoeff%n_Orders    , &
-                                TauCoeff%n_Predictors, &
+  Error_Status = Allocate_ODAS( TauCoeff%n_Predictors, &
                                 TauCoeff%n_Absorbers , &
                                 TauCoeff%n_Channels  , &
+                                n_Alphas             , &
+                                n_Coeffs             , &
                                 ODAS                   )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
@@ -110,8 +128,41 @@ PROGRAM TauCoeff2ODAS
     STOP
   END IF
 
+  ODAS%Pos_Index = -9
+  ODAS%Order     = -9
+  ODAS%Pos_Index = -9
+  ODAS%Pre_Index = -9
+  ODAS%Pre_Index(0,:,:) = -9
+  ps = 1
+  DO l = 1, TauCoeff%n_Channels
+    DO j = 1, TauCoeff%n_Absorbers
+      np = TauCoeff%Predictor_Index(0, j, l)
+      IF( np > 0 )THEN
+        ODAS%Order(j, l) = TauCoeff%Order_Index(0, j, l)  ! the polynomial order
+        ODAS%Pos_Index(j, l) = ps
+        ODAS%Pre_Index(0, j, l) = np
+        ODAS%Pre_Index(1:np, j, l) = TauCoeff%Predictor_Index(1:np, j, l)
+        no = ODAS%Order(j, l)
+        m = 0
+        DO ip = 0, np 
+          DO io = 0, no
+            ODAS%C(ps+m) = TauCoeff%C(io, ip, j, l)
+            m = m + 1
+          END DO
+        END DO
+        ps = ps + (no+1)*(np+1)
+      END IF
+    END DO
+  END DO
 
-  ! Copy over the data
+  DO j = 1, TauCoeff%n_Absorbers
+    ODAS%Max_Order(j) = MAXVAL(ODAS%Order(j, :))
+  END DO
+  ODAS%Alpha(1, :)      = TauCoeff%Alpha           
+  ODAS%Alpha(2, :)      = TauCoeff%Alpha_C1        
+  ODAS%Alpha(3, :)      = TauCoeff%Alpha_C2        
+
+  ! Copy over the other data
   ! ------------------
   ODAS%Release          = TauCoeff%Release + 1
   ODAS%Version          = TauCoeff%Version
@@ -122,12 +173,6 @@ PROGRAM TauCoeff2ODAS
   ODAS%Sensor_Type      = Sensor_Type     
   ODAS%Sensor_Channel   = TauCoeff%Sensor_Channel  
   ODAS%Absorber_ID      = TauCoeff%Absorber_ID     
-  ODAS%Alpha            = TauCoeff%Alpha           
-  ODAS%Alpha_C1         = TauCoeff%Alpha_C1        
-  ODAS%Alpha_C2         = TauCoeff%Alpha_C2        
-  ODAS%Order_Index      = TauCoeff%Order_Index     
-  ODAS%Predictor_Index  = TauCoeff%Predictor_Index 
-  ODAS%C                = TauCoeff%C               
   
 
   ! Write the new datafile
