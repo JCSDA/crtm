@@ -109,7 +109,12 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: ORDER_LONGNAME            = 'Polynomial Order'
   CHARACTER(*), PARAMETER :: PRE_INDEX_LONGNAME        = 'Predictor Index'
   CHARACTER(*), PARAMETER :: POS_INDEX_LONGNAME        = 'Index of starting position index for the C array'
-  CHARACTER(*), PARAMETER :: COEFF_LONGNAME            = 'Regression coefficients.'
+  CHARACTER(*), PARAMETER :: COEFF_LONGNAME            = 'Regression coefficients. '//&
+   'The 1D array data structure is give by ps, np, no, j and l, where ps = Pos_Index(j,l), '//&
+   'np = Pre_Index(0,j,l), no = Order(j,l), j = absorber index and l = channel index. '//&
+   'The set of coeffs for given j and l in the array starts at ps and ends at ps+(np+1)*(no+1)-1. '//&
+   'The structure of this subset is arranged into np+1 consecutive equal segments used to compute '//&
+   'the np+1 B coefficients, respectively, with a segment size no+1.' 
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
@@ -130,9 +135,9 @@ MODULE ODAS_netCDF_IO
   INTEGER(Long), PARAMETER :: SENSOR_TYPE_FILLVALUE      = INVALID_SENSOR
   INTEGER(Long), PARAMETER :: SENSOR_CHANNEL_FILLVALUE   = 0
   INTEGER(Long), PARAMETER :: ABSORBER_ID_FILLVALUE      = 0
-  INTEGER(Long), PARAMETER :: MAX_ORDER_FILLVALUE        = 0
+  INTEGER(Long), PARAMETER :: MAX_ORDER_FILLVALUE        = -1
   REAL(Double),  PARAMETER :: ALPHA_FILLVALUE            = ZERO
-  INTEGER(Long), PARAMETER :: ORDER_FILLVALUE            = 0
+  INTEGER(Long), PARAMETER :: ORDER_FILLVALUE            = -1
   INTEGER(Long), PARAMETER :: PRE_INDEX_FILLVALUE        = -1
   INTEGER(Long), PARAMETER :: POS_INDEX_FILLVALUE        = -1
   REAL(Double),  PARAMETER :: COEFF_FILLVALUE            = ZERO
@@ -1388,9 +1393,6 @@ CONTAINS
       Message = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
       CALL Create_Cleanup(); RETURN
     END IF
-    
-NF90_Status=close_netCDF(NC_FileID)
-stop
 
   CONTAINS
   
@@ -2763,7 +2765,7 @@ stop
       Message = 'Error writing '//POS_INDEX_VARNAME//' to '//TRIM(NC_Filename)
       CALL WriteVar_Cleanup(); RETURN
     END IF
-print *, "?????????? ********************", ODAS%Alpha
+
     ! Write the Tau_Coefficients data
     ! -------------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID, &
