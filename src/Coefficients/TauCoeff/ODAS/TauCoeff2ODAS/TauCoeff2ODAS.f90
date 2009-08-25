@@ -23,7 +23,7 @@ PROGRAM TauCoeff2ODAS
   USE TauCoeff_Define   , ONLY: TauCoeff_type, Destroy_TauCoeff
   USE TauCoeff_netCDF_IO, ONLY: Read_TauCoeff_netCDF
   USE ODAS_Define       , ONLY: N_SENSOR_TYPES, SENSOR_TYPE_NAME, &
-                                ODAS_type, Allocate_ODAS, Destroy_ODAS
+                                ODAS_type, Allocate_ODAS, Destroy_ODAS, ODAS_RELEASE
   USE ODAS_netCDF_IO    , ONLY: Write_ODAS_netCDF
   ! Disable implicit typing
   IMPLICIT NONE
@@ -164,7 +164,7 @@ PROGRAM TauCoeff2ODAS
 
   ! Copy over the other data
   ! ------------------
-  ODAS%Release          = TauCoeff%Release + 1
+  ODAS%Release          = ODAS_RELEASE !TauCoeff%Release + 1
   ODAS%Version          = TauCoeff%Version
 
   ODAS%Sensor_Id        = Sensor_Id

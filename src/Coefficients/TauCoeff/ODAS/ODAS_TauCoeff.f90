@@ -270,33 +270,6 @@ CONTAINS
       END IF
     END DO
 
-    ! Determine the total number of channels
-    n_Channels = SUM(TC%n_Channels)
-    
-    ! Set the protect Max_n_Channels variable
-    !
-    ! Get the current value, if any
-    Max_n_Channels = CRTM_Get_Max_nChannels()
-    ! Has the number of channels been set?
-    IF ( CRTM_IsSet_Max_nChannels() ) THEN
-      ! Yes. Check the value      
-      IF ( Max_n_Channels /= n_Channels ) THEN
-        Error_Status = WARNING
-        WRITE( Message, '( "MAX_N_CHANNELS already set to different value, ", i0, ", ", &
-                          &"than defined by TauCoeff file(s), ", i0, &
-                          &". Overwriting" )' ) &
-                        Max_n_Channels, n_Channels
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message)//TRIM(Process_ID_Tag), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        CALL CRTM_Set_Max_nChannels(n_Channels)
-      END IF
-    ELSE
-      ! No. Set the value
-      CALL CRTM_Set_Max_nChannels(n_Channels)
-    END IF
-
   END FUNCTION Load_TauCoeff 
 
 
