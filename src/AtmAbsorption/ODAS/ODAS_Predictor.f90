@@ -1698,7 +1698,6 @@ CONTAINS
 
       DO i = Max_Order(j), 2, -1 
  
-
         DO k = n_Layers, 1, -1                                                      
 
            Predictor_AD%Ap(k, i-1, j) = Predictor_AD%Ap(k, i-1, j) &
@@ -1706,17 +1705,21 @@ CONTAINS
            A_LEVEL_AD(k) = A_LEVEL_AD(k) + Predictor%Ap(k, i-1, j)*Predictor_AD%Ap(k, i, j)
            Predictor_AD%Ap(k, i, j) = ZERO
         END DO
-        A_Level_AD(1:n_Layers) = A_Level_AD(1:n_Layers) + Predictor_AD%Ap(1:n_layers, 1, j)
-        Predictor_AD%Ap(1:n_Layers, 1, j) = ZERO
         
-        DO k = n_Layers, 1, -1
-          Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &                      
-                                         A_Level_AD(k) / &                            
-          !          --------------------------------------------------------------
-                     ( Alpha(1, j) * (Predictor%aveA(k,j) - Alpha(3, j) ))
-          A_Level_AD(k) = ZERO
-        END DO
       END DO
+      
+      A_Level_AD(1:n_Layers) = A_Level_AD(1:n_Layers) + Predictor_AD%Ap(1:n_layers, 1, j)  
+      Predictor_AD%Ap(1:n_Layers, 1, j) = ZERO  
+
+      DO k = n_Layers, 1, -1  
+        Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &                                
+                                       A_Level_AD(k) / &                                   
+        !          --------------------------------------------------------------          
+                   ( Alpha(1, j) * (Predictor%aveA(k,j) - Alpha(3, j) ))                   
+        A_Level_AD(k) = ZERO                                                               
+
+      END DO  
+                                                                                   
     END DO
 
     ! Calculate the predictor adjoints

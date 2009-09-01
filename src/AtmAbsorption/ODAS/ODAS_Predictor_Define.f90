@@ -544,6 +544,8 @@ CONTAINS
     Predictor%A    = ZERO
     Predictor%dA   = ZERO
     Predictor%aveA = ZERO
+    Predictor%Ap   = ZERO
+    Predictor%X    = ZERO
 
     ! Increment and test the allocation counter
     Predictor%n_Allocates = Predictor%n_Allocates + 1
@@ -724,7 +726,7 @@ CONTAINS
     Predictor%A    = ZERO
     Predictor%dA   = ZERO
     Predictor%aveA = ZERO
-    Predictor%Ap    = ZERO
+    Predictor%Ap   = ZERO
     Predictor%X    = ZERO
   END SUBROUTINE Zero_Predictor
   

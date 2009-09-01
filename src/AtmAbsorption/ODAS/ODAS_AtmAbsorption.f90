@@ -439,25 +439,6 @@ CONTAINS
 
       IF ( np < 0 ) CYCLE Absorber_Loop
 
-
-      ! ----------------------------------------------------------                
-      ! Calculate absorber space level associated with the average                
-      ! absorber amount                                                           
-      !                                                                           
-      ! Absorber level, k, to amount                                              
-      !                                                                           
-      !     A(k) = C1.exp(Alpha * k) + C2                                         
-      !                                                                           
-      ! Absorber amount to level                                                  
-      !                                                                           
-      !           1      A - C2                                                   
-      !     k = ----- LN ------                                                   
-      !         Alpha      C1                                                     
-      !                                                                           
-      !   Alpha : absorber amount-level coordinate constant                       
-      !   C1,C2 : scaling factors for level in the range of 0 to 1                
-      ! ----------------------------------------------------------                
-
       ! ----------------------------------------------------------------          
       ! Compute the coefficients for use with the atmospheric predictors          
       !                                                                           
@@ -670,6 +651,9 @@ CONTAINS
     l = ChannelIndex
     n_Layers = Predictor%n_Layers
 
+    b_AD      = ZERO
+    LN_Chi_AD = ZERO
+    Chi_AD    = ZERO
 
     ! -------------------------------------------
     ! Compute adjoint nadir optical depth profile
@@ -696,7 +680,6 @@ CONTAINS
       ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
       n_orders = TC(n)%Order(j,l)                                                 
 
-      LN_Chi_AD = ZERO
       DO k = n_Layers, 1, -1
 
         ! -----------------------------
@@ -704,7 +687,7 @@ CONTAINS
         ! -----------------------------
         Predictor_AD%dA(k,j) = Predictor_AD%dA(k,j) + &
                                (AAV%Chi(k,j) * AtmAbsorption_AD%Optical_Depth(k))
-        Chi_AD = Predictor%dA(k,j) * AtmAbsorption_AD%Optical_Depth(k)
+        Chi_AD = Chi_AD + Predictor%dA(k,j) * AtmAbsorption_AD%Optical_Depth(k)
 
 
         ! ----------------------------------------
@@ -716,12 +699,13 @@ CONTAINS
         ! is implied since for each layer it is
         ! reassigned in the preceding line of code
         ! ----------------------------------------
-        IF( ABS( AAV%LN_Chi(k,j) ) > LIMIT_EXP ) THEN
+        IF( AAV%LN_Chi(k,j) > LIMIT_EXP ) THEN
           Chi_AD = ZERO
         ELSE IF( AAV%LN_Chi(k,j) < -LIMIT_EXP ) THEN                              
           Chi_AD = ZERO                                                           
         ELSE                                                                      
-          LN_Chi_AD(k) = AAV%Chi(k,j) * Chi_AD
+          LN_Chi_AD(k) = LN_Chi_AD(k) + AAV%Chi(k,j) * Chi_AD
+          Chi_AD       = ZERO
         ENDIF
       END DO
 
@@ -735,7 +719,8 @@ CONTAINS
         
         ! b(i) term, i > 0                                                        
         ic_0 = ps + i*(n_orders+1)                                                
-        DO ic = n_Orders, 1, -1                                                       
+        DO ic = n_Orders, 1, -1 
+                                                      
           c = TC(n)%C(ic_0 + ic)                                                  
           DO k = n_Layers, 1, -1
             Predictor_AD%Ap(k, ic, j) = Predictor_AD%Ap(k, ic, j) + c*b_AD(k)                                                  
@@ -745,6 +730,7 @@ CONTAINS
                                                                             
       END DO                                                                      
       b_AD(1:n_Layers) = b_AD(1:n_Layers) + LN_Chi_AD(1:n_Layers)
+      LN_Chi_AD(1:n_Layers) = ZERO
 
       ic_0 = ps                                                                   
       DO ic = n_Orders, 1, -1                                                         
@@ -757,6 +743,8 @@ CONTAINS
       
     END DO Absorber_Loop
 
+    AtmAbsorption_AD%Optical_Depth = ZERO
+    
   END SUBROUTINE Compute_AtmAbsorption_AD
 
 END MODULE ODAS_AtmAbsorption
