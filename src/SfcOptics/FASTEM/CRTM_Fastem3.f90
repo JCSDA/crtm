@@ -547,9 +547,9 @@ CONTAINS
     ! by Fastem_Version                                                                     
 
     !Point to correct coefficients for this version. There are 36 altogether.               
-    !Those for FASTEM-2 are stored in section 24:59 of the array, those for                 
+    !Those for FASTEM-2/3 are stored in section 24:59 of the array, those for                 
     !FASTEM1 in section 60:95.                                                              
-    If ( Fastem_Version == 2 ) Then                                                         
+    If ( Fastem_Version == 2 .or. Fastem_Version == 3 ) Then                                                         
        c => Fastem3_Coef(24:59)                                                             
     Else                                                                                    
        c => Fastem3_Coef(60:95)                                                             
@@ -1013,9 +1013,9 @@ End SUBROUTINE Fastem3
         ! by coef Fastem_Version
 
         !Point to correct coefficients for this version. There are 36 altogether.
-        !Those for FASTEM-2 are stored in section 24:59 of the array, those for
+        !Those for FASTEM-2/3 are stored in section 24:59 of the array, those for
         !FASTEM1 in section 60:95.
-        If ( Fastem_Version == 2 ) Then
+        If ( Fastem_Version == 2 .or. Fastem_Version == 3 ) Then
            c => Fastem3_Coef(24:59)
         Else
            c => Fastem3_Coef(60:95)
@@ -1560,9 +1560,9 @@ End SUBROUTINE Fastem3
      ! by Fastem_Version
 
      !Point to correct coefficients for this version. There are 36 altogether.
-     !Those for FASTEM-2 are stored in section 24:59 of the array, those for
+     !Those for FASTEM-2/3 are stored in section 24:59 of the array, those for
      !FASTEM1 in section 60:95.
-     If ( Fastem_Version == 2 ) Then
+     If ( Fastem_Version == 2 .or. Fastem_Version == 3 ) Then
         c => Fastem3_Coef(24:59)
      Else
         c => Fastem3_Coef(60:95)
