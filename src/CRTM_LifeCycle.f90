@@ -302,9 +302,6 @@ CONTAINS
     IF ( PRESENT(EmisCoeff_File) ) &
       Default_EmisCoeff_File = TRIM(ADJUSTL(EmisCoeff_File))
 
-    IF ( PRESENT(EmisCoeff_File) ) &
-      Default_EmisCoeff_File = TRIM(ADJUSTL(EmisCoeff_File))
-
     ! Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
       Default_CloudCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
