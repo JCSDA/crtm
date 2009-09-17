@@ -9,7 +9,10 @@ PRO OSRF::Compute_Central_Frequency, $
 
 
   ; Compute the SRF first moment
-  self.f0 = self->Convolve(*self.Frequency)
+  f0 = self->Convolve(*self.Frequency, Debug=Debug)
+  self->Set_Property, $
+    f0=f0, $
+    Debug=Debug
   self->Set_Flag, /f0_Computed
 
 

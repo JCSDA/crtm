@@ -66,8 +66,8 @@ PRO OSRF::Plot, $
 
   ; Set plotting parameters
   !P.MULTI = [0,n_Bands,1]
-  !X.OMARGIN = [6,0]
-  charsize = (n_Bands GT 2) ? 2.25 : 1.5
+  !X.OMARGIN = [10,0]
+  charsize = (n_Bands GT 2) ? 2.0 : 1.0
 
 
   ; Begin band response plots
@@ -76,11 +76,12 @@ PRO OSRF::Plot, $
       i+1, $
       Frequency = f, $
       Response  = r
-    ; Only use a y-axis title for first plot.
+    ; Only use a y-axis title and tickvalues for first plot.
     IF ( i EQ 0 ) THEN BEGIN
       ytitle = 'Relative response'
     ENDIF ELSE BEGIN
       ytitle = ''
+      !Y.TICKNAME = REPLICATE(' ',30)
     ENDELSE
     ; Generate the xrange based on -/+ % of bandwidth
     fdelta = MAX(f)-MIN(f)
@@ -91,7 +92,7 @@ PRO OSRF::Plot, $
           TITLE='Ch.'+STRTRIM(Channel,2)+', band #'+STRTRIM(i+1,2), $
           XTITLE='Frequency', $
           YTITLE=ytitle, $
-          XMARGIN=[2,3], $
+          XMARGIN=[2,2], $
           XRANGE=xrange,/XSTYLE, $
           CHARSIZE=charsize, $
           _EXTRA = Extra

@@ -25,13 +25,23 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   ; Perform conversions to units of inverse centimetres if necessary
   IF ( new->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN BEGIN
     ; ...Convert frequency arrays
-    FOR i = 0L, new.n_Bands-1L DO *(*new.Frequency)[i] = GHz_to_inverse_cm(*(*new.Frequency)[i])
+    FOR i = 0L, new.n_Bands-1L DO BEGIN
+      new->Get_Property, $
+        i+1, $
+        Frequency = f, $
+        Debug=Debug
+      f = GHz_to_inverse_cm(f)
+      new->Set_Property, $
+        i+1, $
+        Frequency = f, $
+        Debug=Debug
+    ENDFOR
+    ; ...Clear the frequency units flag to indicate cm-1
+    new->Clear_Flag, /Frequency_Units, Debug=Debug
     ; ...Recompute integral
     new->Integrate, Debug=Debug
     ; ...Recompute central frequency
     new->Compute_Central_Frequency, Debug=Debug
-    ; ...Clear the frequency units flag to indicate cm-1
-    new->Clear_Flag, /Frequency_Units, Debug=Debug
   ENDIF
   
 

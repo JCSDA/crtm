@@ -10,12 +10,28 @@ FUNCTION OSRF::Convolve, $
 
 
   ; Sum up band integrals
-  y = 0.0d0 
+  y = ZERO
   FOR i = 0L, self.n_Bands-1L DO BEGIN
     IF ( NOT self->Flag_Is_Set(INTEGRATED_FLAG) ) THEN self->Integrate, Debug=Debug
-    y = y + Integral( *(*self.Frequency)[i], (*ptr[i]) * (*(*self.Response)[i]))
+    ; Get band data
+    Band = i+1
+    self->Get_Property, $
+      Band, $
+      Frequency = f, $
+      Response  = r, $
+      Debug=Debug
+    ; Integrate
+    Sum = INT_TABULATED(f, (*ptr[i])*r, /DOUBLE)
+    IF ( Sum LE ZERO ) THEN $
+      MESSAGE, "SRF integration for band #"+STRTRIM(Band,2)+" is < zero", $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    ; Accumulate
+    y = y + Sum
   ENDFOR
-  y = y / self.Integral
+  self->Get_Property, $
+    Integral=IntSum, $
+    Debug=Debug
+  y = y / IntSum
 
 
   ; Done

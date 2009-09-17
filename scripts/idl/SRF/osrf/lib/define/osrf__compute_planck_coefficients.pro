@@ -29,13 +29,19 @@ PRO OSRF::Compute_Planck_Coefficients, $
   
 
   ; Check frequency units
-  f0 = self.f0
+  self->Get_Property, $
+    f0=f0, $
+    Debug=Debug
   IF ( self->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
 
 
   ; Comput ethe Planck coefficients
-  self.Planck_Coeffs[0] = C1_SCALE_FACTOR * C1 * f0^3
-  self.Planck_Coeffs[1] = C2_SCALE_FACTOR * C2 * f0
+  Planck_Coeffs = DBLARR(N_PLANCK_COEFFS)
+  Planck_Coeffs[0] = C1_SCALE_FACTOR * C1 * f0^3
+  Planck_Coeffs[1] = C2_SCALE_FACTOR * C2 * f0
+  self->Set_Property, $
+    Planck_Coeffs=Planck_Coeffs, $
+    Debug=Debug
   
     
   ; Done
