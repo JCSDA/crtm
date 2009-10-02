@@ -61,6 +61,8 @@ PROGRAM Create_LBL_Input
   CHARACTER(256) :: TAPE5_File
   CHARACTER( 78) :: TAPE5_Header
   INTEGER :: j, m, n, n_Profiles
+  INTEGER :: Begin_Profile, End_Profile
+  INTEGER :: Increment
   INTEGER, DIMENSION(2) :: j_idx
   INTEGER :: File_Type
   TYPE(AtmProfile_type), ALLOCATABLE :: ap(:)
@@ -110,11 +112,42 @@ PROGRAM Create_LBL_Input
                           FAILURE )
     STOP
   END IF
-
+  
+  ! Read the specified begin 
+  ! and end profiles from set
+  WRITE( *, FMT = '( /5x, "Enter the begin profile: ")', &
+            ADVANCE = 'NO' )
+  READ( *,* ) Begin_Profile
+  
+  WRITE( *, FMT = '( /5x, "Enter the end profile: ")', &
+            ADVANCE = 'NO' )
+  READ( *,* ) End_Profile
+  
+  IF( End_Profile > n_Profiles .OR. End_Profile <= ZERO ) THEN 
+    Error_Status = FAILURE
+  ENDIF
+  
+  IF( Begin_Profile > n_Profiles .OR. Begin_Profile <= ZERO ) THEN 
+    Error_Status = FAILURE
+  ENDIF
+  
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL display_message( PROGRAM_NAME, &
+                          'Error reading AtmProfile file '//TRIM(Filename), &
+                          FAILURE )
+    STOP
+  END IF 
+  
+  IF( Begin_Profile > End_Profile ) THEN
+    Increment = -1
+  ELSE
+    Increment = 1
+  ENDIF
+    
   calculation_flags%emit=1
 
   ! Loop over profile
-  DO m = 1, n_Profiles
+  DO m = Begin_Profile, End_Profile, Increment
     WRITE( *, '( 5x, "Processing profile #", i4.4, "...." )' ) m
 
     ! Find the absorber indices for H2O and O3 only
