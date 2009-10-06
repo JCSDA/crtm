@@ -34,6 +34,7 @@ MODULE iAtm_Define
   PUBLIC :: Associated_iAtm
   PUBLIC :: Destroy_iAtm
   PUBLIC :: Allocate_iAtm
+  PUBLIC :: Assign_iAtm
 
 
   ! -----------------
@@ -444,6 +445,123 @@ CONTAINS
 
   END FUNCTION Allocate_iAtm
   
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Assign_iAtm
+! 
+! PURPOSE:
+!       Function to copy a CRTM iAtm data structures.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Assign_iAtm( iAtm_in                , &
+!                                   iAtm_out               , &
+!                                   Message_Log=Message_Log  )
+!
+! INPUT ARGUMENTS:
+!       iAtm_in:      Structure to be copied.
+!                     UNITS:      N/A
+!                     TYPE:       iAtm_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       iAtm_out:     Copy of input iAtm_in structure.
+!                     UNITS:      N/A
+!                     TYPE:       iAtm_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUT ARGUMENTS:
+!       Message_Log:  Character string specifying a filename in which any
+!                     messages will be logged. If not specified, or if an
+!                     error occurs opening the log file, the default action
+!                     is to output messages to standard output.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the structure copy was successful
+!                        == FAILURE an error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! COMMENTS:
+!       Note the INTENT on the output structure argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION Assign_iAtm( iAtm_in    , &  ! Input
+                        iAtm_out   , &  ! Output
+                        Message_Log) &  ! Error messaging
+                      RESULT( Error_Status )
+    ! Arguments
+    TYPE(iAtm_type)       , INTENT(IN)     :: iAtm_in
+    TYPE(iAtm_type)       , INTENT(IN OUT) :: iAtm_out
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_iAtm'
+
+    ! Set up
+    Error_Status = SUCCESS
+    ! ...ALL *input* pointers must be associated
+    IF ( .NOT. Associated_iAtm( iAtm_in ) ) THEN
+      Error_Status = Destroy_iAtm( iAtm_out, Message_Log=Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating output iAtm components.', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+      END IF
+      RETURN
+    END IF
+    
+
+    ! Allocate the structure
+    Error_Status = Allocate_iAtm( iAtm_in%n_Layers, &
+                                  iAtm_in%n_Absorbers, &
+                                  iAtm_out, &
+                                  Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error allocating output iAtm arrays.', &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+      RETURN
+    END IF
+
+
+    ! Assign data
+    iAtm_out%pl         = iAtm_in%pl
+    iAtm_out%tl         = iAtm_in%tl
+    iAtm_out%al         = iAtm_in%al
+    iAtm_out%p          = iAtm_in%p
+    iAtm_out%t          = iAtm_in%t
+    iAtm_out%a          = iAtm_in%a
+    iAtm_out%pln_save   = iAtm_in%pln_save
+    iAtm_out%tln_save   = iAtm_in%tln_save
+    iAtm_out%aln_save   = iAtm_in%aln_save
+    iAtm_out%plint_save = iAtm_in%plint_save
+    iAtm_out%tlint_save = iAtm_in%tlint_save
+    iAtm_out%alint_save = iAtm_in%alint_save
+    iAtm_out%a_save     = iAtm_in%a_save
+    iAtm_out%ilpoly     = iAtm_in%ilpoly
+    iAtm_out%elpoly     = iAtm_in%elpoly
+
+  END FUNCTION Assign_iAtm
+
 
 !##################################################################################
 !##################################################################################

@@ -31,7 +31,8 @@ MODULE CRTM_Atmosphere
   USE iAtm_Define,            ONLY: iAtm_type      , &
                                     Associated_iAtm, &
                                     Destroy_iAtm   , &
-                                    Allocate_iAtm
+                                    Allocate_iAtm  , &
+                                    Assign_iAtm
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -50,6 +51,7 @@ MODULE CRTM_Atmosphere
   PUBLIC :: Associated_iAtm
   PUBLIC :: Destroy_iAtm   
   PUBLIC :: Allocate_iAtm
+  PUBLIC :: Assign_iAtm
 
 
   ! -----------------
@@ -387,6 +389,7 @@ CONTAINS
     REAL(fp) :: lpoly_TL
     REAL(fp) :: t_int_TL
     REAL(fp) :: a_int_TL
+    TYPE(iAtm_type) :: l_iAtm
 
 
     ! Set up
@@ -435,25 +438,36 @@ CONTAINS
     tl_TL = ZERO
     al_TL = ZERO
     
+    ! Copy the input internal variable structure for modification
+    Error_Status = Assign_iAtm( iAtm, l_iAtm, Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN 
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error copying iAtm internal variable structure', & 
+                            Error_Status, &
+                            Message_Log=Message_Log )  
+      RETURN
+    END IF
+    
     ! First interpolate the extra levels to the user top pressure
     ! replacing the model data at that array index
-    iAtm%pl(n) = iAtm%pln_save
-    CALL Interp_LPoly_TL( Atm_In%Level_Pressure(0), iAtm%pl(n-1:n), Atm_In_TL%Level_Pressure(0), pl_TL(n-1:n), lpoly_TL )
-    iAtm%pl(n) = iAtm%plint_save
-    iAtm%tl(n) = iAtm%tln_save
-    CALL Interp_Linear_TL( iAtm%ilpoly, iAtm%tl(n-1:n), lpoly_TL, tl_TL(n-1:n), t_int_tl )
-    iAtm%tl(n) = iAtm%tlint_save
+    l_iAtm%pl(n) = l_iAtm%pln_save
+    CALL Interp_LPoly_TL( Atm_In%Level_Pressure(0), l_iAtm%pl(n-1:n), Atm_In_TL%Level_Pressure(0), pl_TL(n-1:n), lpoly_TL )
+    l_iAtm%pl(n) = l_iAtm%plint_save
+    l_iAtm%tl(n) = l_iAtm%tln_save
+    CALL Interp_Linear_TL( l_iAtm%ilpoly, l_iAtm%tl(n-1:n), lpoly_TL, tl_TL(n-1:n), t_int_tl )
+    l_iAtm%tl(n) = l_iAtm%tlint_save
     tl_TL(n) = t_int_TL
     DO j = 1, Atm_In%n_Absorbers
-      iAtm%al(n,j) = iAtm%aln_save(j)
-      CALL Interp_Linear_TL( iAtm%ilpoly, iAtm%al(n-1:n,j), lpoly_TL, al_TL(n-1:n,j), a_int_TL )
-      iAtm%al(n,j) = iAtm%alint_save(j)
+      l_iAtm%al(n,j) = l_iAtm%aln_save(j)
+      CALL Interp_Linear_TL( l_iAtm%ilpoly, l_iAtm%al(n-1:n,j), lpoly_TL, al_TL(n-1:n,j), a_int_TL )
+      l_iAtm%al(n,j) = l_iAtm%alint_save(j)
       al_TL(n,j) = a_int_TL
     END DO
     
     ! Now compute the model profile layer averages
     DO k = 1, n
-      CALL Layer_P_TL( iAtm%pl(k-1:k), pl_TL(k-1:k), p_TL(k))
+      CALL Layer_P_TL( l_iAtm%pl(k-1:k), pl_TL(k-1:k), p_TL(k))
       CALL Layer_X_TL( tl_TL(k-1:k), t_TL(k) )
     END DO
     DO j = 1, Atm_In%n_Absorbers
@@ -464,15 +478,15 @@ CONTAINS
     
     ! Now, extrapolate user layer profile to get the "layer 0" value and
     ! use it to shift the model profile to avoid a discontinuity at p(n)
-    CALL Interp_LPoly_TL( iAtm%p(n), Atm_In%Pressure(1:2), p_TL(n), Atm_In_TL%Pressure(1:2), lpoly_TL )
-    CALL Shift_Profile_TL( iAtm%elpoly, Atm_In%Temperature(1:2), lpoly_TL, Atm_In_TL%Temperature(1:2), t_TL )
+    CALL Interp_LPoly_TL( l_iAtm%p(n), Atm_In%Pressure(1:2), p_TL(n), Atm_In_TL%Pressure(1:2), lpoly_TL )
+    CALL Shift_Profile_TL( l_iAtm%elpoly, Atm_In%Temperature(1:2), lpoly_TL, Atm_In_TL%Temperature(1:2), t_TL )
     DO j = 1, Atm_In%n_Absorbers
-      CALL Shift_Profile_TL( iAtm%elpoly, Atm_In%Absorber(1:2,j), lpoly_TL, Atm_In_TL%Absorber(1:2,j), a_TL(:,j) )
+      CALL Shift_Profile_TL( l_iAtm%elpoly, Atm_In%Absorber(1:2,j), lpoly_TL, Atm_In_TL%Absorber(1:2,j), a_TL(:,j) )
     END DO
     
     ! Make sure the absorber amounts are not negative.
     ! (Is a further, more physical, check needed here?)
-    WHERE (iAtm%a_save < ZERO) a_TL = ZERO
+    WHERE (l_iAtm%a_save < ZERO) a_TL = ZERO
     
 
     ! Copy over the atmosphere structure with extra layers
@@ -525,6 +539,17 @@ CONTAINS
 
     ! Clean up
     ! --------
+    ! Locally copied structures
+    Error_Status = Destroy_iAtm( l_iAtm, Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN 
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error destroying local iAtm internal variable structure', & 
+                            Error_Status, &
+                            Message_Log=Message_Log )  
+      RETURN
+    END IF
+    ! Local allocated arrays
     DEALLOCATE( pl_TL, tl_TL, al_TL, &  ! Level arrays
                 p_TL , t_TL , a_TL , &  ! Layer arrays
                 STAT=Allocate_Status )
