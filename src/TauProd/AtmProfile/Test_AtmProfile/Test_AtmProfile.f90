@@ -122,7 +122,7 @@ PROGRAM Test_AtmProfile
   Error_Status = Read_AtmProfile_netCDF( INPUT_FILENAME, &
                                          AtmProfile2, &
                                          Profile_Set=Profile_Set, &
-                                         Quiet = SET )
+                                         Quiet = .TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN                              
     CALL Display_Message( PROGRAM_NAME, &                         
                           'Error reading into the array the same size as file '//& 
@@ -146,7 +146,7 @@ PROGRAM Test_AtmProfile
   ! larger than number of profiles in file
   Error_Status = Read_AtmProfile_netCDF( INPUT_FILENAME, &
                                          AtmProfile3, &
-                                         Quiet = SET )
+                                         Quiet = .TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &                         
                           'Error reading into array larger than size of file '//& 
@@ -186,7 +186,7 @@ PROGRAM Test_AtmProfile
   ! Read the file just written
   Error_Status = Read_AtmProfile_netCDF( OUTPUT_FILENAME,  &
                                          AtmProfile2, &
-                                         Quiet = SET )
+                                         Quiet = .TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error reading AtmProfile structure array from file '//&
@@ -211,7 +211,7 @@ PROGRAM Test_AtmProfile
   Error_Status = Write_AtmProfile_netCDF( OUTPUT_FILENAME, &
                                           AtmProfile2, &
                                           Profile_Set = Profile_Set, &
-                                          Quiet = SET )
+                                          Quiet = .TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN                              
     CALL Display_Message( PROGRAM_NAME, &                          
                           'Error writing AtmProfile structure array using Profile_Set to file '//&
@@ -224,7 +224,7 @@ PROGRAM Test_AtmProfile
   ! Read the file just written
   Error_Status = Read_AtmProfile_netCDF( OUTPUT_FILENAME,  &
                                          AtmProfile2, &
-                                         Quiet = SET )
+                                         Quiet = .TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error reading AtmProfile structure array from file '//&

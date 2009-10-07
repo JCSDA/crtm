@@ -67,9 +67,6 @@ PROGRAM Create_AtmProfile
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ZEROpointFIVE = 0.5_fp
-  ! Keyword status
-  INTEGER, PARAMETER :: UNSET = 0
-  INTEGER, PARAMETER :: SET   = 1
   ! Pressure cutoff
   REAL(fp), PARAMETER :: PRESSURE_CUTOFF = 10.0_fp
 
@@ -92,7 +89,7 @@ PROGRAM Create_AtmProfile
   INTEGER :: n_Absorbers, j, j_idx(1)
   INTEGER :: n_Profiles, m, im
   INTEGER :: Profile_Set
-  INTEGER :: Quiet
+  LOGICAL :: Quiet
   CHARACTER(512) :: History
   CHARACTER(256) :: Comment
   CHARACTER(256) :: Interpolation_RCS_Id
@@ -532,9 +529,9 @@ PROGRAM Create_AtmProfile
   END IF
   ! ...Set the quiet flag for large data sets
   IF ( n_Profiles > 100 ) THEN
-    Quiet = SET
+    Quiet = .TRUE.
   ELSE
-    Quiet = UNSET
+    Quiet = .FALSE.
   END IF
   ! ...Write the data to file
   Error_Status = Write_AtmProfile_netCDF( AtmProfile_Filename, &
