@@ -544,7 +544,6 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!
 !       Profile_Set:    Integer array specifying the profiles to be written
 !                       UNITS:      N/A
 !                       TYPE:       INTEGER
@@ -555,10 +554,10 @@ CONTAINS
 !                       printed to standard output (or the msg log file if
 !                       the Message_Log optional argument is used.) By default,
 !                       information msgs are printed.
-!                       If QUIET = 0, information msgs are OUTPUT.
-!                          QUIET = 1, information msgs are SUPPRESSED.
+!                       If QUIET = .FALSE., information msgs are OUTPUT. (DEFAULT)
+!                          QUIET = .TRUE.,  information msgs are SUPPRESSED.
 !                       UNITS:      N/A
-!                       TYPE:       Integer
+!                       TYPE:       LOGICAL
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -635,7 +634,7 @@ CONTAINS
     CHARACTER(*),           INTENT(IN)     :: NC_Filename
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: Profile_Set(:)
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
+    LOGICAL,      OPTIONAL, INTENT(IN)     :: Quiet
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Title  
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: History
@@ -664,7 +663,7 @@ CONTAINS
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
     IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
+      IF ( Quiet ) Noisy = .FALSE.
     END IF
 
     ! Create the output data file
@@ -804,25 +803,31 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:          Set this keyword to suppress information messages being
+!       Profile_Set:    Integer array specifying the profiles to be read                  
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Quiet:          Set this logical keyword to suppress information messages being
 !                       printed to standard output (or the msg log file if
 !                       the Message_Log optional argument is used.) By default,
 !                       information messages are printed.
-!                       If QUIET = 0, information messages are OUTPUT.
-!                          QUIET = 1, information messages are SUPPRESSED.
+!                       If QUIET = .FALSE., information messages are OUTPUT. (DEFAULT)
+!                          QUIET = .TRUE.,  information messages are SUPPRESSED.
 !                       UNITS:      N/A
-!                       TYPE:       INTEGER
+!                       TYPE:       LOGICAL
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Reverse:        Set this keyword to reverse the order of the profile data
+!       Reverse:        Set this logical keyword to reverse the order of the profile data
 !                       arrays in the K index (vertical) dimension.
-!                       If REVERSE = 0, arrays are returned as they are stored in
+!                       If REVERSE = .FALSE., arrays are returned as they are stored in
 !                                       the netCDF input file (DEFAULT)
-!                          REVERSE = 1, arrays are returned in reverse order to how
+!                          REVERSE = .TRUE., arrays are returned in reverse order to how
 !                                       they are stored in the netCDF input file.
 !                       UNITS:      N/A
-!                       TYPE:       INTEGER
+!                       TYPE:       LOGICAL
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -836,13 +841,6 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!
-!       Profile_Set:    Integer array specifying the profiles to be read                  
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Rank-1
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 !       Profile_Set_Id: Character string written into the PROFILE_SET_ID global
 !                       attribute field of the netCDF AtmProfile file.
 !                       Identifies the dependent profile set.
@@ -915,8 +913,8 @@ CONTAINS
     CHARACTER(*),           INTENT(IN)     :: NC_Filename   
     TYPE(AtmProfile_type),  INTENT(IN OUT) :: AtmProfile(:)
     INTEGER,      OPTIONAL, INTENT(IN)     :: Profile_Set(:)
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Reverse
+    LOGICAL,      OPTIONAL, INTENT(IN)     :: Quiet
+    LOGICAL,      OPTIONAL, INTENT(IN)     :: Reverse
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Profile_Set_Id
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
     CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
@@ -947,14 +945,14 @@ CONTAINS
     Noisy = .TRUE.
     ! ....unless the QUIET keyword is set.
     IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
+      IF ( Quiet ) Noisy = .FALSE.
     END IF
 
     ! Do NOT reverse profile....
     ReverseProfile = .FALSE.
     ! ....unless the REVERSE keyword is set.
     IF ( PRESENT(Reverse) ) THEN
-      IF ( Reverse == SET ) ReverseProfile = .TRUE.
+      IF ( Reverse ) ReverseProfile = .TRUE.
     END IF
     
     ! Inquire the dimensions for the file

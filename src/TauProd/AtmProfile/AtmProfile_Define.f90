@@ -44,6 +44,7 @@ MODULE AtmProfile_Define
   PUBLIC :: Assign_AtmProfile
   PUBLIC :: Equal_AtmProfile
   PUBLIC :: Info_AtmProfile
+  PUBLIC :: Inspect_AtmProfile
   PUBLIC :: CheckRelease_AtmProfile
 
 
@@ -119,7 +120,11 @@ MODULE AtmProfile_Define
   ! Component invalid values
   REAL(Double),  PARAMETER :: ATMPROFILE_FP_INVALID = -999.0_Double
 
-  ! AtmProfile
+
+  ! --------------------------
+  ! AtmProfile type definition
+  ! --------------------------
+  !:tdoc+:
   TYPE :: AtmProfile_type
     INTEGER :: n_Allocates = 0
     ! Release and version information
@@ -156,18 +161,11 @@ MODULE AtmProfile_Define
     REAL(Double), POINTER :: Layer_Absorber(:,:)  => NULL()  ! Dimension K x J 
     REAL(Double), POINTER :: Layer_Delta_Z(:)     => NULL()  ! Dimension K 
   END TYPE AtmProfile_type
+  !:tdoc-:
 
 
 CONTAINS
 
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -181,7 +179,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Association_Status = Associated_AtmProfile( AtmProfile       , &  ! Input
-!                                                   ANY_Test=Any_Test  )  ! Optional input
+!                                                   ANY_Test=ANY_Test  )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       AtmProfile:          AtmProfile structure which is to have its pointer
@@ -192,16 +190,16 @@ CONTAINS
 !                            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:            Set this argument to test if ANY of the
+!       ANY_Test:            Set this logical argument to test if ANY of the
 !                            AtmProfile structure pointer members are associated.
 !                            The default is to test if ALL the pointer members
 !                            are associated.
-!                            If ANY_Test = 0, test if ALL the pointer members
+!                            If ANY_Test = .FALSE., test if ALL the pointer members
 !                                             are associated.  (DEFAULT)
-!                               ANY_Test = 1, test if ANY of the pointer members
+!                               ANY_Test = .TRUE.,  test if ANY of the pointer members
 !                                             are associated.
 !                            UNITS:      N/A
-!                            TYPE:       INTEGER
+!                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -222,12 +220,13 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Associated_AtmProfile( AtmProfile, &  ! Input          
-                                ANY_Test) &  ! Optional input 
-                              RESULT(Association_Status)      
+  FUNCTION Associated_AtmProfile( &
+    AtmProfile, &  ! Input          
+    ANY_Test  ) &  ! Optional input 
+  RESULT(Association_Status)      
     ! Arguments
     TYPE(AtmProfile_type), INTENT(IN) :: AtmProfile
-    INTEGER, OPTIONAL    , INTENT(IN) :: ANY_Test
+    LOGICAL, OPTIONAL    , INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
@@ -238,7 +237,7 @@ CONTAINS
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
     IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
+      IF ( ANY_Test ) ALL_Test = .FALSE.
     END IF
     
     ! Test the structure associations    
@@ -289,7 +288,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Destroy_AtmProfile( AtmProfile             , &  ! Output
-!                                          RCS_Id     =RCS_Id     , &  ! Revision control
 !                                          Message_Log=Message_Log  )  ! Error messaging
 !
 ! OUTPUT ARGUMENTS:
@@ -308,14 +306,6 @@ CONTAINS
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -342,13 +332,11 @@ CONTAINS
   FUNCTION Destroy_Scalar( &
     AtmProfile , &  ! Output
     No_Clear   , &  ! Optional input
-    RCS_Id     , &  ! Revision control
     Message_Log) &  ! Error messaging
   RESULT(Error_Status)
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
-    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    LOGICAL,      OPTIONAL, INTENT(IN)     :: No_Clear
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -362,7 +350,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Reset the dimension indicators
     AtmProfile%n_Levels    = 0
@@ -374,7 +361,7 @@ CONTAINS
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
     IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
+      IF ( No_Clear ) Clear = .FALSE.
     END IF
     IF ( Clear ) CALL Clear_AtmProfile(AtmProfile)
     
@@ -425,13 +412,11 @@ CONTAINS
   FUNCTION Destroy_Rank1( &
     AtmProfile , &  ! Output
     No_Clear   , &  ! Optional input
-    RCS_Id     , &  ! Revision control
     Message_Log) &  ! Error messaging
   RESULT(Error_Status)
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
-    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
+    LOGICAL,      OPTIONAL, INTENT(IN)     :: No_Clear
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -444,7 +429,6 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     ! Loop over scalar function
     DO m = 1, SIZE(AtmProfile)
@@ -475,7 +459,6 @@ CONTAINS
 !       Error_Status = Allocate_AtmProfile( n_Layers               , &  ! Input
 !                                           n_Absorbers            , &  ! Input
 !                                           AtmProfile             , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
 !                                           Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -510,15 +493,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the ERROR_HANDLER module.
@@ -545,14 +519,12 @@ CONTAINS
     n_Layers   , &  ! Input
     n_Absorbers, &  ! Input
     AtmProfile , &  ! Output
-    RCS_Id     , &  ! Revision control
     Message_Log) &  ! Error messaging
   RESULT( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: n_Layers
     INTEGER,                INTENT(IN)     :: n_Absorbers
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -565,7 +537,6 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     ! ...Check dimensions
     IF ( n_Layers    < 1 .OR. &
          n_Absorbers < 1      ) THEN
@@ -574,9 +545,9 @@ CONTAINS
     END IF
     n_Levels = n_Layers + 1
     ! ...Check if ANY pointers are already associated.
-    IF ( Associated_AtmProfile( AtmProfile, ANY_Test=SET ) ) THEN
+    IF ( Associated_AtmProfile( AtmProfile, ANY_Test=.TRUE. ) ) THEN
       Error_Status = Destroy_AtmProfile( AtmProfile, &               
-                                         No_Clear=SET, &            
+                                         No_Clear=.TRUE., &            
                                          Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error deallocating AtmProfile prior to allocation.'
@@ -648,14 +619,12 @@ CONTAINS
     n_Layers   , &  ! Input
     n_Absorbers, &  ! Input
     AtmProfile , &  ! Output
-    RCS_Id     , &  ! Revision control
     Message_Log) &  ! Error messaging
   RESULT( Error_Status )
     ! Arguments
     INTEGER,                INTENT(IN)     :: n_Layers
     INTEGER,                INTENT(IN)     :: n_Absorbers
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -667,7 +636,6 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     
     
     ! Loop over scalar function
@@ -697,7 +665,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Assign_AtmProfile( AtmProfile_in          , &  ! Input
 !                                         AtmProfile_out         , &  ! Output
-!                                         RCS_Id     =RCS_Id     , &  ! Revision control
 !                                         Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -724,14 +691,6 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:         Character string containing the Revision Control
-!                       System Id field for the module.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
 !                       The error codes are defined in the ERROR_HANDLER module.
@@ -752,13 +711,11 @@ CONTAINS
   FUNCTION Assign_Scalar( &
     AtmProfile_in , &  ! Input
     AtmProfile_out, &  ! Output
-    RCS_Id        , &  ! Revision control
     Message_Log   ) &  ! Error messaging
   RESULT( Error_Status )
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN)     :: AtmProfile_in
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -767,7 +724,6 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     ! ...ALL *input* pointers must be associated
     IF ( .NOT. Associated_AtmProfile( AtmProfile_in ) ) THEN
       Error_Status = FAILURE
@@ -830,13 +786,11 @@ CONTAINS
   FUNCTION Assign_Rank1( &
     AtmProfile_in , &  ! Input
     AtmProfile_out, &  ! Output
-    RCS_Id        , &  ! Revision control
     Message_Log   ) &  ! Error messaging
   RESULT( Error_Status )
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN)     :: AtmProfile_in(:)
     TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile_out(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -848,7 +802,6 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     ! ...Check dimensions
     n_Profiles = SIZE(AtmProfile_in)
     IF ( SIZE(AtmProfile_out) /= n_Profiles ) THEN
@@ -890,7 +843,6 @@ CONTAINS
 !                                        AtmProfile_RHS         , &  ! Input
 !                                        ULP_Scale  =ULP_Scale  , &  ! Optional input
 !                                        Check_All  =Check_All  , &  ! Optional input
-!                                        RCS_Id     =RCS_Id     , &  ! Revision control
 !                                        Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -923,18 +875,18 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Check_All:       Set this argument to check ALL the floating point
+!       Check_All:       Set this logical argument to check ALL the floating point
 !                        channel data of the AtmProfile structures. The default
 !                        action is return with a FAILURE status as soon as
 !                        any difference is found. This optional argument can
 !                        be used to get a listing of ALL the differences
 !                        between data in AtmProfile structures.
-!                        If == 0, Return with FAILURE status as soon as
-!                                 ANY difference is found  *DEFAULT*
-!                           == 1, Set FAILURE status if ANY difference is
+!                        If == .FALSE., Return with FAILURE status as soon as
+!                                 ANY difference is found  (DEFAULT)
+!                           == .TRUE.,  Set FAILURE status if ANY difference is
 !                                 found, but continue to check ALL data.
 !                        UNITS:      N/A
-!                        TYPE:       INTEGER
+!                        TYPE:       LOGICAL
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -946,14 +898,6 @@ CONTAINS
 !                        TYPE:       CHARACTER(*)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -973,15 +917,13 @@ CONTAINS
     AtmProfile_RHS, &  ! Input
     ULP_Scale     , &  ! Optional input
     Check_All     , &  ! Optional input
-    RCS_Id        , &  ! Revision control
     Message_Log   ) &  ! Error messaging
   RESULT( Error_Status )
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_LHS
     TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_RHS
     INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -995,7 +937,6 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     ! ...Set precision
     ULP = 1
     IF ( PRESENT( ULP_Scale ) ) THEN
@@ -1004,7 +945,7 @@ CONTAINS
     ! ...Set return action
     Check_Once = .TRUE.
     IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Check_Once = .FALSE.
+      IF ( Check_All ) Check_Once = .FALSE.
     END IF
     ! ...Check the structure association status
     IF ( .NOT. Associated_AtmProfile( AtmProfile_LHS ) ) THEN
@@ -1187,15 +1128,13 @@ CONTAINS
     AtmProfile_RHS, &  ! Input
     ULP_Scale     , &  ! Optional input
     Check_All     , &  ! Optional input
-    RCS_Id        , &  ! Revision control
     Message_Log   ) &  ! Error messaging
   RESULT( Error_Status )
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_LHS(:)
     TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_RHS(:)
     INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1209,11 +1148,10 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
     ! ...Set return action
     Return_on_Fail = .TRUE.
     IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Return_on_Fail = .FALSE.
+      IF ( Check_All ) Return_on_Fail = .FALSE.
     END IF
     ! ...Check dimensions
     n_Profiles = SIZE(AtmProfile_LHS)
@@ -1256,7 +1194,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CheckRelease_AtmProfile( AtmProfile             , &  ! Input
-!                                               RCS_Id     =RCS_Id     , &  ! Revision control
 !                                               Message_Log=Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -1277,14 +1214,6 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
@@ -1300,12 +1229,10 @@ CONTAINS
 !----------------------------------------------------------------------------------
 
   FUNCTION CheckRelease_AtmProfile( AtmProfile , &  ! Input
-                                    RCS_Id     , &  ! Revision control
                                     Message_Log) &  ! Error messaging
                                   RESULT( Error_Status )
     ! Arguments
     TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -1315,12 +1242,9 @@ CONTAINS
     CHARACTER(ML) :: Message
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
     ! Check release is not too old
-    ! ----------------------------
     IF ( AtmProfile%Release < ATMPROFILE_RELEASE ) THEN
       WRITE( Message,'("An AtmProfile data update is needed. ",&
                       &"AtmProfile release is ",i0,&
@@ -1335,7 +1259,6 @@ CONTAINS
     END IF
 
     ! Check release is not too new
-    ! ----------------------------
     IF ( AtmProfile%Release > ATMPROFILE_RELEASE ) THEN
       WRITE( Message,'("An AtmProfile software update is needed. ",&
                       &"AtmProfile release is ",i0,&
@@ -1352,7 +1275,6 @@ CONTAINS
   END FUNCTION CheckRelease_AtmProfile
 
 
-
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1364,9 +1286,8 @@ CONTAINS
 !       AtmProfile data structure.
 !
 ! CALLING SEQUENCE:
-!       CALL Inf_AtmProfile( AtmProfile   , &  ! Input
-!                            Info         , &  ! Output
-!                            RCS_Id=RCS_Id  )  ! Revision control
+!       CALL Inf_AtmProfile( AtmProfile, &  ! Input
+!                            Info        )  ! Output
 ! 
 ! INPUT ARGUMENTS:
 !       AtmProfile:    Filled AtmProfile structure.
@@ -1383,24 +1304,15 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Info_AtmProfile( AtmProfile, &  ! Input
-                              Info      , &  ! Output
-                              RCS_Id      )  ! Revision control
+  SUBROUTINE Info_AtmProfile( &
+    AtmProfile, &  ! Input
+    Info        )  ! Output
     ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
-    CHARACTER(*)          , INTENT(OUT) :: Info
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    TYPE(AtmProfile_type), INTENT(IN)  :: AtmProfile
+    CHARACTER(*)         , INTENT(OUT) :: Info
     ! Parameters
     INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
     INTEGER, PARAMETER :: LINEFEED = 10
@@ -1408,12 +1320,7 @@ CONTAINS
     CHARACTER(256) :: FmtString
     CHARACTER(512) :: LongString
 
-    ! Set up
-    ! ------
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
     ! Create the format string
-    ! ------------------------
     WRITE( FmtString,'("(a,",''" AtmProfile RELEASE.VERSION: "'',",i2,",''"."'',",i2.2,2x,", &
                       &''"N_LAYERS="'',",i0,2x,", &
                       &''"N_ABSORBERS="'',",i0,2x,",&
@@ -1423,7 +1330,6 @@ CONTAINS
 
 
     ! Write the required data to the local string
-    ! -------------------------------------------
     WRITE( LongString,FMT=FmtString ) ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
                                       AtmProfile%Release, AtmProfile%Version, &
                                       AtmProfile%n_Layers, &
@@ -1435,10 +1341,88 @@ CONTAINS
 
     ! Trim the output based on the
     ! dummy argument string length
-    ! ----------------------------
     Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
 
   END SUBROUTINE Info_AtmProfile
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Inspect_AtmProfile
+!
+! PURPOSE:
+!       Subroutine to display the contents of an AtmProfile structure
+!       to stdout.
+!
+! CALLING SEQUENCE:
+!       CALL Inspect_AtmProfile( AtmProfile )
+! 
+! INPUT ARGUMENTS:
+!       AtmProfile:    Filled AtmProfile structure.
+!                      UNITS:      N/A
+!                      TYPE:       AtmProfile_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Inspect_AtmProfile( AtmProfile )
+    ! Arguments
+    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
+    ! Local variables
+    CHARACTER(512) :: Info
+    INTEGER :: j
+
+    ! Display structure info message
+    CALL Info_AtmProfile( AtmProfile, Info )
+    WRITE(*,'(a)') TRIM(Info)
+    
+    ! Display metadata
+    WRITE(*,'(5x,"DESCRIPTION: ",a)') TRIM(AtmProfile%Description)
+    WRITE(*,'(5x,"CLIMATOLOGY: ",i0)') AtmProfile%Climatology_Model
+    WRITE(*,'(5x,"DATE (YYYYMMDD): ",i4,i2.2,i2.2)') AtmProfile%Year, &
+                                                     AtmProfile%Month, &
+                                                     AtmProfile%Day
+    WRITE(*,'(5x,"LATITUDE : ",f8.3)') AtmProfile%Latitude
+    WRITE(*,'(5x,"LONGITUDE: ",f8.3)') AtmProfile%Longitude
+    WRITE(*,'(5x,"SURFACE ALTITUDE: ",es13.6)') AtmProfile%Surface_Altitude
+    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    
+    ! Display Level data
+    WRITE(*,'(5x,"LEVEL PRESSURE: ")')
+    WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Pressure
+    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    WRITE(*,'(5x,"LEVEL TEMPERATURE: ")')
+    WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Temperature
+    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    DO j = 1, AtmProfile%n_Absorbers
+      WRITE(*,'(5x,"ABSORBER #",i0," LEVEL AMOUNT: ")') j
+      WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Absorber(:,j)
+      WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    END DO
+    WRITE(*,'(5x,"LEVEL ALTITUDE: ")')
+    WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Altitude
+    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    
+    ! Display Layer data
+    WRITE(*,'(5x,"LAYER PRESSURE: ")')
+    WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Pressure
+    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    WRITE(*,'(5x,"LAYER TEMPERATURE: ")')
+    WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Temperature
+    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    DO j = 1, AtmProfile%n_Absorbers
+      WRITE(*,'(5x,"ABSORBER #",i0," LAYER AMOUNT: ")') j
+      WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Absorber(:,j)
+      WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
+    END DO
+    WRITE(*,'(5x,"LAYER THICKNESS: ")')
+    WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Delta_Z
+
+  END SUBROUTINE Inspect_AtmProfile
 
 
 !##################################################################################
