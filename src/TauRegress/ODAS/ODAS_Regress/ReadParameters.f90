@@ -226,7 +226,8 @@ Loop_notes: do i =1, n_Nodes
 
     SatIdWmo  = SensorInfo%WMO_Satellite_ID
     SenIdWmo  = SensorInfo%WMO_Sensor_ID
-    SenType   = SensorInfo%Sensor_Type
+!    SenType   = SensorInfo%Sensor_Type
+    SenIdNcep = -1 !SensorInfo%NCEP_Sensor_ID
 
 
     !--- retrieve channel type
@@ -246,7 +247,8 @@ Loop_notes: do i =1, n_Nodes
     print *, 'Sen           = ', SenName
     print *, 'Sat ID (WMO)  = ', SatIdWmo
     print *, 'Sen ID (WMO)  = ', SenIdWmo
-    print *, 'Sen Type      = ', SenType
+    print *, 'Sen ID (NCEP) = ', SenIdNcep
+!    print *, 'Sen Type      = ', SenType
     print *, '# of sen ch   = ', Nchan
     print *, 'Top  ch seq # = ', Ichan_top
     print *, 'Last ch seq # = ', Ichan_last

@@ -30,8 +30,8 @@ SRC_FILES = Type_Kinds.f90 \
             Sort_Utility.f90 \
             Compare_Float_Numbers.f90 \
             Endian_Utility.f90 \
-            ODAS_Define.f90 \
-            ODAS_netCDF_IO.f90 \
+            TmpODAS_Define.f90 \
+            TmpODAS_netCDF_IO.f90 \
             ODPS_Define.f90 \
             ODPS_netCDF_IO.f90 \
             ODPS_Predictor_Define.f90 \

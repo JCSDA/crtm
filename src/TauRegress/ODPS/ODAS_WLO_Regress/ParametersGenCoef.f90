@@ -107,8 +107,8 @@ module ParametersGenCoef
 !original                            15._fp_kind,  &    ! wet
                                      13._fp_kind,  &    ! wet
 !most stable                         12._fp_kind,  &    ! wet
-                                     4._fp_kind  /)    ! ozone !less stable
-!                                      8._fp_kind  /)    ! ozone
+!                                     4._fp_kind  /)    ! ozone !less stable
+                                      8._fp_kind  /)    ! ozone
   real(fp_kind)           :: Abslvl_coef1, Abslvl_coef2 ! A(k) = abscoef1 * exp(alpha*k) + abscoef2
   real(fp_kind)           :: MaxAbsAmount
   real(fp_kind)           :: MinAbsAmount

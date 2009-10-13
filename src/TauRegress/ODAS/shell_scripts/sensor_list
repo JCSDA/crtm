@@ -210,10 +210,18 @@ vtprS4_itos
 
 BEGIN_LIST
 
-mhs_n18
+imgrD1_g14
+imgrD2_g14
+imgr_g14
+sndrD1_g14
+sndrD2_g14
+sndrD3_g14
+sndrD4_g14
+sndr_g14
+ 
 
 END_LIST
-
+ 
 modisS_aqua
 modisD01S_aqua
 modisD02S_aqua 

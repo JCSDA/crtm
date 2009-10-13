@@ -10,10 +10,11 @@ Message_Handler.o : Message_Handler.f90 File_Utility.o
 Polynomial_Interpolation.o : Polynomial_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
 ProcessControl_Define.o : ProcessControl_Define.f90 Message_Handler.o Type_Kinds.o 
 ProcessControl_IO.o : ProcessControl_IO.f90 ProcessControl_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
-SRF_Define.o : SRF_Define.f90 Integrate_Utility.o Message_Handler.o Type_Kinds.o 
-SRF_netCDF_IO.o : SRF_netCDF_IO.f90 netCDF_Utility.o SRF_Define.o Message_Handler.o Type_Kinds.o 
+SRF_Define.o : SRF_Define.f90 Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+SRF_netCDF_IO.o : SRF_netCDF_IO.f90 SRF_Define.o String_Utility.o Message_Handler.o Type_Kinds.o 
 Search_Utility.o : Search_Utility.f90 Message_Handler.o Type_Kinds.o 
 Spline_Interpolation.o : Spline_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+String_Utility.o : String_Utility.f90 
 TauProfile_Define.o : TauProfile_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 TauProfile_netCDF_IO.o : TauProfile_netCDF_IO.f90 netCDF_Utility.o TauProfile_Define.o Message_Handler.o Type_Kinds.o 
 Tau_Production_Parameters.o : Tau_Production_Parameters.f90 LBLRTM_Parameters.o Type_Kinds.o 

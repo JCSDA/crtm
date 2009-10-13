@@ -35,13 +35,13 @@
 #jcsda/noscrub/wx23yc/TauProfile_Angle/ECMWF83_CFC
 :MAX_CPUs:96
 :CH_INT:1
-:EXE_FILE:/jcsda/save/wx23yc/TauRegress/ODPS/ODPS_Regress/Compute_Coeff
-:WORK_DIR:/jcsda/noscrub/wx23yc/CRTM_ODPStraining/work_ir_test3
+:EXE_FILE:/jcsda/save/wx23yc/CRTM_clean_copy/src_0824/src/TauRegress/ODPS/ODPS_Regress/Compute_Coeff
+:WORK_DIR:/jcsda/noscrub/wx23yc/CRTM_ODPStraining/work_ir_test4
 :PROF_SET:ECMWF83
-:SPC_COEFF_DIR:/jcsda/save/wx23yc/CRTM_svn/trunk/fix/SpcCoeff/Infrared/netCDF
+:SPC_COEFF_DIR:/jcsda/save/wx23yc/CRTM_clean_copy/fix/SpcCoeff/Infrared/netCDF
 :TAU_PROFILE_DIR:/jcsda/noscrub/wx23yc/TauProfile_Angle/ECMWF83_BB
 :ATM_PROFLE_FILE:/jcsda/save/wx23yc/CRTM_svn/trunk/src/TauProd/AtmProfile/netCDF/ECMWF_101LVL_83ATM.AtmProfile.nc
-:GET_SEN_INFO:/jcsda/save/wx23yc/CRTM_ODPStraining/training/src_GetSenInfo/GetSenInfo
+:GET_SEN_INFO:/jcsda/save/wx23yc/CRTM_clean_copy/src_0824/src/TauRegress/ODPS/GetSenInfo/GetSenInfo
 :IR_TYPE:2
 :COMPONENTS:DEFAULT
 #COMPONENTS:ozo

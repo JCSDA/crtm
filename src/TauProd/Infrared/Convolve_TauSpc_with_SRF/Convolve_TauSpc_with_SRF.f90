@@ -69,10 +69,10 @@ PROGRAM Convolve_TauSpc_with_SRF
   REAL(fp), PARAMETER :: TOLERANCE     = EPSILON( ONE )
   REAL(fp), PARAMETER :: TAU_TOLERANCE = FIVE * TOLERANCE
 
-  INTEGER, PARAMETER ::   UPWELLING_DIRECTION = 1
-  INTEGER, PARAMETER :: DOWNWELLING_DIRECTION = 2
-  CHARACTER(*), PARAMETER, DIMENSION( 2 ) :: DIRECTION_NAME = (/ 'upwelling  ', &
-                                                                 'downwelling' /)
+!  INTEGER, PARAMETER ::   UPWELLING_DIRECTION = 1
+!  INTEGER, PARAMETER :: DOWNWELLING_DIRECTION = 2
+!  CHARACTER(*), PARAMETER, DIMENSION( 2 ) :: DIRECTION_NAME = (/ 'upwelling  ', &
+!                                                                 'downwelling' /)
 
 
   ! ---------

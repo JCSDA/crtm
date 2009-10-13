@@ -29,9 +29,9 @@ PROGRAM Cat_ODAS
   ! ------------
 
   USE Message_handler
-  USE ODAS_Define
-  Use ODAS_netCDF_IO
-  
+  USE TauCoeff_Define
+  Use TauCoeff_netCDF_IO
+   
   IMPLICIT NONE
 
     ! ----------
@@ -41,11 +41,12 @@ PROGRAM Cat_ODAS
  
     character(256) :: nc_file1, nc_file2, nc_file_out
   
-    TYPE( ODAS_type )  :: TauCoeff1, TauCoeff2
+    TYPE( TauCoeff_type )  :: TauCoeff1, TauCoeff2
        
     character(2048) :: History
     character(2048) :: Title, Comment, ID_Tag
- 
+    character(64)   :: Sensor_Name, Platform_Name
+
     integer :: cat_type, Error_Status
   
     print *, 'Enter in filename #1: '
@@ -62,40 +63,43 @@ PROGRAM Cat_ODAS
             
 
     !--- read Tau coefficient data
+    				      				    
+    Error_Status = Read_TauCoeff_netCDF( nc_file1, TauCoeff1, &
 
-    Error_Status = Read_ODAS_netCDF(nc_file1, TauCoeff1, &
                                     Title=Title,             &  
                                     History=History,           &  
+                                    Sensor_Name=Sensor_Name,       &  
+                                    Platform_Name=Platform_Name,     &  
                                     Comment=Comment,           &  
-                                    Profile_Set_Id=ID_Tag )  
-
-
+                                    ID_Tag=ID_Tag )  
+    
+    
     if ( Error_Status /= SUCCESS ) then
 
       print *, 'Error in reading the file '//nc_file1
       stop 90
       
-    endif
+    endif				      
 
 
-    Error_Status = Read_ODAS_netCDF( nc_file2, TauCoeff2 ) 
+    Error_Status = Read_TauCoeff_netCDF( nc_file2, TauCoeff2 ) 
 
     if ( Error_Status /= SUCCESS ) then
 
       print *, 'Error in reading the file '//nc_file2
       stop 90
       
-    endif
+    endif				      
     
     select case (cat_type)
     
       case (1) 
   
-        Error_Status = Concatenate_Absorber_ODAS( TauCoeff1, TauCoeff2 )
+        Error_Status = Concatenate_Absorber_TauCoeff( TauCoeff1, TauCoeff2 )
       
       case (2)
           
-        Error_Status = Concatenate_Channel_ODAS( TauCoeff1, TauCoeff2 )
+        Error_Status = Concatenate_Channel_TauCoeff( TauCoeff1, TauCoeff2 )
       
       case default
       
@@ -109,23 +113,26 @@ PROGRAM Cat_ODAS
       print *, 'Error in merging the two files: '//nc_file1//' and '//nc_file2 
       stop 90
       
-    endif
+    endif				      
     
-    Error_Status = Write_ODAS_netCDF( nc_file_out,   &  
-                                      TauCoeff1,      &       
-                                      Title=Title,         &  
-                                      History=History,       &
-                                      Comment=Comment,       &
-                                      Profile_Set_Id=ID_Tag ) 
+    Error_Status = Write_TauCoeff_netCDF( nc_file_out,   &  
+                                  TauCoeff1,      &  
+                                  Title=Title,         & 
+                                  History=History,       & 
+                                  Sensor_Name=Sensor_Name,   & 
+                                  Platform_Name=Platform_Name, & 
+                                  Comment=Comment,       & 
+                                  ID_Tag=ID_Tag )
 
     if ( Error_Status /= SUCCESS ) then
 
       print *, 'Error in writing ot the file: '//nc_file_out 
       stop 90
       
-    endif
+    endif				      
 
     print *, 'Normal End'
     
+     
 end program Cat_ODAS
     

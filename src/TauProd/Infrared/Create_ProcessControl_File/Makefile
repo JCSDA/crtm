@@ -29,10 +29,12 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Attribute_Utility.f90 \
             netCDF_Variable_Utility.f90 \
             SensorInfo_Define.f90 \
+            SensorInfo_Parameters.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
             SRF_Define.f90 \
             SRF_netCDF_IO.f90 \
+            String_Utility.f90 \
             LBLRTM_Parameters.f90 \
             Tau_Production_Parameters.f90 \
             Tau_Production_Utility.f90 \

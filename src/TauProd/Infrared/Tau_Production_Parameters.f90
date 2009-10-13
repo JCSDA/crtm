@@ -10,6 +10,10 @@
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
 !                       paul.vandelst@ssec.wisc.edu
 !
+!
+!       Modified by:    Yong Chen, CIRA/JCSDA 22-Sep-2008
+!                       Yong.Chen@noaa.gov
+!
 
 MODULE Tau_Production_Parameters
 
@@ -36,13 +40,16 @@ MODULE Tau_Production_Parameters
   ! Atmospheric profile information
   ! -------------------------------
   ! The number of recognised profile sets
-  INTEGER, PUBLIC, PARAMETER :: N_PROFILE_SETS = 3
+  INTEGER, PUBLIC, PARAMETER :: N_PROFILE_SETS = 6
 
   ! The profile set ID tags
   CHARACTER(*), PUBLIC, PARAMETER, DIMENSION(N_PROFILE_SETS) :: &
-    PROFILE_SET_ID_TAG = (/ 'UMBC ', &
-                            'CIMSS', &
-                            'ECMWF' /)
+    PROFILE_SET_ID_TAG = (/ 'UMBC         ', &
+                            'CIMSS        ', &
+                            'ECMWF        ', &
+                            'UMBC_extended', &
+                            'ECMWF83      ', &
+                            'ECMWF42      ' /)
 
   ! The beginning profile is always 1 regardless
   ! of the selected profile set. It's an array
@@ -50,13 +57,18 @@ MODULE Tau_Production_Parameters
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_PROFILE_SETS) :: &
     PROFILE_BEGIN = (/ 1, & ! For UMBC set
                        1, & ! For CIMSS set
-                       1 /) ! For ECMWF set
-
+                       1, & ! For ECMWF set
+                       1, & ! For UMBC extend set (inculding CO2 profile)  
+                       1, & ! For ECMWF extend set (inculding CO2 profile) 
+                       1 /) ! For ECMWF extend set (inculding CO2 profile)
   ! The end profile is set dependent
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_PROFILE_SETS) :: &
     PROFILE_END = (/ 48, & ! For UMBC set
                      32, & ! For CIMSS set
-                     52 /) ! For ECMWF set
+                     52, & ! For ECMWF set
+                     48, & ! For UMBC extend set (inculding CO2 profile)
+                     83, & ! For ECMWF extend set (inculding CO2 profile)
+                     42 /) ! For ECMWF extend set (inculding CO2 profile)
 
   ! The number of profiles in each set.
   ! This parameter is superfluous (always the same
@@ -109,7 +121,7 @@ MODULE Tau_Production_Parameters
   REAL(fp), PUBLIC, PARAMETER :: FREQUENCY_END   = 3500.0_fp
 
   ! The number of recognised frequency intervals
-  INTEGER, PUBLIC, PARAMETER :: N_FREQUENCY_INTERVALS = 2
+  INTEGER, PUBLIC, PARAMETER :: N_FREQUENCY_INTERVALS = 3
 
   ! The allowed frequency intervals. These are the values
   ! of the frequency spacing of the line-by-line (LBL)
@@ -118,13 +130,14 @@ MODULE Tau_Production_Parameters
   ! instruments.
   REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
     FREQUENCY_INTERVAL = (/ 0.1000_fp, &
-                            0.0025_fp /)
+                            0.0025_fp, & ! for AIRS
+                            0.001_fp /)  ! for IASI,CrIS
 
   ! The frequency deltas for a band.
   REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
     FREQUENCY_DELTA = (/ 250.0_fp, &  ! For 0.1cm^-1 spacing
-                          25.0_fp /)  ! For 0.0025cm^-1 spacing
-
+                          25.0_fp, &  ! For 0.0025cm^-1 spacing
+                         900.0_fp /)  ! For 0.001cm^-1 spacing
   ! The frequency bandwidths. These are the bandwidths
   ! of the line-by-line (LBL) band outputs.
   REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
@@ -135,8 +148,8 @@ MODULE Tau_Production_Parameters
   !   N_FREQUENCIES = INT( FREQUENCY_BANDWIDTH / FREQUENCY_INTERVAL ) + 1
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
     N_FREQUENCIES = (/ 2500, & ! For 0.1cm^-1 spacing
-                      10000 /) ! For 0.0025cm^-1 spacing
-
+                      10000, & ! For 0.0025cm^-1 spacing
+                     900000 /) ! For 0.001cm^-1 spacing
 
   ! ----------------------------------------------------
   ! The line-by-line (LBL) band values.
@@ -150,15 +163,15 @@ MODULE Tau_Production_Parameters
   ! It's an array for conformance only.
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
     LBLBAND_BEGIN = (/ 1, & ! For 0.1cm^-1 spacing
-                       1 /) ! For 0.0025cm^-1 spacing
-
+                       1, & ! For 0.0025cm^-1 spacing
+                       1 /) ! For 0.001cm^-1 spacing
   ! The end is frequecy interval dependent
   ! The values are determined using
   !   LBLBAND_END = INT((FREQUENCY_BEGIN-FREQUENCY_END)/FREQUENCY_BANDWIDTH)+1
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
-    LBLBAND_END = (/ 13, & ! For 0.1cm^-1 spacing
-                    121 /) ! For 0.0025cm^-1 spacing
-
+    LBLBAND_END = (/ 13, &  ! For 0.1cm^-1 spacing
+                    121, &  ! For 0.0025cm^-1 spacing
+                      3 /)  ! For 0.001cm^-1 spacing
   ! The number of LBL bands for each
   ! frequency interval
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
@@ -168,14 +181,14 @@ MODULE Tau_Production_Parameters
   ! can be read in at one time
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_FREQUENCY_INTERVALS) :: &
     MAX_N_LBLBANDS = (/ 6, & ! For 0.1cm^-1 spacing
-                       10 /) ! For 0.0025cm^-1 spacing
-
+                       10, & ! For 0.0025cm^-1 spacing
+                        1 /) ! For 0.001cm^-1 spacing
 
   ! -------------------------------
   ! The molecular set specification
   ! -------------------------------
   ! The number of "molecular sets" recognised
-  INTEGER, PUBLIC, PARAMETER :: N_MOLECULE_SETS = 21
+  INTEGER, PUBLIC, PARAMETER :: N_MOLECULE_SETS = 36
 
   ! The names of the allowed molecular sets.
   ! These values are used in filenames and
@@ -198,10 +211,26 @@ MODULE Tau_Production_Parameters
        'wco    ', &  !  15
        'doz    ', &  !  16
        'wvd    ', &  !  17
+       'molc2  ', &  !  18 (O2 +CH4)
+       'molc3  ', &  !  19 (O2+CH4+CO)
+       'molc4  ', &  !  20 (O2+CH4+CO+N2O)
+       'molc5  ', &  !  21 (O2+CH4+CO+N2O+CO2)
+       'molc6  ', &  !  22 (O2+CH4+CO+N2O+CO2+H20)
+       'molt1  ', &  !  ( first 7 molecules + 8 NO)   
+       'molt2  ', &  !  ( first 7 molecules + 9 SO2)     
+       'molt3  ', &  !  ( first 7 molecules + 10 NO2)    
+       'molt4  ', &  !  ( first 7 molecules + 12 HNO3)    
+       'molt5  ', &  !  ( first 7 molecules + 19 OCS)    
+       'molt6  ', &  !  ( first 7 molecules + 22 N2)    
        'effmol1', &  ! 101
        'effwet ', &  ! 112
        'effdry ', &  ! 113
-       'effozo ' /)  ! 114
+       'effozo ', &  ! 114
+       'effch4 ', &  ! 118
+       'effco  ', &  ! 119
+       'effn2o ', &  ! 120 
+       'effco2 '/)   ! 121 
+
 
   ! The ID values associated with the allowed moleculer sets
   INTEGER, PUBLIC, PARAMETER, DIMENSION(N_MOLECULE_SETS) :: MOLECULE_SET_TAG_ID = &
@@ -211,7 +240,7 @@ MODULE Tau_Production_Parameters
         4, &  !  mol4   
         5, &  !  mol5   
         6, &  !  mol6   
-        7, &  !  mol7   
+        7, &  !  mol7 (O2)  
         8, &  !  anc    
         9, &  !  con    
        10, &  !  awc    
@@ -221,11 +250,26 @@ MODULE Tau_Production_Parameters
        14, &  !  ozo    
        15, &  !  wco    
        16, &  !  doz     
-       17, &  !  wvd    
+       17, &  !  wvd  
+       18, &  !  (O2 +CH4)
+       19, &  !  (O2+CH4+CO)
+       20, &  !  (O2+CH4+CO+N2O)
+       21, &  !  (O2+CH4+CO+N2O+CO2)
+       22, &  !  (O2+CH4+CO+N2O+CO2+H20)  
+       28, &  !  ( first 7 molecules + 8 NO)   
+       29, &  !  ( first 7 molecules + 9 SO2)     
+       30, &  !  ( first 7 molecules + 10 NO2)    
+       32, &  !  ( first 7 molecules + 12 HNO3)    
+       39, &  !  ( first 7 molecules + 19 OCS)    
+       42, &  !  ( first 7 molecules + 22 N2)    
       101, &  !  effmol1
       112, &  !  effwet 
       113, &  !  effdry 
-      114 /)  !  effozo 
+      114, &  !  effozo 
+      118, &  !  effch4 
+      119, &  !  effco  
+      120, &  !  effn2o 
+      121 /)  !  effco2 
 
 
   ! -----------------------------------

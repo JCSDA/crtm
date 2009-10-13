@@ -49,16 +49,16 @@ SRC_FILES = Type_Kinds.f90 \
             SpcCoeff_netCDF_IO.f90 \
             AntCorr_Define.f90 \
             AntCorr_netCDF_IO.f90 \
-            ODAS_Define.f90 \
-            ODAS_netCDF_IO.f90 \
+            TmpODAS_Define.f90 \
+            TmpODAS_netCDF_IO.f90 \
             Units_Conversion.f90 \
             Fundamental_Constants.f90 \
             Profile_Utility_Parameters.f90 \
             Atmospheric_Properties.f90 \
             TauProfile_Define.f90 \
             TauProfile_netCDF_IO.f90 \
-            AtmProfile_Define.f90 \
-            AtmProfile_netCDF_IO.f90 \
+            TmpAtmProfile_Define.f90 \
+            TmpAtmProfile_netCDF_IO.f90 \
    	    PlanckFunc.f90 \
             Utilities_Statistics.f90 \
             absorber_profile.f90 \

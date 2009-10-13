@@ -5,8 +5,8 @@ PROGRAM Merge_ODPS_ODAS
   USE ODPS_netCDF_IO
   USE File_Utility
   USE Message_Handler
-  USE ODAS_Define
-  USE ODAS_netCDF_IO, ONLY : Read_ODAS_netCDF 
+  USE TauCoeff_Define
+  USE TauCoeff_netCDF_IO, ONLY : Read_OPTRAN_netCDF => Read_TauCoeff_netCDF 
   USE ODPS_Predictor, ONLY : Get_Component_ID, &
                              WLO_ComID, WET_ComID, &
                              GROUP_1, GROUP_2, GROUP_3
@@ -24,7 +24,7 @@ PROGRAM Merge_ODPS_ODAS
   INTEGER        :: fid, Error_Status, Allocate_Status
   CHARACTER(256) :: ODPS_file, ODPS_errfile, OPTRAN_file, OPTRAN_errfile, file_out
   TYPE(ODPS_type):: ODPS
-  TYPE(ODAS_type)    :: OPTRAN
+  TYPE(TauCoeff_type)    :: OPTRAN
   REAL(fp), ALLOCATABLE  :: err_ODPS(:), err_optran(:)
 
   CHARACTER(80)     :: ID_Tag   
@@ -57,7 +57,7 @@ PROGRAM Merge_ODPS_ODAS
     STOP
   END IF
   
-  Error_Status = Read_ODAS_netCDF(OPTRAN_file, &
+  Error_Status = Read_OPTRAN_netCDF(OPTRAN_file, &
                                     OPTRAN)
   IF(Error_Status /= SUCCESS)THEN
     CALL Display_Message( PROGRAM_NAME,    &           

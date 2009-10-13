@@ -179,7 +179,8 @@ module ParametersGenCoef
   character(len=20)   :: SenName                ! Sensor name
   integer             :: SatIdWmo               ! Sat ID (WMO)
   integer             :: SenIdWmo               ! Sen ID (WMO)
-  integer             :: SenType                ! Sen Type
+!  integer             :: SenType                ! Sen Type
+  integer             :: SenIdNcep              ! Sen ID (NCEP)
 
   type(SpcCoeff_type), save :: SpcCoeff  ! spectrum coef (freq, Plunck const)
 

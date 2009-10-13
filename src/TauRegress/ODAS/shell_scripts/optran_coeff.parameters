@@ -18,13 +18,11 @@
 
 :MAX_CPUs:96
 :CH_INT:1
-:EXE_FILE:/jcsda/save/wx23yc/TauRegress/ODAS/ODAS_Regress/gencoef
-:WORK_DIR:/jcsda/noscrub/wx23yc/VTPR_ITOS/work_MW2
+:EXE_FILE:/jcsda/save/wx23yc/CRTM_clean_copy/src_0824/src/TauRegress/ODAS/ODAS_Regress/gencoef
+:WORK_DIR:/jcsda/noscrub/wx23yc/GOES_14/work_g14
 :PROF_SET:umbc48101
 :GAS_NAME_LIST:wet,dry,ozo
-#SPC_COEFF_DIR:/jcsda/save/wx23yc/CRTM_svn/trunk/fix/SpcCoeff/Infrared/netCDF
-:SPC_COEFF_DIR:/jcsda/save/wx23yc/CRTM_svn/trunk/fix/SpcCoeff/Microwave/No_AC/netCDF
-#TAU_PROFILE_DIR:/jcsda/noscrub/wx23yc/VTPR_ITOS/TauProfile_data
-:TAU_PROFILE_DIR:/jcsda/noscrub/wx23yc/TauProfile_Angle/UMBC/MW/Liebe
+:SPC_COEFF_DIR:/jcsda/save/wx23yc/CRTM_clean_copy/fix/SpcCoeff/Infrared/netCDF
+:TAU_PROFILE_DIR:/jcsda/noscrub/wx23yc/GOES_14/TauProfile_data
 :ATM_PROFLE_FILE:/jcsda/save/wx23yc/CRTM_svn/trunk/src/TauProd/AtmProfile/netCDF/UMBC_101LVL_48ATM.AtmProfile.nc
-:SENSOR_INFO_FILE:/jcsda/noscrub/wx23yc/VTPR_ITOS/SensorInfo
+:SENSOR_INFO_FILE:/jcsda/noscrub/wx23yc/GOES_14/SensorInfo

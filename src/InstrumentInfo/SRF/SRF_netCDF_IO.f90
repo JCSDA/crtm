@@ -1658,21 +1658,21 @@ CONTAINS
     
     ! Get the sensor channel data if necessary
     ! ----------------------------------------
+    ! Get the variable Id                                                                  
+    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )                 
+    IF ( NF90_Status /= NF90_NOERR ) THEN                                                  
+      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&      
+            ' variable id - '//TRIM(NF90_STRERROR( NF90_Status ))                          
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN                                      
+    END IF                                                                                 
+    ! Get the data                                                                         
+    NF90_Status = NF90_GET_VAR( NC_FileId,VarId,Local_Sensor_Channel )                     
+    IF ( NF90_Status /= NF90_NOERR ) THEN                                                  
+      msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' data from '//TRIM(NC_Filename)//&  
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))                                      
+      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN                                      
+    END IF                                                                                 
     IF ( PRESENT(Sensor_Channel) ) THEN
-      ! Get the variable Id
-      NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
-              ' variable id - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-      END IF
-      ! Get the data
-      NF90_Status = NF90_GET_VAR( NC_FileId,VarId,Local_Sensor_Channel )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' data from '//TRIM(NC_Filename)//&
-              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-      END IF
       ! Set the return value
       IF ( SIZE(Sensor_Channel) < n ) THEN
         msg = 'Sensor_Channel array too small to hold data.'

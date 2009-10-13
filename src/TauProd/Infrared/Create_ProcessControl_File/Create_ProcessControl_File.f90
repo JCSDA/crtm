@@ -343,7 +343,7 @@ PROGRAM Create_ProcessControl_File
     ! Construct the SRF filename
     ! --------------------------
 
-    SRF_Filename = TRIM( SRF_FilePath )//TRIM( SensorInfo%File_Prefix )//'.srf.nc'
+    SRF_Filename = TRIM( SRF_FilePath )//TRIM( SensorInfo%Sensor_Id )//'.srf.nc'
 
 
 
@@ -517,7 +517,7 @@ PROGRAM Create_ProcessControl_File
     ! Assign the file prefix string
     ! -----------------------------
 
-    ProcessControl%File_Prefix(n) = TRIM( SensorInfo%File_Prefix )
+    ProcessControl%File_Prefix(n) = TRIM( SensorInfo%Sensor_Id )
 
 
     ! --------------------------------------

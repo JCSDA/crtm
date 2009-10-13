@@ -13,7 +13,7 @@ PARAM_NAME_LIST="WORK_DIR PROF_SET SPC_COEFF_DIR GET_SEN_INFO"
 PARAM_FILE=tau_coeff.parameters
 
 # Merge program
-EXE_FILE=/jcsda/save/wx23yc/TauRegress/ODPS/Merge_ODPS_ODAS/Merge_ODPS_ODAS
+EXE_FILE=/jcsda/save/wx23yc/CRTM_clean_copy/src_0824/src/TauRegress/ODPS/Merge_ODPS_ODAS/Merge_ODPS_ODAS
 
 #--- read in parameters from $PARAM_FILE and assign their 
 #--- values to the variables whose names are listed in

@@ -32,6 +32,7 @@ SRC_FILES = Type_Kinds.f90 \
             ProcessControl_IO.f90 \
             SRF_Define.f90 \
             SRF_netCDF_IO.f90 \
+            String_Utility.f90 \
             TauProfile_Define.f90 \
             TauProfile_netCDF_IO.f90 \
             netCDF_Utility.f90 \

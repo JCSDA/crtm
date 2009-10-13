@@ -9,8 +9,8 @@ module WriteTransTable
   use type_kinds, only : fp_kind
   use Message_Handler
   use ParametersGenCoef
-  use ODAS_Define
-  use ODAS_netCDF_IO
+  use TauCoeff_Define
+  use TauCoeff_netCDF_IO
 
 
   !--- Implicit
@@ -50,7 +50,7 @@ module WriteTransTable
     
     INTEGER :: Error_Status
 
-    TYPE( ODAS_type )  :: TauCoeff
+    TYPE( TauCoeff_type )  :: TauCoeff
     
     character(*), parameter   :: TauCoeff_Title = "Compact-OPTRAN upwelling transmittance coefficients"
     character(256)            :: title
@@ -59,11 +59,11 @@ module WriteTransTable
     
     Mchan = Ichan_last - Ichan_top + 1
     
-    Error_Status = Allocate_ODAS( Npolyorder_max,       &                   
-                                 Natmpred_maxused, &                        
-				 1,            & ! Number of absorbers      
-				 Mchan,            &                        
-                                 TauCoeff )                                 
+    Error_Status = Allocate_TauCoeff( Npolyorder_max,       &
+                                      Natmpred_maxused, &
+				      1,            & ! Number of absorbers 
+				      Mchan, 		&  
+                                      TauCoeff )
 				      
     if ( Error_Status /= SUCCESS ) then
       CALL display_message( ROUTINE_NAME,    &
@@ -77,12 +77,10 @@ module WriteTransTable
     !--- Fill the structure TauCoeff
     
 !    TauCoeff%Sensor_Descriptor(:) = SpcCoeff%Sensor_Descriptor(Ichan_top:Ichan_last)
-!    TauCoeff%Sensor_Descriptor(:) = SpcCoeff%Sensor_id
-    TauCoeff%Sensor_id = SpcCoeff%Sensor_id
-    TauCoeff%Sensor_Type = SpcCoeff%Sensor_Type 
-    
-    TauCoeff%WMO_Satellite_ID = SpcCoeff%WMO_Satellite_ID 
-    TauCoeff%WMO_Sensor_ID = SpcCoeff%WMO_Sensor_ID  
+    TauCoeff%Sensor_Descriptor(:) = SpcCoeff%Sensor_id
+    TauCoeff%NCEP_Sensor_ID(:) = SenIdNcep
+    TauCoeff%WMO_Satellite_ID(:) = SatIdWmo
+    TauCoeff%WMO_Sensor_ID(:) = SenIdWmo
     TauCoeff%Sensor_Channel(:) = channel_list(Ichan_top:Ichan_last)
     TauCoeff%Absorber_ID(1) =  gasID_convert(Iabsorber)    
     TauCoeff%Alpha(1) = Alpha
@@ -101,11 +99,6 @@ module WriteTransTable
       TauCoeff%Order_Index(0:,1,k) = Npolyorder(Ichan)
       TauCoeff%Predictor_Index(0,1,k) = Npredcomb(Ichan)      
 
-!      mapping = (/1,2,3,4,5,6,7,8,9,10,11,&
-!                    offs(Iabsorber)+1,offs(Iabsorber)+2,&
-!		    offs(Iabsorber)+3,offs(Iabsorber)+4,&
-!		    offs(Iabsorber)+5,offs(Iabsorber)+6/)
-		    		    
       do i = 1, Natmpred_maxused
       
         if ( predcomb(i,Ichan) == 0 )then
@@ -114,7 +107,6 @@ module WriteTransTable
 	
 	else  
         
-!	  TauCoeff%Predictor_Index(i,1,k) = mapping(predcomb(i,Ichan))
 	  TauCoeff%Predictor_Index(i,1,k) = predcomb(i,Ichan)
 
         endif
@@ -133,22 +125,22 @@ module WriteTransTable
     enddo
     
     ! -- over write the version number
-    TauCoeff%Version = TauCoeff_Version
+!    TauCoeff%Version = TauCoeff_Version
 
     !--- write out TauCoeff
 
     History_all = TRIM(RCS_Id)//'  '//TRIM(History_all)
     Title       = TauCoeff_Title//' for '//TRIM(SenName)//' '//TRIM(SatName)
 
-    Error_Status = Write_ODAS_netCDF( &
+    Error_Status = Write_TauCoeff_netCDF( &
                                   OutFileName_TransCoeff, &
                                   TauCoeff, &
 				  Title = TRIM(Title), &
 				  History = TRIM(History_all), &
-				!  Sensor_Name = SenName, &
-				!  Platform_Name = SatName, &
+				  Sensor_Name = SenName, &
+				  Platform_Name = SatName, &
 				  Comment = TRIM(Comment_all), &
-				  Profile_Set_Id = ProfileTag )
+				  ID_Tag = ProfileTag )
 
     if ( Error_Status /= SUCCESS ) then
       CALL display_message( ROUTINE_NAME,    &
@@ -191,7 +183,7 @@ module WriteTransTable
 
     enddo
 
-    Error_Status = Destroy_ODAS( TauCoeff )
+    Error_Status = Destroy_TauCoeff( TauCoeff )
 
     if ( Error_Status /= SUCCESS ) then
       CALL display_message( ROUTINE_NAME,    &
