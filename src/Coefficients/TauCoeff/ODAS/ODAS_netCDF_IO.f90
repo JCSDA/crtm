@@ -95,8 +95,14 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: ALPHA_DESCRIPTION            = 'Alpha values used to generate the absorber space levels.'
   CHARACTER(*), PARAMETER :: ORDER_DESCRIPTION            = 'List of polynomial orders.'
   CHARACTER(*), PARAMETER :: PRE_INDEX_DESCRIPTION        = 'List of predictors.'
-  CHARACTER(*), PARAMETER :: POS_INDEX_DESCRIPTION        = 'List of starting position indexes for the tau coeff. array, given abosrber and channel .'
-  CHARACTER(*), PARAMETER :: COEFF_DESCRIPTION            = 'Regression model gas absorption coefficients.'
+  CHARACTER(*), PARAMETER :: POS_INDEX_DESCRIPTION        = 'List of starting position indexes for the tau coeff. '//&
+                                                            'array, given abosrber and channel .'
+  CHARACTER(*), PARAMETER :: COEFF_DESCRIPTION            = 'Regression model gas absorption coefficients. '//&
+   'The 1D array data structure is give by ps, np, no, j and l, where ps = Pos_Index(j,l), '//&
+   'np = Pre_Index(0,j,l), no = Order(j,l), j = absorber index and l = channel index. '//&
+   'The set of coeffs for given j and l in the array starts at ps and ends at ps+(np+1)*(no+1)-1. '//&
+   'The structure of this subset is arranged into np+1 consecutive equal segments used to compute '//&
+   'the np+1 B coefficients, respectively, with a segment size no+1.' 
 
   ! Long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
@@ -108,13 +114,8 @@ MODULE ODAS_netCDF_IO
   CHARACTER(*), PARAMETER :: ALPHA_LONGNAME            = 'Alpha coefficients'
   CHARACTER(*), PARAMETER :: ORDER_LONGNAME            = 'Polynomial Order'
   CHARACTER(*), PARAMETER :: PRE_INDEX_LONGNAME        = 'Predictor Index'
-  CHARACTER(*), PARAMETER :: POS_INDEX_LONGNAME        = 'Index of starting position index for the C array'
-  CHARACTER(*), PARAMETER :: COEFF_LONGNAME            = 'Regression coefficients. '//&
-   'The 1D array data structure is give by ps, np, no, j and l, where ps = Pos_Index(j,l), '//&
-   'np = Pre_Index(0,j,l), no = Order(j,l), j = absorber index and l = channel index. '//&
-   'The set of coeffs for given j and l in the array starts at ps and ends at ps+(np+1)*(no+1)-1. '//&
-   'The structure of this subset is arranged into np+1 consecutive equal segments used to compute '//&
-   'the np+1 B coefficients, respectively, with a segment size no+1.' 
+  CHARACTER(*), PARAMETER :: POS_INDEX_LONGNAME        = 'Coefficient array starting position indices'
+  CHARACTER(*), PARAMETER :: COEFF_LONGNAME            = 'Regression coefficients'
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
