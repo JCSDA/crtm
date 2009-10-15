@@ -132,12 +132,12 @@ MODULE TauCoeff_Define
     ! Sensor_Index:   Global sensor index
     ! Sensor_LoIndex: Local sensor index for a collection of sensor using 
     !                 the same algorithm
-    INTEGER, DIMENSION(:), POINTER       :: Algorithm_ID   =>NULL()  ! n
-    INTEGER, DIMENSION(:), POINTER       :: Sensor_Index   =>NULL()  ! n
-    INTEGER, DIMENSION(:), POINTER       :: Sensor_LoIndex =>NULL()  ! n
+    INTEGER, POINTER :: Algorithm_ID(:)   =>NULL()  ! n
+    INTEGER, POINTER :: Sensor_Index(:)   =>NULL()  ! n
+    INTEGER, POINTER :: Sensor_LoIndex(:) =>NULL()  ! n
 
-    TYPE( ODAS_type ),   DIMENSION(:), POINTER  :: ODAS  =>NULL()  ! I1
-    TYPE( ODPS_type ),   DIMENSION(:), POINTER  :: ODPS  =>NULL()  ! I2
+    TYPE( ODAS_type ), POINTER  :: ODAS(:)  =>NULL()  ! I1
+    TYPE( ODPS_type ), POINTER  :: ODPS(:)  =>NULL()  ! I2
 !    ### More dstructure variables for additional algorithms ###
   
   END TYPE TauCoeff_type
@@ -259,15 +259,19 @@ CONTAINS
 !                    DIMENSION:  Scalar
 !                    ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUT ARGUMENTS:       
 !       ANY_Test:    Set this argument to test if ANY of the
 !                    TauCoeff structure pointer members are associated.
 !                    The default is to test if ALL the pointer members
 !                    are associated.
-!                    If ANY_Test = 0, test if ALL the pointer members
-!                                     are associated.  (DEFAULT)
-!                       ANY_Test = 1, test if ANY of the pointer members
-!                                     are associated.
+!                    .TRUE. - Test if any of the pointer members are 
+!                             associated 
+!                    .FALSE. - Test all pointer members that should
+!                              be associated according to TauCoeff's
+!                              dimensions
+!                    UNITS:     N/A
+!                    TYPE:      LOGICAL
+!                    DIMENSION: Scalar
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating the
@@ -283,24 +287,23 @@ CONTAINS
 !                            DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
-
   FUNCTION Associated_TauCoeff( TauCoeff,  & ! Input
                                 ANY_Test ) & ! Optional input
                               RESULT( Association_Status )
     ! Arguments
     TYPE(TauCoeff_type), INTENT(IN) :: TauCoeff
-    INTEGER,   OPTIONAL, INTENT(IN) :: ANY_Test
+    LOGICAL,   OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
     ! Local variables
     LOGICAL :: ALL_Test
-
+       
     ! Default is to test ALL the pointer members
     ! for a true association status....
     ALL_Test = .TRUE.
     ! ...unless the ANY_Test argument is set.
     IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
+      IF ( ANY_Test ) ALL_Test = .FALSE.
     END IF
 
     ! Test the structure associations
@@ -322,9 +325,8 @@ CONTAINS
         Association_Status = .TRUE.
       END IF
     END IF
-
+    
   END FUNCTION Associated_TauCoeff
-
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -332,7 +334,6 @@ CONTAINS
 !##                                                                            ##
 !################################################################################
 !################################################################################
-
 
 !------------------------------------------------------------------------------
 !
@@ -393,7 +394,6 @@ CONTAINS
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !------------------------------------------------------------------------------
-
 !  FUNCTION Destroy_TauCoeff( TauCoeff,     &  ! Output
 !                             No_Clear,     &  ! Optional input
 !                             RCS_Id,       &  ! Revision control
@@ -431,18 +431,11 @@ CONTAINS
 !    IF ( .NOT. Associated_TauCoeff(TauCoeff) ) RETURN
 !
 !    ! Deallocate the pointer members
-!    DEALLOCATE( TauCoeff%Sensor_Descriptor, &
-!                TauCoeff%NCEP_Sensor_ID   , &
-!                TauCoeff%WMO_Satellite_ID , &
-!                TauCoeff%WMO_Sensor_ID    , &
-!                TauCoeff%Sensor_Channel   , &
-!                TauCoeff%Absorber_ID      , &
-!                TauCoeff%Alpha            , &
-!                TauCoeff%Alpha_C1         , &
-!                TauCoeff%Alpha_C2         , &
-!                TauCoeff%Order_Index      , &
-!                TauCoeff%Predictor_Index  , &
-!                TauCoeff%C                , &
+!    DEALLOCATE( TauCoeff%Algorithm_ID     , &
+!                TauCoeff%Sensor_Index     , &
+!                TauCoeff%Sensor_LoIndex   , &
+!                TauCoeff%ODAS             , &
+!                TauCoeff%ODPS             , &
 !                STAT = Allocate_Status )
 !    IF ( Allocate_Status /= 0 ) THEN
 !      Error_Status = FAILURE
@@ -477,21 +470,12 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_TauCoeff( n_Sensors,                 &  ! Input
-!                                         n_ODAS,                    &  ! Input
+!       Error_Status = Allocate_TauCoeff( n_ODAS,                    &  ! Input
 !                                         n_ODPS,                    &  ! Input
 !                                         TauCoeff,                  &  ! Output
-!                                         RCS_Id      = RCS_Id,      &  ! Revision control
 !                                         Message_Log = Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       n_Sensors:    Number of sensors 
-!                     Must be > 0.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
 !       n_ODAS:       Number of ODAS structures
 !                     Must be > 0.
 !                     UNITS:      N/A
@@ -525,15 +509,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -555,19 +530,15 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION Allocate_TauCoeff( n_Sensors,    &  ! Input
-                              n_ODAS,       &  ! Input
+  FUNCTION Allocate_TauCoeff( n_ODAS,       &  ! Input
                               n_ODPS,       &  ! Input
                               TauCoeff,     &  ! Output
-                              RCS_Id,       &  ! Revision control
                               Message_Log ) &  ! Error messaging
                             RESULT( Error_Status )
     ! Arguments
-    INTEGER,                INTENT(IN)     :: n_Sensors
     INTEGER,                INTENT(IN)     :: n_ODAS
     INTEGER,                INTENT(IN)     :: n_ODPS
     TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -576,24 +547,14 @@ CONTAINS
     ! Local variables
     CHARACTER(256)  :: Message
     INTEGER :: Allocate_Status
+    INTEGER :: n_Sensors
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check Dimensions
-    IF ( n_Sensors    < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input TauCoeff n_Sensors dimension must be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
     
-    ! Check Dimensions
-    IF ( n_ODAS       <= 0 .OR. &
-         n_ODPS       <= 0      ) THEN
+    ! Check and set dimensions 
+    IF ( n_ODAS       < 0 .OR. &
+         n_ODPS       < 0      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input TauCoeff n_ODAS and n_ODPS dimensions must be >= 0.', &
@@ -601,6 +562,32 @@ CONTAINS
                             Message_Log = Message_Log )
       RETURN
     END IF
+     
+    n_Sensors = n_ODAS + n_ODPS
+  
+    IF ( n_Sensors    < 1 ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'TauCoeff n_Sensors dimension must be > 0.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+    
+    ! Check if ANY pointers are already associated.
+    ! If they are, deallocate them but leave scalars.
+!    IF ( Associated_TauCoeff( TauCoeff, ANY_Test=.TRUE. ) ) THEN
+!      Error_Status = Destroy_TauCoeff( TauCoeff, &
+!                                       No_Clear=1, &
+!                                       Message_Log = Message_Log )
+!      IF ( Error_Status /= SUCCESS ) THEN
+!        CALL Display_Message( ROUTINE_NAME,    &
+!                              'Error deallocating TauCoeff prior to allocation.', &
+!                              Error_Status,    &
+!                              Message_Log = Message_Log )
+!        RETURN
+!      END IF
+!    END IF
 
     ! Perform the pointer allocation
     ALLOCATE( TauCoeff%Algorithm_ID( n_Sensors ), &
