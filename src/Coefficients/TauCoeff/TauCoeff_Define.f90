@@ -57,7 +57,7 @@ MODULE TauCoeff_Define
   ! Datatypes
   PUBLIC :: TauCoeff_type
   ! Procedures
-!  PUBLIC :: Associated_TauCoeff
+  PUBLIC :: Associated_TauCoeff
 !  PUBLIC :: Destroy_TauCoeff
   PUBLIC :: Allocate_TauCoeff
 !  PUBLIC :: Assign_TauCoeff
@@ -238,15 +238,6 @@ CONTAINS
 !    TauCoeff%n_Sensors = 0
 !  END SUBROUTINE Clear_TauCoeff
 
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-
 !--------------------------------------------------------------------------------
 !
 ! NAME:
@@ -292,60 +283,57 @@ CONTAINS
 !                            DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
-!FUNCTION Associated_TauCoeff( TauCoeff,  & ! Input
-!                              ANY_Test ) & ! Optional input
-!                            RESULT( Association_Status )
-!  ! Arguments
-!  TYPE(TauCoeff_type), INTENT(IN) :: TauCoeff
-!  INTEGER,   OPTIONAL, INTENT(IN) :: ANY_Test
-!  ! Function result
-!  LOGICAL :: Association_Status
-!  ! Local variables
-!  LOGICAL :: ALL_Test
-!
-!  ! Default is to test ALL the pointer members
-!  ! for a true association status....
-!  ALL_Test = .TRUE.
-!  ! ...unless the ANY_Test argument is set.
-!  IF ( PRESENT( ANY_Test ) ) THEN
-!    IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
-!  END IF
-!
-!  ! Test the structure associations
-!  Association_Status = .FALSE.
-!  IF ( ALL_Test ) THEN
-!    IF ( ASSOCIATED( TauCoeff%Sensor_Descriptor ) .AND. &
-!         ASSOCIATED( TauCoeff%NCEP_Sensor_ID    ) .AND. &
-!         ASSOCIATED( TauCoeff%WMO_Satellite_ID  ) .AND. &
-!         ASSOCIATED( TauCoeff%WMO_Sensor_ID     ) .AND. &
-!         ASSOCIATED( TauCoeff%Sensor_Channel    ) .AND. &
-!         ASSOCIATED( TauCoeff%Absorber_ID       ) .AND. &
-!         ASSOCIATED( TauCoeff%Alpha             ) .AND. &
-!         ASSOCIATED( TauCoeff%Alpha_C1          ) .AND. &
-!         ASSOCIATED( TauCoeff%Alpha_C2          ) .AND. &
-!         ASSOCIATED( TauCoeff%Order_Index       ) .AND. &
-!         ASSOCIATED( TauCoeff%Predictor_Index   ) .AND. &
-!         ASSOCIATED( TauCoeff%C                 )       ) THEN
-!      Association_Status = .TRUE.
-!    END IF
-!  ELSE
-!    IF ( ASSOCIATED( TauCoeff%Sensor_Descriptor ) .OR. &
-!         ASSOCIATED( TauCoeff%NCEP_Sensor_ID    ) .OR. &
-!         ASSOCIATED( TauCoeff%WMO_Satellite_ID  ) .OR. &
-!         ASSOCIATED( TauCoeff%WMO_Sensor_ID     ) .OR. &
-!         ASSOCIATED( TauCoeff%Sensor_Channel    ) .OR. &
-!         ASSOCIATED( TauCoeff%Absorber_ID       ) .OR. &
-!         ASSOCIATED( TauCoeff%Alpha             ) .OR. &
-!         ASSOCIATED( TauCoeff%Alpha_C1          ) .OR. &
-!         ASSOCIATED( TauCoeff%Alpha_C2          ) .OR. &
-!         ASSOCIATED( TauCoeff%Order_Index       ) .OR. &
-!         ASSOCIATED( TauCoeff%Predictor_Index   ) .OR. &
-!         ASSOCIATED( TauCoeff%C                 )      ) THEN
-!      Association_Status = .TRUE.
-!    END IF
-!  END IF
-!
-!END FUNCTION Associated_TauCoeff
+
+  FUNCTION Associated_TauCoeff( TauCoeff,  & ! Input
+                                ANY_Test ) & ! Optional input
+                              RESULT( Association_Status )
+    ! Arguments
+    TYPE(TauCoeff_type), INTENT(IN) :: TauCoeff
+    INTEGER,   OPTIONAL, INTENT(IN) :: ANY_Test
+    ! Function result
+    LOGICAL :: Association_Status
+    ! Local variables
+    LOGICAL :: ALL_Test
+
+    ! Default is to test ALL the pointer members
+    ! for a true association status....
+    ALL_Test = .TRUE.
+    ! ...unless the ANY_Test argument is set.
+    IF ( PRESENT( ANY_Test ) ) THEN
+      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
+    END IF
+
+    ! Test the structure associations
+    Association_Status = .FALSE.
+    IF ( ALL_Test ) THEN
+      IF ( ASSOCIATED( TauCoeff%Algorithm_ID    ) .AND. &
+           ASSOCIATED( TauCoeff%Sensor_Index    ) .AND. &
+           ASSOCIATED( TauCoeff%Sensor_LoIndex  ) .AND. &
+           ASSOCIATED( TauCoeff%ODAS            ) .AND. &
+           ASSOCIATED( TauCoeff%ODPS            )       ) THEN
+        Association_Status = .TRUE.
+      END IF
+    ELSE
+      IF ( ASSOCIATED( TauCoeff%Algorithm_ID    ) .OR. &
+           ASSOCIATED( TauCoeff%Sensor_Index    ) .OR. &
+           ASSOCIATED( TauCoeff%Sensor_LoIndex  ) .OR. &
+           ASSOCIATED( TauCoeff%ODAS            ) .OR. &
+           ASSOCIATED( TauCoeff%ODPS            )      ) THEN
+        Association_Status = .TRUE.
+      END IF
+    END IF
+
+  END FUNCTION Associated_TauCoeff
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+
 !------------------------------------------------------------------------------
 !
 ! NAME:
@@ -593,22 +581,22 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
-    ! Dimensions
+    ! Check Dimensions
     IF ( n_Sensors    < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input TauCoeff n_Sensors dimension must all be > 0.', &
+                            'Input TauCoeff n_Sensors dimension must be > 0.', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
     END IF
     
-    ! Dimensions
+    ! Check Dimensions
     IF ( n_ODAS       <= 0 .OR. &
          n_ODPS       <= 0      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input TauCoeff n_ODAS or ODPS dimensions must all be >= 0.', &
+                            'Input TauCoeff n_ODAS and n_ODPS dimensions must be >= 0.', &
                             Error_Status, &
                             Message_Log = Message_Log )
       RETURN
@@ -656,9 +644,6 @@ CONTAINS
     END IF
 
   END FUNCTION Allocate_TauCoeff
-
-
-
 !------------------------------------------------------------------------------
 !
 ! NAME:
