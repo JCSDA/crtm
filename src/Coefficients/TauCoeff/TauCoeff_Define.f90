@@ -58,7 +58,7 @@ MODULE TauCoeff_Define
   PUBLIC :: TauCoeff_type
   ! Procedures
   PUBLIC :: Associated_TauCoeff
-!  PUBLIC :: Destroy_TauCoeff
+  PUBLIC :: Destroy_TauCoeff
   PUBLIC :: Allocate_TauCoeff
 !  PUBLIC :: Assign_TauCoeff
 !  PUBLIC :: Concatenate_Channel_TauCoeff
@@ -77,7 +77,7 @@ MODULE TauCoeff_Define
   '$Id$'
   ! TauCoeff init values
   REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
-  INTEGER,      PARAMETER :: IP_INIT = -1
+  INTEGER,      PARAMETER :: IP_INIT = 0
   ! Sensor descriptor component string length
   INTEGER, PARAMETER :: DL = 20
   ! Current valid release and version numbers
@@ -192,7 +192,6 @@ MODULE TauCoeff_Define
 
 CONTAINS
 
-
 !##################################################################################
 !##################################################################################
 !##                                                                              ##
@@ -200,43 +199,6 @@ CONTAINS
 !##                                                                              ##
 !##################################################################################
 !##################################################################################
-
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Clear_TauCoeff
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a TauCoeff structure.
-!
-! CALLING SEQUENCE:
-!       CALL Clear_TauCoeff( TauCoeff ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff:    TauCoeff structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       TauCoeff_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output TauCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-!  SUBROUTINE Clear_TauCoeff( TauCoeff )
-!    TYPE(TauCoeff_type), INTENT(IN OUT) :: TauCoeff
-!    TauCoeff%n_Orders     = 0
-!    TauCoeff%n_Predictors = 0
-!    TauCoeff%n_Absorbers  = 0
-!    TauCoeff%n_Channels   = 0
-!    TauCoeff%StrLen       = DL
-!    TauCoeff%n_Sensors = 0
-!  END SUBROUTINE Clear_TauCoeff
 
 !--------------------------------------------------------------------------------
 !
@@ -346,7 +308,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Destroy_TauCoeff( TauCoeff,                 &  ! Output
-!                                        RCS_Id = RCS_Id,          &  ! Revision control
 !                                        Message_Log = Message_Log )  ! Error messaging
 !
 ! OPTIONAL INPUT ARGUMENTS:
@@ -357,7 +318,7 @@ CONTAINS
 !                     UNITS:      N/A
 !                     TYPE:       CHARACTER(*)
 !                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(IN)
+!                     ATTRIBUTES: OPTIONAL, INTENT(IN)     
 !
 ! OUTPUT ARGUMENTS:
 !       TauCoeff:     Re-initialized TauCoeff structure.
@@ -365,14 +326,6 @@ CONTAINS
 !                     TYPE:       TauCoeff_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -394,72 +347,61 @@ CONTAINS
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !------------------------------------------------------------------------------
-!  FUNCTION Destroy_TauCoeff( TauCoeff,     &  ! Output
-!                             No_Clear,     &  ! Optional input
-!                             RCS_Id,       &  ! Revision control
-!                             Message_Log ) &  ! Error messaging
-!                            RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
-!    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_TauCoeff'
-!    ! Local variables
-!    CHARACTER(256)  :: Message
-!    LOGICAL :: Clear
-!    INTEGER :: Allocate_Status
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Default is to clear scalar members...
-!    Clear = .TRUE.
-!    ! ....unless the No_Clear argument is set
-!    IF ( PRESENT( No_Clear ) ) THEN
-!      IF ( No_Clear == 1 ) Clear = .FALSE.
-!    END IF
-!
-!    ! Initialise the scalar members
-!    IF ( Clear ) CALL Clear_TauCoeff( TauCoeff )
-!
-!    ! If ALL pointer members are NOT associated, do nothing
-!    IF ( .NOT. Associated_TauCoeff(TauCoeff) ) RETURN
-!
-!    ! Deallocate the pointer members
-!    DEALLOCATE( TauCoeff%Algorithm_ID     , &
-!                TauCoeff%Sensor_Index     , &
-!                TauCoeff%Sensor_LoIndex   , &
-!                TauCoeff%ODAS             , &
-!                TauCoeff%ODPS             , &
-!                STAT = Allocate_Status )
-!    IF ( Allocate_Status /= 0 ) THEN
-!      Error_Status = FAILURE
-!      WRITE( Message, '( "Error deallocating TauCoeff. STAT = ", i5 )' ) &
-!                      Allocate_Status
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            TRIM( Message ), &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!    END IF
-!
-!    ! Decrement and test allocation counter
-!    TauCoeff%n_Allocates = TauCoeff%n_Allocates - 1
-!    IF ( TauCoeff%n_Allocates /= 0 ) THEN
-!      Error_Status = FAILURE
-!      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-!                      TauCoeff%n_Allocates
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            TRIM( Message ), &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!    END IF
-!
-!  END FUNCTION Destroy_TauCoeff
+  FUNCTION Destroy_TauCoeff( TauCoeff,     &  ! Output
+                             Message_Log ) &  ! Error messaging
+                            RESULT( Error_Status )
+    ! Arguments
+    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_TauCoeff'
+    ! Local variables
+    CHARACTER(256)  :: Message
+    INTEGER :: Allocate_Status
+
+    ! Set up
+    Error_Status = SUCCESS
+
+    ! If ALL pointer members are NOT associated, do nothing
+    IF ( .NOT. Associated_TauCoeff(TauCoeff) ) RETURN
+    
+    ! re-initialize the scalar members
+    TauCoeff%n_Sensors = IP_INIT
+    TauCoeff%n_ODAS    = IP_INIT
+    TauCoeff%n_ODPS    = IP_INIT
+
+    ! Deallocate the pointer members
+    DEALLOCATE( TauCoeff%Algorithm_ID     , &
+                TauCoeff%Sensor_Index     , &
+                TauCoeff%Sensor_LoIndex   , &
+                TauCoeff%ODAS             , &
+                TauCoeff%ODPS             , &
+                STAT = Allocate_Status )
+    IF ( Allocate_Status /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Error deallocating TauCoeff. STAT = ", i5 )' ) &
+                      Allocate_Status
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM( Message ), &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
+    END IF
+
+    ! Decrement and test allocation counter
+    TauCoeff%n_Allocates = TauCoeff%n_Allocates - 1
+    IF ( TauCoeff%n_Allocates /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
+                      TauCoeff%n_Allocates
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM( Message ), &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
+    END IF
+
+  END FUNCTION Destroy_TauCoeff
 !------------------------------------------------------------------------------
 !
 ! NAME:
