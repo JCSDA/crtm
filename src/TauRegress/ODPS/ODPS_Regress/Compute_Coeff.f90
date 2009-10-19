@@ -165,6 +165,8 @@ PROGRAM Compute_Coeff
   REAL( fp_kind ), DIMENSION( : ),   ALLOCATABLE :: Ref_Level_Pressure
   REAL( fp_kind ), DIMENSION( : ),   ALLOCATABLE :: Ref_Temperature
   REAL( fp_kind ), DIMENSION( :,: ), ALLOCATABLE :: Ref_absorber
+  REAL( fp_kind ), DIMENSION( :,: ), ALLOCATABLE :: Min_absorber
+  REAL( fp_kind ), DIMENSION( :,: ), ALLOCATABLE :: Max_absorber
 
   ! Profile arrys
   REAL( fp_kind ), DIMENSION( : ),   ALLOCATABLE :: Temperature
@@ -286,6 +288,8 @@ PROGRAM Compute_Coeff
   ALLOCATE( Ref_Level_Pressure(0:Nlay),  &
             Ref_Temperature(Nlay),       &
             Ref_absorber(Nlay, Nabs),    &
+            Min_absorber(Nlay, Nabs),    &
+            Max_absorber(Nlay, Nabs),    &
             Temperature(Nlay),           &
             absorber(Nlay, Nabs),        &
             STAT = Allocate_Status )
@@ -307,6 +311,8 @@ PROGRAM Compute_Coeff
     Ref_Temperature(k) = SUM(AtmProfile%Layer_Temperature(k, :) ) / Natm 
     DO j = 1, Nabs
       Ref_absorber(k,j) = SUM(AtmProfile%Layer_Absorber(k,absorber_index(j),:) ) / Natm  
+      Min_absorber(k,j) = MINVAL(AtmProfile%Layer_Absorber(k,absorber_index(j),:))   
+      Max_absorber(k,j) = MAXVAL(AtmProfile%Layer_Absorber(k,absorber_index(j),:))   
     END DO
   END DO
 
@@ -750,8 +756,10 @@ PROGRAM Compute_Coeff
                              Coeff,                     &                                      
                              Ref_Level_Pressure,        &                                      
                              Ref_Temperature,           &                                      
-                             Ref_Absorber)                                                     
-
+                             Ref_Absorber,              &
+                             Min_Absorber,              &
+                             Max_Absorber)
+                             
     IF ( Error_Status /= 0 ) THEN                                                              
       WRITE( Message, '( "Error writing our tau coefficient data to a file", i0)' ) &          
                       Error_Status                                                             
@@ -813,6 +821,8 @@ PROGRAM Compute_Coeff
             Ref_Level_Pressure,  &
             Ref_Temperature,     &
             Ref_absorber,        &
+            Min_absorber,        &
+            Max_absorber,        &
             Temperature,         &
             absorber,            &
             Coeff,               &
@@ -1129,7 +1139,9 @@ CONTAINS
                      Coeff,        & 
                      Ref_Level_Pressure, &
                      Ref_Temperature, &
-                     Ref_Absorber)    &
+                     Ref_Absorber, & 
+                     Min_Absorber, &
+                     Max_Absorber) &
                      RESULT(Error_Status)
     INTEGER,       INTENT( IN ) :: This_Group
     INTEGER,       INTENT( IN ) :: n_predictors
@@ -1142,6 +1154,8 @@ CONTAINS
     REAL(fp_kind), INTENT( IN)  :: Ref_Level_Pressure(0:) ! K      
     REAL(fp_kind), INTENT( IN)  :: Ref_Temperature(:)     ! K      
     REAL(fp_kind), INTENT( IN)  :: Ref_Absorber(:,:)      ! K x Jm 
+    REAL(fp_kind), INTENT( IN)  :: Min_Absorber(:,:)      ! K x Jm 
+    REAL(fp_kind), INTENT( IN)  :: Max_Absorber(:,:)      ! K x Jm 
 
     INTEGER :: Error_Status
 
@@ -1190,6 +1204,8 @@ CONTAINS
                              LOG(Ref_Level_Pressure(1:n_Layers) / Ref_Level_Pressure(0:n_Layers-1))  
     TC%Ref_Temperature    = Ref_Temperature                                                          
     TC%Ref_Absorber       = Ref_Absorber                                                             
+    TC%Min_Absorber       = Min_Absorber                                                             
+    TC%Max_Absorber       = Max_Absorber                                                             
     TC%Absorber_ID        = Absorber_ID                                                              
     TC%Sensor_Channel     = Channel                                                                  
     TC%Component_ID(1)    = Component_ID
