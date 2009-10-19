@@ -461,6 +461,8 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
         Out_ODPS%Ref_Pressure      = In_ODPS%Ref_Pressure      
         Out_ODPS%Ref_Temperature   = In_ODPS%Ref_Temperature   
         Out_ODPS%Ref_Absorber      = In_ODPS%Ref_Absorber      
+        Out_ODPS%Min_Absorber      = In_ODPS%Min_Absorber      
+        Out_ODPS%Max_Absorber      = In_ODPS%Max_Absorber      
 
         IF ( OPTRAN ) THEN
           Out_ODPS%Alpha            = In_ODPS%Alpha   
@@ -594,6 +596,38 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          END DO                                                                                 
         END DO
        
+        ! Check Min_Absorber value                                                                     
+        DO j = 1, In_ODPS%n_Absorbers 
+         DO k = 1, In_ODPS%n_Layers
+          
+          IF ( .NOT. Compare_Float( In_ODPS%Min_Absorber(k,j) , Out_ODPS%Min_Absorber(k,j)  ) ) THEN                 
+            Error_Status = FAILURE                                                                
+            WRITE( Message, '( "Min_Absorber values are different for band ",a, " for index (", i3, 1x, i0, ")" )' ) &   
+                            TRIM(AIRS_MODULE(l)), k, j                                                 
+            CALL Display_Message( PROGRAM_NAME, &                                                 
+                                  TRIM(Message), &                                                
+                                  Error_Status )                                                  
+            STOP                                                                                  
+          END IF 
+         END DO                                                                                 
+        END DO
+
+        ! Check Max_Absorber value                                                                     
+        DO j = 1, In_ODPS%n_Absorbers 
+         DO k = 1, In_ODPS%n_Layers
+          
+          IF ( .NOT. Compare_Float( In_ODPS%Max_Absorber(k,j) , Out_ODPS%Max_Absorber(k,j)  ) ) THEN                 
+            Error_Status = FAILURE                                                                
+            WRITE( Message, '( "Max_Absorber values are different for band ",a, " for index (", i3, 1x, i0, ")" )' ) &   
+                            TRIM(AIRS_MODULE(l)), k, j                                                 
+            CALL Display_Message( PROGRAM_NAME, &                                                 
+                                  TRIM(Message), &                                                
+                                  Error_Status )                                                  
+            STOP                                                                                  
+          END IF 
+         END DO                                                                                 
+        END DO
+
         IF ( OPTRAN ) THEN
          ! Check Alpha
          IF ( IN_ODPS%Alpha /= Out_ODPS%Alpha ) THEN
@@ -774,6 +808,8 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
   Out_ODPS_f%Ref_Pressure          = Out_ODPS%Ref_Pressure             
   Out_ODPS_f%Ref_Temperature       = Out_ODPS%Ref_Temperature          
   Out_ODPS_f%Ref_Absorber          = Out_ODPS%Ref_Absorber             
+  Out_ODPS_f%Min_Absorber          = Out_ODPS%Min_Absorber             
+  Out_ODPS_f%Max_Absorber          = Out_ODPS%Max_Absorber             
   Out_ODPS_f%Sensor_Channel        = Out_ODPS%Sensor_Channel         
   Out_ODPS_f%n_Predictors          = Out_ODPS%n_Predictors           
   Out_ODPS_f%Pos_Index             = Out_ODPS%Pos_Index              

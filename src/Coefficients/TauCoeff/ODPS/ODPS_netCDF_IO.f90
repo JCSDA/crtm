@@ -89,6 +89,8 @@ MODULE ODPS_netCDF_IO
   CHARACTER(*), PARAMETER :: REF_PRESSURE_VARNAME      = 'Ref_Pressure'
   CHARACTER(*), PARAMETER :: REF_TEMPERATURE_VARNAME   = 'Ref_Temperature'
   CHARACTER(*), PARAMETER :: REF_ABSORBER_VARNAME      = 'Ref_Absorber'
+  CHARACTER(*), PARAMETER :: MIN_ABSORBER_VARNAME      = 'Min_Absorber'
+  CHARACTER(*), PARAMETER :: MAX_ABSORBER_VARNAME      = 'Max_Absorber'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_VARNAME    = 'Sensor_Channel'
   CHARACTER(*), PARAMETER :: COMPONENT_ID_VARNAME      = 'Component_ID'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_VARNAME       = 'Absorber_ID'
@@ -114,6 +116,8 @@ MODULE ODPS_netCDF_IO
   CHARACTER(*), PARAMETER :: REF_PRESSURE_DESCRIPTION      = 'Reference profile pressure'
   CHARACTER(*), PARAMETER :: REF_TEMPERATURE_DESCRIPTION   = 'Reference profile temperature'
   CHARACTER(*), PARAMETER :: REF_ABSORBER_DESCRIPTION      = 'Reference profile absorber'
+  CHARACTER(*), PARAMETER :: MIN_ABSORBER_DESCRIPTION      = 'Training profiles minimum absorber'
+  CHARACTER(*), PARAMETER :: MAX_ABSORBER_DESCRIPTION      = 'Training profiles maximum absorber'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_DESCRIPTION    = 'List of sensor channel numbers'
   CHARACTER(*), PARAMETER :: COMPONENT_ID_DESCRIPTION      = 'List of component ID'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_DESCRIPTION       = 'List of absorber ID'
@@ -139,6 +143,8 @@ MODULE ODPS_netCDF_IO
   CHARACTER(*), PARAMETER :: REF_PRESSURE_LONGNAME      = 'Ref Pressure'
   CHARACTER(*), PARAMETER :: REF_TEMPERATURE_LONGNAME   = 'Ref Temperature'
   CHARACTER(*), PARAMETER :: REF_ABSORBER_LONGNAME      = 'Ref Absorber'
+  CHARACTER(*), PARAMETER :: MIN_ABSORBER_LONGNAME      = 'Min Absorber'
+  CHARACTER(*), PARAMETER :: MAX_ABSORBER_LONGNAME      = 'Max Absorber'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_LONGNAME    = 'Sensor Channel'
   CHARACTER(*), PARAMETER :: COMPONENT_ID_LONGNAME      = 'Component ID'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_LONGNAME       = 'Absorber ID'
@@ -164,6 +170,8 @@ MODULE ODPS_netCDF_IO
   CHARACTER(*), PARAMETER :: REF_PRESSURE_UNITS      = 'hectoPascals (hPa)'
   CHARACTER(*), PARAMETER :: REF_TEMPERATURE_UNITS   = 'Kelvin (K)'
   CHARACTER(*), PARAMETER :: REF_ABSORBER_UNITS      = 'Absorber dependent'
+  CHARACTER(*), PARAMETER :: MIN_ABSORBER_UNITS      = 'Absorber dependent'
+  CHARACTER(*), PARAMETER :: MAX_ABSORBER_UNITS      = 'Absorber dependent'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_UNITS    = 'N/A' 
   CHARACTER(*), PARAMETER :: COMPONENT_ID_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: ABSORBER_ID_UNITS       = 'N/A'
@@ -189,6 +197,8 @@ MODULE ODPS_netCDF_IO
   REAL(fp)     , PARAMETER :: REF_PRESSURE_FILLVALUE      = ZERO
   REAL(fp)     , PARAMETER :: REF_TEMPERATURE_FILLVALUE   = ZERO
   REAL(fp)     , PARAMETER :: REF_ABSORBER_FILLVALUE      = ZERO
+  REAL(fp)     , PARAMETER :: MIN_ABSORBER_FILLVALUE      = ZERO
+  REAL(fp)     , PARAMETER :: MAX_ABSORBER_FILLVALUE      = ZERO
   INTEGER(Long), PARAMETER :: SENSOR_CHANNEL_FILLVALUE    = 0
   INTEGER(Long), PARAMETER :: COMPONENT_ID_FILLVALUE      = 0
   INTEGER(Long), PARAMETER :: ABSORBER_ID_FILLVALUE       = 0
@@ -212,6 +222,8 @@ MODULE ODPS_netCDF_IO
   INTEGER, PARAMETER :: REF_PRESSURE_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: REF_TEMPERATURE_TYPE   = NF90_DOUBLE
   INTEGER, PARAMETER :: REF_ABSORBER_TYPE      = NF90_DOUBLE
+  INTEGER, PARAMETER :: MIN_ABSORBER_TYPE      = NF90_DOUBLE
+  INTEGER, PARAMETER :: MAX_ABSORBER_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: SENSOR_CHANNEL_TYPE    = NF90_INT
   INTEGER, PARAMETER :: COMPONENT_ID_TYPE      = NF90_INT
   INTEGER, PARAMETER :: ABSORBER_ID_TYPE       = NF90_INT
@@ -2687,7 +2699,77 @@ CONTAINS
                 ' variable attributes to '//TRIM(NC_Filename)
       CALL DefineVar_Cleanup(); RETURN
     END IF
+
+    ! Define the MIN_ABSORBER
+    ! --------------------------
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                MIN_ABSORBER_VARNAME, &
+                                MIN_ABSORBER_TYPE, &
+                                dimIDs=(/n_Layers_DimID, n_Absorbers_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//MIN_ABSORBER_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  MIN_ABSORBER_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  MIN_ABSORBER_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  MIN_ABSORBER_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  MIN_ABSORBER_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//MIN_ABSORBER_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
     
+    ! Define the MAX_ABSORBER
+    ! --------------------------
+    NF90_Status = NF90_DEF_VAR( NC_FileID, &
+                                MAX_ABSORBER_VARNAME, &
+                                MAX_ABSORBER_TYPE, &
+                                dimIDs=(/n_Layers_DimID, n_Absorbers_DimID/), &
+                                varID =VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      Message = 'Error defining '//MAX_ABSORBER_VARNAME//' variable in '//&
+                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
+    Put_Status(1) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  LONGNAME_ATTNAME, &
+                                  MAX_ABSORBER_LONGNAME )
+    Put_Status(2) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  DESCRIPTION_ATTNAME, &
+                                  MAX_ABSORBER_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  UNITS_ATTNAME, &
+                                  MAX_ABSORBER_UNITS )
+    Put_Status(4) = NF90_PUT_ATT( NC_FileID, &
+                                  VarID, &
+                                  FILLVALUE_ATTNAME, &
+                                  MAX_ABSORBER_FILLVALUE )
+    IF ( ANY(Put_Status /= SUCCESS) ) THEN
+      Message = 'Error writing '//MAX_ABSORBER_VARNAME//&
+                ' variable attributes to '//TRIM(NC_Filename)
+      CALL DefineVar_Cleanup(); RETURN
+    END IF
+
     ! Define the sensor channels
     ! --------------------------
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
@@ -3566,6 +3648,26 @@ CONTAINS
       CALL WriteVar_Cleanup(); RETURN
     END IF
 
+    ! Write the Min_Absorber
+    ! ---------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        Min_ABSORBER_VARNAME, &
+                                        ODPS%Min_Absorber )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//Min_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+
+    ! Write the Max_Absorber
+    ! ---------------------
+    Error_Status = Put_netCDF_Variable( NC_FileID, &
+                                        Max_ABSORBER_VARNAME, &
+                                        ODPS%Max_Absorber )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing '//Max_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)
+      CALL WriteVar_Cleanup(); RETURN
+    END IF
+
     ! Write the Sensor_Channel data
     ! -----------------------------
     Error_Status = Put_netCDF_Variable( NC_FileID, &
@@ -3881,6 +3983,26 @@ CONTAINS
                                         ODPS%Ref_Absorber )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error reading '//REF_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+
+    ! Read the Min_Absorber
+    ! ---------------------
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        MIN_ABSORBER_VARNAME, &
+                                        ODPS%Min_Absorber )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//MIN_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)
+      CALL ReadVar_Cleanup(); RETURN
+    END IF
+
+    ! Read the Max_Absorber
+    ! ---------------------
+    Error_Status = Get_netCDF_Variable( NC_FileID, &
+                                        MAX_ABSORBER_VARNAME, &
+                                        ODPS%MAX_Absorber )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading '//MAX_ABSORBER_VARNAME//' to '//TRIM(NC_Filename)
       CALL ReadVar_Cleanup(); RETURN
     END IF
 

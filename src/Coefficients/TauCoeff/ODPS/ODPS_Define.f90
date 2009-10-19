@@ -78,7 +78,7 @@ MODULE ODPS_Define
   INTEGER, PARAMETER :: SL = 20   ! Sensor Id
   INTEGER, PARAMETER :: ML = 256  ! Messages
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: ODPS_RELEASE = 1  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: ODPS_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODPS_VERSION = 1  ! This is just the data version.
   ! The optical depth algorithm Id
   INTEGER     , PARAMETER :: ODPS_ALGORITHM = 2
@@ -148,6 +148,9 @@ MODULE ODPS_Define
     ! Reference molecular content profile. The sequence of the molecules in the Jm dimension
     ! must be consistent with that of the Absorber_ID array
     REAL(fp), POINTER   :: Ref_Absorber(:,:)     => NULL()  ! K x Jm
+    ! Training set molecular content ranges
+    REAL(fp), POINTER   :: Min_Absorber(:,:)     => NULL()  ! K x Jm
+    REAL(fp), POINTER   :: Max_Absorber(:,:)     => NULL()  ! K x Jm
 
     ! The actual sensor channel numbers
     INTEGER(Long), POINTER  :: Sensor_Channel(:) => NULL()  ! L     
@@ -293,6 +296,8 @@ CONTAINS
            ASSOCIATED( ODPS%Ref_Pressure      ) .AND. &
            ASSOCIATED( ODPS%Ref_Temperature   ) .AND. &
            ASSOCIATED( ODPS%Ref_Absorber      ) .AND. &
+           ASSOCIATED( ODPS%Min_Absorber      ) .AND. &
+           ASSOCIATED( ODPS%Max_Absorber      ) .AND. &
            ASSOCIATED( ODPS%n_Predictors      ) .AND. &
            ASSOCIATED( ODPS%Pos_Index         )      ) THEN
         Association_Status = .TRUE.
@@ -316,6 +321,8 @@ CONTAINS
            ASSOCIATED( ODPS%Ref_Pressure      ) .OR. &
            ASSOCIATED( ODPS%Ref_Temperature   ) .OR. &
            ASSOCIATED( ODPS%Ref_Absorber      ) .OR. &
+           ASSOCIATED( ODPS%Min_Absorber      ) .OR. &
+           ASSOCIATED( ODPS%Max_Absorber      ) .OR. &
            ASSOCIATED( ODPS%n_Predictors      ) .OR. &
            ASSOCIATED( ODPS%Pos_Index         )      ) THEN
         Association_Status = .TRUE.
@@ -447,6 +454,8 @@ CONTAINS
                 ODPS%Ref_Pressure       , &
                 ODPS%Ref_Temperature    , &
                 ODPS%Ref_Absorber       , &
+                ODPS%Min_Absorber       , &
+                ODPS%Max_Absorber       , &
                 ODPS%n_Predictors       , &
                 ODPS%Pos_Index          , &
                 STAT=Allocate_Status )
@@ -681,6 +690,8 @@ CONTAINS
               ODPS%Ref_Pressure( n_Layers ),          &
               ODPS%Ref_Temperature( n_Layers ),       &
               ODPS%Ref_Absorber( n_Layers, n_Absorbers ),    &
+              ODPS%Min_Absorber( n_Layers, n_Absorbers ),    &
+              ODPS%Max_Absorber( n_Layers, n_Absorbers ),    &
               ODPS%n_Predictors( n_Components, n_Channels ), &
               ODPS%Pos_Index( n_Components, n_Channels ), &
               STAT=Allocate_Status )
@@ -1024,6 +1035,8 @@ CONTAINS
     ODPS_out%Ref_Pressure      = ODPS_in%Ref_Pressure
     ODPS_out%Ref_Temperature   = ODPS_in%Ref_Temperature
     ODPS_out%Ref_Absorber      = ODPS_in%Ref_Absorber
+    ODPS_out%Min_Absorber      = ODPS_in%Min_Absorber
+    ODPS_out%Max_Absorber      = ODPS_in%Max_Absorber
     ODPS_out%n_Predictors      = ODPS_in%n_Predictors
     ODPS_out%Pos_Index         = ODPS_in%Pos_Index
     IF( ODPS_in%n_Coeffs > 0 )THEN
@@ -1049,6 +1062,9 @@ CONTAINS
       ODPS_out%OP_Index         = ODPS_in%OP_Index       
       ODPS_out%OPos_Index       = ODPS_in%OPos_Index 
       ODPS_out%OComponent_Index = ODPS_in%OComponent_Index
+      ODPS_out%Alpha            = ODPS_in%Alpha
+      ODPS_out%Alpha_C1         = ODPS_in%Alpha_C1
+      ODPS_out%Alpha_C2         = ODPS_in%Alpha_C2
           
     END IF
 
@@ -1319,9 +1335,14 @@ CONTAINS
     ODPS1%Ref_Pressure      = ODPS_Tmp%Ref_Pressure
     ODPS1%Ref_Temperature   = ODPS_Tmp%Ref_Temperature
     ODPS1%Ref_Absorber      = ODPS_Tmp%Ref_Absorber
+    ODPS1%Min_Absorber      = ODPS_Tmp%Min_Absorber
+    ODPS1%Max_Absorber      = ODPS_Tmp%Max_Absorber
     ! OPTRAN
     ODPS1%OComponent_Index  = ODPS_Tmp%OComponent_Index
-    
+    ODPS1%Alpha             = ODPS_Tmp%Alpha
+    ODPS1%Alpha_C1          = ODPS_Tmp%Alpha_C1
+    ODPS1%Alpha_C2          = ODPS_Tmp%Alpha_C2
+     
     ! Concatenate the channel array data
     ! ----------------------------------
     ! The first part...
@@ -1628,10 +1649,16 @@ CONTAINS
 
     ! Assign the absorber profile data
     ODPS1%Ref_Absorber(:, 1:ODPS_Tmp%n_Absorbers) = ODPS_Tmp%Ref_Absorber
+    ODPS1%Min_Absorber(:, 1:ODPS_Tmp%n_Absorbers) = ODPS_Tmp%Min_Absorber
+    ODPS1%Max_Absorber(:, 1:ODPS_Tmp%n_Absorbers) = ODPS_Tmp%Max_Absorber
     ODPS1%Absorber_ID(1:ODPS_Tmp%n_Absorbers) = ODPS_Tmp%Absorber_ID
     DO j = 1, n
       ODPS1%Ref_Absorber(:, ODPS_Tmp%n_Absorbers + j) = &
                                     ODPS2%Ref_Absorber(:, indx(j))           
+      ODPS1%Min_Absorber(:, ODPS_Tmp%n_Absorbers + j) = &
+                                    ODPS2%Min_Absorber(:, indx(j))           
+      ODPS1%Max_Absorber(:, ODPS_Tmp%n_Absorbers + j) = &
+                                    ODPS2%Max_Absorber(:, indx(j))           
       ODPS1%Absorber_ID(ODPS_Tmp%n_Absorbers + j) = &
                                     ODPS2%Absorber_ID(indx(j))
     END DO
@@ -1647,7 +1674,10 @@ CONTAINS
     ODPS1%Sensor_Channel    = ODPS_Tmp%Sensor_Channel
     ! OPTRAN
     ODPS1%OComponent_Index  = ODPS_Tmp%OComponent_Index
-    
+    ODPS1%Alpha             = ODPS_Tmp%Alpha
+    ODPS1%Alpha_C1          = ODPS_Tmp%Alpha_C1
+    ODPS1%Alpha_C2          = ODPS_Tmp%Alpha_C2
+     
     !--------------------------------
     ! Concatenate absorber array data
     !--------------------------------
@@ -2076,7 +2106,10 @@ CONTAINS
          ANY(ODPS_LHS%Order /= ODPS_RHS%Order) .OR. &
          ANY(ODPS_LHS%OP_Index /= ODPS_RHS%OP_Index) .OR. &
          ANY(ODPS_LHS%OPos_Index /= ODPS_RHS%OPos_Index) .OR. &
-         ODPS_LHS%OComponent_Index /= ODPS_RHS%OComponent_Index)THEN
+         ODPS_LHS%OComponent_Index /= ODPS_RHS%OComponent_Index .OR. &
+         ODPS_LHS%Alpha     /= ODPS_RHS%Alpha     .OR. &
+         ODPS_LHS%Alpha_C1  /= ODPS_RHS%Alpha_C1  .OR. &
+         ODPS_LHS%Alpha_C2  /= ODPS_RHS%Alpha_C2  )THEN
         Error_Status = FAILURE                                        
         CALL Display_Message( ROUTINE_NAME, &                         
                               "ODPS OPTRAN data are different", &                        

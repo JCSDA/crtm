@@ -688,7 +688,9 @@ CONTAINS
     READ( FileID, IOSTAT=IO_Status ) ODPS%Ref_Level_Pressure, &
                                      ODPS%Ref_Pressure,       &
                                      ODPS%Ref_Temperature,    & 
-                                     ODPS%Ref_Absorber
+                                     ODPS%Ref_Absorber,       &
+                                     ODPS%Min_Absorber,       &
+                                     ODPS%Max_Absorber
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error reading reference profiles from ",a,&
                       &". IOSTAT = ",i0)' ) &
@@ -1054,7 +1056,9 @@ CONTAINS
     WRITE( FileID, IOSTAT=IO_Status ) ODPS%Ref_Level_Pressure, &
                                       ODPS%Ref_Pressure,       &
                                       ODPS%Ref_Temperature,    &
-                                      ODPS%Ref_Absorber
+                                      ODPS%Ref_Absorber,       &
+                                      ODPS%Min_Absorber,       &
+                                      ODPS%Max_Absorber
 
     IF ( IO_Status /= 0 ) THEN
       WRITE( Message,'("Error writing reference profile data to ",a,&
