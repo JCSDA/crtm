@@ -516,20 +516,19 @@ CONTAINS
       RETURN
     END IF
     
-    ! Check if ANY pointers are already associated.
-    ! If they are, deallocate them but leave scalars.
-!    IF ( Associated_TauCoeff( TauCoeff, ANY_Test=.TRUE. ) ) THEN
-!      Error_Status = Destroy_TauCoeff( TauCoeff, &
-!                                       No_Clear=1, &
-!                                       Message_Log = Message_Log )
-!      IF ( Error_Status /= SUCCESS ) THEN
-!        CALL Display_Message( ROUTINE_NAME,    &
-!                              'Error deallocating TauCoeff prior to allocation.', &
-!                              Error_Status,    &
-!                              Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!    END IF
+    ! Check if ANY pointers are already
+    ! associated. If so, deallocate them
+    IF ( Associated_TauCoeff( TauCoeff, ANY_Test=.TRUE. ) ) THEN
+      Error_Status = Destroy_TauCoeff( TauCoeff, &
+                                       Message_Log = Message_Log )
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME,    &
+                              'Error deallocating TauCoeff prior to allocation.', &
+                              Error_Status,    &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+    END IF
 
     ! Perform the pointer allocation
     ALLOCATE( TauCoeff%Algorithm_ID( n_Sensors ), &
