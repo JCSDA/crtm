@@ -60,12 +60,8 @@ MODULE TauCoeff_Define
   PUBLIC :: Associated_TauCoeff
   PUBLIC :: Destroy_TauCoeff
   PUBLIC :: Allocate_TauCoeff
-!  PUBLIC :: Assign_TauCoeff
-!  PUBLIC :: Concatenate_Channel_TauCoeff
-!  PUBLIC :: Concatenate_Absorber_TauCoeff
+  PUBLIC :: Assign_TauCoeff
 !  PUBLIC :: Equal_TauCoeff
-!  PUBLIC :: Check_TauCoeff_Release
-!  PUBLIC :: Count_TauCoeff_Sensors
 !  PUBLIC :: Info_TauCoeff
 
 
@@ -583,7 +579,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Assign_TauCoeff( TauCoeff_in,              &  ! Input
 !                                       TauCoeff_out,             &  ! Output
-!                                       RCS_Id      = RCS_Id,     &  ! Revision control
 !                                       Message_Log = Message_Log )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
@@ -610,15 +605,6 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -634,560 +620,58 @@ CONTAINS
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !------------------------------------------------------------------------------
+  FUNCTION Assign_TauCoeff( TauCoeff_in,   &  ! Input
+                            TauCoeff_out,  &  ! Output
+                            Message_Log )  &  ! Error messaging
+                          RESULT( Error_Status )
+    ! Arguments
+    TYPE(TauCoeff_type),    INTENT(IN)     :: TauCoeff_in
+    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff_out
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_TauCoeff'
+    INTEGER :: n
 
-!  FUNCTION Assign_TauCoeff( TauCoeff_in,   &  ! Input
-!                            TauCoeff_out,  &  ! Output
-!                            RCS_Id,        &  ! Revision control
-!                            Message_Log )  &  ! Error messaging
-!                          RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN)     :: TauCoeff_in
-!    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff_out
-!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_TauCoeff'
-!
-!    ! Set up
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! ALL *input* pointers must be associated
-!    IF ( .NOT. Associated_TauCoeff(TauCoeff_In) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT TauCoeff pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Allocate data arrays
-!    Error_Status = Allocate_TauCoeff( TauCoeff_in%n_Orders    , &
-!                                      TauCoeff_in%n_Predictors, &
-!                                      TauCoeff_in%n_Absorbers , &
-!                                      TauCoeff_in%n_Channels , &
-!                                      TauCoeff_out, &
-!                                      Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Error allocating output TauCoeff arrays.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Assign non-dimension scalar members
-!    TauCoeff_out%Release   = TauCoeff_in%Release
-!    TauCoeff_out%Version   = TauCoeff_in%Version
-!    TauCoeff_out%n_Sensors = TauCoeff_in%n_Sensors
-!
-!    ! Copy array data
-!    TauCoeff_out%Sensor_Descriptor = TauCoeff_in%Sensor_Descriptor
-!    TauCoeff_out%NCEP_Sensor_ID    = TauCoeff_in%NCEP_Sensor_ID
-!    TauCoeff_out%WMO_Satellite_ID  = TauCoeff_in%WMO_Satellite_ID
-!    TauCoeff_out%WMO_Sensor_ID     = TauCoeff_in%WMO_Sensor_ID
-!    TauCoeff_out%Sensor_Channel    = TauCoeff_in%Sensor_Channel
-!    TauCoeff_out%Absorber_ID       = TauCoeff_in%Absorber_ID
-!    TauCoeff_out%Alpha             = TauCoeff_in%Alpha
-!    TauCoeff_out%Alpha_C1          = TauCoeff_in%Alpha_C1
-!    TauCoeff_out%Alpha_C2          = TauCoeff_in%Alpha_C2
-!    TauCoeff_out%Order_Index       = TauCoeff_in%Order_Index
-!    TauCoeff_out%Predictor_Index   = TauCoeff_in%Predictor_Index
-!    TauCoeff_out%C                 = TauCoeff_in%C
-!
-!  END FUNCTION Assign_TauCoeff
+    ! ALL *input* pointers must be associated
+    IF ( .NOT. Associated_TauCoeff(TauCoeff_In) ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME,    &
+                            'Some or all INPUT TauCoeff pointer '//&
+                            'members are NOT associated.', &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
 
+    Error_Status = Allocate_TauCoeff( TauCoeff_in%n_ODAS, &
+                                      TauCoeff_in%n_ODPS, &
+                                      TauCoeff_out, &
+                                      Message_Log = Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,    &
+                            'Error allocating output TauCoeff arrays.', &
+                            Error_Status,    &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
 
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Concatenate_Channel_TauCoeff
-!
-! PURPOSE:
-!       Function to concatenate two valid TauCoeff structures along
-!       the channel dimension.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Concatenate_Channel_TauCoeff( TauCoeff1,                &  ! Input/Output
-!                                                    TauCoeff2,                &  ! Input
-!                                                    RCS_Id      = RCS_Id,     &  ! Revision control
-!                                                    Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff1:     First TauCoeff structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-!       TauCoeff2:     Second TauCoeff structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff1:     The concatenated TauCoeff structure. The order of
-!                      concatenation is TauCoeff1,TauCoeff2 along the 
-!                      channel dimension.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure concatenation was successful
-!                         == FAILURE an error occurred, or
-!                         == WARNING - the version numbers of the TauCoeff structure
-!                                      data are different.
-!                                    - the destruction of a temporary, local TauCoeff
-!                                      structure failed.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The input TauCoeff1 argument contains the concatenated structure
-!       data (in character-speak: TauCoeff1//TauCoeff2) on output. It is
-!       reallocated within this routine so if an error occurs during the
-!       reallocation, the contents of the input TauCoeff1 structure will
-!       be lost.
-!
-!       Because of the structure reallocation there is a potential that 
-!       available memory will become fragmented. Use this routine in a
-!       manner that will minimise this effect (e.g. destroying structures or
-!       allocatable arrays in the opposite order in which they were created). 
-!
-!------------------------------------------------------------------------------
+    ! Copy array data
+    TauCoeff_out%Algorithm_ID = TauCoeff_in%Algorithm_ID
+    TauCoeff_out%Sensor_Index = TauCoeff_in%Sensor_Index
+    TauCoeff_out%Sensor_LoIndex = TauCoeff_in%Sensor_LoIndex
+    
+    ! Copy structure arrays
+    ODAS_Sensor_Loop: DO n = 1, TauCoeff_in%n_ODAS
+      TauCoeff_out%ODAS(n) = TauCoeff_in%ODAS(n)
+    END DO ODAS_Sensor_Loop
+    
+    ODPS_Sensor_Loop: DO n = 1, TauCoeff_in%n_ODPS
+      TauCoeff_out%ODPS(n) = TauCoeff_in%ODPS(n)
+    END DO ODPS_Sensor_Loop
 
-!  FUNCTION Concatenate_Channel_TauCoeff( TauCoeff1,     &  ! Input/Output
-!                                         TauCoeff2,     &  ! Input
-!                                         RCS_Id,        &  ! Revision control
-!                                         Message_Log )  &  ! Error messaging
-!                                       RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN OUT)  :: TauCoeff1
-!    TYPE(TauCoeff_type),    INTENT(IN)      :: TauCoeff2
-!    CHARACTER(*), OPTIONAL, INTENT(OUT)     :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)      :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Concatenate_Channel_TauCoeff'
-!    ! Local variables
-!    INTEGER :: n_Channels, l1, l2
-!    TYPE(TauCoeff_type) :: TauCoeff_Tmp
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Check structures
-!    IF ( .NOT. Associated_TauCoeff( TauCoeff1 ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT TauCoeff1 pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!    IF ( .NOT. Associated_TauCoeff( TauCoeff2 ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT TauCoeff2 pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Compare structure release/version
-!    IF ( TauCoeff1%Release /= TauCoeff2%Release ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Input TauCoeff Release values are different.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!    IF ( TauCoeff1%Version /= TauCoeff2%Version ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Input TauCoeff Version values are different.', &
-!                            WARNING, &
-!                            Message_Log = Message_Log )
-!
-!    END IF
-!
-!    ! Check non-channel dimensions
-!    IF ( TauCoeff1%n_Orders     /= TauCoeff2%n_Orders     .OR. &
-!         TauCoeff1%n_Predictors /= TauCoeff2%n_Predictors .OR. &
-!         TauCoeff1%n_Absorbers  /= TauCoeff2%n_Absorbers       ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Non-channel TauCoeff dimensions are different.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Copy the first structure...
-!    Error_Status = Assign_TauCoeff( TauCoeff1, TauCoeff_Tmp, &
-!                                    Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error copying TauCoeff1 structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! ... now destroy it ...
-!    Error_Status = Destroy_TauCoeff( TauCoeff1, &
-!                                     Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error destroying TauCoeff1 structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! ... and now re-allocate it for all channels
-!    n_Channels = TauCoeff_Tmp%n_Channels + TauCoeff2%n_Channels
-!    Error_Status = Allocate_TauCoeff( TauCoeff_Tmp%n_Orders, &
-!                                      TauCoeff_Tmp%n_Predictors, &
-!                                      TauCoeff_Tmp%n_Absorbers, &
-!                                      n_Channels, &
-!                                      TauCoeff1, &
-!                                      Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error reallocating TauCoeff1 structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Assign the non-channel array data
-!    TauCoeff1%Version     = MAX( TauCoeff_Tmp%Version, TauCoeff2%Version )
-!    TauCoeff1%Absorber_ID = TauCoeff_Tmp%Absorber_ID
-!    TauCoeff1%Alpha       = TauCoeff_Tmp%Alpha
-!    TauCoeff1%Alpha_C1    = TauCoeff_Tmp%Alpha_C1
-!    TauCoeff1%Alpha_C2    = TauCoeff_Tmp%Alpha_C2
-!
-!    ! Concatenate channel array data...
-!    ! ...the first part
-!    l1 = 1
-!    l2 = TauCoeff_Tmp%n_Channels
-!    TauCoeff1%Sensor_Descriptor(l1:l2)   = TauCoeff_Tmp%Sensor_Descriptor
-!    TauCoeff1%NCEP_Sensor_ID(l1:l2)      = TauCoeff_Tmp%NCEP_Sensor_ID
-!    TauCoeff1%WMO_Satellite_ID(l1:l2)    = TauCoeff_Tmp%WMO_Satellite_ID
-!    TauCoeff1%WMO_Sensor_ID(l1:l2)       = TauCoeff_Tmp%WMO_Sensor_ID
-!    TauCoeff1%Sensor_Channel(l1:l2)      = TauCoeff_Tmp%Sensor_Channel
-!    TauCoeff1%Order_Index(:,:,l1:l2)     = TauCoeff_Tmp%Order_Index
-!    TauCoeff1%Predictor_Index(:,:,l1:l2) = TauCoeff_Tmp%Predictor_Index
-!    TauCoeff1%C(:,:,:,l1:l2)             = TauCoeff_Tmp%C
-!    ! ...the second part
-!    l1 = l2 + 1
-!    l2 = n_Channels
-!    TauCoeff1%Sensor_Descriptor(l1:l2)   = TauCoeff2%Sensor_Descriptor
-!    TauCoeff1%NCEP_Sensor_ID(l1:l2)      = TauCoeff2%NCEP_Sensor_ID
-!    TauCoeff1%WMO_Satellite_ID(l1:l2)    = TauCoeff2%WMO_Satellite_ID
-!    TauCoeff1%WMO_Sensor_ID(l1:l2)       = TauCoeff2%WMO_Sensor_ID
-!    TauCoeff1%Sensor_Channel(l1:l2)      = TauCoeff2%Sensor_Channel
-!    TauCoeff1%Order_Index(:,:,l1:l2)     = TauCoeff2%Order_Index
-!    TauCoeff1%Predictor_Index(:,:,l1:l2) = TauCoeff2%Predictor_Index
-!    TauCoeff1%C(:,:,:,l1:l2)             = TauCoeff2%C
-!
-!    ! Count the number of sensors
-!    CALL Count_TauCoeff_Sensors( TauCoeff1 )
-!
-!    ! Destroy the temporary structure
-!    Error_Status = Destroy_TauCoeff( TauCoeff_Tmp, &
-!                                     Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      Error_Status = WARNING
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error destroying TauCoeff_Tmp structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!    END IF
-!
-!  END FUNCTION Concatenate_Channel_TauCoeff
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Concatenate_Absorber_TauCoeff
-!
-! PURPOSE:
-!       Function to concatenate two valid TauCoeff structures along
-!       the absorber dimension.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Concatenate_Absorber_TauCoeff( TauCoeff1,                &  ! Input/Output
-!                                                     TauCoeff2,                &  ! Input
-!                                                     RCS_Id      = RCS_Id,     &  ! Revision control
-!                                                     Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff1:     First TauCoeff structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-!       TauCoeff2:     Second TauCoeff structure to concatenate.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff1:     The concatenated TauCoeff structure. The order of
-!                      concatenation is TauCoeff1,TauCoeff2 along the 
-!                      absorber dimension.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure concatenation was successful
-!                         == FAILURE an error occurred, or
-!                         == WARNING - the version numbers of the TauCoeff structure
-!                                      data are different.
-!                                    - the destruction of a temporary, local TauCoeff
-!                                      structure failed.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The input TauCoeff1 argument contains the concatenated structure
-!       data (in character-speak: TauCoeff1//TauCoeff2) on output. It is
-!       reallocated within this routine so if an error occurs during the
-!       reallocation, the contents of the input TauCoeff1 structure will
-!       be lost.
-!
-!       Because of the structure reallocation there is a potential that 
-!       available memory will become fragmented. Use this routine in a
-!       manner that will minimise this effect (e.g. destroying structures or
-!       allocatable arrays in the opposite order in which they were created). 
-!
-!------------------------------------------------------------------------------
-
-!  FUNCTION Concatenate_Absorber_TauCoeff( TauCoeff1,     &  ! Input/Output
-!                                          TauCoeff2,     &  ! Input
-!                                          RCS_Id,        &  ! Revision control
-!                                          Message_Log )  &  ! Error messaging
-!                                        RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN OUT)  :: TauCoeff1
-!    TYPE(TauCoeff_type),    INTENT(IN)      :: TauCoeff2
-!    CHARACTER(*), OPTIONAL, INTENT(OUT)     :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)      :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Concatenate_Absorber_TauCoeff'
-!    ! Local variables
-!    INTEGER :: n_Absorbers, j1, j2
-!    TYPE(TauCoeff_type) :: TauCoeff_Tmp
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Check structures
-!    IF ( .NOT. Associated_TauCoeff( TauCoeff1 ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT TauCoeff1 pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!    IF ( .NOT. Associated_TauCoeff( TauCoeff2 ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT TauCoeff2 pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Compare structure release/version
-!    IF ( TauCoeff1%Release /= TauCoeff2%Release ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Input TauCoeff Release values are different.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!    IF ( TauCoeff1%Version /= TauCoeff2%Version ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Input TauCoeff Version values are different.', &
-!                            WARNING, &
-!                            Message_Log = Message_Log )
-!    END IF
-!
-!    ! Check the non-absorber dimensions
-!    IF ( TauCoeff1%n_Orders     /= TauCoeff2%n_Orders     .OR. &
-!         TauCoeff1%n_Predictors /= TauCoeff2%n_Predictors .OR. &
-!         TauCoeff1%n_Channels   /= TauCoeff2%n_Channels        ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Non-absorber TauCoeff dimensions are different.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check the ID and channel values
-!    IF ( ANY( ( TauCoeff1%NCEP_Sensor_ID   - TauCoeff2%NCEP_Sensor_ID   ) /= 0 ) .OR. &
-!         ANY( ( TauCoeff1%WMO_Satellite_ID - TauCoeff2%WMO_Satellite_ID ) /= 0 ) .OR. &
-!         ANY( ( TauCoeff1%WMO_Sensor_ID    - TauCoeff2%WMO_Sensor_ID    ) /= 0 ) .OR. &
-!         ANY( ( TauCoeff1%Sensor_Channel   - TauCoeff2%Sensor_Channel   ) /= 0 )      ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'TauCoeff sensor ID and channel values are different.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Copy the first structure...
-!    Error_Status = Assign_TauCoeff( TauCoeff1, TauCoeff_Tmp, &
-!                                    Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error copying TauCoeff1 structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!   
-!    ! ... now destroy it ...
-!    Error_Status = Destroy_TauCoeff( TauCoeff1, &
-!                                     Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error destroying TauCoeff1 structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! ... and now re-allocate it for all absorbers
-!    n_Absorbers = TauCoeff_Tmp%n_Absorbers + TauCoeff2%n_Absorbers
-!    Error_Status = Allocate_TauCoeff( TauCoeff_Tmp%n_Orders, &
-!                                      TauCoeff_Tmp%n_Predictors, &
-!                                      n_Absorbers, &
-!                                      TauCoeff_Tmp%n_Channels, &
-!                                      TauCoeff1, &
-!                                      Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error reallocating TauCoeff1 structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Assign the non-absorber array data
-!    TauCoeff1%Version           = MAX( TauCoeff_Tmp%Version, TauCoeff2%Version )
-!    TauCoeff1%Sensor_Descriptor = TauCoeff_Tmp%Sensor_Descriptor
-!    TauCoeff1%NCEP_Sensor_ID    = TauCoeff_Tmp%NCEP_Sensor_ID
-!    TauCoeff1%WMO_Satellite_ID  = TauCoeff_Tmp%WMO_Satellite_ID
-!    TauCoeff1%WMO_Sensor_ID     = TauCoeff_Tmp%WMO_Sensor_ID
-!    TauCoeff1%Sensor_Channel    = TauCoeff_Tmp%Sensor_Channel
-!
-!    ! Concatenate absorber array data...
-!    ! ...the first part
-!    j1 = 1
-!    j2 = TauCoeff_Tmp%n_Absorbers
-!    TauCoeff1%Absorber_ID(j1:j2)         = TauCoeff_Tmp%Absorber_ID
-!    TauCoeff1%Alpha(j1:j2)               = TauCoeff_Tmp%Alpha
-!    TauCoeff1%Alpha_C1(j1:j2)            = TauCoeff_Tmp%Alpha_C1
-!    TauCoeff1%Alpha_C2(j1:j2)            = TauCoeff_Tmp%Alpha_C2
-!    TauCoeff1%Order_Index(:,j1:j2,:)     = TauCoeff_Tmp%Order_Index
-!    TauCoeff1%Predictor_Index(:,j1:j2,:) = TauCoeff_Tmp%Predictor_Index
-!    TauCoeff1%C(:,:,j1:j2,:)             = TauCoeff_Tmp%C
-!
-!    ! ...the second part
-!    j1 = j2 + 1
-!    j2 = n_Absorbers
-!    TauCoeff1%Absorber_ID(j1:j2)         = TauCoeff2%Absorber_ID
-!    TauCoeff1%Alpha(j1:j2)               = TauCoeff2%Alpha
-!    TauCoeff1%Alpha_C1(j1:j2)            = TauCoeff2%Alpha_C1
-!    TauCoeff1%Alpha_C2(j1:j2)            = TauCoeff2%Alpha_C2
-!    TauCoeff1%Order_Index(:,j1:j2,:)     = TauCoeff2%Order_Index
-!    TauCoeff1%Predictor_Index(:,j1:j2,:) = TauCoeff2%Predictor_Index
-!    TauCoeff1%C(:,:,j1:j2,:)             = TauCoeff2%C
-!
-!    ! Destroy the temporary structure
-!    Error_Status = Destroy_TauCoeff( TauCoeff_Tmp, &
-!                                     Message_Log = Message_Log )
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      Error_Status = WARNING
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Error destroying TauCoeff_Tmp structure.', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!    END IF
-!
-!  END FUNCTION Concatenate_Absorber_TauCoeff
-
-
+  END FUNCTION Assign_TauCoeff
 !------------------------------------------------------------------------------
 !
 ! NAME:
@@ -1601,161 +1085,6 @@ CONTAINS
 !  END FUNCTION Equal_TauCoeff
 
 
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Check_TauCoeff_Release
-!
-! PURPOSE:
-!       Function to check the TauCoeff Release value.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Check_TauCoeff_Release( TauCoeff,                 &  ! Input
-!                                              RCS_Id      = RCS_Id,     &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff:      TauCoeff structure for which the Release member
-!                      is to be checked.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure Release value is valid.
-!                         == FAILURE the structure Release value is NOT valid
-!                                    and either a data file file or software
-!                                    update is required.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-!----------------------------------------------------------------------------------
-
-!  FUNCTION Check_TauCoeff_Release( TauCoeff,     &  ! Input
-!                                   RCS_Id,       &  ! Revision control
-!                                   Message_Log ) &  ! Error messaging
-!                                 RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN)  :: TauCoeff
-!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Check_TauCoeff_Release'
-!    ! Local variables
-!    CHARACTER(256) :: Message
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Check release is not too old
-!    IF ( TauCoeff%Release < TAUCOEFF_RELEASE ) THEN
-!      Error_Status = FAILURE
-!      WRITE( Message, '( "A TauCoeff data update is needed. ", &
-!                        &"TauCoeff release is ", i2, &
-!                        &". Valid release is ",i2,"." )' ) &
-!                      TauCoeff%Release, TAUCOEFF_RELEASE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            TRIM( Message ), &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check release is not too new
-!    IF ( TauCoeff%Release > TAUCOEFF_RELEASE ) THEN
-!      Error_Status = FAILURE
-!      WRITE( Message, '( "A TauCoeff software update is needed. ", &
-!                        &"TauCoeff release is ", i2, &
-!                        &". Valid release is ",i2,"." )' ) &
-!                      TauCoeff%Release, TAUCOEFF_RELEASE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            TRIM( Message ), &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!  END FUNCTION Check_TauCoeff_Release
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Count_TauCoeff_Sensors
-!
-! PURPOSE:
-!       Subroutine to count the number of different satellite/sensors in the
-!       TauCoeff structure and set the n_Sensors field. The Sensor_Descriptor
-!       field in the TauCoeff structure is used for counting.
-!
-! CALLING SEQUENCE:
-!       CALL Count_TauCoeff_Sensors( TauCoeff,       &  ! In/Output
-!                                    RCS_Id = RCS_Id )  ! Optional output
-!
-! INPUT ARGUMENTS:
-!       TauCoeff_in:   Filled TauCoeff structure.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! SIDE EFFECTS:
-!       The N_SENSORS field of the input TauCoeff structure is modified.
-!
-!------------------------------------------------------------------------------
-
-!  SUBROUTINE Count_TauCoeff_Sensors( TauCoeff, &  ! In/Output
-!                                     RCS_Id    )  ! Revision control
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
-!    ! Revision control
-!    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-!    ! Local variables
-!    INTEGER, DIMENSION(TauCoeff%n_Channels) :: Idx
-!
-!    ! Set up
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Sort the structure sensor descriptors
-!    CALL InsertionSort(TauCoeff%Sensor_Descriptor, Idx)
-!
-!    ! Count the unique sensors
-!    TauCoeff%n_Sensors = MAX( COUNT(TauCoeff%Sensor_Descriptor(Idx) /= &
-!                              CSHIFT(TauCoeff%Sensor_Descriptor(Idx),1)), 1)
-!
-!  END SUBROUTINE Count_TauCoeff_Sensors
 
 
 !------------------------------------------------------------------------------
