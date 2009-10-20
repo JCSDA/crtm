@@ -62,7 +62,7 @@ MODULE TauCoeff_Define
   PUBLIC :: Allocate_TauCoeff
   PUBLIC :: Assign_TauCoeff
 !  PUBLIC :: Equal_TauCoeff
-!  PUBLIC :: Info_TauCoeff
+  PUBLIC :: Info_TauCoeff
 
 
   ! -----------------
@@ -1083,23 +1083,17 @@ CONTAINS
 !    END DO Channel_Loop
 !
 !  END FUNCTION Equal_TauCoeff
-
-
-
-
 !------------------------------------------------------------------------------
-!
 ! NAME:
 !       Info_TauCoeff
 !
 ! PURPOSE:
-!       Subroutine to return a string containing version and dimension
+!       Subroutine to return a string containing dimension
 !       information about the TauCoeff data structure.
 !
 ! CALLING SEQUENCE:
 !       CALL Info_TauCoeff( TauCoeff,       &  ! Input
-!                           Info,           &  ! Output
-!                           RCS_Id = RCS_Id )  ! Revision control
+!                           Info            )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       TauCoeff:      Filled TauCoeff structure.
@@ -1115,52 +1109,34 @@ CONTAINS
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 !------------------------------------------------------------------------------
 
-!  SUBROUTINE Info_TauCoeff( TauCoeff, &  ! Input
-!                            Info,     &  ! Output
-!                            RCS_Id    )  ! Revision control
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN)  :: TauCoeff
-!    CHARACTER(*),           INTENT(OUT) :: Info
-!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-!    ! Parameters
-!    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-!    INTEGER, PARAMETER :: LINEFEED = 10
-!    ! Local variables
-!    CHARACTER(512) :: Long_String
-!
-!    ! Set up
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Write the required info to the local string
-!    WRITE( Long_String, '( a,1x,"TauCoeff RELEASE.VERSION: ", i2, ".", i2.2, 2x, &
-!                           &"N_ORDERS=",i2,2x,&
-!                           &"N_PREDICTORS=",i2,2x,&
-!                           &"N_ABSORBERS=",i2,2x,&
-!                           &"N_CHANNELS=",i4,2x,&
-!                           &"N_SENSORS=",i2 )' ) &
-!                         ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-!                         TauCoeff%Release, TauCoeff%Version, &
-!                         TauCoeff%n_Orders, &
-!                         TauCoeff%n_Predictors, &
-!                         TauCoeff%n_Absorbers, &
-!                         TauCoeff%n_Channels, &
-!                         TauCoeff%n_Sensors
-!
-!    ! Trim the output based on the
-!    ! dummy argument string length
-!    Info = Long_String(1:MIN( LEN(Info), LEN_TRIM( Long_String ) ))
-!
-!  END SUBROUTINE Info_TauCoeff
+  SUBROUTINE Info_TauCoeff( TauCoeff, &  ! Input
+                            Info      )  ! Output
+  
+    ! Arguments
+    TYPE(TauCoeff_type),    INTENT(IN)  :: TauCoeff
+    CHARACTER(*),           INTENT(OUT) :: Info
+    ! Parameters
+    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+    INTEGER, PARAMETER :: LINEFEED = 10
+    ! Local variables
+    CHARACTER(512) :: Long_String
+
+    ! Write the required info to the local string
+    WRITE( Long_String, '( a, 2x, &
+                           &"N_SENSORS=",i2,2x,&
+                           &"N_ODAS=",i2,2x,&
+                           &"N_ODPS=",i2 )' ) &
+                         ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                         TauCoeff%n_Sensors, &
+                         TauCoeff%n_ODAS, &
+                         TauCoeff%n_ODPS
+    
+    ! Trim the output based on the
+    ! dummy argument string length
+    Info = Long_String(1:MIN( LEN(Info), LEN_TRIM( Long_String ) ))
+
+  END SUBROUTINE Info_TauCoeff
 
 END MODULE TauCoeff_Define
