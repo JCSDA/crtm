@@ -361,12 +361,10 @@ CONTAINS
     Error_Status = SUCCESS
 
     ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_TauCoeff(TauCoeff) ) RETURN
+    IF ( .NOT. Associated_TauCoeff(TauCoeff, ANY_Test=.TRUE.) ) RETURN
     
     ! re-initialize the scalar members
     TauCoeff%n_Sensors = IP_INIT
-    TauCoeff%n_ODAS    = IP_INIT
-    TauCoeff%n_ODPS    = IP_INIT
 
     ! Deallocate the pointer members
     DEALLOCATE( TauCoeff%Algorithm_ID     , &
@@ -406,20 +404,12 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_TauCoeff( n_ODAS,                    &  ! Input
-!                                         n_ODPS,                    &  ! Input
+!       Error_Status = Allocate_TauCoeff( n_Sensors,                 &  ! Input
 !                                         TauCoeff,                  &  ! Output
 !                                         Message_Log = Message_Log  )  ! Error messaging
 !
 ! INPUT ARGUMENTS:
-!       n_ODAS:       Number of ODAS structures
-!                     Must be > 0.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-!       n_ODPS:       Number of ODPS structures
+!       n_Sensors:    Number of sensors
 !                     Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
@@ -465,15 +455,12 @@ CONTAINS
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !------------------------------------------------------------------------------
-
-  FUNCTION Allocate_TauCoeff( n_ODAS,       &  ! Input
-                              n_ODPS,       &  ! Input
+  FUNCTION Allocate_TauCoeff( n_Sensors,    &  ! Input
                               TauCoeff,     &  ! Output
                               Message_Log ) &  ! Error messaging
                             RESULT( Error_Status )
     ! Arguments
-    INTEGER,                INTENT(IN)     :: n_ODAS
-    INTEGER,                INTENT(IN)     :: n_ODPS
+    INTEGER,                INTENT(IN)     :: n_Sensors
     TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
@@ -481,25 +468,11 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_TauCoeff'
     ! Local variables
-    CHARACTER(256)  :: Message
+    CHARACTER(256) :: Message
     INTEGER :: Allocate_Status
-    INTEGER :: n_Sensors
 
     ! Set up
     Error_Status = SUCCESS
-    
-    ! Check and set dimensions 
-    IF ( n_ODAS       < 0 .OR. &
-         n_ODPS       < 0      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input TauCoeff n_ODAS and n_ODPS dimensions must be >= 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-     
-    n_Sensors = n_ODAS + n_ODPS
   
     IF ( n_Sensors    < 1 ) THEN
       Error_Status = FAILURE
@@ -528,8 +501,6 @@ CONTAINS
     ALLOCATE( TauCoeff%Algorithm_ID( n_Sensors ), &
               TauCoeff%Sensor_Index( n_Sensors ), &
               TauCoeff%Sensor_LoIndex( n_Sensors ), &
-              TauCoeff%ODAS( n_ODAS ), &
-              TauCoeff%ODPS( n_ODPS ), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
@@ -544,8 +515,6 @@ CONTAINS
 
     ! Assign the dimensions
     TauCoeff%n_Sensors = n_Sensors
-    TauCoeff%n_ODAS    = n_ODAS
-    TauCoeff%n_ODPS    = n_ODPS
 
     ! Initialise the arrays
     TauCoeff%Algorithm_ID   = IP_INIT
@@ -630,10 +599,9 @@ CONTAINS
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_TauCoeff'
-    INTEGER :: n
 
     ! ALL *input* pointers must be associated
-    IF ( .NOT. Associated_TauCoeff(TauCoeff_In) ) THEN
+    IF ( .NOT. Associated_TauCoeff(TauCoeff_In, ANY_Test=.TRUE.) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
                             'Some or all INPUT TauCoeff pointer '//&
@@ -643,8 +611,7 @@ CONTAINS
       RETURN
     END IF
 
-    Error_Status = Allocate_TauCoeff( TauCoeff_in%n_ODAS, &
-                                      TauCoeff_in%n_ODPS, &
+    Error_Status = Allocate_TauCoeff( TauCoeff_in%n_Sensors, &
                                       TauCoeff_out, &
                                       Message_Log = Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
@@ -659,15 +626,6 @@ CONTAINS
     TauCoeff_out%Algorithm_ID = TauCoeff_in%Algorithm_ID
     TauCoeff_out%Sensor_Index = TauCoeff_in%Sensor_Index
     TauCoeff_out%Sensor_LoIndex = TauCoeff_in%Sensor_LoIndex
-    
-    ! Copy structure arrays
-    ODAS_Sensor_Loop: DO n = 1, TauCoeff_in%n_ODAS
-      TauCoeff_out%ODAS(n) = TauCoeff_in%ODAS(n)
-    END DO ODAS_Sensor_Loop
-    
-    ODPS_Sensor_Loop: DO n = 1, TauCoeff_in%n_ODPS
-      TauCoeff_out%ODPS(n) = TauCoeff_in%ODPS(n)
-    END DO ODPS_Sensor_Loop
 
   END FUNCTION Assign_TauCoeff
 !------------------------------------------------------------------------------
