@@ -372,8 +372,6 @@ CONTAINS
     DEALLOCATE( TauCoeff%Algorithm_ID     , &
                 TauCoeff%Sensor_Index     , &
                 TauCoeff%Sensor_LoIndex   , &
-                TauCoeff%ODAS             , &
-                TauCoeff%ODPS             , &
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
