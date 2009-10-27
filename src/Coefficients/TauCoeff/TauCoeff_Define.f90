@@ -3,27 +3,11 @@
 !
 ! Module defining the TauCoeff data structure and containing routines to 
 ! manipulate it.
-!       
-!
-! *!IMPORTANT!*
-! -------------
-! Note that the TauCoeff_type is PUBLIC and its members are not
-! encapsulated; that is, they can be fully accessed outside the
-! scope of this module. This makes it possible to manipulate
-! the structure and its data directly rather than, for e.g., via
-! get() and set() functions. This was done to eliminate the
-! overhead of the get/set type of structure access in using the
-! structure. *But*, it is recommended that the user initialize,
-! destroy, allocate, assign, and concatenate the structure
-! using only the routines in this module where possible to
-! eliminate -- or at least minimise -- the possibility of 
-! memory leakage since most of the structure members are
-! pointers.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 18-Mar-2002
+!                       paul.vandelst@noaa.gov
 !
 !       Updated by:     David Groff, EMC/SAIC Oct-2009
 !                       david.groff@noaa.gov
@@ -36,9 +20,7 @@ MODULE TauCoeff_Define
   ! ------------------
   ! Module use
   USE Type_Kinds,            ONLY: Long, Double
-  USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE Sort_Utility,          ONLY: InsertionSort
+  USE Message_Handler,       ONLY: SUCCESS, FAILURE, Display_Message
   USE ODAS_Define,           ONLY: ODAS_type
   USE ODPS_Define,           ONLY: ODPS_type
   ! Disable implicit typing
@@ -50,365 +32,195 @@ MODULE TauCoeff_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Parameters
-  PUBLIC :: N_TAUCOEFF_ITEMS
-  PUBLIC :: TAUCOEFF_DATA_TYPE
-  PUBLIC :: TAUCOEFF_DATA_NAME
   ! Datatypes
   PUBLIC :: TauCoeff_type
+  ! Operators
+  PUBLIC :: ASSIGNMENT(=)
+  PUBLIC :: OPERATOR(.EQ.)
   ! Procedures
-  PUBLIC :: Associated_TauCoeff
-  PUBLIC :: Destroy_TauCoeff
-  PUBLIC :: Allocate_TauCoeff
-  PUBLIC :: Assign_TauCoeff
-!  PUBLIC :: Equal_TauCoeff
-  PUBLIC :: Info_TauCoeff
+  PUBLIC :: TauCoeff_Associated
+  PUBLIC :: TauCoeff_Destroy
+  PUBLIC :: TauCoeff_Create
+  PUBLIC :: TauCoeff_Info
 
-
+  ! -------------------
+  ! Procedure overloads
+  ! -------------------
+  INTERFACE ASSIGNMENT(=)
+    MODULE PROCEDURE TauCoeff_Assign
+  END INTERFACE
+  
+  INTERFACE OPERATOR(.EQ.)
+    MODULE PROCEDURE TauCoeff_Equal
+  END INTERFACE
+  
+  
   ! -----------------
   ! Module parameters
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-  ! TauCoeff init values
-  REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
-  INTEGER,      PARAMETER :: IP_INIT = 0
-  ! Sensor descriptor component string length
-  INTEGER, PARAMETER :: DL = 20
-  ! Current valid release and version numbers
-  INTEGER, PARAMETER :: TAUCOEFF_RELEASE = 5  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: TAUCOEFF_VERSION = 4  ! This is just the data version.
-  ! Number of TauCoeff data items
-  INTEGER(Long), PARAMETER :: N_TAUCOEFF_ITEMS = 12_Long
-  ! Internal data type descriptors for the TauCoeff data
-  !    5 = Double (i.e. 8-byte float)
-  !    4 = Single (i.e. 4-byte float)
-  !    3 = Long   (i.e. 4-byte integer)
-  INTEGER(Long), PARAMETER, DIMENSION( N_TAUCOEFF_ITEMS ) :: &
-    TAUCOEFF_DATA_TYPE = (/ 7_Long, &  ! Sensor_Descriptor
-                            3_Long, &  ! NCEP_Sensor_ID
-                            3_Long, &  ! WMO_Satellite_ID
-                            3_Long, &  ! WMO_Sensor_ID
-                            3_Long, &  ! Sensor_Channel
-                            3_Long, &  ! Absorber_ID
-                            5_Long, &  ! Alpha
-                            5_Long, &  ! Alpha_C1
-                            5_Long, &  ! Alpha_C2
-                            3_Long, &  ! Order_Index
-                            3_Long, &  ! Predictor_Index
-                            5_Long /)  ! C
-  ! Names of the data items (for error processing)
-  CHARACTER(*), PARAMETER, DIMENSION( N_TAUCOEFF_ITEMS ) :: &
-    TAUCOEFF_DATA_NAME = (/ 'Sensor_Descriptor', &
-                            'NCEP_Sensor_ID   ', &
-                            'WMO_Satellite_ID ', &
-                            'WMO_Sensor_ID    ', &
-                            'Sensor_Channel   ', &
-                            'Absorber_ID      ', &
-                            'Alpha            ', &
-                            'Alpha_C1         ', &
-                            'Alpha_C2         ', &
-                            'Order_Index      ', &
-                            'Predictor_Index  ', &
-                            'Tau_Coefficients ' /)
+  ! Message string length
+  INTEGER , PARAMETER :: ML = 256
+
   
   ! -----------------------
   ! Derived type definition  
   ! -----------------------
   TYPE :: TauCoeff_type
-    INTEGER :: n_Allocates = 0
-    ! -- Array dimensions
-    INTEGER( Long ) :: n_Sensors = 0       ! n
-    INTEGER( Long ) :: n_ODAS    = 0       ! I1
-    INTEGER( Long ) :: n_ODPS    = 0       ! I2
-!    ### More dimension variables for additional algorithms ###
-
-    ! Algorithm_ID:   Algorithm ID
-    ! Sensor_Index:   Global sensor index
-    ! Sensor_LoIndex: Local sensor index for a collection of sensor using 
-    !                 the same algorithm
-    INTEGER, POINTER :: Algorithm_ID(:)   =>NULL()  ! n
-    INTEGER, POINTER :: Sensor_Index(:)   =>NULL()  ! n
-    INTEGER, POINTER :: Sensor_LoIndex(:) =>NULL()  ! n
-
-    TYPE( ODAS_type ), POINTER  :: ODAS(:)  =>NULL()  ! I1
-    TYPE( ODPS_type ), POINTER  :: ODPS(:)  =>NULL()  ! I2
-!    ### More dstructure variables for additional algorithms ###
-  
+    ! Array dimensions
+    INTEGER :: n_Sensors = 0       ! n
+    INTEGER :: n_ODAS    = 0       ! I1
+    INTEGER :: n_ODPS    = 0       ! I2
+    ! Arrays
+    INTEGER, ALLOCATABLE :: Algorithm_ID(:)    ! n
+    INTEGER, ALLOCATABLE :: Sensor_Index(:)    ! n
+    INTEGER, ALLOCATABLE :: Sensor_LoIndex(:)  ! n ; Local sensor index for a collection
+                                               !     of sensor using the same algorithm
+    ! Pointers
+    TYPE(ODAS_type), POINTER :: ODAS(:) => NULL()  ! I1
+    TYPE(ODPS_type), POINTER :: ODPS(:) => NULL()  ! I2
   END TYPE TauCoeff_type
-
-
-  ! ------------------------------
-  ! TauCoeff data type definition
-  ! ------------------------------
-!  TYPE :: TauCoeff_type
-!    INTEGER :: n_Allocates = 0
-!    ! Release and version information
-!    INTEGER(Long) :: Release = TAUCOEFF_RELEASE
-!    INTEGER(Long) :: Version = TAUCOEFF_VERSION
-!    ! Array dimensions
-!    INTEGER(Long) :: n_Orders     = 0    ! Iorder
-!    INTEGER(Long) :: n_Predictors = 0    ! Iuse
-!    INTEGER(Long) :: n_Absorbers  = 0    ! J
-!    INTEGER(Long) :: n_Channels   = 0    ! L
-!    INTEGER(Long) :: StrLen       = DL
-!    ! Number of different satellite/sensor combinations
-!    INTEGER(Long) :: n_Sensors = 0
-!    ! The satellite and sensor IDs
-!    CHARACTER(DL), POINTER, DIMENSION(:) :: Sensor_Descriptor => NULL() ! L
-!    INTEGER(Long), POINTER, DIMENSION(:) :: NCEP_Sensor_ID    => NULL() ! L
-!    INTEGER(Long), POINTER, DIMENSION(:) :: WMO_Satellite_ID  => NULL() ! L
-!    INTEGER(Long), POINTER, DIMENSION(:) :: WMO_Sensor_ID     => NULL() ! L
-!    ! The actual sensor channel numbers
-!    INTEGER(Long), POINTER, DIMENSION(:) :: Sensor_Channel => NULL()    ! L
-!    ! The absorber ID
-!    INTEGER(Long), POINTER, DIMENSION(:) :: Absorber_ID => NULL()    ! J
-!    ! The absorber space function values
-!    REAL(Double),  POINTER, DIMENSION(:) :: Alpha    => NULL()       ! J
-!    REAL(Double),  POINTER, DIMENSION(:) :: Alpha_C1 => NULL()       ! J
-!    REAL(Double),  POINTER, DIMENSION(:) :: Alpha_C2 => NULL()       ! J
-!    ! The polynomial order index array.
-!    ! This array identifies the order of the polynomial used to
-!    ! reconstruct the regression coefficients. For each predictor
-!    ! (Iuse), each absorber (J) and each channel (L) a different
-!    ! order of polynomial can be specified.
-!    INTEGER(Long), POINTER, DIMENSION(:,:,:) :: Order_Index => NULL()  ! 0:Iuse x J x L
-!    ! The predictor index array.
-!    ! This array identifies which subset (Iuse) of the total number
-!    ! number of predictors are used to compute the absorption coefficient
-!    ! for absorber (J) and each channel (L). If Predictor_Index(0,:,:) is
-!    ! less than 0, this is an indication that there is NO absorption for
-!    ! the selected absorber in the current channel.
-!    INTEGER(Long), POINTER, DIMENSION(:,:,:)    :: Predictor_Index => NULL()  ! 0:Iuse x J x L
-!    ! The array of coefficients
-!    REAL(Double),  POINTER, DIMENSION(:,:,:,:) :: C => NULL() ! 0:Iorder x 0:Iuse x J x L
-!  END TYPE TauCoeff_type
 
 
 CONTAINS
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
 
 !--------------------------------------------------------------------------------
-!
+!:sdoc+:
 ! NAME:
-!       Associated_TauCoeff
+!       TauCoeff_Associated
 !
 ! PURPOSE:
-!       Function to test the association status of the pointer members of a
-!       TauCoeff structure.
+!       Function to test the status of the allocatable and pointer components
+!       of a TauCoeff structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_TauCoeff( TauCoeff,           &  ! Input
-!                                                 ANY_Test = Any_Test )  ! Optional input
+!       Association_Status = TauCoeff_Associated( self )
 !
-! INPUT ARGUMENTS:
-!       TauCoeff:    TauCoeff structure which is to have its pointer
-!                    member's association status tested.
+! OBJECTS:
+!       self:        TauCoeff structure which is to have its allocatable
+!                    and pointer components status tested.
 !                    UNITS:      N/A
 !                    TYPE:       TauCoeff_type
 !                    DIMENSION:  Scalar
 !                    ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:       
-!       ANY_Test:    Set this argument to test if ANY of the
-!                    TauCoeff structure pointer members are associated.
-!                    The default is to test if ALL the pointer members
-!                    are associated.
-!                    .TRUE. - Test if any of the pointer members are 
-!                             associated 
-!                    .FALSE. - Test all pointer members that should
-!                              be associated according to TauCoeff's
-!                              dimensions
-!                    UNITS:     N/A
-!                    TYPE:      LOGICAL
-!                    DIMENSION: Scalar
-!
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating the
-!                            association status of the TauCoeff pointer members.
-!                            .TRUE.  - if ALL the TauCoeff pointer members are
-!                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the TauCoeff pointer
-!                                      members are associated.
-!                            .FALSE. - some or all of the TauCoeff pointer
-!                                      members are NOT associated.
+!                            status of the allocatable and pointer components.
+!                            .TRUE.  - if ANY of the TauCoeff allocatable or
+!                                      pointer members are in use.
+!                            .FALSE. - if ALL of the TauCoeff allocatable or
+!                                      pointer members are not in use.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Scalar
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  FUNCTION Associated_TauCoeff( TauCoeff,  & ! Input
-                                ANY_Test ) & ! Optional input
-                              RESULT( Association_Status )
+
+  FUNCTION TauCoeff_Associated( TauCoeff ) RESULT( Association_Status )
     ! Arguments
     TYPE(TauCoeff_type), INTENT(IN) :: TauCoeff
-    LOGICAL,   OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
-    ! Local variables
-    LOGICAL :: ALL_Test
-       
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test ) ALL_Test = .FALSE.
-    END IF
 
     ! Test the structure associations
-    Association_Status = .FALSE.
-    IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( TauCoeff%Algorithm_ID    ) .AND. &
-           ASSOCIATED( TauCoeff%Sensor_Index    ) .AND. &
-           ASSOCIATED( TauCoeff%Sensor_LoIndex  ) .AND. &
-           ASSOCIATED( TauCoeff%ODAS            ) .AND. &
-           ASSOCIATED( TauCoeff%ODPS            )       ) THEN
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF ( ASSOCIATED( TauCoeff%Algorithm_ID    ) .OR. &
-           ASSOCIATED( TauCoeff%Sensor_Index    ) .OR. &
-           ASSOCIATED( TauCoeff%Sensor_LoIndex  ) .OR. &
-           ASSOCIATED( TauCoeff%ODAS            ) .OR. &
-           ASSOCIATED( TauCoeff%ODPS            )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-    
-  END FUNCTION Associated_TauCoeff
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
+    Association_Status = &
+      ALLOCATED(TauCoeff%Algorithm_ID  ) .OR. &
+      ALLOCATED(TauCoeff%Sensor_Index  ) .OR. &
+      ALLOCATED(TauCoeff%Sensor_LoIndex) .OR. &
+      ASSOCIATED(TauCoeff%ODAS         ) .OR. &  ! Should this be tested?
+      ASSOCIATED(TauCoeff%ODPS         )         ! Should this be tested?
+
+  END FUNCTION TauCoeff_Associated
 
 !------------------------------------------------------------------------------
-!
+!:sdoc+:
 ! NAME:
-!       Destroy_TauCoeff
+!       TauCoeff_Destroy
 ! 
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of TauCoeff
-!       data structures.
+!       Subroutine to re-initialize the TauCoeff data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_TauCoeff( TauCoeff,                 &  ! Output
-!                                        Message_Log = Message_Log )  ! Error messaging
+!       CALL TauCoeff_Destroy( self, err_stat )
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(IN)     
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff:     Re-initialized TauCoeff structure.
+! OBJECTS:
+!       self:         Re-initialized TauCoeff structure.
 !                     UNITS:      N/A
 !                     TYPE:       TauCoeff_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
+! OUTPUTS:
+!       err_stat:     The error status. The error codes are defined in the
+!                     Message_Handler module.
+!                     If == SUCCESS the object destruction was successful
+!                        == FAILURE an error occurred.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
 !
 ! COMMENTS:
-!       Note the INTENT on the output TauCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!       Note the INTENT on the TauCoeff object argument is IN OUT rather than
+!       just OUT. This is necessary because the argument has pointer components
+!       and may be defined upon input. To prevent memory leaks, the IN OUT
+!       INTENT is a must.
+!:sdoc-:
 !------------------------------------------------------------------------------
-  FUNCTION Destroy_TauCoeff( TauCoeff,     &  ! Output
-                             Message_Log ) &  ! Error messaging
-                            RESULT( Error_Status )
+  SUBROUTINE TauCoeff_Destroy(self, err_stat)
     ! Arguments
-    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(TauCoeff_type), INTENT(IN OUT) :: self
+    INTEGER,             INTENT(OUT)    :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_TauCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'TauCoeff_Destroy'
     ! Local variables
-    CHARACTER(256)  :: Message
-    INTEGER :: Allocate_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: alloc_stat
 
     ! Set up
-    Error_Status = SUCCESS
-
-    ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_TauCoeff(TauCoeff, ANY_Test=.TRUE.) ) RETURN
+    err_stat = SUCCESS
+    ! ...If structure is unused, do nothing
+    IF ( .NOT. TauCoeff_Associated(self) ) RETURN
     
-    ! re-initialize the scalar members
-    TauCoeff%n_Sensors = IP_INIT
+    ! Re-initialize the dimensions
+    self%n_Sensors = 0
 
-    ! Deallocate the pointer members
-    DEALLOCATE( TauCoeff%Algorithm_ID     , &
-                TauCoeff%Sensor_Index     , &
-                TauCoeff%Sensor_LoIndex   , &
-                STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating TauCoeff. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+    ! Deallocate the non-scalar components
+    DEALLOCATE( self%Algorithm_ID  , &
+                self%Sensor_Index  , &
+                self%Sensor_LoIndex, &
+                STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      WRITE( msg, '( "Error deallocating. STAT = ", i0 )' ) alloc_stat
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END IF
 
-    ! Decrement and test allocation counter
-    TauCoeff%n_Allocates = TauCoeff%n_Allocates - 1
-    IF ( TauCoeff%n_Allocates /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-                      TauCoeff%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
+  END SUBROUTINE TauCoeff_Destroy
 
-  END FUNCTION Destroy_TauCoeff
 !------------------------------------------------------------------------------
-!
+!:sdoc+:
 ! NAME:
-!       Allocate_TauCoeff
+!       TauCoeff_Create
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the TauCoeff
-!       data structure.
+!       Subroutine to create an instance of the TauCoeff data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_TauCoeff( n_Sensors,                 &  ! Input
-!                                         TauCoeff,                  &  ! Output
-!                                         Message_Log = Message_Log  )  ! Error messaging
+!       CALL TauCoeff_Create( self, n_Sensors, err_stat )
 !
-! INPUT ARGUMENTS:
+! OBJECTS:
+!       self:         Instance of the TauCoeff structure.
+!                     UNITS:      N/A
+!                     TYPE:       TauCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
 !       n_Sensors:    Number of sensors
 !                     Must be > 0.
 !                     UNITS:      N/A
@@ -416,683 +228,266 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in
-!                     which any messages will be logged. If not
-!                     specified, or if an error occurs opening
-!                     the log file, the default action is to
-!                     output messages to standard output.
+! OUTPUTS:
+!       err_stat:     The error status. The error codes are defined in the
+!                     Message_Handler module.
+!                     If == SUCCESS the object creation was successful
+!                        == FAILURE an error occurred.
 !                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff:     TauCoeff structure with allocated
-!                     pointer members
-!                     UNITS:      N/A
-!                     TYPE:       TauCoeff_type
+!                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
 ! COMMENTS:
-!       Note the INTENT on the output TauCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!       Note the INTENT on the TauCoeff object argument is IN OUT rather than
+!       just OUT. This is necessary because the argument has pointer components
+!       and may be defined upon input. To prevent memory leaks, the IN OUT
+!       INTENT is a must.
+!:sdoc-:
 !------------------------------------------------------------------------------
-  FUNCTION Allocate_TauCoeff( n_Sensors,    &  ! Input
-                              TauCoeff,     &  ! Output
-                              Message_Log ) &  ! Error messaging
-                            RESULT( Error_Status )
+
+  SUBROUTINE TauCoeff_Create(self, n_Sensors, err_stat)
     ! Arguments
-    INTEGER,                INTENT(IN)     :: n_Sensors
-    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(TauCoeff_type), INTENT(IN OUT) :: self
+    INTEGER,             INTENT(IN)     :: n_Sensors
+    INTEGER,             INTENT(OUT)    :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_TauCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'TauCoeff_Create'
     ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: alloc_stat
 
     ! Set up
-    Error_Status = SUCCESS
-  
-    IF ( n_Sensors    < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'TauCoeff n_Sensors dimension must be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-    
-    ! Check if ANY pointers are already
-    ! associated. If so, deallocate them
-    IF ( Associated_TauCoeff( TauCoeff, ANY_Test=.TRUE. ) ) THEN
-      Error_Status = Destroy_TauCoeff( TauCoeff, &
-                                       Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating TauCoeff prior to allocation.', &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
+    err_stat = SUCCESS
+    ! ...Check input
+    IF ( TauCoeff_Associated( self ) ) THEN
+      CALL TauCoeff_Destroy( self, err_stat )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error destroying TauCoeff prior to allocation.'
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
         RETURN
       END IF
     END IF
-
-    ! Perform the pointer allocation
-    ALLOCATE( TauCoeff%Algorithm_ID( n_Sensors ), &
-              TauCoeff%Sensor_Index( n_Sensors ), &
-              TauCoeff%Sensor_LoIndex( n_Sensors ), &
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating TauCoeff data arrays. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+    IF ( n_Sensors < 1 ) THEN
+      err_stat = FAILURE
+      msg = 'n_Sensors must be > 0.'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
 
-    ! Assign the dimensions
-    TauCoeff%n_Sensors = n_Sensors
 
-    ! Initialise the arrays
-    TauCoeff%Algorithm_ID   = IP_INIT
-    TauCoeff%Sensor_Index   = IP_INIT
-    TauCoeff%Sensor_LoIndex = IP_INIT
-
-    ! Increment and test the allocation counter
-    TauCoeff%n_Allocates = TauCoeff%n_Allocates + 1
-    IF ( TauCoeff%n_Allocates /= 1 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
-                      TauCoeff%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+    ! Perform the array allocation
+    ALLOCATE( self%Algorithm_ID( n_Sensors ), &
+              self%Sensor_Index( n_Sensors ), &
+              self%Sensor_LoIndex( n_Sensors ), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      WRITE( msg, '("Error allocating TauCoeff. STAT = ",i0)' ) alloc_stat
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
 
-  END FUNCTION Allocate_TauCoeff
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Assign_TauCoeff
-!
-! PURPOSE:
-!       Function to copy valid TauCoeff structures.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Assign_TauCoeff( TauCoeff_in,              &  ! Input
-!                                       TauCoeff_out,             &  ! Output
-!                                       Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff_in:   TauCoeff structure which is to be copied.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff_out:  Copy of the input structure, TauCoeff_in.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure assignment was successful
-!                        == FAILURE an error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output TauCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
-  FUNCTION Assign_TauCoeff( TauCoeff_in,   &  ! Input
-                            TauCoeff_out,  &  ! Output
-                            Message_Log )  &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    TYPE(TauCoeff_type),    INTENT(IN)     :: TauCoeff_in
-    TYPE(TauCoeff_type),    INTENT(IN OUT) :: TauCoeff_out
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_TauCoeff'
 
-    ! ALL *input* pointers must be associated
-    IF ( .NOT. Associated_TauCoeff(TauCoeff_In, ANY_Test=.TRUE.) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT TauCoeff pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+    ! Initialise
+    ! ...Dimensions
+    self%n_Sensors = n_Sensors
+    ! ...Arrays
+    self%Algorithm_ID   = 0
+    self%Sensor_Index   = 0
+    self%Sensor_LoIndex = 0
+    ! ...Pointers (not required, but what the hell...)
+    NULLIFY( self%ODAS, self%ODPS )
 
-    Error_Status = Allocate_TauCoeff( TauCoeff_in%n_Sensors, &
-                                      TauCoeff_out, &
-                                      Message_Log = Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error allocating output TauCoeff arrays.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Copy array data
-    TauCoeff_out%Algorithm_ID = TauCoeff_in%Algorithm_ID
-    TauCoeff_out%Sensor_Index = TauCoeff_in%Sensor_Index
-    TauCoeff_out%Sensor_LoIndex = TauCoeff_in%Sensor_LoIndex
-
-  END FUNCTION Assign_TauCoeff
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Equal_TauCoeff
-!
-! PURPOSE:
-!       Function to test if two TauCoeff structures are equal.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Equal_TauCoeff( TauCoeff_LHS,             &  ! Input
-!                                      TauCoeff_RHS,             &  ! Input
-!                                      ULP_Scale   = ULP_Scale,  &  ! Optional input
-!                                      Check_All   = Check_All,  &  ! Optional input
-!                                      RCS_Id      = RCS_Id,     &  ! Optional output
-!                                      Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff_LHS:  TauCoeff structure to be compared; equivalent to the
-!                      left-hand side of a lexical comparison, e.g.
-!                        IF ( TauCoeff_LHS == TauCoeff_RHS ).
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-!       TauCoeff_RHS:  TauCoeff structure to be compared to; equivalent to
-!                      right-hand side of a lexical comparison, e.g.
-!                        IF ( TauCoeff_LHS == TauCoeff_RHS ).
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:     Unit of data precision used to scale the floating
-!                      point comparison. ULP stands for "Unit in the Last Place,"
-!                      the smallest possible increment or decrement that can be
-!                      made using a machine's floating point arithmetic.
-!                      Value must be positive - if a negative value is supplied,
-!                      the absolute value is used. If not specified, the default
-!                      value is 1.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Check_All:     Set this argument to check ALL the *floating point*
-!                      channel data of the TauCoeff structures. The default
-!                      action is return with a FAILURE status as soon as
-!                      any difference is found. This optional argument can
-!                      be used to get a listing of ALL the differences
-!                      between data in TauCoeff structures.
-!                      If == 0, Return with FAILURE status as soon as
-!                               ANY difference is found  *DEFAULT*
-!                         == 1, Set FAILURE status if ANY difference is
-!                               found, but continue to check ALL data.
-!                      Note: Setting this argument has no effect if, for
-!                            example, the structure dimensions are different,
-!                            or the sensor ids/channels are different, or the
-!                            absorber ids are different, etc. 
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structures were equal
-!                         == FAILURE - an error occurred, or
-!                                    - the structures were different.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Congruency of the structure data is a prerequisite of equality.
-!       That is, the *order* of the data is important. For example, if
-!       two structures contain the same absorber information, but in a
-!       different order, the structures are not considered equal. 
-! 
-!------------------------------------------------------------------------------
-
-!  FUNCTION Equal_TauCoeff( TauCoeff_LHS, &  ! Input
-!                           TauCoeff_RHS, &  ! Input
-!                           ULP_Scale,    &  ! Optional input
-!                           Check_All,    &  ! Optional input
-!                           RCS_Id,       &  ! Revision control
-!                           Message_Log ) &  ! Error messaging
-!                         RESULT( Error_Status )
-!    ! Arguments
-!    TYPE(TauCoeff_type),    INTENT(IN)  :: TauCoeff_LHS
-!    TYPE(TauCoeff_type),    INTENT(IN)  :: TauCoeff_RHS
-!    INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
-!    INTEGER,      OPTIONAL, INTENT(IN)  :: Check_All
-!    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-!    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-!    ! Function result
-!    INTEGER :: Error_Status
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_TauCoeff'
-!    ! Local variables
-!    CHARACTER(256)  :: message
-!    INTEGER :: ULP
-!    LOGICAL :: Check_Once
-!    INTEGER :: iorder, iuse, j, l
-!
-!    ! Set up
-!    Error_Status = SUCCESS
-!    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-!
-!    ! Default precision is a single unit in last place
-!    ULP = 1
-!    ! ... unless the ULP_Scale argument is set and positive
-!    IF ( PRESENT( ULP_Scale ) ) THEN
-!      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-!    END IF
-!
-!    ! Default action is to return on ANY difference...
-!    Check_Once = .TRUE.
-!    ! ...unless the Check_All argument is set
-!    IF ( PRESENT( Check_All ) ) THEN
-!      IF ( Check_All == 1 ) Check_Once = .FALSE.
-!    END IF
-!
-!    ! Check the structure association status
-!    IF ( .NOT. Associated_TauCoeff( TauCoeff_LHS ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Some or all INPUT TauCoeff_LHS pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!    IF ( .NOT. Associated_TauCoeff( TauCoeff_RHS ) ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME,    &
-!                            'Some or all INPUT TauCoeff_RHS pointer '//&
-!                            'members are NOT associated.', &
-!                            Error_Status,    &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check structure Release/Version
-!    IF ( ( TauCoeff_LHS%Release /= TauCoeff_RHS%Release ) .OR. &
-!         ( TauCoeff_LHS%Version /= TauCoeff_RHS%Version )      ) THEN
-!      Error_Status = FAILURE
-!      WRITE( Message, '( "Release/Version numbers are different : ", &
-!                        &i2, ".", i2.2, " vs. ", i2, ".", i2.2 )' ) &
-!                      TauCoeff_LHS%Release, TauCoeff_LHS%Version, &
-!                      TauCoeff_RHS%Release, TauCoeff_RHS%Version
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            TRIM( Message ), &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      IF ( Check_Once ) RETURN
-!    END IF
-!
-!    ! Check dimensions
-!    IF ( TauCoeff_LHS%n_Orders     /= TauCoeff_RHS%n_Orders     .OR. &
-!         TauCoeff_LHS%n_Predictors /= TauCoeff_RHS%n_Predictors .OR. &
-!         TauCoeff_LHS%n_Absorbers  /= TauCoeff_RHS%n_Absorbers  .OR. &
-!         TauCoeff_LHS%n_Channels   /= TauCoeff_RHS%n_Channels        ) THEN
-!      Error_Status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            'Structure dimensions are different', &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!
-!    ! Check the represented sensors
-!    IF ( TauCoeff_LHS%n_Sensors /= TauCoeff_RHS%n_Sensors ) THEN
-!      Error_Status = FAILURE
-!      WRITE( Message, '( "n_Sensors values are different : ", &
-!                        &i4, " vs. ", i4 )' ) &
-!                      TauCoeff_LHS%n_Sensors, TauCoeff_RHS%n_Sensors
-!      CALL Display_Message( ROUTINE_NAME, &
-!                            TRIM( Message ), &
-!                            Error_Status, &
-!                            Message_Log = Message_Log )
-!      RETURN
-!    END IF
-!
-!    ! Check ID pointers by channel
-!    !
-!    ! Each structure member is tested separately. It's a bit of a brain dead
-!    ! way to do it, but easiest to implement since the data types differ.
-!    ! Also, each channel is tested explicitly, rather than using the ANY
-!    ! or ALL intrinsic functions, since I wanted to highlight the actual
-!    ! channel index where any difference occured so it would be very easy to
-!    ! track down the location of the difference.
-!    l_Channel_Loop: DO l = 1, TauCoeff_RHS%n_Channels
-!
-!      ! The Sensor Descriptor
-!      IF ( TauCoeff_LHS%Sensor_Descriptor(l) /= TauCoeff_RHS%Sensor_Descriptor(l) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "Descriptor values are different, ", &
-!                          &a, " vs. ", a, ",  for channel index # ", i4 )' ) &
-!                        TRIM( TauCoeff_LHS%Sensor_Descriptor(l) ), &
-!                        TRIM( TauCoeff_RHS%Sensor_Descriptor(l) ), &
-!                        l
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                             Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!
-!      ! The NCEP sensor ID
-!      IF ( TauCoeff_LHS%NCEP_Sensor_ID(l) /= TauCoeff_RHS%NCEP_Sensor_ID(l) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "NCEP_Sensor_ID values are different, ", &
-!                          &i4, " vs. ", i4, ",  for channel # ", i4 )' ) &
-!                        TauCoeff_LHS%NCEP_Sensor_ID(l), &
-!                        TauCoeff_RHS%NCEP_Sensor_ID(l), &
-!                        l
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                             Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!
-!      ! The WMO Satellite ID
-!      IF ( TauCoeff_LHS%WMO_Satellite_ID(l) /= TauCoeff_RHS%WMO_Satellite_ID(l) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "WMO_Satellite_ID values are different, ", &
-!                          &i4, " vs. ", i4, ",  for channel # ", i4 )' ) &
-!                        TauCoeff_LHS%WMO_Satellite_ID(l), &
-!                        TauCoeff_RHS%WMO_Satellite_ID(l), &
-!                        l
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                             Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!
-!      ! The WMO Sensor ID
-!      IF ( TauCoeff_LHS%WMO_Sensor_ID(l) /= TauCoeff_RHS%WMO_Sensor_ID(l) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "WMO_Sensor_ID values are different, ", &
-!                          &i4, " vs. ", i4, ",  for channel # ", i4 )' ) &
-!                        TauCoeff_LHS%WMO_Sensor_ID(l), &
-!                        TauCoeff_RHS%WMO_Sensor_ID(l), &
-!                        l
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                             Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!
-!      ! The sensor channel numbers
-!      IF ( TauCoeff_LHS%Sensor_Channel(l) /= TauCoeff_RHS%Sensor_Channel(l) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "Sensor_Channel values are different, ", &
-!                          &i4, " vs. ", i4, ",  for channel # ", i4 )' ) &
-!                        TauCoeff_LHS%Sensor_Channel(l), &
-!                        TauCoeff_RHS%Sensor_Channel(l), &
-!                        l
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                             Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!    END DO l_Channel_Loop
-!
-!    ! Check absorber dimensioned pointer members
-!    j_Absorber_Loop: DO j = 1, TauCoeff_RHS%n_Absorbers
-!
-!      ! The Absorber_ID value
-!      IF ( TauCoeff_LHS%Absorber_ID(j) /= TauCoeff_RHS%Absorber_ID(j) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "Absorber_ID values are different, ", &
-!                          &i3, " vs. ", i3, ",  for absorber # ", i4 )' ) &
-!                        TauCoeff_LHS%Absorber_ID(j), &
-!                        TauCoeff_RHS%Absorber_ID(j), &
-!                        j
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                              Message_Log = Message_Log )
-!        RETURN
-!      END IF
-!
-!      ! The Alpha value
-!      IF ( .NOT. Compare_Float( TauCoeff_LHS%Alpha(j), &
-!                                TauCoeff_RHS%Alpha(j), &
-!                                ULP = ULP              ) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "Alpha values are different, ", &
-!                          &es13.6, " vs. ", es13.6, ",  for absorber # ", i4 )' ) &
-!                        TauCoeff_LHS%Alpha(j), &
-!                        TauCoeff_RHS%Alpha(j), &
-!                        j
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                              Message_Log = Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!
-!      ! The Alpha_C1 value
-!      IF ( .NOT. Compare_Float( TauCoeff_LHS%Alpha_C1(j), &
-!                                TauCoeff_RHS%Alpha_C1(j), &
-!                                ULP = ULP                 ) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "Alpha_C1 values are different, ", &
-!                          &es13.6, " vs. ", es13.6, ",  for absorber # ", i4 )' ) &
-!                        TauCoeff_LHS%Alpha_C1(j), &
-!                        TauCoeff_RHS%Alpha_C1(j), &
-!                        j
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                              Message_Log = Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!
-!      ! The Alpha_C2 value
-!      IF ( .NOT. Compare_Float( TauCoeff_LHS%Alpha_C2(j), &
-!                                TauCoeff_RHS%Alpha_C2(j), &
-!                                ULP = ULP                 ) ) THEN
-!        Error_Status = FAILURE
-!        WRITE( Message, '( "Alpha_C2 values are different, ", &
-!                          &es13.6, " vs. ", es13.6, ",  for absorber # ", i4 )' ) &
-!                        TauCoeff_LHS%Alpha_C2(j), &
-!                        TauCoeff_RHS%Alpha_C2(j), &
-!                        j
-!        CALL Display_Message( ROUTINE_NAME, &
-!                              TRIM( Message ), &
-!                              Error_Status, &
-!                              Message_Log = Message_Log )
-!        IF ( Check_Once ) RETURN
-!      END IF
-!    END DO j_Absorber_Loop
-!
-!    ! Check index and coefficient pointer members by channel/absorber
-!    Channel_Loop: DO l = 1, TauCoeff_RHS%n_Channels
-!      Absorber_Loop: DO j = 1, TauCoeff_RHS%n_Absorbers
-!
-!        ! The order indices
-!        DO iuse = 0, TauCoeff_RHS%n_Predictors
-!          IF ( TauCoeff_LHS%Order_Index(iuse,j,l) /= TauCoeff_RHS%Order_Index(iuse,j,l) ) THEN
-!            Error_Status = FAILURE
-!            WRITE( Message,'("Order_Index values are different for index ",3(i0,1x))' ) iuse,j,l
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM(Message), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!            IF ( Check_Once ) RETURN
-!          END IF
-!        END DO
-!
-!        ! The predictor indices
-!        DO iuse = 0, TauCoeff_RHS%n_Predictors
-!          IF ( TauCoeff_LHS%Predictor_Index(iuse,j,l) /= TauCoeff_RHS%Predictor_Index(iuse,j,l) ) THEN
-!            Error_Status = FAILURE
-!            WRITE( Message,'("Predictor_Index values are different for index ",3(i0,1x))' ) iuse,j,l
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM(Message), &
-!                                  Error_Status, &
-!                                  Message_Log = Message_Log )
-!            IF ( Check_Once ) RETURN
-!          END IF
-!        END DO
-!
-!        ! The gas absorption coefficients
-!        DO iuse = 0, TauCoeff_RHS%n_Predictors
-!          DO iorder = 0, TauCoeff_RHS%n_Orders
-!            IF ( .NOT. Compare_Float( TauCoeff_LHS%C(iorder,iuse,j,l), &
-!                                      TauCoeff_RHS%C(iorder,iuse,j,l), &
-!                                      ULP = ULP                        ) ) THEN
-!              Error_Status = FAILURE
-!              WRITE( Message,'("Gas absorption coefficient values are different for index ",&
-!                             &4(i0,1x))' ) iorder,iuse,j,l
-!              CALL Display_Message( ROUTINE_NAME, &
-!                                    TRIM( Message ), &
-!                                    Error_Status, &
-!                                    Message_Log = Message_Log )
-!              IF ( Check_Once ) RETURN
-!            END IF
-!          END DO
-!        END DO
-!      END DO Absorber_Loop
-!    END DO Channel_Loop
-!
-!  END FUNCTION Equal_TauCoeff
+  END SUBROUTINE TauCoeff_Create
+  
 !------------------------------------------------------------------------------
 ! NAME:
-!       Info_TauCoeff
+!       TauCoeff_Info
 !
 ! PURPOSE:
-!       Subroutine to return a string containing dimension
-!       information about the TauCoeff data structure.
+!       Subroutine to return a string containing information about
+!       a TauCoeff data structure.
 !
 ! CALLING SEQUENCE:
-!       CALL Info_TauCoeff( TauCoeff,       &  ! Input
-!                           Info            )  ! Output
+!       CALL TauCoeff_Info( self, info )
 !
-! INPUT ARGUMENTS:
-!       TauCoeff:      Filled TauCoeff structure.
+! OBJECTS:
+!       self:          TauCoeff structure about which information is required.
 !                      UNITS:      N/A
 !                      TYPE:       TauCoeff_type
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       Info:          String containing version and dimension information
-!                      about the passed TauCoeff data structure.
+! OUTPUTS:
+!       info:          String containing information about the passed
+!                      TauCoeff data structure.
 !                      UNITS:      N/A
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Info_TauCoeff( TauCoeff, &  ! Input
-                            Info      )  ! Output
-  
+  SUBROUTINE TauCoeff_Info( self, info )
     ! Arguments
-    TYPE(TauCoeff_type),    INTENT(IN)  :: TauCoeff
-    CHARACTER(*),           INTENT(OUT) :: Info
+    TYPE(TauCoeff_type), INTENT(IN)  :: self
+    CHARACTER(*),        INTENT(OUT) :: info
     ! Parameters
     INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
     INTEGER, PARAMETER :: LINEFEED = 10
     ! Local variables
-    CHARACTER(512) :: Long_String
+    CHARACTER(2000) :: long_string
 
     ! Write the required info to the local string
-    WRITE( Long_String, '( a, 2x, &
+    WRITE( long_string, '( a, 2x, &
                            &"N_SENSORS=",i2,2x,&
                            &"N_ODAS=",i2,2x,&
                            &"N_ODPS=",i2 )' ) &
                          ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                         TauCoeff%n_Sensors, &
-                         TauCoeff%n_ODAS, &
-                         TauCoeff%n_ODPS
+                         self%n_Sensors, &
+                         self%n_ODAS, &
+                         self%n_ODPS
     
     ! Trim the output based on the
     ! dummy argument string length
-    Info = Long_String(1:MIN( LEN(Info), LEN_TRIM( Long_String ) ))
+    info = long_string(1:MIN( LEN(info), LEN_TRIM( long_string ) ))
 
-  END SUBROUTINE Info_TauCoeff
+  END SUBROUTINE TauCoeff_Info
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       TauCoeff_Assign
+!
+! PURPOSE:
+!       Subroutine to copy valid TauCoeff structures. Used in ASSIGNMENT(=)
+!       interface block.
+!
+! CALLING SEQUENCE:
+!       CALL TauCoeff_Assign( copy, original )
+!
+!         or
+!
+!       copy = original
+!
+! OBJECTS:
+!       copy:          Destination structure for copy.
+!                      UNITS:      N/A
+!                      TYPE:       TauCoeff_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!       original:      Structure to be copied.
+!                      UNITS:      N/A
+!                      TYPE:       TauCoeff_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! COMMENTS:
+!       Note the INTENT on the TauCoeff copy argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!------------------------------------------------------------------------------
+
+  SUBROUTINE TauCoeff_Assign( copy, original )
+    ! Arguments
+    TYPE(TauCoeff_type), INTENT(IN OUT) :: copy
+    TYPE(TauCoeff_type), INTENT(IN)     :: original
+    ! Parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'TauCoeff_Assign'
+    ! Variables
+    INTEGER :: err_stat
+
+    ! Destroy the output structure
+    CALL TauCoeff_Destroy( copy, err_stat )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'Output TauCoeff re-init failed', err_stat )
+      RETURN
+    END IF
+
+    ! If input structure not used, do nothing
+    IF ( .NOT. TauCoeff_Associated( original ) ) RETURN
+
+    ! Create the output structure
+    CALL TauCoeff_Create( copy, original%n_Sensors, err_stat )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'Output TauCoeff allocation failed', err_stat )
+      RETURN
+    END IF
+
+    ! Copy array data
+    copy%Algorithm_ID   = original%Algorithm_ID
+    copy%Sensor_Index   = original%Sensor_Index
+    copy%Sensor_LoIndex = original%Sensor_LoIndex
+
+    ! Set pointers
+    IF ( ASSOCIATED(original%ODAS) ) copy%ODAS => original%ODAS
+    IF ( ASSOCIATED(original%ODPS) ) copy%ODPS => original%ODPS
+    
+  END SUBROUTINE TauCoeff_Assign
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       TauCoeff_Equal
+!
+! PURPOSE:
+!       Elemental function to test the equality of two TauCoeff structures.
+!       Used in OPERATOR(.EQ.) interface block.
+!
+! CALLING SEQUENCE:
+!       is_equal = TauCoeff_Equal( x, y )
+!
+!         or
+!
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
+!
+! OBJECTS:
+!       x, y:          Two TauCoeff structures to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       TauCoeff_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION TauCoeff_Equal( x, y ) RESULT( is_equal )
+    ! Arguments
+    TYPE(TauCoeff_type), INTENT(IN) :: x, y
+    ! Function result
+    LOGICAL :: is_equal
+    
+    ! Setup
+    is_equal = .FALSE.
+    
+    ! Check dimensions
+    IF ( (x%n_Sensors /= y%n_Sensors) .OR. &
+         (x%n_ODAS    /= y%n_ODAS   ) .OR. &
+         (x%n_ODPS    /= y%n_ODPS   )      ) RETURN
+
+    ! Check arrays
+    IF ( ANY(x%Algorithm_ID   /= y%Algorithm_ID  ) .OR. &
+         ANY(x%Sensor_Index   /= y%Sensor_Index  ) .OR. &
+         ANY(x%Sensor_LoIndex /= y%Sensor_LoIndex)      ) RETURN
+
+    ! Check pointers
+    ! .... ? 
+    ! Call individual ODAS_Equal and ODPS_Equal functions?
+    ! If so, they must be elemental also!
+
+    ! If we get here, everything is equal!
+    is_equal = .TRUE.
+    
+  END FUNCTION TauCoeff_Equal
 
 END MODULE TauCoeff_Define
