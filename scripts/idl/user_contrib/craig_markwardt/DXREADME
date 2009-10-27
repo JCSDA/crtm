@@ -1,0 +1,270 @@
+
+DX DEBUG PACKAGE for IDL
+MARKWARDT IDL PROGRAMS
+
+Craig Markwardt
+craigm@cow.physics.wisc.edu
+17 Apr 2000
+
+The following instructions apply to the DXDEBUG package of procedures
+for command line debugging under IDL, available from the Markwardt IDL
+Library.
+
+The procedures in the package supply convenience routines for
+navigating up and down the IDL call stack (DXUP and DXDOWN); for
+interogating and modifying IDL variables at any levels in the call
+stack (DXHELP, DXPRINT, DXGET, DXSET); and for quickly setting and
+clearing breakpoints (DXBREAK, DXFINISH and DXCLEAR).
+
+These routines are really only meant to be useful when actively
+debugging a stopped program -- they are probably *not* acceptable to
+be called as library routines from other procedures.
+
+
+DOWNLOADING
+
+Download new versions of from Craig Markwardt's web page:
+
+http://cow.physics.wisc.edu/~craigm/idl/idl.html
+
+Program modification dates appear on the web page, which you can
+compare agains your own copy.  You can also check the modification
+history of the file itself to see how recent it is.
+
+Please see the file INSTALL for installation instructions.
+
+
+MANIFEST
+
+DXREADME - this file - package description and instructions
+INSTALL - general installation instructions
+
+DXUP - navigate up the IDL call stack (toward outermost level)
+DXDOWN - navigate down the IDL call stack (toward innermost level)
+
+DXGET - function to retrieve variable value at any call level
+DXSET - set a variable value at any call level
+DXPRINT - equivalent of PRINT for any call level
+DXHELP - equivalent of HELP for any call level
+
+DXBREAK - set breakpoints more conveniently than BREAKPOINT
+DXFINISH - set breakpoint at return of current procedure
+DXCLEAR - clear breakpoints
+
+DXLRESET - internal routine
+DXPLEVEL - internal routine
+DXPTRACE - internal reoutine
+
+
+INTRODUCTION
+
+Command line debugging with IDL has always been difficult.  It does
+provide excellent abilities to interactively query and set variables,
+but only at one level -- the deepest level.  Generally, when debugging
+a larger suite of programs one can have procedures and functions that
+nest several levels deep.  Since one procedure can call another, or
+even itself, this is a natural effect.  If an error occurs in a
+procedure several levels deep, knowing the values of variables at
+higher levels (i.e., the calling routines) can be useful and time
+saving.  Unfortunately IDL has no documented provisions for doing
+this.
+
+The DXDEBUG package provides several convenience routines to do
+examine variables at any call level.  The package is based upon
+invaluable discussions about the undocumented ROUTINE_NAMES() function
+on the comp.lang.idl-pvwave Usenet newsgroup.
+
+DXDEBUG also has convenience routines which aid in setting
+breakpoints.  I have always found it difficult to deal with
+breakpoints for because:
+
+  * it is cumbersome to type long commands;
+  * it is difficult to remember or type full path to procedure name;
+  * there is no easy way to break when the current procedure finishes.
+
+I have tried to remedy this with the DXBREAK and DXFINISH procedures.
+
+
+THE IDL CALL STACK
+
+When your program crashes, and you type HELP, you get a report similar
+to the following:
+
+% At  XTE_OPEN           15 /home/craigm/lib/idl/xte/xte_open.pro
+%     XSORTINPUT         76 /home/craigm/lib/idl/idlextract/xsortinput.pro
+%     BINLC             299 /home/craigm/lib/idl/idlextract/binlc.pro
+
+This output indicates that you are currently stopped in a program
+which is three "levels" deep.  That is, the BINLC procedure has called
+XSORTINPUT, which in turn has called XTE_OPEN.  In fact the stopped
+program is *four* levels deep, if you consider that the $MAIN$ level
+as another level (which you should).
+
+This set of levels is the IDL *call stack*.  It describes from where
+each procedure has called the next.  The *deepest* level is considered
+to be innermost.  When IDL crashes or stops, it is always at the
+deepest level.  The *upper- or outermost* level is the main level that
+you started at.  Now let's try the DXHELP command to see the call
+stack again:
+
+IDL> dxhelp
+     1 $MAIN$             0                                                    
+     2 BINLC            299 /home/craigm/lib/idl/idlextract/binlc.pro          
+     3 XSORTINPUT        76 /home/craigm/lib/idl/idlextract/xsortinput.pro     
+ >>  4 XTE_OPEN          15 /home/craigm/lib/idl/xte/xte_open.pro           << 
+
+This is essentially the same information as produced by HELP, but the
+one important difference is the highlighting of the deepest level with
+angled brackets (>> <<).  While IDL itself always stays at the deepest
+level, you can use DXUP and DXDOWN to move up and down the stack and
+examine variables.
+
+
+MOVING UP and DOWN THE STACK
+
+By typing DXUP, we can move one level up the call stack, like this:
+
+IDL> dxup
+ >>  3 XSORTINPUT        76 /home/craigm/lib/idl/idlextract/xsortinput.pro  << 
+
+DXUP reports that we have moved up to level 3, XSORTINPUT.  If we want
+to see the entire call stack we can always type DXHELP again.
+
+*What* exactly has moved up?  IDL itself always stays at the lowest
+level, but all of the DXDEBUG commands maintain a separate notion of
+what level you are currently examining -- which can be any level in
+the call stack.  This level is referred to the "debugging focus"
+level.
+
+As you might suspect, DXDOWN will move us down one level.  In this
+case it would return us to the lowest XTE_OPEN level we started at.
+Let's not do that right now.  It should also be obvious that you
+cannot go any deeper than the deepest level, or any higher than the
+uppermost $MAIN$ level.  You will be warned if you try.
+
+
+EXAMINING VARIABLES
+
+Now that we have moved the debugging focus to the level of XSORTINPUT,
+we can try looking at the variables there.  Periscope up!
+
+You can use DXHELP and DXPRINT like the standard HELP and PRINT
+commands.
+
+IDL> dxhelp, sz
+ >>  3 XSORTINPUT        76 /home/craigm/lib/idl/idlextract/xsortinput.pro  << 
+SZ              LONG      = Array[4]
+
+DXHELP always prints at least the current level to prevent confusion.
+In this case it also shows that SZ is a 4-element long integer array.
+DXPRINT actually prints the values:
+
+IDL> dxprint, sz
+ >>  3 XSORTINPUT        76 /home/craigm/lib/idl/idlextract/xsortinput.pro  << 
+           1           1           7           1
+
+You can use the standard FORMAT keywords if you need to.
+
+
+CHANGING VARIABLES
+
+Sometimes you may need to actually change the value of a variable.
+Two routines, DXGET and DXSET will help you do this.  If you first
+need to retrieve the value of a variable, use DXGET.
+
+IDL> x = dxget('sz')
+IDL> print, x
+           1           1           7           1
+
+In this case we have retrieved the value of SZ from the current
+debugging focus level (level 3, XSORTINPUT), and put the value in the
+variable X.  Notice that it is not required to type quotes around the
+variable name, but it is good practice to do so.
+
+After setting any new values, use DXSET to actually alter the upper
+level value:
+
+IDL> x(2) = 8
+IDL> dxset, 'sz', x
+
+Now the new value will be established.
+
+One note: you have to DXGET an entire variable.  You will not be able
+to retrieve subscripted arrays or structure tags.
+
+
+SETTING BREAKPOINTS
+
+Until now, there was one thing I never did when debugging a program:
+set breakpoints.  The BREAKPOINT command just never seemed convenient.
+Why?  Well, you just couldn't avoid typing a lot of letters.  The
+BREAKPOINT command itself is pretty long, and then you have to type
+either /SET or /CLEAR.  The worst offender, however, was having to
+type the complete path to the procedure being debugged.  In the era of
+multi-gigabyte hard drives, that path was often a pretty long one to
+type.  So I just never got excited about breakpoints and instead put
+in manual debugging statements.
+
+I am trying to change, and I hope you will too.
+
+The DXBREAK command has fewer characters to type, and *most*
+importantly, DXBREAK does not required to type the complete path name.
+If you don't type the full path, DXBREAK will automatically scan your
+IDL_PATH to find the right file.  In fact, if you only enter a line
+number, then DXBREAK will automatically set the breakpoint in the
+current file!
+
+Remember, breakpoints can only be set in procedures or files that are
+compiled from disk.  This means that RESTORE'd procedures, or
+procedures compiled from the console, cannot have breakpoints.
+
+As an example, try:
+
+IDL> dxbreak, 'xsortinput', 70
+Breakpoint set at: XSORTINPUT    70  (/home/craigm/lib/idl/idlextract/xsortinput.pro)
+
+This sets a breakpoint at line 70 in the xsortinput.pro file.  As you
+can see, the full path to the file was discovered automatically.  To
+confirm that the breakpoint was set, we can do the standard HELP
+command:
+
+IDL> help, /break
+Breakpoints:
+  Index  Module           Line  File
+  -----  ------           ----  ----
+      0  XSORTINPUT         70  /home/craigm/lib/idl/idlextract/xsortinput.pro
+
+Clear breakpoints with BREAKPOINT, /CLEAR or DXCLEAR.
+
+The other thing I found wanting in debugging was the ability to let
+the current procedure finish, BUT THEN STOP.  Often the true bug is in
+the calling procedure, so we want to let the current deepest level
+finish so we can do a more detailed analysis one level up.  
+
+DXFINISH is the answer to these desires.  Just type it by itself, and
+it will automatically set a breakpoint in the procedure or function
+one level up, at the next line of execution.  Do it like this:
+
+IDL> dxfinish
+Breakpoint set at: XSORTINPUT    77
+
+Then we simply continue and IDL will stop when the breakpoint is hit:
+
+IDL> .continue
+% Breakpoint at:  XSORTINPUT         77 /home/craigm/lib/idl/idlextract/xsortin
+
+Note that by default DXFINISH uses the /ONCE keyword to set these
+kinds of breakpoints.  This means that the breakpoint will be cleared
+after it has been hit once.  This behavior is usually what is
+intended, but it can be overridden by using the ONCE=0 keyword to
+DXFINISH.
+
+
+CONCLUSION
+
+I hope that this package will help you debug smarter and faster.  I've
+just begun to use them myself, so there may still be some bugs.
+Please let me know if you have any to report, or any other comments.
+Thanks.
+
+

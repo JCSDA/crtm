@@ -1,0 +1,53 @@
+;  ============== STATEMENT OF RESEARCH SYSTEMS INCORPORATED ==============
+;---------------------------------------------------------------------------
+; IDL is a product of Research Systems, Inc (RSI). Use of IDL is governed
+; by the IDL End User License Agreement (EULA). All IDL users are
+; required to read and agree to the terms of the IDL EULA at the time
+; that they install IDL.
+; 
+; The CMSVLIB software, written by Craig Markwardt, embodies
+; unpublished proprietary information about the IDL Save file
+; format. Research Systems grants to the author of this software, and
+; to all IDL users, a license to use and redistribute this software in
+; source or binary form, subject to the following conditions:
+; 
+; 1. The author, and any users of this software must be in full
+;    compliance with the IDL End User License Agreement (EULA).
+; 2. Redistributions of source code must retain the complete and
+;    unaltered text of this notice.
+; 3. Redistributions in binary form must reproduce the complete and
+;    unaltered text of this notice in the documentation and/or other
+;    materials provided with the distribution.
+; 4. The name of Research Systems Inc. may not be used to endorse or
+;    promote this software or products derived from it without specific
+;    prior written permission from Research Systems, Inc.
+; 5. Allowed use of this software is limited to reading and writing
+;    IDL variable related portions of IDL Save files. It may not be
+;    used as a basis for reverse engineering, or otherwise
+;    accessing any other portions of an IDL save file, including but
+;    not limited to, those portions that encode executable IDL programs.
+;    Such use is in violation of the IDL EULA, and will be prosecuted
+;    to the fullest extent possible by Research Systems, Inc. It is
+;    permissible to read such sections of an IDL save file for the
+;    sole purpose of transferring it without examination or interpretation
+;    to another save file.
+; 6. Research Systems disclaims any responsibility for compatibility
+;    with this software, and reserves the right to change the IDL save
+;    file format in any way, at any time, including changes that would
+;    render this software incomplete or inoperable.
+; 7. This software is not a product of Research Systems Inc. Research
+;    Systems Inc disclaims any responsibility for its development or
+;    maintenance.
+; 
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR OR RESEARCH SYSTEMS INC BE LIABLE FOR ANY
+; DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+; OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+; HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+; OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+; SUCH DAMAGE.
+;---------------------------------------------------------------------------

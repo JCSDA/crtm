@@ -1,0 +1,60 @@
+MARKWARDT IDL PROGRAMS
+INSTALLATION INSTRUCTIONS
+
+Craig Markwardt
+craigm@cow.physics.wisc.edu
+31 Jan 2000
+
+The following instructions apply to all functions and procedures
+included in the Markwardt IDL library.
+
+DOWNLOADING
+
+Download new versions of from Craig Markwardt's web page:
+
+http://cow.physics.wisc.edu/~craigm/idl/idl.html
+
+Program modification dates appear on the web page, which you can
+compare agains your own copy.  You can also check the modification
+history of the file itself to see how recent it is.
+
+
+COMPATIBILITY
+
+All programs are intended to be compatible with both Unix, Windows and
+MacIntosh versions of IDL, unless otherwise noted.  If you are
+downloading archive, then the most suitable archive file type can be
+found from this chart, depending on your operating system:
+
+    Windows     ZIP archive          (must have unzipping utility)
+    MacIntosh   ZIP archive          (must have unzipping utility)
+    Unix        TAR or ZIP archive   (must have gunzip or unzip utility)
+
+
+INSTALLATION
+
+Program files should be placed in your IDL PATH.  You may either copy
+them to an existing directory in your path, or else create a new
+directory for them to reside in.  Please see your IDL documentation
+for instructions on how to add directories to your IDL path.
+
+You may read the individual program's documentation, stored with the
+program itself, for more information on usage.
+
+If the files you downloaded came in an archive, you must unarchive
+them.  It is recommended that you unarchive them into a separate
+directory for convenience's sake.
+
+For Windows and MacIntosh systems, you should use an appropriate
+unzipping utility to expand the ZIP archive you downloaded.
+
+For Unix systems, you should use one of the following commands,
+whichever is appropriate:
+
+gzip -dc <archive>.tar.gz | tar xvf -        (for TAR file;   or...)
+unzip <archive>.zip                          (for ZIP file)
+
+where <archive> is the name of the archive you downloaded.
+
+IDL is a registered trademark of RSI
+

@@ -1,0 +1,59 @@
+
+GRAPHICS PACKAGE
+MARKWARDT IDL PROGRAMS
+
+Craig Markwardt
+craigm@cow.physics.wisc.edu
+31 Jan 2000
+
+The following instructions apply to the graphics package of the
+Markwardt IDL Library.
+
+These graphics procedures provide additional graphics capabilities not
+found in standard IDL, which I am making available for the public.  I
+use these routines in every passing, so I have tried to make them as
+general and robust as possible.  I am interested in hearing your
+feedback.
+
+
+DOWNLOADING
+
+Download new versions of from Craig Markwardt's web page:
+
+http://cow.physics.wisc.edu/~craigm/idl/idl.html
+
+Program modification dates appear on the web page, which you can
+compare agains your own copy.  You can also check the modification
+history of the file itself to see how recent it is.
+
+Please see the file INSTALL for installation instructions.
+
+
+MANIFEST
+
+The following procedures are included:
+
+ PLOTIMAGE     - renders a 2D array on screen using familiar PLOT syntax
+ OPLOTIMAGE    - renders a 2D array on an existing coordinate axis
+ PLOTBIN       - renders simple histogram, with (optional) variable binsizes
+ OPLOTBIN      - renders histogram on existing coordinate axis
+ PLOTCOLORFILL - renders a colored histogram
+ PLOTCUBE      - renders 3D scatter data in a tight matrix of plots, suitable
+                 for cutting out and assembling into a paper cube.
+
+ INSTALL     - installation instructions
+ GREADME     - this file
+
+
+USAGE
+
+Each of the program files is extensively self-documented in their
+comment headers.  You can either read the files directly or download
+the documentation from my web page in the documentation section.  The
+examples included in the documentation should be enough to get you
+started.
+
+
+
+IDL is a registered trademark of RSI
+
