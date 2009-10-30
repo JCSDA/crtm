@@ -199,6 +199,9 @@ CONTAINS
       WRITE( msg, '( "Error deallocating. STAT = ", i0 )' ) alloc_stat
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END IF
+    
+    ! Disassociate pointers
+    NULLIFY( self%ODAS, self%ODPS )
 
   END SUBROUTINE TauCoeff_Destroy
 
