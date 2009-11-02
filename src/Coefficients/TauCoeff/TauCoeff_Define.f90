@@ -120,19 +120,19 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION TauCoeff_Associated( TauCoeff ) RESULT( Association_Status )
+  FUNCTION TauCoeff_Associated( self ) RESULT( Association_Status )
     ! Arguments
-    TYPE(TauCoeff_type), INTENT(IN) :: TauCoeff
+    TYPE(TauCoeff_type), INTENT(IN) :: self
     ! Function result
     LOGICAL :: Association_Status
 
     ! Test the structure associations
     Association_Status = &
-      ALLOCATED(TauCoeff%Algorithm_ID  ) .OR. &
-      ALLOCATED(TauCoeff%Sensor_Index  ) .OR. &
-      ALLOCATED(TauCoeff%Sensor_LoIndex) .OR. &
-      ASSOCIATED(TauCoeff%ODAS         ) .OR. &  ! Should this be tested?
-      ASSOCIATED(TauCoeff%ODPS         )         ! Should this be tested?
+      ALLOCATED(self%Algorithm_ID  ) .OR. &
+      ALLOCATED(self%Sensor_Index  ) .OR. &
+      ALLOCATED(self%Sensor_LoIndex) .OR. &
+      ASSOCIATED(self%ODAS         ) .OR. &  ! Should this be tested?
+      ASSOCIATED(self%ODPS         )         ! Should this be tested?
 
   END FUNCTION TauCoeff_Associated
 
