@@ -123,7 +123,7 @@ absoft:
 # -----------------
 # Build the program
 # -----------------
-build: $(OBJ_FILES)
+build: create_links $(OBJ_FILES)
 	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
 
 
@@ -132,6 +132,10 @@ build: $(OBJ_FILES)
 # --------
 clean:
 	$(REMOVE) $(OBJ_FILES) *.mod *.MOD gmon.out
+
+realclean: clean remove_links
+
+real_clean: clean remove_links
 
 
 # ----------------------

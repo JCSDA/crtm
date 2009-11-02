@@ -77,6 +77,15 @@ ARCHIVER = ar
 ARCHIVER_FLAGS = crvs
 
 
+# --------------------------------
+# Define scripts used in makefiles
+# --------------------------------
+
+# Scripts to link and unlink files
+LINK_SCRIPT = linkfiles
+UNLINK_SCRIPT = unlinkfiles
+
+
 
 #################################################################################
 #                                                                               #
