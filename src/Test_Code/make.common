@@ -115,10 +115,10 @@ create_links:
 	$(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT} ${COEFF_DATA_FILES}; \
 	for id in ${IR_SENSOR_IDS}; do \
 	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/Infrared $$id.SpcCoeff.bin; \
-	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff/Infrared/ORD $$id.TauCoeff.bin; \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff/ODAS/Infrared $$id.TauCoeff.bin; \
 	done; \
 	for id in ${MW_SENSOR_IDS}; do \
-	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff/Microwave/Liebe $$id.TauCoeff.bin; \
+	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/TauCoeff/ODAS/Microwave $$id.TauCoeff.bin; \
 	done; \
 	for id in ${MW_SENSOR_IDS_NO_AC}; do \
 	  $(LINK_SCRIPT) -d ${ENDIAN} ${CRTM_FIXFILE_ROOT}/SpcCoeff/Microwave/No_AC $$id.SpcCoeff.bin; \
