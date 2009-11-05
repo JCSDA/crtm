@@ -12,4 +12,12 @@ export CRTM_SCRIPTS_ROOT="${CRTM_ROOT}/scripts"
 export CRTM_DOC_ROOT="${CRTM_ROOT}/doc"
 export CRTM_VALIDATION_ROOT="${CRTM_ROOT}/validation"
 
+alias crtmsrc="cd $CRTM_SOURCE_ROOT"
+alias crtmfix="cd $CRTM_FIXFILE_ROOT"
+alias crtmtest="cd $CRTM_TEST_ROOT"
+alias crtmscripts="cd $CRTM_SCRIPTS_ROOT"
+alias crtmext="cd $CRTM_EXTERNALS_ROOT"
+alias crtmdoc="cd $CRTM_DOC_ROOT"
+alias crtmval="cd $CRTM_VALIDATION_ROOT"
+
 echo "All CRTM environment variables now rooted at ${CRTM_ROOT}"

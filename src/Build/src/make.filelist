@@ -5,6 +5,7 @@ SRC_FILES = Type_Kinds.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
             Sort_Utility.f90 \
+            Search_Utility.f90 \
             Fundamental_Constants.f90 \
             Spectral_Units_Conversion.f90 \
             SensorInfo_Parameters.f90 \
@@ -82,6 +83,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \
             CRTM_AntCorr.f90 \
+            CRTM_SensorInput_Define.f90 SSU_Input_Define.f90 SSMIS_Input_Define.f90 \
             CRTM_Options_Define.f90 \
             CRTM_Parameters.f90 \
             CRTM_LifeCycle.f90 \
@@ -103,7 +105,12 @@ SRC_FILES = Type_Kinds.f90 \
             ODPS_Define.f90 \
             ODPS_TauCoeff.f90 \
             ODPS_ZAtmAbsorption.f90 \
-            CRTM_GeometryInfo.f90
+            CRTM_GeometryInfo.f90 \
+            ODSSU_AtmAbsorption.f90 \
+            ODSSU_Define.f90 \
+            ODSSU_Binary_IO.f90 \
+            ODSSU_TauCoeff.f90 \
+            Profile_Utility_Parameters.f90
                         
             #CRTM_ChannelInfo.f90 \
 

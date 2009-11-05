@@ -74,6 +74,8 @@ MODULE CRTM_Tangent_Linear_Module
                                       CRTM_Allocate_RTV
   USE CRTM_AntCorr,             ONLY: CRTM_Compute_AntCorr, &
                                       CRTM_Compute_AntCorr_TL
+  USE CRTM_SensorInput_Define,  ONLY: CRTM_SensorInput_type, &
+                                      ASSIGNMENT(=)
 
 
   ! -----------------------
@@ -271,6 +273,8 @@ CONTAINS
     INTEGER :: n_Full_Streams
     INTEGER, DIMENSION(5) :: AllocStatus
     INTEGER, DIMENSION(5) :: AllocStatus_TL
+    ! Local sensor input structure
+    TYPE(CRTM_SensorInput_type) :: SensorInput
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm, Atm_TL
     ! Component variables
@@ -418,6 +422,9 @@ CONTAINS
 
         ! Check if antenna correction should be attempted
         IF ( Options(m)%Antenna_Correction == SET ) User_AntCorr = .TRUE.
+
+        ! Copy over sensor-specific input
+        SensorInput = Options(m)%SensorInput
       END IF
 
 
@@ -598,12 +605,14 @@ CONTAINS
         ! ------------------------------------------
         ! Compute predictors for AtmAbsorption calcs
         ! ------------------------------------------
-        CALL CRTM_Compute_Predictors( SensorIndex    , &  ! Input
+        CALL CRTM_Compute_Predictors( SensorInput    , &  ! Input
+                                      SensorIndex    , &  ! Input
                                       Atm            , &  ! Input
                                       GeometryInfo(m), &  ! Input
                                       Predictor      , &  ! Output
                                       APV              )  ! Internal variable output
-        CALL CRTM_Compute_Predictors_TL( SensorIndex    , &  ! Input
+        CALL CRTM_Compute_Predictors_TL( SensorInput    , &  ! Input
+                                         SensorIndex    , &  ! Input
                                          Atm            , &  ! Input
                                          Predictor      , &  ! Input
                                          Atm_TL         , &  ! Input
@@ -642,12 +651,14 @@ CONTAINS
           ! --------------------------
           ! Compute the gas absorption
           ! --------------------------
-          CALL CRTM_Compute_AtmAbsorption( SensorIndex  , &  ! Input
+          CALL CRTM_Compute_AtmAbsorption( SensorInput  , &  ! Input
+                                           SensorIndex  , &  ! Input
                                            ChannelIndex , &  ! Input
                                            Predictor    , &  ! Input
                                            AtmAbsorption, &  ! Output
                                            AAV            )  ! Internal variable output
-          CALL CRTM_Compute_AtmAbsorption_TL( SensorIndex     , &  ! Input
+          CALL CRTM_Compute_AtmAbsorption_TL( SensorInput     , &  ! Input
+                                              SensorIndex     , &  ! Input
                                               ChannelIndex    , &  ! Input
                                               Predictor       , &  ! Input
                                               Predictor_TL    , &  ! Input

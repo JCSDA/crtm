@@ -16,10 +16,11 @@ MODULE ODPS_ZAtmAbsorption
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,                ONLY : fp
-  USE Message_Handler,           ONLY : SUCCESS, FAILURE, Display_Message
-  USE ODPS_Predictor_Define,     ONLY : Predictor_type
-  USE ODPS_Define,               ONLY : ODPS_type
+  USE Type_Kinds,            ONLY: fp
+  USE Message_Handler,       ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters,       ONLY: ZERO, ONE
+  USE ODPS_Predictor_Define, ONLY: Predictor_type
+  USE ODPS_Define,           ONLY: ODPS_type
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -36,33 +37,40 @@ MODULE ODPS_ZAtmAbsorption
   PUBLIC :: Compute_ODPath_zssmis
   PUBLIC :: Compute_ODPath_zssmis_TL
   PUBLIC :: Compute_ODPath_zssmis_AD
+  ! Public parameters
+  PUBLIC :: N_ZCOMPONENTS
+  PUBLIC :: MAX_N_PREDICTORS_ZSSMIS
+  PUBLIC :: PREDICTOR_MASK
 
-  INTEGER, PUBLIC, PARAMETER  :: N_ZCOMPONENTS = 1
+  ! ----------
+  ! Parameters
+  ! ----------
+  INTEGER, PARAMETER :: N_ZCOMPONENTS = 1
   ! set this variable to 1 although it should be 1 to consistant with the ODPS structure (for
   ! Zeeman applications only O2 need to be considered, which will be include as a fixed gas, decribed
   ! by pressure and temperature. 
-  INTEGER, PARAMETER          :: N_ZABSORBERS  = 1
+  INTEGER, PARAMETER :: N_ZABSORBERS  = 1
   
-  INTEGER, PUBLIC, PARAMETER  :: MAX_N_PREDICTORS_ZSSMIS = 18
+  INTEGER, PARAMETER :: MAX_N_PREDICTORS_ZSSMIS = 18
 
   ! Four SSMIS upper air sounding channels affected by Zeeman splitting
-  INTEGER, PARAMETER  :: N_CHANNELS_ZSSMIS = 4
-  INTEGER, PARAMETER  :: CHANNEL_INDEX_SSMIS(N_CHANNELS_ZSSMIS) = &
+  INTEGER, PARAMETER :: N_CHANNELS_ZSSMIS = 4
+  INTEGER, PARAMETER :: CHANNEL_INDEX_SSMIS(N_CHANNELS_ZSSMIS) = &
                          (/19, 20, 21, 22/)  
 
   ! Predictor Mask: 1 - included; 0 - not included
-  INTEGER, PUBLIC, PARAMETER, DIMENSION(MAX_N_PREDICTORS_ZSSMIS, N_CHANNELS_ZSSMIS) :: &
-                      PREDICTOR_MASK = RESHAPE( (/& 
-      ! 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
-        1,1,1,1,0,1,1,1,1,1, 0, 1, 1, 1, 0, 0, 0, 0, &
-        1,1,1,1,1,1,1,1,1,1, 1, 1, 1, 0, 0, 0, 0, 0, &
-        1,1,0,0,0,0,1,1,0,0, 0, 0, 1, 0, 1, 1, 1, 1, &
-        1,1,0,0,0,0,1,1,0,0, 0, 0, 0, 0, 1, 1, 1, 1/), &
-        (/MAX_N_PREDICTORS_ZSSMIS, N_CHANNELS_ZSSMIS/) )
-        
-   REAL(fp), PARAMETER :: ZERO = 0.0_fp, ONE = 1.0_fp
+  INTEGER, PARAMETER :: PREDICTOR_MASK(MAX_N_PREDICTORS_ZSSMIS, N_CHANNELS_ZSSMIS) = &
+    RESHAPE((/ & 
+             ! 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
+               1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, &
+               1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, &
+               1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, &
+               1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1 /), &
+            (/MAX_N_PREDICTORS_ZSSMIS, N_CHANNELS_ZSSMIS/))
+
 
 CONTAINS
+
 
 !------------------------------------------------------------------------------
 !
@@ -796,5 +804,5 @@ CONTAINS
     Predictor_AD%n_CP(1) = MAX_N_PREDICTORS_ZSSMIS 
     
   END SUBROUTINE Compute_Predictors_zssmis_AD    
-                                                                                  
+
 END MODULE ODPS_ZAtmAbsorption

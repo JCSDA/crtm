@@ -74,6 +74,8 @@ PROGRAM Example_Forward
   TYPE(CRTM_Atmosphere_type)  , DIMENSION(N_PROFILES)       :: Atm
   TYPE(CRTM_Surface_type)     , DIMENSION(N_PROFILES)       :: Sfc
   TYPE(CRTM_RTSolution_type)  , DIMENSION(:,:), ALLOCATABLE :: RTSolution
+  ! Define Options
+  TYPE(CRTM_Options_type)     , DIMENSION(N_PROFILES)       :: Options
   ! ============================================================================
 
 
@@ -379,6 +381,21 @@ PROGRAM Example_Forward
   ! All profiles are given the same value
   GeometryInfo%Sensor_Zenith_Angle = ZENITH_ANGLE
   GeometryInfo%Sensor_Scan_Angle   = SCAN_ANGLE
+
+  
+  ! 4c. Option input
+  ! ----------------
+  ! SensorInput
+  DO m = 1, N_PROFILES
+    ! ...SSU
+    CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%SSU, &
+                                        Time=1995.5_fp )
+    ! ...SSMIS
+    CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%SSMIS, &
+                                        Field_Strength=0.35_fp, &
+                                        COS_ThetaB    =0.5_fp, &
+                                        Doppler_Shift =60.0_fp )
+  END DO
   ! ============================================================================
 
 
@@ -391,7 +408,8 @@ PROGRAM Example_Forward
                                Sfc         , &  
                                GeometryInfo, &  
                                ChannelInfo , &  
-                               RTSolution    )
+                               RTSolution  , &
+                               Options = Options )
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
                           'Error in CRTM Forward Model', & 

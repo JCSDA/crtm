@@ -15,7 +15,7 @@ MODULE ODPS_Predictor
   ! Module use
   ! ----------
 
-  USE Type_Kinds,               ONLY : fp => fp_kind, single
+  USE Type_Kinds,               ONLY : fp, single
   USE Message_Handler
   USE ODPS_Predictor_Define,    ONLY : Predictor_type,    &
                                        PAFV_type,         &
@@ -890,7 +890,6 @@ CONTAINS
 
     n_Layers = Predictor%n_Layers
 
-    Predictor%Secant_Zenith = Secang
     Predictor_TL%Secant_Zenith = Secang
 
     !------------------------------------
@@ -1062,10 +1061,8 @@ CONTAINS
           CH4_ACH4zp_TL = SECANG(k)*GAzp_TL(k, ABS_CH4_IR)                                     
 
           ! set number of predictors
-          Predictor%n_CP = N_PREDICTORS_G1
           Predictor_TL%n_CP = N_PREDICTORS_G1
         ELSE
-          Predictor%n_CP = N_PREDICTORS_G2
           Predictor_TL%n_CP = N_PREDICTORS_G2
         END IF
 
@@ -1281,7 +1278,6 @@ CONTAINS
        !#-------------------------------------------------------------------#
 
        ! set number of predictors
-        Predictor%n_CP = N_PREDICTORS_G3
         Predictor_TL%n_CP = N_PREDICTORS_G3
       
         !  ----------------------                                 
@@ -1466,7 +1462,6 @@ CONTAINS
 
     n_Layers = Predictor%n_Layers
 
-    Predictor%Secant_Zenith = Secang
 
     !------------------------------------
     ! Compute integrated variables
@@ -1634,10 +1629,6 @@ CONTAINS
           CH4_R = SQRT(CH4_A)
           CH4_ACH4zp = SECANG(k)*PAFV%GAzp(k, ABS_CH4_IR)                                     
 
-          ! set number of predictors
-          Predictor%n_CP = N_PREDICTORS_G1
-        ELSE
-          Predictor%n_CP = N_PREDICTORS_G2
         END IF
 
        !#-------------------------------------------------------------------#
@@ -2041,10 +2032,6 @@ CONTAINS
           N2O_AD = ZERO   
           CH4_AD = ZERO
 
-          ! set number of predictors
-          Predictor%n_CP = N_PREDICTORS_G1 
-        ELSE
-          Predictor%n_CP = N_PREDICTORS_G2 
         END IF
 
         ! Combinations of variables common to all predictor groups  
@@ -2158,7 +2145,6 @@ CONTAINS
        !#-------------------------------------------------------------------#
 
        ! set number of predictors
-        Predictor%n_CP = N_PREDICTORS_G3
         Predictor_AD%n_CP = N_PREDICTORS_G3
       
         !  ----------------------                                 

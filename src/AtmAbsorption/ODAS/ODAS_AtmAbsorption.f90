@@ -38,7 +38,8 @@ MODULE ODAS_AtmAbsorption
                                        MAX_N_ORDERS,          & 
                                        MAX_N_PREDICTORS_USED, &
                                        MAX_N_ORDERS
-  USE ODAS_TauCoeff,             ONLY: TC
+  USE ODAS_TauCoeff,             ONLY: TC, &
+                                       ODAS_TauCoeff_type
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -105,21 +106,18 @@ CONTAINS
 !       absorption for a given sensor and channel and atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       CALL Compute_AtmAbsorption( SensorIndex  , &  ! Input
+!       CALL Compute_AtmAbsorption( TC           , &  ! Input
 !                                   ChannelIndex , &  ! Input                        
 !                                   Predictor    , &  ! Input                        
-!                                   AtmAbsorption, &  ! Output                       
+!                                   AtmAbsorption, &  ! Output 
 !                                   AAVariables    )  ! Internal variable output     
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        See the ChannelIndex argument.
+!             TC:        Structure containing Tau coefficient data.
 !                        UNITS:      N/A
-!                        TYPE:       INTEGER
+!                        TYPE:       TYPE(ODAS_TauCoeff_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
@@ -151,9 +149,9 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_AtmAbsorption module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(AAVariables_type)
+!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT)
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! COMMENTS:
 !       Note the INTENT on the structure arguments are IN OUT rather
@@ -162,21 +160,20 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Compute_AtmAbsorption( SensorIndex  , &  ! Input
+  SUBROUTINE Compute_AtmAbsorption( TC           , &  ! Input
                                     ChannelIndex , &  ! Input                        
                                     Predictor    , &  ! Input                        
-                                    AtmAbsorption, &  ! Output                       
+                                    AtmAbsorption, &  ! Output 
                                     AAV            )  ! Internal variable output     
     ! Arguments
-    INTEGER                      , INTENT(IN)     :: SensorIndex
-    INTEGER                      , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
-    TYPE(AAVariables_type)       , INTENT(OUT)    :: AAV
+    TYPE(ODAS_TauCoeff_type)          , INTENT(IN)     :: TC
+    INTEGER                           , INTENT(IN)     :: ChannelIndex
+    TYPE(Predictor_type)              , INTENT(IN OUT) :: Predictor
+    TYPE(CRTM_AtmAbsorption_type)     , INTENT(IN OUT) :: AtmAbsorption
+    TYPE(AAVariables_type)            , INTENT(OUT)    :: AAV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_AtmAbsorption'
     ! Local variables
-    INTEGER  :: n       ! Sensor index
     INTEGER  :: l       ! Channel index
     INTEGER  :: k       ! Layer index
     INTEGER  :: j       ! Absorber index
@@ -188,17 +185,17 @@ CONTAINS
     INTEGER  :: ic      ! the index of the coefficients
     REAL(fp) :: c       ! a coefficient
     INTEGER  :: n_Layers
+    
 
     ! ------
     ! Set up
     ! ------
     ! Assign the indices to a short name
-    n = SensorIndex
     l = ChannelIndex
     n_Layers = Predictor%n_Layers
+          
     ! Initilise the optical depth
     AtmAbsorption%Optical_Depth = ZERO
-
 
     ! -----------------------------------------------------
     ! Loop over each absorber for optical depth calculation
@@ -211,7 +208,7 @@ CONTAINS
       ! absorber/channel combination.
       !
       ! -----------------------------------------
-      np = TC(n)%Pre_Index(0,j,l)
+      np = TC%Pre_Index(0,j,l)
 
       IF ( np < 0 ) CYCLE Absorber_Loop
 
@@ -230,14 +227,14 @@ CONTAINS
         !
         ! ----------------------------------------------------------------
 
-        ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset for given j and l
-        n_orders = TC(n)%Order(j,l)
+        ps = TC%Pos_Index(j,l)  ! starting position of the coefficient subset for given j and l
+        n_orders = TC%Order(j,l)
 
         ! compute b(0)
         ic_0 = ps                                   
-        AAV%b(1:n_Layers,0,j) = TC(n)%C(ic_0)                       
+        AAV%b(1:n_Layers,0,j) = TC%C(ic_0)                       
         DO ic = 1, n_Orders                                         
-          c = TC(n)%C(ic_0 + ic)                                    
+          c = TC%C(ic_0 + ic)                                    
           DO k = 1, n_Layers                                            
             AAV%b(k,0,j) = AAV%b(k,0,j) + c*Predictor%Ap(k, ic, j)    
           END DO                                                        
@@ -261,15 +258,15 @@ CONTAINS
         DO i = 1, np
           ! b(i) term, i > 0
           ic_0 = ps + i*(n_orders+1)
-          AAV%b(1:n_Layers,i,j) = TC(n)%C(ic_0)
+          AAV%b(1:n_Layers,i,j) = TC%C(ic_0)
           DO ic = 1, n_Orders    
-            c = TC(n)%C(ic_0 + ic)
+            c = TC%C(ic_0 + ic)
             DO k = 1, n_Layers                                          
               AAV%b(k,i,j) = AAV%b(k,i,j) + c*Predictor%Ap(k, ic, j)  
             END DO                                                      
           END DO
           ! b(i) term contribution
-          ip = TC(n)%Pre_Index(i,j,l)                                                
+          ip = TC%Pre_Index(i,j,l)                                                
           DO k = 1, n_Layers                                                       
             AAV%LN_Chi(k,j) = AAV%LN_Chi(k,j) + AAV%b(k, i, j)* Predictor%X(k,ip)  
           END DO                                                                   
@@ -316,7 +313,7 @@ CONTAINS
 !       profile.
 !
 ! CALLING SEQUENCE:
-!       CALL Compute_AtmAbsorption_TL( SensorIndex     , &  ! Input
+!       CALL Compute_AtmAbsorption_TL(  TC              , &  ! Input
 !                                       ChannelIndex    , &  ! Input                      
 !                                       Predictor       , &  ! FWD Input                  
 !                                       Predictor_TL    , &  ! TL Input                   
@@ -324,14 +321,11 @@ CONTAINS
 !                                       AAVariables       )  ! Internal variable input    
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:        Sensor index id. This is a unique index associated
-!                           with a (supported) sensor used to access the
-!                           shared coefficient data for a particular sensor.
-!                           See the ChannelIndex argument.
+!             TC:           Structure containing Tau coefficient data.
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER
+!                           TYPE:       TYPE(ODAS_TauCoeff_type)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+!                           ATTRIBUTES: INTENT(IN OUT)
 !
 !       ChannelIndex:       Channel index id. This is a unique index associated
 !                           with a (supported) sensor channel used to access the
@@ -381,14 +375,14 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Compute_AtmAbsorption_TL( SensorIndex     , &  ! Input
+  SUBROUTINE Compute_AtmAbsorption_TL( TC              , &  ! Input
                                        ChannelIndex    , &  ! Input                       
                                        Predictor       , &  ! Input                       
                                        Predictor_TL    , &  ! Input                       
                                        AtmAbsorption_TL, &  ! Output                      
                                        AAV               )  ! Internal variable input     
     ! Arguments
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODAS_TauCoeff_type)     , INTENT(IN)     :: TC
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor_TL
@@ -397,7 +391,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_AtmAbsorption_TL'
     ! Local variables
-    INTEGER :: n       ! Sensor index
     INTEGER :: l       ! Channel index
     INTEGER :: k       ! Layer index
     INTEGER :: j       ! Absorber index
@@ -417,9 +410,9 @@ CONTAINS
     ! Set up
     ! ------
     ! Assign the indices to a short name
-    n = SensorIndex
     l = ChannelIndex
     n_Layers = Predictor%n_Layers
+
     ! Initilise the tangent-linear optical depth
     AtmAbsorption_TL%Optical_Depth = ZERO
 
@@ -435,7 +428,7 @@ CONTAINS
       ! absorber/channel combination.
       !
       ! -----------------------------------------
-      np = TC(n)%Pre_Index(0,j,l)
+      np = TC%Pre_Index(0,j,l)
 
       IF ( np < 0 ) CYCLE Absorber_Loop
 
@@ -454,14 +447,14 @@ CONTAINS
       !                                                                           
       ! ----------------------------------------------------------------          
 
-      ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
-      n_orders = TC(n)%Order(j,l)                                                 
+      ps = TC%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
+      n_orders = TC%Order(j,l)                                                 
                                                                                   
       ! compute b(0)                                                              
       ic_0 = ps                                                                   
       b_TL(1:n_Layers) = ZERO                                                     
       DO ic = 1, n_Orders                                                         
-        c = TC(n)%C(ic_0 + ic)                                                    
+        c = TC%C(ic_0 + ic)                                                    
         DO k = 1, n_Layers                                                        
           b_TL(k) = b_TL(k) + c*Predictor_TL%Ap(k, ic, j)                            
         END DO                                                                    
@@ -487,13 +480,13 @@ CONTAINS
         ic_0 = ps + i*(n_orders+1)                                                
         b_TL(1:n_Layers) = ZERO                                                   
         DO ic = 1, n_Orders                                                       
-          c = TC(n)%C(ic_0 + ic)                                                  
+          c = TC%C(ic_0 + ic)                                                  
           DO k = 1, n_Layers                                                      
             b_TL(k) = b_TL(k) + c*Predictor_TL%Ap(k, ic, j)                       
           END DO                                                                  
         END DO                                                                    
         ! b(i) term contribution                                                  
-        ip = TC(n)%Pre_Index(i,j,l)                                                 
+        ip = TC%Pre_Index(i,j,l)                                                 
         DO k = 1, n_Layers                                                        
           LN_Chi_TL(k) = LN_Chi_TL(k) + b_TL(k)* Predictor%X(k,ip) &              
                                       + AAV%b(k,i,j)*Predictor_TL%X(k,ip)         
@@ -545,7 +538,7 @@ CONTAINS
 !       profile.
 !
 ! CALLING SEQUENCE:
-!       CALL Compute_AtmAbsorption_AD( SensorIndex     , &  ! Input
+!       CALL Compute_AtmAbsorption_AD( TC              , &  ! Input
 !                                      ChannelIndex    , &  ! Input                       
 !                                      Predictor       , &  ! FWD Input                   
 !                                      AtmAbsorption_AD, &  ! TL  Input                   
@@ -553,14 +546,12 @@ CONTAINS
 !                                      AAVariables       )  ! Internal variable input     
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:        Sensor index id. This is a unique index associated
-!                           with a (supported) sensor used to access the
-!                           shared coefficient data for a particular sensor.
-!                           See the ChannelIndex argument.
+! OPTIONAL INPUT:
+!             TC:           Structure containing Tau coefficient data.
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER
+!                           TYPE:       TYPE(ODAS_TauCoeff_type)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+!                           ATTRIBUTES: INTENT(IN OUT)
 !
 !       ChannelIndex:       Channel index id. This is a unique index associated
 !                           with a (supported) sensor channel used to access the
@@ -610,14 +601,14 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Compute_AtmAbsorption_AD( SensorIndex     , &  ! Input
+  SUBROUTINE Compute_AtmAbsorption_AD( TC              , &  ! Input
                                        ChannelIndex    , &  ! Input                       
                                        Predictor       , &  ! FWD Input                   
                                        AtmAbsorption_AD, &  ! AD  Input                   
                                        Predictor_AD    , &  ! AD  Output                  
                                        AAV               )  ! Internal variable input     
     ! Arguments
-    INTEGER,                       INTENT(IN)     :: SensorIndex
+    TYPE(ODAS_TauCoeff_type),      INTENT(IN)     :: TC
     INTEGER,                       INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type),          INTENT(IN)     :: Predictor
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_AD
@@ -626,7 +617,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_AtmAbsorption_AD'
     ! Local variables
-    INTEGER :: n       ! Sensor index
     INTEGER :: l       ! Channel index
     INTEGER :: k       ! Layer index
     INTEGER :: j       ! Absorber index
@@ -647,7 +637,6 @@ CONTAINS
     ! Set up
     ! ------
     ! Assign the indices to a short name
-    n = SensorIndex
     l = ChannelIndex
     n_Layers = Predictor%n_Layers
 
@@ -673,12 +662,12 @@ CONTAINS
       ! absorber/channel combination.
       !
       ! -----------------------------------------
-      np = TC(n)%Pre_Index(0,j,l)
+      np = TC%Pre_Index(0,j,l)
 
       IF ( np < 0 ) CYCLE Absorber_Loop
 
-      ps = TC(n)%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
-      n_orders = TC(n)%Order(j,l)                                                 
+      ps = TC%Pos_Index(j,l)  ! starting position of the coefficient subset f  or given j and l
+      n_orders = TC%Order(j,l)                                                 
 
       DO k = n_Layers, 1, -1
 
@@ -711,7 +700,7 @@ CONTAINS
 
       DO i = np, 1, -1
         ! b(i) term contribution                                                  
-        ip = TC(n)%Pre_Index(i,j,l)                                                 
+        ip = TC%Pre_Index(i,j,l)                                                 
         DO k = n_Layers, 1, -1 
           b_AD(k) = b_AD(k) + LN_Chi_AD(k)*Predictor%X(k,ip)
           Predictor_AD%X(k,ip) = Predictor_AD%X(k,ip) + AAV%b(k,i,j)*LN_Chi_AD(k)
@@ -721,7 +710,7 @@ CONTAINS
         ic_0 = ps + i*(n_orders+1)                                                
         DO ic = n_Orders, 1, -1 
                                                       
-          c = TC(n)%C(ic_0 + ic)                                                  
+          c = TC%C(ic_0 + ic)                                                  
           DO k = n_Layers, 1, -1
             Predictor_AD%Ap(k, ic, j) = Predictor_AD%Ap(k, ic, j) + c*b_AD(k)                                                  
           END DO                                                                  
@@ -734,7 +723,7 @@ CONTAINS
 
       ic_0 = ps                                                                   
       DO ic = n_Orders, 1, -1                                                         
-        c = TC(n)%C(ic_0 + ic)                                                    
+        c = TC%C(ic_0 + ic)                                                    
         DO k = n_Layers, 1, -1 
           Predictor_AD%Ap(k, ic, j) = Predictor_AD%Ap(k, ic, j) + c*b_AD(k)                                                       
         END DO                                                                    
@@ -744,7 +733,7 @@ CONTAINS
     END DO Absorber_Loop
 
     AtmAbsorption_AD%Optical_Depth = ZERO
-    
+
   END SUBROUTINE Compute_AtmAbsorption_AD
 
 END MODULE ODAS_AtmAbsorption

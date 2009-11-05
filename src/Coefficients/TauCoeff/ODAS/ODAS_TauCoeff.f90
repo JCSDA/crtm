@@ -50,6 +50,8 @@ MODULE ODAS_TauCoeff
   PRIVATE
   ! The shared data
   PUBLIC :: TC
+  ! Structure defined in ODAS_Define
+  PUBLIC :: ODAS_TauCoeff_type
   ! Public routines in this module
   PUBLIC :: Load_TauCoeff
   PUBLIC :: Destroy_TauCoeff

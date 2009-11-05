@@ -65,8 +65,9 @@ MODULE CRTM_Forward_Module
                                       CRTM_Destroy_RTV        , &
                                       CRTM_Allocate_RTV
   USE CRTM_AntCorr,             ONLY: CRTM_Compute_AntCorr
-
-
+  USE CRTM_SensorInput_Define,  ONLY: CRTM_SensorInput_type, &
+                                      ASSIGNMENT(=)
+                                      
   ! -----------------------
   ! Disable implicit typing
   ! -----------------------
@@ -232,6 +233,8 @@ CONTAINS
     INTEGER :: ln
     INTEGER :: n_Full_Streams
     INTEGER, DIMENSION(5) :: AllocStatus
+    ! Local sensor input structure
+    TYPE(CRTM_SensorInput_type) :: SensorInput
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm
     ! Component variables
@@ -334,7 +337,6 @@ CONTAINS
     END IF
 
 
-
     !#--------------------------------------------------------------------------#
     !#                           -- PROFILE LOOP --                             #
     !#--------------------------------------------------------------------------#
@@ -375,6 +377,9 @@ CONTAINS
         
         ! Check if antenna correction should be attempted
         IF ( Options(m)%Antenna_Correction == SET ) User_AntCorr = .TRUE.
+
+        ! Copy over sensor-specific input
+        SensorInput = Options(m)%SensorInput 
       END IF
 
 
@@ -505,7 +510,8 @@ CONTAINS
         ! ------------------------------------------
         ! Compute predictors for AtmAbsorption calcs
         ! ------------------------------------------
-        CALL CRTM_Compute_Predictors( SensorIndex    , &  ! Input
+        CALL CRTM_Compute_Predictors( SensorInput    , &  ! Input
+                                      SensorIndex    , &  ! Input
                                       Atm            , &  ! Input
                                       GeometryInfo(m), &  ! Input
                                       Predictor      , &  ! Output
@@ -541,7 +547,8 @@ CONTAINS
           ! --------------------------
           ! Compute the gas absorption
           ! --------------------------
-          CALL CRTM_Compute_AtmAbsorption( SensorIndex  , &  ! Input
+          CALL CRTM_Compute_AtmAbsorption( SensorInput  , &  ! Input
+                                           SensorIndex  , &  ! Input
                                            ChannelIndex , &  ! Input
                                            Predictor    , &  ! Input
                                            AtmAbsorption, &  ! Output

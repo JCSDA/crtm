@@ -79,6 +79,9 @@ PROGRAM Example_K_Matrix
   TYPE(CRTM_Atmosphere_type)  , DIMENSION(:,:), ALLOCATABLE :: Atm_K
   TYPE(CRTM_Surface_type)     , DIMENSION(:,:), ALLOCATABLE :: Sfc_K
   TYPE(CRTM_RTSolution_type)  , DIMENSION(:,:), ALLOCATABLE :: RTSolution_K
+
+  ! Define Options
+  TYPE(CRTM_OPTIONS_type)     , DIMENSION(N_PROFILES)       :: Options
   ! ============================================================================
 
 
@@ -361,11 +364,27 @@ PROGRAM Example_K_Matrix
     4.207E-02_fp,3.771E-02_fp,3.012E-02_fp,1.941E-02_fp,9.076E-03_fp,2.980E-03_fp,5.117E-03_fp,1.160E-02_fp, &
     1.428E-02_fp,1.428E-02_fp,1.428E-02_fp,1.428E-02_fp/)
 
+
   ! 4b. GeometryInfo input
   ! ----------------------
   ! All profiles are given the same value
   GeometryInfo%Sensor_Zenith_Angle = ZENITH_ANGLE
   GeometryInfo%Sensor_Scan_Angle   = SCAN_ANGLE
+
+
+  ! 4c. Option input
+  ! ----------------
+  ! SensorInput
+  DO m = 1, N_PROFILES
+    ! ...SSU
+    CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%SSU, &
+                                        Time=1995.5_fp )
+    ! ...SSMIS
+    CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%SSMIS, &
+                                        Field_Strength=0.35_fp, &
+                                        COS_ThetaB    =0.5_fp, &
+                                        Doppler_Shift =60.0_fp )
+  END DO
   ! ============================================================================
 
 
@@ -398,7 +417,8 @@ PROGRAM Example_K_Matrix
                                 ChannelInfo , &  
                                 Atm_K       , &  
                                 Sfc_K       , &  
-                                RTSolution    )
+                                RTSolution  , &
+                                Options = Options )
   IF ( Error_Status /= SUCCESS ) THEN 
     CALL Display_Message( PROGRAM_NAME, &
                           'Error in CRTM K_Matrix Model', & 

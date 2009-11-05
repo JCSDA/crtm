@@ -75,6 +75,8 @@ MODULE CRTM_K_Matrix_Module
                                       CRTM_Allocate_RTV
   USE CRTM_AntCorr,             ONLY: CRTM_Compute_AntCorr, &
                                       CRTM_Compute_AntCorr_AD
+  USE CRTM_SensorInput_Define,  ONLY: CRTM_SensorInput_type, &
+                                      ASSIGNMENT(=)
 
 
   ! -----------------------
@@ -290,6 +292,8 @@ CONTAINS
     INTEGER :: n_Full_Streams
     INTEGER, DIMENSION(5) :: AllocStatus
     INTEGER, DIMENSION(5) :: AllocStatus_K
+    ! Local sensor input structure
+    TYPE(CRTM_SensorInput_type) :: SensorInput
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm, Atm_K
     ! Component variables
@@ -307,7 +311,6 @@ CONTAINS
     TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
     TYPE(CRTM_RTVariables_type) :: RTV  ! RTSolution
-
 
     ! ------
     ! Set up
@@ -444,6 +447,9 @@ CONTAINS
         
         ! Check if antenna correction should be attempted
         IF ( Options(m)%Antenna_Correction == SET ) User_AntCorr = .TRUE.
+
+        ! Copy over sensor-specific input
+        SensorInput = Options(m)%SensorInput
       END IF
 
 
@@ -603,7 +609,8 @@ CONTAINS
         ! ------------------------------------------
         ! Compute predictors for AtmAbsorption calcs
         ! ------------------------------------------
-        CALL CRTM_Compute_Predictors( SensorIndex    , &  ! Input
+        CALL CRTM_Compute_Predictors( SensorInput    , &  ! Input
+                                      SensorIndex    , &  ! Input
                                       Atm            , &  ! Input
                                       GeometryInfo(m), &  ! Input
                                       Predictor      , &  ! Output
@@ -665,7 +672,8 @@ CONTAINS
           ! --------------------------
           ! Compute the gas absorption
           ! --------------------------
-          CALL CRTM_Compute_AtmAbsorption( SensorIndex  , &  ! Input
+          CALL CRTM_Compute_AtmAbsorption( SensorInput  , &  ! Input
+                                           SensorIndex  , &  ! Input
                                            ChannelIndex , &  ! Input
                                            Predictor    , &  ! Input
                                            AtmAbsorption, &  ! Output
@@ -915,7 +923,8 @@ CONTAINS
           ! --------------------------------------
           ! Compute the adjoint gaseous absorption
           ! --------------------------------------
-          CALL CRTM_Compute_AtmAbsorption_AD( SensorIndex    , &  ! Input
+          CALL CRTM_Compute_AtmAbsorption_AD( SensorInput    , &  ! Input
+                                              SensorIndex    , &  ! Input
                                               ChannelIndex   , &  ! Input
                                               Predictor      , &  ! FWD Input
                                               AtmAbsorption_K, &  ! K   Input
@@ -926,13 +935,14 @@ CONTAINS
           ! --------------------------------------          
           ! K-matrix of the predictor calculations
           ! --------------------------------------          
-          CALL CRTM_Compute_Predictors_AD( SensorIndex       , &  ! Input
-                                           Atm               , &  ! FWD Input
-                                           Predictor         , &  ! FWD Input
-                                           Predictor_K       , &  ! K   Input
-                                           GeometryInfo(m)   , &  ! Input
-                                           Atm_K             , &  ! K   Output
-                                           APV                 )  ! Internal variable input
+          CALL CRTM_Compute_Predictors_AD( SensorInput    , &  ! Input
+                                           SensorIndex    , &  ! Input
+                                           Atm            , &  ! FWD Input
+                                           Predictor      , &  ! FWD Input
+                                           Predictor_K    , &  ! K   Input
+                                           GeometryInfo(m), &  ! Input
+                                           Atm_K          , &  ! K   Output
+                                           APV              )  ! Internal variable input
 
           ! ---------------------------
           ! Postprocess some input data

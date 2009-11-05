@@ -52,11 +52,16 @@ MODULE ODPS_AtmAbsorption
                                        Compute_ODPath_zssmis_TL, &
                                        Compute_ODPath_zssmis_AD
 
-  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO          , &
-                             EARTH_RADIUS            , &
-                             SATELLITE_HEIGHT        , &
-                             DEGREES_TO_RADIANS      , &
-                             TOLERANCE
+  USE CRTM_SensorInput_Define, ONLY: CRTM_SensorInput_type, &
+                                     CRTM_SensorInput_Get_Property
+
+  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO, &
+                             EARTH_RADIUS, SATELLITE_HEIGHT, &
+                             DEGREES_TO_RADIANS, &
+                             TOLERANCE, &
+                             LIMIT_EXP, LIMIT_LOG
+
+  USE Profile_Utility_Parameters, ONLY: G0, EPS, R_DRYAIR
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -84,7 +89,7 @@ MODULE ODPS_AtmAbsorption
   PUBLIC :: Geopotential_Height
   PUBLIC :: Geopotential_Height_TL
   PUBLIC :: Geopotential_Height_AD
-  
+    
   ! Internal variable structure
   PUBLIC :: ODPS_AAVariables_type
 
@@ -95,6 +100,7 @@ MODULE ODPS_AtmAbsorption
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
   '$Id: ODPS_AtmAbsorption.f90 896 2008-07-1 yong.han@noaa.gov $'
 
+  
   ! ------------------------------------------
   ! Structure definition to hold forward model
   ! variables across FWD, TL, and AD calls
@@ -106,26 +112,20 @@ MODULE ODPS_AtmAbsorption
 
   ! Maximum allowed layer optical depth
   REAL(fp), PARAMETER :: MAX_OD     = 20.0_fp
-  ! number limits
-  REAL(fp), PARAMETER :: LIMIT_EXP = 20.0_fp
-  REAL(fp), PARAMETER :: LIMIT_LOG = 4.8e+08_fp   ! EXP( LIMIT_EXP )
 
 ! LOGICAL, PUBLIC, PARAMETER  :: ALLOW_OPTRAN = .FALSE.
   LOGICAL, PUBLIC, PARAMETER  :: ALLOW_OPTRAN = .TRUE.
 
   ! Parameters used in the geopotential height calculation routines
-  REAL(fp), PARAMETER, PUBLIC :: STANDARD_GRAVITY = 9.80665_fp
-  REAL(fp), PARAMETER, PUBLIC :: EPS = 0.622_fp  ! MW_H2O / MW_DryAir
-  ! Gas constant for dry air. Units are J.K-1.kg-1
-  REAL(fp), PUBLIC, PARAMETER :: R_DryAir = 287.054_fp 
   ! a factor used in the virtual temperature Tv calculation
   REAL(fp), PARAMETER :: C = (ONE/EPS - ONE) / 1000.0_fp
   ! a factor used in the scale height calculation ( H = CC*Tv)
-  REAL(fp), PARAMETER :: CC = 0.001_fp*R_DryAir/STANDARD_GRAVITY
+  REAL(fp), PARAMETER :: CC = 0.001_fp*R_DRYAIR/G0
   ! for using in SUBROUTINE LayerAvg
   REAL(fp), PARAMETER :: SMALLDIFF  = 1.0E-20_fp
   
 CONTAINS
+
 
 
 !################################################################################
@@ -412,7 +412,7 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_AtmAbsorption_TL( SensorIndex  , &  ! Input
+  SUBROUTINE ODPS_Compute_AtmAbsorption_TL(SensorIndex  ,  &  ! Input
                                          ChannelIndex ,    &  ! Input
                                          Predictor    ,    &  ! Input
                                          Predictor_TL,     &  ! Input                    
@@ -449,11 +449,11 @@ CONTAINS
     !--------------------------------------------------------
     IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
 
-      CALL Compute_ODPath_zssmis_TL(ChannelIndex, &
-                                 aTC,             &
-                                 Predictor,       &
-                                 Predictor_TL,    &    
-                                 OD_Path_TL )
+      CALL Compute_ODPath_zssmis_TL(ChannelIndex,    &
+                                    aTC,             &
+                                    Predictor,       &
+                                    Predictor_TL,    & 
+                                    OD_Path_TL )
     ELSE  ! all other sensors
 
       ! Loop over each tau component for optical depth calculation
@@ -1150,14 +1150,17 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_Predictors(SensorIndex, &
-                                     Atm,         &    
-                                     GeoInfo,     &  
+  SUBROUTINE ODPS_Compute_Predictors(SensorInput,  &
+                                     SensorIndex,  &
+                                     Atm,          &    
+                                     GeoInfo,      &  
                                      Predictor)
-    INTEGER                      , INTENT( IN )     :: SensorIndex
-    TYPE(CRTM_Atmosphere_type)   , INTENT( IN )     :: Atm
-    TYPE(CRTM_GeometryInfo_type) , INTENT( IN )     :: GeoInfo
-    TYPE(Predictor_type)         , INTENT( IN OUT ) :: Predictor
+    ! Arguments
+    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
+    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
+    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
+    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
 
     ! Local variables
     INTEGER  :: idx(1)
@@ -1174,7 +1177,10 @@ CONTAINS
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC(SensorIndex)%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers, n_User_Layers, ODPS_sfc_idx
-
+    ! SSMIS SensorInput data
+    REAL(fp) :: Be, CosBK, Doppler_Shift
+    
+    
     aTC => TC(SensorIndex)
     n_ODPS_Layers = Predictor%n_Layers
     n_User_Layers = Atm%n_layers
@@ -1296,10 +1302,14 @@ CONTAINS
     !-------------------------------------------
     
     IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
-      CALL Compute_Predictors_zssmis(Temperature,           &
-                                     GeoInfo%Be,            &
-                                     GeoInfo%CosBK,         &
-                                     GeoInfo%Doppler_Shift, &
+      CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
+                                          Field_Strength = Be, &
+                                          COS_ThetaB     = CosBk, &
+                                          Doppler_Shift  = Doppler_Shift )
+      CALL Compute_Predictors_zssmis(Temperature,                              &
+                                     Be,             &
+                                     CosBK,          &
+                                     Doppler_Shift,  &
                                      Predictor%Secant_Zenith,&
                                      Predictor)
     
@@ -1421,18 +1431,20 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_Predictors_TL(SensorIndex,    &
+  SUBROUTINE ODPS_Compute_Predictors_TL(SensorInput,    &
+                                        SensorIndex,    &
                                         Atm,            &    
                                         GeoInfo,        &
                                         Predictor,      &
                                         Atm_TL,         & 
                                         Predictor_TL)
  
-    INTEGER                      , INTENT( IN )     :: SensorIndex
-    TYPE(CRTM_Atmosphere_type)   , INTENT( IN )     :: Atm,          Atm_TL
-    TYPE(CRTM_GeometryInfo_type) , INTENT( IN )     :: GeoInfo
-    TYPE(Predictor_type)         , INTENT( IN )     :: Predictor
-    TYPE(Predictor_type)         , INTENT( IN OUT ) :: Predictor_TL
+    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
+    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm,          Atm_TL
+    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
+    TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
+    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor_TL
 
     ! Local variables
     INTEGER  :: idx(1)
@@ -1442,6 +1454,8 @@ CONTAINS
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC(SensorIndex)%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers
+    ! SSMIS SensorInput data
+    REAL(fp) :: Be, CosBK, Doppler_Shift
 
     n_ODPS_Layers = Predictor%n_Layers
     aTC => TC(SensorIndex)
@@ -1484,14 +1498,17 @@ CONTAINS
     ! Compute predictor
     !-------------------------------------------
     IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
-
-      CALL Compute_Predictors_zssmis_TL(Predictor%PAFV%Temperature, &
-                                     GeoInfo%Be,               &
-                                     GeoInfo%CosBK,            &
-                                     GeoInfo%Doppler_Shift,    &
-                                     Predictor%Secant_Zenith,  &
-                                     Temperature_TL,           &
-                                     Predictor_TL)
+      CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
+                                          Field_Strength = Be, &
+                                          COS_ThetaB     = CosBk, &
+                                          Doppler_Shift  = Doppler_Shift )
+      CALL Compute_Predictors_zssmis_TL(Predictor%PAFV%Temperature,           &
+                                        Be,            &   
+                                        CosBK,         &   
+                                        Doppler_Shift, &   
+                                        Predictor%Secant_Zenith,           &
+                                        Temperature_TL,                    &
+                                        Predictor_TL)
 
     ELSE  ! all other sensors
       CALL Compute_Predictor_TL(aTC%Group_index,         &
@@ -1595,19 +1612,21 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_Predictors_AD(SensorIndex,    &
+  SUBROUTINE ODPS_Compute_Predictors_AD(SensorInput,    &
+                                        SensorIndex,    &
                                         Atm,            &    
                                         GeoInfo,        &
                                         Predictor,      &
                                         Predictor_AD,   &
                                         Atm_AD)
 
-    INTEGER                      , INTENT( IN )     :: SensorIndex
-    TYPE(CRTM_Atmosphere_type)   , INTENT( IN )     :: Atm
-    TYPE(CRTM_GeometryInfo_type) , INTENT( IN )     :: GeoInfo
-    TYPE(Predictor_type)         , INTENT( IN )     :: Predictor
-    TYPE(Predictor_type)         , INTENT( INOUT )  :: predictor_AD
-    TYPE(CRTM_Atmosphere_type)   , INTENT( IN OUT ) :: Atm_AD
+    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
+    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
+    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
+    TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
+    TYPE(Predictor_type)         , INTENT(IN OUT) :: predictor_AD
+    TYPE(CRTM_Atmosphere_type)   , INTENT(IN OUT) :: Atm_AD
 
     ! Local variables
     INTEGER  :: idx(1)
@@ -1617,6 +1636,8 @@ CONTAINS
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC(SensorIndex)%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers
+    ! SSMIS SensorInput data
+    REAL(fp) :: Be, CosBK, Doppler_Shift
 
  
     !-----------------------------------------------------------
@@ -1641,13 +1662,17 @@ CONTAINS
     ! Compute predictor
     !-------------------------------------------
     IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
-      CALL Compute_Predictors_zssmis_AD(Predictor%PAFV%Temperature, &
-                                     GeoInfo%Be,               &
-                                     GeoInfo%CosBK,            &
-                                     GeoInfo%Doppler_Shift,    &
-                                     Predictor%Secant_Zenith,  &
-                                     Predictor_AD,             &
-                                     Temperature_AD )
+      CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
+                                          Field_Strength = Be, &
+                                          COS_ThetaB     = CosBk, &
+                                          Doppler_Shift  = Doppler_Shift )
+      CALL Compute_Predictors_zssmis_AD(Predictor%PAFV%Temperature,          &
+                                        Be,           &
+                                        CosBK,        & 
+                                        Doppler_Shift,& 
+                                        Predictor%Secant_Zenith,  &
+                                        Predictor_AD,             &
+                                        Temperature_AD )
 
     ELSE  ! all other sensors
 

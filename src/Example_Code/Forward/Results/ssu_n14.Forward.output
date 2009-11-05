@@ -1,0 +1,37 @@
+
+     **********************************************************
+                           Example_Forward
+
+      Program to provide an example of CRTM Forward function 
+      usage.
+
+      $Revision: 5479 $
+     **********************************************************
+
+
+     Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+     Initializing the CRTM...
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssu_n14.SpcCoeff.bin; 
+ SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=3
+ Read_ODSSU_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssu_n14.TauCoeff.bin; 
+   ODSSU RELEASE.VERSION:  6.04  N_ABSORBERS= 3  N_CHANNELS=3  N_TC_CELLPRESSURES=20  N_REF_CELLPRESSURES=293
+ Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
+ CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
+ AerosolCoeff RELEASE.VERSION:  2.02  N_WAVELENGTHS=  91  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
+ EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
+
+       Profile 1 FWD output
+       Sensor_Id   Channel         R            Tb
+       ssu_n14        1      5.457889E+01     229.567
+       ssu_n14        2      6.547511E+01     239.762
+       ssu_n14        3      7.712043E+01     249.708
+
+       Profile 2 FWD output
+       Sensor_Id   Channel         R            Tb
+       ssu_n14        1      6.477349E+01     239.168
+       ssu_n14        2      6.621500E+01     240.423
+       ssu_n14        3      6.815053E+01     242.097
+
+     Destroying the CRTM...

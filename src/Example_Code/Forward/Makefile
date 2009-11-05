@@ -8,7 +8,7 @@
 # -----------------
 # The location of the CRTM library
 # *** CHANGE THIS TO THE LOCATION ON YOUR SYSTEM ***
-CRTM_DIR = $(HOME)/local/CRTM
+CRTM_DIR = $(CRTM_SOURCE_ROOT)/Build
 
 # The Fortran95 compiler+flags, and linker+flags
 # *** CHANGE THESE FOR THE COMPILER YOU USE ON YOUR SYSTEM ***

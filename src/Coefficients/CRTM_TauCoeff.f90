@@ -31,7 +31,7 @@ MODULE CRTM_TauCoeff
   USE Binary_File_Utility , ONLY: Open_Binary_File
   USE Message_Handler     , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters     , ONLY: MAX_N_SENSORS, &
-                                  TAU_ODAS, TAU_ODPS
+                                  TAU_ODAS, TAU_ODPS, TAU_ODSSU
   USE ODAS_TauCoeff       , ONLY: ODAS_Load_TauCoeff    => Load_TauCoeff   , &
                                   ODAS_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODAS_TC => TC
@@ -40,6 +40,10 @@ MODULE CRTM_TauCoeff
                                   ODPS_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODPS_TC => TC
   USE ODPS_Define         , ONLY: ODPS_type
+  USE ODSSU_TauCoeff      , ONLY: ODSSU_Load_TauCoeff    => Load_TauCoeff   , &
+                                  ODSSU_Destroy_TauCoeff => Destroy_TauCoeff, &
+                                  ODSSU_TC => TC
+  USE ODSSU_Define        , ONLY: ODSSU_type
 
  ! Disable all implicit typing
   IMPLICIT NONE
@@ -77,6 +81,7 @@ MODULE CRTM_TauCoeff
     INTEGER( Long ) :: n_Sensors = 0       ! n
     INTEGER( Long ) :: n_ODAS    = 0       ! I1
     INTEGER( Long ) :: n_ODPS    = 0       ! I2
+    INTEGER( Long ) :: n_ODSSU   = 0       ! I3
 !    ### More dimension variables for additional algorithms ###
 
     ! Algorithm_ID:   Algorithm ID
@@ -89,6 +94,7 @@ MODULE CRTM_TauCoeff
 
     TYPE( ODAS_type ),   DIMENSION(:), POINTER  :: ODAS  =>NULL()  ! I1
     TYPE( ODPS_type ),   DIMENSION(:), POINTER  :: ODPS  =>NULL()  ! I2
+    TYPE( ODSSU_type ),  DIMENSION(:), POINTER  :: ODSSU =>NULL()  ! I3
 !    ### More dstructure variables for additional algorithms ###
 
   END TYPE CRTM_TauCoeff_type
@@ -366,6 +372,11 @@ Sensor_Loop: DO n = 1, n_Sensors
           ! local sensor index, which is used within the algorithm
           TC%Sensor_LoIndex(n) = TC%n_ODPS
 
+        CASE ( TAU_ODSSU )
+
+          TC%n_ODSSU = TC%n_ODSSU + 1
+          ! local sensor index, which is used within the algorithm
+          TC%Sensor_LoIndex(n) = TC%n_ODSSU
           
         CASE DEFAULT
 
@@ -462,6 +473,42 @@ Sensor_Loop: DO n = 1, n_Sensors
 
       ! set the pointer pointing to the local (algorithm specific) TC array
       TC%ODPS => ODPS_TC
+        
+    END IF
+
+    ! *** ODSSU algorithm  ***
+
+    n = TC%n_ODSSU
+    IF( n > 0 )THEN
+      IF ( PRESENT(Sensor_ID) ) THEN
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODSSU)
+        Error_Status = ODSSU_Load_TauCoeff( &
+                                       Sensor_ID        =SensorIDs(1:n)   , & 
+                                       File_Path        =File_Path        , & 
+                                       Quiet            =Quiet            , & 
+                                       Process_ID       =Process_ID       , & 
+                                       Output_Process_ID=Output_Process_ID, & 
+                                       Message_Log      =Message_Log        ) 
+      ELSE
+        ! for the case that the Sensor_ID is not present (in this case, 1 sensor only)
+        Error_Status = ODSSU_Load_TauCoeff( &
+                                       File_Path        =File_Path        , &
+                                       Quiet            =Quiet            , &
+                                       Process_ID       =Process_ID       , &
+                                       Output_Process_ID=Output_Process_ID, &
+                                       Message_Log      =Message_Log        )
+      END IF
+
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error loading ODSSU TauCoeff data', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
+
+      ! set the pointer pointing to the local (algorithm specific) TC array
+      TC%ODSSU => ODSSU_TC
         
     END IF
 
@@ -604,6 +651,25 @@ Sensor_Loop: DO n = 1, n_Sensors
 
     END IF
 
+    IF( TC%n_ODSSU > 0 )THEN
+
+      ! disassociate the TC%ODAS pointer (which is pointing to TauCoeff_ODAS)
+      NULLIFY( TC%ODSSU )
+
+      ! Destroy local TC, i.e TauCoeff_ODAS
+      Destroy_Status = ODSSU_Destroy_TauCoeff( Process_ID =Process_ID , &
+                                               Message_Log=Message_Log  )
+      IF ( Destroy_Status /= SUCCESS ) THEN
+        Error_Status = Destroy_Status
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating shared TauCoeff_SSU data structure', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+      END IF
+
+      TC%n_ODSSU     = 0    
+
+    END IF
 
     ! ----------------------------------------------
     ! Deallocate TauCoeff data arrays

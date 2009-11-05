@@ -40,7 +40,8 @@ MODULE ODAS_Binary_IO
   PUBLIC :: Inquire_ODAS_Binary
   PUBLIC :: Read_ODAS_Binary
   PUBLIC :: Write_ODAS_Binary
-
+  PUBLIC :: Read_ODAS_Data
+  PUBLIC :: Write_ODAS_Data
 
   ! -----------------
   ! Module parameters
@@ -492,13 +493,6 @@ CONTAINS
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER(Long) :: Version
-    INTEGER(Long) :: Algorithm
-    INTEGER(Long) :: n_Predictors
-    INTEGER(Long) :: n_Absorbers
-    INTEGER(Long) :: n_Channels
-    INTEGER(Long) :: n_Alphas
-    INTEGER(Long) :: n_Coeffs
  
     ! Set up
     ! ------
@@ -508,7 +502,8 @@ CONTAINS
     ! Check that the file is present
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
       Message = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_Cleanup(); RETURN
+      Error_Status = FAILURE
+      RETURN
     END IF 
     
     ! Output informational messages....
@@ -531,7 +526,6 @@ CONTAINS
       Process_ID_Tag = ' '
     END IF
 
-
     ! Open the ODAS file
     ! ------------------
     Error_Status = Open_Binary_File( Filename, &
@@ -539,9 +533,75 @@ CONTAINS
                                      Message_Log=Message_Log )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM(Filename)
-      CALL Read_Cleanup(); RETURN
+      Error_Status = FAILURE
+      RETURN
     END IF
 
+    ! Read data and put them in ODAS
+    ! --------------------------------------------
+    Error_Status =  Read_ODAS_Data( Filename       , & 
+                                    FileID         , &   
+                                    ODAS           , &   
+                                    Process_ID_Tag , &   
+                             Message_Log = Message_Log ) 
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error reading data from '//TRIM(Filename)
+      Error_Status = FAILURE
+      RETURN
+    END IF
+  
+    ! Close the file
+    ! --------------
+    CLOSE( FileID, IOSTAT=IO_Status )
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error closing ",a," after read. IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message)//TRIM(Process_ID_Tag), &
+                            WARNING, &
+                            Message_Log=Message_Log )
+    END IF
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      CALL Info_ODAS( ODAS, Message )
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(Filename)//'; '//TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log = Message_Log )
+    END IF
+
+
+  END FUNCTION Read_ODAS_Binary
+
+  FUNCTION Read_ODAS_Data(   Filename         , & 
+                             FileID           , &
+                             ODAS             , &
+                             Process_ID_Tag   , &
+                             Message_Log )      &
+                           RESULT( Error_Status )
+
+    ! Arguments
+    CHARACTER(*)          , INTENT(IN)     :: Filename
+    INTEGER               , INTENT(IN)     :: FileID
+    TYPE(ODAS_type)       , INTENT(IN OUT) :: ODAS
+    CHARACTER(*)          , INTENT(IN)     :: Process_ID_Tag
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_Data_Binary'
+    ! Function variables
+    CHARACTER(ML) :: Message
+    INTEGER       :: IO_Status
+    INTEGER(Long) :: Version
+    INTEGER(Long) :: Algorithm
+    INTEGER(Long) :: n_Predictors
+    INTEGER(Long) :: n_Absorbers
+    INTEGER(Long) :: n_Channels
+    INTEGER(Long) :: n_Alphas
+    INTEGER(Long) :: n_Coeffs
 
     ! Read the Release and Version information
     ! ----------------------------------------
@@ -559,7 +619,6 @@ CONTAINS
       Message = 'ODAS Release check failed for '//TRIM(Filename)
       CALL Read_Cleanup(); RETURN
     END IF
-
 
     ! Read the Alorithm ID
     ! --------------------
@@ -673,31 +732,6 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
-
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error closing ",a," after read. IOSTAT = ",i0)' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message)//TRIM(Process_ID_Tag), &
-                            WARNING, &
-                            Message_Log=Message_Log )
-    END IF
-
-
-
-    ! Output an info message
-    ! ----------------------
-    IF ( Noisy ) THEN
-      CALL Info_ODAS( ODAS, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(Filename)//'; '//TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log = Message_Log )
-    END IF
-
   CONTAINS
   
     SUBROUTINE Read_CleanUp()
@@ -726,7 +760,7 @@ CONTAINS
                             Message_Log=Message_Log )
     END SUBROUTINE Read_CleanUp
 
-  END FUNCTION Read_ODAS_Binary
+  END FUNCTION Read_ODAS_Data
 
 
 !--------------------------------------------------------------------------------
@@ -832,6 +866,79 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
+    ! Open the ODAS data file
+    ! -----------------------
+    Error_Status = Open_Binary_File( Filename, &
+                                     FileID,   &
+                                     For_Output =SET, &
+                                     Message_Log=Message_Log )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error opening '//TRIM( Filename )
+      Error_Status = FAILURE
+      RETURN
+    END IF
+
+    ! Output informational messages....
+    Noisy = .TRUE.
+    ! ....unless the QUIET keyword is set.
+    IF ( PRESENT( Quiet ) ) THEN
+      IF ( Quiet == 1 ) Noisy = .FALSE.
+    END IF
+
+    Error_Status = Write_ODAS_Data( Filename,  &
+                                    FileID,    &
+                                    ODAS,      &
+                                    Message_Log=Message_Log )
+                                    
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error writing data to '//TRIM( Filename )
+      Error_Status = FAILURE
+      RETURN
+    END IF
+
+  
+    ! Close the file
+    ! --------------
+    CLOSE( FileID, IOSTAT=IO_Status )
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error closing ",a," after write. IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            WARNING, &
+                            Message_Log=Message_Log )
+    END IF
+
+
+    ! Output an info message
+    ! ----------------------
+    IF ( Noisy ) THEN
+      CALL Info_ODAS( ODAS, Message )
+      CALL Display_Message( ROUTINE_NAME, &
+                            'FILE: '//TRIM(Filename)//'; '//TRIM(Message), &
+                            INFORMATION, &
+                            Message_Log = Message_Log )
+    END IF
+
+  END FUNCTION Write_ODAS_Binary
+
+  FUNCTION Write_ODAS_Data( Filename   , &
+                            FileID     , &  
+                            ODAS       , &            
+                            Message_Log) & 
+                            RESULT( Error_Status )
+                            
+    CHARACTER(*)          , INTENT(IN)  :: Filename
+    INTEGER               , INTENT(IN)  :: FileID
+    TYPE(ODAS_type)       , INTENT(IN)  :: ODAS
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_ODAS_Data'
+    ! Function result
+    INTEGER :: Error_Status
+    ! Function variables
+    CHARACTER(ML) :: Message
+    INTEGER       :: IO_Status
+    
     ! Check structure association status
     IF ( .NOT. Associated_ODAS( ODAS ) ) THEN
       Message = 'Some or all INPUT ODAS pointer members are NOT associated.'
@@ -852,7 +959,6 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-
     ! Check the ODAS structure dimensions
     IF ( ODAS%n_Predictors < 1 .OR. &
          ODAS%n_Absorbers  < 1 .OR. &
@@ -862,26 +968,6 @@ CONTAINS
       Message = 'One or more dimensions of ODAS structure are < or = 0.'
       CALL Write_Cleanup(); RETURN
     END IF
-
-    ! Output informational messages....
-    Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == 1 ) Noisy = .FALSE.
-    END IF
-
-
-    ! Open the ODAS data file
-    ! -----------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID,   &
-                                     For_Output =SET, &
-                                     Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM( Filename )
-      CALL Write_Cleanup(); RETURN
-    END IF
-
 
     ! Write the Release and Version information
     ! -----------------------------------------
@@ -981,30 +1067,6 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-
-    ! Close the file
-    ! --------------
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error closing ",a," after write. IOSTAT = ",i0)' ) &
-                      TRIM(Filename), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            WARNING, &
-                            Message_Log=Message_Log )
-    END IF
-
-
-    ! Output an info message
-    ! ----------------------
-    IF ( Noisy ) THEN
-      CALL Info_ODAS( ODAS, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(Filename)//'; '//TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log = Message_Log )
-    END IF
-
   CONTAINS
   
     SUBROUTINE Write_CleanUp()
@@ -1028,6 +1090,7 @@ CONTAINS
                             Message_Log=Message_Log )
     END SUBROUTINE Write_CleanUp
 
-  END FUNCTION Write_ODAS_Binary
+
+  END FUNCTION Write_ODAS_Data
 
 END MODULE ODAS_Binary_IO

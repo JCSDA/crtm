@@ -2563,6 +2563,7 @@ CONTAINS
     ! Determine the surface emission behavior
     ! (specular or diffuse)
     ! The surface is specular if microwave sensor
+    ! or if IR sensor over water
     ! -------------------------------------------
     IF( SC(SensorIndex)%Sensor_Type == MICROWAVE_SENSOR .OR. Surface%Water_Coverage > 0.5_fp) THEN
       RTV%Diffuse_Surface = .FALSE.

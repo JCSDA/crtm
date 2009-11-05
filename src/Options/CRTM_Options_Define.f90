@@ -16,10 +16,14 @@ MODULE CRTM_Options_Define
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds           , ONLY: fp
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE CRTM_Parameters      , ONLY: ZERO, SET, NOT_SET, STRLEN
+  USE Type_Kinds             , ONLY: fp
+  USE Message_Handler        , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Compare_Float_Numbers  , ONLY: Compare_Float
+  USE CRTM_Parameters        , ONLY: ZERO, SET, NOT_SET, STRLEN
+  USE CRTM_SensorInput_Define, ONLY: CRTM_SensorInput_type
+
+
+  
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -40,15 +44,9 @@ MODULE CRTM_Options_Define
   ! Utility procedures
   PUBLIC :: CRTM_RCS_ID_Options
 
-
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-  INTERFACE CRTM_Associated_Options
-    MODULE PROCEDURE Associated_Scalar
-    MODULE PROCEDURE Associated_Rank1
-  END INTERFACE CRTM_Associated_Options
-
   INTERFACE CRTM_Destroy_Options
     MODULE PROCEDURE Destroy_Scalar
     MODULE PROCEDURE Destroy_Rank1
@@ -85,19 +83,25 @@ MODULE CRTM_Options_Define
   ! ----------------------------
   !:tdoc+:
   TYPE :: CRTM_Options_type
-    INTEGER :: n_Allocates = 0
-    ! Dimensions
+
+    ! User defined emissivity/reflectivity
+    ! ...Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
-    ! Index into channel-specific components
+    ! ...Index into channel-specific components
     INTEGER :: Channel = 0
-    ! Emissivity optional arguments
+    ! ...Emissivity optional arguments
     INTEGER           :: Emissivity_Switch =  NOT_SET
     REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
-    ! Direct reflectivity optional arguments
+    ! ...Direct reflectivity optional arguments
     INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
     REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
+    
     ! Antenna correction application
     INTEGER :: Antenna_Correction = NOT_SET
+
+    ! Container for sensor-specific inputs
+    TYPE(CRTM_SensorInput_type) :: SensorInput  
+    
   END TYPE CRTM_Options_type
   !:tdoc-:
 
@@ -120,108 +124,44 @@ CONTAINS
 !       CRTM_Associated_Options
 !
 ! PURPOSE:
-!       Function to test the association status of the pointer members of a
-!       CRTM Options structure.
+!       Elemental function to test the association status of the pointer
+!       members of a CRTM Options structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_Options( Options          , &
-!                                                     ANY_Test=Any_Test  )
+!       Association_Status = CRTM_Associated_Options( Options )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Options:             Options structure which is to have its pointer
 !                            member's association status tested.
 !                            UNITS:      N/A
 !                            TYPE:       CRTM_Options_type
-!                            DIMENSION:  Scalar or Rank-1 array
+!                            DIMENSION:  Scalar or any rank
 !                            ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:            Set this argument to test if ANY of the
-!                            Options structure pointer members are associated.
-!                            The default is to test if ALL the pointer members
-!                            are associated.
-!                            If ANY_Test = 0, test if ALL the pointer members
-!                                             are associated.  (DEFAULT)
-!                               ANY_Test = 1, test if ANY of the pointer members
-!                                             are associated.
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Association_Status:  The return value is a logical value indicating the
 !                            association status of the Options pointer
 !                            members.
-!                            .TRUE.  - if ALL the Options pointer members
-!                                      are associated, or if the ANY_Test argument
-!                                      is set and ANY of the Options
-!                                      pointer members are associated.
-!                            .FALSE. - some or all of the Options pointer
+!                            .TRUE.  - if ANY of the Options pointer members
+!                                      are associated,
+!                            .FALSE. - if ALL of the Options pointer
 !                                      members are NOT associated.
 !                            UNITS:      N/A
 !                            TYPE:       LOGICAL
 !                            DIMENSION:  Same as input Options argument
-!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Associated_Scalar( Options , & ! Input
-                              ANY_Test) & ! Optional input
-                            RESULT( Association_Status )
+  ELEMENTAL FUNCTION CRTM_Associated_Options(Options) RESULT(Association_Status)
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN) :: Options
-    INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
     ! Function result
     LOGICAL :: Association_Status
-    ! Local variables
-    LOGICAL :: ALL_Test
-
-    ! Set up
-    ! ------
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
-    END IF
-    ! Initialise a result
-    Association_Status = .FALSE.
-
-    
-    ! Test the structure pointer association
-    ! --------------------------------------
-    IF ( ALL_Test ) THEN
-      IF (ASSOCIATED(Options%Emissivity         ) .AND. &
-          ASSOCIATED(Options%Direct_Reflectivity)) THEN 
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF (ASSOCIATED(Options%Emissivity         ) .OR. &
-          ASSOCIATED(Options%Direct_Reflectivity)) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-
-  END FUNCTION Associated_Scalar
-
-  FUNCTION Associated_Rank1( Options , & ! Input
-                             ANY_Test) & ! Optional input
-                           RESULT( Association_Status )
-    ! Arguments
-    TYPE(CRTM_Options_type), INTENT(IN) :: Options(:)
-    INTEGER,       OPTIONAL, INTENT(IN) :: ANY_Test
-    ! Function result
-    LOGICAL :: Association_Status(SIZE(Options))
-    ! Local variables
-    INTEGER :: i
-
-    DO i = 1, SIZE(Options)
-      Association_Status(i) = Associated_Scalar( Options(i),ANY_Test=ANY_Test )
-    END DO
-
-  END FUNCTION Associated_Rank1
+    ! Test the structure associations
+    Association_Status = &
+      ASSOCIATED(Options%Emissivity         ) .OR. &
+      ASSOCIATED(Options%Direct_Reflectivity)
+  END FUNCTION CRTM_Associated_Options
   
 
 !------------------------------------------------------------------------------
@@ -231,40 +171,23 @@ CONTAINS
 !       CRTM_Destroy_Options
 ! 
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of a CRTM
-!       Options data structure.
+!       Function to re-initialize the CRTM Options structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Options( Options                , &
-!                                            Message_Log=Message_Log  )
+!       Error_Status = CRTM_Destroy_Options( Options )
 ! 
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Options:      Re-initialized Options structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Options_type
 !                     DIMENSION:  Scalar or Rank-1
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
+!                        == FAILURE - an error occurred.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -277,105 +200,66 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( Options    , &  ! Output
-                           No_Clear   , &  ! Optional input
-                           Message_Log) &  ! Error messaging
-                         RESULT( Error_Status )
+  FUNCTION Destroy_Scalar(Options) RESULT(Error_Status)
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
-    INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Options(Scalar)'
     ! Local variables
-    CHARACTER(ML) :: Message
-    LOGICAL :: Clear
+    CHARACTER(ML) :: msg
     INTEGER :: Allocate_Status
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    ! Reset the dimension indicators
+    ! ...Reset the dimension indicators
     Options%n_Channels = 0
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
-    IF ( Clear ) CALL CRTM_Clear_Options( Options )
-    ! If ALL pointer members are NOT associated, do nothing
+    ! ...Clear scalar members
+    CALL CRTM_Clear_Options( Options )
+    ! ...If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. CRTM_Associated_Options( Options ) ) RETURN
 
 
     ! Deallocate the pointer members
-    ! ------------------------------
     DEALLOCATE( Options%Emissivity         , &
                 Options%Direct_Reflectivity, &
                 STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating Options. STAT = ", i0 )' ) &
+      WRITE( msg, '( "Error deallocating Options. STAT = ", i0 )' ) &
                       Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), Error_Status )
     END IF
 
-    ! Decrement and test allocation counter
-    ! -------------------------------------
-    Options%n_Allocates = Options%n_Allocates - 1
-    IF ( Options%n_Allocates /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i0 )' ) &
-                      Options%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-    END IF
   END FUNCTION Destroy_Scalar
 
-  FUNCTION Destroy_Rank1( Options    , &  ! Output
-                          No_Clear   , &  ! Optional input
-                          Message_Log) &  ! Error messaging
-                        RESULT( Error_Status )
+  FUNCTION Destroy_Rank1(Options) RESULT(Error_Status)
     ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options(:)
-    INTEGER,      OPTIONAL,  INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL,  INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Options(Rank-1)'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
 
     ! Loop over Options entries
-    ! -------------------------
-    DO n = 1, SIZE( Options )
-      Scalar_Status = Destroy_Scalar( Options(n)             , &
-                                      No_Clear   =No_Clear   , &
-                                      Message_Log=Message_Log  )
+    DO n = 1, SIZE(Options)
+      Scalar_Status = Destroy_Scalar( Options(n) )
       IF ( Scalar_Status /= SUCCESS ) THEN
         Error_Status = Scalar_Status
-        WRITE( Message, '( "Error destroying element #", i0, &
-                          &" of Options structure array." )' ) n
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+        WRITE( msg,'("Error destroying element #",i0, &
+                    &" of Options structure array.")' ) n
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), Error_Status )
       END IF
     END DO
+    
   END FUNCTION Destroy_Rank1
 
 
@@ -390,11 +274,10 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Options( n_Channels             , &
-!                                             Options                , &
-!                                             Message_Log=Message_Log  )
+!       Error_Status = CRTM_Allocate_Options( n_Channels, &  ! Input
+!                                             Options     )  ! Output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       n_Channels:   Number of sensor channels
 !                     Must be > 0
 !                     UNITS:      N/A
@@ -402,36 +285,19 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       Options:      Options structure with allocated pointer members.
-!                     Upon allocation, all pointer members are initialized to
-!                     a value of zero.
+! OUTPUTS:
+!       Options:      Options structure with allocated internals.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Options_type
 !                     DIMENSION:  Scalar or Rank-1
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
 !                     If == SUCCESS the structure pointer allocations were
 !                                   successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
+!                        == FAILURE an error occurred.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
@@ -444,130 +310,92 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Allocate_Scalar( n_Channels , &  ! Input
-                            Options    , &  ! Output
-                            Message_Log) &  ! Error messaging
+  FUNCTION Allocate_Scalar( n_Channels, &  ! Input
+                            Options   ) &  ! Output
                           RESULT( Error_Status )
     ! Arguments
     INTEGER,                 INTENT(IN)     :: n_Channels
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Options(Scalar)'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: Allocate_Status
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    ! Dimensions
+    ! ...Check dimensions
     IF ( n_Channels < 1 ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Channels must be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME, 'Input n_Channels must be > 0.', Error_Status )
       RETURN
     END IF
-    ! Check if ANY pointers are already associated
-    ! If they are, deallocate them but leave scalars.
-    IF ( CRTM_Associated_Options( Options, ANY_Test=SET ) ) THEN
-      Error_Status = CRTM_Destroy_Options( Options, &
-                                           No_Clear=SET, &
-                                           Message_Log=Message_Log )
+    ! Destroy structure if required.
+    IF ( CRTM_Associated_Options( Options ) ) THEN
+      Error_Status = CRTM_Destroy_Options( Options )
       IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating Options pointer members.', &
-                              Error_Status,    &
-                              Message_Log=Message_Log )
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error destroying Options structure.', &
+                              Error_Status )
         RETURN
       END IF
     END IF
 
 
     ! Perform the pointer allocation
-    ! ------------------------------
     ALLOCATE( Options%Emissivity(n_Channels)         , &
               Options%Direct_Reflectivity(n_Channels), &
               STAT = Allocate_Status )
     IF ( Allocate_Status /= 0 ) THEN
       Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating Options data arrays. STAT = ", i0 )' ) &
+      WRITE( msg, '( "Error allocating Options data arrays. STAT = ", i0 )' ) &
                       Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), Error_Status )
       RETURN
     END IF
 
 
-    ! Assign dimensions
-    ! -----------------
+    ! Initisialise components
+    ! ...Assign dimensions
     Options%n_Channels = n_Channels
-
-
-    ! Initialise the arrays
-    ! ---------------------
+    ! ...Initialise the arrays
     Options%Emissivity          = ZERO
     Options%Direct_Reflectivity = ZERO
 
-
-    ! Increment and test the allocation counter
-    ! -----------------------------------------
-    Options%n_Allocates = Options%n_Allocates + 1
-    IF ( Options%n_Allocates /= 1 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i0 )' ) &
-                      Options%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-    END IF
-
   END FUNCTION Allocate_Scalar
 
-  FUNCTION Allocate_Rank1( n_Channels , &  ! Input,  scalar
-                           Options    , &  ! Output, rank-1
-                           Message_Log) &  ! Error messaging
+  FUNCTION Allocate_Rank1( n_Channels, &  ! Input
+                           Options   ) &  ! Output
                          RESULT( Error_Status )
     ! Arguments
     INTEGER,                 INTENT(IN)     :: n_Channels
     TYPE(CRTM_Options_type), INTENT(IN OUT) :: Options(:)
-    CHARACTER(*), OPTIONAL,  INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Options(Rank-1)'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
     INTEGER :: n
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
 
 
     ! Loop over Options entries
-    ! -------------------------
     DO n = 1, SIZE(Options)
       Error_Status = Allocate_Scalar( n_Channels, & ! Input
-                                      Options(n), & ! Output
-                                      Message_Log=Message_Log )
+                                      Options(n)  ) ! Output
       IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error allocating element #", i0, &
-                          &" of rank-1 Options structure array." )' ) n
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+        WRITE( msg,'("Error allocating element #",i0, &
+                    &" of rank-1 Options structure array.")' ) n
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), Error_Status )
         RETURN
       END IF
     END DO
+    
   END FUNCTION Allocate_Rank1
 
 
@@ -656,8 +484,7 @@ CONTAINS
     ! Allocate data arrays
     ! --------------------
     Error_Status = CRTM_Allocate_Options( Options_in%n_Channels  , &
-                                          Options_out            , &
-                                          Message_Log=Message_Log  )
+                                          Options_out              )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error allocating output Options arrays.', &

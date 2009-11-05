@@ -18,10 +18,11 @@ MODULE CRTM_AtmAbsorption
   ! Module use
   USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters,           ONLY: TAU_ODAS, TAU_ODPS, ZERO
+  USE CRTM_Parameters,           ONLY: TAU_ODAS, TAU_ODPS, TAU_ODSSU, ZERO
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_TauCoeff,             ONLY: CRTM_TauCoeff_type, &
                                        TC
+  USE CRTM_SensorInput_Define,   ONLY: CRTM_SensorInput_type
   USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type, &
                                        CRTM_Associated_AtmAbsorption, &  
                                        CRTM_Destroy_AtmAbsorption, &     
@@ -40,7 +41,8 @@ MODULE CRTM_AtmAbsorption
                                        ODAS_APVariables_type      => APVariables_type,      &
                                        ODAS_Destroy_Predictor     => Destroy_Predictor,     &
                                        ODAS_MAX_N_PREDICTORS      => MAX_N_PREDICTORS,      &
-                                       ODAS_MAX_N_ABSORBERS       => MAX_N_ABSORBERS
+                                       ODAS_MAX_N_ABSORBERS       => MAX_N_ABSORBERS,       &
+                                       ODAS_MAX_N_ORDERS          => MAX_N_ORDERS
 
   USE ODPS_AtmAbsorption,        ONLY: ODPS_Compute_AtmAbsorption,    &
                                        ODPS_Compute_AtmAbsorption_TL, &
@@ -50,6 +52,11 @@ MODULE CRTM_AtmAbsorption
                                        ODPS_Compute_Predictors_TL,    &
                                        ODPS_Compute_Predictors_AD,    &
                                        ALLOW_OPTRAN
+
+  USE ODSSU_AtmAbsorption,       ONLY: ODSSU_Compute_AtmAbsorption    => Compute_AtmAbsorption,    &
+                                       ODSSU_Compute_AtmAbsorption_TL => Compute_AtmAbsorption_TL, &
+                                       ODSSU_Compute_AtmAbsorption_AD => Compute_AtmAbsorption_AD, &
+                                       ODSSU_AAVariables_type         => AAVariables_type                                       
                             
   USE ODPS_Predictor,            ONLY: ODPS_Predictor_type        => Predictor_type,        &
                                        ODPS_APVariables_type,                               &
@@ -62,7 +69,7 @@ MODULE CRTM_AtmAbsorption
                                        ODPS_Allocate_PAFV         => Allocate_PAFV,         &
                                        ODPS_Get_SaveFWVFlag       => Get_SaveFWVFlag 
 
-                                                                              
+                                                                                
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -122,6 +129,7 @@ MODULE CRTM_AtmAbsorption
     PRIVATE
     TYPE(ODAS_AAVariables_type)   :: ODAS
     TYPE(ODPS_AAVariables_type)   :: ODPS
+    TYPE(ODSSU_AAVariables_type)  :: ODSSU
   END TYPE CRTM_AAVariables_type
 
   ! Structure to hold Predictor
@@ -156,13 +164,21 @@ CONTAINS
 !       It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_AtmAbsorption( SensorIndex  , &  ! Input
+!       CALL CRTM_Compute_AtmAbsorption( GeometryInfo , &  ! Input
+!                                        SensorIndex  , &  ! Input
 !                                        ChannelIndex , &  ! Input
 !                                        Predictor    , &  ! Input
 !                                        AtmAbsorption, &  ! Output
 !                                        AAVariables    )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
+!       GeometryInfo:    Structure containing the view geometry
+!                        information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_GeometryInfo_type
+!                        DIMENSION:  Same as input Atmosphere structure
+!                        ATTRIBUTES: INTENT(IN)
+!
 !       SensorIndex:     Sensor index id. This is a unique index associated
 !                        with a (supported) sensor used to access the
 !                        shared coefficient data for a particular sensor.
@@ -213,35 +229,47 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_AtmAbsorption( SensorIndex  ,   &  ! Input
-                                         ChannelIndex ,   &  ! Input                       
-                                         Predictor    ,   &  ! Input                       
-                                         AtmAbsorption,   &  ! Output                      
-                                         AAV            )    ! Internal variable output    
+  SUBROUTINE CRTM_Compute_AtmAbsorption( SensorInput  , &  ! Input
+                                         SensorIndex  , &  ! Input
+                                         ChannelIndex , &  ! Input 
+                                         Predictor    , &  ! Input                       
+                                         AtmAbsorption, &  ! Output                      
+                                         AAV            )  ! Internal variable output    
     ! Arguments
+    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
     INTEGER                      , INTENT(IN)     :: SensorIndex
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Predictor_type)    , INTENT(IN OUT) :: Predictor
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
     TYPE(CRTM_AAVariables_type)  , INTENT(IN OUT) :: AAV
 
-    ! Local
-    CHARACTER(ML) :: Message
-
+    ! Call required algorithm
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
+    
       CASE( TAU_ODAS )
-          CALL ODAS_Compute_AtmAbsorption( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex ,                  &  ! Input                                          
-                    Predictor%ODAS,                 &  ! Input                                          
-                    AtmAbsorption,                  &  ! Output                                         
-                    AAV%ODAS     )                     ! Internal variable output      
+        CALL ODAS_Compute_AtmAbsorption( &
+          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          ChannelIndex                           , &  ! Input                                 
+          Predictor%ODAS                         , &  ! Input                                 
+          AtmAbsorption                          , &  ! Output                                
+          AAV%ODAS                                 )  ! Internal variable output
+
       CASE( TAU_ODPS )
-          CALL ODPS_Compute_AtmAbsorption( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex ,                  &  ! Input 
-                    Predictor%ODPS,                 &  ! Input                                          
-                    AtmAbsorption)                     ! Output                                         
+        CALL ODPS_Compute_AtmAbsorption( &
+          TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
+          ChannelIndex                  , &  ! Input 
+          Predictor%ODPS                , &  ! Input                                          
+          AtmAbsorption                   )  ! Output 
+
+      CASE( TAU_ODSSU )
+        CALL ODSSU_Compute_AtmAbsorption( &
+          SensorInput%SSU               , &  ! Input
+          TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
+          ChannelIndex                  , &  ! Input                                          
+          Predictor%ODAS                , &  ! Input                                          
+          AtmAbsorption                 , &  ! Output                                         
+          AAV%ODSSU                       )  ! Internal variable output      
+
     END SELECT
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption               
@@ -322,13 +350,15 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_AtmAbsorption_TL( SensorIndex     , &  ! Input
+  SUBROUTINE CRTM_Compute_AtmAbsorption_TL( SensorInput     , &  ! Input
+                                            SensorIndex     , &  ! Input
                                             ChannelIndex    , &  ! Input
                                             Predictor       , &  ! Input
                                             Predictor_TL    , &  ! Input
                                             AtmAbsorption_TL, &  ! Output
                                             AAV               )  ! Internal variable input
     ! Arguments
+    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
     INTEGER                      , INTENT(IN)     :: SensorIndex
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Predictor_type)    , INTENT(IN)     :: Predictor
@@ -336,27 +366,36 @@ CONTAINS
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_TL
     TYPE(CRTM_AAVariables_type)  , INTENT(IN OUT) :: AAV
 
-    ! Local
-    CHARACTER(ML) :: Message
-
+    ! Call required algorithm
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
+    
       CASE( TAU_ODAS )
-          CALL ODAS_Compute_AtmAbsorption_TL( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex ,                  &  ! Input                                          
-                    Predictor%ODAS,                 &  ! Input
-                    Predictor_TL%ODAS,              &  ! Input                                          
-                    AtmAbsorption_TL,               &  ! Output                                         
-                    AAV%ODAS     )                     ! Internal variable output      
+        CALL ODAS_Compute_AtmAbsorption_TL( &
+          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          ChannelIndex                           , &  ! Input                                 
+          Predictor%ODAS                         , &  ! Input
+          Predictor_TL%ODAS                      , &  ! Input                                 
+          AtmAbsorption_TL                       , &  ! Output                                
+          AAV%ODAS                                 )  ! Internal variable output
 
       CASE( TAU_ODPS )
-          CALL ODPS_Compute_AtmAbsorption_TL( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input
-                    ChannelIndex ,                  &  ! Input
-                    Predictor%ODPS,                 &  ! Input
-                    Predictor_TL%ODPS,              &  ! Input
-                    AtmAbsorption_TL)                  ! Output
+        CALL ODPS_Compute_AtmAbsorption_TL( &
+          TC%Sensor_LoIndex(SensorIndex), &  ! Input
+          ChannelIndex                  , &  ! Input
+          Predictor%ODPS                , &  ! Input
+          Predictor_TL%ODPS             , &  ! Input
+          AtmAbsorption_TL                )  ! Output
 
+      CASE( TAU_ODSSU )
+        CALL ODSSU_Compute_AtmAbsorption_TL( &
+          SensorInput%SSU               , &  ! Input
+          TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
+          ChannelIndex                  , &  ! Input                                          
+          Predictor%ODAS                , &  ! Input
+          Predictor_TL%ODAS             , &  ! Input                                          
+          AtmAbsorption_TL              , &  ! Output                                         
+          AAV%ODSSU                       )  ! Internal variable output
+                
     END SELECT
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption_TL               
@@ -436,13 +475,15 @@ CONTAINS
 !       in this function.
 !
 !------------------------------------------------------------------------------
-  SUBROUTINE CRTM_Compute_AtmAbsorption_AD( SensorIndex     , &  ! Input
+  SUBROUTINE CRTM_Compute_AtmAbsorption_AD( SensorInput     , &  ! Input
+                                            SensorIndex     , &  ! Input
                                             ChannelIndex    , &  ! Input
                                             Predictor       , &  ! FWD Input
                                             AtmAbsorption_AD, &  ! AD  Input
                                             Predictor_AD    , &  ! AD  Output
                                             AAV               )  ! Internal variable input
     ! Arguments
+    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
     INTEGER,                       INTENT(IN)     :: SensorIndex
     INTEGER,                       INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Predictor_type),     INTENT(IN)     :: Predictor
@@ -450,26 +491,35 @@ CONTAINS
     TYPE(CRTM_Predictor_type),     INTENT(IN OUT) :: Predictor_AD
     TYPE(CRTM_AAVariables_type)  , INTENT(IN OUT) :: AAV
 
-    ! Local
-    CHARACTER(ML) :: Message
-
+    ! Call required algorithm
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
+    
       CASE( TAU_ODAS )
-          CALL ODAS_Compute_AtmAbsorption_AD( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
-                    ChannelIndex ,                  &  ! Input                                          
-                    Predictor%ODAS,                 &  ! FWD Input
-                    AtmAbsorption_AD,               &  ! AD Input                                         
-                    Predictor_AD%ODAS,              &  ! AD Output                         
-                    AAV%ODAS     )                     ! Internal variable output      
+        CALL ODAS_Compute_AtmAbsorption_AD( &
+          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          ChannelIndex                           , &  ! Input                                 
+          Predictor%ODAS                         , &  ! FWD Input
+          AtmAbsorption_AD                       , &  ! AD Input                                
+          Predictor_AD%ODAS                      , &  ! AD Output                
+          AAV%ODAS                                 )  ! Internal variable output
 
       CASE( TAU_ODPS )
-          CALL ODPS_Compute_AtmAbsorption_AD( &
-                    TC%Sensor_LoIndex(SensorIndex), &  ! Input
-                    ChannelIndex ,                  &  ! Input
-                    Predictor%ODPS,                 &  ! FWD Input
-                    AtmAbsorption_AD,               &  ! AD Input
-                    Predictor_AD%ODPS)                 ! AD Output
+        CALL ODPS_Compute_AtmAbsorption_AD( &
+          TC%Sensor_LoIndex(SensorIndex), &  ! Input
+          ChannelIndex                  , &  ! Input
+          Predictor%ODPS                , &  ! FWD Input
+          AtmAbsorption_AD              , &  ! AD Input
+          Predictor_AD%ODPS               )  ! AD Output
+                  
+      CASE( TAU_ODSSU )
+        CALL ODSSU_Compute_AtmAbsorption_AD( &
+          SensorInput%SSU               , &  ! Input
+          TC%Sensor_LoIndex(SensorIndex), &  ! Input                             
+          ChannelIndex                  , &  ! Input                                          
+          Predictor%ODAS                , &  ! FWD Input
+          AtmAbsorption_AD              , &  ! AD Input                                         
+          Predictor_AD%ODAS             , &  ! AD Output                         
+          AAV%ODSSU                       )  ! Internal variable output      
 
     END SELECT
 
@@ -535,39 +585,55 @@ CONTAINS
 ! COMMENTS:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Compute_Predictors(SensorIndex,  &  ! Input
+  SUBROUTINE CRTM_Compute_Predictors(SensorInput,  &  ! Input
+                                     SensorIndex,  &  ! Input
                                      Atmosphere,   &  ! Input                                            
                                      GeometryInfo, &  ! Input                                         
                                      Predictor,    &  ! Output 
                                      APV       )      ! Internal variable output
     ! Arguments
+    TYPE(CRTM_SensorInput_type) , INTENT(IN)     :: SensorInput
     INTEGER,                      INTENT(IN)     :: SensorIndex
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
     TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor
     TYPE(CRTM_APVariables_type),  INTENT(IN OUT) :: APV
     ! Local
-    INTEGER :: SLoIndex
+    INTEGER :: idx
 
-    SLoIndex = TC%Sensor_LoIndex(SensorIndex)  
+    ! Call required algorithm
+    idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
+    
       CASE( TAU_ODAS )
-         CALL ODAS_Compute_Predictors(Atmosphere,                  &  ! Input
-                                      GeometryInfo,                &  ! Input        
-                                      TC%ODAS(SLoIndex)%Max_Order, &  ! Input
-                                      TC%ODAS(SLoIndex)%Alpha,     &  ! Input
-                                      Predictor%ODAS,              &  ! Output
-                                      APV%ODAS   )                  
+         CALL ODAS_Compute_Predictors( Atmosphere            , &  ! Input
+                                       GeometryInfo          , &  ! Input        
+                                       TC%ODAS(idx)%Max_Order, &  ! Input
+                                       TC%ODAS(idx)%Alpha    , &  ! Input
+                                       Predictor%ODAS        , &  ! Output
+                                       APV%ODAS                )
 
       CASE( TAU_ODPS )
-         CALL ODPS_Compute_Predictors(SLoIndex,          &  ! Input
-                                      Atmosphere,        &  ! Input
-                                      GeometryInfo,      &  ! Input        
-                                      Predictor%ODPS)       ! Output  
-              
+         CALL ODPS_Compute_Predictors( SensorInput   , &  ! Input
+                                       idx           , &  ! Input
+                                       Atmosphere    , &  ! Input
+                                       GeometryInfo  , &  ! Input  
+                                       Predictor%ODPS  )  ! Output
+
+      CASE( TAU_ODSSU )
+         ! Assumes the same alphas for all TCs
+         CALL ODAS_Compute_Predictors( Atmosphere                               , &  ! Input
+                                       GeometryInfo                             , &  ! Input
+                                       SPREAD(ODAS_MAX_N_ORDERS, &
+                                              DIM=1, &
+                                              NCOPIES=TC%ODSSU(idx)%n_Absorbers), &  ! Input
+                                       TC%ODSSU(idx)%TC(1)%Alpha                , &  ! Input 
+                                       Predictor%ODAS                           , &  ! Output
+                                       APV%ODAS                                   )                  
     END SELECT
 
   END SUBROUTINE CRTM_Compute_Predictors
+
 
 !--------------------------------------------------------------------------------
 !
@@ -644,7 +710,8 @@ CONTAINS
 !
 !S-
 !--------------------------------------------------------------------------------
-  SUBROUTINE CRTM_Compute_Predictors_TL( SensorIndex,   &  ! Input
+  SUBROUTINE CRTM_Compute_Predictors_TL( SensorInput,   &  ! Input
+                                         SensorIndex,   &  ! Input
                                          Atmosphere,    &  ! FWD Input
                                          Predictor,     &  ! FWD Input
                                          Atmosphere_TL, &  ! TL Input
@@ -652,6 +719,7 @@ CONTAINS
                                          Predictor_TL,  &  ! TL Output
                                          APV            )  ! Internal variable input
     ! Arguments
+    TYPE(CRTM_SensorInput_type),  INTENT(IN)     :: SensorInput
     INTEGER,                      INTENT(IN)     :: SensorIndex
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
     TYPE(CRTM_Predictor_type),    INTENT(IN)     :: Predictor
@@ -660,27 +728,42 @@ CONTAINS
     TYPE(CRTM_Predictor_type),    INTENT(IN OUT) :: Predictor_TL
     TYPE(CRTM_APVariables_type),  INTENT(IN OUT) :: APV
     ! Local
-    INTEGER :: SLoIndex
+    INTEGER :: idx
 
-    SLoIndex = TC%Sensor_LoIndex(SensorIndex)  
+    ! Select required algorithm
+    idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
+    
       CASE( TAU_ODAS )
-         CALL ODAS_Compute_Predictors_TL(Atmosphere,                  &  ! FWD Input
-                                         Predictor%ODAS,              &  ! FWD Input
-                                         Atmosphere_TL,               &  ! TL Input
-                                         GeometryInfo,                &  ! Input    
-                                         TC%ODAS(SLoIndex)%Max_Order, &  ! Input
-                                         TC%ODAS(SLoIndex)%Alpha,     &  ! Input
-                                         Predictor_TL%ODAS,           &  ! TL Output
-                                         APV%ODAS   )                  
+         CALL ODAS_Compute_Predictors_TL( Atmosphere            , &  ! FWD Input
+                                          Predictor%ODAS        , &  ! FWD Input
+                                          Atmosphere_TL         , &  ! TL Input
+                                          GeometryInfo          , &  ! Input    
+                                          TC%ODAS(idx)%Max_Order, &  ! Input
+                                          TC%ODAS(idx)%Alpha    , &  ! Input
+                                          Predictor_TL%ODAS     , &  ! TL Output
+                                          APV%ODAS                )     
 
       CASE( TAU_ODPS )
-         CALL ODPS_Compute_Predictors_TL(SLoIndex,           &  ! Input
-                                         Atmosphere,         &  ! FWD Input
-                                         GeometryInfo,       &  ! Input
-                                         Predictor%ODPS,     &  ! FWD Input
-                                         Atmosphere_TL,      &  ! TL Input
-                                         Predictor_TL%ODPS)     ! TL Output
+         CALL ODPS_Compute_Predictors_TL( SensorInput      , &  ! Input
+                                          idx              , &  ! Input
+                                          Atmosphere       , &  ! FWD Input
+                                          GeometryInfo     , &  ! Input
+                                          Predictor%ODPS   , &  ! FWD Input
+                                          Atmosphere_TL    , &  ! TL Input
+                                          Predictor_TL%ODPS  )  ! TL Output
+      CASE( TAU_ODSSU )
+         ! Assumes the same alphas for all TCs
+         CALL ODAS_Compute_Predictors_TL( Atmosphere                               , &  ! FWD Input
+                                          Predictor%ODAS                           , &  ! FWD Input
+                                          Atmosphere_TL                            , &  ! TL Input
+                                          GeometryInfo                             , &  ! Input    
+                                          SPREAD(ODAS_MAX_N_ORDERS, &
+                                                 DIM=1, &
+                                                 NCOPIES=TC%ODSSU(idx)%n_Absorbers), &  ! Input
+                                          TC%ODSSU(idx)%TC(1)%Alpha                , &  ! Input, 
+                                          Predictor_TL%ODAS                        , &  ! TL Output
+                                          APV%ODAS                                   )                  
               
     END SELECT
 
@@ -698,7 +781,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL CRTM_Compute_Predictors_AD ( SensorIndex,   &  ! Input
 !                                         Atmosphere,    &  ! FWD Input
-!                                         Predictor,     &  ! FWD Input
+!                                         Predictor,     &  ! FW Input
 !                                         Predictor_AD,  &  ! AD Input
 !                                         GeometryInfo,  &  ! Input
 !                                         Atmosphere_AD, &  ! AD Output
@@ -765,7 +848,8 @@ CONTAINS
 !
 !S-
 !--------------------------------------------------------------------------------
-  SUBROUTINE CRTM_Compute_Predictors_AD ( SensorIndex,   &  ! Input
+  SUBROUTINE CRTM_Compute_Predictors_AD ( SensorInput,   &  ! Input
+                                          SensorIndex,   &  ! Input
                                           Atmosphere,    &  ! FWD Input
                                           Predictor,     &  ! FWD Input
                                           Predictor_AD,  &  ! AD Input
@@ -773,6 +857,7 @@ CONTAINS
                                           Atmosphere_AD, &  ! AD Output
                                           APV            )  ! Internal variable input
     ! Arguments
+    TYPE(CRTM_SensorInput_type),  INTENT(IN)     :: SensorInput
     INTEGER,                      INTENT(IN)     :: SensorIndex
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
     TYPE(CRTM_Predictor_type),    INTENT(IN)     :: Predictor
@@ -781,28 +866,43 @@ CONTAINS
     TYPE(CRTM_Atmosphere_type),   INTENT(IN OUT) :: Atmosphere_AD
     TYPE(CRTM_APVariables_type),  INTENT(IN OUT) :: APV
     ! Local
-    INTEGER :: SLoIndex
+    INTEGER :: idx
 
-    SLoIndex = TC%Sensor_LoIndex(SensorIndex)  
+    ! Select required algorithm
+    idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
       CASE( TAU_ODAS )
-         CALL ODAS_Compute_Predictors_AD(Atmosphere,                  &  ! FWD Input
-                                         Predictor%ODAS,              &  ! FWD Input
-                                         Predictor_AD%ODAS,           &  ! AD Intput
-                                         GeometryInfo,                &  ! Input    
-                                         TC%ODAS(SLoIndex)%Max_Order, &  ! Input
-                                         TC%ODAS(SLoIndex)%Alpha,     &  ! Input
-                                         Atmosphere_AD,               &  ! AD Output
-                                         APV%ODAS   )
+        CALL ODAS_Compute_Predictors_AD(Atmosphere,             &  ! FWD Input
+                                        Predictor%ODAS,         &  ! FWD Input
+                                        Predictor_AD%ODAS,      &  ! AD Intput
+                                        GeometryInfo,           &  ! Input    
+                                        TC%ODAS(idx)%Max_Order, &  ! Input
+                                        TC%ODAS(idx)%Alpha,     &  ! Input
+                                        Atmosphere_AD,          &  ! AD Output
+                                        APV%ODAS                )
 
       CASE( TAU_ODPS )
-         CALL ODPS_Compute_Predictors_AD(SLoIndex,            &  ! Input
-                                         Atmosphere,          &  ! FWD Input
-                                         GeometryInfo,        &  ! Input     
-                                         Predictor%ODPS,      &  ! FWD Input
-                                         Predictor_AD%ODPS,   &  ! AD Intput
-                                         Atmosphere_AD)          ! AD Output
-              
+        CALL ODPS_Compute_Predictors_AD(SensorInput,       &  ! Input
+                                        idx,               &  ! Input
+                                        Atmosphere,        &  ! FWD Input
+                                        GeometryInfo,      &  ! Input     
+                                        Predictor%ODPS,    &  ! FWD Input
+                                        Predictor_AD%ODPS, &  ! AD Intput
+                                        Atmosphere_AD      )  ! AD Output
+             
+      CASE( TAU_ODSSU )
+         ! Assumes the same alphas for all TCs
+        CALL ODAS_Compute_Predictors_AD(Atmosphere,                                &  ! FWD Input
+                                        Predictor%ODAS,                            &  ! FWD Input
+                                        Predictor_AD%ODAS,                         &  ! AD Intput
+                                        GeometryInfo,                              &  ! Input    
+                                        SPREAD(ODAS_MAX_N_ORDERS, &
+                                               DIM=1, &
+                                               NCOPIES=TC%ODSSU(idx)%n_Absorbers), &  ! Input
+                                        TC%ODSSU(idx)%TC(1)%Alpha,                 &  ! Input, 
+                                        Atmosphere_AD,                             &  ! AD Output
+                                        APV%ODAS   )
+
     END SELECT
 
   END SUBROUTINE CRTM_Compute_Predictors_AD
@@ -926,6 +1026,12 @@ CONTAINS
                          RCS_Id      =  RCS_Id,  &                           
                          Message_Log = Message_Log )
         END IF
+      CASE ( TAU_ODSSU )                                                       
+
+        Error_Status = ODAS_Destroy_Predictor( Predictor%ODAS,   &
+                                         No_Clear    = No_Clear, &
+                                         RCS_Id      =  RCS_Id,  &           
+                                         Message_Log = Message_Log )          
                                                               
     END SELECT                                                                
 
@@ -1092,6 +1198,15 @@ CONTAINS
                                           RCS_Id = RCS_Id,            & ! Revision control     
                                           Message_Log=Message_Log  )    ! Error messaging 
          END IF
+      CASE( TAU_ODSSU )
+         Allocate_Status = ODAS_Allocate_Predictor( &
+                               n_Layers ,                   &  ! Input
+                               ODAS_MAX_N_PREDICTORS,       &  ! Input
+                               ODAS_MAX_N_ABSORBERS,        &  ! Input
+                               ODAS_MAX_N_ORDERS,           &  ! Input
+                               Predictor%ODAS   ,           &  ! Output
+                               RCS_Id = RCS_Id,             &  ! Revision control               
+                               Message_Log=Message_Log  )      ! Error messaging 
     END SELECT
 
     IF ( Allocate_Status /= SUCCESS ) THEN                                             
