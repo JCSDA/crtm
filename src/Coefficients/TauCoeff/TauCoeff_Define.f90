@@ -23,9 +23,9 @@ MODULE TauCoeff_Define
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, Display_Message
   USE ODAS_Define,           ONLY: ODAS_type
   USE ODPS_Define,           ONLY: ODPS_type
+  USE ODSSU_Define,          ONLY: ODSSU_type
   ! Disable implicit typing
   IMPLICIT NONE
-
 
   ! ------------
   ! Visibilities
@@ -73,14 +73,16 @@ MODULE TauCoeff_Define
     INTEGER :: n_Sensors = 0       ! n
     INTEGER :: n_ODAS    = 0       ! I1
     INTEGER :: n_ODPS    = 0       ! I2
+    INTEGER :: n_ODSSU   = 0       ! I3
     ! Arrays
     INTEGER, ALLOCATABLE :: Algorithm_ID(:)    ! n
     INTEGER, ALLOCATABLE :: Sensor_Index(:)    ! n
     INTEGER, ALLOCATABLE :: Sensor_LoIndex(:)  ! n ; Local sensor index for a collection
                                                !     of sensor using the same algorithm
     ! Pointers
-    TYPE(ODAS_type), POINTER :: ODAS(:) => NULL()  ! I1
-    TYPE(ODPS_type), POINTER :: ODPS(:) => NULL()  ! I2
+    TYPE(ODAS_type),  POINTER :: ODAS(:)  => NULL() ! I1
+    TYPE(ODPS_type),  POINTER :: ODPS(:)  => NULL() ! I2
+    TYPE(ODSSU_type), POINTER :: ODSSU(:) => NULL() ! I3
   END TYPE TauCoeff_type
 
 
@@ -132,7 +134,8 @@ CONTAINS
       ALLOCATED(self%Sensor_Index  ) .OR. &
       ALLOCATED(self%Sensor_LoIndex) .OR. &
       ASSOCIATED(self%ODAS         ) .OR. &  ! Should this be tested?
-      ASSOCIATED(self%ODPS         )         ! Should this be tested?
+      ASSOCIATED(self%ODPS         ) .OR. &  ! Should this be tested?
+      ASSOCIATED(self%ODSSU        )         ! Should this be tested?
 
   END FUNCTION TauCoeff_Associated
 
@@ -201,7 +204,7 @@ CONTAINS
     END IF
     
     ! Disassociate pointers
-    NULLIFY( self%ODAS, self%ODPS )
+    NULLIFY( self%ODAS, self%ODPS, self%ODSSU )
 
   END SUBROUTINE TauCoeff_Destroy
 
@@ -300,7 +303,7 @@ CONTAINS
     self%Sensor_Index   = 0
     self%Sensor_LoIndex = 0
     ! ...Pointers (not required, but what the hell...)
-    NULLIFY( self%ODAS, self%ODPS )
+    NULLIFY( self%ODAS, self%ODPS, self%ODSSU )
 
   END SUBROUTINE TauCoeff_Create
   
@@ -345,11 +348,13 @@ CONTAINS
     WRITE( long_string, '( a, 2x, &
                            &"N_SENSORS=",i2,2x,&
                            &"N_ODAS=",i2,2x,&
-                           &"N_ODPS=",i2 )' ) &
+                           &"N_ODPS=",i2,2x,&
+                           &"N_ODSSU=",i2 )' ) &
                          ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
                          self%n_Sensors, &
                          self%n_ODAS, &
-                         self%n_ODPS
+                         self%n_ODPS, &
+                         self%n_ODSSU
     
     ! Trim the output based on the
     ! dummy argument string length
@@ -427,6 +432,7 @@ CONTAINS
     ! Set pointers
     IF ( ASSOCIATED(original%ODAS) ) copy%ODAS => original%ODAS
     IF ( ASSOCIATED(original%ODPS) ) copy%ODPS => original%ODPS
+    IF ( ASSOCIATED(original%ODSSU) ) copy%ODSSU => original%ODSSU
     
   END SUBROUTINE TauCoeff_Assign
 
@@ -476,7 +482,8 @@ CONTAINS
     ! Check dimensions
     IF ( (x%n_Sensors /= y%n_Sensors) .OR. &
          (x%n_ODAS    /= y%n_ODAS   ) .OR. &
-         (x%n_ODPS    /= y%n_ODPS   )      ) RETURN
+         (x%n_ODPS    /= y%n_ODPS   ) .OR. &
+         (x%n_ODSSU   /= y%n_ODSSU  )      ) RETURN
 
     ! Check arrays
     IF ( ANY(x%Algorithm_ID   /= y%Algorithm_ID  ) .OR. &
@@ -485,7 +492,7 @@ CONTAINS
 
     ! Check pointers
     ! .... ? 
-    ! Call individual ODAS_Equal and ODPS_Equal functions?
+    ! Call individual ODAS_Equal, ODPS_Equal and ODSSU_Equal functions?
     ! If so, they must be elemental also!
 
     ! If we get here, everything is equal!
