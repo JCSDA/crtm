@@ -5,7 +5,7 @@
       Program to provide an example of CRTM Forward function 
       usage.
 
-      $Revision: 2984 $
+      $Revision: 5594 $
      **********************************************************
 
 
@@ -13,8 +13,8 @@
      Initializing the CRTM...
  Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/mhs_n18.SpcCoeff.bin; 
  SpcCoeff RELEASE.VERSION:  7.01  N_CHANNELS=5
- Read_TauCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/mhs_n18.TauCoeff.bin; 
- TauCoeff RELEASE.VERSION:  5.05  N_ORDERS=10  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=   5  N_SENSORS= 1
+ Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/mhs_n18.TauCoeff.bin; 
+   ODAS RELEASE.VERSION:  6.06  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=5  N_Alphas= 3  N_Coeffs=444
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
  CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
@@ -24,18 +24,18 @@
 
        Profile 1 FWD output
        Sensor_Id   Channel         R            Tb
-       mhs_n18        1      2.024234E-02     279.564
-       mhs_n18        2      6.235990E-02     278.416
-       mhs_n18        3      7.838984E-02     257.640
-       mhs_n18        4      8.035860E-02     263.942
-       mhs_n18        5      8.912662E-02     271.707
+       mhs_n18        1      2.024163E-02     279.554
+       mhs_n18        2      6.236241E-02     278.427
+       mhs_n18        3      7.839508E-02     257.657
+       mhs_n18        4      8.034358E-02     263.893
+       mhs_n18        5      8.911851E-02     271.683
 
        Profile 2 FWD output
        Sensor_Id   Channel         R            Tb
-       mhs_n18        1      1.704730E-02     235.773
-       mhs_n18        2      5.393568E-02     241.309
-       mhs_n18        3      7.351837E-02     241.899
-       mhs_n18        4      7.423950E-02     244.175
-       mhs_n18        5      7.966781E-02     243.351
+       mhs_n18        1      1.704854E-02     235.790
+       mhs_n18        2      5.393620E-02     241.311
+       mhs_n18        3      7.353198E-02     241.943
+       mhs_n18        4      7.423415E-02     244.158
+       mhs_n18        5      7.966568E-02     243.344
 
      Destroying the CRTM...
