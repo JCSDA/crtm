@@ -37,6 +37,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Utility.f90 \
             CRTM_Interpolation.f90 \
             CRTM_SpcCoeff.f90 \
+            TauCoeff_Define.f90 \
             CRTM_TauCoeff.f90 \
             CRTM_AerosolCoeff.f90 \
             CRTM_CloudCoeff.f90 \
