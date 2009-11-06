@@ -20,8 +20,7 @@ MODULE CRTM_AtmAbsorption
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,           ONLY: TAU_ODAS, TAU_ODPS, TAU_ODSSU, ZERO
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
-  USE CRTM_TauCoeff,             ONLY: CRTM_TauCoeff_type, &
-                                       TC
+  USE CRTM_TauCoeff,             ONLY: TC
   USE CRTM_SensorInput_Define,   ONLY: CRTM_SensorInput_type
   USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type, &
                                        CRTM_Associated_AtmAbsorption, &  
