@@ -2530,6 +2530,7 @@ CONTAINS
     REAL(fp) :: User_Emissivity, Direct_Reflectivity
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Solar_Irradiance
+    INTEGER  :: Sensor_Type
     LOGICAL  :: Is_Solar_Channel
 
     ! ------
@@ -2555,21 +2556,17 @@ CONTAINS
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
     Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
+    Sensor_Type                = SC(SensorIndex)%Sensor_Type
     Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
 
 
 
-    ! -------------------------------------------
     ! Determine the surface emission behavior
-    ! (specular or diffuse)
-    ! The surface is specular if microwave sensor
-    ! or if IR sensor over water
-    ! -------------------------------------------
-    IF( SC(SensorIndex)%Sensor_Type == MICROWAVE_SENSOR .OR. Surface%Water_Coverage > 0.5_fp) THEN
-      RTV%Diffuse_Surface = .FALSE.
-    ELSE
+    !   By default, surface is SPECULAR.
+    !   If IR sensor AND water coverage < 50%, surface is DIFFUSE
+    RTV%Diffuse_Surface = .FALSE.
+    IF( Sensor_Type == INFRARED_SENSOR .AND. Surface%Water_Coverage < 0.5_fp) &
       RTV%Diffuse_Surface = .TRUE.
-    END IF
 
 
     ! -------------------------------------------
