@@ -19,7 +19,7 @@
 !
 ! CREATION HISTORY:
 !       Written by:     Yong Han, JCSDA, NOAA/NESDIS 20-Jun-2008
-!
+!       Modified by:    David Groff, SAIC 5-Nov-2009
 MODULE CRTM_TauCoeff
 
   ! -----------------
@@ -44,10 +44,12 @@ MODULE CRTM_TauCoeff
                                   ODSSU_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODSSU_TC => TC
   USE ODSSU_Define        , ONLY: ODSSU_type
+  USE TauCoeff_Define     , ONLY: TauCoeff_type, &
+                                  TauCoeff_Destroy, &
+                                  TauCoeff_Create
 
  ! Disable all implicit typing
   IMPLICIT NONE
-
 
   ! ------------
   ! Visibilities
@@ -56,8 +58,7 @@ MODULE CRTM_TauCoeff
   PRIVATE
   ! The shared data
   PUBLIC :: TC
-  ! Derived types
-  PUBLIC :: CRTM_TauCoeff_type
+
   ! Public routines in this module
   PUBLIC :: CRTM_Load_TauCoeff
   PUBLIC :: CRTM_Destroy_TauCoeff
@@ -71,44 +72,13 @@ MODULE CRTM_TauCoeff
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
 
-  ! -----------------------
-  ! Derived type definition
-  ! -----------------------
-
-  TYPE :: CRTM_TauCoeff_type
-
-    ! -- Array dimensions
-    INTEGER( Long ) :: n_Sensors = 0       ! n
-    INTEGER( Long ) :: n_ODAS    = 0       ! I1
-    INTEGER( Long ) :: n_ODPS    = 0       ! I2
-    INTEGER( Long ) :: n_ODSSU   = 0       ! I3
-!    ### More dimension variables for additional algorithms ###
-
-    ! Algorithm_ID:   Algorithm ID
-    ! Sensor_Index:   Global sensor index
-    ! Sensor_LoIndex: Local sensor index for a collection of sensor using 
-    !                 the same algorithm
-    INTEGER, DIMENSION(:), POINTER       :: Algorithm_ID   =>NULL()  ! n
-    INTEGER, DIMENSION(:), POINTER       :: Sensor_Index   =>NULL()  ! n
-    INTEGER, DIMENSION(:), POINTER       :: Sensor_LoIndex =>NULL()  ! n
-
-    TYPE( ODAS_type ),   DIMENSION(:), POINTER  :: ODAS  =>NULL()  ! I1
-    TYPE( ODPS_type ),   DIMENSION(:), POINTER  :: ODPS  =>NULL()  ! I2
-    TYPE( ODSSU_type ),  DIMENSION(:), POINTER  :: ODSSU =>NULL()  ! I3
-!    ### More dstructure variables for additional algorithms ###
-
-  END TYPE CRTM_TauCoeff_type
-
-
   ! --------------------------------------
   ! The shared data for the gas absorption
   ! (AtmAbsorption) model
   ! --------------------------------------
-  TYPE(CRTM_TauCoeff_type), SAVE :: TC
-
+  TYPE(TauCoeff_type), SAVE :: TC
 
 CONTAINS
-
 !------------------------------------------------------------------------------
 !
 ! NAME:
@@ -315,30 +285,17 @@ CONTAINS
 
     END IF
 
-      
-    !---------------------------------------------------------------
-    ! Allocate TC data arrays with n_Sensors dimension 
-    !---------------------------------------------------------------
-    ALLOCATE( TC%Algorithm_ID( n_Sensors ),   & 
-              TC%Sensor_Index( n_Sensors ),   &
-              TC%Sensor_LoIndex( n_Sensors ), &
-              STAT = Allocate_Status )
-
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating TauCoeff data arrays with the n_Sensors dimension. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+    CALL TauCoeff_Create(TC, n_Sensors, Error_Status)
+    IF ( Error_Status /= SUCCESS ) THEN 
+      message = 'Error creating TC'
+      CALL Display_Message( ROUTINE_NAME, TRIM(message), Error_Status)
       RETURN
     END IF
 
     !----------------------------------------------------  
     ! Determine algorithm IDs from the TauCoeff files    
     !----------------------------------------------------  
-Sensor_Loop: DO n = 1, n_Sensors
+    Sensor_Loop: DO n = 1, n_Sensors
 
       ! set global sensor index
       TC%Sensor_Index(n) = n
@@ -671,24 +628,13 @@ Sensor_Loop: DO n = 1, n_Sensors
 
     END IF
 
-    ! ----------------------------------------------
-    ! Deallocate TauCoeff data arrays
-    ! ----------------------------------------------   
-
-    DEALLOCATE( TC%Algorithm_ID,   &        
-                TC%Sensor_Index,   &        
-                TC%Sensor_LoIndex, & 
-                STAT = Allocate_Status )  
-
-    IF ( Allocate_Status /= 0 ) THEN                                          
-      Error_Status = FAILURE                                                  
-      WRITE( Message, '( "Error deallocating TC data arrays with an n_Sensors dimension"// &        
-                        &"STAT = ", i5 )' ) Allocate_Status                                                               
-      CALL Display_Message( ROUTINE_NAME,    &                                
-                            TRIM( Message ), &                                
-                            Error_Status,    &                                
-                            Message_Log = Message_Log )                       
-    END IF                                                                    
+    ! Destroy TC
+    CALL TauCoeff_Destroy(TC, Error_Status)                                                                   
+    IF ( Error_Status /= SUCCESS ) THEN 
+      message = 'Error destroying TC'
+      CALL Display_Message( ROUTINE_NAME, TRIM(message), Error_Status)
+      RETURN
+    END IF                          
 
     TC%n_Sensors    = 0       
 
