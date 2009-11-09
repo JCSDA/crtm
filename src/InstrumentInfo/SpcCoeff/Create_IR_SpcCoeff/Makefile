@@ -28,6 +28,7 @@ SRC_FILES = Type_Kinds.f90 \
             Integrate_Utility.f90 \
             Planck_Functions.f90 \
             Spectral_Units_Conversion.f90 \
+            SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
