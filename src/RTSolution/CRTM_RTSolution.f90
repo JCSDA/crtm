@@ -25,7 +25,7 @@ MODULE CRTM_RTSolution
                                        SCATTERING_ALBEDO_THRESHOLD, &
                                        OPTICAL_DEPTH_THRESHOLD
   USE CRTM_SpcCoeff,             ONLY: SC, &
-                                       MICROWAVE_SENSOR, &
+                                       INFRARED_SENSOR, &
                                        SOLAR_FLAG, IsFlagSet_SpcCoeff
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type
