@@ -1,133 +1,62 @@
 #==============================================================================
 #
-# Makefile 
+# Makefile for ODPS_NC2BIN program
 #
 #==============================================================================
 
-# Macro definitions
-# -----------------
-# The location of the CRTM library
-# *** CHANGE THIS TO THE LOCATION ON YOUR SYSTEM ***
-CRTM_DIR = /u/wx23yh/CRTM/EXP-SSU/src/Build
+# Define macros
+include $(CRTM_SOURCE_ROOT)/make.macros
 
-# The Fortran95 compiler+flags, and linker+flags
-# *** CHANGE THESE FOR THE COMPILER YOU USE ON YOUR SYSTEM ***
-# *** SEE THE END OF FILE FOR THE ADDITIONAL DEFINITIONS        ***
-FC = $(FC_XLF)
-FC_FLAGS = $(FC_XLF_FLAGS) -I$(CRTM_DIR)/include
-FL = $(FC)
-FL_FLAGS = -L$(CRTM_DIR)/lib -lCRTM -o
+# This makefile
+MAKE_FILE = Makefile
 
-# The executable and object files
+# Executable files
 EXE_FILE = TauCoeff2ODSSU
 
-SRC_FILES = TauCoeff_Binary_IO_ssu.f90 \
-            TauCoeff_Define_ssu.f90
-            
+# Source files to link
+SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Message_Handler.f90 \
+            Compare_Float_Numbers.f90 \
+            Binary_File_Utility.f90 \
+            Endian_Utility.f90 \
+            Sort_Utility.f90 \
+            netCDF_Utility.f90 \
+            netCDF_Dimension_Utility.f90 \
+            netCDF_Variable_Utility.f90 \
+            netCDF_Attribute_Utility.f90 \
+            ODAS_Define.f90 \
+            ODAS_Binary_IO.f90 \
+            ODPS_Define.f90 \
+            ODPS_Binary_IO.f90 \
+            TauCoeff_Define_ssu.f90 \
+            TauCoeff_Binary_IO_ssu.f90 \
+            ODSSU_Define.f90 \
+            ODSSU_Binary_IO.f90
+
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
-# Target definitions
-# ------------------
-# The main target
-all: $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
+# Include and library definitions
+INCLUDES = -I$(HOME)/local/netcdf/include
+LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 
-# A clean target
-clean:
-	rm -f $(OBJ_FILE) $(EXE_FILE) *.output *.output.diff
+# Define common make targets (all, build, clean, install)
+include $(CRTM_SOURCE_ROOT)/make.common_targets
 
-# Local dependencies
-TauCoeff_Binary_IO_ssu.o: TauCoeff_Binary_IO_ssu.f90 TauCoeff_Define_ssu.o
-TauCoeff_Define_ssu.o: TauCoeff_Define_ssu.f90
-$(EXE_FILE).o: $(EXE_FILE).f90
+# Source file link creation and removal
+create_links:
+	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
+remove_links:
+	@unlinkfiles $(SRC_FILES)
 
-# Suffix rule definitions
-# -----------------------
-.SUFFIXES:
-.SUFFIXES: .f90 .o
-.f90.o:
-	$(FC) $(FC_FLAGS) $<
+# Squeaky clean target
+realclean: clean remove_links
 
+# Source dependency lists
+include make.dependencies
 
-# Some extra compilers to play with
-# ---------------------------------
-# gfortran
-FC_GFORTRAN = gfortran
-FC_GFORTRAN_FLAGS = -c \
-                    -fbounds-check \
-                    -fconvert=big-endian \
-                    -ffpe-trap=overflow,zero \
-                    -ffree-form \
-	            -fno-second-underscore \
-                    -frecord-marker=4 \
-	            -static \
-                    -Wall
-           
-# g95
-FC_G95 = g95
-FC_G95_FLAGS = -c \
-               -fbounds-check \
-               -fendian=big \
-               -ffree-form \
-               -fno-second-underscore \
-               -ftrace=frame \
-               -malign-double \
-               -Wall
- 
-# Intel
-FC_INTEL = ifort
-FC_INTEL_FLAGS = -c \
-                 -g \
-                 -check bounds \
-                 -convert big_endian \
-                 -e95 \
-                 -traceback \
-                 -warn errors \
-                 -free \
-                 -assume byterecl \
-                 -fpstkchk \
-                 -mp
-
-# PGI
-FC_PGI = pgf95
-FC_PGI_FLAGS = -c \
-               -g \
-               -byteswapio \
-               -Ktrap=ovf,divz \
-               -Mbounds \
-               -Mchkstk \
-               -Mdclchk \
-               -Minform,inform \
-               -Mnosave \
-               -Mstandard \
-               -Mref_externals
-
-# Lahey f95
-FC_LAHEY = lf95
-FC_LAHEY_FLAGS = -c \
-                 -g \
-                 --chk aesu \
-                 --f95 \
-                 --trace \
-                 --trap \
-                 --ninfo --warn
-
-# AIX XLF
-FC_XLF = xlf95
-FC_XLF_FLAGS = -c \
-               -qcheck \
-               -qdbg \
-               -qextchk \
-               -qfloat=nomaf:rndsngl:nans \
-               -qflttrap=ov:zero:inv:en \
-               -qinitauto \
-               -qfree=f90 \
-               -qhalt=W \
-               -qlanglvl=95pure \
-               -qmaxmem=-1 \
-               -qsuffix=f=f90:cpp=F90
-
-
+# Define default rules
+include $(CRTM_SOURCE_ROOT)/make.rules

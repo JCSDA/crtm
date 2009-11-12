@@ -21,10 +21,10 @@ PROGRAM TauCoeff2ODSSU
   USE TauCoeff_Define_ssu, ONLY: TauCoeff_ssu_type, Destroy_TauCoeff_ssu
   USE TauCoeff_Binary_IO_ssu, ONLY: Read_TauCoeff_Binary_ssu
   ! the new ssu tau coeff. data type and reader
-  USE ODSSU_Define      , ONLY: ODSSU_type, Allocate_ODSSU, Destroy_ODSSU
+  USE ODSSU_Define      , ONLY: ODSSU_type, Allocate_ODSSU, Destroy_ODSSU 
   USE ODSSU_Binary_IO   , ONLY: Write_ODSSU_Binary
   ! the ODAS tau coeff. data structure
-  USE ODAS_Define       , ONLY: ODAS_type, Allocate_ODAS, Assign_ODAS
+  USE ODAS_Define       , ONLY: ODAS_type, Allocate_ODAS, Assign_ODAS, Destroy_ODAS, ODAS_ALGORITHM
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -68,6 +68,9 @@ PROGRAM TauCoeff2ODSSU
   ! Construct the filenames
   ! -----------------------
   TauCoeff_Filename = TRIM(Sensor_Id)//'.TauCoeff.bin'  
+
+  IF ( TRIM(Sensor_Id) == 'ssu_n05' ) Sensor_Id = 'ssu_tirosn'
+
   ODSSU_Filename    = TRIM(Sensor_Id)//'.ODSSU.TauCoeff.bin'
     
   ! Read the TauCoeff data
@@ -82,7 +85,9 @@ PROGRAM TauCoeff2ODSSU
                           Error_Status )
     STOP
   END IF
-
+  
+  ODSSU%subAlgorithm = ODAS_ALGORITHM
+  
   Error_Status = Allocate_ODSSU(TauCoeff%n_Absorbers        , &    
                                 TauCoeff%n_Channels         , &    
                                 TauCoeff%n_TC_CellPressures , &    
@@ -186,7 +191,7 @@ PROGRAM TauCoeff2ODSSU
     ODAS%Absorber_ID      = TauCoeff%Absorber_ID                      
 
     Error_Status = Assign_ODAS( ODAS, &                               
-                                ODSSU%TC(k))                        
+                                ODSSU%ODAS(k))                        
                                                                       
     IF ( Error_Status /= SUCCESS ) THEN                               
       CALL Display_Message( PROGRAM_NAME, &                           
@@ -216,6 +221,14 @@ PROGRAM TauCoeff2ODSSU
                           'Error destroying TauCoeff_ssu structure', &
                           WARNING )
   END IF
+  
+  Error_Status = Destroy_ODAS( ODAS )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error destroying ODAS structure.', &
+                          WARNING )
+  END IF
+
   Error_Status = Destroy_ODSSU( ODSSU )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &

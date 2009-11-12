@@ -30,20 +30,19 @@ MODULE CRTM_TauCoeff
   USE File_Utility        , ONLY: File_Exists
   USE Binary_File_Utility , ONLY: Open_Binary_File
   USE Message_Handler     , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE CRTM_Parameters     , ONLY: MAX_N_SENSORS, &
-                                  TAU_ODAS, TAU_ODPS, TAU_ODSSU
+  USE CRTM_Parameters     , ONLY: MAX_N_SENSORS
   USE ODAS_TauCoeff       , ONLY: ODAS_Load_TauCoeff    => Load_TauCoeff   , &
                                   ODAS_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODAS_TC => TC
-  USE ODAS_Define         , ONLY: ODAS_type
+  USE ODAS_Define         , ONLY: ODAS_type, ODAS_ALGORITHM
   USE ODPS_TauCoeff       , ONLY: ODPS_Load_TauCoeff    => Load_TauCoeff   , &
                                   ODPS_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODPS_TC => TC
-  USE ODPS_Define         , ONLY: ODPS_type
+  USE ODPS_Define         , ONLY: ODPS_type, ODPS_ALGORITHM
   USE ODSSU_TauCoeff      , ONLY: ODSSU_Load_TauCoeff    => Load_TauCoeff   , &
                                   ODSSU_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODSSU_TC => TC
-  USE ODSSU_Define        , ONLY: ODSSU_type
+  USE ODSSU_Define        , ONLY: ODSSU_type, ODSSU_ALGORITHM
   USE TauCoeff_Define     , ONLY: TauCoeff_type, &
                                   TauCoeff_Destroy, &
                                   TauCoeff_Create
@@ -317,19 +316,19 @@ CONTAINS
 
       ! update the sensor counter and sensor (local) index for a specific algorithm
       SELECT CASE( Algorithm_ID )
-        CASE ( TAU_ODAS )
+        CASE ( ODAS_ALGORITHM )
 
           TC%n_ODAS = TC%n_ODAS + 1
           ! local sensor index, which is used within the algorithm
           TC%Sensor_LoIndex(n) = TC%n_ODAS
 
-        CASE ( TAU_ODPS )
+        CASE ( ODPS_ALGORITHM )
 
           TC%n_ODPS = TC%n_ODPS + 1
           ! local sensor index, which is used within the algorithm
           TC%Sensor_LoIndex(n) = TC%n_ODPS
 
-        CASE ( TAU_ODSSU )
+        CASE ( ODSSU_ALGORITHM )
 
           TC%n_ODSSU = TC%n_ODSSU + 1
           ! local sensor index, which is used within the algorithm
@@ -366,7 +365,7 @@ CONTAINS
     n = TC%n_ODAS
     IF( n > 0 )THEN
       IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODAS)
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == ODAS_ALGORITHM)
         Error_Status = ODAS_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
@@ -402,7 +401,7 @@ CONTAINS
     n = TC%n_ODPS
     IF( n > 0 )THEN
       IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODPS)
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == ODPS_ALGORITHM)
         Error_Status = ODPS_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
@@ -438,7 +437,7 @@ CONTAINS
     n = TC%n_ODSSU
     IF( n > 0 )THEN
       IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == TAU_ODSSU)
+        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == ODSSU_ALGORITHM)
         Error_Status = ODSSU_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 

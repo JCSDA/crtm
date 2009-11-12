@@ -8,6 +8,9 @@
 ! CREATION HISTORY:
 !       Written by:     Yong Han, NOAA/NESDIS, Oct. 6, 2009
 !
+!                       Yong Chen, NOAA/NESDIS, 06-Nov-2009
+!                       yong.chen@noaa.gov
+!                       
 
 MODULE ODSSU_Binary_IO
 
@@ -24,10 +27,13 @@ MODULE ODSSU_Binary_IO
                                  Destroy_ODSSU       , &
                                  CheckRelease_ODSSU  , &
                                  CheckAlgorithm_ODSSU, &
-                                 Info_ODSSU 
+                                 Info_ODSSU, ODAS_ALGORITHM, ODPS_ALGORITHM
                                  
-  USE ODAS_Binary_IO     , ONLY: Read_ODx_Data  => Read_ODAS_Data, &
-                                 Write_ODx_Data => Write_ODAS_Data
+  USE ODAS_Binary_IO     , ONLY: Read_ODAS_Data, &
+                                 Write_ODAS_Data
+
+  USE ODPS_Binary_IO     , ONLY: Read_ODPS_Data, &
+                                 Write_ODPS_Data
   
   ! Disable implicit typing
   IMPLICIT NONE
@@ -271,6 +277,16 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
+    ! Read the subAlorithm ID
+    ! --------------------
+    READ( FileID, IOSTAT=IO_Status ) ODSSU%subAlgorithm
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error reading subAlgorithm ID from ",a,&
+                      &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Read_Cleanup(); RETURN
+    END IF
+    
     !--------------------------------------------
     ! Allocate memory and read data
     !--------------------------------------------
@@ -317,28 +333,59 @@ CONTAINS
     END IF
 
     ! Read coefficient data and put them into the ODx structure 
-    DO i = 1, n_TC_CellPressures
+    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN   
+                                      
+     DO i = 1, n_TC_CellPressures
     
-      Error_Status = Read_ODx_Data( Filename          , &
-                                     FileID           , &
-                                     ODSSU%TC(i)      , &
-                                     Process_ID_Tag   , &
-                                     Message_Log = Message_Log) 
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading data from '//TRIM(Filename)
-        CALL Read_Cleanup(); RETURN
-        RETURN
-      END IF
+       Error_Status = Read_ODAS_Data( Filename         , &
+                                      FileID           , &
+                                      ODSSU%ODAS(i)    , &
+                                      Process_ID_Tag   , &
+                                      Message_Log = Message_Log) 
+       IF ( Error_Status /= SUCCESS ) THEN
+         Message = 'Error reading data from '//TRIM(Filename)
+         CALL Read_Cleanup(); RETURN
+         RETURN
+       END IF
 
-    END DO
+     END DO
+     
+     ! assign values taken from an ODx to ODSSU 
+     ODSSU%Sensor_Channel   = ODSSU%ODAS(1)%Sensor_Channel
+     ODSSU%Absorber_ID      = ODSSU%ODAS(1)%Absorber_ID
+     ODSSU%Sensor_Id        = ODSSU%ODAS(1)%Sensor_Id
+     ODSSU%WMO_Satellite_ID = ODSSU%ODAS(1)%WMO_Satellite_ID
+     ODSSU%WMO_Sensor_ID    = ODSSU%ODAS(1)%WMO_Sensor_ID
+     ODSSU%Sensor_Type      = ODSSU%ODAS(1)%Sensor_Type
+    
+    ENDIF
 
-    ! assign values taken from an ODx to ODSSU 
-    ODSSU%Sensor_Channel   = ODSSU%TC(1)%Sensor_Channel
-    ODSSU%Absorber_ID      = ODSSU%TC(1)%Absorber_ID
-    ODSSU%Sensor_Id        = ODSSU%TC(1)%Sensor_Id
-    ODSSU%WMO_Satellite_ID = ODSSU%TC(1)%WMO_Satellite_ID
-    ODSSU%WMO_Sensor_ID    = ODSSU%TC(1)%WMO_Sensor_ID
-    ODSSU%Sensor_Type      = ODSSU%TC(1)%Sensor_Type
+    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
+                                       
+     DO i = 1, n_TC_CellPressures
+    
+       Error_Status = Read_ODPS_Data( Filename         , &
+                                      FileID           , &
+                                      ODSSU%ODPS(i)    , &
+                                      Process_ID_Tag   , &
+                                      Message_Log = Message_Log) 
+       IF ( Error_Status /= SUCCESS ) THEN
+         Message = 'Error reading data from '//TRIM(Filename)
+         CALL Read_Cleanup(); RETURN
+         RETURN
+       END IF
+
+     END DO
+     ! assign values taken from an ODx to ODSSU 
+     ODSSU%Sensor_Channel   = ODSSU%ODPS(1)%Sensor_Channel   
+     ODSSU%Absorber_ID      = ODSSU%ODPS(1)%Absorber_ID      
+     ODSSU%Sensor_Id        = ODSSU%ODPS(1)%Sensor_Id        
+     ODSSU%WMO_Satellite_ID = ODSSU%ODPS(1)%WMO_Satellite_ID 
+     ODSSU%WMO_Sensor_ID    = ODSSU%ODPS(1)%WMO_Sensor_ID    
+     ODSSU%Sensor_Type      = ODSSU%ODPS(1)%Sensor_Type      
+                                                                
+    ENDIF
+
                                        
     ! Close the file
     ! --------------
@@ -546,6 +593,16 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
+    ! Write the subAlorithm ID
+    ! ---------------------
+    WRITE( FileID, IOSTAT=IO_Status ) ODSSU%subAlgorithm
+    IF ( IO_Status /= 0 ) THEN
+      WRITE( Message,'("Error writing Algorithm ID to ",a,&
+                      &". IOSTAT = ",i0)' ) &
+                      TRIM(Filename), IO_Status
+      CALL Write_Cleanup(); RETURN
+    END IF
+
     ! Write the array dimensions
     WRITE( FileID, IOSTAT=IO_Status ) ODSSU%n_Channels         , &
                                       ODSSU%n_Absorbers        , &
@@ -571,18 +628,39 @@ CONTAINS
     END IF
       
     ! Write coefficient data    
-    DO i = 1, ODSSU%n_TC_CellPressures
-      Error_Status = Write_ODx_Data(  Filename      , &
-                                      FileID        , &  
-                                      ODSSU%TC(i)   , &            
-                                      Message_Log = Message_Log) 
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error writing data to '//TRIM(Filename)
-        Error_Status = FAILURE
-        RETURN
-      END IF
-      
-    END DO
+    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
+                                       
+     DO i = 1, ODSSU%n_TC_CellPressures
+       Error_Status = Write_ODAS_Data( Filename      , &
+                                       FileID        , &  
+                                       ODSSU%ODAS(i) , &           
+                                       Message_Log = Message_Log)
+       IF ( Error_Status /= SUCCESS ) THEN
+         Message = 'Error writing data to '//TRIM(Filename)
+         Error_Status = FAILURE
+         RETURN
+       END IF
+       
+     END DO
+     
+    ENDIF                                                                             
+
+    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
+                                       
+     DO i = 1, ODSSU%n_TC_CellPressures
+       Error_Status = Write_ODPS_Data( Filename      , &
+                                       FileID        , &  
+                                       ODSSU%ODPS(i) , &           
+                                       Message_Log = Message_Log)
+       IF ( Error_Status /= SUCCESS ) THEN
+         Message = 'Error writing data to '//TRIM(Filename)
+         Error_Status = FAILURE
+         RETURN
+       END IF
+       
+     END DO
+     
+    ENDIF                                                                             
 
     ! Close the file
     ! --------------

@@ -5,7 +5,7 @@
       Program to provide an example of CRTM Forward function 
       usage.
 
-      $Revision: 5594 $
+      $Revision: 2984 $
      **********************************************************
 
 
@@ -13,8 +13,8 @@
      Initializing the CRTM...
  Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/hirs4_n18.SpcCoeff.bin; 
  SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=19
- Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/hirs4_n18.TauCoeff.bin; 
-   ODAS RELEASE.VERSION:  6.04  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=19  N_Alphas= 3  N_Coeffs=2182
+ Read_TauCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/hirs4_n18.TauCoeff.bin; 
+ TauCoeff RELEASE.VERSION:  5.04  N_ORDERS=10  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=  19  N_SENSORS= 1
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
  CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
@@ -37,7 +37,7 @@
        hirs4_n18     11      1.633762E+01     260.900
        hirs4_n18     12      5.641231E+00     246.665
        hirs4_n18     13      1.098474E+00     270.547
-       hirs4_n18     14      6.967192E-01     262.082
+       hirs4_n18     14      6.967193E-01     262.082
        hirs4_n18     15      3.341441E-01     249.667
        hirs4_n18     16      2.465713E-01     244.618
        hirs4_n18     17      5.714161E-01     276.331

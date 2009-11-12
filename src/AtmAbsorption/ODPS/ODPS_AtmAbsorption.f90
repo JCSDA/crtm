@@ -24,7 +24,7 @@ MODULE ODPS_AtmAbsorption
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
   USE ODPS_Define,               ONLY: ODPS_type,                &
                                        SIGNIFICANCE_OPTRAN
-  USE ODPS_TauCoeff,             ONLY: TC
+  USE ODPS_TauCoeff,             ONLY: TC 
   USE ODPS_Predictor,            ONLY: Compute_Predictor,        &
                                        Compute_Predictor_TL,     &
                                        Compute_Predictor_AD,     &
@@ -146,22 +146,18 @@ CONTAINS
 !       absorption for a given sensor and channel and atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       CALL ODPS_Compute_AtmAbsorption( &
-!                                   SensorIndex  , &  ! Input
-!                                   ChannelIndex , &  ! Input                        
-!                                   Predictor    , &  ! Input                        
-!                                   AtmAbsorption, &  ! Output                       
-!                                   AAVariables    )  ! Internal variable output     
+!       CALL ODPS_Compute_AtmAbsorption( TC           , &  ! Input
+!                                        ChannelIndex , &  ! Input                    
+!                                        Predictor    , &  ! Input                    
+!                                        AtmAbsorption, &  ! Output                   
+!                                        AAVariables    )  ! Internal variable output 
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        See the ChannelIndex argument.
+!             TC:        Structure containing Tau coefficient data.
 !                        UNITS:      N/A
-!                        TYPE:       INTEGER
+!                        TYPE:       TYPE(ODPS_TauCoeff_type)
 !                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
@@ -195,12 +191,12 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_AtmAbsorption( SensorIndex  , &  ! Input
+  SUBROUTINE ODPS_Compute_AtmAbsorption( TC           , &  ! Input
                                          ChannelIndex , &  ! Input
                                          Predictor    , &  ! Input
                                          AtmAbsorption)    ! Output
     ! Arguments
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODPS_type)              , INTENT(IN)     :: TC
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
@@ -216,7 +212,6 @@ CONTAINS
 !    REAL(fp) :: Acc_Weighting_OD(Predictor%n_Layers, Predictor%n_User_Layers)
 !    INTEGER  :: ODPS2User_Idx(2, Predictor%n_User_Layers)
     INTEGER  :: ODPS2User_Idx(2, 0:Predictor%n_User_Layers)
-    TYPE(ODPS_type), POINTER :: aTC
     REAL(fp) :: OD_tmp
     LOGICAL  :: OPTRAN
     INTEGER  :: j0, js, ComID
@@ -227,14 +222,13 @@ CONTAINS
     ! Assign the indices to a short name
     n_Layers = Predictor%n_Layers
     n_User_Layers = Predictor%n_User_Layers
-    aTC => TC(SensorIndex)
-
+ 
     !--------------------------------------------------------
     ! Compute optical path profile using specified algorithm
     !--------------------------------------------------------
-    IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
+    IF(TC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
       CALL Compute_ODPath_zssmis(ChannelIndex, &
-                                 aTC,          &
+                                 TC,          &
                                  Predictor,    &
                                  OD_Path)
     ELSE  ! all other sensors
@@ -248,7 +242,7 @@ CONTAINS
         ! For example, if the upper m predictors have zero coefficients,           
         ! then, only coefficients with indexed 1 to (Predictor%n_CP(j) - m)        
         ! are stored and used used in the OD calculations.                         
-        np = aTC%n_Predictors(j, ChannelIndex)
+        np = TC%n_Predictors(j, ChannelIndex)
 
         ! Check if there is any absorption for the component&channel combination.
         IF( np <= 0 ) CYCLE Component_Loop
@@ -256,25 +250,25 @@ CONTAINS
         ! set flag for possible OPTRAN algorithm
         ! If this flag is set, this component is computed using OPTRAN algorithm.
         ! Otherwise, it is computed using ODPS algorithm.
-        IF( Predictor%OPTRAN .AND. j == aTC%OComponent_Index)THEN
-           OPTRAN = aTC%OSignificance(ChannelIndex) == SIGNIFICANCE_OPTRAN
+        IF( Predictor%OPTRAN .AND. j == TC%OComponent_Index)THEN
+           OPTRAN = TC%OSignificance(ChannelIndex) == SIGNIFICANCE_OPTRAN
         ELSE
            OPTRAN = .FALSE.
         END IF
         
         IF(OPTRAN)THEN
-          CALL Add_OPTRAN_wloOD(aTC,          &   
+          CALL Add_OPTRAN_wloOD(TC,          &   
                                ChannelIndex,  &            
                                Predictor,     &            
                                OD ) 
         ELSE
 
           ! ODPS algorithm                                                                     
-          j0 = aTC%Pos_Index(j, ChannelIndex)
+          j0 = TC%Pos_Index(j, ChannelIndex)
           DO i = 1, np
             js = j0+(i-1)*n_Layers-1
             DO k = 1, n_Layers          
-              OD(k) = OD(k) + aTC%C(js+k)*Predictor%X(k, i, j)
+              OD(k) = OD(k) + TC%C(js+k)*Predictor%X(k, i, j)
             END DO
           END DO
         
@@ -348,8 +342,7 @@ CONTAINS
                                    User_OD_Path(0:n_User_Layers-1)) / &
                                    Predictor%Secant_Zenith_Surface
 
-    NULLIFY(aTC)
-
+ 
   END SUBROUTINE ODPS_Compute_AtmAbsorption
 
 !------------------------------------------------------------------------------
@@ -362,23 +355,19 @@ CONTAINS
 !       absorption for a given sensor and channel and atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       CALL ODPS_Compute_AtmAbsorption_TL( &
-!                                   SensorIndex  ,   &  ! Input
-!                                   ChannelIndex ,   &  ! Input                        
-!                                   Predictor    ,   &  ! Input                        
-!                                   Predictor_TL,    &  ! Input                        
-!                                   AtmAbsorption_TL,&  ! Output
-!                                   AAVariables)        ! Internal variable output
+!       CALL ODPS_Compute_AtmAbsorption_TL( TC           ,   &  ! Input
+!                                           ChannelIndex ,   &  ! Input                    
+!                                           Predictor    ,   &  ! Input                    
+!                                           Predictor_TL,    &  ! Input                    
+!                                           AtmAbsorption_TL,&  ! Output
+!                                           AAVariables)        ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        See the ChannelIndex argument.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!             TC:        Structure containing Tau coefficient data.   
+!                        UNITS:      N/A                              
+!                        TYPE:       TYPE(ODPS_TauCoeff_type)         
+!                        DIMENSION:  Scalar                           
+!                        ATTRIBUTES: INTENT(IN OUT)                   
 !
 !       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
@@ -412,13 +401,13 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_AtmAbsorption_TL(SensorIndex  ,  &  ! Input
-                                         ChannelIndex ,    &  ! Input
-                                         Predictor    ,    &  ! Input
-                                         Predictor_TL,     &  ! Input                    
-                                         AtmAbsorption_TL)    ! Output
+  SUBROUTINE ODPS_Compute_AtmAbsorption_TL( TC           ,  &  ! Input
+                                            ChannelIndex ,    &  ! Input
+                                            Predictor    ,    &  ! Input
+                                            Predictor_TL,     &  ! Input                 
+                                            AtmAbsorption_TL)    ! Output
     ! Arguments
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODPS_type)              , INTENT(IN)     :: TC
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(Predictor_type)         , INTENT(INOUT)  :: Predictor_TL
@@ -432,7 +421,6 @@ CONTAINS
     REAL(fp) :: OD_TL(Predictor%n_Layers)  
     REAL(fp) :: OD_Path_TL(0:Predictor%n_Layers)
     REAL(fp) :: User_OD_Path_TL(0:Predictor%n_User_Layers)
-    TYPE(ODPS_type), POINTER :: aTC
     LOGICAL  :: OPTRAN
     INTEGER  :: j0, js
 
@@ -442,15 +430,14 @@ CONTAINS
     ! Assign the indices to a short name
     n_Layers = Predictor%n_Layers
     n_User_Layers = Predictor%n_User_Layers
-    aTC => TC(SensorIndex)
-
+ 
     !--------------------------------------------------------
     ! Compute optical path profile using specified algorithm
     !--------------------------------------------------------
-    IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
+    IF(TC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
 
       CALL Compute_ODPath_zssmis_TL(ChannelIndex,    &
-                                    aTC,             &
+                                    TC,             &
                                     Predictor,       &
                                     Predictor_TL,    & 
                                     OD_Path_TL )
@@ -465,7 +452,7 @@ CONTAINS
         ! For example, if the upper m predictors have zero coefficients,           
         ! then, only coefficients with indexed 1 to (Predictor%n_CP(j) - m)        
         ! are stored and used used in the OD calculations.                         
-        np = aTC%n_Predictors(j, ChannelIndex)
+        np = TC%n_Predictors(j, ChannelIndex)
 
         ! Check if there is any absorption for the component&channel combination.
         IF( np <= 0 ) CYCLE Component_Loop
@@ -473,14 +460,14 @@ CONTAINS
         ! set flag for possible OPTRAN algorithm
         ! If this flag is set, this component is computed using OPTRAN algorithm.
         ! Otherwise, it is computed using ODPS algorithm.
-        IF( Predictor%OPTRAN .AND. j == aTC%OComponent_Index)THEN
-           OPTRAN = aTC%OSignificance(ChannelIndex) == SIGNIFICANCE_OPTRAN
+        IF( Predictor%OPTRAN .AND. j == TC%OComponent_Index)THEN
+           OPTRAN = TC%OSignificance(ChannelIndex) == SIGNIFICANCE_OPTRAN
         ELSE
            OPTRAN = .FALSE.
         END IF
         
         IF(OPTRAN)THEN
-          CALL Add_OPTRAN_wloOD_TL(aTC,       &        
+          CALL Add_OPTRAN_wloOD_TL(TC,       &        
                                ChannelIndex,  &               
                                Predictor,     &               
                                Predictor_TL,  &        
@@ -488,11 +475,11 @@ CONTAINS
         ELSE
 
           ! ODPS algorithm                                                                     
-          j0 = aTC%Pos_Index(j, ChannelIndex)
+          j0 = TC%Pos_Index(j, ChannelIndex)
           DO i = 1, np
             js = j0+(i-1)*n_Layers-1
             DO k = 1, n_Layers          
-              OD_TL(k) = OD_TL(k) + aTC%C(js+k)*Predictor_TL%X(k, i, j)
+              OD_TL(k) = OD_TL(k) + TC%C(js+k)*Predictor_TL%X(k, i, j)
             END DO
           END DO
         
@@ -534,8 +521,7 @@ CONTAINS
                                    User_OD_Path_TL(0:n_User_Layers-1)) / &
                                    Predictor%Secant_Zenith_Surface
 
-    NULLIFY(aTC)
-
+ 
   END SUBROUTINE ODPS_Compute_AtmAbsorption_TL
 
 !------------------------------------------------------------------------------
@@ -548,23 +534,19 @@ CONTAINS
 !       absorption for a given sensor and channel and atmospheric profile.
 !
 ! CALLING SEQUENCE:
-!       CALL ODPS_Compute_AtmAbsorption_AD( &
-!                                   SensorIndex  ,    &  ! Input
-!                                   ChannelIndex ,    &  ! Input                        
-!                                   Predictor    ,    &  ! Input
-!                                   AtmAbsorption_AD, &  ! Input
-!                                   Predictor_AD    , &  ! Output
-!                                   AAVariables )        ! Internal variable output    
+!       CALL ODPS_Compute_AtmAbsorption_AD( TC           ,    &  ! Input
+!                                           ChannelIndex ,    &  ! Input                   
+!                                           Predictor    ,    &  ! Input
+!                                           AtmAbsorption_AD, &  ! Input
+!                                           Predictor_AD    , &  ! Output
+!                                           AAVariables )        ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        See the ChannelIndex argument.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!             TC:        Structure containing Tau coefficient data.   
+!                        UNITS:      N/A                              
+!                        TYPE:       TYPE(ODPS_TauCoeff_type)         
+!                        DIMENSION:  Scalar                           
+!                        ATTRIBUTES: INTENT(IN OUT)                   
 !
 !       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
@@ -598,13 +580,13 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  SUBROUTINE ODPS_Compute_AtmAbsorption_AD( SensorIndex  ,    &  ! Input
+  SUBROUTINE ODPS_Compute_AtmAbsorption_AD( TC           ,    &  ! Input
                                             ChannelIndex ,    &  ! Input
                                             Predictor    ,    &  ! Input
                                             AtmAbsorption_AD, &  ! Input
                                             Predictor_AD)        ! Output
     ! Arguments
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODPS_type)              , INTENT(IN)     :: TC
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_AD
@@ -618,7 +600,6 @@ CONTAINS
     REAL(fp) :: OD_AD(Predictor%n_Layers)                 
     REAL(fp) :: OD_Path_AD(0:Predictor%n_Layers) 
     REAL(fp) :: User_OD_Path_AD(0:Predictor%n_User_Layers)
-    TYPE(ODPS_type), POINTER :: aTC
     LOGICAL  :: OPTRAN
     INTEGER  :: j0, js
 
@@ -628,8 +609,7 @@ CONTAINS
     ! Assign the indices to a short name
     n_Layers = Predictor%n_Layers
     n_User_Layers = Predictor%n_User_Layers
-    aTC => TC(SensorIndex)
- 
+  
     !------- Adjoint part ---------
     
     ! Interpolate the path profile back on the user pressure grids,
@@ -657,9 +637,9 @@ CONTAINS
     !--------------------------------------------------------
     ! Compute optical path profile using specified algorithm
     !--------------------------------------------------------
-    IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
+    IF(TC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
       CALL Compute_ODPath_zssmis_AD(ChannelIndex, &
-                                    aTC,          &
+                                    TC,          &
                                     Predictor,    &
                                     OD_Path_AD,   &
                                     Predictor_AD )
@@ -692,20 +672,20 @@ CONTAINS
         ! For example, if the upper m predictors have zero coefficients,           
         ! then, only coefficients with indexed 1 to (Predictor%n_CP(j) - m)        
         ! are stored and used used in the OD calculations.                         
-        np = aTC%n_Predictors(j, ChannelIndex)
+        np = TC%n_Predictors(j, ChannelIndex)
 
         ! Check if there is any absorption for the component&channel combination.
         IF( np <= 0 ) CYCLE Component_Loop_AD
 
-        IF( Predictor%OPTRAN .AND. j == aTC%OComponent_Index)THEN
-           OPTRAN = aTC%OSignificance(ChannelIndex) == SIGNIFICANCE_OPTRAN
+        IF( Predictor%OPTRAN .AND. j == TC%OComponent_Index)THEN
+           OPTRAN = TC%OSignificance(ChannelIndex) == SIGNIFICANCE_OPTRAN
         ELSE
            OPTRAN = .FALSE.
         END IF
 
        IF(OPTRAN)THEN                                
                                                   
-         CALL Add_OPTRAN_wloOD_AD(aTC,          &    
+         CALL Add_OPTRAN_wloOD_AD(TC,          &    
                                   ChannelIndex, &             
                                   Predictor,    &             
                                   OD_AD,        &    
@@ -713,11 +693,11 @@ CONTAINS
        ELSE
 
          ! ODPS algorithm                                                                      
-         j0 = aTC%Pos_Index(j, ChannelIndex)
+         j0 = TC%Pos_Index(j, ChannelIndex)
          DO i = 1, np
            js = j0+(i-1)*n_Layers-1
            DO k = n_Layers, 1, -1          
-             Predictor_AD%X(k, i, j) = Predictor_AD%X(k, i, j) + aTC%C(js+k)*OD_AD(k)
+             Predictor_AD%X(k, i, j) = Predictor_AD%X(k, i, j) + TC%C(js+k)*OD_AD(k)
            END DO
          END DO
              
@@ -727,8 +707,7 @@ CONTAINS
       
     END IF
 
-    NULLIFY(aTC)
-
+ 
   END SUBROUTINE ODPS_Compute_AtmAbsorption_AD
 
 !------------------------------------------------------------------------------
@@ -1099,6 +1078,7 @@ CONTAINS
 
    END SUBROUTINE Add_OPTRAN_wloOD_AD
 
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:
@@ -1111,20 +1091,18 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL ODPS_Compute_Predictors ( SensorIndex,  &  ! Input
+!       CALL ODPS_Compute_Predictors ( TC,           &  ! Input 
 !                                      Atm,          &  ! Input
 !                                      GeoInfo,      &  ! Input                        
 !                                      Predictor,    &  ! Output                  
 !                                      APV           )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!       TC        :     Structure containing Tau coefficient data.    
+!                       UNITS:      N/A                               
+!                       TYPE:       TYPE(ODPS_TauCoeff_type)          
+!                       DIMENSION:  Scalar                            
+!                       ATTRIBUTES: INTENT(IN)                    
 !
 !       Atm       :     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
@@ -1151,20 +1129,20 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE ODPS_Compute_Predictors(SensorInput,  &
-                                     SensorIndex,  &
+                                     TC,  &
                                      Atm,          &    
                                      GeoInfo,      &  
                                      Predictor)
     ! Arguments
     TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODPS_type)              , INTENT(IN)     :: TC
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
     TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
 
     ! Local variables
     INTEGER  :: idx(1)
-    REAL(fp) :: Absorber(Predictor%n_Layers, TC(SensorIndex)%n_Absorbers)
+    REAL(fp) :: Absorber(Predictor%n_Layers, TC%n_Absorbers)
     REAL(fp) :: Temperature(Predictor%n_Layers)
     REAL(fp) :: Ref_LnPressure(Predictor%n_Layers)
     REAL(fp) :: User_LnPressure(Atm%n_layers)
@@ -1173,21 +1151,19 @@ CONTAINS
     REAL(fp) :: Z(0:Predictor%n_Layers)  ! Heights of pressure levels
     REAL(fp) :: Acc_Weighting(Predictor%n_User_Layers, Predictor%n_Layers)
     INTEGER  :: interp_index(2, Predictor%n_Layers)
-    TYPE(ODPS_type), POINTER :: aTC
     ! absorber index mapping from ODPS to user 
-    INTEGER  :: Idx_map(TC(SensorIndex)%n_Absorbers), H2O_idx
+    INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers, n_User_Layers, ODPS_sfc_idx
     ! SSMIS SensorInput data
     REAL(fp) :: Be, CosBK, Doppler_Shift
     
     
-    aTC => TC(SensorIndex)
     n_ODPS_Layers = Predictor%n_Layers
     n_User_Layers = Atm%n_layers
     ! Set pressure profiles for interpolations
-    Ref_LnPressure = LOG(aTC%Ref_Pressure)
+    Ref_LnPressure = LOG(TC%Ref_Pressure)
     User_LnPressure = LOG(Atm%Pressure(1:n_User_Layers))
-    Predictor%Ref_Level_LnPressure = LOG(aTC%Ref_Level_Pressure)
+    Predictor%Ref_Level_LnPressure = LOG(TC%Ref_Level_Pressure)
     IF(Atm%Level_Pressure(0) <= ZERO)THEN
       ! In this bad case, the top pressure level is set to the half of the next-to-top pressure level
       Predictor%User_Level_LnPressure(0) = LOG(Atm%Level_Pressure(1)/TWO)
@@ -1201,9 +1177,9 @@ CONTAINS
     ! the user surface pressure level 
     ODPS_sfc_idx = n_ODPS_Layers
     ODPS_sfc_fraction = ZERO
-    IF(aTC%Ref_Level_Pressure(n_ODPS_Layers) > Atm%Level_Pressure(n_User_Layers))THEN
+    IF(TC%Ref_Level_Pressure(n_ODPS_Layers) > Atm%Level_Pressure(n_User_Layers))THEN
       DO k = n_ODPS_Layers, 0, -1
-        IF(aTC%Ref_Level_Pressure(k) < Atm%Level_Pressure(n_User_Layers))THEN
+        IF(TC%Ref_Level_Pressure(k) < Atm%Level_Pressure(n_User_Layers))THEN
           ODPS_sfc_idx = k+1
           ODPS_sfc_fraction = (Predictor%Ref_Level_LnPressure(ODPS_sfc_idx) - &
                                Predictor%User_Level_LnPressure(n_User_Layers)) /&
@@ -1230,17 +1206,17 @@ CONTAINS
     !-----------------------------------------------------------
     ! Interpolate absorber profiles on internal pressure grids
     !-----------------------------------------------------------
-    DO j = 1,aTC%n_Absorbers
+    DO j = 1,TC%n_Absorbers
       Idx_map(j) = -1
       DO jj=1, Atm%n_Absorbers
-       IF( Atm%Absorber_ID(jj) == aTC%Absorber_ID(j) ) THEN
+       IF( Atm%Absorber_ID(jj) == TC%Absorber_ID(j) ) THEN
         Idx_map(j) = jj
         EXIT
        END IF
       END DO
  
       ! save index for water vapor absorption
-      IF(aTC%Absorber_ID(j) == H2O_ID)THEN
+      IF(TC%Absorber_ID(j) == H2O_ID)THEN
         H2O_idx = j
       END IF
       IF(Idx_map(j) > 0)THEN
@@ -1253,12 +1229,12 @@ CONTAINS
         DO k=1, n_ODPS_Layers
 
           IF (Absorber(k,j) <= TOLERANCE ) Absorber(k,j) = TOLERANCE
-          IF (Absorber(k,j) < aTC%Min_Absorber(k,j) ) Absorber(k,j) = aTC%Min_Absorber(k,j)
-          IF (Absorber(k,j) > aTC%Max_Absorber(k,j) ) Absorber(k,j) = aTC%Max_Absorber(k,j)
+          IF (Absorber(k,j) < TC%Min_Absorber(k,j) ) Absorber(k,j) = TC%Min_Absorber(k,j)
+          IF (Absorber(k,j) > TC%Max_Absorber(k,j) ) Absorber(k,j) = TC%Max_Absorber(k,j)
 
         END DO
       ELSE ! when the profile is missing, use the referece profile 
-        Absorber(:, j) = aTC%Ref_Absorber(:, j)
+        Absorber(:, j) = TC%Ref_Absorber(:, j)
       END IF
 
     END DO
@@ -1267,23 +1243,23 @@ CONTAINS
     ! Compute height dependent secant zenith angles
     !-----------------------------------------------
     ! Compute geopotential height, which starts from ODPS surface pressure level
-    CALL Geopotential_Height( aTC%Ref_Level_Pressure,   &  
-                              aTC%Ref_Temperature,              &      
-                              aTC%Ref_Absorber(:, H2O_idx),     &      
-                              ZERO,                     &      
+    CALL Geopotential_Height( TC%Ref_Level_Pressure,           &  
+                              TC%Ref_Temperature,              &      
+                              TC%Ref_Absorber(:, H2O_idx),     &      
+                              ZERO,                            &      
                               Z) 
     ! Adjust ODPS surface height for the user surface height. The adjustment includes two parts:       
     ! (1) the delta Z from the ODPS surface pressure to the user surface pressure  
     ! (2) the user-given surface height                                            
-    IF(aTC%Ref_Level_Pressure(n_ODPS_Layers) >= Atm%Level_Pressure(n_User_Layers))THEN
+    IF(TC%Ref_Level_Pressure(n_ODPS_Layers) >= Atm%Level_Pressure(n_User_Layers))THEN
       Z_Offset = -(Z(ODPS_sfc_idx) + ODPS_sfc_fraction*(Z(ODPS_sfc_idx-1)-Z(ODPS_sfc_idx))) &
                  + GeoInfo%Surface_Altitude
     ELSE
       ! For the case in which the user surface pressure is larger than the ODPS surface pressure,
       ! the ODPS surface is adjusted for a surface pressure 1013 mb, regardless the user supplied 
       ! surface height.
-      Z_Offset = CC*aTC%Ref_Temperature(n_ODPS_Layers) &  ! scale height
-                 *LOG(1013.0_fp / aTC%Ref_Level_Pressure(n_ODPS_Layers))
+      Z_Offset = CC*TC%Ref_Temperature(n_ODPS_Layers) &  ! scale height
+                 *LOG(1013.0_fp / TC%Ref_Level_Pressure(n_ODPS_Layers))
     END IF
     Z = Z + Z_Offset
 
@@ -1301,7 +1277,7 @@ CONTAINS
     ! Compute predictor
     !-------------------------------------------
     
-    IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
+    IF(TC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
       CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
                                           Field_Strength = Be, &
                                           COS_ThetaB     = CosBk, &
@@ -1314,24 +1290,24 @@ CONTAINS
                                      Predictor)
     
     ELSE  ! all other sensors
-      CALL Compute_Predictor( aTC%Group_index,        &
+      CALL Compute_Predictor( TC%Group_index,         &
                               Temperature,            &
                               Absorber,               &              
-                              aTC%Ref_Level_Pressure, &      
-                              aTC%Ref_Temperature,    &      
-                              aTC%Ref_Absorber,       &   
+                              TC%Ref_Level_Pressure,  &      
+                              TC%Ref_Temperature,     &      
+                              TC%Ref_Absorber,        &   
                               Predictor%Secant_Zenith,&                    
                               Predictor )
-      IF( ALLOW_OPTRAN .AND. aTC%n_OCoeffs > 0 )THEN
+      IF( ALLOW_OPTRAN .AND. TC%n_OCoeffs > 0 )THEN
 
          CALL Compute_Predictor_OPTRAN( Temperature, &
                                         Absorber(:, H2O_idx),   &
-                                        aTC%Ref_Level_Pressure, &
-                                        aTC%Ref_Pressure,       &
+                                        TC%Ref_Level_Pressure,  &
+                                        TC%Ref_Pressure,        &
                                         Predictor%Secant_Zenith,&
-                                        aTC%Alpha,              &
-                                        aTC%Alpha_C1,           &
-                                        aTC%Alpha_C2,           &
+                                        TC%Alpha,               &
+                                        TC%Alpha_C1,            &
+                                        TC%Alpha_C2,            &
                                         Predictor )
 
        END IF
@@ -1360,8 +1336,7 @@ CONTAINS
     END IF 
                     
 
-    NULLIFY(aTC)
-
+ 
   END SUBROUTINE ODPS_Compute_Predictors     
 
 !--------------------------------------------------------------------------------
@@ -1376,7 +1351,7 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL ODPS_Compute_Predictors_TL ( SensorIndex,  &  ! Input
+!       CALL ODPS_Compute_Predictors_TL ( TC,           &  ! Input
 !                                      Atm,             &  ! Input
 !                                      GeoInfo,         &  ! Input                        
 !                                      Predictor,       &  ! Input
@@ -1385,13 +1360,11 @@ CONTAINS
 !                                      APV)             &  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!       TC        :     Structure containing Tau coefficient data.    
+!                       UNITS:      N/A                               
+!                       TYPE:       TYPE(ODPS_TauCoeff_type)          
+!                       DIMENSION:  Scalar                            
+!                       ATTRIBUTES: INTENT(IN)                    
 !
 !       Atm       :     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
@@ -1432,7 +1405,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE ODPS_Compute_Predictors_TL(SensorInput,    &
-                                        SensorIndex,    &
+                                        TC,             &
                                         Atm,            &    
                                         GeoInfo,        &
                                         Predictor,      &
@@ -1440,7 +1413,7 @@ CONTAINS
                                         Predictor_TL)
  
     TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODPS_type)              , INTENT(IN)     :: TC
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm,          Atm_TL
     TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
@@ -1448,18 +1421,16 @@ CONTAINS
 
     ! Local variables
     INTEGER  :: idx(1)
-    REAL(fp) :: Absorber_TL(Predictor%n_Layers, TC(SensorIndex)%n_Absorbers)
+    REAL(fp) :: Absorber_TL(Predictor%n_Layers, TC%n_Absorbers)
     REAL(fp) :: Temperature_TL(Predictor%n_Layers)
-    TYPE(ODPS_type), POINTER :: aTC
     ! absorber index mapping from ODPS to user 
-    INTEGER  :: Idx_map(TC(SensorIndex)%n_Absorbers), H2O_idx
+    INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers
     ! SSMIS SensorInput data
     REAL(fp) :: Be, CosBK, Doppler_Shift
 
     n_ODPS_Layers = Predictor%n_Layers
-    aTC => TC(SensorIndex)
-
+ 
     !-----------------------------------------------------------
     ! Interpolate temperautre profile on internal pressure grids
     !-----------------------------------------------------------
@@ -1475,7 +1446,7 @@ CONTAINS
     H2O_idx = Predictor%PAFV%H2O_idx
     Idx_map = Predictor%PAFV%Idx_map
 
-    DO j = 1,aTC%n_Absorbers
+    DO j = 1,TC%n_Absorbers
       IF(idx_map(j) > 0)THEN
       
         DO k = 1, n_ODPS_Layers                                                            
@@ -1497,7 +1468,7 @@ CONTAINS
     !-------------------------------------------
     ! Compute predictor
     !-------------------------------------------
-    IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
+    IF(TC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
       CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
                                           Field_Strength = Be, &
                                           COS_ThetaB     = CosBk, &
@@ -1511,27 +1482,27 @@ CONTAINS
                                         Predictor_TL)
 
     ELSE  ! all other sensors
-      CALL Compute_Predictor_TL(aTC%Group_index,         &
+      CALL Compute_Predictor_TL(TC%Group_index,          &
                               Predictor%PAFV%Temperature,&
                               Predictor%PAFV%Absorber,   &              
-                              aTC%Ref_Level_Pressure,    &      
-                              aTC%Ref_Temperature,       &      
-                              aTC%Ref_Absorber,          &   
+                              TC%Ref_Level_Pressure,     &      
+                              TC%Ref_Temperature,        &      
+                              TC%Ref_Absorber,           &   
                               Predictor%Secant_Zenith,   &                    
                               Predictor,                 &
                               Temperature_TL,            &
                               Absorber_TL,               & 
                               Predictor_TL )
-      IF( ALLOW_OPTRAN .AND. aTC%n_OCoeffs > 0)THEN
+      IF( ALLOW_OPTRAN .AND. TC%n_OCoeffs > 0)THEN
 
          CALL Compute_Predictor_OPTRAN_TL( Predictor%PAFV%Temperature,       &
                                         Predictor%PAFV%Absorber(:, H2O_idx), &
-                                        aTC%Ref_Level_Pressure, &
-                                        aTC%Ref_Pressure,       &
+                                        TC%Ref_Level_Pressure,  &
+                                        TC%Ref_Pressure,        &
                                         Predictor%Secant_Zenith,&
-                                        aTC%Alpha,              &
-                                        aTC%Alpha_C1,           &
-                                        aTC%Alpha_C2,           &
+                                        TC%Alpha,               &
+                                        TC%Alpha_C1,            &
+                                        TC%Alpha_C2,            &
                                         Predictor,              &
                                         Temperature_TL,         &
                                         Absorber_TL(:, H2O_idx),&
@@ -1540,8 +1511,7 @@ CONTAINS
        END IF
     END IF
     
-    NULLIFY(aTC)
-
+ 
   END SUBROUTINE ODPS_Compute_Predictors_TL     
 
 !--------------------------------------------------------------------------------
@@ -1556,7 +1526,7 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL ODPS_Compute_Predictors_AD ( SensorIndex,  &  ! Input
+!       CALL ODPS_Compute_Predictors_AD (TC,            &  ! Input
 !                                      Atm,             &  ! Input
 !                                      GeoInfo,         &  ! Input
 !                                      Predictor,       &  ! Input                     
@@ -1565,13 +1535,11 @@ CONTAINS
 !                                      APV )            &  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+!       TC        :     Structure containing Tau coefficient data.    
+!                       UNITS:      N/A                               
+!                       TYPE:       TYPE(ODPS_TauCoeff_type)          
+!                       DIMENSION:  Scalar                            
+!                       ATTRIBUTES: INTENT(IN)                    
 !
 !       Atm       :     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
@@ -1613,7 +1581,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE ODPS_Compute_Predictors_AD(SensorInput,    &
-                                        SensorIndex,    &
+                                        TC,             &
                                         Atm,            &    
                                         GeoInfo,        &
                                         Predictor,      &
@@ -1621,7 +1589,7 @@ CONTAINS
                                         Atm_AD)
 
     TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
-    INTEGER                      , INTENT(IN)     :: SensorIndex
+    TYPE(ODPS_type)              , INTENT(IN)     :: TC
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
     TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
@@ -1630,11 +1598,10 @@ CONTAINS
 
     ! Local variables
     INTEGER  :: idx(1)
-    REAL(fp) :: Absorber_AD(Predictor%n_Layers, TC(SensorIndex)%n_Absorbers)
+    REAL(fp) :: Absorber_AD(Predictor%n_Layers, TC%n_Absorbers)
     REAL(fp) :: Temperature_AD(Predictor%n_Layers)
-    TYPE(ODPS_type), POINTER :: aTC
     ! absorber index mapping from ODPS to user 
-    INTEGER  :: Idx_map(TC(SensorIndex)%n_Absorbers), H2O_idx
+    INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers
     ! SSMIS SensorInput data
     REAL(fp) :: Be, CosBK, Doppler_Shift
@@ -1645,8 +1612,7 @@ CONTAINS
     !-----------------------------------------------------------
 
     n_ODPS_Layers = Predictor%n_Layers
-    aTC => TC(SensorIndex)
-
+ 
     ! initialization
     Temperature_AD = ZERO
     Absorber_AD    = ZERO
@@ -1661,7 +1627,7 @@ CONTAINS
     !-------------------------------------------
     ! Compute predictor
     !-------------------------------------------
-    IF(aTC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
+    IF(TC%Group_index == GROUP_ZSSMIS)THEN  ! for ZSSMIS
       CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
                                           Field_Strength = Be, &
                                           COS_ThetaB     = CosBk, &
@@ -1678,16 +1644,16 @@ CONTAINS
 
       ! If the C-OPTRAN water vapor line algorithm is set (indicated by n_PCeooffs > 0),
       ! then compute predictors for OPTRAN water vapor line absorption.
-      IF( ALLOW_OPTRAN .AND. aTC%n_OCoeffs > 0 )THEN
+      IF( ALLOW_OPTRAN .AND. TC%n_OCoeffs > 0 )THEN
 
          CALL Compute_Predictor_OPTRAN_AD( Predictor%PAFV%Temperature,         &
                                         Predictor%PAFV%Absorber(:, H2O_idx),   &
-                                        aTC%Ref_Level_Pressure, &
-                                        aTC%Ref_Pressure,       &
+                                        TC%Ref_Level_Pressure,  &
+                                        TC%Ref_Pressure,        &
                                         Predictor%Secant_Zenith,&
-                                        aTC%Alpha,              &
-                                        aTC%Alpha_C1,           &
-                                        aTC%Alpha_C2,           &
+                                        TC%Alpha,               &
+                                        TC%Alpha_C1,            &
+                                        TC%Alpha_C2,            &
                                         Predictor,              &
                                         Predictor_AD,           &
                                         Temperature_AD,         &
@@ -1695,12 +1661,12 @@ CONTAINS
 
       END IF
 
-      CALL Compute_Predictor_AD( aTC%Group_index,        &
+      CALL Compute_Predictor_AD( TC%Group_index,         &
                               Predictor%PAFV%Temperature,&
                               Predictor%PAFV%Absorber,   &              
-                              aTC%Ref_Level_Pressure,    &      
-                              aTC%Ref_Temperature,       &      
-                              aTC%Ref_Absorber,          &   
+                              TC%Ref_Level_Pressure,     &      
+                              TC%Ref_Temperature,        &      
+                              TC%Ref_Absorber,           &   
                               Predictor%Secant_Zenith,   &                    
                               Predictor,                 &
                               Predictor_AD,              &
@@ -1712,7 +1678,7 @@ CONTAINS
     !-----------------------------------------------------------
     ! Interpolate absorber profiles on internal pressure grids
     !-----------------------------------------------------------
-    DO j = aTC%n_Absorbers, 1, -1
+    DO j = TC%n_Absorbers, 1, -1
       IF(idx_map(j) > 0)THEN
        
         DO k=1, n_ODPS_Layers
@@ -1746,8 +1712,7 @@ CONTAINS
     Temperature_AD = ZERO
     Absorber_AD    = ZERO
     
-    NULLIFY(aTC)
-
+ 
   END SUBROUTINE ODPS_Compute_Predictors_AD
 
 !--------------------------------------------------------------------------------

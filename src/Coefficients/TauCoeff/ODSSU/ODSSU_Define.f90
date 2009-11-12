@@ -7,6 +7,9 @@
 ! CREATION HISTORY:
 !       Written by:     Yong Han, NOAA/NESDIS, Oct. 6, 2009
 !
+!                       Yong Chen, NOAA/NESDIS, 06-Nov-2009
+!                       yong.chen@noaa.gov
+!
 
 MODULE ODSSU_Define
 
@@ -16,10 +19,14 @@ MODULE ODSSU_Define
   ! Module use
   USE Type_Kinds,            ONLY: Long, Double
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE ODAS_Define,           ONLY: ODx_type       => ODAS_type   , &
-                                   Destroy_ODx    => Destroy_ODAS, &
-                                   Clear_ODx      => Clear_ODAS  , &
-                                   Associated_ODx => Associated_ODAS
+  USE ODAS_Define,           ONLY: ODAS_type   , &
+                                   Destroy_ODAS, &
+                                   Clear_ODAS  , &
+                                   Associated_ODAS, ODAS_ALGORITHM
+  USE ODPS_Define,           ONLY: ODPS_type   , &
+                                   Destroy_ODPS, &
+                                   Clear_ODPS  , &
+                                   Associated_ODPS, ODPS_ALGORITHM
   
   ! Disable implicit typing
   IMPLICIT NONE
@@ -44,6 +51,9 @@ MODULE ODSSU_Define
   PUBLIC :: CheckRelease_ODSSU
   PUBLIC :: CheckAlgorithm_ODSSU
   PUBLIC :: Info_ODSSU
+  
+  PUBLIC :: ODAS_ALGORITHM 
+  PUBLIC :: ODPS_ALGORITHM 
 
   ! -----------------
   ! Module parameters
@@ -92,6 +102,7 @@ MODULE ODSSU_Define
     INTEGER(Long) :: Version = ODSSU_VERSION
 
     INTEGER(Long) :: Algorithm = ODSSU_ALGORITHM
+    INTEGER(Long) :: subAlgorithm = 0  ! refer to the series algorithm ID 1 for ODAS, 2 for ODPS
     ! Array dimensions
     INTEGER(Long) :: n_Channels          = 0  ! L
     INTEGER(Long) :: n_Absorbers         = 0  ! J
@@ -113,7 +124,8 @@ MODULE ODSSU_Define
     REAL(Double),  POINTER, DIMENSION(:,:) :: Ref_CellPressure   => NULL()  ! N x L
 
     ! Tau coefficient series at different cell pressures    
-    TYPE(ODx_type), POINTER, DIMENSION(:) :: TC                 => NULL()  ! M  
+    TYPE(ODAS_type), POINTER, DIMENSION(:) :: ODAS                 => NULL()  ! M  
+    TYPE(ODPS_type), POINTER, DIMENSION(:) :: ODPS                 => NULL()  ! M  
     
   END TYPE ODSSU_type   
 
@@ -195,25 +207,43 @@ CONTAINS
            ASSOCIATED( ODSSU%Absorber_ID       ) .AND. &
            ASSOCIATED( ODSSU%TC_CellPressure   ) .AND. &
            ASSOCIATED( ODSSU%Ref_Time          ) .AND. &
-           ASSOCIATED( ODSSU%Ref_CellPressure  ) .AND. &
-           ASSOCIATED( ODSSU%TC                ) ) THEN
-        Association_Status = .TRUE.
-      END IF
-      DO i = 1, ODSSU%n_TC_CellPressures
-        Association_Status = Association_Status .AND. Associated_ODx( ODSSU%TC(i) )
-      END DO
+           ASSOCIATED( ODSSU%Ref_CellPressure  ) ) THEN
+         Association_Status = .TRUE.  
+      ENDIF                                                                             
+      IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN                                     
+        Association_Status = Association_Status .AND. ASSOCIATED( ODSSU%ODAS )          
+        DO i = 1, ODSSU%n_TC_CellPressures                                              
+         Association_Status = Association_Status .AND. Associated_ODAS( ODSSU%ODAS(i) ) 
+        END DO                                                                          
+      ENDIF                                                                             
+
+      IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN                                     
+        Association_Status = Association_Status .AND. ASSOCIATED( ODSSU%ODPS )          
+        DO i = 1, ODSSU%n_TC_CellPressures                                              
+         Association_Status = Association_Status .AND. Associated_ODPS( ODSSU%ODPS(i) ) 
+        END DO                                                                          
+      ENDIF                                                                             
     ELSE
       IF ( ASSOCIATED( ODSSU%Sensor_Channel    ) .OR. &
            ASSOCIATED( ODSSU%Absorber_ID       ) .OR. &
            ASSOCIATED( ODSSU%TC_CellPressure   ) .OR. &
            ASSOCIATED( ODSSU%Ref_Time          ) .OR. &
-           ASSOCIATED( ODSSU%Ref_CellPressure  ) .OR. &
-           ASSOCIATED( ODSSU%TC                ) ) THEN
-        Association_Status = .TRUE.
+           ASSOCIATED( ODSSU%Ref_CellPressure  ) ) THEN
+         Association_Status = .TRUE.
       END IF
-      DO i = 1, ODSSU%n_TC_CellPressures
-        Association_Status = Association_Status .OR. Associated_ODx( ODSSU%TC(i), ANY_Test = SET)
-      END DO
+      IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN                                     
+        Association_Status = Association_Status .OR. ASSOCIATED( ODSSU%ODAS )          
+        DO i = 1, ODSSU%n_TC_CellPressures                                              
+         Association_Status = Association_Status .OR. Associated_ODAS( ODSSU%ODAS(i) ) 
+        END DO                                                                          
+      ENDIF                                                                             
+
+      IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN                                     
+        Association_Status = Association_Status .OR. ASSOCIATED( ODSSU%ODPS )          
+        DO i = 1, ODSSU%n_TC_CellPressures                                              
+         Association_Status = Association_Status .OR. Associated_ODPS( ODSSU%ODPS(i) ) 
+        END DO                                                                          
+      ENDIF                                                                             
     END IF
 
   END FUNCTION Associated_ODSSU
@@ -295,7 +325,7 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: Message
     LOGICAL :: Clear
-    INTEGER :: Allocate_Status
+    INTEGER :: Allocate_Status1, Allocate_Status2
     INTEGER :: i
 
     ! Set up
@@ -307,18 +337,68 @@ CONTAINS
     IF ( .NOT. Associated_ODSSU( ODSSU ) ) RETURN
 
     ! Destroy ODx 
-    DO i = 1, ODSSU%n_TC_CellPressures
-      Error_Status = Destroy_ODx( ODSSU%TC(i), &
-                                  Message_Log = Message_Log)
-      IF( Error_Status /= SUCCESS )THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              "Error deallocating ODx for ODSSU", &
-                              Error_Status,    &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    END DO
+    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
+     DO i = 1, ODSSU%n_TC_CellPressures
+       Error_Status = Destroy_ODAS( ODSSU%ODAS(i), &
+                                   Message_Log = Message_Log)
+       IF( Error_Status /= SUCCESS )THEN
+         CALL Display_Message( ROUTINE_NAME,    &
+                               "Error deallocating ODAS for ODSSU", &
+                               Error_Status,    &
+                               Message_Log=Message_Log )
+         RETURN
+       END IF
+     END DO
+    ENDIF
+    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
+     DO i = 1, ODSSU%n_TC_CellPressures
+       Error_Status = Destroy_ODPS( ODSSU%ODPS(i), &
+                                   Message_Log = Message_Log)
+       IF( Error_Status /= SUCCESS )THEN
+         CALL Display_Message( ROUTINE_NAME,    &
+                               "Error deallocating ODPS for ODSSU", &
+                               Error_Status,    &
+                               Message_Log=Message_Log )
+         RETURN
+       END IF
+     END DO
+    ENDIF
                        
+    ! Deallocate the regular arrays components
+    ! ----------------------------------------
+    DEALLOCATE( ODSSU%Sensor_Channel  , &
+                ODSSU%Absorber_ID     , &
+                ODSSU%TC_CellPressure , &
+                ODSSU%Ref_Time        , &
+                ODSSU%Ref_CellPressure, &
+                STAT=Allocate_Status1 )
+
+    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
+       DEALLOCATE(ODSSU%ODAS,  STAT=Allocate_Status2) 
+    ENDIF
+    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
+       DEALLOCATE(ODSSU%ODPS,  STAT=Allocate_Status2) 
+    ENDIF
+
+    IF ( Allocate_Status1 /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Error deallocating ODSSU components 1. STAT = ",i0)' ) &
+                     Allocate_Status1
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM(Message), &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
+    END IF
+    IF ( Allocate_Status2 /= 0 ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Error deallocating ODSSU components 2. STAT = ",i0)' ) &
+                     Allocate_Status2
+      CALL Display_Message( ROUTINE_NAME,    &
+                            TRIM(Message), &
+                            Error_Status,    &
+                            Message_Log=Message_Log )
+    END IF
+
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
@@ -332,24 +412,6 @@ CONTAINS
     ODSSU%n_TC_CellPressures  = 0
     ODSSU%n_Ref_CellPressures = 0
 
-    ! Deallocate the regular arrays components
-    ! ----------------------------------------
-    DEALLOCATE( ODSSU%Sensor_Channel  , &
-                ODSSU%Absorber_ID     , &
-                ODSSU%TC_CellPressure , &
-                ODSSU%Ref_Time        , &
-                ODSSU%Ref_CellPressure, &
-                ODSSU%TC              , &
-                STAT=Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Error deallocating ODSSU components. STAT = ",i0)' ) &
-                     Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-    END IF
 
     ! Decrement and test allocation counter
     ! -------------------------------------
@@ -486,7 +548,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_ODSSU'
     ! Local variables
     CHARACTER(ML) :: Message
-    INTEGER :: Allocate_Status
+    INTEGER :: Allocate_Status1, Allocate_Status2
 
     ! Set up
     ! ------
@@ -528,12 +590,18 @@ CONTAINS
               ODSSU%Ref_CellPressure( n_Ref_CellPressures, n_Channels), &
               ODSSU%Sensor_Channel( n_Channels )                      , &
               ODSSU%Absorber_ID( n_Absorbers )                        , &
-              ODSSU%TC( n_TC_CellPressures )                          , & 
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
+              STAT = Allocate_Status1 )
+    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
+       ALLOCATE(ODSSU%ODAS( n_TC_CellPressures ),  STAT=Allocate_Status2) 
+    ENDIF
+    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
+       ALLOCATE(ODSSU%ODPS( n_TC_CellPressures ),  STAT=Allocate_Status2) 
+    ENDIF
+
+    IF ( Allocate_Status1 /= 0 .OR. Allocate_Status2 /= 0) THEN
       Error_Status = FAILURE
       WRITE( Message,'("Error allocating ODSSU data arrays. STAT = ",i0)' ) &
-                     Allocate_Status
+                     Allocate_Status1
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
@@ -596,13 +664,21 @@ CONTAINS
     TYPE(ODSSU_type), INTENT(IN OUT) :: ODSSU
     ! Local
     INTEGER :: i
-    
-    DO i = 1, ODSSU%n_TC_CellPressures
-      CALL Clear_ODx( ODSSU%TC(i) )
-    END DO
+
+    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
+     DO i = 1, ODSSU%n_TC_CellPressures
+       CALL Clear_ODAS( ODSSU%ODAS(i) )
+     END DO
+    ENDIF
+    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
+     DO i = 1, ODSSU%n_TC_CellPressures
+       CALL Clear_ODPS( ODSSU%ODPS(i) )
+     END DO
+    ENDIF
     ODSSU%Release   = ODSSU_RELEASE
     ODSSU%Version   = ODSSU_VERSION
     ODSSU%Algorithm = ODSSU_ALGORITHM
+    ODSSU%subAlgorithm = 0
     ODSSU%Sensor_Id        = ' '
     ODSSU%Sensor_Type      = INVALID_SENSOR
     ODSSU%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
@@ -852,12 +928,14 @@ CONTAINS
     ! Write the required data to the local string
     ! -------------------------------------------
     WRITE( LongString,'( a,3x,"ODSSU RELEASE.VERSION: ",i2,".",i2.2,2x,&
+                      &"SUBALGORITHM=",i2,2x,&
                       &"N_ABSORBERS=",i2,2x,&
                       &"N_CHANNELS=",i0,2x, &
                       &"N_TC_CELLPRESSURES=",i2,2x, &
                       &"N_REF_CELLPRESSURES=",i0)' ) &
                       ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
                       ODSSU%Release, ODSSU%Version, &
+                      ODSSU%subAlgorithm, &
                       ODSSU%n_Absorbers, &
                       ODSSU%n_Channels, &
                       ODSSU%n_TC_CellPressures, &

@@ -591,7 +591,7 @@ CONTAINS
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_Data_Binary'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_ODAS_Data'
     ! Function variables
     CHARACTER(ML) :: Message
     INTEGER       :: IO_Status

@@ -5,7 +5,7 @@
       Program to provide an example of CRTM Forward function 
       usage.
 
-      $Revision: 5594 $
+      $Revision: 2984 $
      **********************************************************
 
 
@@ -13,8 +13,8 @@
      Initializing the CRTM...
  Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsua_n18.SpcCoeff.bin; 
  SpcCoeff RELEASE.VERSION:  7.01  N_CHANNELS=15
- Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsua_n18.TauCoeff.bin; 
-   ODAS RELEASE.VERSION:  6.06  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=15  N_Alphas= 3  N_Coeffs=1443
+ Read_TauCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsua_n18.TauCoeff.bin; 
+ TauCoeff RELEASE.VERSION:  5.05  N_ORDERS=10  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=  15  N_SENSORS= 1
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
  CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
@@ -24,38 +24,38 @@
 
        Profile 1 FWD output
        Sensor_Id   Channel         R            Tb
-       amsua_n18      1      1.484217E-03     285.027
-       amsua_n18      2      2.557108E-03     282.337
-       amsua_n18      3      6.411191E-03     276.320
-       amsua_n18      4      6.830420E-03     267.266
-       amsua_n18      5      6.738359E-03     255.964
-       amsua_n18      6      6.487294E-03     239.301
-       amsua_n18      7      6.259560E-03     226.463
-       amsua_n18      8      6.081628E-03     215.685
-       amsua_n18      9      6.224005E-03     207.251
-       amsua_n18     10      6.442887E-03     214.489
-       amsua_n18     11      6.755414E-03     224.823
-       amsua_n18     12      7.000195E-03     232.920
-       amsua_n18     13      7.237342E-03     240.764
-       amsua_n18     14      7.606925E-03     252.989
-       amsua_n18     15      2.024729E-02     279.553
+       amsua_n18      1      1.484193E-03     285.022
+       amsua_n18      2      2.557120E-03     282.339
+       amsua_n18      3      6.411162E-03     276.319
+       amsua_n18      4      6.830625E-03     267.274
+       amsua_n18      5      6.738329E-03     255.963
+       amsua_n18      6      6.487319E-03     239.302
+       amsua_n18      7      6.259613E-03     226.465
+       amsua_n18      8      6.081721E-03     215.688
+       amsua_n18      9      6.223845E-03     207.246
+       amsua_n18     10      6.442482E-03     214.476
+       amsua_n18     11      6.754969E-03     224.808
+       amsua_n18     12      6.999877E-03     232.909
+       amsua_n18     13      7.236924E-03     240.750
+       amsua_n18     14      7.606363E-03     252.971
+       amsua_n18     15      2.024800E-02     279.563
 
        Profile 2 FWD output
        Sensor_Id   Channel         R            Tb
-       amsua_n18      1      1.200556E-03     230.662
-       amsua_n18      2      2.055180E-03     227.066
-       amsua_n18      3      5.396744E-03     232.788
-       amsua_n18      4      6.069610E-03     237.637
-       amsua_n18      5      6.270566E-03     238.283
-       amsua_n18      6      6.402973E-03     236.208
-       amsua_n18      7      6.500614E-03     235.133
-       amsua_n18      8      6.637722E-03     235.286
-       amsua_n18      9      7.105506E-03     236.410
-       amsua_n18     10      7.101811E-03     236.285
-       amsua_n18     11      7.163497E-03     238.321
-       amsua_n18     12      7.223991E-03     240.323
-       amsua_n18     13      7.221474E-03     240.239
-       amsua_n18     14      7.312901E-03     243.264
-       amsua_n18     15      1.705352E-02     235.792
+       amsua_n18      1      1.200552E-03     230.661
+       amsua_n18      2      2.055132E-03     227.060
+       amsua_n18      3      5.396641E-03     232.784
+       amsua_n18      4      6.069550E-03     237.635
+       amsua_n18      5      6.270587E-03     238.284
+       amsua_n18      6      6.403007E-03     236.209
+       amsua_n18      7      6.500649E-03     235.135
+       amsua_n18      8      6.637733E-03     235.286
+       amsua_n18      9      7.105520E-03     236.411
+       amsua_n18     10      7.101790E-03     236.284
+       amsua_n18     11      7.163377E-03     238.317
+       amsua_n18     12      7.223953E-03     240.321
+       amsua_n18     13      7.221456E-03     240.239
+       amsua_n18     14      7.312698E-03     243.257
+       amsua_n18     15      1.705228E-02     235.775
 
      Destroying the CRTM...
