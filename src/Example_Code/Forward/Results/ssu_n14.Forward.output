@@ -5,7 +5,7 @@
       Program to provide an example of CRTM Forward function 
       usage.
 
-      $Revision: 5479 $
+      $Revision: 5594 $
      **********************************************************
 
 
@@ -14,7 +14,7 @@
  Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssu_n14.SpcCoeff.bin; 
  SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=3
  Read_ODSSU_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssu_n14.TauCoeff.bin; 
-   ODSSU RELEASE.VERSION:  6.04  N_ABSORBERS= 3  N_CHANNELS=3  N_TC_CELLPRESSURES=20  N_REF_CELLPRESSURES=293
+   ODSSU RELEASE.VERSION:  6.04  SUBALGORITHM= 1  N_ABSORBERS= 3  N_CHANNELS=3  N_TC_CELLPRESSURES=20  N_REF_CELLPRESSURES=293
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
  CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
