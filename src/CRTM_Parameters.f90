@@ -126,6 +126,11 @@ MODULE CRTM_Parameters
   !#                       -- AtmAbsorption PARAMETERS --                       #
   !#----------------------------------------------------------------------------#
 
+  ! Algorithm IDs
+  INTEGER, PUBLIC, PARAMETER :: ODAS_ALGORITHM     = 1
+  INTEGER, PUBLIC, PARAMETER :: ODPS_ALGORITHM     = 2
+  INTEGER, PUBLIC, PARAMETER :: ODSSU_ALGORITHM    = 3
+
   ! Maximum number of absorbers in the gas absorption models
   ! ---------------------------------------------------------------
   INTEGER, PUBLIC, PARAMETER :: MAX_N_ABSORBERS = 7

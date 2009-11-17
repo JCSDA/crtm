@@ -9,7 +9,7 @@ CRTM_AerosolScatter.o : CRTM_AerosolScatter.f90 CRTM_AtmScatter_Define.o CRTM_In
 CRTM_Aerosol_Binary_IO.o : CRTM_Aerosol_Binary_IO.f90 CRTM_Aerosol_Define.o CRTM_Parameters.o Binary_File_Utility.o Message_Handler.o File_Utility.o 
 CRTM_Aerosol_Define.o : CRTM_Aerosol_Define.f90 CRTM_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_AntCorr.o : CRTM_AntCorr.f90 CRTM_SpcCoeff.o CRTM_RTSolution_Define.o CRTM_GeometryInfo_Define.o CRTM_Parameters.o Type_Kinds.o 
-CRTM_AtmAbsorption.o : CRTM_AtmAbsorption.f90 ODSSU_Define.o ODPS_Define.o ODAS_Define.o ODPS_Predictor.o ODSSU_AtmAbsorption.o ODPS_AtmAbsorption.o ODAS_Predictor.o ODAS_AtmAbsorption.o CRTM_GeometryInfo_Define.o CRTM_AtmAbsorption_Define.o CRTM_SensorInput_Define.o CRTM_TauCoeff.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
+CRTM_AtmAbsorption.o : CRTM_AtmAbsorption.f90 ODZeeman_AtmAbsorption.o ODPS_Predictor.o ODSSU_AtmAbsorption.o ODPS_AtmAbsorption.o ODAS_Predictor.o ODAS_AtmAbsorption.o CRTM_GeometryInfo_Define.o CRTM_AtmAbsorption_Define.o CRTM_SensorInput_Define.o CRTM_TauCoeff.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_AtmAbsorption_Define.o : CRTM_AtmAbsorption_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_AtmOptics.o : CRTM_AtmOptics.f90 CRTM_AtmScatter_Define.o CRTM_AtmAbsorption_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_AtmScatter_Define.o : CRTM_AtmScatter_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
@@ -58,7 +58,7 @@ CRTM_SpcCoeff.o : CRTM_SpcCoeff.f90 CRTM_Parameters.o SpcCoeff_Binary_IO.o SpcCo
 CRTM_Surface_Binary_IO.o : CRTM_Surface_Binary_IO.f90 CRTM_Surface_Define.o CRTM_Parameters.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
 CRTM_Surface_Define.o : CRTM_Surface_Define.f90 CRTM_SensorData_Define.o CRTM_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_Tangent_Linear_Module.o : CRTM_Tangent_Linear_Module.f90 CRTM_SensorInput_Define.o CRTM_AntCorr.o CRTM_RTSolution.o CRTM_SfcOptics.o CRTM_AtmOptics.o CRTM_CloudScatter.o CRTM_AerosolScatter.o CRTM_AtmScatter_Define.o CRTM_AtmAbsorption.o CRTM_GeometryInfo.o CRTM_Atmosphere.o CRTM_Options_Define.o CRTM_ChannelInfo_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
-CRTM_TauCoeff.o : CRTM_TauCoeff.f90 TauCoeff_Define.o ODSSU_Define.o ODSSU_TauCoeff.o ODPS_Define.o ODPS_TauCoeff.o ODAS_Define.o ODAS_TauCoeff.o CRTM_Parameters.o Message_Handler.o Binary_File_Utility.o File_Utility.o Type_Kinds.o 
+CRTM_TauCoeff.o : CRTM_TauCoeff.f90 CRTM_SensorInfo.o ODZeeman_TauCoeff.o TauCoeff_Define.o ODSSU_Define.o ODSSU_TauCoeff.o ODPS_Define.o ODPS_TauCoeff.o ODAS_Define.o ODAS_TauCoeff.o CRTM_Parameters.o Message_Handler.o Binary_File_Utility.o File_Utility.o Type_Kinds.o 
 CRTM_Utility.o : CRTM_Utility.f90 Message_Handler.o CRTM_Parameters.o Type_Kinds.o 
 CRTM_surface_ir_emissivity.o : CRTM_surface_ir_emissivity.f90 File_Utility.o Type_Kinds.o 
 CloudCoeff_Binary_IO.o : CloudCoeff_Binary_IO.f90 CloudCoeff_Define.o Binary_File_Utility.o Message_Handler.o Type_Kinds.o 
@@ -88,21 +88,24 @@ NESDIS_SSMI_SnowEM_Module.o : NESDIS_SSMI_SnowEM_Module.f90 NESDIS_LandEM_Module
 NESDIS_SnowEM_Parameters.o : NESDIS_SnowEM_Parameters.f90 Type_Kinds.o 
 ODAS_AtmAbsorption.o : ODAS_AtmAbsorption.f90 ODAS_TauCoeff.o ODAS_Predictor.o CRTM_AtmAbsorption_Define.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 ODAS_Binary_IO.o : ODAS_Binary_IO.f90 ODAS_Define.o Binary_File_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
-ODAS_Define.o : ODAS_Define.f90 Sort_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+ODAS_Define.o : ODAS_Define.f90 CRTM_Parameters.o Sort_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 ODAS_Predictor.o : ODAS_Predictor.f90 ODAS_Predictor_Define.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 ODAS_Predictor_Define.o : ODAS_Predictor_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 ODAS_TauCoeff.o : ODAS_TauCoeff.f90 CRTM_Parameters.o ODAS_Binary_IO.o ODAS_Define.o Message_Handler.o 
-ODPS_AtmAbsorption.o : ODPS_AtmAbsorption.f90 Profile_Utility_Parameters.o CRTM_Parameters.o CRTM_SensorInput_Define.o ODPS_ZAtmAbsorption.o ODPS_Predictor.o ODPS_TauCoeff.o ODPS_Define.o CRTM_GeometryInfo_Define.o CRTM_AtmAbsorption_Define.o CRTM_Atmosphere_Define.o Message_Handler.o Type_Kinds.o 
+ODPS_AtmAbsorption.o : ODPS_AtmAbsorption.f90 ODPS_CoordinateMapping.o CRTM_Parameters.o ODPS_Predictor.o ODPS_Define.o CRTM_GeometryInfo_Define.o CRTM_AtmAbsorption_Define.o CRTM_Atmosphere_Define.o Message_Handler.o Type_Kinds.o 
 ODPS_Binary_IO.o : ODPS_Binary_IO.f90 ODPS_Define.o Binary_File_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
-ODPS_Define.o : ODPS_Define.f90 Sort_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-ODPS_Predictor.o : ODPS_Predictor.f90 ODPS_ZAtmAbsorption.o ODPS_Predictor_Define.o Message_Handler.o Type_Kinds.o 
+ODPS_CoordinateMapping.o : ODPS_CoordinateMapping.f90 CRTM_Parameters.o Profile_Utility_Parameters.o ODPS_Predictor_Define.o ODPS_Define.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o Type_Kinds.o 
+ODPS_Define.o : ODPS_Define.f90 CRTM_Parameters.o Sort_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+ODPS_Predictor.o : ODPS_Predictor.f90 ODPS_Predictor_Define.o Message_Handler.o Type_Kinds.o 
 ODPS_Predictor_Define.o : ODPS_Predictor_Define.f90 Message_Handler.o Type_Kinds.o 
 ODPS_TauCoeff.o : ODPS_TauCoeff.f90 ODPS_Binary_IO.o ODPS_Define.o Message_Handler.o 
-ODPS_ZAtmAbsorption.o : ODPS_ZAtmAbsorption.f90 ODPS_Define.o ODPS_Predictor_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 ODSSU_AtmAbsorption.o : ODSSU_AtmAbsorption.f90 Search_Utility.o SSU_Input_Define.o ODSSU_TauCoeff.o ODPS_Predictor.o ODAS_Predictor.o ODPS_AtmAbsorption.o ODAS_AtmAbsorption.o CRTM_AtmAbsorption_Define.o CRTM_GeometryInfo_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 ODSSU_Binary_IO.o : ODSSU_Binary_IO.f90 ODPS_Binary_IO.o ODAS_Binary_IO.o ODSSU_Define.o Binary_File_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
-ODSSU_Define.o : ODSSU_Define.f90 ODPS_Define.o ODAS_Define.o Message_Handler.o Type_Kinds.o 
+ODSSU_Define.o : ODSSU_Define.f90 CRTM_Parameters.o ODPS_Define.o ODAS_Define.o Message_Handler.o Type_Kinds.o 
 ODSSU_TauCoeff.o : ODSSU_TauCoeff.f90 CRTM_Parameters.o ODSSU_Binary_IO.o ODSSU_Define.o Message_Handler.o 
+ODZeeman_AtmAbsorption.o : ODZeeman_AtmAbsorption.f90 ODPS_CoordinateMapping.o CRTM_SensorInput_Define.o ODZeeman_Predictor.o ODPS_Define.o ODPS_Predictor_Define.o CRTM_GeometryInfo_Define.o CRTM_AtmAbsorption_Define.o CRTM_Atmosphere_Define.o Message_Handler.o Type_Kinds.o 
+ODZeeman_Predictor.o : ODZeeman_Predictor.f90 ODPS_Define.o ODPS_Predictor_Define.o Message_Handler.o Type_Kinds.o 
+ODZeeman_TauCoeff.o : ODZeeman_TauCoeff.f90 ODPS_Binary_IO.o ODPS_Define.o Message_Handler.o 
 Ocean_Permittivity.o : Ocean_Permittivity.f90 Fundamental_Constants.o Type_Kinds.o 
 Profile_Utility_Parameters.o : Profile_Utility_Parameters.f90 Fundamental_Constants.o Type_Kinds.o 
 SSMIS_Input_Define.o : SSMIS_Input_Define.f90 Compare_Float_Numbers.o Type_Kinds.o 

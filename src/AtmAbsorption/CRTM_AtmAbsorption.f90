@@ -18,7 +18,8 @@ MODULE CRTM_AtmAbsorption
   ! Module use
   USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters,           ONLY: ZERO
+  USE CRTM_Parameters,           ONLY: ZERO, &
+                                       ODAS_ALGORITHM,  ODPS_ALGORITHM, ODSSU_ALGORITHM
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_TauCoeff,             ONLY: TC
   USE CRTM_SensorInput_Define,   ONLY: CRTM_SensorInput_type
@@ -67,12 +68,20 @@ MODULE CRTM_AtmAbsorption
                                        ODPS_Allocate_Predictor    => Allocate_Predictor,    &
                                        ODPS_Destroy_PAFV          => Destroy_PAFV,          &
                                        ODPS_Allocate_PAFV         => Allocate_PAFV,         &
-                                       ODPS_Get_SaveFWVFlag       => Get_SaveFWVFlag 
+                                       ODPS_Get_SaveFWVFlag       => Get_SaveFWVFlag
+                                        
+  USE ODZeeman_AtmAbsorption,    ONLY: ZSSMIS_Compute_AtmAbsorption,     &
+                                       ZSSMIS_Compute_AtmAbsorption_TL,  &
+                                       ZSSMIS_Compute_AtmAbsorption_AD,  &
+                                       ZSSMIS_Compute_Predictors,     &
+                                       ZSSMIS_Compute_Predictors_TL,  &
+                                       ZSSMIS_Compute_Predictors_AD,  &
+                                       N_ZCOMPONENTS,       &
+                                       N_ZABSORBERS,        &
+                                       Is_ZSSMIS_Channel,   &
+                                       Is_ZSSMIS,           &
+                                       MAX_N_PREDICTORS_ZSSMIS
 
-  USE ODAS_Define,               ONLY: ODAS_ALGORITHM
-  USE ODPS_Define,               ONLY: ODPS_ALGORITHM
-  USE ODSSU_Define,              ONLY: ODSSU_ALGORITHM
-                                                                                
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -123,6 +132,8 @@ MODULE CRTM_AtmAbsorption
     PRIVATE
     TYPE(ODAS_Predictor_type)   :: ODAS
     TYPE(ODPS_Predictor_type)   :: ODPS
+    TYPE(ODPS_Predictor_type)   :: ODZeeman
+    
   END TYPE CRTM_Predictor_type
 
   ! Structure to hold AtmAbsorption
@@ -167,19 +178,18 @@ CONTAINS
 !       It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_AtmAbsorption( GeometryInfo , &  ! Input
+!       CALL CRTM_Compute_AtmAbsorption( sensorInput  , &  ! Input
 !                                        SensorIndex  , &  ! Input
 !                                        ChannelIndex , &  ! Input
 !                                        Predictor    , &  ! Input
 !                                        AtmAbsorption, &  ! Output
-!                                        AAVariables    )  ! Internal variable output
+!                                        AAV            )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       GeometryInfo:    Structure containing the view geometry
-!                        information.
+!     SensorInput :      Structure holding sensor specific user inputs
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_GeometryInfo_type
-!                        DIMENSION:  Same as input Atmosphere structure
+!                        TYPE:       SensorInput_type
+!                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       SensorIndex:     Sensor index id. This is a unique index associated
@@ -216,7 +226,7 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-!       AAVariables:     Structure containing internal variables required for
+!               AAV:     Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_AtmAbsorption module.
@@ -246,15 +256,30 @@ CONTAINS
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
     TYPE(CRTM_AAVariables_type)  , INTENT(IN OUT) :: AAV
 
+    ! Local variables
     INTEGER :: idx
 
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    ! Zeeman channel
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+      IF( Is_ZSSMIS_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
+         CALL ZSSMIS_Compute_AtmAbsorption( &                     
+                             TC%ODZeeman(idx)     , & ! Input     
+                             ChannelIndex         , &  ! Input    
+                             Predictor%ODZeeman   , &  ! Input                                         
+                             AtmAbsorption )           ! Output  
+         RETURN
+      END IF 
+        
+    END IF
+    
     ! Call required algorithm
+    idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
     
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_AtmAbsorption( &
-          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), &  ! Input
           ChannelIndex                           , &  ! Input                                 
           Predictor%ODAS                         , &  ! Input                                 
           AtmAbsorption                          , &  ! Output                                
@@ -264,11 +289,10 @@ CONTAINS
         CALL ODPS_Compute_AtmAbsorption( &
           TC%ODPS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
           ChannelIndex                           , &  ! Input 
-          Predictor%ODPS                         , &  ! Input                                 
-          AtmAbsorption                            )  ! Output 
+          Predictor%ODPS                         , &  ! Input                                          
+          AtmAbsorption                   )           ! Output 
 
       CASE( ODSSU_ALGORITHM )
-      
         CALL ODSSU_Compute_AAV( SensorInput%SSU , &  ! Input
                            SensorIndex     , &  ! Input
                            ChannelIndex    , &  ! Input                        
@@ -290,7 +314,7 @@ CONTAINS
            AtmAbsorption                 , &  ! Output                                        
            AAV%ODSSU                       )  ! Internal variable output     
         ENDIF
-
+          
     END SELECT
 
   END SUBROUTINE CRTM_Compute_AtmAbsorption               
@@ -306,22 +330,28 @@ CONTAINS
 !       profile. It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_AtmAbsorption_TL( SensorIndex     , &  ! Input
-!                                           ChannelIndex    , &  ! Input
+!       CALL CRTM_Compute_AtmAbsorption_TL( sensorInput     , &  ! Input
+!                                           SensorIndex     , &  ! InputChannelIndex    , &  ! Input
 !                                           Predictor       , &  ! FWD Input
 !                                           Predictor_TL    , &  ! TL Input
 !                                           AtmAbsorption_TL, &  ! TL Output
-!                                           AAVariables       )  ! Internal variable input
+!                                           AAV               )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:        Sensor index id. This is a unique index associated
-!                           with a (supported) sensor used to access the
-!                           shared coefficient data for a particular sensor.
-!                           See the ChannelIndex argument.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+!     SensorInput :      Structure holding sensor specific user inputs
+!                        UNITS:      N/A
+!                        TYPE:       SensorInput_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       SensorIndex:     Sensor index id. This is a unique index associated
+!                        with a (supported) sensor used to access the
+!                        shared coefficient data for a particular sensor.
+!                        See the ChannelIndex argument.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 !       ChannelIndex:       Channel index id. This is a unique index associated
 !                           with a (supported) sensor channel used to access the
@@ -347,7 +377,7 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       AAVariables:        Structure containing internal variables required for
+!               AAV:        Structure containing internal variables required for
 !                           subsequent tangent-linear or adjoint model calls.
 !                           The contents of this structure are NOT accessible
 !                           outside of the CRTM_AtmAbsorption module.
@@ -386,16 +416,31 @@ CONTAINS
     TYPE(CRTM_Predictor_type)    , INTENT(IN OUT) :: Predictor_TL
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_TL
     TYPE(CRTM_AAVariables_type)  , INTENT(IN OUT) :: AAV
+
+    ! Local variables
     INTEGER :: idx
 
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    ! Zeeman channel
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+      IF( Is_ZSSMIS_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
+            CALL ZSSMIS_Compute_AtmAbsorption_TL( &
+                                TC%ODZeeman(idx)     , & ! Input
+                                ChannelIndex         , &  ! Input 
+                                Predictor%ODZeeman   , &  ! Input                                      
+                                Predictor_TL%ODZeeman, &  ! Input                                      
+                                AtmAbsorption_TL )           ! Output
+        RETURN
+      END IF        
+    END IF
 
     ! Call required algorithm
+    idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
     
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_AtmAbsorption_TL( &
-          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), &  ! Input
           ChannelIndex                           , &  ! Input                                 
           Predictor%ODAS                         , &  ! Input
           Predictor_TL%ODAS                      , &  ! Input                                 
@@ -404,11 +449,11 @@ CONTAINS
 
       CASE( ODPS_ALGORITHM )
         CALL ODPS_Compute_AtmAbsorption_TL( &
-          TC%ODPS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          TC%ODPS(TC%Sensor_LoIndex(SensorIndex)), &  ! Input
           ChannelIndex                           , &  ! Input
           Predictor%ODPS                         , &  ! Input
           Predictor_TL%ODPS                      , &  ! Input
-          AtmAbsorption_TL                         )  ! Output
+          AtmAbsorption_TL                )           ! Output
 
       CASE( ODSSU_ALGORITHM )
         IF(TC%ODSSU(idx)%subAlgorithm == ODAS_ALGORITHM) THEN                                     
@@ -445,22 +490,29 @@ CONTAINS
 !       profile. It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_AtmAbsorption_AD( SensorIndex     , &  ! Input
+!       CALL CRTM_Compute_AtmAbsorption_AD( sensorInput     , &  ! Input
+!                                           SensorIndex     , &  ! Input
 !                                           ChannelIndex    , &  ! Input
 !                                           Predictor       , &  ! FWD Input
 !                                           AtmAbsorption_AD, &  ! TL  Input
 !                                           Predictor_AD    , &  ! TL  Output
-!                                           AAVariables       )  ! Internal variable input
+!                                           AAV               )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
-!       SensorIndex:        Sensor index id. This is a unique index associated
-!                           with a (supported) sensor used to access the
-!                           shared coefficient data for a particular sensor.
-!                           See the ChannelIndex argument.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+!       SensorInput :      Structure holding sensor specific user inputs
+!                          UNITS:      N/A
+!                          TYPE:       SensorInput_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       SensorIndex:       Sensor index id. This is a unique index associated
+!                          with a (supported) sensor used to access the
+!                          shared coefficient data for a particular sensor.
+!                          See the ChannelIndex argument.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       ChannelIndex:       Channel index id. This is a unique index associated
 !                           with a (supported) sensor channel used to access the
@@ -487,7 +539,7 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
-!       AAVariables:        Structure containing internal variables required for
+!       AAV:                Structure containing internal variables required for
 !                           subsequent tangent-linear or adjoint model calls.
 !                           The contents of this structure are NOT accessible
 !                           outside of the CRTM_AtmAbsorption module.
@@ -525,15 +577,30 @@ CONTAINS
     TYPE(CRTM_Predictor_type),     INTENT(IN OUT) :: Predictor_AD
     TYPE(CRTM_AAVariables_type)  , INTENT(IN OUT) :: AAV
 
+    ! Local variables
     INTEGER :: idx
 
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    ! Zeeman channel
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+      IF( Is_ZSSMIS_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
+            CALL ZSSMIS_Compute_AtmAbsorption_AD( &
+                                TC%ODZeeman(idx)     , &  ! Input
+                                ChannelIndex         , &  ! Input 
+                                Predictor%ODZeeman   , &  ! Input
+                                AtmAbsorption_AD     , &  ! AD Input                                      
+                                Predictor_AD%ODZeeman)    ! Input                                      
+        RETURN
+      END IF        
+    END IF
+
     ! Call required algorithm
+    idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
     
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_AtmAbsorption_AD( &
-          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          TC%ODAS(TC%Sensor_LoIndex(SensorIndex)), &  ! Input
           ChannelIndex                           , &  ! Input                                 
           Predictor%ODAS                         , &  ! FWD Input
           AtmAbsorption_AD                       , &  ! AD Input                                
@@ -542,11 +609,11 @@ CONTAINS
 
       CASE( ODPS_ALGORITHM )
         CALL ODPS_Compute_AtmAbsorption_AD( &
-          TC%ODPS(TC%Sensor_LoIndex(SensorIndex)), & ! Input
+          TC%ODPS(TC%Sensor_LoIndex(SensorIndex)), &  ! Input
           ChannelIndex                           , &  ! Input
           Predictor%ODPS                         , &  ! FWD Input
           AtmAbsorption_AD                       , &  ! AD Input
-          Predictor_AD%ODPS                        )  ! AD Output
+          Predictor_AD%ODPS               )  ! AD Output
                   
       CASE( ODSSU_ALGORITHM )
          IF(TC%ODSSU(idx)%subAlgorithm == ODAS_ALGORITHM) THEN                                     
@@ -583,13 +650,20 @@ CONTAINS
 !       It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_Predictors ( SensorIndex,  &  ! Input
+!       CALL CRTM_Compute_Predictors ( sensorInput , &  ! Input
+!                                      SensorIndex,  &  ! Input
 !                                      Atmosphere,   &  ! Input
 !                                      GeometryInfo, &  ! Input
 !                                      Predictor,    &  ! Output
 !                                      APVariables   )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
+!     SensorInput :      Structure holding sensor specific user inputs
+!                        UNITS:      N/A
+!                        TYPE:       SensorInput_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
 !       SensorIndex:     Sensor index id. This is a unique index associated
 !                        with a (supported) sensor used to access the
 !                        shared coefficient data for a particular sensor.
@@ -662,8 +736,7 @@ CONTAINS
                                        APV%ODAS                )
 
       CASE( ODPS_ALGORITHM )
-         CALL ODPS_Compute_Predictors( SensorInput   , &  ! Input
-                                       TC%ODPS(idx)  , &  ! Input
+         CALL ODPS_Compute_Predictors( TC%ODPS(idx)  , &  ! Input
                                        Atmosphere    , &  ! Input
                                        GeometryInfo  , &  ! Input  
                                        Predictor%ODPS  )  ! Output
@@ -682,15 +755,24 @@ CONTAINS
          ENDIF
          
          IF(TC%ODSSU(idx)%subAlgorithm == ODPS_ALGORITHM) THEN                                     
-          CALL ODPS_Compute_Predictors( SensorInput   , &  ! Input
-                                        TC%ODSSU(idx)%ODPS(1), &  ! Input
+          CALL ODPS_Compute_Predictors( TC%ODSSU(idx)%ODPS(1), &  ! Input
                                         Atmosphere    , &  ! Input
                                         GeometryInfo  , &  ! Input  
                                         Predictor%ODPS  )  ! Output
-         
-         ENDIF
-                                             
+         END IF
     END SELECT
+
+    ! Zeeman sensor
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+      IF( Is_ZSSMIS(TC%ODZeeman(idx) ))THEN
+          CALL ZSSMIS_Compute_Predictors( SensorInput      , &  ! Input
+                                          TC%ODZeeman(idx) , &  ! Input  
+                                          Atmosphere       , &  ! Input  
+                                          GeometryInfo     , &  ! Input  
+                                          Predictor%ODZeeman )  ! Output     
+      END IF
+    END IF
 
   END SUBROUTINE CRTM_Compute_Predictors
 
@@ -705,7 +787,8 @@ CONTAINS
 !       predictors. It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_Predictors_TL ( SensorIndex,   &  ! Input
+!       CALL CRTM_Compute_Predictors_TL ( sensorInput  , &  ! Input
+!                                         SensorIndex,   &  ! Input
 !                                         Atmosphere,    &  ! FWD Input
 !                                         Predictor,     &  ! FWD Input
 !                                         Atmosphere_TL, &  ! TL Input
@@ -714,6 +797,12 @@ CONTAINS
 !                                         APVariables    )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
+!        SensorInput :      Structure holding sensor specific user inputs
+!                           UNITS:      N/A
+!                           TYPE:       SensorInput_type
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
 !       SensorIndex:       Sensor index id. This is a unique index associated
 !                          with a (supported) sensor used to access the
 !                          shared coefficient data for a particular sensor.
@@ -805,8 +894,7 @@ CONTAINS
                                           APV%ODAS                )     
 
       CASE( ODPS_ALGORITHM )
-         CALL ODPS_Compute_Predictors_TL( SensorInput      , &  ! Input
-                                          TC%ODPS(idx)     , &  ! Input
+         CALL ODPS_Compute_Predictors_TL( TC%ODPS(idx)     , &  ! Input
                                           Atmosphere       , &  ! FWD Input
                                           GeometryInfo     , &  ! Input
                                           Predictor%ODPS   , &  ! FWD Input
@@ -828,8 +916,7 @@ CONTAINS
          ENDIF
          
          IF(TC%ODSSU(idx)%subAlgorithm == ODPS_ALGORITHM) THEN                                     
-          CALL ODPS_Compute_Predictors_TL( SensorInput      , &  ! Input
-                                           TC%ODSSU(idx)%ODPS(1), &  ! Input
+          CALL ODPS_Compute_Predictors_TL( TC%ODSSU(idx)%ODPS(1), &  ! Input
                                            Atmosphere       , &  ! FWD Input
                                            GeometryInfo     , &  ! Input
                                            Predictor%ODPS   , &  ! FWD Input
@@ -838,6 +925,20 @@ CONTAINS
          ENDIF
               
     END SELECT
+
+    ! Zeeman sensor
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+      IF( Is_ZSSMIS(TC%ODZeeman(idx)) )THEN
+          CALL ZSSMIS_Compute_Predictors_TL( SensorInput       , &  ! Input
+                                             TC%ODZeeman(idx)  , &  ! Input       
+                                             Atmosphere        , &  ! Input       
+                                             GeometryInfo      , &  ! Input       
+                                             Predictor%ODZeeman, &  ! FWD Input   
+                                             Atmosphere_TL     , &  ! TL Input    
+                                             Predictor_TL%ODZeeman  )  ! TL Output
+      END IF
+    END IF
 
   END SUBROUTINE CRTM_Compute_Predictors_TL
 
@@ -851,7 +952,8 @@ CONTAINS
 !       It is a wrapper which calls the algorithm specific routine.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Compute_Predictors_AD ( SensorIndex,   &  ! Input
+!       CALL CRTM_Compute_Predictors_AD ( sensorInput,   &  ! Input
+!                                         SensorIndex,   &  ! Input
 !                                         Atmosphere,    &  ! FWD Input
 !                                         Predictor,     &  ! FW Input
 !                                         Predictor_AD,  &  ! AD Input
@@ -859,6 +961,12 @@ CONTAINS
 !                                         Atmosphere_AD, &  ! AD Output
 !                                         APVariables    )  ! Internal variable input
 ! INPUT ARGUMENTS:
+!       SensorInput :      Structure holding sensor specific user inputs
+!                          UNITS:      N/A
+!                          TYPE:       SensorInput_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       SensorIndex:       Sensor index id. This is a unique index associated
 !                          with a (supported) sensor used to access the
 !                          shared coefficient data for a particular sensor.
@@ -940,6 +1048,20 @@ CONTAINS
     ! Local
     INTEGER :: idx
 
+    ! Zeeman sensor
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+      IF( Is_ZSSMIS(TC%ODZeeman(idx)) )THEN
+          CALL ZSSMIS_Compute_Predictors_AD(SensorInput,     &  ! Input
+                                          TC%ODZeeman(idx),  &  ! Input
+                                          Atmosphere,        &  ! FWD Input
+                                          GeometryInfo,      &  ! Input    
+                                          Predictor%ODZeeman,&  ! FWD Input
+                                          Predictor_AD%ODZeeman, &  ! AD Intput
+                                          Atmosphere_AD      )  ! AD Output
+      END IF
+    END IF
+
     ! Select required algorithm
     idx = TC%Sensor_LoIndex(SensorIndex)  
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
@@ -954,8 +1076,7 @@ CONTAINS
                                         APV%ODAS                )
 
       CASE( ODPS_ALGORITHM )
-        CALL ODPS_Compute_Predictors_AD(SensorInput,       &  ! Input
-                                        TC%ODPS(idx),      &  ! Input
+        CALL ODPS_Compute_Predictors_AD(TC%ODPS(idx)  ,    &  ! Input
                                         Atmosphere,        &  ! FWD Input
                                         GeometryInfo,      &  ! Input     
                                         Predictor%ODPS,    &  ! FWD Input
@@ -978,14 +1099,14 @@ CONTAINS
 
         ENDIF
         IF(TC%ODSSU(idx)%subAlgorithm == ODPS_ALGORITHM) THEN                                     
-         CALL ODPS_Compute_Predictors_AD(SensorInput,       &  ! Input
-                                         TC%ODSSU(idx)%ODPS(1), &  ! Input
+         CALL ODPS_Compute_Predictors_AD(TC%ODSSU(idx)%ODPS(1), &  ! Input
                                          Atmosphere,        &  ! FWD Input
                                          GeometryInfo,      &  ! Input     
                                          Predictor%ODPS,    &  ! FWD Input
                                          Predictor_AD%ODPS, &  ! AD Intput
                                          Atmosphere_AD      )  ! AD Output
         ENDIF
+
     END SELECT
 
   END SUBROUTINE CRTM_Compute_Predictors_AD
@@ -1080,12 +1201,8 @@ CONTAINS
     CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
-    ! Local
     INTEGER :: idx
 
-    ! Call required algorithm
-    idx = TC%Sensor_LoIndex(SensorIndex)  
-    
     ! Set up
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
@@ -1095,6 +1212,7 @@ CONTAINS
     ! ----------------------------------------------
     ! Destroy TauCoeff structure
     ! ----------------------------------------------   
+    idx = TC%Sensor_LoIndex(SensorIndex)      
     SELECT CASE( TC%Algorithm_ID( SensorIndex ) )                            
       CASE ( ODAS_ALGORITHM )                                                       
 
@@ -1145,6 +1263,22 @@ CONTAINS
                             Error_Status,    &                                
                             Message_Log = Message_Log )                       
     END IF                                                                    
+
+    ! Zeeman sensor
+    idx = TC%ZSensor_LoIndex(SensorIndex)
+    IF( idx > 0 )THEN
+       Error_Status = ODPS_Destroy_Predictor( Predictor%ODZeeman, &    
+                                        No_Clear    = No_Clear,   &    
+                                        RCS_Id      =  RCS_Id,    &            
+                                        Message_Log = Message_Log )    
+       IF( Error_Status == SUCCESS )THEN                               
+         Error_Status = ODPS_Destroy_PAFV(&                            
+                        Predictor%ODZeeman%PAFV, &                     
+                        RCS_Id      =  RCS_Id,   &                            
+                        Message_Log = Message_Log )                    
+       END IF                                                          
+       
+    END IF
 
   END FUNCTION CRTM_Destroy_Predictor
 
@@ -1314,31 +1448,31 @@ CONTAINS
          ENDIF
          
          IF(TC%ODSSU(SLoIndex)%subAlgorithm == ODPS_ALGORITHM) THEN   
-          i = TC%ODSSU(SLoIndex)%ODPS(1)%Group_Index
-          IF(TC%ODSSU(SLoIndex)%ODPS(1)%n_OCoeffs > 0 .AND. ALLOW_OPTRAN)THEN  
-            Predictor%ODPS%OPTRAN = .TRUE.                      
-          END IF                                                              
-          Allocate_Status = ODPS_Allocate_Predictor( &
-                                TC%ODSSU(SLoIndex)%ODPS(1)%n_Layers,  & ! input  - n internal layers
-                                ODPS_Get_n_Components(i),    & ! Input
-                                ODPS_Get_max_n_Predicotrs(i),& ! Input                              
-                                Predictor%ODPS   ,           & ! Output            
-                                OPTRAN = Predictor%ODPS%OPTRAN, & ! Input, OPTRAN flag         
-                                n_User_Layers = n_Layers ,   & ! Input - n user layers
-                                RCS_Id = RCS_Id,             & ! Revision control                
-                                Message_Log=Message_Log  )     ! Error messaging 
-          ! Allocate memory for FW variables, whose values will be saved in the FW routines and
-          ! used in the TL and AD routines
-          IF(PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag(i))THEN
-            Allocate_Status = ODPS_Allocate_PAFV( &
-                                           TC%ODSSU(SLoIndex)%ODPS(1)%n_Layers, & ! Input
-                                           ODPS_Get_n_Absorbers(i),    & ! Input
-                                           n_Layers,                   & ! Input
-                                           Predictor%ODPS%OPTRAN,      & ! Input
-                                           Predictor%ODPS%PAFV,        & ! Output
-                                           RCS_Id = RCS_Id,            & ! Revision control     
-                                           Message_Log=Message_Log  )    ! Error messaging 
-          END IF
+           i = TC%ODSSU(SLoIndex)%ODPS(1)%Group_Index
+           IF(TC%ODSSU(SLoIndex)%ODPS(1)%n_OCoeffs > 0 .AND. ALLOW_OPTRAN)THEN  
+             Predictor%ODPS%OPTRAN = .TRUE.                      
+           END IF                                                              
+           Allocate_Status = ODPS_Allocate_Predictor( &
+                                 TC%ODSSU(SLoIndex)%ODPS(1)%n_Layers,  & ! input  - n internal layers
+                                 ODPS_Get_n_Components(i),    & ! Input
+                                 ODPS_Get_max_n_Predicotrs(i),& ! Input                              
+                                 Predictor%ODPS   ,           & ! Output            
+                                 OPTRAN = Predictor%ODPS%OPTRAN, & ! Input, OPTRAN flag         
+                                 n_User_Layers = n_Layers ,   & ! Input - n user layers
+                                 RCS_Id = RCS_Id,             & ! Revision control                
+                                 Message_Log=Message_Log  )     ! Error messaging 
+           ! Allocate memory for FW variables, whose values will be saved in the FW routines and
+           ! used in the TL and AD routines
+           IF(PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag(i))THEN
+             Allocate_Status = ODPS_Allocate_PAFV( &
+                                            TC%ODSSU(SLoIndex)%ODPS(1)%n_Layers, & ! Input
+                                            ODPS_Get_n_Absorbers(i),    & ! Input
+                                            n_Layers,                   & ! Input
+                                            Predictor%ODPS%OPTRAN,      & ! Input
+                                            Predictor%ODPS%PAFV,        & ! Output
+                                            RCS_Id = RCS_Id,            & ! Revision control     
+                                            Message_Log=Message_Log  )    ! Error messaging 
+           END IF
                                            
          ENDIF
     END SELECT
@@ -1352,6 +1486,53 @@ CONTAINS
                             Message_Log=Message_Log )                                   
       RETURN                                                                            
     END IF                                                                              
+
+    ! Zeeman sensor
+    SLoIndex = TC%ZSensor_LoIndex(SensorIndex)
+
+ZEEMAN_BLOCK: IF( SLoIndex > 0 )THEN
+
+      Allocate_Status = ODPS_Allocate_Predictor( &                                            
+                            TC%ODZeeman(SLoIndex)%n_Layers,  & ! input  - n internal layers   
+                            N_ZCOMPONENTS,                   & ! Input                        
+                            MAX_N_PREDICTORS_ZSSMIS,         & ! Input                                 
+                            Predictor%ODZeeman,              & ! Output                       
+                            n_User_Layers = n_Layers ,       & ! Input - n user layers        
+                            RCS_Id = RCS_Id,                 & ! Revision control                   
+                            Message_Log=Message_Log  )       ! Error messaging                  
+      IF ( Allocate_Status /= SUCCESS ) THEN                                                              
+        Error_Status=FAILURE                                                                              
+        WRITE( Message,'("Error allocating Predictor_ODZeeman for the sensor index",i0)' ) SensorIndex    
+        CALL Display_Message( ROUTINE_NAME, &                                                             
+                              TRIM(Message), &                                                            
+                              Error_Status, &                                                             
+                              Message_Log=Message_Log )                                                   
+        RETURN                                                                                            
+      END IF                                                                                              
+      ! Allocate memory for FW variables, whose values will be saved in the FW routines and    
+      ! used in the TL and AD routines   
+      IF(PRESENT(SaveFWV))THEN 
+        Allocate_Status = ODPS_Allocate_PAFV( &                                                
+                                       TC%ODZeeman(SLoIndex)%n_Layers, & ! Input               
+                                       N_ZABSORBERS,               & ! Input                   
+                                       n_Layers,                   & ! Input                   
+                                       Predictor%ODZeeman%OPTRAN,  & ! Input                   
+                                       Predictor%ODZeeman%PAFV,    & ! Output                  
+                                       RCS_Id = RCS_Id,            & ! Revision control        
+                                       Message_Log=Message_Log  )    ! Error messaging         
+ 
+        IF ( Allocate_Status /= SUCCESS ) THEN                                                              
+          Error_Status=FAILURE                                                                              
+          WRITE( Message,'("Error allocating Predictor%ODZeeman%PAFV for the sensor index",i0)' ) SensorIndex   
+          CALL Display_Message( ROUTINE_NAME, &                                                             
+                               TRIM(Message), &                                                            
+                               Error_Status, &                                                             
+                               Message_Log=Message_Log )                                                   
+          RETURN                                                                                                    
+        END IF                                                                                              
+      END IF
+      
+    END IF ZEEMAN_BLOCK
 
   END FUNCTION CRTM_Allocate_Predictor
 

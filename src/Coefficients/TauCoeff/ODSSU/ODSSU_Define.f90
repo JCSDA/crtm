@@ -21,12 +21,11 @@ MODULE ODSSU_Define
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE ODAS_Define,           ONLY: ODAS_type   , &
                                    Destroy_ODAS, &
-                                   Clear_ODAS  , &
                                    Associated_ODAS, ODAS_ALGORITHM
   USE ODPS_Define,           ONLY: ODPS_type   , &
                                    Destroy_ODPS, &
-                                   Clear_ODPS  , &
                                    Associated_ODPS, ODPS_ALGORITHM
+  USE CRTM_Parameters,       ONLY: ODSSU_ALGORITHM
   
   ! Disable implicit typing
   IMPLICIT NONE
@@ -47,7 +46,6 @@ MODULE ODSSU_Define
   PUBLIC :: Associated_ODSSU
   PUBLIC :: Destroy_ODSSU
   PUBLIC :: Allocate_ODSSU
-  PUBLIC :: Clear_ODSSU
   PUBLIC :: CheckRelease_ODSSU
   PUBLIC :: CheckAlgorithm_ODSSU
   PUBLIC :: Info_ODSSU
@@ -72,8 +70,7 @@ MODULE ODSSU_Define
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: ODSSU_RELEASE = 6  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODSSU_VERSION = 4  ! This is just the data version.
-  ! The optical depth algorithm Id
-  INTEGER     , PARAMETER :: ODSSU_ALGORITHM = 3
+  ! The optical depth algorithm name
   CHARACTER(*), PARAMETER :: ODSSU_ALGORITHM_NAME = 'ODSSU'
   ! ASCII codes for Version routine
   INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
@@ -332,6 +329,12 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    ! Default is to clear scalar members...
+    Clear = .TRUE.
+    ! ....unless the No_Clear argument is set
+    IF ( PRESENT( No_Clear ) ) THEN
+      IF ( No_Clear == SET ) Clear = .FALSE.
+    END IF
 
     ! If ALL components are NOT associated, do nothing
     IF ( .NOT. Associated_ODSSU( ODSSU ) ) RETURN
@@ -340,7 +343,7 @@ CONTAINS
     IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
      DO i = 1, ODSSU%n_TC_CellPressures
        Error_Status = Destroy_ODAS( ODSSU%ODAS(i), &
-                                   Message_Log = Message_Log)
+                                    Message_Log = Message_Log)
        IF( Error_Status /= SUCCESS )THEN
          CALL Display_Message( ROUTINE_NAME,    &
                                "Error deallocating ODAS for ODSSU", &
@@ -353,7 +356,7 @@ CONTAINS
     IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
      DO i = 1, ODSSU%n_TC_CellPressures
        Error_Status = Destroy_ODPS( ODSSU%ODPS(i), &
-                                   Message_Log = Message_Log)
+                                    Message_Log = Message_Log)
        IF( Error_Status /= SUCCESS )THEN
          CALL Display_Message( ROUTINE_NAME,    &
                                "Error deallocating ODPS for ODSSU", &
@@ -399,12 +402,7 @@ CONTAINS
                             Message_Log=Message_Log )
     END IF
 
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
+    ! Clear the scalar members
     IF ( Clear ) CALL Clear_ODSSU( ODSSU )
 
     ! Reinitialise the dimensions
@@ -638,52 +636,6 @@ CONTAINS
 
   END FUNCTION Allocate_ODSSU
      
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Clear_ODSSU
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a ODSSU structure.
-!
-! CALLING SEQUENCE:
-!       CALL Clear_ODSSU( ODSSU ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       ODSSU:       ODSSU structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       ODSSU_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
-!
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE Clear_ODSSU( ODSSU )
-    TYPE(ODSSU_type), INTENT(IN OUT) :: ODSSU
-    ! Local
-    INTEGER :: i
-
-    IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
-     DO i = 1, ODSSU%n_TC_CellPressures
-       CALL Clear_ODAS( ODSSU%ODAS(i) )
-     END DO
-    ENDIF
-    IF(ODSSU%subAlgorithm == ODPS_ALGORITHM) THEN  
-     DO i = 1, ODSSU%n_TC_CellPressures
-       CALL Clear_ODPS( ODSSU%ODPS(i) )
-     END DO
-    ENDIF
-    ODSSU%Release   = ODSSU_RELEASE
-    ODSSU%Version   = ODSSU_VERSION
-    ODSSU%Algorithm = ODSSU_ALGORITHM
-    ODSSU%subAlgorithm = 0
-    ODSSU%Sensor_Id        = ' '
-    ODSSU%Sensor_Type      = INVALID_SENSOR
-    ODSSU%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    ODSSU%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-  END SUBROUTINE Clear_ODSSU
 
 !----------------------------------------------------------------------------------
 !
@@ -948,4 +900,51 @@ CONTAINS
 
   END SUBROUTINE Info_ODSSU
   
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!----------------------------------------------------------------------------------
+!
+! NAME:
+!       Clear_ODSSU
+!
+! PURPOSE:
+!       Subroutine to clear the scalar members of a ODSSU structure.
+!
+! CALLING SEQUENCE:
+!       CALL Clear_ODSSU( ODSSU ) ! Output
+!
+! OUTPUT ARGUMENTS:
+!       ODSSU:       ODSSU structure for which the scalar members have
+!                    been cleared.
+!                    UNITS:      N/A
+!                    TYPE:       ODSSU_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+!
+!----------------------------------------------------------------------------------
+
+  SUBROUTINE Clear_ODSSU( ODSSU )
+    TYPE(ODSSU_type), INTENT(IN OUT) :: ODSSU
+    ! Local
+    INTEGER :: i
+
+    ODSSU%Release   = ODSSU_RELEASE
+    ODSSU%Version   = ODSSU_VERSION
+    ODSSU%Algorithm = ODSSU_ALGORITHM
+    ODSSU%subAlgorithm = 0
+    ODSSU%Sensor_Id        = ' '
+    ODSSU%Sensor_Type      = INVALID_SENSOR
+    ODSSU%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    ODSSU%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+  END SUBROUTINE Clear_ODSSU
+
 END MODULE ODSSU_Define

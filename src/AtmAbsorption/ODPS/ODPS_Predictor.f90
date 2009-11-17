@@ -25,11 +25,7 @@ MODULE ODPS_Predictor
                                        MAX_OPTRAN_USED_PREDICTORS, &
                                        Destroy_PAFV,      &
                                        Allocate_PAFV
-  USE ODPS_ZAtmAbsorption,      ONLY : Compute_Predictors_zssmis,    &
-                                       Compute_Predictors_zssmis_TL, &
-                                       Compute_Predictors_zssmis_AD, &
-                                       MAX_N_PREDICTORS_ZSSMIS,      &                                       
-                                       N_ZCOMPONENTS
+
   ! -----------------------
   ! Disable implicit typing
   ! -----------------------
@@ -44,9 +40,6 @@ MODULE ODPS_Predictor
   PUBLIC :: Allocate_Predictor
   PUBLIC :: Destroy_PAFV
   PUBLIC :: Allocate_PAFV
-  PUBLIC :: Compute_Predictors_zssmis
-  PUBLIC :: Compute_Predictors_zssmis_TL
-  PUBLIC :: Compute_Predictors_zssmis_AD
   
   ! routines from this module
   PUBLIC  :: Compute_Predictor
@@ -68,7 +61,7 @@ MODULE ODPS_Predictor
 
   ! Public parameters  
   PUBLIC  :: TOT_ComID, WLO_ComID, WET_ComID, CO2_ComID
-  PUBLIC  :: GROUP_1, GROUP_2, GROUP_3, GROUP_ZSSMIS
+  PUBLIC  :: GROUP_1, GROUP_2, GROUP_3
   
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
@@ -77,19 +70,15 @@ MODULE ODPS_Predictor
   !----------------------------------------------------------
   ! Dimensions of each predictor group.
   !----------------------------------------------------------
-  INTEGER, PARAMETER  :: N_G = 4
-  INTEGER, PARAMETER  :: N_COMPONENTS_G(N_G)     = (/8,   5, 2, N_ZCOMPONENTS/)
-  INTEGER, PARAMETER  :: N_ABSORBERS_G(N_G)      = (/6,   3, 1, 1/)
-  INTEGER, PARAMETER  :: MAX_N_PREDICTORS_G(N_G) = (/18, 15, 14, MAX_N_PREDICTORS_ZSSMIS/)
-  ! Group index  
+  INTEGER, PARAMETER  :: N_G = 3
+  INTEGER, PARAMETER  :: N_COMPONENTS_G(N_G)     = (/8,   5, 2/)
+  INTEGER, PARAMETER  :: N_ABSORBERS_G(N_G)      = (/6,   3, 1/)
+  INTEGER, PARAMETER  :: MAX_N_PREDICTORS_G(N_G) = (/18, 15, 14/)
+  ! Group index (note, group indexes 4 - 6 are reserved for Zeeman sub-algorithms 
   INTEGER, PARAMETER :: GROUP_1 = 1
   INTEGER, PARAMETER :: GROUP_2 = 2
   INTEGER, PARAMETER :: GROUP_3 = 3
-  ! Group index for ZSSMIS. This number should not be used in this module 
-  ! or modified without a corresponding change in ODPS_ZAtmAbsorption.f90.
-  INTEGER, PARAMETER :: GROUP_4 = 4
-  INTEGER, PARAMETER :: GROUP_ZSSMIS = GROUP_4
-
+  
   ! Number of predictors for each component
   INTEGER, PARAMETER :: N_PREDICTORS_G1(8) = (/ &
                      7, &  ! dry gas                                                              

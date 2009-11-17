@@ -1,0 +1,81 @@
+
+     **********************************************************
+                           Example_Forward
+
+      Program to provide an example of CRTM Forward function 
+      usage.
+
+      $Revision: 5594 $
+     **********************************************************
+
+
+     Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+     Initializing the CRTM...
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssmis_f16.SpcCoeff.bin; 
+ SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=24
+ Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssmis_f16.TauCoeff.bin; 
+   ODAS RELEASE.VERSION:  6.08  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=24  N_Alphas= 3  N_Coeffs=2147
+ Read_ODPS_Binary(INFORMATION) : FILE: ../Coefficient_Data/zssmis_f16.TauCoeff.bin; 
+   ODPS RELEASE.VERSION:  2.01  N_LAYERS=105  N_COMPONENTS=1  N_ABSORBERS=1  N_CHANNELS=4  N_COEFFS=59575
+ Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
+ CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
+ AerosolCoeff RELEASE.VERSION:  2.02  N_WAVELENGTHS=  91  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
+ EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
+
+       Profile 1 FWD output
+       Sensor_Id   Channel         R            Tb
+       ssmis_f16      1      6.411209E-03     276.317
+       ssmis_f16      2      6.831331E-03     267.302
+       ssmis_f16      3      6.717533E-03     255.177
+       ssmis_f16      4      6.495023E-03     239.583
+       ssmis_f16      5      6.076487E-03     215.506
+       ssmis_f16      6      6.223480E-03     207.236
+       ssmis_f16      7      6.965542E-03     215.755
+       ssmis_f16      8      5.702812E-02     278.740
+       ssmis_f16      9      8.281580E-02     271.615
+       ssmis_f16     10      8.036087E-02     263.951
+       ssmis_f16     11      7.841231E-02     257.715
+       ssmis_f16     12      9.971251E-04     289.587
+       ssmis_f16     13      9.974160E-04     289.671
+       ssmis_f16     14      1.297772E-03     285.516
+       ssmis_f16     15      3.534261E-03     281.131
+       ssmis_f16     16      3.534242E-03     281.131
+       ssmis_f16     17      2.146509E-02     279.575
+       ssmis_f16     18      2.146507E-02     279.575
+       ssmis_f16     19      8.925210E-03     243.473
+       ssmis_f16     20      7.967252E-03     235.500
+       ssmis_f16     21      8.782886E-03     259.460
+       ssmis_f16     22      8.599610E-03     254.076
+       ssmis_f16     23      8.052415E-03     238.002
+       ssmis_f16     24      7.746418E-03     229.013
+
+       Profile 2 FWD output
+       Sensor_Id   Channel         R            Tb
+       ssmis_f16      1      5.396881E-03     232.791
+       ssmis_f16      2      6.069386E-03     237.629
+       ssmis_f16      3      6.273162E-03     238.381
+       ssmis_f16      4      6.402708E-03     236.197
+       ssmis_f16      5      6.639106E-03     235.336
+       ssmis_f16      6      7.105489E-03     236.412
+       ssmis_f16      7      7.626828E-03     236.103
+       ssmis_f16      8      4.919987E-02     240.967
+       ssmis_f16      9      7.402216E-02     243.237
+       ssmis_f16     10      7.423320E-02     244.156
+       ssmis_f16     11      7.354501E-02     241.988
+       ssmis_f16     12      8.075807E-04     234.627
+       ssmis_f16     13      8.075811E-04     234.627
+       ssmis_f16     14      1.054211E-03     232.031
+       ssmis_f16     15      2.848103E-03     226.723
+       ssmis_f16     16      2.848083E-03     226.723
+       ssmis_f16     17      1.810319E-02     236.130
+       ssmis_f16     18      1.810317E-02     236.130
+       ssmis_f16     19      8.195409E-03     223.688
+       ssmis_f16     20      6.739823E-03     199.443
+       ssmis_f16     21      8.351336E-03     246.783
+       ssmis_f16     22      8.235634E-03     243.384
+       ssmis_f16     23      8.122840E-03     240.071
+       ssmis_f16     24      8.104046E-03     239.519
+
+     Destroying the CRTM...

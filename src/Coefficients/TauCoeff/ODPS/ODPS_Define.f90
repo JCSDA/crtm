@@ -20,6 +20,7 @@ MODULE ODPS_Define
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
   USE Sort_Utility,          ONLY: InsertionSort
+  USE CRTM_Parameters,       ONLY: ODPS_ALGORITHM
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -60,7 +61,6 @@ MODULE ODPS_Define
   PUBLIC :: INFRARED_SENSOR 
   PUBLIC :: VISIBLE_SENSOR  
   PUBLIC :: SENSOR_TYPE_NAME
-  PUBLIC :: Clear_ODPS
   ! The Global unique algorithm ID
   PUBLIC :: ODPS_ALGORITHM
 
@@ -81,8 +81,7 @@ MODULE ODPS_Define
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: ODPS_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODPS_VERSION = 1  ! This is just the data version.
-  ! The optical depth algorithm Id
-  INTEGER     , PARAMETER :: ODPS_ALGORITHM = 2
+  ! The optical depth algorithm name
   CHARACTER(*), PARAMETER :: ODPS_ALGORITHM_NAME = 'ODPS'
   ! ASCII codes for Version routine
   INTEGER, PARAMETER :: CARRIAGE_RETURN = 13

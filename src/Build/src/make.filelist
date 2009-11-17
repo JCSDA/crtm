@@ -37,8 +37,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Utility.f90 \
             CRTM_Interpolation.f90 \
             CRTM_SpcCoeff.f90 \
-            TauCoeff_Define.f90 \
-            CRTM_TauCoeff.f90 \
+            CRTM_TauCoeff.f90 TauCoeff_Define.f90 \
             CRTM_AerosolCoeff.f90 \
             CRTM_CloudCoeff.f90 \
             CRTM_EmisCoeff.f90 \
@@ -105,13 +104,17 @@ SRC_FILES = Type_Kinds.f90 \
             ODPS_Binary_IO.f90 \
             ODPS_Define.f90 \
             ODPS_TauCoeff.f90 \
-            ODPS_ZAtmAbsorption.f90 \
             CRTM_GeometryInfo.f90 \
             ODSSU_AtmAbsorption.f90 \
             ODSSU_Define.f90 \
             ODSSU_Binary_IO.f90 \
             ODSSU_TauCoeff.f90 \
-            Profile_Utility_Parameters.f90
+            Profile_Utility_Parameters.f90 \
+            ODPS_CoordinateMapping.f90 \
+            ODZeeman_TauCoeff.f90 \
+            ODZeeman_AtmAbsorption.f90 \
+            ODZeeman_Predictor.f90
+            
                         
             #CRTM_ChannelInfo.f90 \
 

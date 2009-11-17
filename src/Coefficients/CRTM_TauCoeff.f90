@@ -46,6 +46,13 @@ MODULE CRTM_TauCoeff
   USE TauCoeff_Define     , ONLY: TauCoeff_type, &
                                   TauCoeff_Destroy, &
                                   TauCoeff_Create
+  USE ODZeeman_TauCoeff   , ONLY: ODZeeman_Load_TauCoeff    => Load_TauCoeff   , & 
+                                  ODZeeman_Destroy_TauCoeff => Destroy_TauCoeff, & 
+                                  ODZeeman_TC => TC                                
+  USE CRTM_SensorInfo     , ONLY: WMO_SSMIS, WMO_AMSUA                             
+  USE TauCoeff_Define     , ONLY: TauCoeff_type, &                                 
+                                  TauCoeff_Destroy, &                              
+                                  TauCoeff_Create                                  
 
  ! Disable all implicit typing
   IMPLICIT NONE
@@ -204,10 +211,12 @@ CONTAINS
     CHARACTER(256), DIMENSION(MAX_N_SENSORS) :: TauCoeff_File
     INTEGER :: Allocate_Status, Deallocate_Status
     INTEGER :: n, n_Sensors
-    ! Local
+    INTEGER :: i, j
     INTEGER, PARAMETER :: SL = 128
     INTEGER            :: Algorithm_ID
     CHARACTER(SL), ALLOCATABLE :: SensorIDs(:)
+    CHARACTER(SL), ALLOCATABLE :: zfnames(:)
+    INTEGER,       ALLOCATABLE :: SensorIndex(:)
 
     ! Set up
     Error_Status = SUCCESS
@@ -269,20 +278,24 @@ CONTAINS
                               Message_Log=Message_Log)
         RETURN
       END IF
-      ALLOCATE( SensorIDs( n_Sensors ),   & 
-                STAT = Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error allocating SensorIDs with an n_Sensors dimension. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
 
     END IF
+
+    ! Allocate memory for the local arrays    
+    ALLOCATE( SensorIDs( n_Sensors ),   &                                                                 
+              zfnames( n_Sensors ),     & 
+              SensorIndex( n_Sensors ), &                                                                
+              STAT = Allocate_Status )                                                                    
+    IF ( Allocate_Status /= 0 ) THEN                                                                      
+      Error_Status = FAILURE                                                                              
+      WRITE( Message, '( "Error allocating local arrays with an n_Sensors dimension. STAT = ", i5 )' ) &  
+                      Allocate_Status                                                                     
+      CALL Display_Message( ROUTINE_NAME,    &                                                            
+                            TRIM( Message ), &                                                            
+                            Error_Status,    &                                                            
+                            Message_Log = Message_Log )                                                   
+      RETURN                                                                                              
+    END IF                                                                                                
 
     CALL TauCoeff_Create(TC, n_Sensors, Error_Status)
     IF ( Error_Status /= SUCCESS ) THEN 
@@ -365,7 +378,9 @@ CONTAINS
     n = TC%n_ODAS
     IF( n > 0 )THEN
       IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == ODAS_ALGORITHM)
+        CALL Extract_SensorInfo(ODAS_ALGORITHM, TC%Algorithm_ID, &
+                                SensorIDs, SensorIndex, &
+                                SensorID_in = Sensor_ID )
         Error_Status = ODAS_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
@@ -393,6 +408,15 @@ CONTAINS
 
       ! set the pointer pointing to the local (algorithm specific) TC array
       TC%ODAS => ODAS_TC
+
+      ! Copy over sensor types and IDs 
+      DO i = 1, n  
+        j = SensorIndex(i)   
+        TC%Sensor_ID(j)        = TC%ODAS(i)%Sensor_ID  
+        TC%WMO_Satellite_ID(j) = TC%ODAS(i)%WMO_Satellite_ID
+        TC%WMO_Sensor_ID(j)    = TC%ODAS(i)%WMO_Sensor_ID
+        TC%Sensor_Type(j)      = TC%ODAS(i)%Sensor_Type
+      END DO     
         
     END IF
 
@@ -401,7 +425,9 @@ CONTAINS
     n = TC%n_ODPS
     IF( n > 0 )THEN
       IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == ODPS_ALGORITHM)
+        CALL Extract_SensorInfo(ODPS_ALGORITHM, TC%Algorithm_ID, &
+                                SensorIDs, SensorIndex, &
+                                SensorID_in = Sensor_ID )
         Error_Status = ODPS_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
@@ -429,6 +455,15 @@ CONTAINS
 
       ! set the pointer pointing to the local (algorithm specific) TC array
       TC%ODPS => ODPS_TC
+
+      ! Copy over sensor types and IDs 
+      DO i = 1, n  
+        j = SensorIndex(i)   
+        TC%Sensor_ID(j)        = TC%ODPS(i)%Sensor_ID  
+        TC%WMO_Satellite_ID(j) = TC%ODPS(i)%WMO_Satellite_ID
+        TC%WMO_Sensor_ID(j)    = TC%ODPS(i)%WMO_Sensor_ID
+        TC%Sensor_Type(j)      = TC%ODPS(i)%Sensor_Type
+      END DO     
         
     END IF
 
@@ -437,7 +472,9 @@ CONTAINS
     n = TC%n_ODSSU
     IF( n > 0 )THEN
       IF ( PRESENT(Sensor_ID) ) THEN
-        SensorIDs(1:n) = PACK(Sensor_ID, MASK=TC%Algorithm_ID == ODSSU_ALGORITHM)
+        CALL Extract_SensorInfo(ODSSU_ALGORITHM, TC%Algorithm_ID, &
+                                SensorIDs, SensorIndex, &
+                                SensorID_in = Sensor_ID )
         Error_Status = ODSSU_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
@@ -466,24 +503,70 @@ CONTAINS
       ! set the pointer pointing to the local (algorithm specific) TC array
       TC%ODSSU => ODSSU_TC
         
+      ! Copy over sensor types and IDs 
+      DO i = 1, n  
+        j = SensorIndex(i) 
+        TC%Sensor_ID(j)        = TC%ODSSU(i)%Sensor_ID  
+        TC%WMO_Satellite_ID(j) = TC%ODSSU(i)%WMO_Satellite_ID
+        TC%WMO_Sensor_ID(j)    = TC%ODSSU(i)%WMO_Sensor_ID
+        TC%Sensor_Type(j)      = TC%ODSSU(i)%Sensor_Type
+      END DO   
+        
     END IF
 
+    !----------------------------------------------------------------------------------
+    ! Load auxiliary tau coeff. data for sensors which require special Tau algorithms
+    ! for some of the channels (i.g. the Zeeman algorithms for SSMIS and AMSU-A.
+    !----------------------------------------------------------------------------------
+    TC%ZSensor_LoIndex = 0
+    TC%n_ODZeeman = 0
+    i = 1
+    DO n = 1, n_Sensors
+      IF(TC%WMO_Sensor_ID(n) == WMO_SSMIS .OR. TC%WMO_Sensor_ID(n) == WMO_AMSUA )THEN
+               
+          ! file name: i.g. zssmis_n16.TauCoeff.bin
+        zfnames(i) = 'z'//TRIM(TC%Sensor_ID(n))//'.TauCoeff.bin'
+        IF( File_Exists(TRIM(File_Path)//TRIM(zfnames(i))) ) THEN
+          TC%ZSensor_LoIndex(n) = i
+          TC%n_ODZeeman = i
+          i = i + 1
+        END IF
+      END IF
+    END DO
+    IF( TC%n_ODZeeman > 0 )THEN 
+      Error_Status = ODZeeman_Load_TauCoeff( &                              
+                                     zfnames(1:TC%n_ODZeeman)           , &                     
+                                     File_Path        =File_Path        , &    
+                                     Quiet            =Quiet            , &    
+                                     Process_ID       =Process_ID       , &    
+                                     Output_Process_ID=Output_Process_ID, &    
+                                     Message_Log      =Message_Log        )  
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error loading ODZeeman TauCoeff data', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
+      TC%ODZeeman => ODZeeman_TC
+    END IF  
 
     !----------------------------------------------
     ! deallocate local arrays
     !----------------------------------------------
 
-    IF ( PRESENT(Sensor_ID) ) THEN
-      DEALLOCATE(SensorIDs, STAT  = Deallocate_Status)
-      IF ( Deallocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating the SensorIDs array', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    ENDIF
+    DEALLOCATE(SensorIDs,   &                 
+               zfnames,     &
+               SensorIndex, &                                                                
+                STAT  = Deallocate_Status)
+    IF ( Deallocate_Status /= 0 ) THEN                                   
+      Error_Status = FAILURE                                             
+      CALL Display_Message( ROUTINE_NAME, &                              
+                            'Error deallocating the local arrays', &  
+                            Error_Status, &                              
+                            Message_Log=Message_Log )                    
+      RETURN                                                             
+    END IF                                                               
   
   END FUNCTION CRTM_Load_TauCoeff
 
@@ -627,6 +710,26 @@ CONTAINS
 
     END IF
 
+    IF( TC%n_ODZeeman > 0 )THEN
+
+      ! disassociate the TC%ODAS pointer (which is pointing to TauCoeff_ODAS)
+      NULLIFY( TC%ODZeeman )
+
+      ! Destroy local TC, i.e TauCoeff_ODAS
+      Destroy_Status = ODZeeman_Destroy_TauCoeff( Process_ID =Process_ID , &
+                                                  Message_Log=Message_Log  )
+      IF ( Destroy_Status /= SUCCESS ) THEN
+        Error_Status = Destroy_Status
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Error deallocating shared TauCoeff Zeeman data structure', &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+      END IF
+
+      TC%n_ODZeeman = 0    
+
+    END IF
+
     ! Destroy TC
     CALL TauCoeff_Destroy(TC, Error_Status)                                                                   
     IF ( Error_Status /= SUCCESS ) THEN 
@@ -635,7 +738,13 @@ CONTAINS
       RETURN
     END IF                          
 
-    TC%n_Sensors    = 0       
+    ! Destroy TC
+    CALL TauCoeff_Destroy(TC, Error_Status)                                                                   
+    IF ( Error_Status /= SUCCESS ) THEN 
+      message = 'Error destroying TC'
+      CALL Display_Message( ROUTINE_NAME, TRIM(message), Error_Status)
+      RETURN
+    END IF                          
 
   END FUNCTION CRTM_Destroy_TauCoeff
 
@@ -744,5 +853,47 @@ CONTAINS
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_AlgorithmID
-                               
+
+  !------------------------------------------------------------------------------------------
+  ! Extract sensor IDs and sensor indexes
+  !   Inputs:
+  !     TheAlgorithmID - an algorithm ID
+  !     AlgorithmID    - algorithm ID array holding the ID data
+  !   Outputs:
+  !     SensorID_subset - subset of the sensor IDs with the same algorithm ID TheAlgorithmID,
+  !                       extracted from the array AlgorithmID
+  !     SensorIndex     - the subset of the sensor indexes, corresponding to SensorID_subset
+  !  Optional inputs:
+  !     SensorID_in     - sensor ID array
+  !               
+  ! Note: if Sensor_ID  is not present, no Sensor ID will be extracted and the sensor index
+  !       is set to 1 (this is the case if user does not specify sensor ID).    
+  !------------------------------------------------------------------------------------------ 
+  SUBROUTINE Extract_SensorInfo(TheAlgorithmID, AlgorithmID,  &  ! Inputs
+                                SensorID_subset, SensorIndex, &  ! Output
+                                SensorID_in )                    ! Optional input
+     INTEGER,                INTENT(IN)  :: TheAlgorithmID
+     INTEGER,                INTENT(IN)  :: AlgorithmID(:)
+     CHARACTER(*),           INTENT(OUT) :: SensorID_subset(:)
+     INTEGER,                INTENT(OUT) :: SensorIndex(:)
+     CHARACTER(*), OPTIONAL, INTENT(IN)  :: SensorID_in(:)
+     
+     ! LOCAL variables
+     INTEGER :: i, ii
+     
+     IF(PRESENT(SensorID_in))THEN
+        ii = 0
+        DO i = 1, SIZE(AlgorithmID)
+          IF(TC%Algorithm_ID(i) == TheAlgorithmID) THEN
+            ii = ii + 1
+            SensorID_subset(ii) = SensorID_in(i) 
+            SensorIndex(ii) = i
+          END IF
+        END DO
+     ELSE
+        SensorIndex(1) = 1
+     END IF
+     
+  END SUBROUTINE Extract_SensorInfo 
+  
 END MODULE CRTM_TauCoeff

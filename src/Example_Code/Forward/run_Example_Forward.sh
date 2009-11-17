@@ -14,9 +14,7 @@ else
 fi
 
 # Specify test sensor ids
-#SENSOR_ID="ssu_n14 zssmis_f16"
-#SENSOR_ID="ssu_tirosn"
-SENSOR_ID="amsua_n18 mhs_n18 hirs4_n18 ssu_n14 zssmis_f16"
+SENSOR_ID="amsua_n18 mhs_n18 hirs4_n18 ssu_n14 ssmis_f16"
 
 # Loop over test sensors
 for SID in ${SENSOR_ID}; do

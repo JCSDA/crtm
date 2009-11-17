@@ -63,6 +63,8 @@ MODULE TauCoeff_Define
   '$Id$'
   ! Message string length
   INTEGER , PARAMETER :: ML = 256
+  ! Sensor ID string length
+  INTEGER , PARAMETER :: SL = 20
 
   
   ! -----------------------
@@ -70,19 +72,35 @@ MODULE TauCoeff_Define
   ! -----------------------
   TYPE :: TauCoeff_type
     ! Array dimensions
-    INTEGER :: n_Sensors = 0       ! n
-    INTEGER :: n_ODAS    = 0       ! I1
-    INTEGER :: n_ODPS    = 0       ! I2
-    INTEGER :: n_ODSSU   = 0       ! I3
+    INTEGER :: n_Sensors          = 0       ! n
+    INTEGER :: n_ODAS             = 0       ! I1
+    INTEGER :: n_ODPS             = 0       ! I2
+    INTEGER :: n_ODSSU            = 0       ! I3
+    INTEGER :: n_ODZeeman         = 0       ! I4
     ! Arrays
     INTEGER, ALLOCATABLE :: Algorithm_ID(:)    ! n
     INTEGER, ALLOCATABLE :: Sensor_Index(:)    ! n
     INTEGER, ALLOCATABLE :: Sensor_LoIndex(:)  ! n ; Local sensor index for a collection
                                                !     of sensor using the same algorithm
+    INTEGER, ALLOCATABLE :: ZSensor_LoIndex(:) ! n; Local sensor index for a collection of sensors 
+                                               !    with channles requiring the Zeeman algorithm
+    ! Sensor Info: Sensor types and IDs
+    CHARACTER(SL), ALLOCATABLE :: Sensor_ID(:)  ! n
+    INTEGER, ALLOCATABLE :: WMO_Satellite_ID(:) ! n
+    INTEGER, ALLOCATABLE :: WMO_Sensor_ID(:)    ! n
+    INTEGER, ALLOCATABLE :: Sensor_Type(:)      ! n
+    
     ! Pointers
     TYPE(ODAS_type),  POINTER :: ODAS(:)  => NULL() ! I1
     TYPE(ODPS_type),  POINTER :: ODPS(:)  => NULL() ! I2
     TYPE(ODSSU_type), POINTER :: ODSSU(:) => NULL() ! I3
+
+    ! Pointers to the TC with the Zeeman algorithm
+    TYPE( ODPS_type ),POINTER :: ODZeeman(:)  =>NULL()  ! I4
+    
+!    ### More dstructure variables for additional algorithms ###
+
+
   END TYPE TauCoeff_type
 
 
@@ -135,9 +153,11 @@ CONTAINS
       ALLOCATED(self%Sensor_LoIndex) .OR. &
       ASSOCIATED(self%ODAS         ) .OR. &  ! Should this be tested?
       ASSOCIATED(self%ODPS         ) .OR. &  ! Should this be tested?
-      ASSOCIATED(self%ODSSU        )         ! Should this be tested?
+      ASSOCIATED(self%ODSSU        ) .OR. &  ! Should this be tested?
+      ASSOCIATED(self%ODZeeman     )         ! Should this be tested?
 
   END FUNCTION TauCoeff_Associated
+  
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -193,9 +213,14 @@ CONTAINS
     self%n_Sensors = 0
 
     ! Deallocate the non-scalar components
-    DEALLOCATE( self%Algorithm_ID  , &
-                self%Sensor_Index  , &
-                self%Sensor_LoIndex, &
+    DEALLOCATE( self%Algorithm_ID    , &
+                self%Sensor_Index    , &
+                self%Sensor_LoIndex  , &
+                self%ZSensor_LoIndex , &
+                self%Sensor_ID       , &
+                self%WMO_Satellite_ID, &
+                self%WMO_Sensor_ID   , &
+                self%Sensor_Type     , &               
                 STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
@@ -204,9 +229,10 @@ CONTAINS
     END IF
     
     ! Disassociate pointers
-    NULLIFY( self%ODAS, self%ODPS, self%ODSSU )
+    NULLIFY( self%ODAS, self%ODPS, self%ODSSU, self%ODZeeman )
 
   END SUBROUTINE TauCoeff_Destroy
+
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -283,9 +309,14 @@ CONTAINS
 
 
     ! Perform the array allocation
-    ALLOCATE( self%Algorithm_ID( n_Sensors ), &
-              self%Sensor_Index( n_Sensors ), &
-              self%Sensor_LoIndex( n_Sensors ), &
+    ALLOCATE( self%Algorithm_ID( n_Sensors )    , &
+              self%Sensor_Index( n_Sensors )    , &
+              self%Sensor_LoIndex( n_Sensors )  , &
+              self%ZSensor_LoIndex( n_Sensors ) , &
+              self%Sensor_ID( n_Sensors )       , &
+              self%WMO_Satellite_ID( n_Sensors ), &
+              self%WMO_Sensor_ID( n_Sensors )   , &
+              self%Sensor_Type( n_Sensors )     , &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
@@ -299,11 +330,16 @@ CONTAINS
     ! ...Dimensions
     self%n_Sensors = n_Sensors
     ! ...Arrays
-    self%Algorithm_ID   = 0
-    self%Sensor_Index   = 0
-    self%Sensor_LoIndex = 0
+    self%Algorithm_ID     = 0
+    self%Sensor_Index     = 0
+    self%Sensor_LoIndex   = 0
+    self%ZSensor_LoIndex  = 0
+    self%Sensor_ID        = ''
+    self%WMO_Satellite_ID = 0
+    self%WMO_Sensor_ID    = 0
+    self%Sensor_Type      = 0
     ! ...Pointers (not required, but what the hell...)
-    NULLIFY( self%ODAS, self%ODPS, self%ODSSU )
+    NULLIFY( self%ODAS, self%ODPS, self%ODSSU, self%ODZeeman )
 
   END SUBROUTINE TauCoeff_Create
   
@@ -349,12 +385,14 @@ CONTAINS
                            &"N_SENSORS=",i2,2x,&
                            &"N_ODAS=",i2,2x,&
                            &"N_ODPS=",i2,2x,&
-                           &"N_ODSSU=",i2 )' ) &
+                           &"N_ODSSU=",i2,2x,&
+                           &"N_ODZeeman=",i2 )' ) &
                          ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
                          self%n_Sensors, &
                          self%n_ODAS, &
                          self%n_ODPS, &
-                         self%n_ODSSU
+                         self%n_ODSSU, &
+                         self%n_ODZeeman
     
     ! Trim the output based on the
     ! dummy argument string length
@@ -425,17 +463,22 @@ CONTAINS
     END IF
 
     ! Copy array data
-    copy%Algorithm_ID   = original%Algorithm_ID
-    copy%Sensor_Index   = original%Sensor_Index
-    copy%Sensor_LoIndex = original%Sensor_LoIndex
+    copy%Algorithm_ID     = original%Algorithm_ID
+    copy%Sensor_Index     = original%Sensor_Index
+    copy%Sensor_LoIndex   = original%Sensor_LoIndex
+    copy%ZSensor_LoIndex  = original%ZSensor_LoIndex
+    copy%Sensor_ID        = original%Sensor_ID
+    copy%WMO_Satellite_ID = original%WMO_Satellite_ID
+    copy%WMO_Sensor_ID    = original%WMO_Sensor_ID
+    copy%Sensor_Type      = original%Sensor_Type
 
     ! Set pointers
     IF ( ASSOCIATED(original%ODAS) ) copy%ODAS => original%ODAS
     IF ( ASSOCIATED(original%ODPS) ) copy%ODPS => original%ODPS
     IF ( ASSOCIATED(original%ODSSU) ) copy%ODSSU => original%ODSSU
+    IF ( ASSOCIATED(original%ODZeeman) ) copy%ODZeeman => original%ODZeeman
     
   END SUBROUTINE TauCoeff_Assign
-
 
 !------------------------------------------------------------------------------
 !
@@ -483,12 +526,18 @@ CONTAINS
     IF ( (x%n_Sensors /= y%n_Sensors) .OR. &
          (x%n_ODAS    /= y%n_ODAS   ) .OR. &
          (x%n_ODPS    /= y%n_ODPS   ) .OR. &
-         (x%n_ODSSU   /= y%n_ODSSU  )      ) RETURN
+         (x%n_ODSSU   /= y%n_ODSSU  ) .OR. &
+         (x%n_ODZeeman /= y%n_ODZeeman  ) ) RETURN
 
     ! Check arrays
-    IF ( ANY(x%Algorithm_ID   /= y%Algorithm_ID  ) .OR. &
-         ANY(x%Sensor_Index   /= y%Sensor_Index  ) .OR. &
-         ANY(x%Sensor_LoIndex /= y%Sensor_LoIndex)      ) RETURN
+    IF ( ANY(x%Algorithm_ID     /= y%Algorithm_ID  )    .OR. & 
+         ANY(x%Sensor_Index     /= y%Sensor_Index  )    .OR. & 
+         ANY(x%Sensor_LoIndex   /= y%Sensor_LoIndex)    .OR. & 
+         ANY(x%ZSensor_LoIndex  /= y%ZSensor_LoIndex)   .OR. &
+         ANY(x%Sensor_ID        /= y%Sensor_ID)         .OR. &
+         ANY(x%WMO_Satellite_ID /= y%WMO_Satellite_ID)  .OR. &
+         ANY(x%WMO_Sensor_ID    /= y%WMO_Sensor_ID)     .OR. &
+         ANY(x%Sensor_Type      /= y%Sensor_Type)      ) RETURN
 
     ! Check pointers
     ! .... ? 

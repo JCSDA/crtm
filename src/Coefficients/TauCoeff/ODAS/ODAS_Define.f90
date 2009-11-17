@@ -20,6 +20,8 @@ MODULE ODAS_Define
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
   USE Sort_Utility,          ONLY: InsertionSort
+  USE CRTM_Parameters,       ONLY: ODAS_ALGORITHM
+  
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -58,7 +60,6 @@ MODULE ODAS_Define
   PUBLIC :: VISIBLE_SENSOR  
   PUBLIC :: SENSOR_TYPE_NAME
   PUBLIC :: ODAS_RELEASE
-  PUBLIC :: Clear_ODAS
   ! The Global unique algorithm ID
   PUBLIC :: ODAS_ALGORITHM
 
@@ -80,8 +81,7 @@ MODULE ODAS_Define
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: ODAS_RELEASE = 6  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODAS_VERSION = 4  ! This is just the data version.
-  ! The optical depth algorithm Id
-  INTEGER     , PARAMETER :: ODAS_ALGORITHM = 1
+  ! The optical depth algorithm name
   CHARACTER(*), PARAMETER :: ODAS_ALGORITHM_NAME = 'ODAS'
   ! ASCII codes for Version routine
   INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
@@ -1432,6 +1432,15 @@ CONTAINS
 
   END SUBROUTINE Info_ODAS
 
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
 !----------------------------------------------------------------------------------
 !
 ! NAME:
@@ -1468,15 +1477,5 @@ CONTAINS
     ODAS%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     ODAS%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
   END SUBROUTINE Clear_ODAS
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-
 
 END MODULE ODAS_Define
