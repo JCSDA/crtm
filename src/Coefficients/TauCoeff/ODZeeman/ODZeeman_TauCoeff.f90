@@ -73,23 +73,16 @@ CONTAINS
 !       the shared data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Load_TauCoeff( Sensor_ID        =Sensor_ID,         &  ! Optional input
-!                                     File_Path        =File_Path,         &  ! Optional input      
-!                                     Quiet            =Quiet,             &  ! Optional input      
-!                                     Process_ID       =Process_ID,        &  ! Optional input      
+!       Error_Status = Load_TauCoeff( Filename                           , &  
+!                                     File_Path        =File_Path        , &  ! Optional input      
+!                                     Quiet            =Quiet            , &  ! Optional input      
+!                                     Process_ID       =Process_ID       , &  ! Optional input      
 !                                     Output_Process_ID=Output_Process_ID, &  ! Optional input      
 !                                     Message_Log      =Message_Log        )  ! Error messaging     
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
-!                           ssmis_f16, etc) with which the CRTM is to be
-!                           initialised. These Sensor ID are used to construct
-!                           the sensor specific TauCoeff filenames containing
-!                           the necessary coefficient data, i.e.
-!                             <Sensor_ID>.TauCoeff.bin
-!                           If this argument is not specified, the default
-!                           TauCoeff filename is
-!                             TauCoeff.bin
+!       Filename:           Character string array specifying the name/s of the 
+!                           binary format Zeeman file/s 
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Rank-1
@@ -219,7 +212,10 @@ CONTAINS
       ! Add the file path
       IF ( PRESENT(File_Path) ) THEN
         TauCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(FileName(n))
+      ELSE
+        TauCoeff_File = TRIM(FileName(n))
       END IF
+      
       Error_Status = Read_TauCoeff_Binary( TRIM(TauCoeff_File)                , &  ! Input
                                            TC(n)                              , &  ! Output
                                            Quiet            =Quiet            , &
