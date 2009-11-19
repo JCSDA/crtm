@@ -108,11 +108,11 @@ CONTAINS
 !       TauCoeff_Associated
 !
 ! PURPOSE:
-!       Function to test the status of the allocatable and pointer components
-!       of a TauCoeff structure.
+!       Elemental Function to test the status of the allocatable and pointer 
+!       components of a TauCoeff structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = TauCoeff_Associated( self )
+!       Is_Associated = TauCoeff_Associated( self )
 !
 ! OBJECTS:
 !       self:        TauCoeff structure which is to have its allocatable
@@ -123,26 +123,26 @@ CONTAINS
 !                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Association_Status:  The return value is a logical value indicating the
-!                            status of the allocatable and pointer components.
-!                            .TRUE.  - if ANY of the TauCoeff allocatable or
-!                                      pointer members are in use.
-!                            .FALSE. - if ALL of the TauCoeff allocatable or
-!                                      pointer members are not in use.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!       Is_Associated:  The return value is a logical value indicating the
+!                       status of the allocatable and pointer components.     
+!                       .TRUE.  - if ANY of the TauCoeff allocatable or       
+!                                 pointer members are in use.                 
+!                       .FALSE. - if ALL of the TauCoeff allocatable or       
+!                                 pointer members are not in use.             
+!                       UNITS:      N/A                                       
+!                       TYPE:       LOGICAL                                   
+!                       DIMENSION:  Scalar                                    
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION TauCoeff_Associated( self ) RESULT( Association_Status )
+  ELEMENTAL FUNCTION TauCoeff_Associated( self ) RESULT( Is_Associated )
     ! Arguments
     TYPE(TauCoeff_type), INTENT(IN) :: self
     ! Function result
-    LOGICAL :: Association_Status
+    LOGICAL :: Is_Associated
 
     ! Test the structure associations
-    Association_Status = &
+    Is_Associated = &
       ALLOCATED(self%Algorithm_ID  ) .OR. &
       ALLOCATED(self%Sensor_Index  ) .OR. &
       ALLOCATED(self%Sensor_LoIndex) .OR. &
