@@ -91,15 +91,10 @@ MODULE TauCoeff_Define
     INTEGER, ALLOCATABLE :: Sensor_Type(:)      ! n
     
     ! Pointers
-    TYPE(ODAS_type),  POINTER :: ODAS(:)  => NULL() ! I1
-    TYPE(ODPS_type),  POINTER :: ODPS(:)  => NULL() ! I2
-    TYPE(ODSSU_type), POINTER :: ODSSU(:) => NULL() ! I3
-
-    ! Pointers to the TC with the Zeeman algorithm
-    TYPE( ODPS_type ),POINTER :: ODZeeman(:)  =>NULL()  ! I4
-    
-!    ### More dstructure variables for additional algorithms ###
-
+    TYPE(ODAS_type),  POINTER :: ODAS(:)     => NULL() ! I1
+    TYPE(ODPS_type),  POINTER :: ODPS(:)     => NULL() ! I2
+    TYPE(ODSSU_type), POINTER :: ODSSU(:)    => NULL() ! I3
+    TYPE(ODPS_type),  POINTER :: ODZeeman(:) => NULL() ! I4
 
   END TYPE TauCoeff_type
 
