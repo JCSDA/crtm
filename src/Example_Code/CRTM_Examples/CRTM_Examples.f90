@@ -947,7 +947,7 @@ PROGRAM CRTM_Examples
     ! Deallocate memory for sensor dependent interface structures
      
     Error_Status_arr = SUCCESS
-    Allocate_Status  = 0
+    Allocate_Status_arr  = 0
     IF ( Case_ID == Optional_Inputs_Outputs ) THEN                                             
       Error_Status_arr(1) = CRTM_Destroy_Options(Options)                                      
       Error_Status_arr(2) = CRTM_Destroy_RTSolution(RTSolution)                                
