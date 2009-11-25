@@ -26,11 +26,17 @@ MODULE ODZeeman_AtmAbsorption
   USE ODZeeman_Predictor,        ONLY: Compute_Predictors_zssmis,     &
                                        Compute_Predictors_zssmis_TL,  &
                                        Compute_Predictors_zssmis_AD,  &
+                                       Compute_Predictors_zamsua,     &
+                                       Compute_Predictors_zamsua_TL,  &
+                                       Compute_Predictors_zamsua_AD,  &
+                                       ZSSMIS_ChannelMap,             &
+                                       ZAMSUA_ChannelMap,             &
+                                       ODPS_gINDEX_ZSSMIS,            &
+                                       ODPS_gINDEX_ZAMSUA,            &
                                        N_ZCOMPONENTS,                 &
                                        N_ZABSORBERS,                  &
                                        MAX_N_PREDICTORS_ZSSMIS,       &
-                                       ZSSMIS_ChannelMap,             &
-                                       ODPS_gINDEX_SSMIS
+                                       MAX_N_PREDICTORS_ZAMSUA
   USE CRTM_SensorInput_Define,   ONLY: CRTM_SensorInput_type, &
                                        CRTM_SensorInput_Get_Property
   USE ODPS_CoordinateMapping,    ONLY: Map_Input, Map_Input_TL, Map_Input_AD, &
@@ -48,21 +54,19 @@ MODULE ODZeeman_AtmAbsorption
   ! Everything private by default
   PRIVATE
   ! Public routines
-  PUBLIC :: ZSSMIS_Compute_Predictors
-  PUBLIC :: ZSSMIS_Compute_Predictors_TL
-  PUBLIC :: ZSSMIS_Compute_Predictors_AD
-  PUBLIC :: ZSSMIS_Compute_AtmAbsorption
-  PUBLIC :: ZSSMIS_Compute_AtmAbsorption_TL
-  PUBLIC :: ZSSMIS_Compute_AtmAbsorption_AD
+  PUBLIC :: Zeeman_Compute_Predictors
+  PUBLIC :: Zeeman_Compute_Predictors_TL
+  PUBLIC :: Zeeman_Compute_Predictors_AD
+  PUBLIC :: Zeeman_Compute_AtmAbsorption
+  PUBLIC :: Zeeman_Compute_AtmAbsorption_TL
+  PUBLIC :: Zeeman_Compute_AtmAbsorption_AD
   ! routines from other modules
-  PUBLIC :: Is_ZSSMIS_Channel
-  PUBLIC :: Is_ZSSMIS
+  PUBLIC :: Is_Zeeman_Channel
+  PUBLIC :: Is_ODZeeman
+  PUBLIC :: Get_NumOfZPredictors
+  PUBLIC :: Get_NumOfZComponents
+  PUBLIC :: Get_NumOfZAbsorbers
   
-  ! Public 
-  PUBLIC :: N_ZCOMPONENTS
-  PUBLIC :: N_ZABSORBERS
-  PUBLIC :: MAX_N_PREDICTORS_ZSSMIS
-
   ! ----------
   ! Parameters
   ! ----------
@@ -74,15 +78,15 @@ CONTAINS
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!      ZSSMIS_Compute_AtmAbsorption
+!      Zeeman_Compute_AtmAbsorption
 !
 ! PURPOSE:
-!       Subroutine to compute slant path optical path for SSMIS channels 19 - 22 
-!       which are affected by Zeeman splitting
+!       Subroutine to compute slant path optical path for channels affected by 
+!       affected by Zeeman splitting
 !
 ! CALLING SEQUENCE:
 !
-!    SUBROUTINE ZSSMIS_Compute_AtmAbsorption(TC, &
+!    SUBROUTINE Zeeman_Compute_AtmAbsorption(TC,            &
 !                                            ChannelIndex,  &
 !                                            Predictor,     &       
 !                                            AtmAbsorption )
@@ -116,10 +120,10 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !------------------------------------------------------------------------------
-  SUBROUTINE ZSSMIS_Compute_AtmAbsorption( TC           , &  ! Input
-                                           ChannelIndex , &  ! Input   
-                                           Predictor    , &  ! Input   
-                                           AtmAbsorption)    ! Output  
+  SUBROUTINE Zeeman_Compute_AtmAbsorption(TC           , &  ! Input
+                                          ChannelIndex , &  ! Input     
+                                          Predictor    , &  ! Input     
+                                          AtmAbsorption)    ! Output    
 
     ! Arguments
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
@@ -136,12 +140,17 @@ CONTAINS
 
     n_User_Layers = Predictor%n_User_Layers
     
-    idx = ZSSMIS_ChannelMap(ChannelIndex)
-
-    CALL Compute_ODPath_zssmis(idx,        &           
-                               TC,         &   
-                               Predictor,  &  
-                               OD_Path)         
+    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
+      idx = ZSSMIS_ChannelMap(ChannelIndex)
+      CALL Compute_ODPath_zssmis(idx,        &         
+                                 TC,         & 
+                                 Predictor,  & 
+                                 OD_Path) 
+    ELSE
+      CALL Compute_ODPath_zamsua(TC,         & 
+                                 Predictor,  & 
+                                 OD_Path) 
+    END IF          
 
     ! Interpolate the path profile back on the user pressure grids,
     ! Compute layer optical depths (vertical direction)
@@ -177,20 +186,20 @@ CONTAINS
                                    User_OD_Path(0:n_User_Layers-1)) / &
                                    Predictor%Secant_Zenith_Surface
 
-  END SUBROUTINE ZSSMIS_Compute_AtmAbsorption
+  END SUBROUTINE Zeeman_Compute_AtmAbsorption
 
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!      ZSSMIS_Compute_AtmAbsorption_TL
+!      Zeeman_Compute_AtmAbsorption_TL
 !
 ! PURPOSE:
-!       Subroutine to compute TL slant path optical path for SSMIS channels 19 - 22 
-!       which are affected by Zeeman splitting
+!       Subroutine to compute TL slant path optical path for channels affected by 
+!       affected by Zeeman splitting
 !
 ! CALLING SEQUENCE:
 !
-!        CALL ZSSMIS_Compute_AtmAbsorption_TL(TC,            &
+!        CALL Zeeman_Compute_AtmAbsorption_TL(TC,            &
 !                                             ChannelIndex,  &
 !                                             Predictor,     &  
 !                                             Predictor_TL,  &  
@@ -231,7 +240,7 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !------------------------------------------------------------------------------
-  SUBROUTINE ZSSMIS_Compute_AtmAbsorption_TL(TC           ,    &  ! Input
+  SUBROUTINE Zeeman_Compute_AtmAbsorption_TL(TC           ,    &  ! Input
                                              ChannelIndex ,    &  ! Input    
                                              Predictor    ,    &  ! Input    
                                              Predictor_TL,     &  ! Input       
@@ -252,13 +261,19 @@ CONTAINS
 
     n_User_Layers = Predictor%n_User_Layers
 
-    idx = ZSSMIS_ChannelMap(ChannelIndex)
-
-    CALL Compute_ODPath_zssmis_TL(idx,             &   
-                                  TC,              &   
-                                  Predictor,       &   
-                                  Predictor_TL,    &   
-                                  OD_Path_TL )         
+    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
+      idx = ZSSMIS_ChannelMap(ChannelIndex)
+      CALL Compute_ODPath_zssmis_TL(idx,             & 
+                                    TC,              & 
+                                    Predictor,       & 
+                                    Predictor_TL,    & 
+                                    OD_Path_TL ) 
+    ELSE
+      CALL Compute_ODPath_zamsua_TL(TC,              & 
+                                    Predictor,       & 
+                                    Predictor_TL,    & 
+                                    OD_Path_TL ) 
+    END IF          
 
     ! Interpolate the path profile back on the user pressure grids,
     ! Compute layer optical depths (vertical direction)
@@ -273,20 +288,20 @@ CONTAINS
                                    User_OD_Path_TL(0:n_User_Layers-1)) / &
                                    Predictor%Secant_Zenith_Surface
 
-  END SUBROUTINE ZSSMIS_Compute_AtmAbsorption_TL
+  END SUBROUTINE Zeeman_Compute_AtmAbsorption_TL
 
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!     ZSSMIS_Compute_AtmAbsorption_AD
+!     Zeeman_Compute_AtmAbsorption_AD
 !
 ! PURPOSE:
-!       Subroutine to compute AD slant path optical path for SSMIS channels 19 - 22 
-!       which are affected by Zeeman splitting
+!       Subroutine to compute AD slant path optical path for channels affected by 
+!       affected by Zeeman splitting
 !
 ! CALLING SEQUENCE:
 !
-!        CALL ZSSMIS_Compute_AtmAbsorption_AD(TC,           &
+!        CALL Zeeman_Compute_AtmAbsorption_AD(TC,           &
 !                                      ChannelIndex,        &
 !                                      Predictor,           &
 !                                      AtmAbsorption_AD,    &  
@@ -327,7 +342,7 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !------------------------------------------------------------------------------
-  SUBROUTINE ZSSMIS_Compute_AtmAbsorption_AD( TC           ,    &  ! Input
+  SUBROUTINE Zeeman_Compute_AtmAbsorption_AD( TC           ,    &  ! Input
                                               ChannelIndex ,    &  ! Input   
                                               Predictor    ,    &  ! Input   
                                               AtmAbsorption_AD, &  ! Input   
@@ -347,7 +362,6 @@ CONTAINS
     INTEGER  :: idx
 
     n_User_Layers = Predictor%n_User_Layers
-    idx = ZSSMIS_ChannelMap(ChannelIndex)
  
      !------- Adjoint part ---------
     
@@ -373,13 +387,21 @@ CONTAINS
  
     User_OD_Path_AD(0) = ZERO
 
-    CALL Compute_ODPath_zssmis_AD(idx,          &  
-                                  TC,           &   
-                                  Predictor,    &  
-                                  OD_Path_AD,   &  
-                                  Predictor_AD )   
-
-  END SUBROUTINE ZSSMIS_Compute_AtmAbsorption_AD
+    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
+      idx = ZSSMIS_ChannelMap(ChannelIndex)
+      CALL Compute_ODPath_zssmis_AD(idx,          &
+                                    TC,           & 
+                                    Predictor,    &
+                                    OD_Path_AD,   &
+                                    Predictor_AD ) 
+    ELSE
+      CALL Compute_ODPath_zamsua_AD(TC,           & 
+                                    Predictor,    &
+                                    OD_Path_AD,   &
+                                    Predictor_AD ) 
+    END IF
+        
+  END SUBROUTINE Zeeman_Compute_AtmAbsorption_AD
   
 !------------------------------------------------------------------------------
 !
@@ -780,10 +802,405 @@ CONTAINS
 
   END SUBROUTINE Compute_ODPath_zssmis_AD
 
+!------------------------------------------------------------------------------
+!
+! NAME:
+!      Compute_ODPath_zamsua
+!
+! PURPOSE:
+!       Subroutine to compute slant path optical path for AMSUA channel 14
+!       affected by Zeeman splitting.
+!
+! CALLING SEQUENCE:
+!
+!    SUBROUTINE Compute_ODPath_zamsua(TC,            &
+!                                     Predictor,     &       
+!                                     OD_Path )
+!
+! INPUT ARGUMENTS:
+!
+!            TC:         ODPS structure holding coefficient data
+!                        UNITS:      N/A         
+!                        TYPE:       ODPS_type   
+!                        DIMENSION:  Scalar      
+!                        ATTRIBUTES: INTENT(IN) 
+!
+!       Predictor:       Predictor structure containing the predictors for estimating of optical depth
+!                        UNITS:      N/A
+!                        TYPE:       TYPE(Predictor_type)
+!                        DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!   OUTPUT ARGUMENTS:
+!         OD_Path:      Slant path optical path profile (from space down) 
+!                       UNITS:      N/A
+!                       TYPE:       REAL(fp)
+!                       DIMENSION:  Rank-1 (0:n_Layers)
+!                       ATTRIBUTES: INTENT(OUT)
+!
+!------------------------------------------------------------------------------
+
+  SUBROUTINE Compute_ODPath_zamsua(TC,               &
+                                   Predictor,        &       
+                                   OD_Path )          
+    TYPE(ODPS_type),      INTENT( IN )     :: TC
+    TYPE(Predictor_type), INTENT( INOUT )  :: Predictor
+    REAL(fp),             INTENT( OUT)     :: OD_Path(0:)
+                                          
+    ! Local
+    REAL(fp), DIMENSION(Predictor%n_Layers)   :: ODv, ODh
+    REAL(fp), DIMENSION(0:Predictor%n_Layers) :: ODv_Path, ODh_Path    
+    REAL(fp) :: tauv, tauh, tau
+    REAL(fp) :: Wv, Wh
+    INTEGER  :: i, j1, j2, k1, k2, k, m1, m2, n_Layers, np
+
+    OD_Path = ZERO
+    np = TC%n_Predictors(1, 1)                                     
+
+    ! Check if there is any absorption for the component&channel combination.  
+    IF( np > 0 ) THEN  
+      
+      !----------------------------------------------------------------------------------
+      ! Compute optical depths at specified polarizations
+      !----------------------------------------------------------------------------------                                      
+      n_Layers = Predictor%n_Layers
+      j1 = TC%Pos_Index(1, 1)    ! starting index for vertical polarization
+      j2 = j1 + (np+1)*n_Layers  ! starting index for horizontal polarization
+
+      ! offset coefficients
+      ODv = TC%C(j1:(j1+n_Layers-1))
+      ODh = TC%C(j2:(j2+n_Layers-1))
+      ! Predictor contributions
+      DO i = 1, np
+        m1 = j1+i*n_Layers
+        m2 = j2+i*n_Layers
+        DO k = 1, n_Layers
+          k1 = m1+(k-1)
+          k2 = m2+(k-1)
+          ODv(k) = ODv(k) + TC%C(k1)*Predictor%X(k, i, 1)
+          ODh(k) = ODh(k) + TC%C(k2)*Predictor%X(k, i, 1)
+        END DO
+      END DO
+ 
+      !------------------------------------------------------
+      ! Compute transmittances and then combine them
+      !------------------------------------------------------      
+      Wv = Predictor%w
+      Wh = ONE - Wv
+      ODv_Path(0) = ZERO
+      ODh_Path(0) = ZERO
+      DO k = 1, n_Layers
+        IF(ODv(k) < ZERO)ODv(k) = ZERO
+        ODv_Path(k) = ODv_Path(k-1) + ODv(k)
+        tauv = EXP(-ODv_Path(k))
+        IF(ODh(k) < ZERO)ODh(k) = ZERO
+        ODh_Path(k) = ODh_Path(k-1) + ODh(k)
+        tauh = EXP(-ODh_Path(k))
+        
+        tau = Wv*tauv + Wh*tauh
+        OD_Path(k) = -LOG(tau)
+      END DO
+      
+    END IF
+    
+  END SUBROUTINE Compute_ODPath_zamsua       
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!      Compute_ODPath_zamsua_TL
+!
+! PURPOSE:
+!       Subroutine to compute TL slant path optical path for AMSUA channel 14
+!       affected by Zeeman splitting.
+!
+! CALLING SEQUENCE:
+!
+!        CALL Compute_ODPath_zamsua_TL(TC,            & 
+!                                      Predictor,     &   
+!                                      Predictor_TL,  &    
+!                                      OD_Path_TL )
+!
+! INPUT ARGUMENTS:
+!
+!            TC:         ODPS structure holding coefficient data
+!                        UNITS:      N/A         
+!                        TYPE:       ODPS_type   
+!                        DIMENSION:  Scalar      
+!                        ATTRIBUTES: INTENT(IN) 
+!
+!       Predictor:       Predictor structure containing the predictors for estimating of optical depth
+!                        UNITS:      N/A
+!                        TYPE:       TYPE(Predictor_type)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       Predictor_TL:    Predictor structure containing the TL predictors
+!                        UNITS:      N/A
+!                        TYPE:       TYPE(Predictor_type)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(INOUT)
+!
+!   OUTPUT ARGUMENTS:
+!         OD_Path_TL:   TL Slant path optical path profile (from space down) 
+!                       UNITS:      N/A
+!                       TYPE:       REAL(fp)
+!                       DIMENSION:  Rank-1 (0:n_Layers)
+!                       ATTRIBUTES: INTENT(OUT)
+!
+!------------------------------------------------------------------------------
+  SUBROUTINE Compute_ODPath_zamsua_TL(TC,               &
+                                      Predictor,        &       
+                                      Predictor_TL,     &       
+                                      OD_Path_TL )          
+    TYPE(ODPS_type),      INTENT( IN )     :: TC
+    TYPE(Predictor_type), INTENT( IN )     :: Predictor
+    TYPE(Predictor_type), INTENT( IN )     :: Predictor_TL
+    REAL(fp),             INTENT( OUT)     :: OD_Path_TL(0:)
+                                          
+    ! Local
+    REAL(fp), DIMENSION(Predictor%n_Layers)   :: ODv, ODh, ODv_TL, ODh_TL
+    REAL(fp), DIMENSION(0:Predictor%n_Layers) :: ODv_Path, ODh_Path, ODv_Path_Tl, ODh_Path_TL   
+    REAL(fp) :: tauv, tauh, tau, tauv_TL, tauh_TL, tau_TL
+    REAL(fp) :: Wv, Wh
+    INTEGER  :: i, j1, j2, k1, k2, k, m1, m2, n_Layers, np
+
+    OD_Path_TL = ZERO
+    np = TC%n_Predictors(1, 1)                                     
+
+    ! Check if there is any absorption for the component&channel combination.  
+    IF( np > 0 ) THEN  
+      
+      !----------------------------------------------------------------------------------
+      ! Compute optical depths at specified polarizations
+      !----------------------------------------------------------------------------------                                      
+      n_Layers = Predictor%n_Layers
+      j1 = TC%Pos_Index(1, 1)    ! starting index for vertical polarization
+      j2 = j1 + (np+1)*n_Layers  ! starting index for horizontal polarization
+
+      ODv = TC%C(j1:(j1+n_Layers-1))
+      ODh = TC%C(j2:(j2+n_Layers-1))
+      ODv_TL = ZERO
+      ODh_TL = ZERO
+      DO i = 1, np
+        m1 = j1+i*n_Layers
+        m2 = j2+i*n_Layers
+        DO k = 1, n_Layers
+          k1 = m1+(k-1)
+          k2 = m2+(k-1)
+          ODv(k) = ODv(k) + TC%C(k1)*Predictor%X(k, i, 1)
+          ODh(k) = ODh(k) + TC%C(k2)*Predictor%X(k, i, 1)
+          ODv_TL(k) = ODv_TL(k) + TC%C(k1)*Predictor_TL%X(k, i, 1)
+          ODh_TL(k) = ODh_TL(k) + TC%C(k2)*Predictor_TL%X(k, i, 1)
+        END DO
+      END DO
+ 
+      !------------------------------------------------------
+      ! Compute transmittances and then combine them
+      !------------------------------------------------------      
+      Wv = Predictor%w
+      Wh = ONE - Wv
+      ODv_Path(0) = ZERO
+      ODh_Path(0) = ZERO
+      ODv_Path_TL(0) = ZERO
+      ODh_Path_TL(0) = ZERO
+      DO k = 1, n_Layers
+        IF(ODv(k) < ZERO)THEN
+          ODv(k)    = ZERO
+          ODv_TL(k) = ZERO
+        END IF
+        ODv_Path(k) = ODv_Path(k-1) + ODv(k)
+        tauv = EXP(-ODv_Path(k)) 
+        ODv_Path_TL(k) = ODv_Path_TL(k-1) + ODv_TL(k)
+        tauv_TL = -tauv*ODv_Path_TL(k)
+        
+        IF(ODh(k) < ZERO)THEN
+          ODh(k)    = ZERO
+          ODh_TL(k) = ZERO
+        END IF
+        ODh_Path(k) = ODh_Path(k-1) + ODh(k)
+        tauh = EXP(-ODh_Path(k))
+        ODh_Path_TL(k) = ODh_Path_TL(k-1) + ODh_TL(k)
+        tauh_TL = -tauh*ODh_Path_TL(k)
+        
+        tau = Wv*tauv + Wh*tauh
+        tau_TL = Wv*tauv_TL + Wh*tauh_TL
+        OD_Path_TL(k) = -(ONE/tau)*tau_TL
+
+      END DO
+                
+    END IF
+    
+  END SUBROUTINE Compute_ODPath_zamsua_TL      
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!      Compute_ODPath_zamsua_AD
+!
+! PURPOSE:
+!       Subroutine to compute AD slant path optical path for AMSUA channel 14
+!       affected by Zeeman splitting.
+!
+! CALLING SEQUENCE:
+!
+!        CALL Compute_ODPath_zamsua_AD(TC,            & 
+!                                      Predictor,     & 
+!                                      OD_Path_AD,    &  
+!                                      Predictor_AD)    
+!
+! INPUT ARGUMENTS:
+!
+!            TC:         ODPS structure holding coefficient data
+!                        UNITS:      N/A         
+!                        TYPE:       ODPS_type   
+!                        DIMENSION:  Scalar      
+!                        ATTRIBUTES: INTENT(IN) 
+!
+!       Predictor:       Predictor structure containing the predictors for estimating of optical depth
+!                        UNITS:      N/A
+!                        TYPE:       TYPE(Predictor_type)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!         OD_Path_AD:    AD Slant path optical path profile (from space down) 
+!                        UNITS:      N/A
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Rank-1 (0:n_Layers)
+!                        ATTRIBUTES: INTENT(INOUT)
+!
+!   OUTPUT ARGUMENTS:
+!       Predictor_AD:    Predictor structure containing the AD predictors
+!                        UNITS:      N/A
+!                        TYPE:       TYPE(Predictor_type)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(INOUT)
+!
+!------------------------------------------------------------------------------
+  SUBROUTINE Compute_ODPath_zamsua_AD(TC,               &
+                                      Predictor,        & 
+                                      OD_Path_AD,       &      
+                                      Predictor_AD)       
+    TYPE(ODPS_type),      INTENT( IN )     :: TC
+    TYPE(Predictor_type), INTENT( IN )     :: Predictor
+    REAL(fp),             INTENT( INOUT)   :: OD_Path_AD(0:)
+    TYPE(Predictor_type), INTENT( INOUT )  :: Predictor_AD
+                                          
+    ! Local
+    REAL(fp), DIMENSION(Predictor%n_Layers)   :: ODv, ODh, ODv_AD, ODh_AD
+    REAL(fp), DIMENSION(0:Predictor%n_Layers) :: ODv_Path, ODh_Path, ODv_Path_AD, ODh_Path_AD   
+    REAL(fp) :: tauv, tauh, tau, tauv_AD, tauh_AD, tau_AD
+    REAL(fp) :: Wv, Wh, OD_tmp
+    INTEGER  :: i, j1, j2, k1, k2, m1, m2, k, n_Layers, np
+
+    np = TC%n_Predictors(1, 1)                                     
+
+    ! Check if there is any absorption for the component&channel combination.  
+    IF( np > 0 ) THEN  
+
+      ODv_AD      = ZERO
+      ODh_AD      = ZERO
+      ODv_Path_AD = ZERO
+      ODh_Path_AD = ZERO
+      tauv_AD     = ZERO
+      tauh_AD     = ZERO
+      tau_AD      = ZERO
+
+      ! ***************
+      ! Forward part
+      ! ***************   
+             
+      !----------------------------------------------------------------------------------
+      ! Compute optical depths at specified polarizations
+      !----------------------------------------------------------------------------------                                      
+      n_Layers = Predictor%n_Layers
+      j1 = TC%Pos_Index(1, 1)    ! starting index for vertical polarization
+      j2 = j1 + (np+1)*n_Layers  ! starting index for horizontal polarization
+
+      ODv = TC%C(j1:(j1+n_Layers-1))
+      ODh = TC%C(j2:(j2+n_Layers-1))
+      DO i = 1, np
+        m1 = j1+i*n_Layers
+        m2 = j2+i*n_Layers
+        DO k = 1, n_Layers
+          k1 = m1+(k-1)
+          k2 = m2+(k-1)
+          ODv(k) = ODv(k) + TC%C(k1)*Predictor%X(k, i, 1)
+          ODh(k) = ODh(k) + TC%C(k2)*Predictor%X(k, i, 1)
+        END DO
+      END DO
+ 
+      !------------------------------------------------------
+      ! Compute transmittances and then combine them
+      !------------------------------------------------------      
+      Wv = Predictor%w
+      Wh = ONE - Wv
+      ODv_Path(0) = ZERO
+      ODh_Path(0) = ZERO
+      DO k = 1, n_Layers
+        OD_tmp = ODv(k)
+        IF(ODv(k) < ZERO)OD_tmp = ZERO
+        ODv_Path(k) = ODv_Path(k-1) + OD_tmp
+        OD_tmp = ODh(k)
+        IF(ODh(k) < ZERO)OD_tmp = ZERO
+        ODh_Path(k) = ODh_Path(k-1) + OD_tmp
+      END DO
+
+      ! ***************
+      ! Adjoint part
+      ! ***************   
+        
+      DO k = n_Layers, 1, -1
+        tauv = EXP(-ODv_Path(k)) 
+        tauh = EXP(-ODh_Path(k))
+        tau = Wv*tauv + Wh*tauh
+
+        tau_AD = tau_AD - (ONE/tau)*OD_Path_AD(k) 
+        OD_Path_AD(k) = ZERO
+        tauv_AD = tauv_AD + Wv*tau_AD
+        tauh_AD = tauh_AD + Wh*tau_AD
+        tau_AD = ZERO
+        
+        ODh_PATH_AD(k) = ODh_PATH_AD(k) - tauh*tauh_AD
+        tauh_AD = ZERO  
+        ODh_Path_AD(k-1) = ODh_Path_AD(k-1) + ODh_Path_AD(k)
+        ODh_AD(k)        = ODh_AD(k)        + ODh_Path_AD(k)
+        ODh_Path_AD(k) = ZERO
+        IF(ODh(k) < ZERO)ODh_AD(k) = ZERO
+        
+        ODv_PATH_AD(k) = ODv_PATH_AD(k) - tauv*tauv_AD
+        tauv_AD = ZERO  
+        ODv_Path_AD(k-1) = ODv_Path_AD(k-1) + ODv_Path_AD(k)
+        ODv_AD(k)        = ODv_AD(k)        + ODv_Path_AD(k)
+        ODv_Path_AD(k) = ZERO
+        IF(ODv(k) < ZERO)ODv_AD(k) = ZERO
+      END DO
+!      ODv_Path_AD(0) = ZERO
+!      ODh_Path_AD(0) = ZERO
+      
+      DO i = np, 1, -1
+        m1 = j1+i*n_Layers
+        m2 = j2+i*n_Layers
+        DO k = n_Layers, 1, -1
+          k1 = m1+(k-1)
+          k2 = m2+(k-1)
+          Predictor_AD%X(k, i, 1) = Predictor_AD%X(k, i, 1) + TC%C(k1)*ODv_AD(k)
+          Predictor_AD%X(k, i, 1) = Predictor_AD%X(k, i, 1) + TC%C(k2)*ODh_AD(k)
+        END DO
+      END DO
+!      OD1_AD(:) = ZERO
+!      OD2_AD(:) = ZERO
+
+    END IF
+ 
+    OD_Path_AD = ZERO
+     
+  END SUBROUTINE Compute_ODPath_zamsua_AD       
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       ZSSMIS_Compute_Predictors
+!       Zeeman_Compute_Predictors
 !
 ! PURPOSE:
 !       Subroutine to calculate the gas absorption model predictors. It first
@@ -792,7 +1209,7 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL ZSSMIS_Compute_Predictors ( SensorInput   &  ! Input
+!       CALL Zeeman_Compute_Predictors ( SensorInput   &  ! Input
 !                                        TC,           &  ! Input                   
 !                                        Atm,          &  ! Input                   
 !                                        GeoInfo,      &  ! Input                      
@@ -835,11 +1252,11 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ZSSMIS_Compute_Predictors(SensorInput,  &
-                                       TC,           &
+  SUBROUTINE Zeeman_Compute_Predictors(SensorInput,  &
+                                       TC,           &  
                                        Atm,          &  
-                                       GeoInfo,      &
-                                       Predictor)     
+                                       GeoInfo,      &  
+                                       Predictor)       
     ! Arguments
     TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
@@ -853,7 +1270,8 @@ CONTAINS
     REAL(fp) :: Temperature(Predictor%n_Layers)
     REAL(fp) :: Absorber(Predictor%n_Layers, TC%n_Absorbers)
     INTEGER  :: H2O_idx
-    REAL(fp) :: Be, CosBK, Doppler_Shift
+    REAL(fp) :: Be, CosBK, CosPhiB, Doppler_Shift
+    REAL(fp) :: COS2_ScanA, COS2_PhiB
 
     !------------------------------------------------------------------
     ! Mapping data from user to internal fixed pressure layers/levels.
@@ -875,17 +1293,34 @@ CONTAINS
     !-------------------------------------------
     ! Compute predictor
     !-------------------------------------------
-    
-    CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &              
-                                        Field_Strength = Be, &            
-                                        COS_ThetaB     = CosBk, &         
-                                        Doppler_Shift  = Doppler_Shift )  
-    CALL Compute_Predictors_zssmis(Temperature,    &                      
-                                   Be,             &                      
-                                   CosBK,          &                      
-                                   Doppler_Shift,  &                      
-                                   Predictor%Secant_Zenith,&              
-                                   Predictor)                             
+    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
+      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &            
+                                          Field_Strength = Be, &          
+                                          COS_ThetaB     = CosBk, &       
+                                          Doppler_Shift  = Doppler_Shift )
+      CALL Compute_Predictors_zssmis(Temperature,    &                    
+                                     Be,             &                    
+                                     CosBK,          &                    
+                                     Doppler_Shift,  &                    
+                                     Predictor%Secant_Zenith,&            
+                                     Predictor)                           
+    ELSE
+      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &            
+                                          Field_Strength = Be, &          
+                                          COS_ThetaB     = CosBk, &
+                                          COS_PhiB       = CosPhiB)      
+      CALL Compute_Predictors_zamsua(Temperature,    &
+                                     TC%Ref_Temperature, &                   
+                                     Be,             &                    
+                                     CosBK,          &                    
+                                     Predictor%Secant_Zenith,&            
+                                     Predictor) 
+      ! weights for combining transmittances at the two special polarizations
+      COS2_ScanA = COS(GeoInfo%Sensor_Scan_Radian)
+      COS2_ScanA = COS2_ScanA*COS2_ScanA 
+      COS2_PhiB  = CosPhiB*CosPhiB
+      Predictor%w = (ONE-COS2_ScanA)*COS2_PhiB + COS2_ScanA*(ONE-COS2_PhiB)
+    END IF                           
          
     IF(Predictor%PAFV%Active)THEN
       ! Set and save the interpolation index array for absorption
@@ -897,27 +1332,27 @@ CONTAINS
                                 Predictor%PAFV%ODPS2User_Idx) 
     END IF 
                     
-  END SUBROUTINE ZSSMIS_Compute_Predictors     
+  END SUBROUTINE Zeeman_Compute_Predictors     
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       ZSSMIS_Compute_Predictors_TL
+!       Zeeman_Compute_Predictors_TL
 !
 ! PURPOSE:
-!       Subroutine to calculate the gas absorption model predictors. It first
+!       Subroutine to calculate the TL gas absorption model predictors. It first
 !       Interpolates the user temperature and absorber profiles on the
 !       internal pressure grids and then call the predictor computation
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL ZSSMIS_Compute_Predictors_TL ( SensorInput      &  ! Input
-!                                           TC,              &  ! Input                   
-!                                           Atm,             &  ! Input                   
-!                                           GeoInfo,         &  ! Input                   
-!                                           Predictor,       &  ! Input                   
-!                                           Atm_TL,          &  ! Input                   
-!                                           Predictor_TL     )  ! Output                  
+!       CALL Zeeman_Compute_Predictors_TL (SensorInput      &  ! Input
+!                                          TC,              &  ! Input                    
+!                                          Atm,             &  ! Input                    
+!                                          GeoInfo,         &  ! Input                    
+!                                          Predictor,       &  ! Input                    
+!                                          Atm_TL,          &  ! Input                    
+!                                          Predictor_TL     )  ! Output                   
 !
 ! INPUT ARGUMENTS:
 !     SensorInput :     Structure holding sensor specific user inputs
@@ -970,13 +1405,13 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ZSSMIS_Compute_Predictors_TL(SensorInput,    &
-                                          TC,             & 
+  SUBROUTINE Zeeman_Compute_Predictors_TL(SensorInput,    &
+                                          TC,             &  
                                           Atm,            &  
-                                          GeoInfo,        & 
-                                          Predictor,      & 
-                                          Atm_TL,         & 
-                                          Predictor_TL)     
+                                          GeoInfo,        &  
+                                          Predictor,      &  
+                                          Atm_TL,         &  
+                                          Predictor_TL)      
  
     TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
@@ -1005,25 +1440,38 @@ CONTAINS
     !-------------------------------------------
     ! Compute predictor
     !-------------------------------------------
-    CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &                   
-                                        Field_Strength = Be, &                 
-                                        COS_ThetaB     = CosBk, &              
-                                        Doppler_Shift  = Doppler_Shift )       
-    CALL Compute_Predictors_zssmis_TL(Predictor%PAFV%Temperature, &  
-                                      Be,                         &            
-                                      CosBK,                      &            
-                                      Doppler_Shift,              &            
-                                      Predictor%Secant_Zenith,    &     
-                                      Temperature_TL,             &     
-                                      Predictor_TL)                            
+    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
+      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,     &                 
+                                          Field_Strength = Be,    &               
+                                          COS_ThetaB     = CosBk, &            
+                                          Doppler_Shift  = Doppler_Shift )     
+      CALL Compute_Predictors_zssmis_TL(Predictor%PAFV%Temperature, &  
+                                        Be,                         &          
+                                        CosBK,                      &          
+                                        Doppler_Shift,              &          
+                                        Predictor%Secant_Zenith,    &     
+                                        Temperature_TL,             &     
+                                        Predictor_TL) 
+    ELSE
+      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &                 
+                                          Field_Strength = Be, &               
+                                          COS_ThetaB     = CosBk)            
+      CALL Compute_Predictors_zamsua_TL(Predictor%PAFV%Temperature, &
+                                        TC%Ref_Temperature,         &  
+                                        Be,                         &          
+                                        CosBK,                      &          
+                                        Predictor%Secant_Zenith,    &     
+                                        Temperature_TL,             &     
+                                        Predictor_TL) 
+    END IF                             
 
     
-  END SUBROUTINE ZSSMIS_Compute_Predictors_TL     
+  END SUBROUTINE Zeeman_Compute_Predictors_TL     
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       ZSSMIS_Predictors_AD
+!       Zeeman_Compute_Predictors_AD
 !
 ! PURPOSE:
 !       Subroutine to calculate the gas absorption model predictors. It first
@@ -1032,13 +1480,13 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL ZSSMIS_Predictors_AD ( SensorInput      &  ! Input
-!                                   TC,              &  ! Input                         
-!                                   Atm,             &  ! Input                         
-!                                   GeoInfo,         &  ! Input                         
-!                                   Predictor,       &  ! Input                         
-!                                   Predictor_AD,    &  ! Input                         
-!                                   Atm_AD)             ! Output                        
+!       CALL Zeeman_Compute_Predictors_AD ( SensorInput      &  ! Input
+!                                           TC,              &  ! Input                 
+!                                           Atm,             &  ! Input                 
+!                                           GeoInfo,         &  ! Input                 
+!                                           Predictor,       &  ! Input                 
+!                                           Predictor_AD,    &  ! Input                 
+!                                           Atm_AD)             ! Output                
 !
 ! INPUT ARGUMENTS:
 !     SensorInput :     Structure holding sensor specific user inputs
@@ -1092,13 +1540,13 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ZSSMIS_Compute_Predictors_AD(SensorInput,    &
-                                          TC,             & 
+  SUBROUTINE Zeeman_Compute_Predictors_AD(SensorInput,    &
+                                          TC,             &  
                                           Atm,            &  
-                                          GeoInfo,        & 
-                                          Predictor,      & 
-                                          Predictor_AD,   & 
-                                          Atm_AD)           
+                                          GeoInfo,        &  
+                                          Predictor,      &  
+                                          Predictor_AD,   &  
+                                          Atm_AD)            
 
     TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
@@ -1125,7 +1573,8 @@ CONTAINS
     !-------------------------------------------
     ! Compute predictor
     !-------------------------------------------
-      CALL CRTM_SensorInput_Get_Property( SensorInput%SSMIS, &
+    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
+      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &
                                           Field_Strength = Be, &
                                           COS_ThetaB     = CosBk, &
                                           Doppler_Shift  = Doppler_Shift )
@@ -1136,7 +1585,18 @@ CONTAINS
                                         Predictor%Secant_Zenith,    &
                                         Predictor_AD,               &
                                         Temperature_AD )
-
+    ELSE
+      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &
+                                          Field_Strength = Be, &
+                                          COS_ThetaB     = CosBk)
+      CALL Compute_Predictors_zamsua_AD(Predictor%PAFV%Temperature, &
+                                        TC%Ref_Temperature,         &
+                                        Be,                         &
+                                        CosBK,                      & 
+                                        Predictor%Secant_Zenith,    &
+                                        Predictor_AD,               &
+                                        Temperature_AD )
+    END IF    
     !------------------------------------------------------------------
     ! Mapping data from user to internal fixed pressure layers/levels.
     !------------------------------------------------------------------
@@ -1147,25 +1607,79 @@ CONTAINS
                       Atm_AD,         & ! output
                       Predictor%PAFV)   ! Input
          
-  END SUBROUTINE ZSSMIS_Compute_Predictors_AD
+  END SUBROUTINE Zeeman_Compute_Predictors_AD
 
-  FUNCTION Is_ZSSMIS_Channel(TC, ChannelIndex) RESULT( ZChannel )
+  !-------------------------------------------------
+  ! Check if the given channel is a Zeeman channel
+  !  Inputs:
+  !    TC  - Taucoeff structure
+  !    ChannelIndex - the sensor's channel index
+  !  Return
+  !    .TRUE.  - this is a Zeeman channel
+  !    .FALSE. - not a Zeeman channel
+  !-------------------------------------------------
+  FUNCTION Is_Zeeman_Channel(TC, ChannelIndex) RESULT( ZChannel )
     TYPE(ODPS_type), INTENT(IN)     :: TC
     INTEGER,         INTENT(IN)     :: ChannelIndex
     
     LOGICAL :: ZChannel
     
-    ZChannel = ( TC%Group_Index == ODPS_gINDEX_SSMIS .AND. ZSSMIS_ChannelMap(ChannelIndex) > 0 )
+    ZChannel = ( TC%Group_Index == ODPS_gINDEX_ZSSMIS .AND. ZSSMIS_ChannelMap(ChannelIndex) > 0 ) &
+          .OR. ( TC%Group_Index == ODPS_gINDEX_ZAMSUA .AND. ZAMSUA_ChannelMap(ChannelIndex) > 0 )
     
-  END FUNCTION Is_ZSSMIS_Channel
-  
-  FUNCTION Is_ZSSMIS(TC) RESULT( ZSSMIS )
+  END FUNCTION Is_Zeeman_Channel
+
+  !---------------------------------------------------------
+  ! Check if the given TC is associated with Zeeman algorithm
+  !  Inputs:
+  !    TC  - Taucoeff structure
+  !  Return
+  !    .TRUE.  - associated with the Zeeman algorithm
+  !    .FALSE. - not associated with the Zeeman algorithm
+  !-------------------------------------------------
+  FUNCTION Is_ODZeeman(TC) RESULT( ODZeeman )
     TYPE(ODPS_type), INTENT(IN)     :: TC
     
-    LOGICAL :: ZSSMIS
+    LOGICAL :: ODZeeman
     
-    ZSSMIS = ( TC%Group_Index == ODPS_gINDEX_SSMIS )
+    ODZeeman = ( TC%Group_Index == ODPS_gINDEX_ZSSMIS .OR. TC%Group_Index == ODPS_gINDEX_ZAMSUA )
     
-  END FUNCTION Is_ZSSMIS
+  END FUNCTION Is_ODZeeman
 
+  !----------------------------------------------------------
+  ! Obtain number of predictors, given an ODPS group index
+  !----------------------------------------------------------
+  FUNCTION Get_NumOfZPredictors(gIndex)RESULT( n_Predictors )
+    INTEGER, INTENT(IN) :: gIndex
+    
+    INTEGER :: n_Predictors
+    
+    IF( gIndex == ODPS_gINDEX_ZSSMIS )THEN      
+      n_Predictors = MAX_N_PREDICTORS_ZSSMIS
+    ELSE
+      n_Predictors = MAX_N_PREDICTORS_ZAMSUA
+    END IF
+  END FUNCTION Get_NumOfZPredictors
+
+  !----------------------------------------------------------
+  ! Obtain number of compoents, given an ODPS group index
+  !----------------------------------------------------------
+  FUNCTION Get_NumOfZComponents(gIndex)RESULT( n_Components )
+    INTEGER, INTENT(IN) :: gIndex
+    
+    INTEGER :: n_Components
+    
+    n_Components = N_ZCOMPONENTS
+  END FUNCTION Get_NumOfZComponents
+      
+  ! Obtain number of compoents, given an ODPS group index
+  !----------------------------------------------------------
+  FUNCTION Get_NumOfZAbsorbers(gIndex)RESULT( n_Absorbers )
+    INTEGER, INTENT(IN) :: gIndex
+    
+    INTEGER :: n_Absorbers
+    
+    n_Absorbers = N_ZABSORBERS
+  END FUNCTION Get_NumOfZAbsorbers
+  
 END MODULE ODZeeman_AtmAbsorption

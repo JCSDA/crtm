@@ -51,7 +51,7 @@ CRTM_RTSolution_Binary_IO.o : CRTM_RTSolution_Binary_IO.f90 CRTM_RTSolution_Defi
 CRTM_RTSolution_Define.o : CRTM_RTSolution_Define.f90 CRTM_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_SensorData_Define.o : CRTM_SensorData_Define.f90 CRTM_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_SensorInfo.o : CRTM_SensorInfo.f90 CRTM_Parameters.o Message_Handler.o 
-CRTM_SensorInput_Define.o : CRTM_SensorInput_Define.f90 SSMIS_Input_Define.o SSU_Input_Define.o 
+CRTM_SensorInput_Define.o : CRTM_SensorInput_Define.f90 Zeeman_Input_Define.o SSU_Input_Define.o 
 CRTM_SfcOptics.o : CRTM_SfcOptics.f90 CRTM_IR_Ice_SfcOptics.o CRTM_IR_Snow_SfcOptics.o CRTM_IR_Water_SfcOptics.o CRTM_IR_Land_SfcOptics.o CRTM_MW_Ice_SfcOptics.o CRTM_MW_Snow_SfcOptics.o CRTM_MW_Water_SfcOptics.o CRTM_MW_Land_SfcOptics.o CRTM_SfcOptics_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_SfcOptics_Define.o : CRTM_SfcOptics_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_SpcCoeff.o : CRTM_SpcCoeff.f90 CRTM_Parameters.o SpcCoeff_Binary_IO.o SpcCoeff_Define.o Message_Handler.o 
@@ -108,7 +108,6 @@ ODZeeman_Predictor.o : ODZeeman_Predictor.f90 ODPS_Define.o ODPS_Predictor_Defin
 ODZeeman_TauCoeff.o : ODZeeman_TauCoeff.f90 ODPS_Binary_IO.o ODPS_Define.o Message_Handler.o 
 Ocean_Permittivity.o : Ocean_Permittivity.f90 Fundamental_Constants.o Type_Kinds.o 
 Profile_Utility_Parameters.o : Profile_Utility_Parameters.f90 Fundamental_Constants.o Type_Kinds.o 
-SSMIS_Input_Define.o : SSMIS_Input_Define.f90 Compare_Float_Numbers.o Type_Kinds.o 
 SSU_Input_Define.o : SSU_Input_Define.f90 Compare_Float_Numbers.o Type_Kinds.o 
 Search_Utility.o : Search_Utility.f90 Message_Handler.o Type_Kinds.o 
 SensorInfo_Parameters.o : SensorInfo_Parameters.f90 
@@ -118,4 +117,6 @@ SpcCoeff_Define.o : SpcCoeff_Define.f90 AntCorr_Define.o SensorInfo_Parameters.o
 Spectral_Units_Conversion.o : Spectral_Units_Conversion.f90 Fundamental_Constants.o Type_Kinds.o 
 TauCoeff_Define.o : TauCoeff_Define.f90 ODSSU_Define.o ODPS_Define.o ODAS_Define.o Message_Handler.o Type_Kinds.o 
 Type_Kinds.o : Type_Kinds.f90 
+Zeeman_Input_Define.o : Zeeman_Input_Define.f90 Compare_Float_Numbers.o Type_Kinds.o 
+Zeeman_Utility.o : Zeeman_Utility.f90 File_Utility.o Message_Handler.o Type_Kinds.o 
 iAtm_Define.o : iAtm_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 

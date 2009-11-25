@@ -23,11 +23,11 @@ MODULE CRTM_SensorInput_Define
                                 SSU_Input_Get_Property, &
                                 SSU_Input_Set_Property, &
                                 SSU_Input_Inspect
-  USE SSMIS_Input_Define, ONLY: SSMIS_Input_type, &
+  USE Zeeman_Input_Define,ONLY: Zeeman_Input_type, &
                                 ASSIGNMENT(=), OPERATOR(==), &
-                                SSMIS_Input_Get_Property, &
-                                SSMIS_Input_Set_Property, &
-                                SSMIS_Input_Inspect
+                                Zeeman_Input_Get_Property, &
+                                Zeeman_Input_Set_Property, &
+                                Zeeman_Input_Inspect
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -47,7 +47,7 @@ MODULE CRTM_SensorInput_Define
   PUBLIC :: CRTM_SensorInput_Set_Property
   ! Inherited types
   PUBLIC :: SSU_Input_type
-  PUBLIC :: SSMIS_Input_type
+  PUBLIC :: Zeeman_Input_type
 
 
   ! -------------------
@@ -63,12 +63,12 @@ MODULE CRTM_SensorInput_Define
   
   INTERFACE CRTM_SensorInput_Get_Property
     MODULE PROCEDURE SSU_Input_Get_Property
-    MODULE PROCEDURE SSMIS_Input_Get_Property
+    MODULE PROCEDURE Zeeman_Input_Get_Property
   END INTERFACE CRTM_SensorInput_Get_Property
   
   INTERFACE CRTM_SensorInput_Set_Property
     MODULE PROCEDURE SSU_Input_Set_Property
-    MODULE PROCEDURE SSMIS_Input_Set_Property
+    MODULE PROCEDURE Zeeman_Input_Set_Property
   END INTERFACE CRTM_SensorInput_Set_Property
   
   
@@ -77,7 +77,7 @@ MODULE CRTM_SensorInput_Define
   ! --------------------
   TYPE :: CRTM_SensorInput_type
     TYPE(SSU_Input_type)   :: SSU
-    TYPE(SSMIS_Input_type) :: SSMIS
+    TYPE(Zeeman_Input_type) :: Zeeman
   END TYPE CRTM_SensorInput_type
 
 
@@ -87,28 +87,28 @@ CONTAINS
   SUBROUTINE CRTM_SensorInput_Get( &
     SensorInput, &
     SSU  , &
-    SSMIS  )
+    Zeeman  )
     ! Arguments
     TYPE(CRTM_SensorInput_type),      INTENT(IN)     :: SensorInput
     TYPE(SSU_Input_type),   OPTIONAL, INTENT(IN OUT) :: SSU
-    TYPE(SSMIS_Input_type), OPTIONAL, INTENT(IN OUT) :: SSMIS
+    TYPE(Zeeman_Input_type),OPTIONAL, INTENT(IN OUT) :: Zeeman
     ! Get components
     IF ( PRESENT(SSU)   ) SSU   = SensorInput%SSU
-    IF ( PRESENT(SSMIS) ) SSMIS = SensorInput%SSMIS
+    IF ( PRESENT(Zeeman) ) Zeeman = SensorInput%Zeeman
   END SUBROUTINE CRTM_SensorInput_Get
 
 
   SUBROUTINE CRTM_SensorInput_Set( &
     SensorInput, &
     SSU  , &
-    SSMIS  )
+    Zeeman  )
     ! Arguments
     TYPE(CRTM_SensorInput_type),      INTENT(IN OUT) :: SensorInput
     TYPE(SSU_Input_type),   OPTIONAL, INTENT(IN)     :: SSU
-    TYPE(SSMIS_Input_type), OPTIONAL, INTENT(IN)     :: SSMIS
+    TYPE(Zeeman_Input_type),OPTIONAL, INTENT(IN)     :: Zeeman
     ! Get components
     IF ( PRESENT(SSU)   ) SensorInput%SSU   = SSU
-    IF ( PRESENT(SSMIS) ) SensorInput%SSMIS = SSMIS
+    IF ( PRESENT(Zeeman) ) SensorInput%Zeeman = Zeeman
   END SUBROUTINE CRTM_SensorInput_Set
 
 
@@ -116,7 +116,7 @@ CONTAINS
     TYPE(CRTM_SensorInput_type), INTENT(IN) :: SensorInput
     WRITE(*, '(3x,"CRTM_SensorInput components:")')
     CALL SSU_Input_Inspect(SensorInput%SSU)
-    CALL SSMIS_Input_Inspect(SensorInput%SSMIS)
+    CALL Zeeman_Input_Inspect(SensorInput%Zeeman)
   END SUBROUTINE CRTM_SensorInput_Inspect
 
 
@@ -132,7 +132,7 @@ CONTAINS
     TYPE(CRTM_SensorInput_type), INTENT(OUT) :: lhs
     TYPE(CRTM_SensorInput_type), INTENT(IN)  :: rhs
     lhs%SSU    = rhs%SSU
-    lhs%SSMIS  = rhs%SSMIS
+    lhs%Zeeman  = rhs%Zeeman
   END SUBROUTINE CRTM_SensorInput_Assign
   
 
@@ -141,7 +141,7 @@ CONTAINS
     LOGICAL :: is_equal
     is_equal = .FALSE.
     IF ( (x%SSU == y%SSU) .AND. &
-         (x%SSMIS == y%SSMIS) ) is_equal = .TRUE.
+         (x%Zeeman == y%Zeeman) ) is_equal = .TRUE.
   END FUNCTION CRTM_SensorInput_Equal
          
 END MODULE CRTM_SensorInput_Define

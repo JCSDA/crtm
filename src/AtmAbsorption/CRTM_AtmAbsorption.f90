@@ -70,17 +70,17 @@ MODULE CRTM_AtmAbsorption
                                        ODPS_Allocate_PAFV         => Allocate_PAFV,         &
                                        ODPS_Get_SaveFWVFlag       => Get_SaveFWVFlag
                                         
-  USE ODZeeman_AtmAbsorption,    ONLY: ZSSMIS_Compute_AtmAbsorption,     &
-                                       ZSSMIS_Compute_AtmAbsorption_TL,  &
-                                       ZSSMIS_Compute_AtmAbsorption_AD,  &
-                                       ZSSMIS_Compute_Predictors,     &
-                                       ZSSMIS_Compute_Predictors_TL,  &
-                                       ZSSMIS_Compute_Predictors_AD,  &
-                                       N_ZCOMPONENTS,       &
-                                       N_ZABSORBERS,        &
-                                       Is_ZSSMIS_Channel,   &
-                                       Is_ZSSMIS,           &
-                                       MAX_N_PREDICTORS_ZSSMIS
+  USE ODZeeman_AtmAbsorption,    ONLY: Zeeman_Compute_AtmAbsorption,    &
+                                       Zeeman_Compute_AtmAbsorption_TL, &
+                                       Zeeman_Compute_AtmAbsorption_AD, &
+                                       Zeeman_Compute_Predictors,     &
+                                       Zeeman_Compute_Predictors_TL,  &
+                                       Zeeman_Compute_Predictors_AD,  &
+                                       Get_NumOfZComponents, &      
+                                       Get_NumOfZAbsorbers,  &      
+                                       Get_NumOfZPredictors, &
+                                       Is_Zeeman_Channel,    &
+                                       Is_ODZeeman
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -262,8 +262,8 @@ CONTAINS
     ! Zeeman channel
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF( idx > 0 )THEN
-      IF( Is_ZSSMIS_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
-         CALL ZSSMIS_Compute_AtmAbsorption( &                     
+      IF( Is_Zeeman_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
+         CALL Zeeman_Compute_AtmAbsorption( &                     
                              TC%ODZeeman(idx)     , & ! Input     
                              ChannelIndex         , &  ! Input    
                              Predictor%ODZeeman   , &  ! Input                                         
@@ -423,8 +423,8 @@ CONTAINS
     ! Zeeman channel
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF( idx > 0 )THEN
-      IF( Is_ZSSMIS_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
-            CALL ZSSMIS_Compute_AtmAbsorption_TL( &
+      IF( Is_Zeeman_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
+            CALL Zeeman_Compute_AtmAbsorption_TL( &
                                 TC%ODZeeman(idx)     , & ! Input
                                 ChannelIndex         , &  ! Input 
                                 Predictor%ODZeeman   , &  ! Input                                      
@@ -583,8 +583,8 @@ CONTAINS
     ! Zeeman channel
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF( idx > 0 )THEN
-      IF( Is_ZSSMIS_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
-            CALL ZSSMIS_Compute_AtmAbsorption_AD( &
+      IF( Is_Zeeman_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
+            CALL Zeeman_Compute_AtmAbsorption_AD( &
                                 TC%ODZeeman(idx)     , &  ! Input
                                 ChannelIndex         , &  ! Input 
                                 Predictor%ODZeeman   , &  ! Input
@@ -765,11 +765,11 @@ CONTAINS
     ! Zeeman sensor
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF( idx > 0 )THEN
-      IF( Is_ZSSMIS(TC%ODZeeman(idx) ))THEN
-          CALL ZSSMIS_Compute_Predictors( SensorInput      , &  ! Input
-                                          TC%ODZeeman(idx) , &  ! Input  
-                                          Atmosphere       , &  ! Input  
-                                          GeometryInfo     , &  ! Input  
+      IF( Is_ODZeeman(TC%ODZeeman(idx)) )THEN
+          CALL Zeeman_Compute_Predictors( SensorInput      , &  ! Input
+                                          TC%ODZeeman(idx) , &  ! Input   
+                                          Atmosphere       , &  ! Input   
+                                          GeometryInfo     , &  ! Input   
                                           Predictor%ODZeeman )  ! Output     
       END IF
     END IF
@@ -929,8 +929,8 @@ CONTAINS
     ! Zeeman sensor
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF( idx > 0 )THEN
-      IF( Is_ZSSMIS(TC%ODZeeman(idx)) )THEN
-          CALL ZSSMIS_Compute_Predictors_TL( SensorInput       , &  ! Input
+      IF( Is_ODZeeman(TC%ODZeeman(idx)) )THEN
+          CALL Zeeman_Compute_Predictors_TL( SensorInput       , &  ! Input
                                              TC%ODZeeman(idx)  , &  ! Input       
                                              Atmosphere        , &  ! Input       
                                              GeometryInfo      , &  ! Input       
@@ -1051,8 +1051,8 @@ CONTAINS
     ! Zeeman sensor
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF( idx > 0 )THEN
-      IF( Is_ZSSMIS(TC%ODZeeman(idx)) )THEN
-          CALL ZSSMIS_Compute_Predictors_AD(SensorInput,     &  ! Input
+      IF( Is_ODZeeman(TC%ODZeeman(idx)) )THEN
+          CALL Zeeman_Compute_Predictors_AD(SensorInput,     &  ! Input
                                           TC%ODZeeman(idx),  &  ! Input
                                           Atmosphere,        &  ! FWD Input
                                           GeometryInfo,      &  ! Input    
@@ -1490,12 +1490,12 @@ CONTAINS
     ! Zeeman sensor
     SLoIndex = TC%ZSensor_LoIndex(SensorIndex)
 
-ZEEMAN_BLOCK: IF( SLoIndex > 0 )THEN
-
+    ZEEMAN_BLOCK: IF( SLoIndex > 0 )THEN
+      i = TC%ODZeeman(SLoIndex)%Group_index
       Allocate_Status = ODPS_Allocate_Predictor( &                                            
                             TC%ODZeeman(SLoIndex)%n_Layers,  & ! input  - n internal layers   
-                            N_ZCOMPONENTS,                   & ! Input                        
-                            MAX_N_PREDICTORS_ZSSMIS,         & ! Input                                 
+                            Get_NumOfZComponents(i),         & ! Input                 
+                            Get_NumOfZPredictors(i),         & ! Input                          
                             Predictor%ODZeeman,              & ! Output                       
                             n_User_Layers = n_Layers ,       & ! Input - n user layers        
                             RCS_Id = RCS_Id,                 & ! Revision control                   
@@ -1514,7 +1514,7 @@ ZEEMAN_BLOCK: IF( SLoIndex > 0 )THEN
       IF(PRESENT(SaveFWV))THEN 
         Allocate_Status = ODPS_Allocate_PAFV( &                                                
                                        TC%ODZeeman(SLoIndex)%n_Layers, & ! Input               
-                                       N_ZABSORBERS,               & ! Input                   
+                                       Get_NumOfZAbsorbers(i),     & ! Input                   
                                        n_Layers,                   & ! Input                   
                                        Predictor%ODZeeman%OPTRAN,  & ! Input                   
                                        Predictor%ODZeeman%PAFV,    & ! Output                  

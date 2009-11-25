@@ -390,10 +390,11 @@ PROGRAM Example_Forward
     ! ...SSU
     CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%SSU, &
                                         Time=1995.5_fp )
-    ! ...SSMIS
-    CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%SSMIS, &
+    ! ...SSMIS & AMSUA Zeeman
+    CALL CRTM_SensorInput_Set_Property( Options(m)%SensorInput%Zeeman, &
                                         Field_Strength=0.35_fp, &
                                         COS_ThetaB    =0.5_fp, &
+                                        COS_PhiB      =0.5_fp, &
                                         Doppler_Shift =60.0_fp )
   END DO
   ! ============================================================================

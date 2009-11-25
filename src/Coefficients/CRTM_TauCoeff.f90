@@ -72,7 +72,7 @@ MODULE CRTM_TauCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
 
   ! Keyword set value
@@ -84,7 +84,10 @@ MODULE CRTM_TauCoeff
   ! --------------------------------------
   TYPE(TauCoeff_type), SAVE :: TC
 
+
 CONTAINS
+
+
 !------------------------------------------------------------------------------
 !
 ! NAME:
@@ -634,7 +637,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message
     CHARACTER(256) :: Process_ID_Tag
-    INTEGER :: n, Destroy_Status, Allocate_Status
+    INTEGER :: Destroy_Status
     
     ! Set up
     Error_Status = SUCCESS

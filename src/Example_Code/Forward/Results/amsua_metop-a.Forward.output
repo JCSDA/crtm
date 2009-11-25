@@ -1,0 +1,63 @@
+
+     **********************************************************
+                           Example_Forward
+
+      Program to provide an example of CRTM Forward function 
+      usage.
+
+      $Revision: 5827 $
+     **********************************************************
+
+
+     Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+     Initializing the CRTM...
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsua_metop-a.SpcCoeff.bin; 
+ SpcCoeff RELEASE.VERSION:  7.01  N_CHANNELS=15
+ Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsua_metop-a.TauCoeff.bin; 
+   ODAS RELEASE.VERSION:  6.06  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=15  N_Alphas= 3  N_Coeffs=1443
+ Read_ODPS_Binary(INFORMATION) : FILE: ../Coefficient_Data/zamsua_metop-a.TauCoeff.bin; 
+   ODPS RELEASE.VERSION:  2.01  N_LAYERS=97  N_COMPONENTS=1  N_ABSORBERS=1  N_CHANNELS=1  N_COEFFS=1552
+ Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
+ CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
+ AerosolCoeff RELEASE.VERSION:  2.02  N_WAVELENGTHS=  91  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
+ EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
+
+       Profile 1 FWD output
+       Sensor_Id   Channel         R            Tb
+       amsua_met      1      1.484225E-03     285.027
+       amsua_met      2      2.557302E-03     282.337
+       amsua_met      3      6.411263E-03     276.319
+       amsua_met      4      6.830445E-03     267.269
+       amsua_met      5      6.738362E-03     255.962
+       amsua_met      6      6.486904E-03     239.280
+       amsua_met      7      6.259646E-03     226.469
+       amsua_met      8      6.081691E-03     215.691
+       amsua_met      9      6.223949E-03     207.249
+       amsua_met     10      6.442609E-03     214.480
+       amsua_met     11      6.756588E-03     224.862
+       amsua_met     12      6.999810E-03     232.907
+       amsua_met     13      7.242881E-03     240.948
+       amsua_met     14      7.566428E-03     251.650
+       amsua_met     15      2.024151E-02     279.553
+
+       Profile 2 FWD output
+       Sensor_Id   Channel         R            Tb
+       amsua_met      1      1.200563E-03     230.662
+       amsua_met      2      2.055336E-03     227.065
+       amsua_met      3      5.396824E-03     232.788
+       amsua_met      4      6.069551E-03     237.636
+       amsua_met      5      6.270602E-03     238.283
+       amsua_met      6      6.403109E-03     236.206
+       amsua_met      7      6.500543E-03     235.134
+       amsua_met      8      6.637606E-03     235.285
+       amsua_met      9      7.105510E-03     236.410
+       amsua_met     10      7.101742E-03     236.283
+       amsua_met     11      7.163848E-03     238.333
+       amsua_met     12      7.223970E-03     240.322
+       amsua_met     13      7.221251E-03     240.232
+       amsua_met     14      7.301178E-03     242.876
+       amsua_met     15      1.704855E-02     235.790
+
+     Destroying the CRTM...

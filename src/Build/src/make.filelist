@@ -83,7 +83,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \
             CRTM_AntCorr.f90 \
-            CRTM_SensorInput_Define.f90 SSU_Input_Define.f90 SSMIS_Input_Define.f90 \
+            CRTM_SensorInput_Define.f90 SSU_Input_Define.f90 Zeeman_Input_Define.f90 \
             CRTM_Options_Define.f90 \
             CRTM_Parameters.f90 \
             CRTM_LifeCycle.f90 \
@@ -113,7 +113,8 @@ SRC_FILES = Type_Kinds.f90 \
             ODPS_CoordinateMapping.f90 \
             ODZeeman_TauCoeff.f90 \
             ODZeeman_AtmAbsorption.f90 \
-            ODZeeman_Predictor.f90
+            ODZeeman_Predictor.f90 \
+            Zeeman_Utility.f90
             
                         
             #CRTM_ChannelInfo.f90 \
