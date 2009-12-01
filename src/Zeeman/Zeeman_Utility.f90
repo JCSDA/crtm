@@ -85,7 +85,7 @@ CONTAINS
 
     IF ( .NOT. File_Exists( TRIM(filename_LUT) ) )THEN
       Error_Status = FAILURE
-      Message = 'File '//TRIM(Filename)//' not found.'
+      Message = 'File '//TRIM(Filename_LUT)//' not found.'
       CALL Display_Message( ROUTINE_NAME,    &
                             TRIM( Message ), &
                             Error_Status)
