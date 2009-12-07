@@ -60,7 +60,8 @@ MODULE CRTM_SfcOptics_Define
     INTEGER :: Compute_Switch = SET
     ! Mandatory members
     INTEGER  :: Index_Sat_Ang       = 1
-    REAL(fp) :: Surface_Temperature = ZERO
+    INTEGER  :: mth_Azi       = 0
+    REAL(fp) :: Surface_Temperature = ZERO    
     REAL(fp), DIMENSION(:),       POINTER :: Angle               => NULL() ! I
     REAL(fp), DIMENSION(:),       POINTER :: Weight              => NULL() ! I
     REAL(fp), DIMENSION(:,:),     POINTER :: Emissivity          => NULL() ! I x Ls

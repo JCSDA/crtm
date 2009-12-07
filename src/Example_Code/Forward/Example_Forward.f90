@@ -365,7 +365,7 @@ PROGRAM Example_Forward
   Atm(2)%Cloud(1)%Water_Content(k1:k2)    =    5.0_fp ! kg/m^2
 
   ! Some pretend aerosol data
-  Atm(2)%Aerosol(1)%Type = DRY_ORGANIC_CARBON_AEROSOL
+  Atm(2)%Aerosol(1)%Type = ORGANIC_CARBON_AEROSOL
   k1 = 56  ! Pressure[k1] = 206.459hPa
   k2 = 63  ! Pressure[k2] = 293.077hPa
   Atm(2)%Aerosol(1)%Effective_Radius(k1:k2) = 0.09_fp ! microns
@@ -430,6 +430,7 @@ PROGRAM Example_Forward
               &/7x,"Sensor_Id",3x,"Channel",9x,"R",12x,"Tb")' ) m
     Sensor  = 1
     Channel = 1
+
     DO l = 1, n_Channels
       ! Determine the ChannelInfo sensor 
       IF ( Channel > ChannelInfo(Sensor)%n_Channels ) THEN

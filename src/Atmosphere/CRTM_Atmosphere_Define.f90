@@ -170,13 +170,11 @@
 !                Aerosol Type      Parameter Name
 !           --------------------------------------------------
 !                   None           NO_AEROSOL   
-!                   Dust           DUST_AEROSOL   
-!               Sea salt SSAM(*)   SEASALT_SSAM_AEROSOL 
-!               Sea salt SSCM(+)   SEASALT_SSCM_AEROSOL 
-!             Dry organic carbon   DRY_ORGANIC_CARBON_AEROSOL
-!             Wet organic carbon   WET_ORGANIC_CARBON_AEROSOL
-!              Dry black carbon    DRY_BLACK_CARBON_AEROSOL
-!              Wet black carbon    WET_BLACK_CARBON_AEROSOL
+!              Sea salt SSCM1(+)   SEASALT_SSCM_AEROSOL 
+!              Sea salt SSCM2(+)   SEASALT_SSCM_AEROSOL 
+!              Sea salt SSCM3(+)   SEASALT_SSCM_AEROSOL 
+!              Organic carbon      ORGANIC_CARBON_AEROSOL
+!              Black carbon        BLACK_CARBON_AEROSOL
 !                  Sulfate         SULFATE_AEROSOL  
 !
 !            (*) SSAM == sea salt accumulation mode, Reff ~ 0.5 - 5.0 um
@@ -234,11 +232,11 @@ MODULE CRTM_Atmosphere_Define
                                    NO_AEROSOL, &
                                    DUST_AEROSOL, &
                                    SEASALT_SSAM_AEROSOL, &
-                                   SEASALT_SSCM_AEROSOL, &
-                                   DRY_ORGANIC_CARBON_AEROSOL, &
-                                   WET_ORGANIC_CARBON_AEROSOL, &
-                                   DRY_BLACK_CARBON_AEROSOL, &
-                                   WET_BLACK_CARBON_AEROSOL, &
+                                   SEASALT_SSCM1_AEROSOL     , &
+                                   SEASALT_SSCM2_AEROSOL     , &
+                                   SEASALT_SSCM3_AEROSOL     , &
+                                   ORGANIC_CARBON_AEROSOL    , &
+                                   BLACK_CARBON_AEROSOL      , &     
                                    SULFATE_AEROSOL  , &
                                    AEROSOL_TYPE_NAME, &
                                    CRTM_Aerosol_type, &
@@ -285,11 +283,11 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: NO_AEROSOL
   PUBLIC :: DUST_AEROSOL
   PUBLIC :: SEASALT_SSAM_AEROSOL
-  PUBLIC :: SEASALT_SSCM_AEROSOL
-  PUBLIC :: DRY_ORGANIC_CARBON_AEROSOL
-  PUBLIC :: WET_ORGANIC_CARBON_AEROSOL
-  PUBLIC :: DRY_BLACK_CARBON_AEROSOL
-  PUBLIC :: WET_BLACK_CARBON_AEROSOL
+  PUBLIC :: SEASALT_SSCM1_AEROSOL
+  PUBLIC :: SEASALT_SSCM2_AEROSOL
+  PUBLIC :: SEASALT_SSCM3_AEROSOL
+  PUBLIC :: ORGANIC_CARBON_AEROSOL
+  PUBLIC :: BLACK_CARBON_AEROSOL
   PUBLIC :: SULFATE_AEROSOL  
   PUBLIC :: AEROSOL_TYPE_NAME
   ! Aerosol structure data type

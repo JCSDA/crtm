@@ -23,12 +23,8 @@ MODULE CRTM_AtmAbsorption
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_TauCoeff,             ONLY: TC
   USE CRTM_SensorInput_Define,   ONLY: CRTM_SensorInput_type
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type, &
-                                       CRTM_Associated_AtmAbsorption, &  
-                                       CRTM_Destroy_AtmAbsorption, &     
-                                       CRTM_Allocate_AtmAbsorption, &    
-                                       CRTM_Assign_AtmAbsorption      
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
   USE ODAS_AtmAbsorption,        ONLY: ODAS_Compute_AtmAbsorption    => Compute_AtmAbsorption,    &
                                        ODAS_Compute_AtmAbsorption_TL => Compute_AtmAbsorption_TL, &
                                        ODAS_Compute_AtmAbsorption_AD => Compute_AtmAbsorption_AD, &
@@ -90,15 +86,6 @@ MODULE CRTM_AtmAbsorption
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_AtmAbsorption structure data type
-  ! in the CRTM_AtmAbsorption_Define module
-  PUBLIC :: CRTM_AtmAbsorption_type
-  ! CRTM_AtmAbsorption structure routines inherited
-  ! from the CRTM_AtmAbsorption_Define module
-  PUBLIC :: CRTM_Associated_AtmAbsorption
-  PUBLIC :: CRTM_Destroy_AtmAbsorption
-  PUBLIC :: CRTM_Allocate_AtmAbsorption
-  PUBLIC :: CRTM_Assign_AtmAbsorption
   ! routines in this modules
   PUBLIC :: CRTM_Compute_AtmAbsorption
   PUBLIC :: CRTM_Compute_AtmAbsorption_TL

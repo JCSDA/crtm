@@ -193,10 +193,10 @@ MODULE CRTM_Parameters
   ! - Azimuth angles that are multiples
   !   of 2pi are not accepted.
   ! -----------------------------------
-  REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_SCAN_ANGLE    = 65.0_fp
-  REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_ZENITH_ANGLE  = 65.0_fp
+  REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_SCAN_ANGLE    = 80.0_fp
+  REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_ZENITH_ANGLE  = 80.0_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_AZIMUTH_ANGLE = 360.0_fp
-
+  REAL(fp), PUBLIC, PARAMETER :: MAX_OPTRAN_SECANT  = 2.36620_fp   ! = 1/cosd(65.0)
 
   ! -------------------------------------------------
   ! Limits on source angles.
@@ -246,8 +246,8 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: WATER_CONTENT_THRESHOLD = 0.000001_fp
   REAL(fp), PUBLIC, PARAMETER :: OPTICAL_DEPTH_THRESHOLD = 0.000001_fp
 
-  REAL(fp), PUBLIC, PARAMETER :: BS_THRESHOLD  = 0.000001_fp  ! Was SCATTERING_ALBEDO_THRESHOLD
-  REAL(fp), PUBLIC, PARAMETER :: SCATTERING_ALBEDO_THRESHOLD  = 0.000001_fp  ! Eventually replace this with BS_THRESHOLD
+  REAL(fp), PUBLIC, PARAMETER :: BS_THRESHOLD  = 1.0e-10_fp  ! Was SCATTERING_ALBEDO_THRESHOLD
+  REAL(fp), PUBLIC, PARAMETER :: SCATTERING_ALBEDO_THRESHOLD = BS_THRESHOLD  ! Eventually replace this with BS_THRESHOLD
 
 
   INTEGER, PUBLIC, PARAMETER :: MAX_N_LEGENDRE_TERMS = 6 !10
@@ -255,7 +255,8 @@ MODULE CRTM_Parameters
   INTEGER, PUBLIC, PARAMETER :: MAX_N_STREAMS = 20 
   INTEGER, PUBLIC, PARAMETER :: MAX_N_ANGLES = 5 
   INTEGER, PUBLIC, PARAMETER :: MAX_N_STOKES = 4
-  
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_AZI = 16
+    
   LOGICAL, PUBLIC, PARAMETER :: HGPHASE = .FALSE.
                                                                                                         
 

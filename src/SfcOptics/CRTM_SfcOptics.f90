@@ -78,6 +78,7 @@ MODULE CRTM_SfcOptics
                                       Compute_IR_Ice_SfcOptics, &
                                       Compute_IR_Ice_SfcOptics_TL, &
                                       Compute_IR_Ice_SfcOptics_AD
+  USE CRTM_VIS_Water_SfcOptics
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -463,6 +464,7 @@ CONTAINS
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Emissivity
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES, &
                         SfcOptics%n_Angles,MAX_N_STOKES) :: Reflectivity
+    REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Direct_Reflectivity
     INTEGER :: Sensor_Type, Polarization
 
 
@@ -479,7 +481,7 @@ CONTAINS
     ! Initialise the local emissivity and reflectivities
     Emissivity   = ZERO 
     Reflectivity = ZERO
-
+    Direct_Reflectivity = ZERO
 
     ! ---------------------
     ! Branch on sensor type
@@ -801,7 +803,7 @@ CONTAINS
           ! based on land coverage fraction
           Emissivity(1:nZ,1)          = SfcOptics%Emissivity(1:nZ,1)          * Surface%Land_Coverage
           Reflectivity(1:nZ,1,1:nZ,1) = SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Land_Coverage
-
+          Direct_Reflectivity(1:nZ,1) = SfcOptics%Direct_Reflectivity(1:nZ,1) * Surface%Land_Coverage
         END IF Infrared_Land
 
 
@@ -836,6 +838,9 @@ CONTAINS
           Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1) + & 
             ( SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Water_Coverage )
 
+          Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1) + & 
+            ( SfcOptics%Direct_Reflectivity(1:nZ,1) * Surface%Water_Coverage )
+            
         END IF Infrared_Water
 
 
@@ -868,6 +873,8 @@ CONTAINS
             (SfcOptics%Emissivity(1:nZ,1)*Surface%Snow_Coverage)
           Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1) + & 
             (SfcOptics%Reflectivity(1:nZ,1,1:nZ,1)*Surface%Snow_Coverage)
+          Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1) + & 
+            ( SfcOptics%Direct_Reflectivity(1:nZ,1)*Surface%Snow_Coverage)
 
         ENDIF Infrared_Snow
 
@@ -901,7 +908,9 @@ CONTAINS
             (SfcOptics%Emissivity(1:nZ,1) * Surface%Ice_Coverage)
           Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1) + & 
             (SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Ice_Coverage)
-
+          Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1) + & 
+            ( SfcOptics%Direct_Reflectivity(1:nZ,1)*Surface%Ice_Coverage)
+            
         END IF Infrared_Ice
 
 
@@ -910,26 +919,183 @@ CONTAINS
         ! -----------------------
         SfcOptics%Emissivity(1:nZ,1)          = Emissivity(1:nZ,1)
         SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1)
-
+        SfcOptics%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1)
 
 
       !##########################################################################
       !##########################################################################
       !##                                                                      ##
       !##                       ## VISIBLE CALCULATIONS ##                     ##
-      !##                                                                      ##
+      !## Visible part shares using the IR code, in which visible              ##
+      !## lambertian emissivity/reflectivity can be computed for visible       ##
+      !## wavenumber.                                                          ##
       !##########################################################################
       !##########################################################################
 
       CASE ( VISIBLE_SENSOR )
 
+      IF( SfcOptics%mth_Azi == 0 ) THEN
+     !  Lambertian surface
+        ! -------------------------------------          
+        ! Infrared/Visible LAND emissivity/reflectivity
+        ! -------------------------------------
+        Visible_Land: IF( Surface%Land_Coverage > ZERO ) THEN
 
-        ! -------------------
-        ! Default values only
-        ! -------------------
-        SfcOptics%Emissivity(1:nZ,1)          = 0.95_fp
-        SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) = ONE - SfcOptics%Emissivity(1,1)
+          ! Compute the surface optics
+          Error_Status = Compute_IR_Land_SfcOptics( Surface     , &  ! Input
+                                                    GeometryInfo, &  ! Input
+                                                    SensorIndex , &  ! Input
+                                                    ChannelIndex, &  ! Input
+                                                    SfcOptics   , &  ! In/Output
+                                                    SOV%IRLSOV  , &  ! Internal variable output
+                                                    Message_Log=Message_Log )
+          IF ( Error_Status /= SUCCESS ) THEN
+            WRITE( Message, '( "Error computing IR land SfcOptics at ", &
+                              &"channel index ", i4 )' ) ChannelIndex
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log=Message_Log )
+            RETURN
+          END IF
 
+          ! Accumulate the surface optics properties
+          ! based on land coverage fraction
+
+          Emissivity(1:nZ,1)          = SfcOptics%Emissivity(1:nZ,1)          * Surface%Land_Coverage
+          Reflectivity(1:nZ,1,1:nZ,1) = SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Land_Coverage
+          Direct_Reflectivity(1:nZ,1) = SfcOptics%Direct_Reflectivity(1:nZ,1) * Surface%Land_Coverage
+        
+        END IF Visible_Land
+
+
+        ! --------------------------------------
+        ! Infrared WATER emissivity/reflectivity
+        ! --------------------------------------
+        Visible_Water: IF( Surface%Water_Coverage > ZERO ) THEN
+
+          ! Compute the surface optics
+          Error_Status = Compute_VIS_Water_SfcOptics( Surface,     &  ! Input
+                                                    GeometryInfo,  &  ! Input
+                                                    SensorIndex ,  &  ! Input
+                                                    ChannelIndex,  &  ! Input
+                                                    SfcOptics,     &  ! In/Output
+                                                    Message_Log=Message_Log )
+!          Error_Status = Compute_IR_Water_SfcOptics( Surface     , &  ! Input
+!                                                     GeometryInfo, &  ! Input
+!                                                     SensorIndex , &  ! Input
+!                                                     ChannelIndex, &  ! Input
+!                                                     SfcOptics   , &  ! In/Output
+!                                                     SOV%IRWSOV  , &  ! Internal variable output
+!                                                     Message_Log=Message_Log )
+          IF ( Error_Status /= SUCCESS ) THEN
+            WRITE( Message, '( "Error computing IR water SfcOptics at ", &
+                              &"channel index ", i4 )' ) ChannelIndex
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log=Message_Log )
+            RETURN
+          END IF
+
+          ! Accumulate the surface optics properties
+          ! based on water coverage fraction
+          Emissivity(1:nZ,1) = Emissivity(1:nZ,1) + &
+            ( SfcOptics%Emissivity(1:nZ,1) * Surface%Water_Coverage )
+
+          Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1) + & 
+            ( SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Water_Coverage )
+
+          Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1) + & 
+            ( SfcOptics%Direct_Reflectivity(1:nZ,1) * Surface%Water_Coverage )
+          
+        END IF Visible_Water
+
+
+        ! -------------------------------------
+        ! Infrared SNOW emissivity/reflectivity
+        ! -------------------------------------
+        Visible_Snow: IF( Surface%Snow_Coverage > ZERO ) THEN
+
+          ! Compute the surface optics
+          Error_Status = Compute_IR_Snow_SfcOptics( Surface     , &  ! Input
+                                                    GeometryInfo, &  ! Input
+                                                    SensorIndex , &  ! Input
+                                                    ChannelIndex, &  ! Input
+                                                    SfcOptics   , &  ! In/Output
+                                                    SOV%IRSSOV  , &  ! Internal variable output
+                                                    Message_Log=Message_Log )
+          IF ( Error_Status /= SUCCESS ) THEN
+            WRITE( Message, '( "Error computing IR snow SfcOptics at ", &
+                              &"channel index ", i4 )' ) ChannelIndex
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log=Message_Log )
+            RETURN
+          END IF
+
+          ! Accumulate the surface optics properties
+          ! based on snow coverage fraction
+          Emissivity(1:nZ,1) = Emissivity(1:nZ,1) + &
+            (SfcOptics%Emissivity(1:nZ,1)*Surface%Snow_Coverage)
+          Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1) + & 
+            (SfcOptics%Reflectivity(1:nZ,1,1:nZ,1)*Surface%Snow_Coverage)
+          Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1) + & 
+            ( SfcOptics%Direct_Reflectivity(1:nZ,1) * Surface%Snow_Coverage )
+            
+        ENDIF Visible_Snow
+
+
+        ! ------------------------------------
+        ! Infrared ICE emissivity/reflectivity
+        ! ------------------------------------
+        Visible_Ice: IF( Surface%Ice_Coverage > ZERO ) THEN
+
+          ! Compute the surface optics
+          Error_Status = Compute_IR_Ice_SfcOptics( Surface     , &  ! Input
+                                                   GeometryInfo, &  ! Input
+                                                   SensorIndex , &  ! Input
+                                                   ChannelIndex, &  ! Input
+                                                   SfcOptics   , &  ! In/Output
+                                                   SOV%IRISOV  , &  ! Internal variable output
+                                                   Message_Log=Message_Log )
+          IF ( Error_Status /= SUCCESS ) THEN
+            WRITE( Message, '( "Error computing IR ice SfcOptics at ", &
+                              &"channel index ", i4 )' ) ChannelIndex
+            CALL Display_Message( ROUTINE_NAME, &
+                                  TRIM( Message ), &
+                                  Error_Status, &
+                                  Message_Log=Message_Log )
+            RETURN
+          END IF
+
+          ! Accumulate the surface optics properties
+          ! based on Ice coverage fraction
+          Emissivity(1:nZ,1) = Emissivity(1:nZ,1) + &
+            (SfcOptics%Emissivity(1:nZ,1) * Surface%Ice_Coverage)
+          Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1) + & 
+            (SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Ice_Coverage)
+          Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1) + & 
+            ( SfcOptics%Direct_Reflectivity(1:nZ,1) * Surface%Ice_Coverage )
+            
+        END IF Visible_Ice
+
+
+        ! -----------------------
+        ! Assign the final result
+        ! -----------------------
+        SfcOptics%Emissivity(1:nZ,1)          = Emissivity(1:nZ,1)
+        SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1)
+        SfcOptics%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1)
+        
+     ELSE
+     
+        SfcOptics%Emissivity(1:nZ,1) = ZERO
+        SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) = ZERO
+        SfcOptics%Direct_Reflectivity = ZERO
+        
+     ENDIF
 
 
       !##########################################################################
@@ -1105,7 +1271,7 @@ CONTAINS
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Emissivity_TL
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES, &
                         SfcOptics%n_Angles,MAX_N_STOKES) :: Reflectivity_TL
-
+    REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Direct_Reflectivity_TL
 
     ! ------
     ! Set up
@@ -1120,7 +1286,7 @@ CONTAINS
     ! Initialise the local emissivity and reflectivities
     Emissivity_TL   = ZERO 
     Reflectivity_TL = ZERO
-
+    Direct_Reflectivity_TL = ZERO
 
     ! ---------------------
     ! Branch on sensor type
@@ -1169,7 +1335,7 @@ CONTAINS
 
           Reflectivity_TL(1:nZ,1:2,1:nZ,1:2) = &
             SfcOptics_TL%Reflectivity(1:nZ,1:2,1:nZ,1:2)*Surface%Land_Coverage
-
+            
         END IF Microwave_Land
 
 
@@ -1496,6 +1662,8 @@ CONTAINS
             ( SfcOptics_TL%Emissivity(1:nZ,1) * Surface%Water_Coverage )
           Reflectivity_TL(1:nZ,1,1:nZ,1) = Reflectivity_TL(1:nZ,1,1:nZ,1) + & 
             ( SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Water_Coverage )
+          Direct_Reflectivity_TL(1:nZ,1) = Direct_Reflectivity_TL(1:nZ,1) + & 
+            ( SfcOptics_TL%Direct_Reflectivity(1:nZ,1) * Surface%Water_Coverage )
 
         END IF Infrared_Water
 
@@ -1532,6 +1700,8 @@ CONTAINS
             ( SfcOptics_TL%Emissivity(1:nZ,1) * Surface%Snow_Coverage )
           Reflectivity_TL(1:nZ,1,1:nZ,1) = Reflectivity_TL(1:nZ,1,1:nZ,1) + & 
             ( SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Snow_Coverage )
+          Direct_Reflectivity_TL(1:nZ,1) = Direct_Reflectivity_TL(1:nZ,1) + & 
+            ( SfcOptics_TL%Direct_Reflectivity(1:nZ,1) * Surface%Snow_Coverage )
 
         END IF Infrared_Snow
 
@@ -1568,6 +1738,8 @@ CONTAINS
             ( SfcOptics_TL%Emissivity(1:nZ,1) * Surface%Ice_Coverage )
           Reflectivity_TL(1:nZ,1,1:nZ,1) = Reflectivity_TL(1:nZ,1,1:nZ,1) + & 
             ( SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1) * Surface%Ice_Coverage )
+          Direct_Reflectivity_TL(1:nZ,1) = Direct_Reflectivity_TL(1:nZ,1) + & 
+            ( SfcOptics_TL%Direct_Reflectivity(1:nZ,1) * Surface%Ice_Coverage )
 
         END IF Infrared_Ice
 
@@ -1577,7 +1749,7 @@ CONTAINS
         ! -----------------------
         SfcOptics_TL%Emissivity(1:nZ,1)          = Emissivity_TL(1:nZ,1)
         SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity_TL(1:nZ,1,1:nZ,1)
-
+        SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity_TL(1:nZ,1)
 
 
       !##########################################################################
@@ -1596,7 +1768,7 @@ CONTAINS
         ! -------------------
         SfcOptics_TL%Emissivity(1:nZ,1)          = ZERO
         SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1) = ZERO
-
+        SfcOptics_TL%Direct_Reflectivity = ZERO
 
 
       !##########################################################################
@@ -1779,7 +1951,7 @@ CONTAINS
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Emissivity_AD
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES, &
                         SfcOptics%n_Angles,MAX_N_STOKES) :: Reflectivity_AD
-
+    REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Direct_Reflectivity_AD
 
     ! ------
     ! Set up
@@ -1794,7 +1966,7 @@ CONTAINS
     ! Initialise the local emissivity and reflectivity adjoints
     Emissivity_AD = ZERO 
     Reflectivity_AD = ZERO
-
+    Direct_Reflectivity_AD = ZERO
 
     ! ---------------------
     ! Branch on sensor type
@@ -2314,7 +2486,7 @@ CONTAINS
         ! -------------------
         SfcOptics_AD%Emissivity(1:nZ,1)       = ZERO
         SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1) = ZERO
-
+        SfcOptics_AD%Direct_Reflectivity = ZERO
 
 
       !##########################################################################

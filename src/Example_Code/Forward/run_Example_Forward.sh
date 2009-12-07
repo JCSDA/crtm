@@ -14,7 +14,7 @@ else
 fi
 
 # Specify test sensor ids
-SENSOR_ID="amsua_metop-a mhs_n18 hirs4_n18 ssu_n14 ssmis_f16"
+SENSOR_ID="amsua_metop-a mhs_n18 hirs4_n18 ssu_n14 ssmis_f16 v.seviri_m09 hirs3_n17 amsre_aqua"
 
 # Loop over test sensors
 for SID in ${SENSOR_ID}; do

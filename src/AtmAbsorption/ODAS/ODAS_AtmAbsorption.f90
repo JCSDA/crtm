@@ -28,11 +28,7 @@ MODULE ODAS_AtmAbsorption
                                        LIMIT_LOG       
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type      , &
-                                       CRTM_Associated_AtmAbsorption, &
-                                       CRTM_Destroy_AtmAbsorption   , &
-                                       CRTM_Allocate_AtmAbsorption  , &
-                                       CRTM_Assign_AtmAbsorption
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
   USE ODAS_Predictor,            ONLY: Predictor_type,        &
                                        MAX_N_ABSORBERS,       &
                                        MAX_N_ORDERS,          & 
@@ -53,12 +49,6 @@ MODULE ODAS_AtmAbsorption
   ! CRTM_AtmAbsorption structure data type
   ! in the CRTM_AtmAbsorption_Define module
   PUBLIC :: CRTM_AtmAbsorption_type
-  ! CRTM_AtmAbsorption structure routines inherited
-  ! from the CRTM_AtmAbsorption_Define module
-  PUBLIC :: CRTM_Associated_AtmAbsorption
-  PUBLIC :: CRTM_Destroy_AtmAbsorption
-  PUBLIC :: CRTM_Allocate_AtmAbsorption
-  PUBLIC :: CRTM_Assign_AtmAbsorption
   ! Science routines in this modules
   PUBLIC :: Compute_AtmAbsorption
   PUBLIC :: Compute_AtmAbsorption_TL
@@ -166,11 +156,11 @@ CONTAINS
                                     AtmAbsorption, &  ! Output 
                                     AAV            )  ! Internal variable output     
     ! Arguments
-    TYPE(ODAS_TauCoeff_type)          , INTENT(IN)     :: TC
-    INTEGER                           , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)              , INTENT(IN OUT) :: Predictor
-    TYPE(CRTM_AtmAbsorption_type)     , INTENT(IN OUT) :: AtmAbsorption
-    TYPE(AAVariables_type)            , INTENT(OUT)    :: AAV
+    TYPE(ODAS_TauCoeff_type)     , INTENT(IN)     :: TC
+    INTEGER                      , INTENT(IN)     :: ChannelIndex
+    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
+    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
+    TYPE(AAVariables_type)       , INTENT(OUT)    :: AAV
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_AtmAbsorption'
     ! Local variables

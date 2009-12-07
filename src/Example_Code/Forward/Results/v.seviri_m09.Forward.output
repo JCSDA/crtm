@@ -1,0 +1,39 @@
+
+     **********************************************************
+                           Example_Forward
+
+      Program to provide an example of CRTM Forward function 
+      usage.
+
+      $Revision: 5798 $
+     **********************************************************
+
+
+     Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+     Initializing the CRTM...
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/v.seviri_m09.SpcCoeff.bin; 
+ SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=4
+ Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/v.seviri_m09.TauCoeff.bin; 
+   ODAS RELEASE.VERSION:  6.04  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=4  N_Alphas= 3  N_Coeffs=273
+ Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
+ CloudCoeff RELEASE.VERSION:  2.04  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)=  61  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
+ AerosolCoeff RELEASE.VERSION:  2.03  N_WAVELENGTHS=  61  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
+ EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
+
+       Profile 1 FWD output
+       Sensor_Id   Channel         R            Tb
+       v.seviri_      1      7.147555E-27     289.795
+       v.seviri_      2      4.983092E-22     270.199
+       v.seviri_      3      3.703432E-08     275.525
+       v.seviri_     12      2.305372E-28     289.501
+
+       Profile 2 FWD output
+       Sensor_Id   Channel         R            Tb
+       v.seviri_      1      4.104330E-31     257.495
+       v.seviri_      2      1.050880E-24     247.124
+       v.seviri_      3      1.000645E-09     247.528
+       v.seviri_     12      1.218271E-32     258.259
+
+     Destroying the CRTM...

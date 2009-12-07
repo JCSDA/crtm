@@ -22,7 +22,7 @@ MODULE ODSSU_AtmAbsorption
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters,           ONLY: ZERO, ONE 
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type 
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
   USE ODAS_AtmAbsorption,        ONLY: ODAS_AAVariables_type         => AAVariables_type,         &
                                        ODAS_Compute_AtmAbsorption    => Compute_AtmAbsorption,    &
                                        ODAS_Compute_AtmAbsorption_TL => Compute_AtmAbsorption_TL, &

@@ -326,6 +326,11 @@ MODULE CRTM_GeometryInfo_Define
     ! Flux angle information
     REAL(fp) :: Flux_Zenith_Radian = DIFFUSIVITY_RADIAN
     REAL(fp) :: Secant_Flux_Zenith = SECANT_DIFFUSIVITY
+    ! date and sun-earth distance ratio
+    INTEGER :: Day_of_Year = 1
+    ! Square of ratio between mean and actual sun-earth distances
+    REAL(fp) :: AU_ratio2 = ONE
+    
   END TYPE CRTM_GeometryInfo_type
   !:tdoc-:
 

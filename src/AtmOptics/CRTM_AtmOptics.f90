@@ -4,8 +4,7 @@
 !       CRTM_AtmOptics
 !
 ! PURPOSE:
-!       Module containing routines to combining the optical properties from the
-!       CRTM AtmAbsorption, CloudScatter and AerosolScatter results.
+!       Module containing routines to compute single scattering albedo, and delta correction.
 !
 ! CATEGORY:
 !       CRTM : AtmOptics
@@ -21,12 +20,6 @@
 !
 !       CRTM_Parameters:            Module of parameter definitions for the CRTM.
 !                                   USEs: TYPE_KINDS module
-!
-!       CRTM_AtmAbsorption_Define:  Module defining the CRTM AtmAbsorption
-!                                   structure and containing routines to
-!                                   manipulate it.
-!                                   USEs: TYPE_KINDS module
-!                                         ERROR_HANDLER module
 !
 !       CRTM_AtmScatter_Define:     Module defining the CRTM AtmScatter structure
 !                                   and containing routines to manipulate it.
@@ -105,7 +98,6 @@ MODULE CRTM_AtmOptics
 
   ! -- CRTM modules
   USE CRTM_Parameters
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type
   USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmScatter_type
 
 
@@ -135,7 +127,7 @@ MODULE CRTM_AtmOptics
 
   ! -- RCS Id for the module                                            
   CHARACTER( * ),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &              
-  '$Id: CRTM_AtmOptics.f90,v 1.14 2006/05/02 14:58:34 dgroff Exp $'        
+  '$Id$'        
 
 
   ! --------------------------------------
@@ -147,8 +139,6 @@ MODULE CRTM_AtmOptics
     PRIVATE
 
     REAL( fp_kind ), DIMENSION( MAX_N_LAYERS ) :: Optical_Depth = ZERO
-    REAL( fp_kind ), DIMENSION( MAX_N_LAYERS ) :: bs_Cloud      = ZERO
-    REAL( fp_kind ), DIMENSION( MAX_N_LAYERS ) :: bs_Aerosol    = ZERO
     REAL( fp_kind ), DIMENSION( MAX_N_LAYERS ) :: bs            = ZERO
     REAL( fp_kind ), DIMENSION( MAX_N_LAYERS ) :: w             = ZERO
 
@@ -192,39 +182,11 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics( AtmAbsorption,  &  ! Input
-!                                    CloudScatter,   &  ! Input
-!                                    AerosolScatter, &  ! Input
-!                                    AtmOptics,      &  ! Output
+!       CALL CRTM_Combine_AtmOptics( AtmOptics,      &  ! In/Output
 !                                    AOVariables     )  ! Internal variable output
 !
-! INPUT ARGUMENTS:
+! IN/ OUTPUT ARGUMENTS:
 !
-!       AtmAbsorption:  Structure containing the atmospheric gas absorption
-!                       data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmAbsorption_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN )
-!
-!       CloudScatter:   Structure containing the cloud particle absorption and
-!                       scattering parameter data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN )
-!
-!       AerosolScatter: Structure containing the aerosol absorption and scattering
-!                       parameter data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
 !       AtmOptics:      Structure containing the combined atmospheric optical
 !                       parameters
 !                       UNITS:      N/A
@@ -260,10 +222,7 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics( AtmAbsorption,  &  ! Input
-                                     CloudScatter,   &  ! Input
-                                     AerosolScatter, &  ! Input
-                                     AtmOptics,      &  ! Output
+  SUBROUTINE CRTM_Combine_AtmOptics( AtmOptics,      &  ! Output
                                      AOV             )  ! Internal variable output
 
 
@@ -275,12 +234,7 @@ CONTAINS
     ! Arguments
     ! ---------
 
-    ! -- Inputs
-    TYPE( CRTM_AtmAbsorption_type ), INTENT( IN )     :: AtmAbsorption
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: CloudScatter
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: AerosolScatter
-
-    ! -- Outputs
+    ! -- Inputs/Outputs
     TYPE( CRTM_AtmScatter_type ),    INTENT( IN OUT ) :: AtmOptics
 
     ! -- Internal variable output
@@ -300,24 +254,6 @@ CONTAINS
 
 
     INTEGER :: i, k, l
-    REAL( fp_kind ) :: d, g
-    REAL( fp_kind ) :: Omd
-    REAL( fp_kind ) :: c, rl
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- INITIALISE OUTPUT STRUCTURE VARIABLES --               #
-    !#                                                                          #
-    !# These forward variables are only computed if there is significant        #
-    !# scattering. Otherwise, they're set to zero                               #
-    !#--------------------------------------------------------------------------#
-
-    AtmOptics%Phase_Coefficient     = ZERO
-    AtmOptics%Asymmetry_Factor      = ZERO
-    AtmOptics%Delta_Truncation      = ZERO
-    AtmOptics%Single_Scatter_Albedo = ZERO
-
 
 
     !#--------------------------------------------------------------------------#
@@ -325,7 +261,6 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     IF( AtmOptics%n_Legendre_Terms == 0 ) THEN
-      AtmOptics%Optical_Depth = AtmAbsorption%Optical_Depth
       RETURN
     END IF
 
@@ -335,206 +270,29 @@ CONTAINS
     !#                         -- BEGIN MAIN LAYER LOOP --                      #
     !#--------------------------------------------------------------------------#
 
-    Layer_Loop: DO k = 1, AtmAbsorption%n_Layers
+    Layer_Loop: DO k = 1, AtmOptics%n_Layers
 
-
-      ! ---------------------------------------------
-      ! Compute the total optical depth for the layer
-      ! ---------------------------------------------
-
-      AtmOptics%Optical_Depth(k) =  AtmAbsorption%Optical_Depth(k) + &
-                                     CloudScatter%Optical_Depth(k) + &
-                                   AerosolScatter%Optical_Depth(k)
-
-      ! -- Save the unmodified optical depth
+      ! -- Save the unmodified optical parameters
       AOV%Optical_Depth(k) = AtmOptics%Optical_Depth(k)
-
+      AOV%bs(k) = AtmOptics%Single_Scatter_Albedo(k)
 
       ! ------------------------------------------------------
       ! Only proceed if the total optical depth is significant
       ! ------------------------------------------------------
 
-      Significant_Optical_Depth: IF( AOV%Optical_Depth(k) > OPTICAL_DEPTH_THRESHOLD ) THEN
+      Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD ) THEN
 
-
-        ! ------------------------------------------------------
-        ! Compute the cloud (_C) and aerosol (_A) scattering
-        ! coefficients
-        ! 
-        !                  tau(scatter)
-        !   w = --------------------------------
-        !        tau(absorption) + tau(scatter)
-        ! 
-        !            bs
-        !     == ---------
-        !         ba + bs
-        ! 
-        ! 
-        !     =  bs
-        !       ----
-        !        be
-        ! 
-        ! so,
-        ! 
-        !   bs = w.be
-        ! 
-        ! where w   == single scattering albedo
-        !       tau == optical depth
-        !       bs  == cloud/aerosol scattering coefficient
-        !       ba  == cloud/aerosol absorption coefficient
-        !       be  == cloud/aerosol total extinction coefficient
-        !
-        ! -------------------------------------------------------
-
-        AOV%bs_Cloud(k)   =   CloudScatter%Single_Scatter_Albedo(k) *   CloudScatter%Optical_Depth(k)
-        AOV%bs_Aerosol(k) = AerosolScatter%Single_Scatter_Albedo(k) * AerosolScatter%Optical_Depth(k)
-
-        AOV%bs(k) = AOV%bs_Cloud(k) + AOV%bs_Aerosol(k)
-
-
-        ! ------------------------------
-        ! Only proceed if the scattering
-        ! coefficient is significant
-        ! ------------------------------
-
-        Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD) THEN
-
-
-          ! ------------------------------------------------------
-          ! The weighted average single scatter albedo, w, from
-          ! cloud (_C), aerosol (_A), and atmospheric (_Atm) data.
-          !
-          !   _     w_C.tau_C + w_A.tau_A
-          !   w = -------------------------
-          !        tau_C + tau_A + tau_Atm
-          !
-          !        bs
-          !     = -----
-          !        tau
-          !
-          ! ------------------------------------------------------
-
-          AOV%w(k) = AOV%bs(k) / AtmOptics%Optical_Depth(k)
-
-
-          ! --------------------------------------------------
-          ! Test if the phase coefficients need to be averaged
-          ! --------------------------------------------------
-
-          Phase_Function_Type: IF( .NOT. HGphase .AND. AtmOptics%n_Legendre_Terms > 2 ) THEN
-
-
-            ! -----------------------------------------------------------
-            ! Compute the weighted average phase function coefficients,
-            ! P, from the cloud (_C) and aerosol (_A) data.
-            !
-            !   _    P_C.w_C.tau_C + P_A.w_A.tau_A
-            !   P = -------------------------------
-            !            w_C.tau_C + w_A.tau_A
-            !
-            !        (P_C.bs_C ) + (P_A.bs_A )
-            !     = ---------------------------
-            !                   bs
-            !
-            ! -----------------------------------------------------------
-
-            DO i = 1, AtmOptics%n_Phase_Elements
-              DO l = 0, AtmOptics%n_Legendre_Terms
-
-                 AtmOptics%Phase_Coefficient(l,i,k) = &
-                   ( (  CloudScatter%Phase_Coefficient(l,i,k) * AOV%bs_Cloud(k)  ) + &
-                     (AerosolScatter%Phase_Coefficient(l,i,k) * AOV%bs_Aerosol(k))   ) / AOV%bs(k)
-
-              END DO
-            END DO   
-
-
-            ! ------------------------------------------
-            ! Recalculate the asymmetry factor and delta
-            ! truncation for given n_Streams
-            ! ------------------------------------------
-
-            AtmOptics%Asymmetry_Factor(k) = AtmOptics%Phase_Coefficient(1,1,k) / ONEpointFIVE
-            AtmOptics%Delta_Truncation(k) = AtmOptics%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)
-
-
-          ELSE Phase_Function_Type
-
-            ! -- Temporary variables
-            d = AtmOptics%Delta_Truncation(k)
-            g = AtmOptics%Asymmetry_Factor(k)
-            Omd = ONE - d
-
-
-            ! ----------------------------------------
-            ! The weighted average asymmetry factor, g
-            !
-            !      _    (g_C.w_C.tau_C) + (g_A.w_A.tau_A)
-            !      g = -----------------------------------
-            !               (w_C.tau_C) + (w_A.tau_A)
-            !
-            !           (g_C.bs_C ) + (g_A.bs_A )
-            !        = ---------------------------
-            !                      bs
-            !
-            ! ----------------------------------------
-
-            AtmOptics%Asymmetry_Factor(k) = &
-              ( (   CloudScatter%Asymmetry_Factor(k) * AOV%bs_Cloud(k)   ) + &
-                ( AerosolScatter%Asymmetry_Factor(k) * AOV%bs_Aerosol(k) )   ) / AOV%bs(k)
-
-
-            ! ----------------------------------------------
-            ! Compute the delta truncation for a HG function
-            !
-            !   d = g**L
-            !
-            ! where L = number of Legendre terms
-            ! ----------------------------------------------
-
-            AtmOptics%Delta_Truncation(k) = AtmOptics%Asymmetry_Factor(k)**AtmOptics%n_Legendre_Terms
-
-
-            ! ----------------------------------------------------------
-            ! Compute the phase coefficients for HG function
-            ! Loop over Legendre terms. The phase coefficients given by,
-            ! 
-            !                  l
-            !        2l+1     g  - d
-            !   P = ------ . --------
-            !         2        1 - d
-            !
-            ! are rewritten as,
-            ! 
-            !                l
-            !               g  - d
-            !   P = c(l) . --------
-            !                1 - d
-            ! 
-            ! ----------------------------------------------------------
-
-            ! -- Normalization condition for phase function for 0'th term
-            AtmOptics%Phase_Coefficient(0,1,k) = POINT_5
-
-            ! -- Legendre term loop
-            DO l = 1, AtmOptics%n_Legendre_Terms - 1
-
-              c  = REAL((2*l)+1, fp_kind ) / TWO
-              rl = REAL(  l,     fp_kind )
-
-              AtmOptics%Phase_Coefficient(l,1,k) = c * ( g**l - d ) / Omd
-
-            END DO
-
-
-            ! ----------------------------------------------------
-            ! Recalculate the asymmetry factor for given n_Streams
-            ! ----------------------------------------------------
-
-            AtmOptics%Asymmetry_Factor(k) = (g - d)/Omd
-
-          END IF Phase_Function_Type
-
+        AOV%w(k) = AtmOptics%Single_Scatter_Albedo(k) / AtmOptics%Optical_Depth(k)
+        
+        DO i = 1, AtmOptics%n_Phase_Elements
+          DO l = 1, AtmOptics%n_Legendre_Terms
+             AtmOptics%Phase_Coefficient(l,i,k) = AtmOptics%Phase_Coefficient(l,i,k)/AtmOptics%Single_Scatter_Albedo(k)
+          END DO
+        ! Normalization requirement for energy conservation
+             AtmOptics%Phase_Coefficient(0,i,k) = POINT_5
+        END DO           
+        
+        AtmOptics%Delta_Truncation(k) = AtmOptics%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)        
 
           ! -----------------------------------------------------
           ! Redfine the total optical depth and single scattering
@@ -548,8 +306,6 @@ CONTAINS
                                                ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) )
 
         END IF Significant_Scattering
-
-      END IF Significant_Optical_Depth
 
     END DO Layer_Loop
 
@@ -573,37 +329,11 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics_TL( AtmAbsorption,     &  ! FWD Input
-!                                       CloudScatter,      &  ! FWD Input
-!                                       AerosolScatter,    &  ! FWD Input
-!                                       AtmOptics,         &  ! FWD Input
-!                                       AtmAbsorption_TL,  &  ! TL Input
-!                                       CloudScatter_TL,   &  ! TL Input
-!                                       AerosolScatter_TL, &  ! TL Input
+!       CALL CRTM_Combine_AtmOptics_TL( AtmOptics,         &  ! FWD Input
 !                                       AtmOptics_TL,      &  ! TL Output
 !                                       AOVariables        )  ! Internal variable input
 ! INPUT ARGUMENTS:
 !
-!       AtmAbsorption:     Structure containing the atmospheric gas absorption
-!                          data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmAbsorption_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
-!       CloudScatter:      Structure containing the cloud particle absorption and
-!                          scattering parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
-!       AerosolScatter:    Structure containing the aerosol absorption and scattering
-!                          parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
 !
 !       AtmOptics:         Structure containing the combined atmospheric optical
 !                          parameters
@@ -612,26 +342,6 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT( IN )
 !
-!       AtmAbsorption_TL:  Structure containing the tangent linear
-!                          atmospheric gas absorption data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmAbsorption_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
-!       CloudScatter_TL:   Structure containing the tangent linear cloud
-!                          particle absorption and scattering parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
-!       AerosolScatter_TL: Structure containing the tangent linear aerosol
-!                          absorption and scattering parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
 !
 !       AOVariables:       Structure containing internal forward model variables
 !                          required for subsequent tangent-linear or adjoint model
@@ -672,13 +382,7 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics_TL( AtmAbsorption,     &  ! FWD Input
-                                        CloudScatter,      &  ! FWD Input
-                                        AerosolScatter,    &  ! FWD Input
-                                        AtmOptics,         &  ! FWD Input
-                                        AtmAbsorption_TL,  &  ! TL Input
-                                        CloudScatter_TL,   &  ! TL Input
-                                        AerosolScatter_TL, &  ! TL Input
+  SUBROUTINE CRTM_Combine_AtmOptics_TL( AtmOptics,         &  ! FWD Input
                                         AtmOptics_TL,      &  ! TL Output
                                         AOV                )  ! Internal variable input
 
@@ -693,15 +397,7 @@ CONTAINS
     ! ---------
 
     ! -- FWD Inputs
-    TYPE( CRTM_AtmAbsorption_type ), INTENT( IN )     :: AtmAbsorption
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: CloudScatter
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: AerosolScatter
     TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: AtmOptics
-
-    ! -- TL Inputs
-    TYPE( CRTM_AtmAbsorption_type ), INTENT( IN )     :: AtmAbsorption_TL
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: CloudScatter_TL
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: AerosolScatter_TL
 
     ! -- Outputs
     TYPE( CRTM_AtmScatter_type ),    INTENT( IN OUT ) :: AtmOptics_TL
@@ -722,298 +418,33 @@ CONTAINS
     ! ---------------
 
     INTEGER :: i, k, l
-    REAL( fp_kind ) :: d, g
-    REAL( fp_kind ) :: Omd
-    REAL( fp_kind ) :: c, rl
     REAL( fp_kind ) :: w_TL
-    REAL( fp_kind ) :: bs_Cloud_TL, bs_Aerosol_TL, bs_TL
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- INITIALISE OUTPUT STRUCTURE VARIABLES --               #
-    !#                                                                          #
-    !# These tangent-linear variables are only computed if there is significant #
-    !# scattering. Otherwise, they're set to zero                               #
-    !#--------------------------------------------------------------------------#
-
-    AtmOptics_TL%Phase_Coefficient     = ZERO
-    AtmOptics_TL%Asymmetry_Factor      = ZERO
-    AtmOptics_TL%Delta_Truncation      = ZERO
-    AtmOptics_TL%Single_Scatter_Albedo = ZERO
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                          -- NO SCATTERING CASE --                        #
-    !#--------------------------------------------------------------------------#
-
-    IF( AtmOptics%n_Legendre_Terms == 0 ) THEN
-      AtmOptics_TL%Optical_Depth = AtmAbsorption_TL%Optical_Depth
-      RETURN
-    END IF
-
-
 
     !#--------------------------------------------------------------------------#
     !#                         -- BEGIN MAIN LAYER LOOP --                      #
     !#--------------------------------------------------------------------------#
 
-    Layer_Loop: DO k = 1, AtmAbsorption%n_Layers
+    Layer_Loop: DO k = 1, AtmOptics%n_Layers
 
+      ! ------------------------------------------------------
+      ! Only proceed if the total optical depth is significant
+      ! ------------------------------------------------------
 
-      ! --------------------------------
-      ! Compute the tangent linear total
-      ! optical depth for the layer
-      ! --------------------------------
+      Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD ) THEN
 
-      AtmOptics_TL%Optical_Depth(k) = AtmAbsorption_TL%Optical_Depth(k) + &
-                                       CloudScatter_TL%Optical_Depth(k) + &
-                                     AerosolScatter_TL%Optical_Depth(k)
-
-
-      ! ----------------------------------------------------------
-      ! Only proceed if the total FWD optical depth is significant
-      ! ----------------------------------------------------------
-                     
-      Significant_Optical_Depth: IF( AOV%Optical_Depth(k) > OPTICAL_DEPTH_THRESHOLD ) THEN
-
-
-        ! ------------------------------------------------------
-        ! Compute the tangent-linear cloud (_C) and aerosol (_A)
-        ! scattering coefficients
-        ! 
-        !                  tau(scatter)
-        !   w = --------------------------------
-        !        tau(absorption) + tau(scatter)
-        ! 
-        !            bs
-        !     == ---------
-        !         ba + bs
-        ! 
-        ! 
-        !     =  bs
-        !       ----
-        !        be
-        ! 
-        ! so,
-        ! 
-        !   bs = w.be
-        ! 
-        ! where w   == single scattering albedo
-        !       tau == optical depth
-        !       bs  == cloud/aerosol scattering coefficient
-        !       ba  == cloud/aerosol absorption coefficient
-        !       be  == cloud/aerosol total extinction coefficient
-        ! 
-        ! so,
-        !   bs_C = w_C * tau_C
-        !   bs_A = w_A * tau_A
-        !   bs   = bs_C + bs_A
-        ! 
-        ! and,
-        ! 
-        !   bs_C_TL = ( w_C_TL * tau_C ) + ( w_C * tau_C_TL )
-        !   bs_A_TL = ( w_A_TL * tau_A ) + ( w_A * tau_A_TL )
-        !   b_TL    = bs_C_TL + bs_A_TL
-        !
-        ! ------------------------------------------------------
-
-        
-        bs_Cloud_TL   = (   CloudScatter_TL%Single_Scatter_Albedo(k) *      CloudScatter%Optical_Depth(k) ) + &
-                        (      CloudScatter%Single_Scatter_Albedo(k) *   CloudScatter_TL%Optical_Depth(k) )
-        bs_Aerosol_TL = ( AerosolScatter_TL%Single_Scatter_Albedo(k) *    AerosolScatter%Optical_Depth(k) ) + &
-                        (    AerosolScatter%Single_Scatter_Albedo(k) * AerosolScatter_TL%Optical_Depth(k) )
-        bs_TL = bs_Cloud_TL + bs_Aerosol_TL
-
-
-        ! ----------------------------------
-        ! Only proceed if the FWD scattering
-        ! coefficient is significant
-        ! ----------------------------------
-                                           
-        Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD) THEN
-
-
-          ! ------------------------------------------------------
-          ! The weighted average single scatter albedo, w, from
-          ! cloud (_C), aerosol (_A), and atmospheric (_Atm) data.
-          !
-          !   _     w_C.tau_C + w_A.tau_A
-          !   w = -------------------------
-          !        tau_C + tau_A + tau_Atm
-          !
-          !        bs
-          !     = -----
-          !        tau
-          !
-          !     _       bs_TL       w.tau_TL
-          ! So, w_TL = -------  -  ----------
-          !              tau          tau
-          !
-          ! ------------------------------------------------------
-
-          w_TL = ( bs_TL / AOV%Optical_Depth(k) ) - &
+        w_TL = ( AtmOptics_TL%Single_Scatter_Albedo(k) / AOV%Optical_Depth(k) ) - &
                  ( AtmOptics_TL%Optical_Depth(k) * AOV%w(k) / AOV%Optical_Depth(k) )
-
-
-          ! --------------------------------------------------
-          ! Test if the phase coefficients need to be averaged
-          ! --------------------------------------------------
-                                         
-          Phase_Function_Type: IF( .NOT. HGphase .AND. AtmOptics%n_Legendre_Terms > 2 ) THEN
-
-
-            ! -----------------------------------------------------------
-            ! Compute the tangent-linear weighted average phase function
-            ! coefficients, P, from the cloud (_C) and aerosol (_A) data.
-            !
-            !      _    (P_C.w_C.tau_C) + (P_A.w_A.tau_A)
-            !      P = -----------------------------------
-            !               (w_C.tau_C) + (w_A.tau_A)
-            !
-            !           (P_C.bs_C ) + (P_A.bs_A )
-            !        = ---------------------------
-            !                      bs
-            !                                                                                  _
-            !     _       (P_C_TL.bs_C ) + (P_C.bs_C_TL ) + (P_A_TL.bs_A ) + (P_A.bs_A_TL ) - (P.bs_TL)
-            ! So, P_TL = -------------------------------------------------------------------------------
-            !                                                bs
-            !
-            ! -----------------------------------------------------------
-
-            DO i = 1, AtmOptics%n_Phase_Elements
-              DO l = 0, AtmOptics%n_Legendre_Terms
-
-                 AtmOptics_TL%Phase_Coefficient(l,i,k) = &
-                  ( ( CloudScatter_TL%Phase_Coefficient(l,i,k)*AOV%bs_Cloud(k) ) + &
-                    (    CloudScatter%Phase_Coefficient(l,i,k)*    bs_Cloud_TL ) + &
-                    ( AerosolScatter_TL%Phase_Coefficient(l,i,k)*AOV%bs_Aerosol(k) ) + &
-                    (    AerosolScatter%Phase_Coefficient(l,i,k)*    bs_Aerosol_TL ) - &
-                    ( AtmOptics%Phase_Coefficient(l,i,k) * bs_TL ) ) / AOV%bs(k)
-
-              END DO
-            END DO
-
-
-            ! -----------------------------------------------
-            ! Recalculate the tangent-linear asymmetry factor
-            ! and delta truncation for given n_Streams
-            ! -----------------------------------------------
-
-            AtmOptics_TL%Asymmetry_Factor(k) = AtmOptics_TL%Phase_Coefficient(1,1,k) / ONEpointFIVE
-            AtmOptics_TL%Delta_Truncation(k) = AtmOptics_TL%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)
-
-
-          ELSE Phase_Function_Type
-
-            ! -- Temporary FWD variables
-            d   = AtmOptics%Delta_Truncation(k)
-            g   = AtmOptics%Asymmetry_Factor(k)
-            Omd = ONE - d
-
-
-            ! ----------------------------------------
-            ! The weighted average asymmetry factor, g
-            !
-            !      _    (g_C.w_C.tau_C) + (g_A.w_A.tau_A)
-            !      g = -----------------------------------
-            !               (w_C.tau_C) + (w_A.tau_A)
-            !
-            !           (g_C.bs_C ) + (g_A.bs_A )
-            !        = ---------------------------
-            !                      bs
-            !                                                                                  _
-            !     _       (g_C_TL.bs_C ) + (g_C.bs_C_TL ) + (g_A_TL.bs_A ) + (g_A.bs_A_TL ) - (g.bs_TL)
-            ! So, g_TL = -------------------------------------------------------------------------------
-            !                                                bs
-            !
-            ! ----------------------------------------
-
-            AtmOptics_TL%Asymmetry_Factor(k) = &
-              ( (   CloudScatter_TL%Asymmetry_Factor(k) * AOV%bs_Cloud(k) ) + &
-                (      CloudScatter%Asymmetry_Factor(k) *     bs_Cloud_TL ) + &
-                ( AerosolScatter_TL%Asymmetry_Factor(k) * AOV%bs_Aerosol(k) ) + &
-                (    AerosolScatter%Asymmetry_Factor(k) *     bs_Aerosol_TL ) - &
-                ( AtmOptics%Asymmetry_Factor(k) * bs_TL ) ) / AOV%bs(k)
-
-
-            ! -------------------------------------------------------------
-            ! Compute the tangent-linear delta truncation for a HG function
-            !
-            !   d = g**L
-            !
-            ! where L = number of Legendre terms, so
-            !
-            !   d_TL = L . g**(L-1) . g_TL 
-            !
-            ! -------------------------------------------------------------
-
-            AtmOptics_TL%Delta_Truncation(k) = &
-              REAL( AtmOptics%n_Legendre_Terms, fp_kind ) * &
-              AtmOptics_TL%Asymmetry_Factor(k) * &
-              ( AtmOptics%Asymmetry_Factor(k)**(AtmOptics%n_Legendre_Terms-1) )
-
-
-            ! -------------------------------------------------------------
-            ! Compute the tangent-linear phase coefficients for HG function
-            ! Loop over Legendre terms. The phase coefficients given by,
-            !
-            !                   l
-            !         2l+1     g  - d
-            !    P = ------ . --------
-            !          2        1 - d
-            !
-            !    are rewritten as,
-            !
-            !                 l
-            !                g  - d
-            !    P = c(l) . --------
-            !                 1 - d
-            !
-            !    The tangent-linear form of the above is,
-            !
-            !                    l-1
-            !            c(l).l.g                ( P(l) - c(l) )
-            !    P_TL = ------------ . g_TL  +  ----------------- . d_TL
-            !              1 - d                      1 - d
-            !
-            !    The expression was order the above way to make the adjoint
-            !    form easy to determine from the TL form.
-            ! -------------------------------------------------------------
-
-            ! -- Normalization condition for phase function for 0'th term
-            AtmOptics_TL%Phase_Coefficient(0,1,k) = ZERO
-
-            ! -- Th Legendre term loop
-            DO l = 1, AtmOptics%n_Legendre_Terms - 1
-
-              c  = REAL((2*l)+1, fp_kind ) / TWO
-              rl = REAL(  l,     fp_kind )
-
-              AtmOptics_TL%Phase_Coefficient(l,1,k) = &
-                ( ( c * rl * g**(l-1) * AtmOptics_TL%Asymmetry_Factor(k) ) + &
-                  ( ( AtmOptics%Phase_Coefficient(l,1,k) - c ) * AtmOptics_TL%Delta_Truncation(k) ) ) / Omd
-
-            END DO
-
-
-            ! ----------------------------------------------------
-            ! Recalculate the asymmetry factor for given n_Streams
-            !
-            !      g - d                g_TL       (g - 1 ).d_TL
-            ! g = ------- so, g_TL = ---------- + ---------------
-            !      1 - d               1 - d          1 - d
-            !
-            ! Again, the TL expression above was expressed such
-            ! that the adjoint form is simple to determine.
-            ! ----------------------------------------------------
-
-            AtmOptics_TL%Asymmetry_Factor(k) = &
-              ( AtmOptics_TL%Asymmetry_Factor(k) + &
-                ( ( g - ONE ) * AtmOptics_TL%Delta_Truncation(k) ) ) / Omd
-
-          END IF Phase_Function_Type
+                        
+        DO i = 1, AtmOptics%n_Phase_Elements
+          DO l = 1, AtmOptics%n_Legendre_Terms
+             AtmOptics_TL%Phase_Coefficient(l,i,k) = ( AtmOptics_TL%Phase_Coefficient(l,i,k) &
+                - AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_TL%Single_Scatter_Albedo(k) )/AOV%bs(k)             
+          END DO
+        ! Normalization requirement for energy conservation
+             AtmOptics_TL%Phase_Coefficient(0,i,k) = ZERO
+        END DO           
+   
+        AtmOptics_TL%Delta_Truncation(k) = AtmOptics_TL%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)        
 
 
           ! ----------------------------------------------------------
@@ -1060,8 +491,7 @@ CONTAINS
             ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) )
 
         END IF Significant_Scattering
-                           
-      ENDIF Significant_Optical_Depth
+
 
     END DO Layer_Loop
                                       
@@ -1085,53 +515,17 @@ CONTAINS
 !       Fortran-95
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics_AD( AtmAbsorption,     &  ! FWD Input
-!                                       CloudScatter,      &  ! FWD Input
-!                                       AerosolScatter,    &  ! FWD Input
-!                                       AtmOptics,         &  ! FWD Input
+!       CALL CRTM_Combine_AtmOptics_AD( AtmOptics,         &  ! FWD Input
 !                                       AtmOptics_AD,      &  ! AD Input
-!                                       AtmAbsorption_AD,  &  ! AD Output
-!                                       CloudScatter_AD,   &  ! AD Output
-!                                       AerosolScatter_AD, &  ! AD Output
 !                                       RTVariables        )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
-!       AtmAbsorption:     Structure containing the atmospheric gas absorption
-!                          data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmAbsorption_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
-!       CloudScatter:      Structure containing the cloud particle absorption and
-!                          scattering parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
-!       AerosolScatter:    Structure containing the aerosol absorption and scattering
-!                          parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN )
-!
 !       AtmOptics:         Structure containing the combined atmospheric optical
 !                          parameters
 !                          UNITS:      N/A
 !                          TYPE:       CRTM_AtmScatter_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT( IN )
-!
-!       AtmOptics_AD:      Structure containing the combined adjoint atmospheric
-!                          optical parameters.
-!                          NOTE: The components of this structures are all zeroed
-!                                upon exit from this routine.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN OUT )
 !
 !       AOVariables:       Structure containing internal forward model variables
 !                          required for subsequent tangent-linear or adjoint model
@@ -1142,30 +536,19 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT( IN )
 !
+! IN/OUTPUT
+!       AtmOptics_AD:      Structure containing the combined adjoint atmospheric
+!                          optical parameters.
+!                          NOTE: The components of this structures are all zeroed
+!                                upon exit from this routine.
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_AtmScatter_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT( IN OUT )
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       None.
 !
-! OUTPUT ARGUMENTS:
-!       AtmAbsorption_AD:  Structure containing the adjoint atmospheric gas
-!                          absorption data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmAbsorption_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN OUT )
-!
-!       CloudScatter_AD:   Structure containing the adjoint cloud particle
-!                          absorption and scattering parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN OUT )
-!
-!       AerosolScatter_AD: Structure containing the adjoint aerosol
-!                          absorption and scattering parameter data.
-!                          UNITS:      N/A
-!                          TYPE:       CRTM_AtmScatter_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT( IN OUT )
 !
 ! OPTIONAL OUTUPT ARGUMENTS:
 !       None.
@@ -1186,14 +569,8 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics_AD( AtmAbsorption,     &  ! FWD Input
-                                        CloudScatter,      &  ! FWD Input
-                                        AerosolScatter,    &  ! FWD Input
-                                        AtmOptics,         &  ! FWD Input
+  SUBROUTINE CRTM_Combine_AtmOptics_AD( AtmOptics,         &  ! FWD Input
                                         AtmOptics_AD,      &  ! AD Input
-                                        AtmAbsorption_AD,  &  ! AD Output
-                                        CloudScatter_AD,   &  ! AD Output
-                                        AerosolScatter_AD, &  ! AD Output
                                         AOV                )  ! Internal variable input
 
     !#--------------------------------------------------------------------------#
@@ -1205,18 +582,12 @@ CONTAINS
     ! ---------
 
     ! -- FWD Inputs
-    TYPE( CRTM_AtmAbsorption_type ), INTENT( IN )     :: AtmAbsorption
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: CloudScatter
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: AerosolScatter
+
     TYPE( CRTM_AtmScatter_type ),    INTENT( IN )     :: AtmOptics
 
     ! -- AD Inputs
     TYPE( CRTM_AtmScatter_type ),    INTENT( IN OUT ) :: AtmOptics_AD
 
-    ! -- AD Outputs
-    TYPE( CRTM_AtmAbsorption_type ), INTENT( IN OUT ) :: AtmAbsorption_AD
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN OUT ) :: CloudScatter_AD
-    TYPE( CRTM_AtmScatter_type ),    INTENT( IN OUT ) :: AerosolScatter_AD
 
     ! -- Internal variable input
     TYPE( CRTM_AOVariables_type ),   INTENT( IN )     :: AOV
@@ -1234,65 +605,21 @@ CONTAINS
     ! ---------------
 
     INTEGER :: i, k, l
-    REAL( fp_kind ) :: d, g
-    REAL( fp_kind ) :: Omd
-    REAL( fp_kind ) :: c, rl
     REAL( fp_kind ) :: w_AD
-    REAL( fp_kind ) :: bs_Cloud_AD, bs_Aerosol_AD, bs_AD
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#             -- INITIALISE OUTPUT ADJOINT STRUCTURE VARIABLES --          #
-    !#                                                                          #
-    !# These adjoint variables are only computed if there is significant        #
-    !# scattering. Otherwise, they're set to zero. Strictly, these variables    #
-    !# should be zeroed in the Adjoint and K-Matrix modules, but initialisation #
-    !# here minimises duplicate code.                                           #
-    !#--------------------------------------------------------------------------#
-                                            
-    AerosolScatter_AD%Phase_Coefficient     = ZERO
-    AerosolScatter_AD%Asymmetry_Factor      = ZERO
-    AerosolScatter_AD%Delta_Truncation      = ZERO
-    AerosolScatter_AD%Optical_Depth         = ZERO
-    AerosolScatter_AD%Single_Scatter_Albedo = ZERO
-
-    CloudScatter_AD%Phase_Coefficient     = ZERO
-    CloudScatter_AD%Asymmetry_Factor      = ZERO
-    CloudScatter_AD%Delta_Truncation      = ZERO
-    CloudScatter_AD%Optical_Depth         = ZERO
-    CloudScatter_AD%Single_Scatter_Albedo = ZERO
-
-    AtmAbsorption_AD%Optical_Depth = ZERO 
-
-
+    REAL( fp_kind ) :: bs_AD
 
     !#--------------------------------------------------------------------------#
     !#                          -- NO SCATTERING CASE --                        #
     !#--------------------------------------------------------------------------#
 
-    IF( AtmOptics%n_Legendre_Terms == 0 ) THEN
-
-      ! -- Assign the AtmAbsorption optical depth
-      AtmAbsorption_AD%Optical_Depth = AtmOptics_AD%Optical_Depth
-
-      ! -- Zero the input adjoint structure components
-      AtmOptics_AD%Optical_Depth         = ZERO
-      AtmOptics_AD%Single_Scatter_Albedo = ZERO
-      AtmOptics_AD%Delta_Truncation      = ZERO
-      AtmOptics_AD%Asymmetry_Factor      = ZERO
-      AtmOptics_AD%Phase_Coefficient     = ZERO
-
-      RETURN
-    END IF
-
+    IF( AtmOptics%n_Legendre_Terms == 0 ) RETURN
 
 
     !#--------------------------------------------------------------------------#
     !#                         -- BEGIN MAIN LAYER LOOP --                      #
     !#--------------------------------------------------------------------------#
                                             
-    Layer_Loop: DO k = AtmAbsorption%n_Layers, 1, -1
+    Layer_Loop: DO k = AtmOptics%n_Layers, 1, -1
 
 
       ! -----------------------------------------------------
@@ -1300,22 +627,11 @@ CONTAINS
       ! -----------------------------------------------------
 
       w_AD          = ZERO
-      bs_AD         = ZERO
-      bs_Aerosol_AD = ZERO
-      bs_Cloud_AD   = ZERO
-
-                     
+                    
       ! ------------------------------------------------------
-      ! Only proceed if the total optical depth is significant
+      ! Only proceed if the scattering is significant
       ! ------------------------------------------------------
-                     
-      Significant_Optical_Depth: IF( AOV%Optical_Depth(k) > OPTICAL_DEPTH_THRESHOLD ) THEN
-
-
-        ! ------------------------------
-        ! Only proceed if the scattering
-        ! coefficient is significant
-        ! ------------------------------
+               
                                            
         Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD) THEN
 
@@ -1382,355 +698,34 @@ CONTAINS
                                           AtmOptics_AD%Optical_Depth(k)
 
 
-          ! --------------------------------------------------
-          ! Test if the phase coefficients need to be averaged
-          ! --------------------------------------------------
-                                         
-          Phase_Function_Type: IF( .NOT. HGphase .AND. AtmOptics%n_Legendre_Terms > 2 ) THEN
-
-
-            ! ------------------------------------
-            ! The adjoint asymmetry factor and
-            ! delta truncation for given n_Streams
-            !
-            !   d_TL = P_TL(L,1,k)
-            ! and
-            !   g_TL = P_TL(1,1,k)/1.5
-            !
-            ! where L == number of Legendre terms, so
-            !
-            !   P_AD(L,1,k) = P_AD(L,1,k) + d_AD
-            !   d_AD = ZERO
-            ! and
-            !   P_AD(1,1,k) = P_AD(1,1,k) + g_AD/1.5
-            !   g_AD = ZERO
-            ! ------------------------------------
-
             ! -- Delta truncation adjoint
             L = AtmOptics%n_Legendre_Terms
             AtmOptics_AD%Phase_Coefficient(L,1,k) = AtmOptics_AD%Phase_Coefficient(L,1,k) + &
                                                     AtmOptics_AD%Delta_Truncation(k)
+ 
             AtmOptics_AD%Delta_Truncation(k) = ZERO
-
-            ! -- Asymmetry factor adjoint
-            AtmOptics_AD%Phase_Coefficient(1,1,k) = AtmOptics_AD%Phase_Coefficient(1,1,k) + &
-                                                    ( AtmOptics_AD%Asymmetry_Factor(k) / ONEpointFIVE )
-            AtmOptics_AD%Asymmetry_Factor(k) = ZERO
-
-
-            ! ---------------------------------------------------------
-            ! Compute the adjoint of the weighted average phase
-            ! function coefficients, P, from the cloud (_C) and
-            ! aerosol (_A) data.
-            !
-            !   _       (P_C_TL.bs_C ) + (P_C.bs_C_TL ) + (P_A_TL.bs_A ) + (P_A.bs_A_TL ) - (P.bs_TL)
-            !   P_TL = -------------------------------------------------------------------------------
-            !                                              bs
-            ! So,
-            !                         _
-            !                     P . P_AD
-            !   bs_AD = bs_AD - -----------
-            !                       bs
-            !                              _
-            !                        P_A . P_AD
-            !   bs_A_AD = bs_A_AD + ------------
-            !                            bs
-            !                             _
-            !                      bs_A . P_AD
-            !   P_A_AD = P_A_AD + -------------
-            !                          bs
-            !                              _
-            !                        P_C . P_AD
-            !   bs_C_AD = bs_C_AD + ------------
-            !                            bs
-            !                             _
-            !                      bs_C . P_AD
-            !   P_C_AD = P_C_AD + -------------
-            !                          bs
-            !   _
-            !   P_AD = 0
-            ! 
-            ! ---------------------------------------------------------
 
             DO i = 1, AtmOptics%n_Phase_Elements
-              DO l = 0, AtmOptics%n_Legendre_Terms
-
-                bs_AD = bs_AD - &
-                  ( AtmOptics%Phase_Coefficient(l,i,k) * &
-                    AtmOptics_AD%Phase_Coefficient(l,i,k) / AOV%bs(k) )
-
-                bs_Aerosol_AD = bs_Aerosol_AD + &
-                  ( AerosolScatter%Phase_Coefficient(l,i,k) * &
-                    AtmOptics_AD%Phase_Coefficient(l,i,k) / AOV%bs(k) ) 
-
-                AerosolScatter_AD%Phase_Coefficient(l,i,k) = &
-                  AerosolScatter_AD%Phase_Coefficient(l,i,k) + &
-                  ( AOV%bs_Aerosol(k) * AtmOptics_AD%Phase_Coefficient(l,i,k) / AOV%bs(k) )
-
-                bs_Cloud_AD = bs_Cloud_AD + &
-                  ( CloudScatter%Phase_Coefficient(l,i,k) * &
-                    AtmOptics_AD%Phase_Coefficient(l,i,k) / AOV%bs(k) ) 
-
-                CloudScatter_AD%Phase_Coefficient(l,i,k) = &
-                  CloudScatter_AD%Phase_Coefficient(l,i,k) + &
-                  ( AOV%bs_Cloud(k) * AtmOptics_AD%Phase_Coefficient(l,i,k) / AOV%bs(k) )
-
-                AtmOptics_AD%Phase_Coefficient(l,i,k ) = ZERO
-
+        ! Normalization requirement for energy conservation
+              AtmOptics_AD%Phase_Coefficient(0,i,k) = ZERO
+              DO l = 1, AtmOptics%n_Legendre_Terms
+                 AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k)  &
+                   - AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) 
+                 AtmOptics_AD%Phase_Coefficient(l,i,k) = ( AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) )
               END DO
-            END DO
+            END DO           
 
-          ELSE Phase_Function_Type
+            AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k)  &
+                   + w_AD/ AOV%Optical_Depth(k)
+            
+            AtmOptics_AD%Optical_Depth(k) = AtmOptics_AD%Optical_Depth(k) - w_AD*AOV%w(k) / AOV%Optical_Depth(k)
 
-            ! -- Temporary variables
-            d   = AtmOptics%Delta_Truncation(k)
-            g   = AtmOptics%Asymmetry_Factor(k)
-            Omd = ONE - d
-
-
-            ! ----------------------------------------------------
-            ! The adjoint asymmetry factor for given n_Streams
-            !
-            !             g_TL       (g - 1 ).d_TL
-            !   g_TL = ---------- + ---------------
-            !            1 - d          1 - d
-            !
-            ! so,
-            !
-            !                  g - 1
-            !   d_AD = d_AD + -------.g_AD
-            !                  1 - d
-            !
-            !            g_AD
-            !   g_AD = -------
-            !           1 - d
-            !
-            ! ----------------------------------------------------
-
-            AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) + &
-              ( ( g - ONE ) * AtmOptics_AD%Asymmetry_Factor(k) / Omd )
-
-            AtmOptics_AD%Asymmetry_Factor(k) = AtmOptics_AD%Asymmetry_Factor(k) / Omd
-
-
-            ! -------------------------------------------------------
-            ! Compute the adjoint phase coefficients for HG function.
-            ! Loop over Legendre terms. The TL phase coefficients are 
-            !
-            !                    l-1
-            !            c(l).l.g                ( P(l) - c(l) )
-            !    P_TL = ------------ . g_TL  +  ----------------- . d_TL
-            !              1 - d                      1 - d
-            !
-            ! so,
-            !                  ( P(l) - c(l) )
-            !   d_AD = d_AD + ----------------- . P_AD
-            !                       1 - d
-            !
-            !                          l-1
-            !                  c(l).l.g   
-            !   g_AD = g_AD + ------------ . P_AD
-            !                    1 - d
-            !
-            !   P_AD = 0
-            !
-            ! -------------------------------------------------------
-
-            DO l = AtmOptics%n_Legendre_Terms - 1, 1, -1
-
-              c  = REAL((2*l)+1, fp_kind ) / TWO
-              rl = REAL(  l,     fp_kind )
-
-              AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) + &
-                ( ( ( AtmOptics%Phase_Coefficient(l,1,k) - c ) * AtmOptics_AD%Phase_Coefficient(l,1,k) ) / Omd )
-
-              AtmOptics_AD%Asymmetry_Factor(k) = AtmOptics_AD%Asymmetry_Factor(k) + &
-                ( c * rl * g**(l-1) * AtmOptics_AD%Phase_Coefficient(l,1,k) / Omd )
-
-              AtmOptics_AD%Phase_Coefficient(l,1,k) = ZERO
-
-            END DO
-
-            ! -- Normalization condition for phase function for 0'th term
-            AtmOptics_AD%Phase_Coefficient(0,1,k) = ZERO
-
-
-            ! ------------------------------------------------------
-            ! Compute the adjoint delta truncation for a HG function
-            !
-            !   d_TL = L . g**(L-1) . g_TL 
-            !
-            ! where L = number of Legendre terms, so
-            !
-            !   g_AD = g_AD  +  ( L . g**(L-1) . d_AD )
-            !
-            !   d_AD = 0
-            !
-            ! ------------------------------------------------------
-
-            AtmOptics_AD%Asymmetry_Factor(k) = AtmOptics_AD%Asymmetry_Factor(k) + &
-              ( REAL( AtmOptics%n_Legendre_Terms, fp_kind ) * &
-                ( g**(AtmOptics%n_Legendre_Terms-1) ) * &
-                AtmOptics_AD%Delta_Truncation(k) )
-
-            AtmOptics_AD%Delta_Truncation(k) = ZERO
-
-
-            ! ----------------------------------------------------
-            ! The adjoint of the weighted average asymmetry factor
-            !
-            !   _       (g_C_TL.bs_C ) + (g_C.bs_C_TL ) + (g_A_TL.bs_A ) + (g_A.bs_A_TL ) - (g.bs_TL)
-            !   g_TL = -------------------------------------------------------------------------------
-            !                                              bs
-            ! So,
-            !
-            !                       _
-            !                   g . g_AD
-            ! bs_AD = bs_AD - -----------
-            !                     bs
-            !                            _
-            !                      g_A . g_AD
-            ! bs_A_AD = bs_A_AD + ------------
-            !                          bs
-            !                           _
-            !                    bs_A . g_AD
-            ! g_A_AD = g_A_AD + -------------
-            !                        bs
-            !                            _
-            !                      g_C . g_AD
-            ! bs_C_AD = bs_C_AD + ------------
-            !                          bs
-            !                           _
-            !                    bs_C . g_AD
-            ! g_C_AD = g_C_AD + -------------
-            !                        bs
-            ! _
-            ! g_AD = 0
-            ! 
-            ! ----------------------------------------------------
-
-            bs_AD = bs_AD - ( g * AtmOptics_AD%Asymmetry_Factor(k) / AOV%bs(k) )
-
-            bs_Aerosol_AD = bs_Aerosol_AD + &
-              ( AerosolScatter%Asymmetry_Factor(k) * AtmOptics_AD%Asymmetry_Factor(k) / AOV%bs(k) ) 
-
-            AerosolScatter_AD%Asymmetry_Factor(k) = AerosolScatter_AD%Asymmetry_Factor(k) + &
-              ( AOV%bs_Aerosol(k) * AtmOptics_AD%Asymmetry_Factor(k) / AOV%bs(k) )
-
-            bs_Cloud_AD = bs_Cloud_AD + &
-              ( CloudScatter%Asymmetry_Factor(k) * AtmOptics_AD%Asymmetry_Factor(k) / AOV%bs(k) ) 
-
-            CloudScatter_AD%Asymmetry_Factor(k) = CloudScatter_AD%Asymmetry_Factor(k) + &
-              ( AOV%bs_Cloud(k) * AtmOptics_AD%Asymmetry_Factor(k) / AOV%bs(k) )
-
-            AtmOptics_AD%Asymmetry_Factor(k) = ZERO
-
-          END IF Phase_Function_Type
-
-
-          ! ---------------------------------------------------------
-          ! The adjoint of the weighted average single scatter albedo
-          !
-          !   _       bs_TL       w.tau_TL
-          !   w_TL = -------  -  ----------
-          !            tau          tau
-          !
-          ! So,
-          !                          _
-          !                      w . w_AD
-          !   tau_AD = tau_AD - -----------
-          !                        tau
-          !                    _
-          !                    w_AD
-          !   bs_AD = bs_AD + ------
-          !                    tau
-          !   _
-          !   w_AD = 0
-          ! ----------------------------------------------------
-
-          AtmOptics_AD%Optical_Depth(k) = AtmOptics_AD%Optical_Depth(k) - &
-            ( AOV%w(k) * w_AD / AOV%Optical_Depth(k) )
-
-          bs_AD = bs_AD + ( w_AD / AOV%Optical_Depth(k) )
-
-          w_AD = ZERO
 
         END IF Significant_Scattering
-  
-
-        ! ------------------------------------------------------
-        ! Compute the adjoint of the cloud (_C) and aerosol (_A)
-        ! scattering coefficients
-        ! 
-        !   bs_C_TL = ( w_C_TL * tau_C ) + ( w_C * tau_C_TL )
-        !   bs_A_TL = ( w_A_TL * tau_A ) + ( w_A * tau_A_TL )
-        !   b_TL    = bs_C_TL + bs_A_TL
-        ! 
-        ! So,
-        !
-        !   bs_A_AD = bs_A_AD + bs_AD
-        !   bs_C_AD = bs_C_AD + bs_AD
-        !   bs_AD   = 0
-        !
-        !   tau_A_AD = tau_A_AD + ( w_A   * bs_A_AD )
-        !   w_A_AD   = w_A_AD   + ( tau_A * bs_A_AD )
-        !   bs_A_AD  = 0
-        !
-        !   tau_C_AD = tau_C_AD + ( w_C   * bs_C_AD )
-        !   w_C_AD   = w_C_AD   + ( tau_C * bs_C_AD )
-        !   bs_C_AD  = 0
-        !
-        ! ------------------------------------------------------
-
-        ! -- Total term
-        bs_Aerosol_AD = bs_Aerosol_AD + bs_AD
-        bs_Cloud_AD   = bs_Cloud_AD   + bs_AD
-        bs_AD = ZERO
-
-        ! -- Aerosol terms
-        AerosolScatter_AD%Optical_Depth(k) = AerosolScatter_AD%Optical_Depth(k) + &
-          ( AerosolScatter%Single_Scatter_Albedo(k) * bs_Aerosol_AD )
-
-        AerosolScatter_AD%Single_Scatter_Albedo(k) = AerosolScatter_AD%Single_Scatter_Albedo(k) + &
-          ( AerosolScatter%Optical_Depth(k) * bs_Aerosol_AD )
-
-        bs_Aerosol_AD = ZERO
-
-        ! -- Cloud terms
-        CloudScatter_AD%Optical_Depth(k) = CloudScatter_AD%Optical_Depth(k) + &
-          ( CloudScatter%Single_Scatter_Albedo(k) * bs_Cloud_AD )
-
-        CloudScatter_AD%Single_Scatter_Albedo(k) = CloudScatter_AD%Single_Scatter_Albedo(k) + &
-          ( CloudScatter%Optical_Depth(k) * bs_Cloud_AD )
-
-        bs_Cloud_AD = ZERO
-
-      END IF Significant_Optical_Depth
-
-
-      ! --------------------------------
-      ! Compute the adjoint of the total
-      ! optical depth for the layer
-      ! --------------------------------
-
-      AerosolScatter_AD%Optical_Depth(k) = AerosolScatter_AD%Optical_Depth(k) + AtmOptics_AD%Optical_Depth(k)
-      CloudScatter_AD%Optical_Depth(k)   = CloudScatter_AD%Optical_Depth(k)   + AtmOptics_AD%Optical_Depth(k)
-      AtmAbsorption_AD%Optical_Depth(k)  = AtmAbsorption_AD%Optical_Depth(k)  + AtmOptics_AD%Optical_Depth(k)
-
-      AtmOptics_AD%Optical_Depth(k) = ZERO
+ 
 
     END DO Layer_Loop
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#      -- INPUT ADJOINT STRUCTURE COMPONENTS NO LONGER CONTRIBUTE --       #
-    !#--------------------------------------------------------------------------#
-
-    AtmOptics_AD%Single_Scatter_Albedo = ZERO
-    AtmOptics_AD%Delta_Truncation      = ZERO
-    AtmOptics_AD%Asymmetry_Factor      = ZERO
-    AtmOptics_AD%Phase_Coefficient     = ZERO
 
   END SUBROUTINE CRTM_Combine_AtmOptics_AD
 
@@ -1741,11 +736,11 @@ END MODULE CRTM_AtmOptics
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CRTM_AtmOptics.f90,v 1.14 2006/05/02 14:58:34 dgroff Exp $
+! $Id$
 !
 ! $Date: 2006/05/02 14:58:34 $
 !
-! $Revision: 1.14 $
+! $Revision$
 !
 ! $Name:  $
 !

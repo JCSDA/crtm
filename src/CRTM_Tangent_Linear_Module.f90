@@ -17,14 +17,16 @@ MODULE CRTM_Tangent_Linear_Module
   ! ------------
   USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE CRTM_Parameters,          ONLY: SET, NOT_SET, ONE   , &
+  USE CRTM_Parameters,          ONLY: SET,NOT_SET,ZERO,ONE, &
                                       MAX_N_PROFILES      , &
                                       MAX_N_PHASE_ELEMENTS, &
                                       MAX_N_LEGENDRE_TERMS, &
                                       MAX_N_STOKES        , &
-                                      MAX_N_ANGLES
-  USE CRTM_SpcCoeff,            ONLY: SC                  , &
-                                      VISIBLE_SENSOR
+                                      MAX_N_ANGLES        , &
+                                      MAX_N_AZI           , &
+                                      MAX_SOURCE_ZENITH_ANGLE
+                                      
+  USE CRTM_SpcCoeff,            ONLY: SC, VISIBLE_SENSOR
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type, &
                                       CRTM_Destroy_Atmosphere
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
@@ -36,11 +38,8 @@ MODULE CRTM_Tangent_Linear_Module
                                       iAtm_type, &
                                       Destroy_iAtm
   USE CRTM_GeometryInfo,        ONLY: CRTM_Compute_GeometryInfo
-  USE CRTM_AtmAbsorption,       ONLY: CRTM_AtmAbsorption_type      , &
-                                      CRTM_AAVariables_type        , &
-                                      CRTM_Allocate_AtmAbsorption  , &
-                                      CRTM_Destroy_AtmAbsorption   , &
-                                      CRTM_Compute_AtmAbsorption   , &
+  USE CRTM_AtmAbsorption,       ONLY: CRTM_AAVariables_type        , &
+                                      CRTM_Compute_AtmAbsorption, &
                                       CRTM_Compute_AtmAbsorption_TL, &
                                       CRTM_Destroy_Predictor       , &
                                       CRTM_Allocate_Predictor      , &
@@ -66,17 +65,18 @@ MODULE CRTM_Tangent_Linear_Module
                                       CRTM_Compute_SurfaceT   , &
                                       CRTM_Compute_SurfaceT_TL  
   USE CRTM_RTSolution,          ONLY: CRTM_RTSolution_type      , &
-                                      CRTM_RTVariables_type     , &
                                       CRTM_Compute_nStreams     , &
                                       CRTM_Compute_RTSolution   , &
-                                      CRTM_Compute_RTSolution_TL, &
-                                      CRTM_Destroy_RTV          , &
-                                      CRTM_Allocate_RTV
+                                      CRTM_Compute_RTSolution_TL
+  USE RTV_Define,               ONLY: CRTM_RTVariables_type     , &
+                                      Allocate_RTV              , &
+                                      Destroy_RTV
   USE CRTM_AntCorr,             ONLY: CRTM_Compute_AntCorr, &
                                       CRTM_Compute_AntCorr_TL
+  USE CRTM_MoleculeScatter,     ONLY: CRTM_Compute_MoleculeScatter, &
+                                      CRTM_Compute_MoleculeScatter_TL
   USE CRTM_SensorInput_Define,  ONLY: CRTM_SensorInput_type, &
                                       ASSIGNMENT(=)
-
 
   ! -----------------------
   ! Disable implicit typing
@@ -270,18 +270,16 @@ CONTAINS
     INTEGER :: l, n_Channels, ChannelIndex
     INTEGER :: m, n_Profiles
     INTEGER :: ln
-    INTEGER :: n_Full_Streams
-    INTEGER, DIMENSION(5) :: AllocStatus
-    INTEGER, DIMENSION(5) :: AllocStatus_TL
+    INTEGER :: n_Full_Streams, mth_Azi
+    INTEGER, DIMENSION(2) :: AllocStatus, AllocStatus_TL
+    REAL(fp) :: Wavenumber
+
     ! Local sensor input structure
     TYPE(CRTM_SensorInput_type) :: SensorInput
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm, Atm_TL
     ! Component variables
     TYPE(CRTM_Predictor_type)     :: Predictor,      Predictor_TL
-    TYPE(CRTM_AtmAbsorption_type) :: AtmAbsorption,  AtmAbsorption_TL
-    TYPE(CRTM_AtmScatter_type)    :: AerosolScatter, AerosolScatter_TL
-    TYPE(CRTM_AtmScatter_type)    :: CloudScatter,   CloudScatter_TL
     TYPE(CRTM_AtmScatter_type)    :: AtmOptics,      AtmOptics_TL
     TYPE(CRTM_SfcOptics_type)     :: SfcOptics,      SfcOptics_TL
     ! Component variable internals
@@ -479,69 +477,40 @@ CONTAINS
         RETURN
       END IF
 
+      ! -----------------------------
+      ! Allocate all local structures
+      ! -----------------------------
+      ! The AtmOptics structure
+      AllocStatus(1)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
+                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input
+                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input
+                                                  AtmOptics              , &  ! Output
+                                                  Message_Log=Message_Log  )  ! Error messaging
+      AllocStatus_TL(1)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input
+                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input
+                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input
+                                                  AtmOptics_TL           , &  ! Output
+                                                  Message_Log=Message_Log  )  ! Error messaging
+      ! The SfcOptics structure
+      AllocStatus(2)   =CRTM_Allocate_SfcOptics( MAX_N_ANGLES           , &  ! Input
+                                                 MAX_N_STOKES           , &  ! Input
+                                                 SfcOptics              , &  ! Output
+                                                 Message_Log=Message_Log  )  ! Error messaging
+      AllocStatus_TL(2)=CRTM_Allocate_SfcOptics( MAX_N_ANGLES           , &  ! Input
+                                                 MAX_N_STOKES           , &  ! Input
+                                                 SfcOptics_TL           , &  ! Output
+                                                 Message_Log=Message_Log  )  ! Error messaging
 
-      ! -----------------------------------------------------
-      ! Allocate all local sensor independent data structures
-      ! -----------------------------------------------------
-      ! Atmospheric absorption structures
-      AllocStatus(1)   =CRTM_Allocate_AtmAbsorption( Atm%n_Layers           , &  ! Input          
-                                                     AtmAbsorption          , &  ! Output         
-                                                     Message_Log=Message_Log  )  ! Error messaging
-      AllocStatus_TL(1)=CRTM_Allocate_AtmAbsorption( Atm%n_Layers           , &  ! Input          
-                                                     AtmAbsorption_TL       , &  ! Output         
-                                                     Message_Log=Message_Log  )  ! Error messaging
-      ! The CloudScatter structures                                                               
-      AllocStatus(2)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input             
-                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input             
-                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input             
-                                                  CloudScatter           , &  ! Output            
-                                                  Message_Log=Message_Log  )  ! Error messaging   
-      AllocStatus_TL(2)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input             
-                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input             
-                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input             
-                                                  CloudScatter_TL        , &  ! Output            
-                                                  Message_Log=Message_Log  )  ! Error messaging   
-      ! The AerosolScatter structures                                                             
-      AllocStatus(3)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input             
-                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input             
-                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input             
-                                                  AerosolScatter         , &  ! Output            
-                                                  Message_Log=Message_Log  )  ! Error messaging   
-      AllocStatus_TL(3)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input             
-                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input             
-                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input             
-                                                  AerosolScatter_TL      , &  ! Output            
-                                                  Message_Log=Message_Log  )  ! Error messaging   
-      ! The AtmOptics structure                                                                   
-      AllocStatus(4)   =CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input             
-                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input             
-                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input             
-                                                  AtmOptics              , &  ! Output            
-                                                  Message_Log=Message_Log  )  ! Error messaging   
-      AllocStatus_TL(4)=CRTM_Allocate_AtmScatter( Atm%n_Layers           , &  ! Input             
-                                                  MAX_N_LEGENDRE_TERMS   , &  ! Input             
-                                                  MAX_N_PHASE_ELEMENTS   , &  ! Input             
-                                                  AtmOptics_TL           , &  ! Output            
-                                                  Message_Log=Message_Log  )  ! Error messaging   
-      ! The SfcOptics structure                                                                   
-      AllocStatus(5)   =CRTM_Allocate_SfcOptics( MAX_N_ANGLES           , &  ! Input              
-                                                 MAX_N_STOKES           , &  ! Input              
-                                                 SfcOptics              , &  ! Output             
-                                                 Message_Log=Message_Log  )  ! Error messaging    
-      AllocStatus_TL(5)=CRTM_Allocate_SfcOptics( MAX_N_ANGLES           , &  ! Input              
-                                                 MAX_N_STOKES           , &  ! Input              
-                                                 SfcOptics_TL           , &  ! Output             
-                                                 Message_Log=Message_Log  )  ! Error messaging    
-      IF ( ANY(AllocStatus    /= SUCCESS) .OR. &                                                  
-           ANY(AllocStatus_TL /= SUCCESS)      ) THEN                                             
-        Error_Status=FAILURE                                                                      
-        WRITE( Message,'("Error allocating local sensor independent data structures for profile #",i0)' ) m         
-        CALL Display_Message( ROUTINE_NAME, &                                                    
-                              TRIM(Message), &                                                   
-                              Error_Status, &                                                    
-                              Message_Log=Message_Log )                                          
-        RETURN                                                                                    
-      END IF                                                                                      
+      IF ( ANY(AllocStatus    /= SUCCESS ) .OR. &
+           ANY(AllocStatus_TL /= SUCCESS ) ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Error deallocating local sensor independent data structures for profile #",i0)' ) m  
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+        RETURN
+      END IF
 
       ! --------------------------
       ! Preprocess some input data
@@ -587,8 +556,8 @@ CONTAINS
         AllocStatus(2) = SUCCESS
         IF(Atm%n_Clouds > 0 .OR. Atm%n_Aerosols > 0 &
                             .OR. SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR)THEN
-          AllocStatus(2)=CRTM_Allocate_RTV(RTV, &  ! Output
-                                           Message_Log=Message_Log ) ! Error messaging
+          AllocStatus(2) = Allocate_RTV(RTV, &  ! Output
+                                Message_Log=Message_Log ) ! Error messaging
         END IF                                   
         IF ( AllocStatus(1)    /= SUCCESS .OR. AllocStatus(2) /= SUCCESS .OR. &                                                  
              AllocStatus_TL(1) /= SUCCESS  ) THEN                                             
@@ -631,7 +600,15 @@ CONTAINS
           ! Increment channel counter
           ln = ln + 1
 
-          
+          AtmOptics%Optical_Depth         = ZERO
+          AtmOptics%Phase_Coefficient     = ZERO
+          AtmOptics%Delta_Truncation      = ZERO
+          AtmOptics%Single_Scatter_Albedo = ZERO
+   
+          AtmOptics_TL%Optical_Depth         = ZERO
+          AtmOptics_TL%Phase_Coefficient     = ZERO
+          AtmOptics_TL%Delta_Truncation      = ZERO
+          AtmOptics_TL%Single_Scatter_Albedo = ZERO          
           ! ---------------------------------------------------------------
           ! Determine the number of streams (n_Full_Streams) in up+downward
           ! directions. Currently, n_Full_Streams is determined from the
@@ -655,35 +632,76 @@ CONTAINS
                                            SensorIndex  , &  ! Input
                                            ChannelIndex , &  ! Input
                                            Predictor    , &  ! Input
-                                           AtmAbsorption, &  ! Output
+                                           AtmOptics    , &  ! Output
                                            AAV            )  ! Internal variable output
           CALL CRTM_Compute_AtmAbsorption_TL( SensorInput     , &  ! Input
                                               SensorIndex     , &  ! Input
                                               ChannelIndex    , &  ! Input
                                               Predictor       , &  ! Input
                                               Predictor_TL    , &  ! Input
-                                              AtmAbsorption_TL, &  ! Output
+                                              AtmOptics_TL    , &  ! Output
                                               AAV               )  ! Internal variable input
+
+
+          ! -------------------------------------------
+          ! Compute the molecular scattering properties
+          ! -------------------------------------------
+          ! Solar radiation
+          IF( SC(SensorIndex)%Solar_Irradiance(ChannelIndex) > ZERO .AND. &
+              GeometryInfo(m)%Source_Zenith_Angle < MAX_SOURCE_ZENITH_ANGLE) THEN
+             RTV%Solar_Flag_true = .TRUE.
+          END IF
+          
+          IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .and. RTV%Solar_Flag_true ) THEN 
+            RTV%Visible_Flag_true = .true.
+            RTV%n_Azi = MAX_N_AZI            
+            ! Rayleigh phase function has 0, 1, 2 components.
+            IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
+              AtmOptics%n_Legendre_Terms = 4
+              RTSolution(ln,m)%Scattering_FLAG = .TRUE.
+              RTSolution(ln,m)%n_Full_Streams = AtmOptics%n_Legendre_Terms + 2
+            END IF
+            ! Get molecular scattering and extinction
+            Wavenumber = SC(SensorIndex)%Wavenumber(ChannelIndex)
+            Status_FWD = CRTM_Compute_MoleculeScatter( Wavenumber,Atm,AtmOptics, &
+                                                       Message_Log=Message_Log  )
+            Status_TL  = CRTM_Compute_MoleculeScatter_TL( Wavenumber,Atm_TL,AtmOptics_TL, &
+                                                          Message_Log=Message_Log )
+            IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
+              Error_Status = FAILURE
+              WRITE(Message,'("Error computing MoleculeScatter for ",a,&
+                             &", channel ",i0,", profile #",i0)') &
+                              TRIM(ChannelInfo(n)%Sensor_ID), &
+                              ChannelInfo(n)%Sensor_Channel(l), &
+                              m
+              CALL Display_Message( ROUTINE_NAME, &
+                                    TRIM(Message), &
+                                    Error_Status, &
+                                    Message_Log=Message_Log )
+              RETURN
+            END IF
+          ELSE
+            RTV%Visible_Flag_true = .FALSE.
+            RTV%n_Azi = 0
+          END IF        
 
           
           ! -----------------------------------------------------------
           ! Compute the cloud particle absorption/scattering properties
           ! -----------------------------------------------------------
           IF( Atm%n_Clouds > 0 ) THEN
-            CloudScatter%n_Legendre_Terms    = n_Full_Streams
-            CloudScatter_TL%n_Legendre_Terms = n_Full_Streams
             Status_FWD = CRTM_Compute_CloudScatter( Atm                    , &  ! Input
                                                     SensorIndex            , &  ! Input
                                                     ChannelIndex           , &  ! Input
-                                                    CloudScatter           , &  ! Output
+                                                    AtmOptics              , &  ! Output
                                                     CSV                    , &  ! Internal variable output
                                                     Message_Log=Message_Log  )  ! Error messaging
             Status_TL = CRTM_Compute_CloudScatter_TL( Atm                    , &  ! FWD Input
-                                                      CloudScatter           , &  ! FWD Input
+                                                      AtmOptics              , &  ! FWD Input
                                                       Atm_TL                 , &  ! TL  Input
                                                       SensorIndex            , &  ! Input
                                                       ChannelIndex           , &  ! Input
-                                                      CloudScatter_TL        , &  ! TL  Output
+                                                      AtmOptics_TL           , &  ! TL  Output
                                                       CSV                    , &  ! Internal variable input
                                                       Message_Log=Message_Log  )  ! Error messaging
             IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
@@ -706,20 +724,18 @@ CONTAINS
           ! Compute the aerosol absorption/scattering properties
           ! ----------------------------------------------------
           IF ( Atm%n_Aerosols > 0 ) THEN
-            AerosolScatter%n_Legendre_Terms    = n_Full_Streams
-            AerosolScatter_TL%n_Legendre_Terms = n_Full_Streams
             Status_FWD = CRTM_Compute_AerosolScatter( Atm                    , &  ! Input
                                                       SensorIndex            , &  ! Input
                                                       ChannelIndex           , &  ! Input
-                                                      AerosolScatter         , &  ! In/Output
+                                                      AtmOptics              , &  ! In/Output
                                                       ASV                    , &  ! Internal variable output
                                                       Message_Log=Message_Log  )  ! Error messaging
             Status_TL  = CRTM_Compute_AerosolScatter_TL( Atm                    , &  ! FWD Input
-                                                         AerosolScatter         , &  ! FWD Input
+                                                         AtmOptics              , &  ! FWD Input
                                                          Atm_TL                 , &  ! TL  Input
                                                          SensorIndex            , &  ! Input
                                                          ChannelIndex           , &  ! Input
-                                                         AerosolScatter_TL      , &  ! TL  Output  
+                                                         AtmOptics_TL           , &  ! TL  Output  
                                                          ASV                    , &  ! Internal variable input
                                                          Message_Log=Message_Log  )  ! Error messaging
             IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
@@ -741,22 +757,13 @@ CONTAINS
           ! ---------------------------------------------------
           ! Compute the combined atmospheric optical properties
           ! ---------------------------------------------------
-          CALL CRTM_Combine_AtmOptics( AtmAbsorption , & ! Input
-                                       CloudScatter  , & ! Input
-                                       AerosolScatter, & ! Input
-                                       AtmOptics     , & ! Output
+          CALL CRTM_Combine_AtmOptics( AtmOptics     , & ! In/Output
                                        AOV             ) ! Internal variable output
-          CALL CRTM_Combine_AtmOptics_TL( AtmAbsorption    , & ! FWD Input
-                                          CloudScatter     , & ! FWD Input
-                                          AerosolScatter   , & ! FWD Input
-                                          AtmOptics        , & ! FWD Input
-                                          AtmAbsorption_TL , & ! TL  Input
-                                          CloudScatter_TL  , & ! TL  Input
-                                          AerosolScatter_TL, & ! TL  Input
-                                          AtmOptics_TL     , & ! TL  Output
+                                       
+          CALL CRTM_Combine_AtmOptics_TL( AtmOptics        , & ! FWD Input
+                                          AtmOptics_TL     , & ! TL  In/Output
                                           AOV                ) ! Internal variable input
-
-
+                                          
           ! ------------------------------------
           ! Fill the SfcOptics structure for the
           ! optional emissivity input case.
@@ -783,6 +790,15 @@ CONTAINS
           ! Solve the radiative transfer problem
           ! ------------------------------------
           ! Forward model
+
+          RTSolution(ln,m)%Radiance = ZERO
+          RTSolution_TL(ln,m)%Radiance = ZERO
+
+          
+        Azi_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
+          RTV%mth_Azi = mth_Azi
+          SfcOptics%mth_Azi = mth_Azi
+                     
           Error_Status = CRTM_Compute_RTSolution( Atm                    , &  ! Input
                                                   Surface(m)             , &  ! Input
                                                   AtmOptics              , &  ! Input
@@ -835,6 +851,8 @@ CONTAINS
             RETURN
           END IF
 
+        END DO Azi_Fourier_Loop
+ 
 
           ! --------------------------------------
           ! Compute Antenna correction if required
@@ -859,7 +877,7 @@ CONTAINS
         AllocStatus(1)   =CRTM_Destroy_Predictor( SensorIndex, Predictor )
         AllocStatus(2) = SUCCESS
         IF( RTV%mAllocated )THEN
-          AllocStatus(2) = CRTM_Destroy_RTV( RTV )
+          AllocStatus(2) = Destroy_RTV( RTV )
         END IF
         IF ( AllocStatus(1) /= SUCCESS.OR. AllocStatus_TL(1) /= SUCCESS &
              .OR. AllocStatus(2) /= SUCCESS ) THEN
@@ -874,31 +892,25 @@ CONTAINS
 
       END DO Sensor_Loop
 
-      ! --------------------------------------------------- 
-      ! Deallocate local sensor independent data structures   
-      ! ---------------------------------------------------
-      AllocStatus_TL(5)=CRTM_Destroy_SfcOptics( SfcOptics_TL )          
-      AllocStatus(5)   =CRTM_Destroy_SfcOptics( SfcOptics )             
-      AllocStatus_TL(4)=CRTM_Destroy_AtmScatter( AtmOptics_TL )         
-      AllocStatus(4)   =CRTM_Destroy_AtmScatter( AtmOptics )            
-      AllocStatus_TL(3)=CRTM_Destroy_AtmScatter( AerosolScatter_TL )    
-      AllocStatus(3)   =CRTM_Destroy_AtmScatter( AerosolScatter )       
-      AllocStatus_TL(2)=CRTM_Destroy_AtmScatter( CloudScatter_TL )      
-      AllocStatus(2)   =CRTM_Destroy_AtmScatter( CloudScatter )         
-      AllocStatus_TL(1)=CRTM_Destroy_AtmAbsorption( AtmAbsorption_TL )  
-      AllocStatus(1)   =CRTM_Destroy_AtmAbsorption( AtmAbsorption )     
-      IF ( ANY(AllocStatus /= SUCCESS ) .OR. ANY(AllocStatus_TL /= SUCCESS ) ) THEN                                              
-        Error_Status = FAILURE                                                              
-        WRITE( Message,'("Error deallocating local sensor independent data structures for profile #",i0)' ) m  
-        CALL Display_Message( ROUTINE_NAME, &                                               
-                              TRIM(Message), &                                              
-                              Error_Status, &                                               
-                              Message_Log=Message_Log ) 
-        RETURN
-      END IF                                    
+
+      ! ---------------------------
+      ! Deallocate local structures
+      ! ---------------------------
+      AllocStatus_TL(1)=CRTM_Destroy_SfcOptics( SfcOptics_TL )
+      AllocStatus(1)   =CRTM_Destroy_SfcOptics( SfcOptics )
+      AllocStatus_TL(2)=CRTM_Destroy_AtmScatter( AtmOptics_TL )
+      AllocStatus(2)   =CRTM_Destroy_AtmScatter( AtmOptics )
+
+      IF ( ANY(AllocStatus /= SUCCESS ) .OR. ANY(AllocStatus_TL /= SUCCESS ) ) THEN
+        Error_Status = WARNING
+        WRITE( Message,'("Error deallocating local data structures for profile #",i0)' ) m
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(Message), &
+                              Error_Status, &
+                              Message_Log=Message_Log )
+      END IF
 
     END DO Profile_Loop
-
 
     ! ---------------------------------
     ! Destroy "extra layers" structures

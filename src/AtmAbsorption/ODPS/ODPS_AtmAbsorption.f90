@@ -19,9 +19,10 @@ MODULE ODPS_AtmAbsorption
   ! Module use
   USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters,           ONLY: ZERO, ONE, TWO, LIMIT_EXP, LIMIT_LOG
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
   USE ODPS_Define,               ONLY: ODPS_type,                &
                                        SIGNIFICANCE_OPTRAN
   USE ODPS_Predictor,            ONLY: Compute_Predictor,        &
@@ -42,11 +43,7 @@ MODULE ODPS_AtmAbsorption
                                        GROUP_3                    , &
                                        MAX_OPTRAN_ORDER           ,  &
                                        MAX_OPTRAN_USED_PREDICTORS
-                                        
-  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO, &
-                             LIMIT_EXP, LIMIT_LOG
-
-  USE ODPS_CoordinateMapping, ONLY: Map_Input, Map_Input_TL, Map_Input_AD, &
+  USE ODPS_CoordinateMapping,    ONLY: Map_Input, Map_Input_TL, Map_Input_AD, &
                                        Interpolate_Profile,    &
                                        Interpolate_Profile_F1_TL, &
                                        Interpolate_Profile_F1_AD, &

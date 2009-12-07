@@ -57,11 +57,11 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_GeometryInfo.f90 \
             CRTM_Atmosphere.f90 iAtm_Define.f90 \
             CRTM_Model_Profiles.f90 \
-            CRTM_AtmAbsorption_Define.f90 \
             CRTM_AtmAbsorption.f90 \
             CRTM_AtmScatter_Define.f90 \
             CRTM_AerosolScatter.f90 \
             CRTM_CloudScatter.f90 \
+            CRTM_MoleculeScatter.f90 \
             CRTM_SfcOptics_Define.f90 \
             CRTM_SfcOptics.f90 \
             CRTM_IR_Ice_SfcOptics.f90 \
@@ -72,6 +72,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_MW_Land_SfcOptics.f90 \
             CRTM_MW_Snow_SfcOptics.f90 \
             CRTM_MW_Water_SfcOptics.f90 \
+            CRTM_VIS_Water_SfcOptics.f90 \
             CRTM_LowFrequency_MWSSEM.f90 Ocean_Permittivity.f90 Fresnel.f90 \
             CRTM_Fastem1.f90 \
             CRTM_Fastem3.f90 \
@@ -79,6 +80,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_surface_ir_emissivity.f90 \
             CRTM_AtmOptics.f90 \
             CRTM_RTSolution_Define.f90 \
+            RTV_Define.f90 \
             CRTM_RTSolution_Binary_IO.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \

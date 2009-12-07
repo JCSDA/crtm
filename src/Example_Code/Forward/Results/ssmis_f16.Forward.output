@@ -18,9 +18,9 @@
  Read_ODPS_Binary(INFORMATION) : FILE: ../Coefficient_Data/zssmis_f16.TauCoeff.bin; 
    ODPS RELEASE.VERSION:  2.01  N_LAYERS=105  N_COMPONENTS=1  N_ABSORBERS=1  N_CHANNELS=4  N_COEFFS=59575
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
- CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ CloudCoeff RELEASE.VERSION:  2.04  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)=  61  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
- AerosolCoeff RELEASE.VERSION:  2.02  N_WAVELENGTHS=  91  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ AerosolCoeff RELEASE.VERSION:  2.03  N_WAVELENGTHS=  61  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
  Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
  EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
 
@@ -53,24 +53,24 @@
 
        Profile 2 FWD output
        Sensor_Id   Channel         R            Tb
-       ssmis_f16      1      5.396881E-03     232.791
-       ssmis_f16      2      6.069386E-03     237.629
-       ssmis_f16      3      6.273162E-03     238.381
-       ssmis_f16      4      6.402708E-03     236.197
+       ssmis_f16      1      5.396974E-03     232.795
+       ssmis_f16      2      6.069430E-03     237.631
+       ssmis_f16      3      6.273176E-03     238.382
+       ssmis_f16      4      6.402710E-03     236.197
        ssmis_f16      5      6.639106E-03     235.336
        ssmis_f16      6      7.105489E-03     236.412
        ssmis_f16      7      7.626828E-03     236.103
-       ssmis_f16      8      4.919987E-02     240.967
-       ssmis_f16      9      7.402216E-02     243.237
-       ssmis_f16     10      7.423320E-02     244.156
-       ssmis_f16     11      7.354501E-02     241.988
-       ssmis_f16     12      8.075807E-04     234.627
-       ssmis_f16     13      8.075811E-04     234.627
-       ssmis_f16     14      1.054211E-03     232.031
-       ssmis_f16     15      2.848103E-03     226.723
-       ssmis_f16     16      2.848083E-03     226.723
-       ssmis_f16     17      1.810319E-02     236.130
-       ssmis_f16     18      1.810317E-02     236.130
+       ssmis_f16      8      4.920024E-02     240.969
+       ssmis_f16      9      7.402249E-02     243.238
+       ssmis_f16     10      7.423335E-02     244.157
+       ssmis_f16     11      7.354503E-02     241.988
+       ssmis_f16     12      8.075986E-04     234.632
+       ssmis_f16     13      8.075990E-04     234.632
+       ssmis_f16     14      1.054247E-03     232.039
+       ssmis_f16     15      2.848233E-03     226.733
+       ssmis_f16     16      2.848212E-03     226.733
+       ssmis_f16     17      1.810345E-02     236.133
+       ssmis_f16     18      1.810343E-02     236.133
        ssmis_f16     19      8.195409E-03     223.688
        ssmis_f16     20      6.739823E-03     199.443
        ssmis_f16     21      8.351336E-03     246.783

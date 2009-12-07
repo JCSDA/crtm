@@ -30,12 +30,12 @@ MODULE CRTM_RTSolution
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type
   USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmScatter_type
   USE CRTM_Planck_Functions
   USE CRTM_SfcOptics
   USE CRTM_RTSolution_Define
   USE CRTM_Utility
+  USE RTV_Define
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -62,8 +62,6 @@ MODULE CRTM_RTSolution
   PUBLIC :: CRTM_Compute_RTSolution_TL
   PUBLIC :: CRTM_Compute_RTSolution_AD
   PUBLIC :: CRTM_Compute_nStreams
-  PUBLIC :: CRTM_Destroy_RTV
-  PUBLIC :: CRTM_Allocate_RTV
 
   ! -----------------
   ! Module parameters
@@ -72,123 +70,6 @@ MODULE CRTM_RTSolution
   ! RCS Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-
-  ! Threshold for determing if an additional stream
-  ! angle is required for the satellite zenith angle
-  REAL(fp), PARAMETER :: ANGLE_THRESHOLD = 1.0e-7_fp
-
-  ! Small positive value used to replace negative
-  ! values in the computed phase function
-  REAL(fp), PARAMETER :: PHASE_THRESHOLD = 1.0e-7_fp
-
-  ! The maximum number of doubling processes in the
-  ! the doubling-adding scheme.
-  INTEGER,         PRIVATE, PARAMETER :: MAX_NUMBER_DOUBLING = 25
-
-  ! The optical depth difference used to obtain the
-  ! number of doubling processes for a layer, where
-  !   Optical_depth = 2**n . DELTA_OPTICAL_DEPTH
-  ! and n == number of doubling layers.
-  REAL(fp), PARAMETER :: DELTA_OPTICAL_DEPTH = 1.0e-3_fp
-
-
-  ! --------------------------------------
-  ! Structure definition to hold forward
-  ! variables across FWD, TL, and AD calls
-  ! --------------------------------------
-
-  TYPE :: CRTM_RTVariables_type
-
-    ! Dimension information
-    INTEGER :: n_Layers       = 0  ! Total number of atmospheric layers
-    INTEGER :: n_Added_Layers = 0  !  Number of layers appended to TOA
-    INTEGER :: n_Streams      = 0  !  Number of *hemispheric* stream angles used in RT
-    INTEGER :: n_Angles       = 0  !  n_Streams + sensor zenith angle
-
-    ! Variable to hold the various portions of the
-    ! radiance for emissivity retrieval algorithms
-    ! Passed to FWD RTSolution structure argument output
-    REAL(fp) :: Up_Radiance         = ZERO
-    REAL(fp) :: Down_Solar_Radiance = ZERO
-
-    REAL(fp) :: Secant_Down_Angle = 0
-
-    ! Emission model variables
-    REAL(fp) :: Total_OD  = ZERO
-    REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_UP   = ZERO
-    REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_DOWN = ZERO
-    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Rad_UP     = ZERO
-    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Rad_DOWN   = ZERO
-
-    ! Planck radiances
-    REAL(fp)                               :: Planck_Surface    = ZERO
-    REAL(fp), DIMENSION(  0:MAX_N_LAYERS ) :: Planck_Atmosphere = ZERO
-
-    ! Quadrature information
-    REAL(fp), DIMENSION( MAX_N_ANGLES ) :: COS_Angle  = ZERO  ! Gaussian quadrature abscissa
-    REAL(fp), DIMENSION( MAX_N_ANGLES ) :: COS_Weight = ZERO  ! Gaussian quadrature weights
-
-    ! Logical switches
-    LOGICAL :: Diffuse_Surface = .TRUE.
-    LOGICAL :: Scattering_RT   = .FALSE.
-
-
-    !-------------------------------------------------------
-    ! Variables used in the ADA routines
-    !-------------------------------------------------------
-    ! Flag to indicate the following arrays have all been allocated
-    LOGICAL :: mAllocated = .FALSE.
-     
-    REAL(fp), POINTER :: Delta_Tau(:)        => NULL()
-    INTEGER,  POINTER :: Number_Doubling(:)  => NULL()
-
-    ! Forward and backward scattering phase matrices
-    REAL(fp), POINTER :: Pff(:,:,:) => NULL() 
-    REAL(fp), POINTER :: Pbb(:,:,:) => NULL() 
-
-    ! Positive and negative cosine angle Legendre phase functions
-    REAL(fp), POINTER :: Pplus(:,:)  => NULL() 
-    REAL(fp), POINTER :: Pminus(:,:) => NULL() 
-
-    ! Original forward and backward scattering phase matrices.
-    ! These may be slightly negative and, if so, need to be made
-    ! positive and thus adjusted to ensure energy conservation
-    REAL(fp), POINTER :: Off(:,:,:)  => NULL() 
-    REAL(fp), POINTER :: Obb(:,:,:)  => NULL() 
-    
-    ! Normalisation factor and intermediate sum used for original
-    ! phase matrix energy conservation.
-    REAL(fp), POINTER :: n_Factor(:,:)  => NULL() 
-    REAL(fp), POINTER :: sum_fac(:,:)   => NULL() 
-
-    ! Adding-Doubling model variables
-
-    REAL(fp), POINTER :: Inv_Gamma(:,:,:)    => NULL() 
-    REAL(fp), POINTER :: Inv_GammaT(:,:,:)   => NULL() 
-    REAL(fp), POINTER :: Refl_Trans(:,:,:)   => NULL() 
-
-    REAL(fp), POINTER :: s_Layer_Trans(:,:,:)   => NULL() 
-    REAL(fp), POINTER :: s_Layer_Refl(:,:,:)    => NULL() 
-
-    REAL(fp), POINTER :: s_Level_Refl_UP(:,:,:)   => NULL() 
-    REAL(fp), POINTER :: s_Level_Rad_UP(:,:)      => NULL()
-     
-    REAL(fp), POINTER :: s_Layer_Source_UP(:,:)     => NULL() 
-    REAL(fp), POINTER :: s_Layer_Source_DOWN(:,:)   => NULL() 
-
-    REAL(fp), POINTER :: C1(:,:)   => NULL() 
-    REAL(fp), POINTER :: C2(:,:)   => NULL() 
-    REAL(fp), POINTER :: D1(:,:)   => NULL() 
-    REAL(fp), POINTER :: D2(:,:)   => NULL() 
-
-    REAL(fp), POINTER :: Trans(:,:,:,:)     => NULL() 
-    REAL(fp), POINTER :: Refl(:,:,:,:)      => NULL() 
-    REAL(fp), POINTER :: Inv_BeT(:,:,:,:)   => NULL() 
-
-    ! The surface optics forward variables
-    TYPE(CRTM_SOVariables_type) :: SOV
-
-  END TYPE CRTM_RTVariables_type
 
 
 CONTAINS
@@ -203,161 +84,6 @@ CONTAINS
 !################################################################################
 !################################################################################
 
- ! --------------------------------------------------------!
- !  FUNCTION: deallocate structure RTV pointer arrays.     !
- ! --------------------------------------------------------
-  FUNCTION CRTM_Destroy_RTV( RTV,              &  ! Output
-                             RCS_Id,           &  ! Revision control           
-                             Message_Log )     &  ! Error messaging            
-                            RESULT( Error_Status )                             
-    TYPE(CRTM_RTVariables_type),   INTENT(IN OUT) :: RTV
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_RTV'
-    ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Deallocate the pointer members
-    DEALLOCATE( RTV%Delta_Tau, &
-                RTV%Number_Doubling, &
-                RTV%Pff, &
-                RTV%Pbb, &
-                RTV%Pplus,&
-                RTV%Pminus,&
-                RTV%Off,&
-                RTV%Obb,&
-                RTV%n_Factor,&
-                RTV%sum_fac,&
-                RTV%Inv_Gamma,&
-                RTV%Inv_GammaT,&
-                RTV%Refl_Trans,&
-                RTV%s_Layer_Trans,&
-                RTV%s_Layer_Refl,&
-                RTV%s_Level_Refl_UP,&
-                RTV%s_Level_Rad_UP,&
-                RTV%s_Layer_Source_UP,&
-                RTV%s_Layer_Source_DOWN,&
-                RTV%C1,&
-                RTV%C2,&
-                RTV%D1,&
-                RTV%D2,&
-                RTV%Trans,&
-                RTV%Refl,&
-                RTV%Inv_BeT,&
-                STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating RTV structure. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,  &
-                            TRIM(Message), &
-                            Error_Status,  &
-                            Message_Log=Message_Log )
-    END IF
-
-    RTV%mAllocated = .FALSE.
-    
-  END FUNCTION CRTM_Destroy_RTV
-  
- ! --------------------------------------------------------!
- !  FUNCTION: allocate structure RTV pointer arrays.       !
- ! --------------------------------------------------------
-  FUNCTION CRTM_Allocate_RTV( RTV,              &  ! Output
-                              RCS_Id,           &  ! Revision control          
-                              Message_Log )     &  ! Error messaging           
-                            RESULT( Error_Status )                             
-    TYPE(CRTM_RTVariables_type),   INTENT(IN OUT) :: RTV
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_RTV'
-    ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Perform the allocation
-    ALLOCATE( RTV%Delta_Tau      (MAX_N_LAYERS), &
-              RTV%Number_Doubling(MAX_N_LAYERS), &
-              RTV%Pff(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS), &
-              RTV%Pbb(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS), &
-              RTV%Pplus (0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES),&
-              RTV%Pminus(0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES),&
-              RTV%Off(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Obb(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%n_Factor (MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%sum_fac(0:MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Inv_Gamma (MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Inv_GammaT(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Refl_Trans(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Layer_Trans(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Layer_Refl (MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Level_Refl_UP(MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_N_LAYERS),&
-              RTV%s_Level_Rad_UP(MAX_N_ANGLES, 0:MAX_N_LAYERS),&
-              RTV%s_Layer_Source_UP  (MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Layer_Source_DOWN(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%C1(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%C2(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%D1(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%D2(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Trans  (MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS),&
-              RTV%Refl   (MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS),&
-              RTV%Inv_BeT(MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_NUMBER_DOUBLING, MAX_N_LAYERS),&
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating RTV data arrays. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    RTV%mAllocated = .TRUE.
-    
-!    RTV%Number_Doubling     = 0                 
-!    RTV%Delta_Tau           = ZERO                    
-!    RTV%Pff                 = ZERO                          
-!    RTV%Pbb                 = ZERO                          
-!    RTV%Pplus               = ZERO                        
-!    RTV%Pminus              = ZERO                       
-!    RTV%Off                 = ZERO                          
-!    RTV%Obb                 = ZERO                          
-!    RTV%n_Factor            = ZERO                     
-!    RTV%sum_fac             = ZERO                      
-!    RTV%Inv_Gamma           = ZERO                    
-!    RTV%Inv_GammaT          = ZERO                   
-!    RTV%Refl_Trans          = ZERO                   
-!    RTV%s_Layer_Trans       = ZERO                
-!    RTV%s_Layer_Refl        = ZERO                 
-!    RTV%s_Level_Refl_UP     = ZERO              
-!    RTV%s_Level_Rad_UP      = ZERO               
-!    RTV%s_Layer_Source_UP   = ZERO            
-!    RTV%s_Layer_Source_DOWN = ZERO          
-!    RTV%C1                  = ZERO                           
-!    RTV%C2                  = ZERO                           
-!    RTV%D1                  = ZERO                           
-!    RTV%D2                  = ZERO                           
-!    RTV%Trans               = ZERO                        
-!    RTV%Refl                = ZERO                         
-!    RTV%Inv_BeT             = ZERO                      
-                 
-  END FUNCTION CRTM_Allocate_RTV
 
   SUBROUTINE CRTM_Emission(n_Layers, & ! Input  number of atmospheric layers
                            n_Angles, & ! number angles used in SfcOptics
@@ -699,6 +425,7 @@ CONTAINS
       END SUBROUTINE CRTM_Emission_AD 
 !
 !
+!
    SUBROUTINE CRTM_ADA(n_Layers, & ! Input  number of atmospheric layers
                               w, & ! Input  layer scattering albedo
                               g, & ! Input  layer asymmetry factor
@@ -706,6 +433,7 @@ CONTAINS
               cosmic_background, & ! Input  cosmic background radiance
                      emissivity, & ! Input  surface emissivity
                    reflectivity, & ! Input  surface reflectivity matrix 
+            direct_reflectivity, & ! Input  surface direct reflectivity 
                             RTV)   ! IN/Output upward radiance and others
 ! ------------------------------------------------------------------------- !
 ! FUNCTION:                                                                 !
@@ -722,7 +450,7 @@ CONTAINS
       INTEGER nZ
       TYPE(CRTM_RTVariables_type), INTENT( INOUT ) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity, direct_reflectivity
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity 
       REAL (fp), INTENT(IN) ::  cosmic_background
 
@@ -732,10 +460,17 @@ CONTAINS
    !         refl: reflection, up: upward, down: downward                !
    ! --------------------------------------------------------------------!
       REAL (fp), DIMENSION(RTV%n_Angles, RTV%n_Angles) :: temporal_matrix
-
       REAL (fp), DIMENSION( RTV%n_Angles, n_Layers) :: refl_down 
+      REAL (fp), DIMENSION(0:n_Layers) :: total_opt
       INTEGER :: i, j, k, Error_Status
+      CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_ADA'
+      CHARACTER(256) :: Message
 !
+       total_opt(0) = ZERO
+       DO k = 1, n_Layers
+         total_opt(k) = total_opt(k-1) + T_OD(k)
+       END DO
+       
        nZ = RTV%n_Angles
        RTV%s_Layer_Trans = ZERO
        RTV%s_Layer_Refl = ZERO
@@ -745,7 +480,15 @@ CONTAINS
        RTV%s_Layer_Source_DOWN = ZERO
 !
        RTV%s_Level_Refl_UP(1:RTV%n_Angles,1:RTV%n_Angles,n_Layers)=reflectivity(1:RTV%n_Angles,1:RTV%n_Angles)
-       RTV%s_Level_Rad_UP(1:RTV%n_Angles,n_Layers ) = emissivity(1:RTV%n_Angles)*RTV%Planck_Surface
+       
+       IF( RTV%mth_Azi == 0 ) THEN
+         RTV%s_Level_Rad_UP(1:RTV%n_Angles,n_Layers ) = emissivity(1:RTV%n_Angles)*RTV%Planck_Surface
+       END IF
+       
+       IF( RTV%Solar_Flag_true ) THEN
+         RTV%s_Level_Rad_UP(1:nZ,n_Layers ) = RTV%s_Level_Rad_UP(1:nZ,n_Layers )+direct_reflectivity(1:nZ)* &
+           RTV%COS_SUN*RTV%Solar_irradiance/PI*exp(-total_opt(n_Layers)/RTV%COS_SUN)       
+       END IF
 !
 !         UPWARD ADDING LOOP STARTS FROM BOTTOM LAYER TO ATMOSPHERIC TOP LAYER.
        DO 10 k = n_Layers, 1, -1
@@ -758,14 +501,10 @@ CONTAINS
        !    transmission, reflection, and source functions.           !
        !  ----------------------------------------------------------- !
 
-!
-       call CRTM_Doubling_layer(RTV%n_Streams,RTV%n_Angles,k,w(k),g(k),T_OD(k),RTV%COS_Angle, & ! Input
-              RTV%COS_Weight,RTV%Pff(:,:,k),RTV%Pbb(:,:,k),        & ! Input
-              RTV%Planck_Atmosphere(k), & ! Input 
-              RTV)                       ! Output
-!
-!         Adding method to add the layer to the present level
-
+       CALL CRTM_AMOM_layer(RTV%n_Streams,RTV%n_Angles,k,w(k),T_OD(k),total_opt(k-1),RTV%COS_Angle, & ! Input
+        RTV%COS_Weight,RTV%Pff(:,:,k),RTV%Pbb(:,:,k),        & ! Input
+        RTV%Planck_Atmosphere(k),                            & ! Input
+        RTV)  
        !  ----------------------------------------------------------- !
        !    Adding method to add the layer to the present level       !
        !    to compute upward radiances and reflection matrix         !
@@ -779,6 +518,14 @@ CONTAINS
           ENDDO
 
          RTV%Inv_Gamma(1:RTV%n_Angles,1:RTV%n_Angles,k) = matinv(temporal_matrix, Error_Status)
+         IF( Error_Status /= SUCCESS  ) THEN
+         WRITE( Message,'("Error in matrix inversion matinv(temporal_matrix, Error_Status) ")' ) 
+          CALL Display_Message( ROUTINE_NAME, &                                                    
+                                TRIM(Message), &                                                   
+                                Error_Status )                                          
+          RETURN                                                                                    
+         END IF
+         
          RTV%Inv_GammaT(1:RTV%n_Angles,1:RTV%n_Angles,k) =   &
           matmul(RTV%s_Layer_Trans(1:RTV%n_Angles,1:RTV%n_Angles,k), RTV%Inv_Gamma(1:RTV%n_Angles,1:RTV%n_Angles,k))
          refl_down(1:RTV%n_Angles,k) = matmul(RTV%s_Level_Refl_UP(1:RTV%n_Angles,1:RTV%n_Angles,k),  &
@@ -815,9 +562,11 @@ CONTAINS
    10     CONTINUE
 !
 !  Adding reflected cosmic background radiation
+   IF( RTV%mth_Azi == 0 ) THEN
       DO i = 1, RTV%n_Angles 
       RTV%s_Level_Rad_UP(i,0)=RTV%s_Level_Rad_UP(i,0)+sum(RTV%s_Level_Refl_UP(i,1:RTV%n_Angles,0))*cosmic_background
       ENDDO
+   END IF
 !
      !   Forward part End
 
@@ -832,6 +581,7 @@ CONTAINS
                  cosmic_background, & ! Input  cosmic background radiance
                         emissivity, & ! Input  surface emissivity
                                       !   reflectivity is stored in RTV !
+               direct_reflectivity, & ! Input  direct reflectivity
                                RTV, & ! Input  structure containing forward part results 
               Planck_Atmosphere_TL, & ! Input  tangent-linear atmospheric layer Planck radiance 
                  Planck_Surface_TL, & ! Input  TL surface Planck radiance
@@ -840,6 +590,7 @@ CONTAINS
                            T_OD_TL, & ! Input  TL layer optical depth
                      emissivity_TL, & ! Input  TL surface emissivity
                    reflectivity_TL, & ! Input  TL  reflectivity
+            direct_reflectivity_TL, & ! Input  TL  direct reflectivity
                             Pff_TL, & ! Input  TL forward phase matrix
                             Pbb_TL, & ! Input  TL backward phase matrix
                          s_rad_up_TL) ! Output TL upward radiance 
@@ -860,7 +611,7 @@ CONTAINS
       INTEGER, INTENT(IN) :: n_Layers
       TYPE(CRTM_RTVariables_type), INTENT(IN) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,direct_reflectivity
       REAL (fp), INTENT(IN) ::  cosmic_background
 
       REAL (fp),INTENT(IN),DIMENSION( :,:,: ) ::  Pff_TL, Pbb_TL
@@ -870,6 +621,7 @@ CONTAINS
       REAL (fp),INTENT(IN),DIMENSION( : ) ::  emissivity_TL
       REAL (fp),INTENT(IN),DIMENSION( :,: ) :: reflectivity_TL 
       REAL (fp),INTENT(INOUT),DIMENSION( : ) :: s_rad_up_TL 
+      REAL (fp),INTENT(INOUT),DIMENSION( : ) :: direct_reflectivity_TL
    ! -------------- internal variables --------------------------------- !
    !  Abbreviations:                                                     !
    !      s: scattering, rad: radiance, trans: transmission,             !
@@ -882,11 +634,32 @@ CONTAINS
  
       REAL (fp), DIMENSION( RTV%n_Angles, RTV%n_Angles ) :: s_trans_TL,s_refl_TL,Refl_Trans_TL 
       REAL (fp), DIMENSION( RTV%n_Angles, RTV%n_Angles ) :: s_refl_up_TL,Inv_Gamma_TL,Inv_GammaT_TL
-      INTEGER :: i, j, k
+      REAL (fp), DIMENSION(0:n_Layers) :: total_opt, total_opt_TL
+      INTEGER :: i, j, k, nZ
 !
+       nZ = RTV%n_Angles
+       
+       total_opt(0) = ZERO
+       total_opt_TL(0) = ZERO
+       DO k = 1, n_Layers
+         total_opt(k) = total_opt(k-1) + T_OD(k)
+         total_opt_TL(k) = total_opt_TL(k-1) + T_OD_TL(k)
+       END DO
+       
        Refl_Trans_TL = ZERO
+       s_rad_up_TL = ZERO
        s_refl_up_TL = reflectivity_TL
+       IF( RTV%mth_Azi == 0 ) THEN
        s_rad_up_TL = emissivity_TL * RTV%Planck_Surface + emissivity * Planck_Surface_TL
+       END IF
+ 
+       IF( RTV%Solar_Flag_true ) THEN
+         s_rad_up_TL = s_rad_up_TL+direct_reflectivity_TL*RTV%COS_SUN*RTV%Solar_irradiance/PI  &
+                     * exp(-total_opt(n_Layers)/RTV%COS_SUN) &
+                     - direct_reflectivity * RTV%Solar_irradiance/PI  &
+                     * total_opt_TL(n_Layers) * exp(-total_opt(n_Layers)/RTV%COS_SUN)
+       END IF 
+     
        DO 10 k = n_Layers, 1, -1
          s_source_up_TL = ZERO
          s_source_down_TL = ZERO
@@ -902,15 +675,14 @@ CONTAINS
        !    CALL Doubling algorithm to computing forward and tagent   !
        !    layer transmission, reflection, and source functions.     !
        !  ----------------------------------------------------------- !
-        
-      call CRTM_Doubling_layer_TL(RTV%n_Streams,RTV%n_Angles,k,w(k),g(k),T_OD(k), & !Input
-         RTV%COS_Angle(1:RTV%n_Angles),RTV%COS_Weight(1:RTV%n_Angles),            & !Input
-         RTV%Pff(1:RTV%n_Angles,1:RTV%n_Angles,k),                                & !Input
-         RTV%Pbb(1:RTV%n_Angles,1:RTV%n_Angles,k),RTV%Planck_Atmosphere(k),       & !Input
-         w_TL(k),g_TL(k),T_OD_TL(k),Pff_TL(:,:,k),     & !Input
-         Pbb_TL(:,:,k),Planck_Atmosphere_TL(k),RTV,     & !Input
-         s_trans_TL,s_refl_TL,s_source_up_TL,s_source_down_TL)                      !Output
 
+      call CRTM_AMOM_layer_TL(RTV%n_Streams,RTV%n_Angles,k,w(k),T_OD(k),total_opt(k-1), & !Input
+         RTV%COS_Angle(1:RTV%n_Angles),RTV%COS_Weight(1:RTV%n_Angles)                   , & !Input
+         RTV%Pff(:,:,k), RTV%Pbb(:,:,k),RTV%Planck_Atmosphere(k)                        , & !Input
+         w_TL(k),T_OD_TL(k),total_opt_TL(k-1),Pff_TL(:,:,k)                             , & !Input
+         Pbb_TL(:,:,k),Planck_Atmosphere_TL(k),RTV                                      , & !Input
+         s_trans_TL,s_refl_TL,s_source_up_TL,s_source_down_TL)                              !Output
+   
 !         Adding method
          temporal_matrix_TL = -matmul(s_refl_up_TL,RTV%s_Layer_Refl(1:RTV%n_Angles,1:RTV%n_Angles,k))  &
                             - matmul(RTV%s_Level_Refl_UP(1:RTV%n_Angles,1:RTV%n_Angles,k),s_refl_TL)
@@ -936,6 +708,7 @@ CONTAINS
                      +matmul(RTV%Inv_GammaT(1:RTV%n_Angles,1:RTV%n_Angles,k),Refl_Trans_TL)
 
          Refl_Trans_TL = ZERO
+         
       ELSE
 
          DO i = 1, RTV%n_Angles
@@ -969,9 +742,11 @@ CONTAINS
    10     CONTINUE
 !
 !  Adding reflected cosmic background radiation
+    IF( RTV%mth_Azi == 0 ) THEN
       DO i = 1, RTV%n_Angles 
       s_rad_up_TL(i)=s_rad_up_TL(i)+sum(s_refl_up_TL(i,:))*cosmic_background
       ENDDO
+    END IF
 !
       RETURN
       END SUBROUTINE CRTM_ADA_TL
@@ -984,6 +759,7 @@ CONTAINS
                  cosmic_background, & ! Input  cosmic background radiance
                         emissivity, & ! Input  surface emissivity
                                       !   surface reflectivity is stored in RTV !
+               direct_reflectivity, & ! surface direct reflectivity
                                RTV, & ! Input  structure containing forward results 
                        s_rad_up_AD, & ! Input  adjoint upward radiance 
               Planck_Atmosphere_AD, & ! Output AD atmospheric layer Planck radiance
@@ -993,6 +769,7 @@ CONTAINS
                            T_OD_AD, & ! Output AD layer optical depth
                      emissivity_AD, & ! Output AD surface emissivity
                    reflectivity_AD, & ! Output AD surface reflectivity
+            direct_reflectivity_AD, & ! Output AD surface direct reflectivity
                             Pff_AD, & ! Output AD forward phase matrix
                             Pbb_AD)   ! Output AD backward phase matrix
 ! ------------------------------------------------------------------------- !
@@ -1012,14 +789,14 @@ CONTAINS
       INTEGER, INTENT(IN) :: n_Layers
       TYPE(CRTM_RTVariables_type), INTENT(IN) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,direct_reflectivity
       REAL (fp), INTENT(IN) ::  cosmic_background
 
       REAL (fp),INTENT(INOUT),DIMENSION( :,:,: ) ::  Pff_AD, Pbb_AD
       REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  g_AD,w_AD,T_OD_AD
       REAL (fp),INTENT(INOUT),DIMENSION( 0: ) ::  Planck_Atmosphere_AD
       REAL (fp),INTENT(INOUT) ::  Planck_Surface_AD
-      REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  emissivity_AD
+      REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  emissivity_AD,direct_reflectivity_AD
       REAL (fp),INTENT(INOUT),DIMENSION( :,: ) :: reflectivity_AD 
       REAL (fp),INTENT(INOUT),DIMENSION( : ) :: s_rad_up_AD 
    ! -------------- internal variables --------------------------------- !
@@ -1034,23 +811,35 @@ CONTAINS
  
       REAL (fp), DIMENSION( RTV%n_Angles, RTV%n_Angles) :: s_trans_AD,s_refl_AD,Refl_Trans_AD
       REAL (fp), DIMENSION( RTV%n_Angles, RTV%n_Angles) :: s_refl_up_AD,Inv_Gamma_AD,Inv_GammaT_AD
-      REAL (fp) :: sum_s_AD, sums_AD
-      INTEGER :: i, j, k
+      REAL (fp) :: sum_s_AD, sums_AD, xx
+      REAL (fp), DIMENSION(0:n_Layers) :: total_opt, total_opt_AD
+      INTEGER :: i, j, k,nZ
+!
+      nZ = RTV%n_Angles
+      
+       total_opt_AD = ZERO
+       total_opt(0) = ZERO
+       DO k = 1, n_Layers
+         total_opt(k) = total_opt(k-1) + T_OD(k)
+       END DO
 !
        s_trans_AD = ZERO
        Planck_Atmosphere_AD = ZERO
        Planck_Surface_AD = ZERO
+       s_refl_up_AD = ZERO
 
       Pff_AD = ZERO
       Pbb_AD = ZERO
-      T_OD_AD = ZERO
+!      T_OD_AD = ZERO
 !  Adding reflected cosmic background radiation
+
       DO i = 1, RTV%n_Angles 
       sum_s_AD = s_rad_up_AD(i)*cosmic_background
       DO j = 1, RTV%n_Angles 
       s_refl_up_AD(i,j) = sum_s_AD
       ENDDO
       ENDDO
+
 !
        DO 10 k = 1, n_Layers 
        s_source_up_AD = ZERO
@@ -1104,12 +893,11 @@ CONTAINS
        !    layer transmission, reflection, and source functions.     !
        !  ----------------------------------------------------------- !
 
-      call CRTM_Doubling_layer_AD(RTV%n_Streams,RTV%n_Angles,k,w(k),g(k),T_OD(k),      & !Input
-         RTV%COS_Angle,RTV%COS_Weight,RTV%Pff(:,:,k),RTV%Pbb(:,:,k),RTV%Planck_Atmosphere(k),    & !Input
-         s_trans_AD,s_refl_AD,s_source_up_AD,   & 
-         s_source_down_AD,RTV,w_AD(k),g_AD(k),T_OD_AD(k),Pff_AD(:,:,k), & 
-         Pbb_AD(:,:,k),Planck_Atmosphere_AD(k))  !Output
-!
+      call CRTM_AMOM_layer_AD(RTV%n_Streams,RTV%n_Angles,k,w(k),T_OD(k),total_opt(k-1)      , & !Input
+         RTV%COS_Angle,RTV%COS_Weight,RTV%Pff(:,:,k),RTV%Pbb(:,:,k),RTV%Planck_Atmosphere(k), & !Input
+         s_trans_AD,s_refl_AD,s_source_up_AD,s_source_down_AD,RTV,w_AD(k),T_OD_AD(k)        , &
+         total_opt_AD(k-1),Pff_AD(:,:,k),Pbb_AD(:,:,k),Planck_Atmosphere_AD(k))  !Output
+
       ELSE
         DO i = 1, RTV%n_Angles 
         DO j = 1, RTV%n_Angles 
@@ -1150,22 +938,40 @@ CONTAINS
       ENDIF
    10     CONTINUE
 
-      emissivity_AD = s_rad_up_AD * RTV%Planck_Surface
-      Planck_Surface_AD = sum(emissivity(:) * s_rad_up_AD(:) )
+! 
+
+       IF( RTV%Solar_Flag_true ) THEN         
+         xx = RTV%Solar_irradiance/PI * exp(-total_opt(n_Layers)/RTV%COS_SUN)
+         total_opt_AD(n_Layers) = total_opt_AD(n_Layers)  &
+            - xx*sum(direct_reflectivity(1:RTV%n_Angles)*s_rad_up_AD(1:RTV%n_Angles))
+         direct_reflectivity_AD = direct_reflectivity_AD + s_rad_up_AD * RTV%COS_SUN * xx
+       END IF 
+ 
+        emissivity_AD = s_rad_up_AD * RTV%Planck_Surface
+        Planck_Surface_AD = sum(emissivity(:) * s_rad_up_AD(:) )
+
+     
       reflectivity_AD = s_refl_up_AD
 !
        s_rad_up_AD = ZERO
        s_refl_up_AD = ZERO
+ 
+       
+       DO k = n_Layers, 1, -1
+         T_OD_AD(k) = T_OD_AD(k) + total_opt_AD(k)
+         total_opt_AD(k-1) = total_opt_AD(k-1) + total_opt_AD(k)
+       END DO
+       
       RETURN
       END SUBROUTINE CRTM_ADA_AD
 !
 !
-      SUBROUTINE CRTM_Doubling_layer(n_streams, & ! Input, number of streams
-                                          NANG, & ! Input, number of angles
+      SUBROUTINE CRTM_AMOM_layer(    n_streams, & ! Input, number of streams
+                                            nZ, & ! Input, number of angles
                                             KL, & ! Input, KL-th layer 
                                  single_albedo, & ! Input, single scattering albedo
-                              asymmetry_factor, & ! Input, asymmetry factor
                                  optical_depth, & ! Input, layer optical depth
+                                     total_opt, & ! Input, accumulated optical depth from the top to current layer top
                                      COS_Angle, & ! Input, COSINE of ANGLES
                                     COS_Weight, & ! Input, GAUSSIAN Weights
                                             ff, & ! Input, Phase matrix (forward part)
@@ -1178,382 +984,930 @@ CONTAINS
 !    at the top and bottom of the layer.
 !
 !   Method and References
-!   It is a common doubling method and its theoretical basis is referred to
-!   Hansen, J. E., 1971: Multiple scattering of polarized light in 
-!   planetary atmosphere. Part I. The doubling method, J. ATmos. Sci., 28, 120-125.
+!    The transmittance and reflectance matrices is further derived from 
+!    matrix operator method. The matrix operator method is referred to the paper by
+!
+!    Weng, F., and Q. Liu, 2003: Satellite Data Assimilation in Numerical Weather Prediction
+!    Model: Part 1: Forward Radiative Transfer and Jacobian Modeling in Cloudy Atmospheres,
+!    J. Atmos. Sci., 60, 2633-2646.
 !
 !   see also ADA method.
 !   Quanhua Liu
 !   Quanhua.Liu@noaa.gov
 ! ----------------------------------------------------------------------------------------
      IMPLICIT NONE
-     INTEGER, INTENT(IN) :: n_streams,NANG,KL
+     INTEGER, INTENT(IN) :: n_streams,nZ,KL
      TYPE(CRTM_RTVariables_type), INTENT( INOUT ) :: RTV
      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
      REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-     REAL(fp) :: single_albedo,asymmetry_factor,optical_depth,Planck_Func
+     REAL(fp) :: single_albedo,optical_depth,Planck_Func,total_opt
 
      ! internal variables
-     REAL(fp), DIMENSION(NANG,NANG) :: term2,term3,term4,trans,refl
-     REAL(fp), DIMENSION(NANG) :: C1, C2, source_up,source_down 
-     REAL(fp) :: s, c
-     INTEGER :: i,j,k,L
+     REAL(fp), DIMENSION(nZ,nZ) :: trans, refl, tempo
+     REAL(fp) :: s, c, xx
+     INTEGER :: i,j,N2,N2_1
      INTEGER :: Error_Status
-!
-
-      !  Forward part beginning
-
-      IF( optical_depth < OPTICAL_DEPTH_THRESHOLD ) THEN
-        RTV%s_Layer_Trans(1:NANG,1:NANG,KL) = ZERO
-        DO i = 1, NANG
-          RTV%s_Layer_Trans(i,i,KL) = ONE
+     REAL(fp) :: EXPfactor,Sfactor,s_transmittance,Solar(2*nZ),V0(2*nZ,2*nZ),Solar1(2*nZ)
+     REAL(fp) :: V1(2*nZ,2*nZ),Sfac2,source_up(nZ),source_down(nZ)    
+     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AMOM_layer'
+     CHARACTER(256) :: Message
+     !
+     ! for small layer optical depth, single scattering is applied.  
+     IF( optical_depth < DELTA_OPTICAL_DEPTH ) THEN
+        s = optical_depth * single_albedo
+        DO i = 1, nZ
+          RTV%Thermal_C(i,KL) = ZERO
+          c = s/COS_Angle(i)
+          DO j = 1, nZ
+            RTV%s_Layer_Refl(i,j,KL) = c * bb(i,j) * COS_Weight(j)
+            RTV%s_Layer_Trans(i,j,KL) = c * ff(i,j) * COS_Weight(j)
+            IF( i == j ) THEN
+              RTV%s_Layer_Trans(i,i,KL) = RTV%s_Layer_Trans(i,i,KL) + &
+                ONE - optical_depth/COS_Angle(i)
+            END IF
+          IF( RTV%mth_Azi == 0 ) THEN
+            RTV%Thermal_C(i,KL) = RTV%Thermal_C(i,KL) + &
+              ( RTV%s_Layer_Refl(i,j,KL) + RTV%s_Layer_Trans(i,j,KL) )
+          END IF
+          ENDDO
+         
+          IF( RTV%mth_Azi == 0 ) THEN
+          RTV%s_Layer_Source_UP(i,KL) = ( ONE - RTV%Thermal_C(i,KL) ) * Planck_Func
+          RTV%s_Layer_Source_DOWN(i,KL) = RTV%s_Layer_Source_UP(i,KL)
+          END IF
         ENDDO
-        RTV%s_Layer_Refl(1:NANG,1:NANG,KL) = ZERO 
-        RTV%s_Layer_Source_DOWN(1:NANG,KL) = ZERO 
-        RTV%s_Layer_Source_UP(1:NANG,KL) = ZERO 
         RETURN
-      ENDIF
-
-        ! -------------------------------------------------------------- !
-        !  Determining number of doubling processes and constructing     !
-        !  initial transmission and reflection matrix 
-        !  --------------------------------------------------------------!
-        RTV%Number_Doubling(KL)=INT(log(optical_depth/DELTA_OPTICAL_DEPTH)/log(TWO))+1
-        IF( RTV%Number_Doubling(KL) < 1 ) RTV%Number_Doubling(KL) = 1
-        RTV%Delta_Tau(KL) = optical_depth/(TWO**RTV%Number_Doubling(KL))
-        IF(RTV%Number_Doubling(KL) > MAX_NUMBER_DOUBLING) THEN
-           RTV%Number_Doubling(KL)=MAX_NUMBER_DOUBLING
-           RTV%Delta_Tau(KL) = DELTA_OPTICAL_DEPTH
-        ENDIF
-        s = RTV%Delta_Tau(KL) * single_albedo
-        DO i = 1, NANG
-        c = s/COS_Angle(i)
-        DO j = 1, NANG
-        RTV%Refl(i,j,0,KL) = c * bb(i,j) * COS_Weight(j)
-        RTV%Trans(i,j,0,KL) = c * ff(i,j) * COS_Weight(j)
-        ENDDO
-        RTV%Trans(i,i,0,KL) = RTV%Trans(i,i,0,KL) + ONE - RTV%Delta_Tau(KL)/COS_Angle(i)
-        ENDDO
-
-        ! -------------------------------------------------------------- !
-        !  Doubling divided sub-layers                                   !
-        !  --------------------------------------------------------------!
-        DO L = 1, RTV%Number_Doubling(KL)
-          DO i = 1, NANG
-          DO j = 1, NANG
-          term4(i,j) = ZERO
-          DO k = 1, NANG
-          term4(i,j) = term4(i,j) - RTV%Refl(i,k,L-1,KL)*RTV%Refl(k,j,L-1,KL)
-          ENDDO
-          ENDDO
-          term4(i,i) = term4(i,i) + ONE
-          ENDDO
-
-        RTV%Inv_BeT(1:NANG,1:NANG,L,KL) = matinv(term4, Error_Status)
-        IF( Error_Status /= SUCCESS ) THEN
-          print *,' error at matinv in CRTM_Doubling_layer '
-          RTV%s_Layer_Trans(1:NANG,1:NANG,KL) = ZERO
-          DO i = 1, NANG
-            RTV%s_Layer_Trans(i,i,KL) = exp(-optical_depth/COS_Angle(i)) 
-          ENDDO
-          RTV%s_Layer_Refl(1:NANG,1:NANG,KL) = ZERO 
-          RTV%s_Layer_Source_DOWN(1:NANG,KL) = ZERO 
-          RTV%s_Layer_Source_UP(1:NANG,KL) = ZERO 
-          RETURN
-        ENDIF
-
-        term2 = matmul(RTV%Trans(1:NANG,1:NANG,L-1,KL), RTV%Inv_BeT(1:NANG,1:NANG,L,KL))
-        term3 = matmul(term2, RTV%Refl(1:NANG,1:NANG,L-1,KL))
-        term3 = matmul(term3, RTV%Trans(1:NANG,1:NANG,L-1,KL))
- 
-        RTV%Refl(1:NANG,1:NANG,L,KL) = RTV%Refl(1:NANG,1:NANG,L-1,KL) + term3
-        RTV%Trans(1:NANG,1:NANG,L,KL) = matmul(term2, RTV%Trans(1:NANG,1:NANG,L-1,KL))
-        ENDDO
-
-        trans = RTV%Trans(1:NANG,1:NANG,RTV%Number_Doubling(KL),KL)
-        refl  = RTV%Refl(1:NANG,1:NANG,RTV%Number_Doubling(KL),KL)
-!
-!   computing source function at up and downward directions.
-      DO i = 1, NANG
-        C1(i) = ZERO
-        C2(i) = ZERO
-       DO j = 1, n_Streams 
-        C1(i) = C1(i) + trans(i,j) 
-        C2(i) = C2(i) + refl(i,j) 
+     END IF
+     !
+     ! for numerical stability, 
+     IF( single_albedo < max_albedo ) THEN
+       s = single_albedo
+     ELSE
+       s = max_albedo
+     END IF
+     !
+     ! building phase matrices
+     DO i = 1, nZ
+       c = s/COS_Angle(i)
+       DO j = 1, nZ
+         RTV%PM(i,j,KL) = c * bb(i,j) * COS_Weight(j)
+         RTV%PP(i,j,KL) = c * ff(i,j) * COS_Weight(j)
        ENDDO
-      IF(i == NANG .AND. NANG == (n_Streams+1)) THEN
-        C1(i) = C1(i)+trans(NANG,NANG)
-      ENDIF
-      ENDDO
+         RTV%PP(i,i,KL) = RTV%PP(i,i,KL) - ONE/COS_Angle(i)
+     ENDDO
+     RTV%PPM(1:nZ,1:nZ,KL) = RTV%PP(1:nZ,1:nZ,KL) - RTV%PM(1:nZ,1:nZ,KL)
+     RTV%i_PPM(1:nZ,1:nZ,KL) = matinv( RTV%PPM(1:nZ,1:nZ,KL), Error_Status )
+     IF( Error_Status /= SUCCESS  ) THEN
+       WRITE( Message,'("Error in matrix inversion matinv( RTV%PPM(1:nZ,1:nZ,KL), Error_Status ) ")' ) 
+       CALL Display_Message( ROUTINE_NAME, &                                                    
+                             TRIM(Message), &                                                   
+                             Error_Status )                                          
+       RETURN                                                                                    
+     END IF
+         
+     RTV%PPP(1:nZ,1:nZ,KL) = RTV%PP(1:nZ,1:nZ,KL) + RTV%PM(1:nZ,1:nZ,KL)
+     RTV%HH(1:nZ,1:nZ,KL) = matmul( RTV%PPM(1:nZ,1:nZ,KL), RTV%PPP(1:nZ,1:nZ,KL) )   
+     !
+     ! save phase element RTV%HH, call ASYMTX for calculating eigenvalue and vectors.
+     tempo = RTV%HH(1:nZ,1:nZ,KL)
+     CALL ASYMTX(tempo,nZ,nZ,nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL),Error_Status)
+     DO i = 1, nZ
+       IF( RTV%EigVa(i,KL) > ZERO ) THEN         
+         RTV%EigValue(i,KL) = sqrt( RTV%EigVa(i,KL) )
+       ELSE
+         RTV%EigValue(i,KL) = ZERO
+       END IF
+     END DO
+     
+     DO i = 1, nZ
+       DO j = 1, nZ
+         RTV%EigVeVa(i,j,KL) = RTV%EigVe(i,j,KL) * RTV%EigValue(j,KL)
+       END DO
+     END DO       
+     RTV%EigVeF(1:nZ,1:nZ,KL) = matmul( RTV%i_PPM(1:nZ,1:nZ,KL), RTV%EigVeVa(1:nZ,1:nZ,KL) )
+     !
+     ! compute layer reflection, transmission and source function
+     RTV%Gp(1:nZ,1:nZ,KL) = ( RTV%EigVe(1:nZ,1:nZ,KL) + RTV%EigVeF(1:nZ,1:nZ,KL) )/2.0_fp
+     RTV%Gm(1:nZ,1:nZ,KL) = ( RTV%EigVe(1:nZ,1:nZ,KL) - RTV%EigVeF(1:nZ,1:nZ,KL) )/2.0_fp
+     RTV%i_Gm(1:nZ,1:nZ,KL) = matinv( RTV%Gm(1:nZ,1:nZ,KL), Error_Status)
 
-      DO i = 1, NANG
-        source_up(i) = (ONE-C1(i)-C2(i))*Planck_Func
-        source_down(i) = source_up(i)
-      ENDDO
+     IF( Error_Status /= SUCCESS  ) THEN
+       WRITE( Message,'("Error in matrix inversion matinv( RTV%Gm(1:nZ,1:nZ,KL), Error_Status) ")' ) 
+       CALL Display_Message( ROUTINE_NAME, &                                                    
+                             TRIM(Message), &                                                   
+                             Error_Status )                                          
+       RETURN                                                                                    
+     END IF             
+     !
+     DO i = 1, nZ
+       xx = RTV%EigValue(i,KL)*optical_depth
+       RTV%Exp_x(i,KL) = exp(-xx)
+     END DO
+     !
+     DO i = 1, nZ
+       DO j = 1, nZ
+         RTV%A1(i,j,KL) = RTV%Gp(i,j,KL) * RTV%Exp_x(j,KL)
+         RTV%A4(i,j,KL) = RTV%Gm(i,j,KL) * RTV%Exp_x(j,KL)
+       END DO
+     END DO
+     !
+     RTV%A2(1:nZ,1:nZ,KL) = matmul( RTV%i_Gm(1:nZ,1:nZ,KL), RTV%A1(1:nZ,1:nZ,KL) )
+     RTV%A3(1:nZ,1:nZ,KL) = matmul( RTV%Gp(1:nZ,1:nZ,KL), RTV%A2(1:nZ,1:nZ,KL) )
+     RTV%A5(1:nZ,1:nZ,KL) = matmul( RTV%A1(1:nZ,1:nZ,KL), RTV%A2(1:nZ,1:nZ,KL) )
+     RTV%A6(1:nZ,1:nZ,KL) = matmul( RTV%A4(1:nZ,1:nZ,KL), RTV%A2(1:nZ,1:nZ,KL) )
+     RTV%Gm_A5(1:nZ,1:nZ,KL) = RTV%Gm(1:nZ,1:nZ,KL) - RTV%A5(1:nZ,1:nZ,KL)     
+     RTV%i_Gm_A5(1:nZ,1:nZ,KL) = matinv(RTV%Gm_A5(1:nZ,1:nZ,KL), Error_Status)
+     IF( Error_Status /= SUCCESS  ) THEN
+       WRITE( Message,'("Error in matrix inversion matinv(RTV%Gm_A5(1:nZ,1:nZ,KL), Error_Status) ")' ) 
+       CALL Display_Message( ROUTINE_NAME, &                                                    
+                             TRIM(Message), &                                                   
+                             Error_Status )                                          
+       RETURN                                                                                    
+     END IF
+     trans = matmul( RTV%A4(1:nZ,1:nZ,KL) - RTV%A3(1:nZ,1:nZ,KL), RTV%i_Gm_A5(1:nZ,1:nZ,KL) ) 
+     refl = matmul( RTV%Gp(1:nZ,1:nZ,KL) - RTV%A6(1:nZ,1:nZ,KL), RTV%i_Gm_A5(1:nZ,1:nZ,KL) )
+     !
+     ! post processing  
+     RTV%s_Layer_Trans(1:nZ,1:nZ,KL) = trans(:,:)
+     RTV%s_Layer_Refl(1:nZ,1:nZ,KL) = refl(:,:)
+     RTV%s_Layer_Source_UP(:,KL) = ZERO
+     IF( RTV%mth_Azi == 0 ) THEN
+       DO i = 1, nZ
+         RTV%Thermal_C(i,KL) = ZERO
+         DO j = 1, n_Streams
+           RTV%Thermal_C(i,KL) = RTV%Thermal_C(i,KL) + (trans(i,j) + refl(i,j) )
+         ENDDO
+         IF ( i == nZ .AND. nZ == (n_Streams+1) ) THEN
+           RTV%Thermal_C(i,KL) = RTV%Thermal_C(i,KL) + trans(nZ,nZ)
+         END IF
+         RTV%s_Layer_Source_UP(i,KL) = ( ONE - RTV%Thermal_C(i,KL) ) * Planck_Func
+         RTV%s_Layer_Source_DOWN(i,KL) = RTV%s_Layer_Source_UP(i,KL)
+       ENDDO
+     END IF
+     !
+     !  compute visible part for visible channels during daytime
+     IF( RTV%Visible_Flag_true ) THEN
+       N2 = 2 * nZ
+       N2_1 = N2 - 1
+       source_up = ZERO
+       source_down = ZERO
+       !
+       ! Solar source  
+       Sfactor = single_albedo*RTV%Solar_irradiance/PI
+       IF( RTV%mth_Azi == 0 ) Sfactor = Sfactor/TWO
+         EXPfactor = exp(-optical_depth/RTV%COS_SUN)
+         s_transmittance = exp(-total_opt/RTV%COS_SUN)
+        
+         DO i = 1, nZ     
+           Solar(i) = -bb(i,nZ+1)*Sfactor
+           Solar(i+nZ) = -ff(i,nZ+1)*Sfactor
 
-        RTV%C1( 1:NANG,KL ) = C1( : )
-        RTV%C2( 1:NANG,KL ) = C2( : )
-        RTV%s_Layer_Trans(1:NANG,1:NANG,KL) = trans(:,:)
-        RTV%s_Layer_Refl(1:NANG,1:NANG,KL) = refl(:,:)
-        RTV%s_Layer_Source_DOWN(1:NANG,KL) = source_down(:)
-        RTV%s_Layer_Source_UP(1:NANG,KL) = source_up(:)
+           DO j = 1, nZ
+             V0(i,j) = single_albedo * ff(i,j) * COS_Weight(j)
+             V0(i+nZ,j) = single_albedo * bb(i,j) * COS_Weight(j)
+             V0(i,j+nZ) = V0(i+nZ,j)
+             V0(nZ+i,j+nZ) = V0(i,j)
+           ENDDO
+           V0(i,i) = V0(i,i) - ONE - COS_Angle(i)/RTV%COS_SUN
+           V0(i+nZ,i+nZ) = V0(i+nZ,i+nZ) - ONE + COS_Angle(i)/RTV%COS_SUN
+         ENDDO
+   
+         V1(1:N2_1,1:N2_1) = matinv(V0(1:N2_1,1:N2_1), Error_Status)
+         IF( Error_Status /= SUCCESS  ) THEN
+           WRITE( Message,'("Error in matrix inversion matinv(V0(1:N2_1,1:N2_1), Error_Status) ")' ) 
+           CALL Display_Message( ROUTINE_NAME, &                                                    
+                                 TRIM(Message), &                                                   
+                                 Error_Status )                                          
+           RETURN                                                                                    
+         END IF         
+         
+         Solar1(1:N2_1) = matmul( V1(1:N2_1,1:N2_1), Solar(1:N2_1) )
+         Solar1(N2) = ZERO
+         Sfac2 = Solar(N2) - sum( V0(N2,1:N2_1)*Solar1(1:N2_1) )
+             
+      
+         DO i = 1, nZ
+           source_up(i) = Solar1(i)
+           source_down(i) = EXPfactor*Solar1(i+nZ)
+           DO j = 1, nZ
+            source_up(i) =source_up(i)-refl(i,j)*Solar1(j+nZ)-trans(i,j)*EXPfactor*Solar1(j)
+            source_down(i) =source_down(i) -trans(i,j)*Solar1(j+nZ) -refl(i,j)*EXPfactor*Solar1(j)
+           END DO
+         END DO
+         ! specific treatment for downeward source function
+         IF( abs( V0(N2,N2) ) > 0.0001_fp ) THEN
+           source_down(nZ) =source_down(nZ) +(EXPfactor-trans(nZ,nZ))*Sfac2/V0(N2,N2)
+         ELSE
+           source_down(nZ) =source_down(nZ) -EXPfactor*Sfac2*optical_depth/COS_Angle(nZ)
+         END IF
+     
+         source_up(1:nZ) = source_up(1:nZ)*s_transmittance
+         source_down(1:nZ) = source_down(1:nZ)*s_transmittance
+
+         RTV%s_Layer_Source_UP(1:nZ,KL) = RTV%s_Layer_Source_UP(1:nZ,KL)+source_up(1:nZ)
+         RTV%s_Layer_Source_DOWN(1:nZ,KL) = RTV%s_Layer_Source_DOWN(1:nZ,KL)+source_down(1:nZ)
+      END IF
        
       RETURN
 
-      END SUBROUTINE CRTM_Doubling_layer
+      END SUBROUTINE CRTM_AMOM_layer
 !
 !
-      SUBROUTINE CRTM_Doubling_layer_TL(n_streams, & ! Input, number of streams
-                                             NANG, & ! Input, number of angles
-                                               KL, & ! Input, number of angles
-                                    single_albedo, & ! Input, single scattering albedo
-                                 asymmetry_factor, & ! Input, asymmetry factor
-                                    optical_depth, & ! Input, layer optical depth
-                                        COS_Angle, & ! Input, COSINE of ANGLES
-                                       COS_Weight, & ! Input, GAUSSIAN Weights
-                                               ff, & ! Input, Phase matrix (forward part)
-                                               bb, & ! Input, Phase matrix (backward part)
-                                      Planck_Func, & ! Input, Planck for layer temperature
-                                 single_albedo_TL, & ! Input, tangent-linear single albedo
-                              asymmetry_factor_TL, & ! Input, TL asymmetry factor
-                                 optical_depth_TL, & ! Input, TL layer optical depth
-                                            ff_TL, & ! Input, TL forward Phase matrix
-                                            bb_TL, & ! Input, TL backward Phase matrix
-                                    Planck_Func_TL, & ! Input, TL Planck for layer temperature
-                                              RTV, & ! Input, structure containing forward results 
-                                         trans_TL, & ! Output, layer tangent-linear trans 
-                                          refl_TL, & ! Output, layer tangent-linear refl 
-                                     source_up_TL, & ! Output, layer tangent-linear source_up 
-                                   source_down_TL)   ! Output, layer tangent-linear source_down 
+      SUBROUTINE CRTM_AMOM_layer_TL( n_streams, & ! Input, number of streams
+                                            nZ, & ! Input, number of angles
+                                            KL, & ! Input, KL-th layer 
+                                 single_albedo, & ! Input, single scattering albedo
+                                 optical_depth, & ! Input, layer optical depth
+                                     total_opt, & ! Input, accumulated optical depth from the top to current layer top
+                                     COS_Angle, & ! Input, COSINE of ANGLES
+                                    COS_Weight, & ! Input, GAUSSIAN Weights
+                                            ff, & ! Input, Phase matrix (forward part)
+                                            bb, & ! Input, Phase matrix (backward part)
+                                   Planck_Func, & ! Input, Planck for layer temperature
+                              single_albedo_TL, & ! Input, tangent-linear single albedo
+                              optical_depth_TL, & ! Input, TL layer optical depth
+                                  total_opt_TL, & ! Input, accumulated TL optical depth from the top to current layer top
+                                         ff_TL, & ! Input, TL forward Phase matrix
+                                         bb_TL, & ! Input, TL backward Phase matrix
+                                Planck_Func_TL, & ! Input, TL Planck for layer temperature
+                                           RTV, & ! Input, structure containing forward results 
+                                      trans_TL, & ! Output, layer tangent-linear trans 
+                                       refl_TL, & ! Output, layer tangent-linear refl 
+                                  source_up_TL, & ! Output, layer tangent-linear source_up 
+                                source_down_TL)   ! Output, layer tangent-linear source_down 
+                                                                
 ! ---------------------------------------------------------------------------------------
 !   FUNCTION
-!    Compute tangent-linear layer transmission, reflection matrices and source function 
+!    Compute TL layer transmission, reflection matrices and source function 
 !    at the top and bottom of the layer.
 !
+!   see also ADA method.
 !   Quanhua Liu
 !   Quanhua.Liu@noaa.gov
 ! ----------------------------------------------------------------------------------------
      IMPLICIT NONE
-     INTEGER, INTENT(IN) :: n_streams,NANG,KL
-      TYPE(CRTM_RTVariables_type), INTENT(IN) :: RTV
-      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
-      REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-      REAL(fp) :: single_albedo,asymmetry_factor,optical_depth,Planck_Func
+     INTEGER, INTENT(IN) :: n_streams,nZ,KL
+     TYPE(CRTM_RTVariables_type), INTENT( IN ) :: RTV
+     REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
+     REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
+     REAL(fp) :: single_albedo,optical_depth,Planck_Func,total_opt
+     !
+     ! internal variables
+     REAL(fp) :: s, c, s_TL,c_TL,xx_TL
+     INTEGER :: i,j
+     INTEGER :: Error_Status
+     !
+     ! Tangent-Linear Part
+     REAL(fp), INTENT(OUT), DIMENSION( :,: ) :: trans_TL,refl_TL
+     REAL(fp), INTENT(OUT), DIMENSION( : ) :: source_up_TL,source_down_TL
+     
+     REAL(fp), INTENT(IN) :: single_albedo_TL
+     REAL(fp), INTENT(IN) :: optical_depth_TL,Planck_Func_TL,total_opt_TL
+     REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff_TL,bb_TL
 
-      ! Tangent-Linear Part
-      REAL(fp), INTENT(OUT), DIMENSION( :,: ) :: trans_TL,refl_TL
-      REAL(fp), INTENT(OUT), DIMENSION( : ) :: source_up_TL,source_down_TL
-      REAL(fp), INTENT(IN) :: single_albedo_TL,asymmetry_factor_TL
-      REAL(fp), INTENT(IN) :: optical_depth_TL,Planck_Func_TL
-      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff_TL,bb_TL
+     REAL(fp), DIMENSION(nZ) :: Exp_x_TL,EigVa_TL,EigValue_TL
+     REAL(fp), DIMENSION(nZ,nZ) :: i_Gm_TL, Gm_TL, Gp_TL, EigVe_TL, EigVeF_TL, EigVeVa_TL
+     REAL(fp), DIMENSION(nZ,nZ) :: A1_TL,A2_TL,A3_TL,A4_TL,A5_TL,A6_TL,Gm_A5_TL,i_Gm_A5_TL
+     REAL(fp), DIMENSION(nZ,nZ) :: HH_TL,PM_TL,PP_TL,PPM_TL,i_PPM_TL,PPP_TL
 
-      ! internal variables
-      REAL(fp), DIMENSION(NANG,NANG) :: term1,term2,term3,term4,term5_TL
-      REAL(fp) :: s, c
-      REAL(fp) :: s_TL, c_TL, Delta_Tau_TL
-      REAL(fp), DIMENSION(NANG) :: C1_TL, C2_TL
-      INTEGER :: i,j,L
-!
-      ! Tangent-Linear Beginning
-
-      IF( optical_depth < OPTICAL_DEPTH_THRESHOLD ) THEN
-        trans_TL = ZERO
-        refl_TL = ZERO
-        source_up_TL = ZERO
-        source_down_TL = ZERO
-        RETURN
-      ENDIF
-
-        s = RTV%Delta_Tau(KL) * single_albedo
-        Delta_Tau_TL = optical_depth_TL/(TWO**RTV%Number_Doubling(KL))
-        s_TL = Delta_Tau_TL * single_albedo + RTV%Delta_Tau(KL) * single_albedo_TL
-        DO i = 1, NANG
-        c = s/COS_Angle(i)
-        c_TL = s_TL/COS_Angle(i)
-        DO j = 1, NANG
-        refl_TL(i,j) = c_TL*bb(i,j)*COS_Weight(j)+c*bb_TL(i,j)*COS_Weight(j)
-        trans_TL(i,j) =c_TL*ff(i,j)*COS_Weight(j)+c*ff_TL(i,j)*COS_Weight(j)
-        ENDDO
-        trans_TL(i,i) =trans_TL(i,i) - Delta_Tau_TL/COS_Angle(i)
-        ENDDO
-
-        DO L = 1, RTV%Number_Doubling(KL) 
-
-        term1 = matmul(RTV%Trans(1:NANG,1:NANG,L-1,KL),RTV%Inv_BeT(1:NANG,1:NANG,L,KL))
-        term2 = matmul(RTV%Inv_BeT(1:NANG,1:NANG,L,KL),RTV%Refl(1:NANG,1:NANG,L-1,KL))
-        term3 = matmul(RTV%Inv_BeT(1:NANG,1:NANG,L,KL),RTV%Trans(1:NANG,1:NANG,L-1,KL))
-        term4 = matmul(term2,RTV%Trans(1:NANG,1:NANG,L-1,KL))
-        term5_TL = matmul(refl_TL,RTV%Refl(1:NANG,1:NANG,L-1,KL))  &
-              + matmul(RTV%Refl(1:NANG,1:NANG,L-1,KL),refl_TL)
-
-        refl_TL=refl_TL+matmul(matmul(term1,term5_TL),term4)+matmul(trans_TL,term4) &
-               +matmul(matmul(term1,refl_TL),RTV%Trans(1:NANG,1:NANG,L-1,KL)) 
-        refl_TL=refl_TL+matmul(matmul(term1,RTV%Refl(1:NANG,1:NANG,L-1,KL)),trans_TL)
-
-        trans_TL=matmul(trans_TL,term3)  &
-                +matmul(matmul(term1,term5_TL),term3)+matmul(term1,trans_TL)
-
-        ENDDO
-
-!   computing source function at up and downward directions.
-
-      DO i = 1, NANG
-        C1_TL(i) = ZERO
-        C2_TL(i) = ZERO
-       DO j = 1, n_Streams 
-        C1_TL(i) = C1_TL(i) + trans_TL(i,j) 
-        C2_TL(i) = C2_TL(i) + refl_TL(i,j) 
+     REAL(fp) :: EXPfactor,Sfactor,s_transmittance,Solar(2*nZ),V0(2*nZ,2*nZ),Solar1(2*nZ)
+     REAL(fp) :: V1(2*nZ,2*nZ),Sfac2,source_up(nZ),source_down(nZ) 
+     REAL(fp) :: EXPfactor_TL,Sfactor_TL,s_transmittance_TL,Solar_TL(2*nZ),V0_TL(2*nZ,2*nZ),Solar1_TL(2*nZ)
+     REAL(fp) :: Sfac2_TL
+     REAL(fp), DIMENSION( nZ ) :: thermal_up_TL,thermal_down_TL,C1_TL,C2_TL,C1,C2
+     REAL(fp), DIMENSION(nZ,nZ) :: trans, refl
+     INTEGER :: N2, N2_1
+     REAL(fp) :: Thermal_C_TL
+     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AMOM_layer_TL'
+     CHARACTER(256) :: Message
+     !
+     ! for small layer optical depth, single scattering is applied.  
+     IF( optical_depth < DELTA_OPTICAL_DEPTH ) THEN
+       s = optical_depth * single_albedo
+       s_TL = optical_depth_TL * single_albedo + optical_depth * single_albedo_TL
+       DO i = 1, nZ
+         Thermal_C_TL = ZERO
+         c = s/COS_Angle(i)
+         c_TL = s_TL/COS_Angle(i)
+         DO j = 1, nZ
+           refl_TL(i,j) = (c_TL * bb(i,j) + c*bb_TL(i,j) )* COS_Weight(j)
+           trans_TL(i,j) = (c_TL * ff(i,j) + c*ff_TL(i,j) )* COS_Weight(j)
+           IF( i == j ) THEN
+             trans_TL(i,j) = trans_TL(i,j) - optical_depth_TL/COS_Angle(i)
+           END IF
+         
+           IF( RTV%mth_Azi == 0 ) THEN
+             Thermal_C_TL = Thermal_C_TL + refl_TL(i,j) + trans_TL(i,j)
+           END IF
+         ENDDO
+         IF( RTV%mth_Azi == 0 ) THEN
+           source_up_TL(i) = -Thermal_C_TL * Planck_Func + &
+             ( ONE - RTV%Thermal_C(i,KL) ) * Planck_Func_TL
+           source_down_TL(i) = source_up_TL(i)
+         END IF
        ENDDO
-      IF(i == NANG .AND. NANG == (n_Streams+1)) THEN
-        C1_TL(i) = C1_TL(i)+trans_TL(NANG,NANG)
-      ENDIF
-      ENDDO
+       RETURN
+     END IF
 
-      DO i = 1, NANG
-        source_up_TL(i) = -(C1_TL(i)+C2_TL(i))*Planck_Func  &
-         + (ONE-RTV%C1(i,KL)-RTV%C2(i,KL))*Planck_Func_TL
-        source_down_TL(i) = source_up_TL(i)
-      END DO
+     !
+     ! for numerical stability, 
+     IF( single_albedo < max_albedo ) THEN
+       s = single_albedo
+       s_TL = single_albedo_TL
+     ELSE
+       s = max_albedo
+       s_TL = 0.0_fp
+     END IF
+     !
+     ! building TL phase matrices
+     DO i = 1, nZ
+       c = s/COS_Angle(i)
+       c_TL = s_TL/COS_Angle(i)
+       DO j = 1, nZ
+         PM_TL(i,j) = (c_TL * bb(i,j) + c*bb_TL(i,j) ) * COS_Weight(j)
+         PP_TL(i,j) = (c_TL * ff(i,j) + c*ff_TL(i,j) ) * COS_Weight(j)
+       END DO
+     ENDDO
 
-      RETURN
+     PPM_TL(:,:) = PP_TL(:,:) - PM_TL(:,:)
+     i_PPM_TL(:,:) = - matmul( RTV%i_PPM(1:nZ,1:nZ,KL), matmul(PPM_TL(:,:),RTV%i_PPM(1:nZ,1:nZ,KL)) )     
+     PPP_TL(:,:) = PP_TL(:,:) + PM_TL(:,:)
+     HH_TL(:,:) = matmul( PPM_TL(:,:), RTV%PPP(1:nZ,1:nZ,KL) )+matmul( RTV%PPM(1:nZ,1:nZ,KL), PPP_TL(:,:) )
+     !
+     ! compute TL eigenvectors EigVe, and eigenvalues EigVa
+     CALL ASYMTX_TL(COS_Angle(nZ),n_streams,nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL),HH_TL, &
+          EigVe_TL,EigVa_TL,Error_Status)
 
-      END SUBROUTINE CRTM_Doubling_layer_TL
+     DO i = 1, nZ
+       IF( RTV%EigVa(i,KL) > ZERO ) THEN
+         EigValue_TL(i) = 0.5_fp*EigVa_TL(i)/RTV%EigValue(i,KL)
+       ELSE
+         EigValue_TL(i) = ZERO 
+       END IF
+     END DO
+     EigVeVa_TL = ZERO
+     
+     DO i = 1, nZ
+       DO j = 1, nZ
+         EigVeVa_TL(i,j) = EigVe_TL(i,j) * RTV%EigValue(j,KL)+RTV%EigVe(i,j,KL) * EigValue_TL(j)
+       END DO
+     END DO     
+     EigVeF_TL(:,:) = matmul( i_PPM_TL(:,:), RTV%EigVeVa(1:nZ,1:nZ,KL) )  &
+                    + matmul( RTV%i_PPM(1:nZ,1:nZ,KL), EigVeVa_TL(:,:) )
+     !  
+     ! compute TL reflection and transmission matrices, TL source function     
+     Gp_TL(:,:) = ( EigVe_TL(:,:) + EigVeF_TL(:,:) )/2.0_fp
+     Gm_TL(:,:) = ( EigVe_TL(:,:) - EigVeF_TL(:,:) )/2.0_fp
+     i_Gm_TL = -matmul( RTV%i_Gm(1:nZ,1:nZ,KL), matmul(Gm_TL,RTV%i_Gm(1:nZ,1:nZ,KL)) )
+     DO i = 1, nZ
+       xx_TL = EigValue_TL(i)*optical_depth+RTV%EigValue(i,KL)*optical_depth_TL
+       Exp_x_TL(i) = -xx_TL*RTV%Exp_x(i,KL)
+     END DO
 
+     DO i = 1, nZ
+       DO j = 1, nZ
+         A1_TL(i,j) = Gp_TL(i,j)* RTV%Exp_x(j,KL)+ RTV%Gp(i,j,KL)* Exp_x_TL(j)
+         A4_TL(i,j) = Gm_TL(i,j)* RTV%Exp_x(j,KL)+ RTV%Gm(i,j,KL)* Exp_x_TL(j)
+       END DO
+     END DO        
+     A2_TL(:,:) = matmul(i_Gm_TL(:,:),RTV%A1(1:nZ,1:nZ,KL))+matmul(RTV%i_Gm(1:nZ,1:nZ,KL),A1_TL(:,:))          
+     A3_TL(:,:) = matmul(Gp_TL(:,:),RTV%A2(1:nZ,1:nZ,KL))+matmul(RTV%Gp(1:nZ,1:nZ,KL),A2_TL(:,:))
+     A5_TL(:,:) = matmul(A1_TL(:,:),RTV%A2(1:nZ,1:nZ,KL))+matmul(RTV%A1(1:nZ,1:nZ,KL),A2_TL(:,:))
+     A6_TL(:,:) = matmul(A4_TL(:,:),RTV%A2(1:nZ,1:nZ,KL))+matmul(RTV%A4(1:nZ,1:nZ,KL),A2_TL(:,:))
+  
+     Gm_A5_TL(:,:) = Gm_TL(:,:) - A5_TL(:,:)
+     i_Gm_A5_TL(:,:) = -matmul( RTV%i_Gm_A5(1:nZ,1:nZ,KL),matmul(Gm_A5_TL,RTV%i_Gm_A5(1:nZ,1:nZ,KL)))
+     !
+     ! T = matmul( RTV%A4(:,:,KL) - RTV%A3(:,:,KL), RTV%i_Gm_A5(:,:,KL) )
+     trans_TL = matmul( A4_TL(:,:) - A3_TL(:,:), RTV%i_Gm_A5(1:nZ,1:nZ,KL) )  &
+          + matmul( RTV%A4(1:nZ,1:nZ,KL) - RTV%A3(1:nZ,1:nZ,KL), i_Gm_A5_TL(:,:) )
+     refl_TL = matmul( Gp_TL(:,:) - A6_TL(:,:), RTV%i_Gm_A5(1:nZ,1:nZ,KL) )  &
+          + matmul( RTV%Gp(1:nZ,1:nZ,KL) - RTV%A6(1:nZ,1:nZ,KL), i_Gm_A5_TL(:,:) )
 
+     trans(1:nZ,1:nZ) = RTV%s_Layer_Trans(1:nZ,1:nZ,KL)
+     refl(1:nZ,1:nZ) = RTV%s_Layer_Refl(1:nZ,1:nZ,KL)
+     Source_UP_TL = ZERO
+     Source_DOWN_TL = ZERO    
+     !
+     ! Thermal part
+     IF( RTV%mth_Azi == 0 ) THEN  
+       DO i = 1, nZ
+         Thermal_C_TL = ZERO
+         DO j = 1, n_Streams 
+           Thermal_C_TL = Thermal_C_TL + (trans_TL(i,j) + refl_TL(i,j))
+         ENDDO
+         IF(i == nZ .AND. nZ == (n_Streams+1)) THEN
+           Thermal_C_TL = Thermal_C_TL + trans_TL(nZ,nZ)
+         ENDIF
+         thermal_up_TL(i) = -Thermal_C_TL * Planck_Func  &
+           + ( ONE - RTV%Thermal_C(i,KL) ) * Planck_Func_TL
+         thermal_down_TL(i) = thermal_up_TL(i)
+       ENDDO
+     END IF
+     
+     !
+     ! for visible channels at daytime
+     IF( RTV%Visible_Flag_true ) THEN 
+       N2 = 2 * nZ
+       N2_1 = N2 - 1
+       V0 = ZERO
+       V1 = ZERO
+       Solar = ZERO
+       Solar1 = ZERO
+       Sfac2 = ZERO
+       V0_TL = ZERO
+       Solar_TL = ZERO
+       Solar1_TL = ZERO
+       Sfac2_TL = ZERO
+       !
+       ! Solar source  
+       Sfactor = single_albedo*RTV%Solar_irradiance/PI
+       Sfactor_TL = single_albedo_TL*RTV%Solar_irradiance/PI
+               
+       IF( RTV%mth_Azi == 0 ) THEN
+         Sfactor = Sfactor/TWO
+         Sfactor_TL = Sfactor_TL/TWO
+       END IF
+       EXPfactor = exp(-optical_depth/RTV%COS_SUN)
+       EXPfactor_TL = -optical_depth_TL/RTV%COS_SUN*EXPfactor
+      
+       s_transmittance = exp(-total_opt/RTV%COS_SUN)
+       s_transmittance_TL = -total_opt_TL/RTV%COS_SUN*s_transmittance
+       
+       DO i = 1, nZ     
+         Solar(i) = -bb(i,nZ+1)*Sfactor
+         Solar_TL(i) = -bb_TL(i,nZ+1)*Sfactor-bb(i,nZ+1)*Sfactor_TL
+         Solar(i+nZ) = -ff(i,nZ+1)*Sfactor
+         Solar_TL(i+nZ) = -ff_TL(i,nZ+1)*Sfactor-ff(i,nZ+1)*Sfactor_TL
+         DO j = 1, nZ
+           V0(i,j) = single_albedo * ff(i,j) * COS_Weight(j)
+           V0_TL(i,j) = single_albedo_TL*ff(i,j)*COS_Weight(j)+single_albedo*ff_TL(i,j)*COS_Weight(j)
+           V0(i+nZ,j) = single_albedo * bb(i,j) * COS_Weight(j)
+           V0_TL(i+nZ,j) = single_albedo_TL*bb(i,j)*COS_Weight(j)+single_albedo*bb_TL(i,j)*COS_Weight(j)
+           V0(i,j+nZ) = V0(i+nZ,j)
+           V0_TL(i,j+nZ) = V0_TL(i+nZ,j)
+           V0(nZ+i,j+nZ) = V0(i,j)
+           V0_TL(nZ+i,j+nZ) = V0_TL(i,j)
+         ENDDO
+         V0(i,i) = V0(i,i) - ONE - COS_Angle(i)/RTV%COS_SUN
+         V0(i+nZ,i+nZ) = V0(i+nZ,i+nZ) - ONE + COS_Angle(i)/RTV%COS_SUN
+       ENDDO
+
+       V1(1:N2_1,1:N2_1) = matinv(V0(1:N2_1,1:N2_1), Error_Status)
+       IF( Error_Status /= SUCCESS  ) THEN
+         WRITE( Message,'("Error in matrix inversion matinv(V0(1:N2_1,1:N2_1), Error_Status) ")' ) 
+         CALL Display_Message( ROUTINE_NAME, &                                                    
+                               TRIM(Message), &                                                   
+                               Error_Status )                                          
+         RETURN                                                                                    
+       END IF           
+       
+       Solar1(1:N2_1) = matmul( V1(1:N2_1,1:N2_1), Solar(1:N2_1) )
+       
+       Solar(1:N2_1) =  matmul( V1(1:N2_1,1:N2_1),Solar(1:N2_1) )
+       Solar1_TL(1:N2_1) = matmul( V0_TL(1:N2_1,1:N2_1),Solar(1:N2_1) )
+       Solar1_TL(1:N2_1) = -matmul(  V1(1:N2_1,1:N2_1),Solar1_TL(1:N2_1) )  &
+                         + matmul( V1(1:N2_1,1:N2_1), Solar_TL(1:N2_1) )
+       
+       Solar1(N2) = ZERO
+       Solar1_TL(N2) = ZERO
+       Sfac2 = Solar(N2) - sum( V0(N2,1:N2_1)*Solar1(1:N2_1) )
+       Sfac2_TL = Solar_TL(N2) - sum( V0_TL(N2,1:N2_1)*Solar1(1:N2_1) )  &
+                - sum( V0(N2,1:N2_1)*Solar1_TL(1:N2_1) )
+               
+       DO i = 1, nZ
+         source_up(i) = Solar1(i)
+         source_up_TL(i) = Solar1_TL(i)
+         source_down(i) = EXPfactor*Solar1(i+nZ)
+         source_down_TL(i) = EXPfactor_TL*Solar1(i+nZ)+EXPfactor*Solar1_TL(i+nZ)
+         DO j = 1, nZ
+           source_up(i) =source_up(i)-refl(i,j)*Solar1(j+nZ)-trans(i,j)*EXPfactor*Solar1(j)
+           source_up_TL(i) =source_up_TL(i)-refl_TL(i,j)*Solar1(j+nZ) -refl(i,j)*Solar1_TL(j+nZ) &
+           - trans_TL(i,j)*EXPfactor*Solar1(j) - trans(i,j)*EXPfactor_TL*Solar1(j) -trans(i,j)*EXPfactor*Solar1_TL(j)
+           source_down(i) =source_down(i) -trans(i,j)*Solar1(j+nZ) -refl(i,j)*EXPfactor*Solar1(j)
+           source_down_TL(i) =source_down_TL(i) -trans_TL(i,j)*Solar1(j+nZ) -trans(i,j)*Solar1_TL(j+nZ) &
+           -refl_TL(i,j)*EXPfactor*Solar1(j) -refl(i,j)*EXPfactor_TL*Solar1(j) -refl(i,j)*EXPfactor*Solar1_TL(j)
+         END DO
+       END DO
+       !
+       ! specific treatment for downeward source function
+       IF( abs( V0(N2,N2) ) > 0.0001_fp ) THEN
+         source_down(nZ) =source_down(nZ) +(EXPfactor-trans(nZ,nZ))*Sfac2/V0(N2,N2)
+         source_down_TL(nZ) =source_down_TL(nZ) +(EXPfactor_TL-trans_TL(nZ,nZ))*Sfac2/V0(N2,N2) &
+          +(EXPfactor-trans(nZ,nZ))*Sfac2_TL/V0(N2,N2)-(EXPfactor-trans(nZ,nZ))*Sfac2*V0_TL(N2,N2)/V0(N2,N2)/V0(N2,N2)
+       ELSE
+         source_down(nZ) =source_down(nZ) -EXPfactor*Sfac2*optical_depth/COS_Angle(nZ)
+         source_down_TL(nZ) =source_down_TL(nZ) -EXPfactor_TL*Sfac2*optical_depth/COS_Angle(nZ)  &
+         -EXPfactor*Sfac2_TL*optical_depth/COS_Angle(nZ)-EXPfactor*Sfac2*optical_depth_TL/COS_Angle(nZ)
+       END IF
+        
+       ! source_up(1:nZ) = source_up(1:nZ)*s_transmittance
+        source_up_TL(1:nZ) = source_up_TL(1:nZ)*s_transmittance+source_up(1:nZ)*s_transmittance_TL
+       ! source_down(1:nZ) = source_down(1:nZ)*s_transmittance
+        source_down_TL(1:nZ) = source_down_TL(1:nZ)*s_transmittance + source_down(1:nZ)*s_transmittance_TL
+     END IF
+
+     source_up_TL(:) = source_up_TL(:) + thermal_up_TL(:)
+     source_down_TL(:) = source_down_TL(:) + thermal_down_TL(:)
+    
+     RETURN
+
+     END SUBROUTINE CRTM_AMOM_layer_TL
+!
+!
+     SUBROUTINE CRTM_AMOM_layer_AD(  n_streams, & ! Input, number of streams
+                                            nZ, & ! Input, number of angles
+                                            KL, & ! Input, KL-th layer 
+                                 single_albedo, & ! Input, single scattering albedo
+                                 optical_depth, & ! Input, layer optical depth
+                                     total_opt, & ! Input, 
+                                     COS_Angle, & ! Input, COSINE of ANGLES
+                                    COS_Weight, & ! Input, GAUSSIAN Weights
+                                            ff, & ! Input, Phase matrix (forward part)
+                                            bb, & ! Input, Phase matrix (backward part)
+                                   Planck_Func, & ! Input, Planck for layer temperature
+                                      trans_AD, & ! Input, layer tangent-linear trans 
+                                       refl_AD, & ! Input, layer tangent-linear refl 
+                                  source_up_AD, & ! Input, layer tangent-linear source_up 
+                                source_down_AD, & ! Input, layer tangent-linear source_down 
+                                           RTV, & ! Input, structure containing forward results 
+                              single_albedo_AD, & ! Output adjoint single scattering albedo
+                              optical_depth_AD, & ! Output AD layer optical depth
+                                  total_opt_AD, & ! Output AD accumulated optical depth ftom TOA to current layer top
+                                         ff_AD, & ! Output AD forward Phase matrix
+                                         bb_AD, & ! Output AD backward Phase matrix
+                                Planck_Func_AD)   ! Output AD Planck for layer temperature
 ! ---------------------------------------------------------------------------------------
 !   FUNCTION
-!    Compute layer adjoint transmission, reflection matrices and source function 
+!    Compute AD layer transmission, reflection matrices and source function 
 !    at the top and bottom of the layer.
 !
+!   see also ADA method.
 !   Quanhua Liu
 !   Quanhua.Liu@noaa.gov
 ! ----------------------------------------------------------------------------------------
+     IMPLICIT NONE
+     INTEGER, INTENT(IN) :: n_streams,nZ,KL
+     TYPE(CRTM_RTVariables_type), INTENT( IN ) :: RTV
+     REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
+     REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
+     REAL(fp) :: single_albedo,optical_depth,Planck_Func,total_opt
 
-  SUBROUTINE CRTM_Doubling_layer_AD(n_streams, & ! Input, number of streams
-                                         NANG, & ! Input, number of angles
-                                           KL, & ! Input, number of angles
-                                single_albedo, & ! Input, single scattering albedo
-                             asymmetry_factor, & ! Input, asymmetry factor
-                                optical_depth, & ! Input, layer optical depth
-                                    COS_Angle, & ! Input, COSINE of ANGLES
-                                   COS_Weight, & ! Input, GAUSSIAN Weights
-                                           ff, & ! Input, Phase matrix (forward part)
-                                           bb, & ! Input, Phase matrix (backward part)
-                                  Planck_Func, & ! Input, Planck for layer temperature
-                                     trans_AD, & ! Input, layer tangent-linear trans 
-                                      refl_AD, & ! Input, layer tangent-linear refl 
-                                 source_up_AD, & ! Input, layer tangent-linear source_up 
-                               source_down_AD, & ! Input, layer tangent-linear source_down 
-                                          RTV, & ! Input, structure containing forward results 
-                             single_albedo_AD, & ! Output adjoint single scattering albedo
-                          asymmetry_factor_AD, & ! Output AD asymmetry factor
-                             optical_depth_AD, & ! Output AD layer optical depth
-                                        ff_AD, & ! Output AD forward Phase matrix
-                                        bb_AD, & ! Output AD backward Phase matrix
-                               Planck_Func_AD)   ! Output AD Planck for layer temperature
+     ! internal variables
+     REAL(fp) :: s, c, s_AD,c_AD,xx_AD
+     INTEGER :: i,j
+     INTEGER :: Error_Status
 
+     ! Tangent-Linear Part
+     REAL(fp), INTENT( INOUT ), DIMENSION( :,: ) :: trans_AD,refl_AD
+     REAL(fp), INTENT( INOUT ), DIMENSION( : ) :: source_up_AD,source_down_AD
+     REAL(fp), INTENT( INOUT ) :: single_albedo_AD
+     REAL(fp), INTENT( INOUT ) :: optical_depth_AD,Planck_Func_AD,total_opt_AD
+     REAL(fp), INTENT(INOUT), DIMENSION(:,:) :: ff_AD,bb_AD
 
-    INTEGER, INTENT(IN) :: n_streams,NANG,KL
-    TYPE(CRTM_RTVariables_type), INTENT(IN) :: RTV
-    REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
-    REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-    REAL(fp) :: single_albedo,asymmetry_factor,optical_depth,Planck_Func
-
-    ! Tangent-Linear Part
-    REAL(fp), INTENT( INOUT ), DIMENSION( :,: ) :: trans_AD,refl_AD
-    REAL(fp), INTENT( INOUT ), DIMENSION( : ) :: source_up_AD,source_down_AD
-    REAL(fp), INTENT( INOUT ) :: single_albedo_AD,asymmetry_factor_AD
-    REAL(fp), INTENT( INOUT ) :: optical_depth_AD,Planck_Func_AD
-    REAL(fp), INTENT(INOUT), DIMENSION(:,:) :: ff_AD,bb_AD
-
-    ! internal variables
-    REAL(fp), DIMENSION(NANG,NANG) :: term1,term2,term3,term4,term5_AD
-    REAL(fp) :: s, c
-    REAL(fp) :: s_AD, c_AD, Delta_Tau_AD
-    REAL(fp), DIMENSION(NANG) :: C1_AD, C2_AD
-    INTEGER :: i,j,L
-
-    ! Tangent-Linear Beginning
-
-    IF( optical_depth < OPTICAL_DEPTH_THRESHOLD ) THEN
-      trans_AD = ZERO
-      refl_AD = ZERO
-      source_up_AD = ZERO
-      source_down_AD = ZERO
-      RETURN
-    ENDIF
-
-    DO i = NANG, 1, -1
-      source_up_AD(i) = source_up_AD(i) + source_down_AD(i)
-      source_down_AD(i) = ZERO
-      C2_AD(i) = -source_up_AD(i)*Planck_Func
-      C1_AD(i) = -source_up_AD(i)*Planck_Func
-      Planck_Func_AD = Planck_Func_AD + (ONE-RTV%C1(i,KL)-RTV%C2(i,KL))*source_up_AD(i)
-    END DO
-
-    ! Compute the source function in the up and downward directions.
-    DO i = NANG, 1, -1
-
-      IF(i == NANG .AND. NANG == (n_Streams+1)) THEN
-        trans_AD(NANG,NANG)=trans_AD(NANG,NANG)+C1_AD(i)
-      ENDIF
-
-      DO j = n_Streams, 1, -1 
-        refl_AD(i,j)=refl_AD(i,j)+C2_AD(i)
-        trans_AD(i,j)=trans_AD(i,j)+C1_AD(i)
-      END DO
-
-    END DO
-
-    DO L = RTV%Number_Doubling(KL), 1, -1 
-
-      term1 = MATMUL(RTV%Trans(1:NANG,1:NANG,L-1,KL),RTV%Inv_BeT(1:NANG,1:NANG,L,KL))
-      term2 = MATMUL(RTV%Inv_BeT(1:NANG,1:NANG,L,KL),RTV%Refl(1:NANG,1:NANG,L-1,KL))
-      term3 = MATMUL(RTV%Inv_BeT(1:NANG,1:NANG,L,KL),RTV%Trans(1:NANG,1:NANG,L-1,KL))
-      term4 = MATMUL(term2,RTV%Trans(1:NANG,1:NANG,L-1,KL))
-
-      term5_AD = MATMUL(MATMUL(TRANSPOSE(term1),trans_AD),TRANSPOSE(term3))
-      trans_AD = MATMUL(trans_AD,TRANSPOSE(term3))+MATMUL(TRANSPOSE(term1),trans_AD)
+     REAL(fp), DIMENSION(nZ) :: Exp_x_AD,EigVa_AD,EigValue_AD
+     REAL(fp), DIMENSION(nZ,nZ) :: i_Gm_AD, Gm_AD, Gp_AD, EigVe_AD, EigVeF_AD, EigVeVa_AD
+     REAL(fp), DIMENSION(nZ,nZ) :: A1_AD,A2_AD,A3_AD,A4_AD,A5_AD,A6_AD,Gm_A5_AD,i_Gm_A5_AD
+     REAL(fp), DIMENSION(nZ,nZ) :: HH_AD,PM_AD,PP_AD,PPM_AD,i_PPM_AD,PPP_AD
     
-      trans_AD=trans_AD+MATMUL(TRANSPOSE(MATMUL(term1,RTV%Refl(1:NANG,1:NANG,L-1,KL))),refl_AD) 
+     REAL(fp), DIMENSION(nZ) :: thermal_up_AD, thermal_down_AD
+     REAL(fp) :: EXPfactor,Sfactor,s_transmittance,Solar(2*nZ),V0(2*nZ,2*nZ),Solar1(2*nZ)
+     REAL(fp) :: V1(2*nZ,2*nZ),Sfac2,source_up(nZ),source_down(nZ) 
+     REAL(fp) :: EXPfactor_AD,Sfactor_AD,s_transmittance_AD,Solar_AD(2*nZ),V0_AD(2*nZ,2*nZ),Solar1_AD(2*nZ)
+     REAL(fp) :: V1_AD(2*nZ,2*nZ),Sfac2_AD
+     REAL(fp), DIMENSION( nZ ) :: C1_AD,C2_AD,C1,C2
+     REAL(fp), DIMENSION(nZ,nZ) :: trans, refl
+     INTEGER :: N2, N2_1
+     REAL(fp) :: Thermal_C_AD
+     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AMOM_layer_AD'
+     CHARACTER(256) :: Message
+          
+     s_AD = ZERO
+     c_AD = ZERO
+     !
+     ! for small layer optical depth, single scattering is applied.  
+     IF( optical_depth < DELTA_OPTICAL_DEPTH ) THEN
+       s = optical_depth * single_albedo
+       DO i = 1, nZ         
+         c = s/COS_Angle(i)
+         IF( RTV%mth_Azi == 0 ) THEN
+           source_up_AD(i) = source_up_AD(i) + source_down_AD(i)
+           source_down_AD(i) = ZERO
+           Planck_Func_AD = Planck_Func_AD + (ONE - RTV%Thermal_C(i,KL))*source_up_AD(i)
+           Thermal_C_AD = -source_up_AD(i) * Planck_Func
+         END IF
 
-      term5_AD =term5_AD+MATMUL(MATMUL(TRANSPOSE(term1),refl_AD),TRANSPOSE(term4))
-      trans_AD = trans_AD+MATMUL(refl_AD,TRANSPOSE(term4)) 
-      refl_AD = refl_AD+MATMUL(MATMUL(TRANSPOSE(term1),refl_AD),TRANSPOSE(RTV%Trans(1:NANG,1:NANG,L-1,KL)))
-      refl_AD = refl_AD+MATMUL(term5_AD,TRANSPOSE(RTV%Refl(1:NANG,1:NANG,L-1,KL)))
-      refl_AD = refl_AD+MATMUL(TRANSPOSE(RTV%Refl(1:NANG,1:NANG,L-1,KL)),term5_AD)
+         DO j = 1, nZ   
+           IF( RTV%mth_Azi == 0 ) THEN
+             refl_AD(i,j) = refl_AD(i,j) + Thermal_C_AD
+             trans_AD(i,j) = trans_AD(i,j) + Thermal_C_AD
+           END IF
+           IF( i == j ) THEN
+             optical_depth_AD = optical_depth_AD - trans_AD(i,j)/COS_Angle(i)
+           END IF
+            
+           c_AD = c_AD + trans_AD(i,j) * ff(i,j) * COS_Weight(j)
+           ff_AD(i,j) = ff_AD(i,j) + c * trans_AD(i,j) * COS_Weight(j)
+           c_AD = c_AD + refl_AD(i,j) * bb(i,j) * COS_Weight(j)
+           bb_AD(i,j) = bb_AD(i,j) + c * refl_AD(i,j) * COS_Weight(j)
+         ENDDO
 
-    ENDDO
+         source_up_AD(i) = ZERO
+         s_AD = s_AD + c_AD/COS_Angle(i)
+         c_AD = ZERO
+       ENDDO
+       optical_depth_AD = optical_depth_AD + s_AD * single_albedo
+       single_albedo_AD = single_albedo_AD + optical_depth * s_AD
+       RETURN
+     END IF
 
-    s = RTV%Delta_Tau(KL) * single_albedo
-    c_AD = ZERO
-    s_AD = ZERO
-    Delta_Tau_AD=ZERO
+     trans(1:nZ,1:nZ) = RTV%s_Layer_Trans(1:nZ,1:nZ,KL)
+     refl(1:nZ,1:nZ) = RTV%s_Layer_Refl(1:nZ,1:nZ,KL)
 
-    DO i = NANG, 1, -1
+     thermal_up_AD(:) = source_up_AD(:)
+     thermal_down_AD(:) = source_down_AD(:)
 
-      c = s/COS_Angle(i)
-      Delta_Tau_AD = Delta_Tau_AD - trans_AD(i,i)/COS_Angle(i)
+     IF( RTV%Visible_Flag_true ) THEN 
+       N2 = 2 * nZ
+       N2_1 = N2 - 1
 
-      DO j = NANG, 1, -1
-        c_AD = c_AD + trans_AD(i,j)*ff(i,j)*COS_Weight(j)
-        ff_AD(i,j)=ff_AD(i,j)+trans_AD(i,j)*c*COS_Weight(j)
-        c_AD = c_AD + refl_AD(i,j)*bb(i,j)*COS_Weight(j)
-        bb_AD(i,j)=bb_AD(i,j) + refl_AD(i,j)*c*COS_Weight(j)
-      END DO
+       ! forward part  start   ********
+       source_up = ZERO
+       source_down = ZERO
+       Solar_AD = ZERO
+       Solar1_AD = ZERO
+       Sfactor_AD = ZERO
+       Sfac2_AD = ZERO
+       EXPfactor_AD = ZERO
+       s_transmittance_AD = ZERO
+       V0_AD = ZERO
+       V1_AD = ZERO
+       !
+       ! Solar source  
+       Sfactor = single_albedo*RTV%Solar_irradiance/PI
+       IF( RTV%mth_Azi == 0 ) Sfactor = Sfactor/TWO
+       EXPfactor = exp(-optical_depth/RTV%COS_SUN)
+       s_transmittance = exp(-total_opt/RTV%COS_SUN)
+       
+       DO i = 1, nZ     
+         Solar(i) = -bb(i,nZ+1)*Sfactor
+         Solar(i+nZ) = -ff(i,nZ+1)*Sfactor
 
-      s_AD = s_AD + c_AD/COS_Angle(i) 
-      c_AD = ZERO
+         DO j = 1, nZ
+           V0(i,j) = single_albedo * ff(i,j) * COS_Weight(j)
+           V0(i+nZ,j) = single_albedo * bb(i,j) * COS_Weight(j)
+           V0(i,j+nZ) = V0(i+nZ,j)
+           V0(nZ+i,j+nZ) = V0(i,j)
+         ENDDO
+       V0(i,i) = V0(i,i) - ONE - COS_Angle(i)/RTV%COS_SUN
+       V0(i+nZ,i+nZ) = V0(i+nZ,i+nZ) - ONE + COS_Angle(i)/RTV%COS_SUN
+       ENDDO
+       
+       V1(1:N2_1,1:N2_1) = matinv(V0(1:N2_1,1:N2_1), Error_Status)
+       IF( Error_Status /= SUCCESS  ) THEN
+         WRITE( Message,'("Error in matrix inversion matinv(V0(1:N2_1,1:N2_1), Error_Status) ")' ) 
+         CALL Display_Message( ROUTINE_NAME, &                                                    
+                               TRIM(Message), &                                                   
+                               Error_Status )                                          
+         RETURN                                                                                    
+       END IF               
+       
+       Solar1(1:N2_1) = matmul( V1(1:N2_1,1:N2_1), Solar(1:N2_1) )
+       Solar1(N2) = ZERO
+       Sfac2 = Solar(N2) - sum( V0(N2,1:N2_1)*Solar1(1:N2_1) )
 
-    ENDDO
+       DO i = 1, nZ
+         source_up(i) = Solar1(i)
+         source_down(i) = EXPfactor*Solar1(i+nZ)
+         DO j = 1, nZ
+           source_up(i) =source_up(i)-refl(i,j)*Solar1(j+nZ)-trans(i,j)*EXPfactor*Solar1(j)
+           source_down(i) =source_down(i) -trans(i,j)*Solar1(j+nZ) -refl(i,j)*EXPfactor*Solar1(j)
+         END DO
+       END DO
+       ! specific treatment for downeward source function
+       IF( abs( V0(N2,N2) ) > 0.0001_fp ) THEN
+         source_down(nZ) =source_down(nZ) +(EXPfactor-trans(nZ,nZ))*Sfac2/V0(N2,N2)
+       ELSE
+         source_down(nZ) =source_down(nZ) -EXPfactor*Sfac2*optical_depth/COS_Angle(nZ)
+       END IF
+        
+       ! forward part end  ********      
+       !
+       s_transmittance_AD = s_transmittance_AD+sum (source_down(1:nZ)*source_down_AD(1:nZ) )
+       source_down_AD(1:nZ) = source_down_AD(1:nZ)*s_transmittance
+       s_transmittance_AD = s_transmittance_AD + sum (source_up(1:nZ)*source_up_AD(1:nZ) )
+       source_up_AD(1:nZ) = source_up_AD(1:nZ)*s_transmittance
+       !
+       ! specific treatment for downeward source function
+       IF( abs( V0(N2,N2) ) > 0.0001_fp ) THEN
+         V0_AD(N2,N2)=V0_AD(N2,N2)-(EXPfactor-trans(nZ,nZ))*Sfac2*source_down_AD(nZ)/V0(N2,N2)/V0(N2,N2)
+         Sfac2_AD = Sfac2_AD+(EXPfactor-trans(nZ,nZ))*source_down_AD(nZ)/V0(N2,N2)
+         EXPfactor_AD = EXPfactor_AD+source_down_AD(nZ)*Sfac2/V0(N2,N2)
+         trans_AD(nZ,nZ) = trans_AD(nZ,nZ)-source_down_AD(nZ)*Sfac2/V0(N2,N2)
+       ELSE
+         optical_depth_AD = optical_depth_AD -EXPfactor*Sfac2*source_down_AD(nZ)/COS_Angle(nZ)
+         Sfac2_AD = Sfac2_AD-EXPfactor*source_down_AD(nZ)*optical_depth/COS_Angle(nZ)
+         EXPfactor_AD = EXPfactor_AD-source_down_AD(nZ)*Sfac2*optical_depth/COS_Angle(nZ)
+       END IF
 
-    Delta_Tau_AD = Delta_Tau_AD + s_AD* single_albedo
-    single_albedo_AD = single_albedo_AD+RTV%Delta_Tau(KL) * s_AD
-    optical_depth_AD = optical_depth_AD + Delta_Tau_AD/(TWO**RTV%Number_Doubling(KL))
+       DO i = nZ, 1, -1
+         DO j = nZ, 1, -1
+           Solar1_AD(j)=Solar1_AD(j)-refl(i,j)*EXPfactor*source_down_AD(i)
+           EXPfactor_AD = EXPfactor_AD -refl(i,j)*source_down_AD(i)*Solar1(j)
+           refl_AD(i,j) = refl_AD(i,j) -source_down_AD(i)*EXPfactor*Solar1(j)
+           Solar1_AD(j+nZ) = Solar1_AD(j+nZ) -trans(i,j)*source_down_AD(i)
+           trans_AD(i,j) = trans_AD(i,j) -source_down_AD(i)*Solar1(j+nZ)
+           
+           Solar1_AD(j)=Solar1_AD(j)-trans(i,j)*EXPfactor*source_up_AD(i)
+           EXPfactor_AD = EXPfactor_AD - trans(i,j)*source_up_AD(i)*Solar1(j)
+           trans_AD(i,j)=trans_AD(i,j) - source_up_AD(i)*EXPfactor*Solar1(j)
+           Solar1_AD(j+nZ) = Solar1_AD(j+nZ) -refl(i,j)*source_up_AD(i)
+           refl_AD(i,j) = refl_AD(i,j) -source_up_AD(i)*Solar1(j+nZ)
+         END DO
+         
+         Solar1_AD(i+nZ) = Solar1_AD(i+nZ) + EXPfactor * source_down_AD(i)
+         EXPfactor_AD = EXPfactor_AD + source_down_AD(i)*Solar1(i+nZ)
+         Solar1_AD(i) = Solar1_AD(i) + source_up_AD(i)          
+       END DO
 
-  END SUBROUTINE CRTM_Doubling_layer_AD
+       Solar1_AD(1:N2_1)=Solar1_AD(1:N2_1) -Sfac2_AD*V0(N2,1:N2_1)
+       V0_AD(N2,1:N2_1)=V0_AD(N2,1:N2_1) -Sfac2_AD*Solar1(1:N2_1)
+       Solar_AD(N2) = Solar_AD(N2) + Sfac2_AD
 
+       Solar1_AD(N2) = ZERO
+       Solar_AD(1:N2_1)=Solar_AD(1:N2_1)+matmul( transpose(V1(1:N2_1,1:N2_1)),Solar1_AD(1:N2_1) )
+       Solar(1:N2_1) =  matmul( V1(1:N2_1,1:N2_1),Solar(1:N2_1) )                  
+       Solar1_AD(1:N2_1) = -matmul( transpose(V1(1:N2_1,1:N2_1)),Solar1_AD(1:N2_1) ) 
+       DO i = 1, N2_1
+       DO j = 1, N2_1
+         V0_AD(i,j)=V0_AD(i,j)+Solar1_AD(i)*Solar(j)
+       END DO
+       END DO        
+        
+       ! Solar source            
+       DO i = nZ, 1, -1                
+         DO j = nZ, 1, -1    
+           V0_AD(i,j)=V0_AD(i,j) + V0_AD(nZ+i,j+nZ)
+           V0_AD(i+nZ,j)=V0_AD(i+nZ,j) + V0_AD(i,j+nZ)
+           bb_AD(i,j)=bb_AD(i,j) + single_albedo*V0_AD(i+nZ,j)*COS_Weight(j)
+           single_albedo_AD=single_albedo_AD + V0_AD(i+nZ,j)*bb(i,j)*COS_Weight(j)
+           ff_AD(i,j)=ff_AD(i,j) + single_albedo*V0_AD(i,j)*COS_Weight(j)
+           single_albedo_AD=single_albedo_AD +V0_AD(i,j)*ff(i,j)*COS_Weight(j)
+         ENDDO
+       
+         Sfactor_AD = Sfactor_AD -ff(i,nZ+1)*Solar_AD(i+nZ)
+         ff_AD(i,nZ+1) = ff_AD(i,nZ+1) -Solar_AD(i+nZ)*Sfactor
+         Sfactor_AD = Sfactor_AD -bb(i,nZ+1)*Solar_AD(i)
+         bb_AD(i,nZ+1)=bb_AD(i,nZ+1) - Solar_AD(i)*Sfactor
+       ENDDO
+        
+       total_opt_AD = total_opt_AD -s_transmittance_AD/RTV%COS_SUN*s_transmittance
+       optical_depth_AD = optical_depth_AD -EXPfactor_AD/RTV%COS_SUN*EXPfactor
+       
+       IF( RTV%mth_Azi == 0 ) THEN
+         Sfactor_AD = Sfactor_AD/TWO
+       END IF
+             
+       single_albedo_AD = single_albedo_AD + Sfactor_AD*RTV%Solar_irradiance/PI
+       
+     END IF
 
+    ! Thermal part
+     IF( RTV%mth_Azi == 0 ) THEN
+       DO i = nZ, 1, -1
+         thermal_up_AD(i) = thermal_up_AD(i) + thermal_down_AD(i)
+         thermal_down_AD(i) = ZERO
+         Planck_Func_AD = Planck_Func_AD + ( ONE - RTV%Thermal_C(i,KL) ) * thermal_up_AD(i)
+         Thermal_C_AD = -thermal_up_AD(i) * Planck_Func
+
+         IF ( i == nZ .AND. nZ == (n_Streams+1) ) THEN
+           trans_AD(nZ,nZ) = trans_AD(nZ,nZ) + Thermal_C_AD
+         END IF
+       
+         DO j = n_Streams, 1, -1
+           trans_AD(i,j) = trans_AD(i,j) + Thermal_C_AD
+           refl_AD(i,j) = refl_AD(i,j) + Thermal_C_AD
+         ENDDO
+         thermal_up_AD(i) = ZERO
+       ENDDO
+     END IF
+!     
+     i_Gm_A5_AD = matmul( transpose(RTV%Gp(1:nZ,1:nZ,KL)-RTV%A6(1:nZ,1:nZ,KL)),refl_AD )
+     Gp_AD(:,:) = matmul( refl_AD, transpose(RTV%i_Gm_A5(1:nZ,1:nZ,KL)) )       
+     
+     A6_AD = - GP_AD  
+     i_Gm_A5_AD = i_Gm_A5_AD + matmul( transpose(RTV%A4(1:nZ,1:nZ,KL)-RTV%A3(1:nZ,1:nZ,KL)),trans_AD )
+     A4_AD(:,:) = matmul( trans_AD, transpose(RTV%i_Gm_A5(1:nZ,1:nZ,KL)) )
+     A3_AD = - A4_AD
+     Gm_A5_AD = -matmul( transpose(RTV%i_Gm_A5(1:nZ,1:nZ,KL)) ,matmul( i_Gm_A5_AD,transpose(RTV%i_Gm_A5(1:nZ,1:nZ,KL)) ) )       
+     Gm_AD = Gm_A5_AD
+     A5_AD = - Gm_A5_AD
+
+     A4_AD = A4_AD + matmul( A6_AD(:,:), transpose(RTV%A2(1:nZ,1:nZ,KL)) )
+     A2_AD = matmul( transpose(RTV%A4(1:nZ,1:nZ,KL)),A6_AD(:,:) )
+
+     A1_AD = matmul( A5_AD(:,:), transpose(RTV%A2(1:nZ,1:nZ,KL)) )
+     A2_AD = A2_AD + matmul( transpose(RTV%A1(1:nZ,1:nZ,KL)), A5_AD(:,:) )
+
+     Gp_AD = Gp_AD + matmul( A3_AD(:,:), transpose(RTV%A2(1:nZ,1:nZ,KL)) )
+     A2_AD = A2_AD + matmul( transpose(RTV%Gp(1:nZ,1:nZ,KL)),A3_AD(:,:) )
+
+     i_Gm_AD = matmul( A2_AD(:,:), transpose(RTV%A1(1:nZ,1:nZ,KL)) )
+     A1_AD = A1_AD + matmul( transpose(RTV%i_Gm(1:nZ,1:nZ,KL)), A2_AD(:,:) )
+
+     Exp_x_AD = ZERO
+     
+     DO i = nZ, 1, -1
+       DO j = nZ, 1, -1
+         Gm_AD(i,j) = Gm_AD(i,j) + A4_AD(i,j)* RTV%Exp_x(j,KL)
+         Exp_x_AD(j) = Exp_x_AD(j) + RTV%Gm(i,j,KL)*A4_AD(i,j)
+         Gp_AD(i,j) = Gp_AD(i,j) + A1_AD(i,j)* RTV%Exp_x(j,KL)
+         Exp_x_AD(j) = Exp_x_AD(j) + RTV%Gp(i,j,KL)*A1_AD(i,j)
+       END DO
+     END DO
+    
+     DO i = nZ, 1, -1
+       xx_AD = -Exp_x_AD(i)*RTV%Exp_x(i,KL)
+       Exp_x_AD(i) = ZERO
+       EigValue_AD(i) = xx_AD*optical_depth
+       optical_depth_AD = optical_depth_AD + RTV%EigValue(i,KL)*xx_AD
+     END DO
+
+     Gm_AD = Gm_AD -matmul( transpose(RTV%i_Gm(1:nZ,1:nZ,KL)), matmul( i_Gm_AD, transpose(RTV%i_Gm(1:nZ,1:nZ,KL)) ) )
+ 
+     EigVe_AD(:,:) = Gm_AD(:,:)/2.0_fp           
+     EigVeF_AD(:,:) = - Gm_AD(:,:)/2.0_fp         
+
+     EigVe_AD = EigVe_AD + Gp_AD(:,:)/2.0_fp
+     EigVeF_AD = EigVeF_AD + Gp_AD(:,:)/2.0_fp
+
+     i_PPM_AD(:,:) = matmul( EigVeF_AD(:,:), transpose(RTV%EigVeVa(1:nZ,1:nZ,KL)) )
+     EigVeVa_AD(:,:) = matmul( transpose(RTV%i_PPM(1:nZ,1:nZ,KL)), EigVeF_AD(:,:) )           
+
+     DO i = nZ, 1, -1
+       DO j = nZ, 1, -1              
+         EigVe_AD(i,j)=EigVe_AD(i,j)+EigVeVa_AD(i,j)* RTV%EigValue(j,KL)
+         EigValue_AD(j) = EigValue_AD(j)+RTV%EigVe(i,j,KL)*EigVeVa_AD(i,j)
+       END DO
+     END DO
+    
+     DO i = nZ, 1, -1
+       IF( RTV%EigVa(i,KL) > ZERO ) THEN
+         EigVa_AD(i) = 0.5_fp*EigValue_AD(i)/RTV%EigValue(i,KL)
+       ELSE
+         EigValue_AD(i) = ZERO
+         EigVa_AD(i) = ZERO 
+       END IF
+     END DO
+
+     ! compute eigenvectors EigVe, and eigenvalues EigVa
+     CALL ASYMTX_AD(COS_Angle(nZ),n_Streams,nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL), &
+          EigVe_AD,EigVa_AD,HH_AD,Error_Status) 
+
+     PPM_AD(:,:) = matmul( HH_AD(:,:), transpose(RTV%PPP(1:nZ,1:nZ,KL)) )
+     PPP_AD(:,:) = matmul( transpose(RTV%PPM(1:nZ,1:nZ,KL)), HH_AD(:,:) )
+
+     PP_AD = PPP_AD
+     PM_AD = PPP_AD
+   
+     PPM_AD(:,:) = PPM_AD(:,:)-matmul( transpose(RTV%i_PPM(1:nZ,1:nZ,KL)),matmul(i_PPM_AD(:,:),transpose(RTV%i_PPM(1:nZ,1:nZ,KL))) )
+
+     PP_AD = PP_AD + PPM_AD
+     PM_AD = PM_AD - PPM_AD
+
+     IF( single_albedo < max_albedo ) THEN
+       s = single_albedo
+     ELSE
+       s = max_albedo
+     END IF 
+     
+       c_AD = ZERO
+       s_AD = ZERO
+     DO i = nZ, 1, -1
+       c = s/COS_Angle(i) 
+       DO j = nZ, 1, -1
+       c_AD = c_AD + PP_AD(i,j) * ff(i,j) * COS_Weight(j)
+       ff_AD(i,j) = ff_AD(i,j) + c * PP_AD(i,j) * COS_Weight(j)
+       c_AD = c_AD + PM_AD(i,j) * bb(i,j) * COS_Weight(j)
+       bb_AD(i,j) = bb_AD(i,j) + c * PM_AD(i,j) * COS_Weight(j)
+       END DO
+       s_AD = s_AD + c_AD/COS_Angle(i)
+       c_AD = ZERO
+     ENDDO
+!
+     IF( single_albedo < max_albedo ) THEN
+       s = single_albedo
+       single_albedo_AD = s_AD + single_albedo_AD       
+     ELSE
+       s = max_albedo
+       s_AD = 0.0_fp
+     END IF
+!       
+     RETURN
+
+     END SUBROUTINE CRTM_AMOM_layer_AD
+!
+!
 !--------------------------------------------------------------------------------
 !S+
 ! NAME:
@@ -1651,7 +2005,7 @@ CONTAINS
     ! Local variables
     ! ---------------
 
-    INTEGER :: i, j, k, l
+    INTEGER :: i, j, k, l, ifac, jn
 
 
 
@@ -1662,11 +2016,17 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     DO i = 1, RTV%n_Angles 
-       CALL Legendre(AtmOptics%n_Legendre_Terms,  RTV%COS_Angle(i), RTV%Pplus(0:,i) )
-       CALL Legendre(AtmOptics%n_Legendre_Terms, -RTV%COS_Angle(i), RTV%Pminus(0:,i))
+       CALL Legendre_M(RTV%mth_Azi,AtmOptics%n_Legendre_Terms, RTV%COS_Angle(i), RTV%Pleg(0:,i) )
     END DO
 
+    IF(RTV%Solar_Flag_true) &
+    CALL Legendre_M(RTV%mth_Azi,AtmOptics%n_Legendre_Terms, RTV%COS_SUN, RTV%Pleg(0:,RTV%n_Angles+1) )
 
+    IF( RTV%Solar_Flag_true ) THEN
+      jn = RTV%n_Angles + 1
+    ELSE
+      jn = RTV%n_Angles
+    END IF
 
     !#--------------------------------------------------------------------------#
     !#                    -- COMPUTE THE PHASE MATRICES --                      #
@@ -1681,30 +2041,34 @@ CONTAINS
       ! ------------------------------    
 
       Significant_Scattering: IF( AtmOptics%Single_Scatter_Albedo(k) > SCATTERING_ALBEDO_THRESHOLD) THEN
-
-        DO j = 1, RTV%n_Angles
+      
+        DO j = 1, jn
+          ! add solar angle
           DO i = 1, RTV%n_Angles
 
             RTV%Off(i,j,k)=ZERO
             RTV%Obb(i,j,k)=ZERO
 
-            DO l = 0, AtmOptics%n_Legendre_Terms - 1
-              RTV%Off(i,j,k) = RTV%Off(i,j,k) + ( AtmOptics%Phase_Coefficient(l,1,k)*RTV%Pplus(l,i)*RTV%Pplus(l,j) )
-              RTV%Obb(i,j,k) = RTV%Obb(i,j,k) + ( AtmOptics%Phase_Coefficient(l,1,k)*RTV%Pplus(l,i)*RTV%Pminus(l,j) )
+            DO l = RTV%mth_Azi, AtmOptics%n_Legendre_Terms - 1
+              ifac = (-1) ** (l - RTV%mth_Azi)
+              RTV%Off(i,j,k) = RTV%Off(i,j,k) + ( AtmOptics%Phase_Coefficient(l,1,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j) )
+              RTV%Obb(i,j,k) = RTV%Obb(i,j,k) + ( AtmOptics%Phase_Coefficient(l,1,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j)*ifac )
             END DO
 
             RTV%Pff(i,j,k) = RTV%Off(i,j,k)
             RTV%Pbb(i,j,k) = RTV%Obb(i,j,k)
 
-            ! For intensity, the phase matrix element must >= ZERO             
-            IF(RTV%Pff(i,j,k) < ZERO) RTV%Pff(i,j,k) = PHASE_THRESHOLD
-            IF(RTV%Pbb(i,j,k) < ZERO) RTV%Pbb(i,j,k) = PHASE_THRESHOLD
+            ! For intensity, the phase matrix element must >= ZERO   
+            IF ( RTV%mth_Azi == 0 ) THEN          
+              IF(RTV%Pff(i,j,k) < ZERO) RTV%Pff(i,j,k) = PHASE_THRESHOLD
+              IF(RTV%Pbb(i,j,k) < ZERO) RTV%Pbb(i,j,k) = PHASE_THRESHOLD
+            END IF
 
           END DO
         END DO
 
         ! Normalization to ensure energy conservation
-        CALL Normalize_Phase( k, RTV )
+        IF (  RTV%mth_Azi == 0 ) CALL Normalize_Phase( k, RTV )
              
       END IF Significant_Scattering
 
@@ -1829,8 +2193,8 @@ CONTAINS
     ! Local variables
     ! ---------------
 
-    INTEGER :: i, j, k, l, nZ
-    REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles) :: Lff, Lbb
+    INTEGER :: i, j, k, l, nZ, ifac, jn
+    REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles+1) :: Lff, Lbb
 
 
 
@@ -1839,33 +2203,40 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     nZ = RTV%n_Angles
+    IF( RTV%Solar_Flag_true ) THEN
+      jn = RTV%n_Angles + 1
+    ELSE
+      jn = RTV%n_Angles
+    END IF
 
     Layer_Loop: DO  k = 1, RTV%n_Layers
-    
-    
+        
       ! ------------------------------    
       ! Only proceed if the scattering    
       ! coefficient is significant        
       ! ------------------------------    
 
       Significant_Scattering: IF( AtmOptics%Single_Scatter_Albedo(k) > SCATTERING_ALBEDO_THRESHOLD) THEN
-            
-        Lff(1:nZ,1:nZ) = RTV%Off(1:nZ,1:nZ,k)
-        Lbb(1:nZ,1:nZ) = RTV%Obb(1:nZ,1:nZ,k)
+                 
+        Lff(1:nZ,1:jn) = RTV%Off(1:nZ,1:jn,k)
+        Lbb(1:nZ,1:jn) = RTV%Obb(1:nZ,1:jn,k)
 
-        DO j = 1, RTV%n_Angles
+
+        DO j = 1, jn
           DO i = 1, RTV%n_Angles
 
             Pff_TL(i,j,k) = ZERO
             Pbb_TL(i,j,k) = ZERO    
                 
-            DO l = 0, AtmOptics%n_Legendre_Terms - 1
-              Pff_TL(i,j,k) = Pff_TL(i,j,k) + ( AtmOptics_TL%Phase_Coefficient(l,1,k)*RTV%Pplus(l,i)*RTV%Pplus(l,j) )
-              Pbb_TL(i,j,k) = Pbb_TL(i,j,k) + ( AtmOptics_TL%Phase_Coefficient(l,1,k)*RTV%Pplus(l,i)*RTV%Pminus(l,j) )
+            DO l = RTV%mth_Azi, AtmOptics%n_Legendre_Terms - 1
+              ifac = (-1) ** (l - RTV%mth_Azi)
+              Pff_TL(i,j,k) = Pff_TL(i,j,k) + ( AtmOptics_TL%Phase_Coefficient(l,1,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j) )
+              Pbb_TL(i,j,k) = Pbb_TL(i,j,k) + ( AtmOptics_TL%Phase_Coefficient(l,1,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j)*ifac )
             END DO
               
             ! For intensity, the FWD phase matrix element must >= ZERO
             ! so the TL form is always == zero.
+          IF ( RTV%mth_Azi == 0 ) THEN
             IF ( RTV%Off(i,j,k) < ZERO ) THEN
               Pff_TL(i,j,k) = ZERO
               Lff(i,j)      = PHASE_THRESHOLD 
@@ -1875,17 +2246,19 @@ CONTAINS
               Pbb_TL(i,j,k) = ZERO
               Lbb(i,j) = PHASE_THRESHOLD 
             END IF
+          END IF
              
           END DO
         END DO
 
+        IF ( RTV%mth_Azi == 0 ) THEN
         ! Normalisation for energy conservation
-        CALL Normalize_Phase_TL( k, RTV, &
+          CALL Normalize_Phase_TL( k, RTV, &
                                  Lff,           & ! FWD Input
                                  Lbb,           & ! FWD Input
                                  Pff_TL(:,:,k), & ! TL  Output
                                  Pbb_TL(:,:,k)  ) ! TL  Output
-             
+        END IF
       END IF Significant_Scattering
     
     END DO Layer_Loop
@@ -2019,8 +2392,8 @@ CONTAINS
     ! Local variables
     ! ---------------
 
-    INTEGER :: i, j, k, l, nZ
-    REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles) :: Lff, Lbb
+    INTEGER :: i, j, k, l, nZ, ifac, jn
+    REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles+1) :: Lff, Lbb
 
 
 
@@ -2029,7 +2402,12 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     nZ = RTV%n_Angles
-
+    IF( RTV%Solar_Flag_true ) THEN
+      jn = RTV%n_Angles + 1
+    ELSE
+      jn = RTV%n_Angles
+    END IF
+        
     Layer_Loop: DO  k = 1, RTV%n_Layers
     
     
@@ -2042,18 +2420,21 @@ CONTAINS
 
 
         ! AD normalization to ensure energy conservation
-        AtmOptics_AD%Phase_Coefficient(0:,1,k) = ZERO
+     !!   AtmOptics_AD%Phase_Coefficient(0:,1,k) = ZERO
         
-        Lff(1:nZ,1:nZ) = RTV%Off(1:nZ,1:nZ,k)
-        Lbb(1:nZ,1:nZ) = RTV%Obb(1:nZ,1:nZ,k)
+        Lff(1:nZ,1:jn) = RTV%Off(1:nZ,1:jn,k)
+        Lbb(1:nZ,1:jn) = RTV%Obb(1:nZ,1:jn,k)
 
-        DO j = 1, RTV%n_Angles
+      IF ( RTV%mth_Azi == 0 ) THEN              
+        DO j = 1, jn
           DO i = 1, RTV%n_Angles
          
             ! For intensity, the FWD phase matrix element must >= ZERO
             ! so the TL, and thus the AD, for is always == zero.
-            IF ( RTV%Off(i,j,k) < ZERO) Lff(i,j) = PHASE_THRESHOLD
-            IF ( RTV%Obb(i,j,k) < ZERO) Lbb(i,j) = PHASE_THRESHOLD
+
+              IF ( RTV%Off(i,j,k) < ZERO) Lff(i,j) = PHASE_THRESHOLD
+              IF ( RTV%Obb(i,j,k) < ZERO) Lbb(i,j) = PHASE_THRESHOLD
+           
           END DO
         END DO
 
@@ -2061,20 +2442,24 @@ CONTAINS
                                 Lff, Lbb,      & ! FWD Input
                                 Pff_AD(:,:,k), & ! AD  Output
                                 Pbb_AD(:,:,k)  ) ! AD  Output
+      END IF
 
-        DO j = 1, RTV%n_Angles
+        DO j = 1, jn
           DO i = 1, RTV%n_Angles
          
             ! For intensity, the FWD phase matrix element must >= ZERO
             ! so the TL, and thus the AD, for is always == zero.
+          IF ( RTV%mth_Azi == 0 ) THEN
             IF ( RTV%Off(i,j,k) < ZERO) Pff_AD(i,j,k) = ZERO
             IF ( RTV%Obb(i,j,k) < ZERO) Pbb_AD(i,j,k) = ZERO
+          END IF
 
-            DO l = 0, AtmOptics%n_Legendre_Terms - 1
+            DO l = RTV%mth_Azi, AtmOptics%n_Legendre_Terms - 1
+               ifac = (-1) ** (l - RTV%mth_Azi)
                AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
-                                                       ( Pff_AD(i,j,k)*RTV%Pplus(l,i)*RTV%Pplus(l,j) )
+                                                       ( Pff_AD(i,j,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j) )
                AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
-                                                       ( Pbb_AD(i,j,k)*RTV%Pplus(l,i)*RTV%Pminus(l,j) ) 
+                                                       ( Pbb_AD(i,j,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j)*ifac ) 
             END DO
 
             Pff_AD(i,j,k) = ZERO
@@ -2088,7 +2473,7 @@ CONTAINS
     END DO Layer_Loop
 
   END SUBROUTINE CRTM_Phase_Matrix_AD
-
+!
 
   SUBROUTINE Normalize_Phase( k, RTV )
     INTEGER,                       INTENT(IN)     :: k
@@ -2104,7 +2489,7 @@ CONTAINS
 
     RTV%Sum_Fac(0,k)=ZERO
 
-    DO i = 1, nZ-1
+    DO i = 1, RTV%n_Streams
       RTV%n_Factor(i,k)=ZERO
       DO j = i,nZ
         RTV%n_Factor(i,k)=RTV%n_Factor(i,k)+(RTV%Pff(i,j,k)+RTV%Pbb(i,j,k))*RTV%COS_Weight(j)
@@ -2115,39 +2500,37 @@ CONTAINS
         RTV%Pbb(i,j,k)=RTV%Pbb(i,j,k)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))
       END DO
       
-      DO j=i,nZ
-        RTV%Pff(j,i,k)=RTV%Pff(i,j,k)
-        RTV%Pbb(j,i,k)=RTV%Pbb(i,j,k)
-      END DO
-
       RTV%Sum_Fac(i,k)=ZERO
-      IF(i < nZ) THEN
+      IF( i < nZ ) THEN
+        DO j=i+1,nZ
+          RTV%Pff(j,i,k)=RTV%Pff(i,j,k)
+          RTV%Pbb(j,i,k)=RTV%Pbb(i,j,k)
+        END DO
+      
         DO j = 1, i
           RTV%Sum_Fac(i,k)=RTV%Sum_Fac(i,k) + (RTV%Pff(i+1,j,k)+RTV%Pbb(i+1,j,k))*RTV%COS_Weight(j)
         END DO
       END IF
-
     END DO
 
+    IF( RTV%n_Streams < nZ ) THEN 
+      ! Sensor viewing angle differs from the Gaussian angles
+      RTV%n_Factor(nZ,k) =  RTV%Sum_Fac(nZ-1,k)
 
-    ! -------------------------------------
-    ! Normalisation for sensor zenith angle
-    ! -------------------------------------
+      DO j = 1, nZ
+        RTV%Pff(j,nZ,k) = RTV%Pff(j,nZ,k)/RTV%n_Factor(nZ,k)
+        RTV%Pbb(j,nZ,k) = RTV%Pbb(j,nZ,k)/RTV%n_Factor(nZ,k)
 
-    RTV%n_Factor(nZ,k) = ZERO                               
-    DO j = 1, nZ-1                               
-      RTV%n_Factor(nZ,k)=RTV%n_Factor(nZ,k)+(RTV%Pff(nZ,j,k)+RTV%Pbb(nZ,j,k))*RTV%COS_Weight(j)    
-    END DO                                      
-
-    DO j = 1, nZ                
-      RTV%Pff(nZ,j,k)=RTV%Pff(nZ,j,k)/RTV%n_Factor(nZ,k)    
-      RTV%Pbb(nZ,j,k)=RTV%Pbb(nZ,j,k)/RTV%n_Factor(nZ,k)    
-    END DO      
-                    
-    DO j = 1, nZ                
-      RTV%Pff(j,nZ,k)=RTV%Pff(nZ,j,k)          
-      RTV%Pbb(j,nZ,k)=RTV%Pbb(nZ,j,k)          
-    END DO                     
+    ! -------------------
+    ! Symmetric condition
+    ! -------------------
+        IF( j < nZ ) THEN
+          RTV%Pff(nZ,j,k) = RTV%Pff(j,nZ,k)
+          RTV%Pbb(nZ,j,k) = RTV%Pbb(j,nZ,k)
+        END IF
+        
+      END DO      
+    END IF
 
   END SUBROUTINE Normalize_Phase
 
@@ -2172,7 +2555,7 @@ CONTAINS
 
     Sum_Fac_TL(0) = ZERO
 
-    DO i = 1, nZ-1
+    DO i = 1, RTV%n_Streams
       n_Factor_TL = ZERO
       DO j = i,nZ
         n_Factor_TL=n_Factor_TL+(Pff_TL(i,j)+Pbb_TL(i,j))*RTV%COS_Weight(j)
@@ -2191,31 +2574,23 @@ CONTAINS
       END DO
 
       Sum_Fac_TL(i)=ZERO
- 
+    ! -------------------
+    ! Symmetric condition
+    ! -------------------
+      IF( i < nZ ) THEN
+        DO j = i+1, nZ
+          Pff_TL(j,i) = Pff_TL(i,j)
+          Pbb_TL(j,i) = Pbb_TL(i,j)
+        END DO
         DO j = 1, i
           Sum_Fac_TL(i)=Sum_Fac_TL(i) + (Pff_TL(j,i+1)+Pbb_TL(j,i+1))*RTV%COS_Weight(j)
         END DO
-       
+     END IF
     END DO
 
-    IF( RTV%n_Streams == nZ ) THEN 
-      ! Sensor viewing angle can be represented by one of the Gaussian angles
-      n_Factor_TL = (Pff_TL(nZ,nZ) + Pbb_TL(nZ,nZ) )*RTV%COS_Weight(nZ)  
-          
-      Pff_TL(nZ,nZ) = Pff_TL(nZ,nZ)/RTV%n_Factor(nZ,k)*(ONE-RTV%Sum_Fac(nZ-1,k)) &
-                    - Pff(nZ,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL*(ONE-RTV%Sum_Fac(nZ-1,k)) &
-                    - Pff(nZ,nZ)/RTV%n_Factor(nZ,k)*Sum_Fac_TL(nZ-1)
-
-      Pbb_TL(nZ,nZ) = Pbb_TL(nZ,nZ)/RTV%n_Factor(nZ,k)*(ONE-RTV%Sum_Fac(nZ-1,k)) &
-                    - Pbb(nZ,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL*(ONE-RTV%Sum_Fac(nZ-1,k)) &
-                    - Pbb(nZ,nZ)/RTV%n_Factor(nZ,k)*Sum_Fac_TL(nZ-1)
-  
-    ELSE
+    IF( RTV%n_Streams < nZ ) THEN 
       ! Sensor viewing angle differs from the Gaussian angles
-      n_Factor_TL = ZERO
-      DO j = 1,nZ-1
-        n_Factor_TL = n_Factor_TL+(Pff_TL(j,nZ)+Pbb_TL(j,nZ))*RTV%COS_Weight(j)
-      END DO
+      n_Factor_TL = Sum_Fac_TL(nZ-1)
 
       DO j = 1, nZ
       
@@ -2225,25 +2600,17 @@ CONTAINS
         Pbb_TL(j,nZ) = Pbb_TL(j,nZ)/RTV%n_Factor(nZ,k)  &
                      - Pbb(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL             
 
-      END DO
-      
-    END IF
-
-
     ! -------------------
     ! Symmetric condition
     ! -------------------
-                 
-    DO i = 1, nZ
-    
-      DO j = i, nZ
-        IF( i /= j ) THEN
-          Pff_TL(j,i) = Pff_TL(i,j)
-          Pbb_TL(j,i) = Pbb_TL(i,j)
+        IF( j < nZ ) THEN
+        Pff_TL(nZ,j) = Pff_TL(j,nZ)
+        Pbb_TL(nZ,j) = Pbb_TL(j,nZ)
         END IF
+        
       END DO
       
-    ENDDO
+    END IF
                      
 
   END SUBROUTINE Normalize_Phase_TL
@@ -2268,43 +2635,21 @@ CONTAINS
     ! Symmetric condition
     ! -------------------
 
-    DO i = nZ, 1, -1
-      DO j = nZ, i, -1
-        IF( i /= j ) THEN
-       
-          Pff_AD(i,j) = Pff_AD(i,j) + Pff_AD(j,i)
-          Pbb_AD(i,j) = Pbb_AD(i,j) + Pbb_AD(j,i)
-          Pff_AD(j,i) = ZERO
-          Pbb_AD(j,i) = ZERO
-          
-        END IF
-      END DO
-    ENDDO
-
-
     n_Factor_AD = ZERO
 
-    IF( RTV%n_Streams == nZ ) THEN 
-
-      ! Sensor viewing angle can be represented by one of the Gaussian angles
-
-      Sum_Fac_AD(nZ-1) = Sum_Fac_AD(nZ-1) - Pbb(nZ,nZ)/RTV%n_Factor(nZ,k)*Pbb_AD(nZ,nZ)
-      n_Factor_AD = n_Factor_AD - Pbb(nZ,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*Pbb_AD(nZ,nZ) &
-                  * (ONE-RTV%Sum_Fac(nZ-1,k))
-      Pbb_AD(nZ,nZ) = Pbb_AD(nZ,nZ)/RTV%n_Factor(nZ,k)*(ONE-RTV%Sum_Fac(nZ-1,k))
-      
-      Sum_Fac_AD(nZ-1) = Sum_Fac_AD(nZ-1) - Pff(nZ,nZ)/RTV%n_Factor(nZ,k)*Pff_AD(nZ,nZ)
-      n_Factor_AD = n_Factor_AD - Pff(nZ,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*Pff_AD(nZ,nZ) &
-                  * (ONE-RTV%Sum_Fac(nZ-1,k))
-      Pff_AD(nZ,nZ) = Pff_AD(nZ,nZ)/RTV%n_Factor(nZ,k)*(ONE-RTV%Sum_Fac(nZ-1,k))
-      
-      Pbb_AD(nZ,nZ) = Pbb_AD(nZ,nZ) + n_Factor_AD* RTV%COS_Weight(nZ)
-      Pff_AD(nZ,nZ) = Pff_AD(nZ,nZ) + n_Factor_AD* RTV%COS_Weight(nZ)
-      
-    ELSE
+    IF( RTV%n_Streams < nZ ) THEN 
       ! Sensor viewing angle diffs from the Gaussian angles
       
       DO j = nZ, 1, -1
+    ! -------------------
+    ! Symmetric condition
+    ! -------------------
+        IF( j < nZ ) THEN
+          Pff_AD(j,nZ) = Pff_AD(j,nZ) + Pff_AD(nZ,j)
+          Pff_AD(nZ,j) = ZERO
+          Pbb_AD(j,nZ) = Pbb_AD(j,nZ) + Pbb_AD(nZ,j)
+          Pbb_AD(nZ,j) = ZERO
+        END IF
       
         n_Factor_AD = n_Factor_AD - Pff(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*Pff_AD(j,nZ)
         Pff_AD(j,nZ) = Pff_AD(j,nZ)/RTV%n_Factor(nZ,k)
@@ -2313,27 +2658,33 @@ CONTAINS
         Pbb_AD(j,nZ) = Pbb_AD(j,nZ)/RTV%n_Factor(nZ,k)             
         
       END DO   
-      
-      
-      DO j = nZ-1, 1, -1
-        
-        Pff_AD(j,nZ) = Pff_AD(j,nZ) + n_Factor_AD*RTV%COS_Weight(j)
-        Pbb_AD(j,nZ) = Pbb_AD(j,nZ) + n_Factor_AD*RTV%COS_Weight(j)
-        
-      END DO
 
+      Sum_Fac_AD(nZ-1) = n_Factor_AD      
       n_Factor_AD = ZERO
-      
+
     END IF
     
-    DO i = nZ-1, 1, -1 
+    DO i = RTV%n_Streams, 1, -1 
  
-      DO j = i, 1, -1
-       
-        Pbb_AD(j,i+1) = Pbb_AD(j,i+1) + Sum_Fac_AD(i)*RTV%COS_Weight(j)
-        Pff_AD(j,i+1) = Pff_AD(j,i+1) + Sum_Fac_AD(i)*RTV%COS_Weight(j)
+    ! -------------------
+    ! Symmetric condition
+    ! -------------------
+      IF( i < nZ ) THEN
+        DO j = i, 1, -1       
+          Pbb_AD(j,i+1) = Pbb_AD(j,i+1) + Sum_Fac_AD(i)*RTV%COS_Weight(j)
+          Pff_AD(j,i+1) = Pff_AD(j,i+1) + Sum_Fac_AD(i)*RTV%COS_Weight(j)        
+        END DO
         
-      END DO
+    ! -------------------
+    ! Symmetric condition
+    ! -------------------
+        DO j = nZ,i+1,-1
+          Pff_AD(i,j) = Pff_AD(i,j) + Pff_AD(j,i)
+          Pff_AD(j,i) = ZERO
+          Pbb_AD(i,j) = Pbb_AD(i,j) + Pbb_AD(j,i)
+          Pbb_AD(j,i) = ZERO
+        END DO
+      END IF
        
       Sum_Fac_AD(i) = ZERO
     
@@ -2529,7 +2880,7 @@ CONTAINS
     REAL(fp) :: Factor  ! SfcOptics quadrature weights normalisation factor
     REAL(fp) :: User_Emissivity, Direct_Reflectivity
     REAL(fp) :: Cosmic_Background_Radiance
-    REAL(fp) :: Solar_Irradiance
+    REAL(fp) :: Radiance
     INTEGER  :: Sensor_Type
     LOGICAL  :: Is_Solar_Channel
 
@@ -2555,12 +2906,11 @@ CONTAINS
     END IF
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
     Sensor_Type                = SC(SensorIndex)%Sensor_Type
     Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
-
-
-
+    RTV%COS_SUN                = cos(GeometryInfo%Source_Zenith_Radian)
+    RTV%Solar_Irradiance       = SC(SensorIndex)%Solar_Irradiance(ChannelIndex) * GeometryInfo%AU_ratio2
+   
     ! Determine the surface emission behavior
     !   By default, surface is SPECULAR.
     !   If IR sensor AND water coverage < 50%, surface is DIFFUSE
@@ -2742,18 +3092,22 @@ CONTAINS
     ! Compute Planck radiances
     ! ------------------------
     ! Atmospheric layer radiances
-    DO k = 1, Atmosphere%n_Layers 
-      CALL CRTM_Planck_Radiance( SensorIndex              , & ! Input
+    IF( RTV%mth_Azi == 0 ) THEN
+      DO k = 1, Atmosphere%n_Layers 
+        CALL CRTM_Planck_Radiance( SensorIndex              , & ! Input
                                  ChannelIndex             , & ! Input
                                  Atmosphere%Temperature(k), & ! Input
                                  RTV%Planck_Atmosphere(k)   ) ! Output
-    END DO
+      END DO
     ! Surface radiance
-    CALL CRTM_Planck_Radiance( SensorIndex                  , & ! Input
+      CALL CRTM_Planck_Radiance( SensorIndex                  , & ! Input
                                ChannelIndex                 , & ! Input
                                SfcOptics%Surface_Temperature, & ! Input
                                RTV%Planck_Surface             ) ! Output
-
+    ELSE
+      RTV%Planck_Atmosphere = ZERO
+      RTV%Planck_Surface = ZERO
+    END IF
 
 
     ! ------------------------------
@@ -2761,7 +3115,6 @@ CONTAINS
     ! ------------------------------
     ! Select the RT model
     IF( RTV%Scattering_RT ) THEN
-
 
       ! -----------------------------------------------------
       ! Scattering RT. NESDIS advanced adding-doubling method 
@@ -2773,9 +3126,10 @@ CONTAINS
                      Cosmic_Background_Radiance                , & ! Input, cosmic background radiation
                      SfcOptics%Emissivity( 1:nZ, 1 )           , & ! Input, surface emissivity
                      SfcOptics%Reflectivity( 1:nZ, 1, 1:nZ, 1 ), & ! Input, surface reflectivity
+                     SfcOptics%Direct_Reflectivity(1:nZ,1)     , & ! Input, surface reflectivity for a point source
                      RTV                                         ) ! Output, Internal variables
       ! The output radiance
-      RTSolution%Radiance = RTV%s_Level_Rad_UP( SfcOptics%Index_Sat_Ang, 0 )
+      Radiance = RTV%s_Level_Rad_UP( SfcOptics%Index_Sat_Ang, 0 )
  
     ELSE
 
@@ -2794,12 +3148,12 @@ CONTAINS
                           SfcOptics%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, surface reflectivity                
                           SfcOptics%Direct_Reflectivity(1:nZ,1), & ! Input, surface reflectivity for a point source
                           Cosmic_Background_Radiance,            & ! Input, cosmic background radiation 
-                          Solar_Irradiance,                      & ! Input, Source irradiance at TOA
+                          RTV%Solar_Irradiance,                  & ! Input, Source irradiance at TOA
                           Is_Solar_Channel,                      & ! Input, Source sensitive channel info.
                           GeometryInfo%Source_Zenith_Radian,     & ! Input, Source zenith angle
                           RTV                                    ) ! Output, Internal variables
       ! The output radiance
-      RTSolution%Radiance = RTV%e_Level_Rad_UP(0)
+      Radiance = RTV%e_Level_Rad_UP(0)
 
       ! Other emission-only output
       RTSolution%Up_Radiance             = RTV%Up_Radiance
@@ -2816,15 +3170,20 @@ CONTAINS
         RTSolution%Upwelling_Radiance(1:no) = RTV%e_Level_Rad_UP(na+1:nt)
       END IF
     END IF
-
+ 
+    ! accumulate Fourier component
+    RTSolution%Radiance = RTSolution%Radiance + Radiance*  &
+       cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
 
     ! ------------------------------------------------
     ! Compute the corresponding brightness temperature
     ! ------------------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
     CALL CRTM_Planck_Temperature( SensorIndex,                      & ! Input
                                   ChannelIndex,                     & ! Input
                                   RTSolution%Radiance,              & ! Input
                                   RTSolution%Brightness_Temperature ) ! Output
+    END IF
 
   END FUNCTION CRTM_Compute_RTSolution
 
@@ -3030,7 +3389,6 @@ CONTAINS
     INTEGER :: no, na, nt
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Cosmic_Background_Radiance
-    REAL(fp) :: Solar_Irradiance
     LOGICAL  :: Is_Solar_Channel
     REAL(fp) :: User_Emissivity_TL, Direct_Reflectivity_TL
     REAL(fp)                                     :: Planck_Surface_TL    ! Surface TL radiance
@@ -3038,13 +3396,13 @@ CONTAINS
 
     ! The following variables are RT model specific
     REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
                          Atmosphere%n_Layers ) :: Pff_TL ! Forward scattering TL phase matrix
     REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
                          Atmosphere%n_Layers ) :: Pbb_TL ! Backward scattering TL phase matrix
     REAL(fp), DIMENSION( MAX_N_ANGLES ) :: Scattering_Radiance_TL
-
+    REAL(fp) :: Radiance_TL
 
     ! ------
     ! Set up
@@ -3067,7 +3425,6 @@ CONTAINS
     END IF
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
     Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
 
 
@@ -3160,21 +3517,26 @@ CONTAINS
     ! -------------------------------------------
     ! Compute the tangent-linear planck radiances
     ! -------------------------------------------
+    
+    IF( RTV%mth_Azi == 0 ) THEN
     ! Atmospheric layer TL radiances
-    DO k = 1, Atmosphere%n_Layers 
-      CALL CRTM_Planck_Radiance_TL( SensorIndex                 , & ! Input
+      DO k = 1, Atmosphere%n_Layers 
+        CALL CRTM_Planck_Radiance_TL( SensorIndex                 , & ! Input
                                     ChannelIndex                , & ! Input
                                     Atmosphere%Temperature(k)   , & ! Input
                                     Atmosphere_TL%Temperature(k), & ! Input
                                     Planck_Atmosphere_TL(k)       ) ! Output
-    END DO
+      END DO
     ! Surface TL radiance
-    CALL CRTM_Planck_Radiance_TL( SensorIndex                     , & ! Input
+      CALL CRTM_Planck_Radiance_TL( SensorIndex                     , & ! Input
                                   ChannelIndex                    , & ! Input
                                   SfcOptics%Surface_Temperature   , & ! Input
                                   SfcOptics_TL%Surface_Temperature, & ! Input
                                   Planck_Surface_TL                 ) ! Output
-
+    ELSE
+      Planck_Atmosphere_TL = ZERO
+      Planck_Surface_TL = ZERO
+    END IF
 
 
     ! ---------------------------------------------
@@ -3193,6 +3555,7 @@ CONTAINS
                         AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
                         Cosmic_Background_Radiance,               & ! cosmic background radiation
                         SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
+                        SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, surface direct reflectivity
                         RTV,                                      & ! Input, structure containing forward results 
                         Planck_Atmosphere_TL,                     & ! Input, TL layer radiances
                         Planck_Surface_TL,                        & ! Input, TL surface radiance
@@ -3201,11 +3564,12 @@ CONTAINS
                         AtmOptics_TL%Optical_Depth,               & ! Input, TL layer optical depth
                         SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
                         SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
-                        Pff_TL(1:nZ,1:nZ,:),                      & ! Input, TL layer forward phase matrix
-                        Pbb_TL(1:nZ,1:nZ,:),                      & ! Input, TL layer backward phase matrix
+                        SfcOptics_TL%Direct_Reflectivity(1:nZ,1), & ! Input, TL surface direct reflectivity
+                        Pff_TL(1:nZ,1:(nZ+1),:),                      & ! Input, TL layer forward phase matrix
+                        Pbb_TL(1:nZ,1:(nZ+1),:),                      & ! Input, TL layer backward phase matrix
                         Scattering_Radiance_TL(1:nZ)              ) ! Output, TL radiances
       ! The output TL radiance for the sensor zenith angle
-      RTSolution_TL%Radiance = Scattering_Radiance_TL( SfcOptics%Index_Sat_Ang )
+      Radiance_TL = Scattering_Radiance_TL( SfcOptics%Index_Sat_Ang )
 
     ELSE
 
@@ -3222,7 +3586,7 @@ CONTAINS
                              SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
                              SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
                              SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
-                             Solar_Irradiance,                         & ! Input, Source irradiance at TOA
+                             RTV%Solar_Irradiance,                     & ! Input, Source irradiance at TOA
                              Is_Solar_Channel,                         & ! Input, Source sensitive channel info.
                              GeometryInfo%Source_Zenith_Radian,        & ! Input, Source zenith angle
                              RTV,                                      & ! Input, internal variables
@@ -3232,19 +3596,24 @@ CONTAINS
                              SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
                              SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
                              SfcOptics_TL%Direct_Reflectivity(1:nZ,1), & ! Input, TL surface reflectivity for a point source
-                             RTSolution_TL%Radiance                    ) ! Output, TL radiances
+                             Radiance_TL                               ) ! Output, TL radiances
     END IF
 
-
+    ! accumulate Fourier component
+    RTSolution_TL%Radiance = RTSolution_TL%Radiance + Radiance_TL*  &
+       cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
+     
     ! ---------------------------------------------------------------
     ! Compute the corresponding tangent-linear brightness temperature
     ! ---------------------------------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
     CALL CRTM_Planck_Temperature_TL( SensorIndex                        , & ! Input
                                      ChannelIndex                       , & ! Input
                                      RTSolution%Radiance                , & ! Input
                                      RTSolution_TL%Radiance             , & ! Input
                                      RTSolution_TL%Brightness_Temperature ) ! Output
-
+    END IF
+    
   END FUNCTION CRTM_Compute_RTSolution_TL
 
 
@@ -3448,20 +3817,19 @@ CONTAINS
     INTEGER :: no, na, nt
     REAL(fp) :: u       ! COS( sensor zenith angle )
     REAL(fp) :: Cosmic_Background_Radiance
-    REAL(fp) :: Solar_Irradiance
     LOGICAL  :: Is_Solar_Channel
     REAL(fp)                                     :: Planck_Surface_AD    ! Surface AD radiance
     REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_AD ! *LAYER* AD radiances
     REAL(fp) :: User_Emissivity_AD    ! Temporary adjoint variable for SfcOptics calcs.
     ! The following variables are RT model specific
     REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
                          Atmosphere%n_Layers ) :: Pff_AD ! Forward scattering AD phase matrix
     REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
                          Atmosphere%n_Layers ) :: Pbb_AD ! Backward scattering AD phase matrix
     REAL (fp),DIMENSION( MAX_N_ANGLES ) :: Scattering_Radiance_AD
-
+    REAL (fp) :: Radiance_AD
 
     ! -----
     ! Setup
@@ -3474,24 +3842,27 @@ CONTAINS
     SfcOptics_AD%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Solar_Irradiance           = SC(SensorIndex)%Solar_Irradiance(ChannelIndex)
     Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
     ! Initialise local adjoint variables
     Planck_Surface_AD    = ZERO
     Planck_Atmosphere_AD = ZERO
 
-
+    Radiance_AD = ZERO
     ! ------------------------------------------
     ! Compute the brightness temperature adjoint
     ! ------------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
     CALL CRTM_Planck_Temperature_AD( SensorIndex                         , & ! Input
                                      ChannelIndex                        , & ! Input
                                      RTSolution%Radiance                 , & ! Input
                                      RTSolution_AD%Brightness_Temperature, & ! Input
-                                     RTSolution_AD%Radiance                ) ! Output
+                                     Radiance_AD                ) ! Output
     RTSolution_AD%Brightness_Temperature = ZERO 
+    END IF
 
-
+    ! accumulate Fourier component
+    Radiance_AD = Radiance_AD + RTSolution_AD%Radiance   &
+         *cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
 
     ! --------------------------------------
     ! Perform the adjoint radiative transfer
@@ -3505,8 +3876,8 @@ CONTAINS
       ! -----------------------------------------------------
       ! Initialise the input adjoint radiance
       Scattering_Radiance_AD = ZERO
-      Scattering_Radiance_AD( SfcOptics%Index_Sat_Ang ) = RTSolution_AD%Radiance
-      RTSolution_AD%Radiance = ZERO
+      Scattering_Radiance_AD( SfcOptics%Index_Sat_Ang ) = Radiance_AD
+!!      RTSolution_AD%Radiance = ZERO
       ! Call the RT Solver
       CALL CRTM_ADA_AD( Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
                         AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
@@ -3514,6 +3885,7 @@ CONTAINS
                         AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
                         Cosmic_Background_Radiance,               & ! Input, cosmic background radiation
                         SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
+                        SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
                         RTV,                                      & ! In/Output, internal variables
                         Scattering_Radiance_AD(1:nZ),             & ! Input, AD radiances
                         Planck_Atmosphere_AD,                     & ! Output, AD layer radiances
@@ -3523,8 +3895,9 @@ CONTAINS
                         AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
                         SfcOptics_AD%Emissivity(1:nZ,1),          & ! Output, AD surface emissivity
                         SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1), & ! Output, AD surface reflectivity
-                        Pff_AD(1:nZ,1:nZ,:),                      & ! Output, AD layer forward phase matrix
-                        Pbb_AD(1:nZ,1:nZ,:)                       ) ! Output, AD layer backward phase matrix
+                        SfcOptics_AD%Direct_Reflectivity(1:nZ,1), & ! Output, AD surface reflectivity for a point source
+                        Pff_AD(1:nZ,1:(nZ+1),:),                      & ! Output, AD layer forward phase matrix
+                        Pbb_AD(1:nZ,1:(nZ+1),:)                       ) ! Output, AD layer backward phase matrix
     ELSE
 
 
@@ -3540,11 +3913,11 @@ CONTAINS
                              SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
                              SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
                              SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
-                             Solar_Irradiance,                         & ! Input, Source irradiance at TOA
+                             RTV%Solar_Irradiance,                     & ! Input, Source irradiance at TOA
                              Is_Solar_Channel,                         & ! Input, Source sensitive channel info.
                              GeometryInfo%Source_Zenith_Radian,        & ! Input, Source zenith angle
                              RTV,                                      & ! Input, internal variables
-                             RTSolution_AD%Radiance,                   & ! Input, AD radiance
+                             Radiance_AD,                              & ! Input, AD radiance
                              AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
                              Planck_Atmosphere_AD,                     & ! Output, AD layer radiances
                              Planck_Surface_AD,                        & ! Output, AD surface radiance
@@ -3559,21 +3932,26 @@ CONTAINS
     ! Compute the adjoint planck radiances
     ! ------------------------------------
     ! Surface AD radiance
-    CALL CRTM_Planck_Radiance_AD( SensorIndex                    , & ! Input
+    IF( RTV%mth_Azi == 0 ) THEN
+      CALL CRTM_Planck_Radiance_AD( SensorIndex                    , & ! Input
                                   ChannelIndex                   , & ! Input
                                   SfcOptics%Surface_Temperature  , & ! Input
                                   Planck_Surface_AD              , & ! Input
                                   SfcOptics_AD%Surface_Temperature ) ! In/Output
-    Planck_Surface_AD = ZERO
+      Planck_Surface_AD = ZERO
     ! Atmospheric layer AD radiances
-    DO k = 1, Atmosphere%n_Layers
-      CALL CRTM_Planck_Radiance_AD( SensorIndex                , & ! Input
+      DO k = 1, Atmosphere%n_Layers
+        CALL CRTM_Planck_Radiance_AD( SensorIndex                , & ! Input
                                     ChannelIndex               , & ! Input
                                     Atmosphere%Temperature(k)  , & ! Input
                                     Planck_Atmosphere_AD(k)    , & ! Input
                                     Atmosphere_AD%Temperature(k) ) ! In/Output
       Planck_Atmosphere_AD(k) = ZERO
-    END DO
+      END DO
+    ELSE
+      Planck_Surface_AD = ZERO
+      Planck_Atmosphere_AD = ZERO
+    END IF
 
 
     ! ---------------------------------------------------------------------
@@ -3678,6 +4056,7 @@ CONTAINS
     END IF
 
   END FUNCTION CRTM_Compute_RTSolution_AD
+
 
 
 !--------------------------------------------------------------------------------

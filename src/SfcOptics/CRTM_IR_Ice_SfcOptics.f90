@@ -386,6 +386,7 @@ CONTAINS
     ! -----------------------------------------------------
     SfcOptics_TL%Reflectivity = ZERO
     SfcOptics_TL%Emissivity   = ZERO
+    SfcOptics_TL%Direct_Reflectivity = ZERO
 
   END FUNCTION Compute_IR_Ice_SfcOptics_TL
 
@@ -548,6 +549,7 @@ CONTAINS
     ! ***No AD models yet, so there is no impact on AD result***
     ! ----------------------------------------------
     SfcOptics_AD%Reflectivity = ZERO
+    SfcOptics_AD%Direct_Reflectivity = ZERO
     SfcOptics_AD%Emissivity   = ZERO
 
   END FUNCTION Compute_IR_Ice_SfcOptics_AD

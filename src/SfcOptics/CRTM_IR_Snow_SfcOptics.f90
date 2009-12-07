@@ -386,6 +386,7 @@ CONTAINS
     ! -----------------------------------------------------
     SfcOptics_TL%Reflectivity = ZERO
     SfcOptics_TL%Emissivity   = ZERO
+    SfcOptics_TL%Direct_Reflectivity = ZERO
 
   END FUNCTION Compute_IR_Snow_SfcOptics_TL
 
@@ -549,6 +550,7 @@ CONTAINS
     ! ----------------------------------------------
     SfcOptics_AD%Reflectivity = ZERO
     SfcOptics_AD%Emissivity   = ZERO
+    SfcOptics_AD%Direct_Reflectivity = ZERO
 
   END FUNCTION Compute_IR_Snow_SfcOptics_AD
 

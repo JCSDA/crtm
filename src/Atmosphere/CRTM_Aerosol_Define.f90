@@ -12,15 +12,15 @@
 !                 None           NO_AEROSOL   
 !                 Dust           DUST_AEROSOL   
 !             Sea salt SSAM(*)   SEASALT_SSAM_AEROSOL 
-!             Sea salt SSCM(+)   SEASALT_SSCM_AEROSOL 
-!           Dry organic carbon   DRY_ORGANIC_CARBON_AEROSOL
-!           Wet organic carbon   WET_ORGANIC_CARBON_AEROSOL
-!            Dry black carbon    DRY_BLACK_CARBON_AEROSOL
-!            Wet black carbon    WET_BLACK_CARBON_AEROSOL
+!             Sea salt SSCM1(+)  SEASALT_SSCM_AEROSOL 
+!             Sea salt SSCM2(+)  SEASALT_SSCM_AEROSOL 
+!             Sea salt SSCM3(+)  SEASALT_SSCM_AEROSOL 
+!             Organic carbon     ORGANIC_CARBON_AEROSOL
+!             Black carbon       BLACK_CARBON_AEROSOL
 !                Sulfate         SULFATE_AEROSOL  
 !
-!          (*) SSAM == sea salt accumulation mode, Reff ~ 0.5 - 5.0 um
-!          (+) SSCM == sea salt coarse mode,       Reff ~ 5.0 - 30 um
+!          (*) SSAM == sea salt accumulation mode
+!          (+) SSCM# == sea salt coarse mode
 !
 !       2) The number of valid aerosol types is specified by the 
 !            N_VALID_AEROSOL_TYPES
@@ -30,9 +30,9 @@
 !            AEROSOL_TYPE_NAME
 !          uses the above aerosol type definitions to provide a string value for
 !          the type of aerosol. For example,
-!            AEROSOL_TYPE_NAME( DRY_BLACK_CARBON_AEROSOL )
+!            AEROSOL_TYPE_NAME( BLACK_CARBON_AEROSOL )
 !          contains the string
-!            'Dry black carbon'
+!            'black carbon'
 !
 !
 ! CREATION HISTORY:
@@ -66,11 +66,11 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: NO_AEROSOL
   PUBLIC :: DUST_AEROSOL
   PUBLIC :: SEASALT_SSAM_AEROSOL
-  PUBLIC :: SEASALT_SSCM_AEROSOL
-  PUBLIC :: DRY_ORGANIC_CARBON_AEROSOL
-  PUBLIC :: WET_ORGANIC_CARBON_AEROSOL
-  PUBLIC :: DRY_BLACK_CARBON_AEROSOL
-  PUBLIC :: WET_BLACK_CARBON_AEROSOL
+  PUBLIC :: SEASALT_SSCM1_AEROSOL
+  PUBLIC :: SEASALT_SSCM2_AEROSOL
+  PUBLIC :: SEASALT_SSCM3_AEROSOL
+  PUBLIC :: ORGANIC_CARBON_AEROSOL
+  PUBLIC :: BLACK_CARBON_AEROSOL
   PUBLIC :: SULFATE_AEROSOL
   PUBLIC :: AEROSOL_TYPE_NAME
   ! Aerosol data structure definition
@@ -139,21 +139,21 @@ MODULE CRTM_Aerosol_Define
   INTEGER, PARAMETER ::                 NO_AEROSOL = 0
   INTEGER, PARAMETER ::               DUST_AEROSOL = 1
   INTEGER, PARAMETER ::       SEASALT_SSAM_AEROSOL = 2
-  INTEGER, PARAMETER ::       SEASALT_SSCM_AEROSOL = 3
-  INTEGER, PARAMETER :: DRY_ORGANIC_CARBON_AEROSOL = 4
-  INTEGER, PARAMETER :: WET_ORGANIC_CARBON_AEROSOL = 5
-  INTEGER, PARAMETER ::   DRY_BLACK_CARBON_AEROSOL = 6
-  INTEGER, PARAMETER ::   WET_BLACK_CARBON_AEROSOL = 7
+  INTEGER, PARAMETER ::      SEASALT_SSCM1_AEROSOL = 3
+  INTEGER, PARAMETER ::      SEASALT_SSCM2_AEROSOL = 4
+  INTEGER, PARAMETER ::      SEASALT_SSCM3_AEROSOL = 5
+  INTEGER, PARAMETER ::     ORGANIC_CARBON_AEROSOL = 6
+  INTEGER, PARAMETER ::       BLACK_CARBON_AEROSOL = 7
   INTEGER, PARAMETER ::            SULFATE_AEROSOL = 8
   CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_AEROSOL_TYPES ) :: &
     AEROSOL_TYPE_NAME = (/ 'None              ', &
                            'Dust              ', &
                            'Sea salt (SSAM)   ', &
-                           'Sea salt (SSCM)   ', &
-                           'Dry organic carbon', &
-                           'Wet organic carbon', &
-                           'Dry black carbon  ', &
-                           'Wet black carbon  ', &
+                           'Sea salt (SSCM1)  ', &
+                           'Sea salt (SSCM2)  ', &
+                           'Sea salt (SSCM3)  ', &
+                           'Organic carbon    ', &
+                           'Black carbon      ', &
                            'Sulfate           ' /)
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &

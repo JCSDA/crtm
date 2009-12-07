@@ -36,11 +36,11 @@ MODULE CRTM_AerosolScatter
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type      , &
                                       DUST_AEROSOL              , &
                                       SEASALT_SSAM_AEROSOL      , &
-                                      SEASALT_SSCM_AEROSOL      , &
-                                      DRY_ORGANIC_CARBON_AEROSOL, &
-                                      WET_ORGANIC_CARBON_AEROSOL, &
-                                      DRY_BLACK_CARBON_AEROSOL  , &
-                                      WET_BLACK_CARBON_AEROSOL  , &
+                                      SEASALT_SSCM1_AEROSOL     , &
+                                      SEASALT_SSCM2_AEROSOL     , &
+                                      SEASALT_SSCM3_AEROSOL     , &
+                                      ORGANIC_CARBON_AEROSOL    , &
+                                      BLACK_CARBON_AEROSOL      , &
                                       SULFATE_AEROSOL
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_Interpolation,       ONLY: NPTS        , &
@@ -268,9 +268,6 @@ CONTAINS
     Error_Status = SUCCESS
     ! Sensor Type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
-    ! Initialise and return if: - sensor is microwave, or
-    !                           - no aerosols
-    CALL CRTM_Zero_AtmScatter(AScat)
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
     IF (Atm%n_Aerosols == 0) RETURN
     ASV%Total_bs = ZERO
@@ -329,7 +326,6 @@ CONTAINS
                               Atm%Aerosol(n)%Effective_Radius(ka), & ! Input                               
                               ASV%ke(ka,n)                       , & ! Output
                               ASV%w(ka,n)                        , & ! Output
-                              ASV%g(ka,n)                        , & ! Output
                               ASV%pcoeff(:,:,ka,n)               , & ! Output
                               ASV%asi(ka,n)                        ) ! Interpolation
 
@@ -354,7 +350,8 @@ CONTAINS
         !   rho = integrated aerosol concentration for a layer (kg/m^2) [M.L^-2]
         !   w   = single scatter albedo [dimensionless]
         !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
-        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)
+        !  qliu
+        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) 
         ASV%Total_bs(ka) = ASV%Total_bs(ka) + bs 
         
         ! Compute the optical depth (absorption + scattering)
@@ -373,13 +370,8 @@ CONTAINS
         ! compute the single scatter albedo in the Layer_loop below.
         AScat%Optical_Depth(ka) = AScat%Optical_Depth(ka) + &
                                   (ASV%ke(ka,n)*Atm%Aerosol(n)%Concentration(ka))
+        AScat%Single_Scatter_Albedo(ka) = AScat%Single_Scatter_Albedo(ka) + bs
 
-        ! Compute and sum the asymmetry factor
-        !   g = g + g(LUT)*bs
-        ! where
-        !   g(LUT) = the asymmetry factor from the LUT
-        AScat%Asymmetry_Factor(ka) = AScat%Asymmetry_Factor(ka) + &
-                                     (ASV%g(ka,n) * bs)
         ! Compute the phase matrix coefficients
         ! p = p + p(LUT)*bs
         ! where
@@ -394,43 +386,6 @@ CONTAINS
         END IF
       END DO Aerosol_Layer_loop
     END DO Aerosol_loop                                      
-
-
-    ! --------------------------------------------
-    ! Accumulate optical properties for all Aerosols
-    ! --------------------------------------------
-    ! Some short names
-    l = AScat%n_Legendre_Terms
-
-    ! Begin full atmosphere layer loop
-    Layer_Loop: DO k = 1, Atm%n_Layers
-      ! Only process layers that scatter
-      IF (ASV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
-
-      ! Normalize the asymmetry factor with the total
-      ! volume scattering coefficient, bs.
-      AScat%Asymmetry_Factor(k) = AScat%Asymmetry_Factor(k) / ASV%Total_bs(k)
-
-      IF ( AScat%n_Phase_Elements > 0 ) THEN
-        IF (l > 2) THEN
-          ! Normalize the phase matrix coefficients with
-          ! the total volume scattering coefficient, bs.
-          DO m = 1, AScat%n_Phase_Elements
-            AScat%Phase_Coefficient(0:l,m,k) = AScat%Phase_Coefficient(0:l,m,k) / &
-                                                        ASV%Total_bs(k)
-          END DO
-        ELSE
-          ! Henyey-Greenstein phase function
-          AScat%Phase_Coefficient(1,1,k) = ONEpointFIVE * AScat%Asymmetry_Factor(k)
-          AScat%Phase_Coefficient(2,1,k) = ZERO
-        END IF
-        
-        ! Normalization requirement
-        AScat%Phase_Coefficient(0,1,k) = POINT_5
-        AScat%Single_Scatter_Albedo(k) = ASV%Total_bs(k) / AScat%Optical_Depth(k)
-        AScat%Delta_Truncation(k)      = AScat%Phase_Coefficient(l,1,k)
-      END IF
-    END DO Layer_loop
                                                     
   END FUNCTION CRTM_Compute_AerosolScatter
 
@@ -572,7 +527,6 @@ CONTAINS
     REAL(fp) :: ke_TL, w_TL, g_TL
     REAL(fp) :: pcoeff_TL(0:AScat%n_Legendre_Terms, AScat%n_Phase_Elements)
     REAL(fp) :: bs, bs_TL
-    REAL(fp) :: Total_bs_TL(Atm%n_Layers)
     
     ! ------
     ! Set up
@@ -580,12 +534,8 @@ CONTAINS
     Error_Status = SUCCESS
     ! Sensor Type
     Sensor_Type = SC(SensorIndex)%Sensor_Type
-    ! Initialise and return if: - sensor is microwave, or
-    !                           - no aerosols
-    CALL CRTM_Zero_AtmScatter(AScat_TL)
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
     IF (Atm%n_Aerosols == 0) RETURN
-    Total_bs_TL = ZERO
     ! Frequency
     Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -621,7 +571,6 @@ CONTAINS
                                 Atm_TL%Aerosol(n)%Effective_Radius(ka), & ! TL  Input
                                 ke_TL                                 , & ! TL  Output
                                 w_TL                                  , & ! TL  Output
-                                g_TL                                  , & ! TL  Output
                                 pcoeff_TL                             , & ! TL  Output
                                 ASV%asi(ka,n)                           ) ! Interpolation
 
@@ -638,21 +587,16 @@ CONTAINS
           w_TL  = ZERO
         END IF        
         ! Compute the volume scattering coefficient
-        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)                     
-        bs_TL = (Atm_TL%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)) + &
-                (Atm%Aerosol(n)%Concentration(ka)    * w_TL        * ASV%ke(ka,n)) + &
-                (Atm%Aerosol(n)%Concentration(ka)    * ASV%w(ka,n) * ke_TL       )
-        Total_bs_TL(ka) = Total_bs_TL(ka) + bs_TL
+        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n)  
+        bs_TL = (Atm_TL%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) ) + &
+                (Atm%Aerosol(n)%Concentration(ka) * ke_TL * ASV%w(ka,n) ) + &
+                (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * w_TL ) 
+        AScat_TL%Single_Scatter_Albedo(ka) = AScat_TL%Single_Scatter_Albedo(ka) + bs_TL
 
         ! Compute the optical depth (absorption + scattering)
         AScat_TL%Optical_Depth(ka) = AScat_TL%Optical_Depth(ka) + &
                                      (ke_TL        * Atm%Aerosol(n)%Concentration(ka)) + &
                                      (ASV%ke(ka,n) * Atm_TL%Aerosol(n)%Concentration(ka))
-
-        ! Compute the asymmetry factor
-        AScat_TL%Asymmetry_Factor(ka) = AScat_TL%Asymmetry_Factor(ka) + &
-                                        (g_TL        * bs   ) + &
-                                        (ASV%g(ka,n) * bs_TL)
 
         ! Compute the phase matrix coefficients
         IF( n_Phase_Elements > 0) THEN
@@ -666,66 +610,6 @@ CONTAINS
         END IF
       END DO Aerosol_Layer_loop
     END DO Aerosol_loop      
-
-
-    ! ----------------------------------------------
-    ! Accumulate optical properties for all aerosols
-    ! ----------------------------------------------
-    ! Some short names
-    l = n_Legendre_Terms
-    
-    ! Begin full atmosphere layer loop
-    Layer_loop: DO k = 1, Atm%n_Layers
-    
-      ! Only process layers that scatter
-      IF (ASV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
-      
-      ! Normalize the asymmetry factor with the total
-      ! volume scattering coefficient, bs.
-      ! NOTE: the second term is NOT divided by
-      !       ASV%Total_bs(k)**2 because the forward
-      !       model asymmetry factor for this layer
-      !       has already been divided once by
-      !       ASV%Total_bs(k).
-      AScat_TL%Asymmetry_Factor(k) = &
-        (AScat_TL%Asymmetry_Factor(k) - (AScat%Asymmetry_Factor(k)*Total_bs_TL(k))) / &
-        ASV%Total_bs(k)
-        
-      IF (n_Phase_Elements > 0) THEN
-        IF (l > 2) THEN
-          ! Normalise the phase matrix coefficients with
-          ! the total volume scattering coefficient, bs.
-          ! NOTE: the second term is NOT divided by
-          !       ASV%Total_bs(k)**2 because the forward
-          !       model phase coefficients for this layer
-          !       have already been divided once by
-          !       ASV%Total_bs(k).
-          DO m = 1, n_Phase_Elements
-            AScat_TL%Phase_Coefficient(0:l,m,k) = &
-              (AScat_TL%Phase_Coefficient(0:l,m,k) - (AScat%Phase_Coefficient(0:l,m,k)*Total_bs_TL(k))) / &
-              ASV%Total_bs(k)
-          END DO
-        ELSE
-          ! Henyey-Greenstein phase function
-          AScat_TL%Phase_Coefficient(1,1,k) = ONEpointFIVE * AScat_TL%Asymmetry_Factor(k)
-          AScat_TL%Phase_Coefficient(2,1,k) = ZERO
-        END IF
-        
-        ! Normalization requirement
-        ! NOTE: the second term of the single scatter
-        !       albedo computation is NOT divided by
-        !       AScat%Optical_Depth(k)**2 because
-        !       the forward model single scatter albedo
-        !       is used rather than recomputing it again
-        !       here (i.e. the total scattering coefficient
-        !       divided by the optical depth).
-        AScat_TL%Phase_Coefficient(0,1,k) = ZERO
-        AScat_TL%Single_Scatter_Albedo(k) = &
-          (Total_bs_TL(k) - (AScat%Single_Scatter_Albedo(k)*AScat_TL%Optical_Depth(k))) / &
-          AScat%Optical_Depth(k)
-        AScat_TL%Delta_Truncation(k) = AScat_TL%Phase_Coefficient(l,1,k)
-      END IF
-    END DO Layer_loop
 
   END FUNCTION CRTM_Compute_AerosolScatter_TL
 
@@ -870,7 +754,7 @@ CONTAINS
     REAL(fp)  :: ke_AD, w_AD, g_AD
     REAL(fp)  :: pcoeff_AD(0:AScat%n_Legendre_Terms, AScat%n_Phase_Elements)
     REAL(fp)  :: bs, bs_AD
-    REAL(fp)  :: Total_bs_AD(Atm%n_Layers)
+!    REAL(fp)  :: Total_bs_AD(Atm%n_Layers)
     
     ! ------
     ! Set up
@@ -881,7 +765,7 @@ CONTAINS
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
     IF (Atm%n_Aerosols == 0) RETURN
     ! Initialize local adjoint variables
-    Total_bs_AD = ZERO
+!    Total_bs_AD = ZERO
     ! Frequency
     Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -895,57 +779,6 @@ CONTAINS
     ! ----------------------------------------------------------
     ! Shorten variable name 
     l = n_Legendre_Terms
-    
-    ! Begin full atmosphere layer loop
-    Layer_loop: DO k = 1, Atm%n_Layers
-    
-      ! Only process layers that scatter
-      IF (ASV%Total_bs(k) < BS_THRESHOLD) CYCLE Layer_loop
-      
-      IF (n_Phase_Elements > 0) THEN
-      
-        ! Adjoint of the normalization requirements
-        AScat_AD%Phase_Coefficient(0,1,k) = ZERO
-        
-        AScat_AD%Optical_Depth(k) = AScat_AD%Optical_Depth(k) - &
-          (AScat_AD%Single_Scatter_Albedo(k)*AScat%Single_Scatter_Albedo(k) / &
-           AScat%Optical_Depth(k))
-        Total_bs_AD(k) = Total_bs_AD(k) + (AScat_AD%Single_Scatter_Albedo(k)/AScat%Optical_Depth(k))
-        AScat_AD%Single_Scatter_Albedo(k) = ZERO
-        
-        AScat_AD%Phase_Coefficient(l,1,k) = AScat_AD%Phase_Coefficient(l,1,k) + &
-                                            AScat_AD%Delta_Truncation(k)
-        AScat_AD%Delta_Truncation(k) = ZERO
-        
-        ! Adjoint of phase matrix coefficients
-        IF (l > 2) THEN
-          ! Adjoint of the phase matrix coefficient normalization
-          ! with the total volume scattering coefficient, bs.
-          DO m = 1, n_Phase_Elements
-            Total_bs_AD(k) = Total_bs_AD(k) - &
-                             (SUM(AScat_AD%Phase_Coefficient(0:l,m,k) * &
-                                  AScat%Phase_Coefficient(0:l,m,k)) / &
-                              ASV%Total_bs(k))
-            AScat_AD%Phase_Coefficient(0:l,m,k) = AScat_AD%Phase_Coefficient(0:l,m,k) / &
-                                                  ASV%Total_bs(k)
-          END DO
-        ELSE
-          ! Henyey-Greenstein phase function
-          AScat_AD%Asymmetry_Factor(k) = AScat_AD%Asymmetry_Factor(k) + &
-                                         (ONEpointFIVE * AScat_AD%Phase_Coefficient(1,1,k))
-          AScat_AD%Phase_Coefficient(1,1,k) = ZERO
-          AScat_AD%Phase_Coefficient(2,1,k) = ZERO
-        END IF
-        
-      END IF
-      
-      ! Adjoint of the asymmetry factor normalization with
-      ! the total volume scattering coefficient, bs.
-      Total_bs_AD(k) = Total_bs_AD(k) - (AScat_AD%Asymmetry_Factor(k)*AScat%Asymmetry_Factor(k) / &
-                                         ASV%Total_bs(k))
-      AScat_AD%Asymmetry_Factor(k) = AScat_AD%Asymmetry_Factor(k)/ASV%Total_bs(k)
-    END DO Layer_loop
-      
       
     ! ------------------------------------------------
     ! Loop over different types of aerosols in profile
@@ -969,13 +802,12 @@ CONTAINS
         ! Aerosol adjoint variables
         bs_AD = ZERO
         pcoeff_AD = ZERO
-        g_AD      = ZERO
         ke_AD     = ZERO
         w_AD      = ZERO
         
         ! Recompute the forward model volume scattering
         ! coefficient for the current aerosol type ONLY
-        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%w(ka,n) * ASV%ke(ka,n)
+        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) 
         
         ! Compute the adjoint of the
         ! phase matrix coefficients
@@ -988,11 +820,6 @@ CONTAINS
           END DO
         END IF
             
-        ! Compute the adjoint of
-        ! the asymmetry factor
-        bs_AD = bs_AD + (ASV%g(ka,n) * AScat_AD%Asymmetry_Factor(ka))
-        g_AD  = g_AD  + (bs          * AScat_AD%Asymmetry_Factor(ka))
-        
         ! Compute the adjoint of the optical 
         ! depth (absorption + scattering)
         Atm_AD%Aerosol(n)%Concentration(ka) = Atm_AD%Aerosol(n)%Concentration(ka) + &
@@ -1004,13 +831,24 @@ CONTAINS
         ! NOTE: bs_AD is not reinitialized after this
         !       point since it is reinitialized at the
         !       start of the Aerosol_Layer_loop
-        bs_AD = bs_AD + Total_bs_AD(ka)
-        
-        ke_AD = ke_AD + (Atm%Aerosol(n)%Concentration(ka) * ASV%w(ka,n)  * bs_AD )
-        w_AD  = w_AD  + (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * bs_AD )
+        bs_AD = bs_AD + AScat_AD%Single_Scatter_Albedo(ka)
+        w_AD  = w_AD  + (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n)* bs_AD )
+        ke_AD = ke_AD + (Atm%Aerosol(n)%Concentration(ka) * bs_AD * ASV%w(ka,n) )
         Atm_AD%Aerosol(n)%Concentration(ka) = Atm_AD%Aerosol(n)%Concentration(ka) + &
-                                              (ASV%w(ka,n) * ASV%ke(ka,n) * bs_AD)
-                                                     
+                                              ( bs_AD * ASV%ke(ka,n) * ASV%w(ka,n) )
+! 
+        ! interpolation quality control
+        IF( ASV%w(ka,n) >= ONE ) THEN
+          w_AD = ZERO
+        END IF        
+        IF( ASV%ke(ka,n) <= ZERO ) THEN
+          ke_AD = ZERO
+          w_AD = ZERO
+        END IF
+        IF( ASV%w(ka,n) <= ZERO ) THEN
+          w_AD = ZERO
+          pcoeff_AD = ZERO
+        END IF                                                       
         ! interpolation quality control
         IF( ASV%w(ka,n) >= ONE ) THEN
           w_AD = ZERO
@@ -1031,7 +869,6 @@ CONTAINS
                                 Atm%Aerosol(n)%Effective_Radius(ka)   , & ! FWD Input
                                 ke_AD                                 , & ! AD Input
                                 w_AD                                  , & ! AD Input
-                                g_AD                                  , & ! AD Input
                                 pcoeff_AD                             , & ! AD Input
                                 Atm_AD%Aerosol(n)%Effective_Radius(ka), & ! AD  Output
                                 ASV%asi(ka,n)                           ) ! Interpolation
@@ -1041,6 +878,7 @@ CONTAINS
         
   END FUNCTION CRTM_Compute_AerosolScatter_AD
 
+  
   
 !################################################################################
 !################################################################################
@@ -1060,11 +898,11 @@ CONTAINS
     SELECT CASE (Aerosol_Type)
       CASE(DUST_AEROSOL)              ; k=1
       CASE(SEASALT_SSAM_AEROSOL)      ; k=2
-      CASE(SEASALT_SSCM_AEROSOL)      ; k=3
-      CASE(DRY_ORGANIC_CARBON_AEROSOL); k=4
-      CASE(WET_ORGANIC_CARBON_AEROSOL); k=5
-      CASE(DRY_BLACK_CARBON_AEROSOL)  ; k=6
-      CASE(WET_BLACK_CARBON_AEROSOL)  ; k=7
+      CASE(SEASALT_SSCM1_AEROSOL)     ; k=3
+      CASE(SEASALT_SSCM2_AEROSOL)     ; k=4
+      CASE(SEASALT_SSCM3_AEROSOL)     ; k=5
+      CASE(ORGANIC_CARBON_AEROSOL)    ; k=6
+      CASE(BLACK_CARBON_AEROSOL)      ; k=7
       CASE(SULFATE_AEROSOL)           ; k=8
     END SELECT
   END FUNCTION Aerosol_Type_Index
@@ -1084,7 +922,6 @@ CONTAINS
                               Reff          , &  ! Input effective radius (mm)
                               ke            , &  ! Output extinction coefficient (=~ optical depth)
                               w             , &  ! Output single scattering albedo
-                              g             , &  ! Output asymmetry factor
                               pcoeff        , &  ! Output spherical Legendre coefficients
                               asi             )  ! Output interpolation data
     ! Arguments
@@ -1094,7 +931,6 @@ CONTAINS
     REAL(fp)                  , INTENT(IN)     :: Reff
     REAL(fp)                  , INTENT(OUT)    :: ke
     REAL(fp)                  , INTENT(OUT)    :: w
-    REAL(fp)                  , INTENT(OUT)    :: g
     REAL(fp)                  , INTENT(IN OUT) :: pcoeff(0:,:)
     TYPE(ASinterp_type)       , INTENT(IN OUT) :: asi
     ! Local variables
@@ -1132,9 +968,7 @@ CONTAINS
     ! ---------------------
     CALL interp_2D( AeroC%ke(asi%i1:asi%i2,asi%j1:asi%j2,k), asi%wlp, asi%xlp, ke )
     CALL interp_2D( AeroC%w(asi%i1:asi%i2,asi%j1:asi%j2,k) , asi%wlp, asi%xlp, w  )
-    CALL interp_2D( AeroC%g(asi%i1:asi%i2,asi%j1:asi%j2,k) , asi%wlp, asi%xlp, g  )
-    IF (AerosolScatter%n_Phase_Elements > 0 .AND.  &
-        AerosolScatter%n_Legendre_Terms > 2        ) THEN
+    IF (AerosolScatter%n_Phase_Elements > 0 ) THEN
       pcoeff(0,1) = POINT_5
       DO m = 1, AerosolScatter%n_Phase_Elements
         DO l = 1, AerosolScatter%n_Legendre_Terms
@@ -1162,7 +996,6 @@ CONTAINS
                                 Reff_TL          , &  ! Input  TL effective radius (mm)
                                 ke_TL            , &  ! Output TL extinction coefficient (=~ optical depth)
                                 w_TL             , &  ! Output TL single scattering albedo
-                                g_TL             , &  ! Output TL asymmetry factor
                                 pcoeff_TL        , &  ! TL  Output spherical Legendre coefficients
                                 asi                )  ! Input interpolation data
 
@@ -1174,7 +1007,6 @@ CONTAINS
     REAL(fp),                   INTENT(IN)     :: Reff_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
     REAL(fp),                   INTENT(OUT)    :: w_TL
-    REAL(fp),                   INTENT(OUT)    :: g_TL
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
     TYPE(ASinterp_type),        INTENT(IN)     :: asi
     ! Local variables
@@ -1192,7 +1024,6 @@ CONTAINS
     IF ( asi%f_outbound .AND. asi%r_outbound ) THEN
       ke_TL     = ZERO
       w_TL      = ZERO
-      g_TL      = ZERO
       pcoeff_TL = ZERO
       RETURN
     END IF
@@ -1235,14 +1066,8 @@ CONTAINS
     CALL interp_2D_TL( z   , asi%wlp, asi%xlp, &  ! FWD Input
                        z_TL, wlp_TL , xlp_TL , &  ! TL  Input
                        w_TL                    )  ! TL  Output
-    ! Asymmetry factor
-    z => AeroC%g(asi%i1:asi%i2,asi%j1:asi%j2,k)
-    CALL interp_2D_TL( z   , asi%wlp, asi%xlp, &  ! FWD Input
-                       z_TL, wlp_TL , xlp_TL , &  ! TL  Input
-                       g_TL                    )  ! TL  Output
     ! Phase matrix coefficients    
-    IF (AerosolScatter_TL%n_Phase_Elements > 0 .AND. &
-        AerosolScatter_TL%n_Legendre_Terms > 2       ) THEN
+    IF (AerosolScatter_TL%n_Phase_Elements > 0 ) THEN
       pcoeff_TL(0,1) = ZERO
       DO m = 1, AerosolScatter_TL%n_Phase_Elements
         DO l = 1, AerosolScatter_TL%n_Legendre_Terms
@@ -1272,7 +1097,6 @@ CONTAINS
                                  Reff             , & ! FWD Input effective radius
                                  ke_AD            , & ! AD Input extinction cross section
                                  w_AD             , & ! AD Input single scatter albedo
-                                 g_AD             , & ! AD Input asymmetry factor
                                  pcoeff_AD        , & ! AD Input spherical Legendre coefficients
                                  Reff_AD          , & ! AD Output effective radius
                                  asi                ) ! Input interpolation data
@@ -1283,7 +1107,6 @@ CONTAINS
     REAL(fp),                   INTENT(IN)     :: Reff  
     REAL(fp),                   INTENT(IN OUT) :: ke_AD            ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: w_AD             ! AD Input
-    REAL(fp),                   INTENT(IN OUT) :: g_AD             ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:)  ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: Reff_AD          ! AD Output
     TYPE(ASinterp_type),        INTENT(IN)     :: asi
@@ -1304,7 +1127,6 @@ CONTAINS
       Reff_AD = ZERO
       ke_AD     = ZERO
       w_AD      = ZERO
-      g_AD      = ZERO
       pcoeff_AD = ZERO
       RETURN
     END IF
@@ -1326,8 +1148,7 @@ CONTAINS
     ! Perform interpolation
     ! ---------------------
     ! Phase matrix coefficients
-    IF (AerosolScatter_AD%n_Phase_Elements > 0 .AND. &
-        AerosolScatter_AD%n_Legendre_Terms > 2       ) THEN
+    IF (AerosolScatter_AD%n_Phase_Elements > 0 ) THEN
       DO m = 1, AerosolScatter_AD%n_Phase_Elements
         DO l = 1, AerosolScatter_AD%n_Legendre_Terms
           z => AeroC%pcoeff(asi%i1:asi%i2,asi%j1:asi%j2,k,l+AerosolScatter_AD%lOffset,m)
@@ -1338,11 +1159,6 @@ CONTAINS
       END DO
       pcoeff_AD(0,1) = ZERO
     END IF
-    ! Asymmetry factor
-    z => AeroC%g(asi%i1:asi%i2,asi%j1:asi%j2,k)
-    CALL interp_2D_AD( z   , asi%wlp, asi%xlp, &  ! FWD Input
-                       g_AD                  , &  ! AD  Input
-                       z_AD, wlp_AD , xlp_AD   )  ! AD  Output
     ! Single scatter albedo
     z => AeroC%w(asi%i1:asi%i2,asi%j1:asi%j2,k)
     CALL interp_2D_AD( z   , asi%wlp, asi%xlp, &  ! FWD Input

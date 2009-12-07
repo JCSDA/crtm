@@ -134,11 +134,7 @@ MODULE ODCAPS_AtmAbsorption
 
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
 
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type      , &
-                                       CRTM_Associated_AtmAbsorption, &
-                                       CRTM_Destroy_AtmAbsorption   , &
-                                       CRTM_Allocate_AtmAbsorption  , &
-                                       CRTM_Assign_AtmAbsorption
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
 
   ! -- The AtmAbsorption structure definition module
   ! -- The PUBLIC entities in ODCAPS_Predictor_Define
@@ -5452,8 +5448,8 @@ CONTAINS
     TYPE( Predictor_type ),          INTENT( IN )     :: Predictor 
     TYPE(AAVariables_type),          INTENT( IN )     :: AAV
     ! -- In/Outputs
-    TYPE( Predictor_type ),           INTENT( IN OUT ) :: Predictor_AD 
-    TYPE(CRTM_AtmAbsorption_type),    INTENT( IN OUT ) :: AtmAbsorption_AD
+    TYPE( Predictor_type ),          INTENT( IN OUT ) :: Predictor_AD 
+    TYPE(CRTM_AtmAbsorption_type),   INTENT( IN OUT ) :: AtmAbsorption_AD
  
     ! ----------------
     ! Local parameters

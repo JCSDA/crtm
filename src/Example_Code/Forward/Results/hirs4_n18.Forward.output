@@ -16,9 +16,9 @@
  Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/hirs4_n18.TauCoeff.bin; 
    ODAS RELEASE.VERSION:  6.04  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=19  N_Alphas= 3  N_Coeffs=2182
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
- CloudCoeff RELEASE.VERSION:  2.03  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)= 601  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ CloudCoeff RELEASE.VERSION:  2.04  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)=  61  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
- AerosolCoeff RELEASE.VERSION:  2.02  N_WAVELENGTHS=  91  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ AerosolCoeff RELEASE.VERSION:  2.03  N_WAVELENGTHS=  61  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
  Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
  EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
 
@@ -28,42 +28,42 @@
        hirs4_n18      2      4.373944E+01     219.391
        hirs4_n18      3      4.186336E+01     218.239
        hirs4_n18      4      5.104455E+01     229.571
-       hirs4_n18      5      6.260993E+01     241.639
-       hirs4_n18      6      7.766015E+01     255.994
-       hirs4_n18      7      8.950869E+01     266.756
-       hirs4_n18      8      8.590033E+01     279.983
-       hirs4_n18      9      4.698098E+01     263.215
-       hirs4_n18     10      9.745786E+01     277.283
+       hirs4_n18      5      6.260996E+01     241.639
+       hirs4_n18      6      7.766020E+01     255.994
+       hirs4_n18      7      8.950906E+01     266.756
+       hirs4_n18      8      8.587932E+01     279.968
+       hirs4_n18      9      4.701056E+01     263.244
+       hirs4_n18     10      9.746208E+01     277.286
        hirs4_n18     11      1.633762E+01     260.900
        hirs4_n18     12      5.641231E+00     246.665
-       hirs4_n18     13      1.098474E+00     270.547
-       hirs4_n18     14      6.967192E-01     262.082
-       hirs4_n18     15      3.341441E-01     249.667
-       hirs4_n18     16      2.465713E-01     244.618
-       hirs4_n18     17      5.714161E-01     276.331
-       hirs4_n18     18      4.373375E-01     278.804
-       hirs4_n18     19      2.399356E-01     278.716
+       hirs4_n18     13      1.097520E+00     270.527
+       hirs4_n18     14      6.965823E-01     262.078
+       hirs4_n18     15      3.342255E-01     249.671
+       hirs4_n18     16      2.466203E-01     244.622
+       hirs4_n18     17      5.781421E-01     276.588
+       hirs4_n18     18      4.446639E-01     279.161
+       hirs4_n18     19      2.420757E-01     278.897
 
        Profile 2 FWD output
        Sensor_Id   Channel         R            Tb
        hirs4_n18      1      6.505919E+01     239.238
        hirs4_n18      2      6.174358E+01     237.473
-       hirs4_n18      3      6.036934E+01     237.084
-       hirs4_n18      4      5.785460E+01     236.191
-       hirs4_n18      5      5.834749E+01     237.751
-       hirs4_n18      6      5.987125E+01     240.966
-       hirs4_n18      7      6.171340E+01     244.603
-       hirs4_n18      8      4.796803E+01     248.870
-       hirs4_n18      9      2.889480E+01     242.331
-       hirs4_n18     10      5.968690E+01     248.340
-       hirs4_n18     11      9.619874E+00     243.746
-       hirs4_n18     12      3.588564E+00     234.775
-       hirs4_n18     13      3.167037E-01     244.432
-       hirs4_n18     14      2.401462E-01     240.914
-       hirs4_n18     15      1.749058E-01     237.735
-       hirs4_n18     16      1.610935E-01     236.984
-       hirs4_n18     17      1.269859E-01     246.850
-       hirs4_n18     18      9.007387E-02     248.541
-       hirs4_n18     19      4.596038E-02     248.790
+       hirs4_n18      3      6.036930E+01     237.084
+       hirs4_n18      4      5.785507E+01     236.191
+       hirs4_n18      5      5.834983E+01     237.754
+       hirs4_n18      6      5.987406E+01     240.969
+       hirs4_n18      7      6.171738E+01     244.607
+       hirs4_n18      8      4.795954E+01     248.861
+       hirs4_n18      9      2.889750E+01     242.334
+       hirs4_n18     10      5.970030E+01     248.352
+       hirs4_n18     11      9.625077E+00     243.763
+       hirs4_n18     12      3.588067E+00     234.772
+       hirs4_n18     13      3.167886E-01     244.437
+       hirs4_n18     14      2.402128E-01     240.919
+       hirs4_n18     15      1.749333E-01     237.738
+       hirs4_n18     16      1.611112E-01     236.985
+       hirs4_n18     17      1.268876E-01     246.837
+       hirs4_n18     18      8.998083E-02     248.524
+       hirs4_n18     19      4.590078E-02     248.769
 
      Destroying the CRTM...

@@ -19,7 +19,7 @@ MODULE ODZeeman_AtmAbsorption
   USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
-  USE CRTM_AtmAbsorption_Define, ONLY: CRTM_AtmAbsorption_type
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
   USE ODPS_Predictor_Define,     ONLY: Predictor_type
   USE ODPS_Define,               ONLY: ODPS_type

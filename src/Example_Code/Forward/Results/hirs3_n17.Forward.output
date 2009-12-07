@@ -1,0 +1,69 @@
+
+     **********************************************************
+                           Example_Forward
+
+      Program to provide an example of CRTM Forward function 
+      usage.
+
+      $Revision: 5798 $
+     **********************************************************
+
+
+     Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+     Initializing the CRTM...
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/hirs3_n17.SpcCoeff.bin; 
+ SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=19
+ Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/hirs3_n17.TauCoeff.bin; 
+   ODAS RELEASE.VERSION:  6.04  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=19  N_Alphas= 3  N_Coeffs=2170
+ Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
+ CloudCoeff RELEASE.VERSION:  2.04  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)=  61  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
+ AerosolCoeff RELEASE.VERSION:  2.03  N_WAVELENGTHS=  61  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
+ EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
+
+       Profile 1 FWD output
+       Sensor_Id   Channel         R            Tb
+       hirs3_n17      1      5.807530E+01     232.847
+       hirs3_n17      2      4.410034E+01     219.696
+       hirs3_n17      3      4.192671E+01     218.509
+       hirs3_n17      4      4.967993E+01     228.075
+       hirs3_n17      5      6.487799E+01     243.796
+       hirs3_n17      6      7.728723E+01     255.733
+       hirs3_n17      7      8.726511E+01     264.922
+       hirs3_n17      8      8.594473E+01     279.957
+       hirs3_n17      9      4.667372E+01     262.924
+       hirs3_n17     10      9.752453E+01     277.410
+       hirs3_n17     11      1.617933E+01     260.633
+       hirs3_n17     12      5.794428E+00     246.941
+       hirs3_n17     13      1.196060E+00     272.205
+       hirs3_n17     14      6.760167E-01     261.661
+       hirs3_n17     15      4.202680E-01     253.724
+       hirs3_n17     16      3.157890E-01     248.753
+       hirs3_n17     17      5.762675E-01     276.323
+       hirs3_n17     18      4.372603E-01     279.117
+       hirs3_n17     19      2.511516E-01     278.926
+
+       Profile 2 FWD output
+       Sensor_Id   Channel         R            Tb
+       hirs3_n17      1      6.473526E+01     239.019
+       hirs3_n17      2      6.186174E+01     237.495
+       hirs3_n17      3      6.000252E+01     236.928
+       hirs3_n17      4      5.795816E+01     236.181
+       hirs3_n17      5      5.870701E+01     238.237
+       hirs3_n17      6      5.978431E+01     240.924
+       hirs3_n17      7      6.129529E+01     244.013
+       hirs3_n17      8      4.802215E+01     248.861
+       hirs3_n17      9      2.882370E+01     242.248
+       hirs3_n17     10      5.962306E+01     248.374
+       hirs3_n17     11      9.563116E+00     243.636
+       hirs3_n17     12      3.659641E+00     234.813
+       hirs3_n17     13      3.346059E-01     245.168
+       hirs3_n17     14      2.353942E-01     240.767
+       hirs3_n17     15      1.887455E-01     238.636
+       hirs3_n17     16      1.718884E-01     237.599
+       hirs3_n17     17      1.272389E-01     246.705
+       hirs3_n17     18      8.838140E-02     248.509
+       hirs3_n17     19      4.782058E-02     248.768
+
+     Destroying the CRTM...

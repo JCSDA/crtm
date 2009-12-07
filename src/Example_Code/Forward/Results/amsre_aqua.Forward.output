@@ -1,0 +1,55 @@
+
+     **********************************************************
+                           Example_Forward
+
+      Program to provide an example of CRTM Forward function 
+      usage.
+
+      $Revision: 5798 $
+     **********************************************************
+
+
+     Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+     Initializing the CRTM...
+ Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsre_aqua.SpcCoeff.bin; 
+ SpcCoeff RELEASE.VERSION:  7.01  N_CHANNELS=12
+ Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsre_aqua.TauCoeff.bin; 
+   ODAS RELEASE.VERSION:  6.06  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=12  N_Alphas= 3  N_Coeffs=686
+ Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
+ CloudCoeff RELEASE.VERSION:  2.04  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)=  61  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
+ Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
+ AerosolCoeff RELEASE.VERSION:  2.03  N_WAVELENGTHS=  61  N_RADII= 36  N_TYPES= 8  N_RH= 36  N_LEGENDRE_TERMS=37  N_PHASE_ELEMENTS= 1
+ Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
+ EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
+
+       Profile 1 FWD output
+       Sensor_Id   Channel         R            Tb
+       amsre_aqu      1      1.349076E-04     305.526
+       amsre_aqu      2      1.339260E-04     303.304
+       amsre_aqu      3      3.146976E-04     301.485
+       amsre_aqu      4      3.136538E-04     300.486
+       amsre_aqu      5      9.343368E-04     290.532
+       amsre_aqu      6      9.339950E-04     290.426
+       amsre_aqu      7      1.484146E-03     285.030
+       amsre_aqu      8      1.484055E-03     285.012
+       amsre_aqu      9      3.440343E-03     281.222
+       amsre_aqu     10      3.440337E-03     281.221
+       amsre_aqu     11      2.024214E-02     279.553
+       amsre_aqu     12      2.024214E-02     279.553
+
+       Profile 2 FWD output
+       Sensor_Id   Channel         R            Tb
+       amsre_aqu      1      1.108713E-04     251.120
+       amsre_aqu      2      1.108701E-04     251.117
+       amsre_aqu      3      2.562084E-04     245.499
+       amsre_aqu      4      2.562084E-04     245.499
+       amsre_aqu      5      7.566043E-04     235.351
+       amsre_aqu      6      7.566043E-04     235.351
+       amsre_aqu      7      1.200541E-03     230.672
+       amsre_aqu      8      1.200541E-03     230.672
+       amsre_aqu      9      2.771304E-03     226.703
+       amsre_aqu     10      2.771304E-03     226.703
+       amsre_aqu     11      1.704928E-02     235.794
+       amsre_aqu     12      1.704928E-02     235.794
+
+     Destroying the CRTM...

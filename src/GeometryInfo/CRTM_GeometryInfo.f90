@@ -17,7 +17,7 @@ MODULE CRTM_GeometryInfo
   ! Module use
   USE Type_Kinds, ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, WARNING, FAILURE, Display_Message
-  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO          , &
+  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO, PI      , &
                              EARTH_RADIUS            , &
                              SATELLITE_HEIGHT        , &
                              DEGREES_TO_RADIANS      , &
@@ -203,6 +203,14 @@ CONTAINS
     gInfo%Flux_Zenith_Radian = DEGREES_TO_RADIANS * gInfo%Flux_Zenith_Angle
     gInfo%Secant_Flux_Zenith = ONE / COS(gInfo%Flux_Zenith_Radian)
 
+    ! Square of ratio between mean and actual Sun-Earth distances
+    ! see Liou, 2002: An Introduction to Atmospheric Radiation
+    gInfo%AU_ratio2 = TWO * PI * (gInfo%Day_of_Year-ONE)/365.0_fp
+    gInfo%AU_ratio2 = 1.00011_fp + 0.034221_fp * cos(gInfo%AU_ratio2)  &
+                    + 0.00128_fp * sin(gInfo%AU_ratio2)  &
+                    + 0.000719_fp * cos(TWO*gInfo%AU_ratio2)  &
+                    + 0.000077_fp * sin(TWO*gInfo%AU_ratio2)
+                    
   END FUNCTION CRTM_Compute_GeometryInfo
 
 !----------------------------------------------------------------------------------

@@ -200,7 +200,6 @@ CONTAINS
     ! Wavelength in microns 
     Wavelength = Inverse_cm_to_Micron(SC(SensorIndex)%Wavenumber(ChannelIndex))
 
-
     ! -------------------------------------------------------
     ! Compute Lambertian surface emissivity
     !
@@ -210,7 +209,6 @@ CONTAINS
     CALL Surface_IR_Emissivity( Wavelength, &
                                 Emissivity, &
                                 (Surface%Land_Type+OFFSET))                                   
-
 
     ! ----------------------
     ! Solar direct component
@@ -385,6 +383,7 @@ CONTAINS
     ! ***No TL models yet, so default TL output is zero***
     ! -----------------------------------------------------
     SfcOptics_TL%Reflectivity = ZERO
+    SfcOptics_TL%Direct_Reflectivity  = ZERO
     SfcOptics_TL%Emissivity   = ZERO
 
   END FUNCTION Compute_IR_Land_SfcOptics_TL
@@ -548,6 +547,7 @@ CONTAINS
     ! ***No AD models yet, so there is no impact on AD result***
     ! ----------------------------------------------
     SfcOptics_AD%Reflectivity = ZERO
+    SfcOptics_AD%Direct_Reflectivity = ZERO
     SfcOptics_AD%Emissivity   = ZERO
 
   END FUNCTION Compute_IR_Land_SfcOptics_AD
