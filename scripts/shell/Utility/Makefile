@@ -12,7 +12,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 # Shell scripts to install
 SRC_DIR = $(CRTM_SCRIPTS_ROOT)/shell/Utility
 
-SRC_FILES = linkfiles \
+SRC_FILES = linkfiles.sh \
             unlinkfiles \
             Link_SensorInfo \
             Link_Solar \
