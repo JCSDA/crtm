@@ -82,7 +82,7 @@ ARCHIVER_FLAGS = crvs
 # --------------------------------
 
 # Scripts to link and unlink files
-LINK_SCRIPT = linkfiles
+LINK_SCRIPT = linkfiles.sh
 UNLINK_SCRIPT = unlinkfiles
 
 

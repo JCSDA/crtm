@@ -15,10 +15,6 @@ SOURCE_DIR = src
 LIBRARY_DIR = lib
 INCLUDE_DIR = include
 
-# The linkfile script
-LINKSCRIPT = linkfiles
-UNLINKSCRIPT = unlinkfiles
-
 # Source files to link
 include $(BUILD_DIR)/$(SOURCE_DIR)/make.filelist
 
@@ -47,21 +43,21 @@ realclean: distclean remove_links
 # File link creation and removal
 macro_links:
 	@cd $(BUILD_DIR); \
-	$(LINKSCRIPT) $(CRTM_SOURCE_ROOT) make.macros ; \
+	$(LINK) $(CRTM_SOURCE_ROOT)/make.macros . ; \
 	cd $(SOURCE_DIR); \
-	$(LINKSCRIPT) $(CRTM_SOURCE_ROOT) make.rules; \
+	$(LINK) $(CRTM_SOURCE_ROOT)/make.rules . ; \
 	cd ../..
 
 create_links: macro_links
 	@cd $(BUILD_DIR)/$(SOURCE_DIR); \
-	$(LINKSCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES); \
+	$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES); \
 	cd ../..
 
 remove_links:
 	@cd $(BUILD_DIR)/$(SOURCE_DIR) ; \
-	$(UNLINKSCRIPT) make.rules $(SRC_FILES) ; \
+	$(UNLINK_SCRIPT) make.rules $(SRC_FILES) ; \
 	cd .. ; \
-	$(UNLINKSCRIPT) make.macros ; \
+	$(UNLINK_SCRIPT) make.macros ; \
 	cd ..
 
 
