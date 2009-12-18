@@ -26,10 +26,16 @@ MODULE Compare_Float_Numbers
   ! Visibilities
   ! ------------
   PRIVATE
-  PUBLIC :: Compare_Float
+  ! Parameters
+  PUBLIC :: DEFAULT_N_SIGFIG
+  ! Operators
   PUBLIC :: OPERATOR (.EqualTo.)
   PUBLIC :: OPERATOR (.GreaterThan.)
   PUBLIC :: OPERATOR (.LessThan.)
+  ! Procedures
+  PUBLIC :: Compare_Float
+  PUBLIC :: Tolerance
+  PUBLIC :: Compares_Within_Tolerance
 
 
   ! ---------------------
@@ -60,25 +66,46 @@ MODULE Compare_Float_Numbers
     MODULE PROCEDURE Is_Less_Than_Double
   END INTERFACE OPERATOR (.LessThan.)
 
+  INTERFACE Tolerance
+    MODULE PROCEDURE Tolerance_Real_Single
+    MODULE PROCEDURE Tolerance_Real_Double
+    MODULE PROCEDURE Tolerance_Complex_Single
+    MODULE PROCEDURE Tolerance_Complex_Double
+  END INTERFACE Tolerance
+
+  INTERFACE Compares_Within_Tolerance
+    MODULE PROCEDURE cwt_Real_Single
+    MODULE PROCEDURE cwt_Real_Double
+    MODULE PROCEDURE cwt_Complex_Single
+    MODULE PROCEDURE cwt_Complex_Double
+  END INTERFACE Compares_Within_Tolerance
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Module Version Id
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Numeric literals
   REAL(Single), PARAMETER :: SP_ZERO = 0.0_Single
   REAL(Double), PARAMETER :: DP_ZERO = 0.0_Double
   REAL(Single), PARAMETER :: SP_ONE = 1.0_Single
   REAL(Double), PARAMETER :: DP_ONE = 1.0_Double
+  REAL(Single), PARAMETER :: SP_TEN = 10.0_Single
+  REAL(Double), PARAMETER :: DP_TEN = 10.0_Double
   REAL(Single), PARAMETER :: SP_HUNDRED = 100.0_Single
   REAL(Double), PARAMETER :: DP_HUNDRED = 100.0_Double
+  REAL(Single), PARAMETER :: SP_COMPARE_CUTOFF = 1.0e-15_Single
+  REAL(Double), PARAMETER :: DP_COMPARE_CUTOFF = 1.0e-15_Double
+  ! Default number of significant figures
+  INTEGER, PARAMETER :: DEFAULT_N_SIGFIG = 6
+
 
 CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 ! NAME:
 !       .EqualTo.
 !
@@ -111,7 +138,7 @@ CONTAINS
 !
 !       If the result is .TRUE., the numbers are considered equal. For complex
 !       input the test is applied separately to the real and imaginary parts.
-!
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION EqualTo_Real_Single( x, y ) RESULT( EqualTo )
@@ -148,6 +175,7 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 ! NAME:
 !       .GreaterThan.
 !
@@ -182,7 +210,7 @@ CONTAINS
 !         ( x - y ) >= SPACING( MAX(ABS(x),ABS(y)) )
 !
 !       If the result is .TRUE., x is considered greater than y.
-!
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION Is_Greater_Than_Single( x, y ) RESULT ( Greater_Than )
@@ -208,6 +236,7 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 ! NAME:
 !       .LessThan.
 !
@@ -242,7 +271,7 @@ CONTAINS
 !         ( y - x ) >= SPACING( MAX(ABS(x),ABS(y)) )
 !
 !       If the result is .TRUE., x is considered less than y.
-!
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION Is_Less_Than_Single( x, y ) RESULT ( Less_Than )
@@ -268,6 +297,7 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 ! NAME:
 !       Compare_Float
 !
@@ -364,7 +394,7 @@ CONTAINS
 !
 !       For complex numbers, the same test is applied to both the real and
 !       imaginary parts and each result is ANDed.
-!
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION Compare_Real_Single( x, y, ULP, Percent ) RESULT( Compare )
@@ -485,5 +515,212 @@ CONTAINS
     Compare = Compare_Real_Double(xr,yr,ULP=ULP,Percent=Percent) .AND. &
               Compare_Real_Double(xi,yi,ULP=ULP,Percent=Percent)
   END FUNCTION Compare_Complex_Double
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       Tolerance
+!
+! PURPOSE:
+!       Elemental function to compute a tolerance value for a given input for a
+!       specified number of significant figures.
+!
+! CALLING SEQUENCE:
+!       Result = Tolerance( x, n )
+!
+! INPUT ARGUMENTS:
+!       x:           Floating point value for which a tolerance value is required.
+!                    UNITS:      N/A
+!                    TYPE:       REAL(Single)   [ == default real]
+!                                  OR
+!                                REAL(Double)
+!                                  OR
+!                                COMPLEX(Single)
+!                                  OR
+!                                COMPLEX(Double)
+!                    DIMENSION:  Scalar or any rank array.
+!                    ATTRIBUTES: INTENT(IN)
+!
+!       n:           The approximate number of significant figures for which the 
+!                    tolerance is required.
+!                    UNITS:      N/A
+!                    TYPE:       INTEGER
+!                    DIMENSION:  Scalar or same as input x.
+!                    ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Result:      The return value is a tolerance value that can be used to
+!                    compare two numbers.
+!                    UNITS:      N/A
+!                    TYPE:       Same as input x.
+!                    DIMENSION:  Same as input x.
+!:sdoc-:
+!----------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION Tolerance_Real_Single(x,n) RESULT( Tolerance )
+    REAL(Single), INTENT(IN) :: x
+    INTEGER     , INTENT(IN) :: n
+    REAL(Single) :: Tolerance
+    REAL(Single) :: e
+    IF (ABS(x) > SP_ZERO) THEN
+      e = FLOOR(LOG10(ABS(x))) - n
+      Tolerance = SP_TEN**e
+    ELSE
+      Tolerance = SP_ONE
+    END IF
+  END FUNCTION Tolerance_Real_Single
+  
+  ELEMENTAL FUNCTION Tolerance_Real_Double(x,n) RESULT( Tolerance )
+    REAL(Double), INTENT(IN) :: x
+    INTEGER,      INTENT(IN) :: n
+    REAL(Double) :: Tolerance
+    REAL(Double) :: e
+    IF (ABS(x) > SP_ZERO) THEN
+      e = FLOOR(LOG10(ABS(x))) - n
+      Tolerance = DP_TEN**e
+    ELSE
+      Tolerance = DP_ONE
+    END IF
+  END FUNCTION Tolerance_Real_Double
+  
+  ELEMENTAL FUNCTION Tolerance_Complex_Single(x,n) RESULT( Tolerance )
+    COMPLEX(Single), INTENT(IN) :: x
+    INTEGER,         INTENT(IN) :: n
+    COMPLEX(Single) :: Tolerance
+    REAL(Single) :: tr, ti
+    tr = Tolerance_Real_Single(REAL(x),n)
+    ti = Tolerance_Real_Single(AIMAG(x),n)
+    Tolerance = CMPLX(tr,ti,Single)
+  END FUNCTION Tolerance_Complex_Single
+  
+  ELEMENTAL FUNCTION Tolerance_Complex_Double(x,n) RESULT( Tolerance )
+    COMPLEX(Double), INTENT(IN) :: x
+    INTEGER,         INTENT(IN) :: n
+    COMPLEX(Double) :: Tolerance
+    REAL(Double) :: tr, ti
+    tr = Tolerance_Real_Double(REAL(x),n)
+    ti = Tolerance_Real_Double(AIMAG(x),n)
+    Tolerance = CMPLX(tr,ti,Double)
+  END FUNCTION Tolerance_Complex_Double
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       Compares_Within_Tolerance
+!
+! PURPOSE:
+!       Elemental function to determine if two values are comparable withing
+!       a given tolerance determined by the number of significant figures
+!       used in the comparison.
+!
+! CALLING SEQUENCE:
+!       Result = Compare_Within_Tolerance( x, y, n, cutoff=cutoff )
+!
+! INPUTS:
+!       x, y:        Floating point values to be compared.
+!                    UNITS:      N/A
+!                    TYPE:       REAL(Single)   [ == default real]
+!                                  OR
+!                                REAL(Double)
+!                                  OR
+!                                COMPLEX(Single)
+!                                  OR
+!                                COMPLEX(Double)
+!                    DIMENSION:  Scalar or any rank array.
+!                    ATTRIBUTES: INTENT(IN)
+!
+!       n:           The approximate number of significant figures for which the 
+!                    tolerance is required.
+!                    UNITS:      N/A
+!                    TYPE:       INTEGER
+!                    DIMENSION:  Scalar or same as input x, y.
+!                    ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       cutoff:      Floating point value below which the comparison is not
+!                    performed. In this case, the function result will be .TRUE.
+!                    If not specified, the default value is 1.0e-15 for real
+!                    input, or (1.0e-15,1.0e-15) for complex input.
+!                    UNITS:      N/A
+!                    TYPE:       Same as input x
+!                    DIMENSION:  Scalar or same as input x, y.
+!                    ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Result:      The return value is a logical value indicating if the 
+!                    comparison was successful or not.
+!                    If .TRUE. , the two numbers compare within the prescribed
+!                                tolerance, or
+!                       .FALSE., they do not.
+!                    UNITS:      N/A
+!                    TYPE:       LOGICAL
+!                    DIMENSION:  Same as input x, y.
+!:sdoc-:
+!----------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION cwt_Real_Single(x,y,n,cutoff) RESULT(is_comparable)
+    REAL(Single),           INTENT(IN) :: x, y
+    INTEGER,                INTENT(IN) :: n
+    REAL(Single), OPTIONAL, INTENT(IN) :: cutoff
+    LOGICAL :: is_comparable
+    REAL(Single) :: c
+    IF ( PRESENT(cutoff) ) THEN
+      c = cutoff
+    ELSE
+      c = SP_COMPARE_CUTOFF
+    END IF
+    is_comparable = .TRUE.
+    IF ( ABS(x) > c ) is_comparable = ABS(x-y) < Tolerance(x,n)
+  END FUNCTION cwt_Real_Single
+
+
+  ELEMENTAL FUNCTION cwt_Real_Double(x,y,n,cutoff) RESULT(is_comparable)
+    REAL(Double),           INTENT(IN) :: x, y
+    INTEGER,                INTENT(IN) :: n
+    REAL(Double), OPTIONAL, INTENT(IN) :: cutoff
+    LOGICAL :: is_comparable
+    REAL(Double) :: c
+    IF ( PRESENT(cutoff) ) THEN
+      c = cutoff
+    ELSE
+      c = DP_COMPARE_CUTOFF
+    END IF
+    is_comparable = .TRUE.
+    IF ( ABS(x) > c ) is_comparable = ABS(x-y) < Tolerance(x,n)
+  END FUNCTION cwt_Real_Double
+
+
+  ELEMENTAL FUNCTION cwt_Complex_Single(x,y,n,cutoff) RESULT(is_comparable)
+    COMPLEX(Single),           INTENT(IN) :: x, y
+    INTEGER,                   INTENT(IN) :: n
+    COMPLEX(Single), OPTIONAL, INTENT(IN) :: cutoff
+    LOGICAL :: is_comparable
+    COMPLEX(Single) :: c
+    IF ( PRESENT(cutoff) ) THEN
+      c = cutoff
+    ELSE
+      c = CMPLX(SP_COMPARE_CUTOFF,SP_COMPARE_CUTOFF,Single)
+    END IF
+    is_comparable = cwt_Real_Single(REAL(x) ,REAL(y) ,n,cutoff=REAL(c) ) .AND. &
+                    cwt_Real_Single(AIMAG(x),AIMAG(y),n,cutoff=AIMAG(c))
+  END FUNCTION cwt_Complex_Single
+
+
+  ELEMENTAL FUNCTION cwt_Complex_Double(x,y,n,cutoff) RESULT(is_comparable)
+    COMPLEX(Double),           INTENT(IN) :: x, y
+    INTEGER,                   INTENT(IN) :: n
+    COMPLEX(Double), OPTIONAL, INTENT(IN) :: cutoff
+    LOGICAL :: is_comparable
+    COMPLEX(Double) :: c
+    IF ( PRESENT(cutoff) ) THEN
+      c = cutoff
+    ELSE
+      c = CMPLX(DP_COMPARE_CUTOFF,DP_COMPARE_CUTOFF,Double)
+    END IF
+    is_comparable = cwt_Real_Double(REAL(x) ,REAL(y) ,n,cutoff=REAL(c) ) .AND. &
+                    cwt_Real_Double(AIMAG(x),AIMAG(y),n,cutoff=AIMAG(c))
+  END FUNCTION cwt_Complex_Double
 
 END MODULE Compare_Float_Numbers

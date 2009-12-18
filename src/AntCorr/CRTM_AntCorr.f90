@@ -18,7 +18,8 @@ MODULE CRTM_AntCorr
   ! Module use statements
   USE Type_Kinds              , ONLY: fp
   USE CRTM_Parameters         , ONLY: SET, ZERO, TSPACE
-  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type, &
+                                      CRTM_GeometryInfo_GetValue
   USE CRTM_RTSolution_Define  , ONLY: CRTM_RTSolution_type
   USE CRTM_SpcCoeff           , ONLY: SC
   ! Disable all implicit typing
@@ -63,11 +64,16 @@ CONTAINS
     INTEGER                     , INTENT(IN)     :: n  ! SensorIndex
     INTEGER                     , INTENT(IN)     :: l  ! ChannelIndex
     TYPE(CRTM_RTSolution_type)  , INTENT(IN OUT) :: RT
-
+    ! Local variables
+    INTEGER :: iFOV
+    
+    ! Get the FOV index value
+    CALL CRTM_GeometryInfo_GetValue( gI, iFOV = iFOV )
+    
     ! Compute the antenna temperature
-    RT%Brightness_Temperature = SC(n)%AC%A_earth(   gI%iFOV,l)*RT%Brightness_Temperature + &
-                                SC(n)%AC%A_platform(gI%iFOV,l)*RT%Brightness_Temperature + &
-                                SC(n)%AC%A_space(   gI%iFOV,l)*TSPACE
+    RT%Brightness_Temperature = SC(n)%AC%A_earth(   iFOV,l)*RT%Brightness_Temperature + &
+                                SC(n)%AC%A_platform(iFOV,l)*RT%Brightness_Temperature + &
+                                SC(n)%AC%A_space(   iFOV,l)*TSPACE
     
   END SUBROUTINE CRTM_Compute_AntCorr
 
@@ -82,13 +88,17 @@ CONTAINS
     INTEGER                     , INTENT(IN)     :: l  ! ChannelIndex
     TYPE(CRTM_RTSolution_type)  , INTENT(IN OUT) :: RT_TL
     ! Local variables
+    INTEGER :: iFOV
     REAL(fp) :: c
 
+    ! Get the FOV index value
+    CALL CRTM_GeometryInfo_GetValue( gI, iFOV = iFOV )
+    
     ! Compute the tangent linear antenna temperature
     ! Note the A_platform term has to be included even
     ! though the earth temperature is used as a proxy
     ! for the platform temperature.
-    c = SC(n)%AC%A_earth(gI%iFOV,l) + SC(n)%AC%A_platform(gI%iFOV,l)
+    c = SC(n)%AC%A_earth(iFOV,l) + SC(n)%AC%A_platform(iFOV,l)
     RT_TL%Brightness_Temperature = c * RT_TL%Brightness_Temperature
     
   END SUBROUTINE CRTM_Compute_AntCorr_TL
@@ -104,10 +114,14 @@ CONTAINS
     INTEGER                     , INTENT(IN)     :: l  ! ChannelIndex
     TYPE(CRTM_RTSolution_type)  , INTENT(IN OUT) :: RT_AD
     ! Local variables
+    INTEGER :: iFOV
     REAL(fp) :: c
 
+    ! Get the FOV index value
+    CALL CRTM_GeometryInfo_GetValue( gI, iFOV = iFOV )
+    
     ! Compute the adjoint of the antenna temperature
-    c = SC(n)%AC%A_earth(gI%iFOV,l) + SC(n)%AC%A_platform(gI%iFOV,l)
+    c = SC(n)%AC%A_earth(iFOV,l) + SC(n)%AC%A_platform(iFOV,l)
     RT_AD%Brightness_Temperature = c * RT_AD%Brightness_Temperature
     
   END SUBROUTINE CRTM_Compute_AntCorr_AD

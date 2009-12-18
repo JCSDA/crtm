@@ -17,7 +17,8 @@ MODULE ODPS_CoordinateMapping
   ! Module use
   USE Type_Kinds,                ONLY: fp
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
-  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type, &
+                                       CRTM_GeometryInfo_GetValue
   USE ODPS_Define,               ONLY: ODPS_type
   USE ODPS_Predictor_Define,     ONLY: PAFV_type
   USE Profile_Utility_Parameters,ONLY: G0, EPS, R_DRYAIR
@@ -179,6 +180,7 @@ CONTAINS
     INTEGER  :: interp_index(2, TC%n_Layers)
     REAL(fp) :: Ref_LnPressure(TC%n_Layers)
     REAL(fp) :: User_LnPressure(Atm%n_layers)
+    REAL(fp) :: Surface_Altitude, Sensor_Zenith_Radian
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC%n_Absorbers)
     INTEGER  :: j, jj, k, n_ODPS_Layers, n_User_Layers, ODPS_sfc_idx
@@ -214,7 +216,13 @@ CONTAINS
         END IF
       END DO
     END IF
-               
+    
+    ! Extract the needed GeometryInfo information
+    CALL CRTM_GeometryInfo_GetValue( GeoInfo, &
+                                     Surface_Altitude = Surface_Altitude, &
+                                     Sensor_Zenith_Radian = Sensor_Zenith_Radian )
+
+
     !-----------------------------------------------------------
     ! Interpolate temperautre profile on internal pressure grids
     !-----------------------------------------------------------
@@ -279,7 +287,7 @@ CONTAINS
     ! (2) the user-given surface height                                            
     IF(TC%Ref_Level_Pressure(n_ODPS_Layers) >= Atm%Level_Pressure(n_User_Layers))THEN
       Z_Offset = -(Z(ODPS_sfc_idx) + ODPS_sfc_fraction*(Z(ODPS_sfc_idx-1)-Z(ODPS_sfc_idx))) &
-                 + GeoInfo%Surface_Altitude
+                 + Surface_Altitude
     ELSE
       ! For the case in which the user surface pressure is larger than the ODPS surface pressure,
       ! the ODPS surface is adjusted for a surface pressure 1013 mb, regardless the user supplied 
@@ -289,7 +297,7 @@ CONTAINS
     END IF
     Z = Z + Z_Offset
 
-    s = (EARTH_RADIUS + GeoInfo%Surface_Altitude)*SIN(GeoInfo%Sensor_Zenith_Angle*DEGREES_TO_RADIANS)
+    s = (EARTH_RADIUS + Surface_Altitude)*SIN(Sensor_Zenith_Radian)
 
     DO k = 1, n_ODPS_Layers
       SineAng = s /(EARTH_RADIUS + Z(k))

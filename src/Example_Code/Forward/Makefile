@@ -13,10 +13,10 @@ CRTM_DIR = $(CRTM_SOURCE_ROOT)/Build
 # The Fortran95 compiler+flags, and linker+flags
 # *** CHANGE THESE FOR THE COMPILER YOU USE ON YOUR SYSTEM ***
 # *** SEE THE END OF FILE FOR THE ADDITIONAL DEFINITIONS        ***
-#FC = $(FC_GFORTRAN)
-#FC_FLAGS = $(FC_GFORTRAN_FLAGS) -I$(CRTM_DIR)/include
-FC = $(FC_XLF)
-FC_FLAGS = $(FC_XLF_FLAGS) -I$(CRTM_DIR)/include
+FC = $(FC_GFORTRAN)
+FC_FLAGS = $(FC_GFORTRAN_FLAGS) -I$(CRTM_DIR)/include
+#FC = $(FC_XLF)
+#FC_FLAGS = $(FC_XLF_FLAGS) -I$(CRTM_DIR)/include
 FL = $(FC)
 FL_FLAGS = -L$(CRTM_DIR)/lib -lCRTM -o
 
@@ -33,7 +33,7 @@ all: $(OBJ_FILE)
 
 # A clean target
 clean:
-	rm -f $(OBJ_FILE) $(EXE_FILE) *.output *.output.diff
+	rm -f $(OBJ_FILE) $(EXE_FILE) *.output Results/*.signal
 
 # Local dependencies
 $(EXE_FILE).o: $(EXE_FILE).f90

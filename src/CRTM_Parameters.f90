@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS@NOAA/NCEP/EMC 31-Jul-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 31-Jul-2000
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_Parameters
@@ -178,7 +178,7 @@ MODULE CRTM_Parameters
 
 
   !#----------------------------------------------------------------------------#
-  !#                       -- GeometryInfo PARAMETERS --                        #
+  !#                         -- Geometry PARAMETERS --                          #
   !#----------------------------------------------------------------------------#
 
   ! -----------------
@@ -186,6 +186,13 @@ MODULE CRTM_Parameters
   ! -----------------
   REAL(fp), PUBLIC, PARAMETER :: EARTH_RADIUS     = 6370.0_fp  ! Mean earth radius 
   REAL(fp), PUBLIC, PARAMETER :: SATELLITE_HEIGHT = 800.0_fp
+
+
+  ! ----------------
+  ! Altitude extrema
+  ! ----------------
+  REAL(fp), PUBLIC, PARAMETER :: MIN_SURFACE_ALTITUDE = -400.0_fp ! Dead sea
+  REAL(fp), PUBLIC, PARAMETER :: MAX_SURFACE_ALTITUDE = 8900.0_fp ! Chomolungma
 
 
   ! -----------------------------------

@@ -29,7 +29,8 @@ MODULE ODAS_Predictor
   USE CRTM_Atmosphere_Define  , ONLY: CRTM_Atmosphere_type, &
                                       CRTM_Get_AbsorberIdx, &
                                       H2O_ID, O3_ID
-  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type, &
+                                      CRTM_GeometryInfo_GetValue
   USE ODAS_Predictor_Define   , ONLY: Predictor_type      , &
                                       Associated_Predictor, &
                                       Destroy_Predictor   , &
@@ -1270,7 +1271,7 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!      Max_Order:          The maximum order of the polynomial function for each absorber 
+!       Max_Order:      The maximum order of the polynomial function for each absorber 
 !                       UNITS:      N/A
 !                       TYPE:       INTEGER
 !                       DIMENSION:  1D array (n_Absorbers)
@@ -1337,9 +1338,12 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors'
     INTEGER :: i,j,k,n_Layers
+    REAL(fp) :: Secant_Sensor_Zenith
 
     ! Save the angle information
-    Predictor%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
+                                     Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+    Predictor%Secant_Sensor_Zenith = Secant_Sensor_Zenith
 
     ! Compute the nadir integrated absorber profiles
     CALL Compute_IntAbsorber( Atmosphere, &  ! Input
@@ -1446,7 +1450,7 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!      Max_Order:          The maximum order of the polynomial function for each absorber 
+!       Max_Order:         The maximum order of the polynomial function for each absorber 
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  1D array (n_Absorbers)
@@ -1519,9 +1523,12 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_TL'
     REAL(fp):: A_Level_TL(Atmosphere%n_Layers)
     INTEGER :: i,j,k,n_Layers
+    REAL(fp) :: Secant_Sensor_Zenith
 
     ! Save the angle information
-    Predictor_TL%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
+                                     Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+    Predictor_TL%Secant_Sensor_Zenith = Secant_Sensor_Zenith
 
     ! Compute the tangent-linear nadir integrated absorber profiles
     CALL Compute_IntAbsorber_TL( Atmosphere   , &  ! Input
@@ -1613,7 +1620,7 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!      Max_Order:          The maximum order of the polynomial function for each absorber 
+!       Max_Order:         The maximum order of the polynomial function for each absorber 
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  1D array (n_Absorbers)
@@ -1684,9 +1691,12 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_AD'
     REAL(fp):: A_Level_AD(Atmosphere%n_Layers)
     INTEGER :: i, j, k, n_Layers
+    REAL(fp) :: Secant_Sensor_Zenith
 
     ! Save the angle information
-    Predictor_AD%Secant_Sensor_Zenith = GeometryInfo%Secant_Sensor_Zenith
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
+                                     Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+    Predictor_AD%Secant_Sensor_Zenith = Secant_Sensor_Zenith
 
     ! Compute aveA AD
     A_Level_AD = ZERO

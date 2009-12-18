@@ -2,146 +2,39 @@
 #
 # Makefile for Numeric_Inquiry program
 #
-# $Id: Makefile,v 1.4 2004/11/30 14:07:47 paulv Exp $
-#
 #==============================================================================
 
-#-----------------------------------------------------------------------------
-#                          -- Define macros --
-#-----------------------------------------------------------------------------
+# Define macros
+include $(CRTM_SOURCE_ROOT)/make.macros
 
-F90_DIR = $(HOME)/f90
-
-include $(F90_DIR)/make.macros
-
-
-# -------------
 # This makefile
-# -------------
-
 MAKE_FILE = Makefile
 
-
-# ----------------
-# Executable files
-# ----------------
-
+# Executable file
 EXE_FILE = Numeric_Inquiry
 
+# Source files to link
+SRC_FILES = Type_Kinds.f90
 
-# ------------
-# Object files
-# ------------
-
-
-UTILITY_OBJ_FILES = Type_Kinds.o
-
-OBJ_FILES = $(UTILITY_OBJ_FILES) \
+# Obj files used in link phase
+OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
+# Define common make targets (all, build, clean, install)
+include $(CRTM_SOURCE_ROOT)/make.common_targets
 
-
-#-----------------------------------------------------------------------------
-#                          -- Define dependecies --
-#-----------------------------------------------------------------------------
-
-# ---------------------
-# Make based on OS type
-# ---------------------
-
-
-# Make based on OS type
-all:
-	@echo "OS type detected: "`uname -s`
-	@case `uname -s` in \
-	  "SunOS")   make -f $(MAKE_FILE) test_program $(SUNOS_FLAGS) ;; \
-	  "AIX")     make -f $(MAKE_FILE) test_program $(AIX_FLAGS) ;; \
-	  "IRIX64" ) make -f $(MAKE_FILE) test_program $(IRIX64_FLAGS) ;; \
-	  "Linux" )  make -f $(MAKE_FILE) test_program $(Linux_FLAGS) ;; \
-	  *) echo "This system is not supported" ;; \
-       esac
-
-
-
-# ----------------
-# Make the program
-# ----------------
-
-test_program: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
-
-
-# --------
-# Clean up
-# --------
-
-clean:
-	$(REMOVE) $(OBJ_FILES) *.mod *.MOD *.stb
-
-
-realclean: remove_links clean
-
-
-# --------------------------------
-# Create the links for compilation
-# --------------------------------
-
-UTILITY_SOURCE_DIR = $(F90_DIR)/Utility
-UTILITY_SOURCE_FILES = ${UTILITY_OBJ_FILES:.o=.f90}
-
-
+# Source link creation and removal
 create_links:
-	@for source_file in ${UTILITY_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${UTILITY_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-
-ALL_SOURCE_FILES = $(UTILITY_SOURCE_FILES)
+	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
 remove_links:
-	@for source_file in ${ALL_SOURCE_FILES}; do \
-	  $(REMOVE) $$source_file ; \
-	done
+	@unlinkfiles $(SRC_FILES)
 
+# Squeaky clean target
+realclean: clean remove_links
 
-# ---------------
-# Dependency list
-# ---------------
+# Source dependency lists
+include make.dependencies
 
-Type_Kinds.o : Type_Kinds.f90 
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o
-
-
-# -------------------------------
-# Create tarball for distribution
-# -------------------------------
-
-TAR_FILE = $(EXE_FILE)_software.tar
-
-TEST_OUTPUT_FILES = Numeric_Inquiry.Intel-Linux.Output \
-                    Numeric_Inquiry.Lahey-Linux.Output \
-                    Numeric_Inquiry.SGI-IRIX.Output \
-                    Numeric_Inquiry.IBM-AIX.Output \
-                    Numeric_Inquiry.Sun-Solaris.Output
-
-tar: create_links
-	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
-	@$(COPY) makefile.dist makefile
-	$(TARBALL_APPEND) $(TAR_FILE) makefile
-	@$(REMOVE) makefile
-	@$(COPY) $(F90_DIR)/make.macros .
-	@$(COPY) $(F90_DIR)/make.rules .
-	$(TARBALL_APPEND) $(TAR_FILE) make.macros make.rules
-	@$(REMOVE) make.macros make.rules
-	$(TARBALL_APPEND) $(TAR_FILE) $(TEST_OUTPUT_FILES)
-	compress $(TAR_FILE)
-
-
-
-#-----------------------------------------------------------------------------
-#                          -- Define default rules --
-#-----------------------------------------------------------------------------
-
-include $(F90_DIR)/make.rules
-
+# Define default rules
+include $(CRTM_SOURCE_ROOT)/make.rules

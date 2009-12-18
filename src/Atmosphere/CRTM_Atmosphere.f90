@@ -16,23 +16,25 @@ MODULE CRTM_Atmosphere
   ! -----------------
   ! Module use
   USE Type_Kinds            , ONLY: fp
-  USE Message_Handler       , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Message_Handler       , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters       , ONLY: ZERO, ONE, POINT_5, SET, &
                                     TOA_PRESSURE           , &
                                     MINIMUM_ABSORBER_AMOUNT
   USE CRTM_Atmosphere_Define, ONLY: CRTM_Atmosphere_type    , &
-                                    CRTM_Allocate_Atmosphere, &
-                                    CRTM_Assign_Atmosphere  , &  
-                                    CRTM_Sum_Atmosphere     , &
-                                    CRTM_Zero_Atmosphere
+                                    OPERATOR(==), &
+                                    OPERATOR(+), &
+                                    CRTM_Atmosphere_Associated, &
+                                    CRTM_Atmosphere_Create, &
+                                    CRTM_Atmosphere_AddLayerCopy, &
+                                    CRTM_Atmosphere_Zero
   USE CRTM_Model_Profiles   , ONLY: MODEL_LEVEL_PRESSURE, & 
                                     CRTM_Get_Model_Profile
   ! ...Internal variable definition module
   USE iAtm_Define,            ONLY: iAtm_type      , &
-                                    Associated_iAtm, &
-                                    Destroy_iAtm   , &
-                                    Allocate_iAtm  , &
-                                    Assign_iAtm
+                                    iAtm_Associated, &
+                                    iAtm_Create    , &
+                                    iAtm_Destroy
+                                    
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -43,15 +45,16 @@ MODULE CRTM_Atmosphere
   ! Everything private by default
   PRIVATE
   ! Module procedures
-  PUBLIC :: CRTM_AddLayers_Atmosphere
-  PUBLIC :: CRTM_AddLayers_Atmosphere_TL
-  PUBLIC :: CRTM_AddLayers_Atmosphere_AD
-  ! Pass through entities for internal variable
+  PUBLIC :: CRTM_Atmosphere_AddLayers
+  PUBLIC :: CRTM_Atmosphere_AddLayers_TL
+  PUBLIC :: CRTM_Atmosphere_AddLayers_AD
+  ! iAtm entities
+  ! ...Structure
   PUBLIC :: iAtm_type      
-  PUBLIC :: Associated_iAtm
-  PUBLIC :: Destroy_iAtm   
-  PUBLIC :: Allocate_iAtm
-  PUBLIC :: Assign_iAtm
+  ! ...Procedures
+  PUBLIC :: iAtm_Associated
+  PUBLIC :: iAtm_Create
+  PUBLIC :: iAtm_Destroy
 
 
   ! -----------------
@@ -79,19 +82,18 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_AddLayers_Atmosphere
+!       CRTM_Atmosphere_AddLayers
 !
 ! PURPOSE:
 !       Function to copy an atmosphere structure and adding extra layers from
 !       climatology as required to supplement the upper atmosphere profile data.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_AddLayers_Atmosphere( Atm_In                 , &  ! Input
-!                                                 Atm_Out                , &  ! Output
-!                                                 iAtm                   , &  ! Internal variable output
-!                                                 Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Atmosphere_AddLayers( Atm_In , &  ! Input
+!                                                 Atm_Out, &  ! Output
+!                                                 iAtm     )  ! Internal variable output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Atm_In:          Atmosphere structure that is to be supplemented
 !                        or copied.
 !                        UNITS:      N/A
@@ -99,23 +101,13 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Atm_Out:         Copy of the input atmosphere structure with extra upper
 !                        atmosphere layers added as required.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       iAtm:            Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
@@ -143,62 +135,55 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_AddLayers_Atmosphere( Atm_In     , &  ! Input
-                                      Atm_Out    , &  ! Output
-                                      iAtm       , &  ! Internal variable output
-                                      Message_Log) &  ! Error messaging
-                                    RESULT( Error_Status )
+  FUNCTION CRTM_Atmosphere_AddLayers( &
+    Atm_In , &  ! Input
+    Atm_Out, &  ! Output
+    iAtm   ) &  ! Internal variable output
+  RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_In
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_Out
     TYPE(iAtm_type)           , INTENT(OUT)    :: iAtm
-    CHARACTER(*), OPTIONAL    , INTENT(IN)     :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AddLayers_Atmosphere'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Atmosphere_AddLayers'
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: i, j, k, n
 
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
 
 
     ! If extra layers are NOT needed,
     ! then simply copy the structure
-    ! -------------------------------
     IF ( Atm_In%Level_Pressure(0) <= TOA_PRESSURE) THEN
-      Error_Status = CRTM_Assign_Atmosphere( Atm_In, Atm_Out, &
-                                             Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error assigning Atmosphere structure with NO extra layers', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+      Atm_Out = Atm_In
+      IF ( .NOT. CRTM_Atmosphere_Associated( Atm_Out ) ) THEN
+        err_stat = FAILURE
+        msg = 'Error assigning Atmosphere structure with NO extra layers'
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       END IF
       RETURN
     END IF
     
     
     ! Allocate the internal variable structure
-    ! ----------------------------------------
     n = Extra_Layers( Atm_In )
-    Error_Status = Allocate_iAtm( n, Atm_In%n_Absorbers, iAtm, Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating iAtm internal structure', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    CALL iAtm_Create( iAtm, n, Atm_In%n_Absorbers )
+    IF ( .NOT. iAtm_Associated( iAtm ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error allocating iAtm internal structure'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
 
 
     ! Get the extra layer profiles
-    ! ----------------------------
-    ! Fill them
     CALL CRTM_Get_Model_Profile( iAtm%pl, iAtm%tl, iAtm%al, Model=Atm_In%Climatology )
+
 
     ! First interpolate the extra levels to the user top pressure
     ! replacing the model data at that array index
@@ -226,6 +211,7 @@ CONTAINS
       END DO
     END DO
     
+    
     ! Now, extrapolate user layer profile to get the "layer 0" value and
     ! use it to shift the model profile to avoid a discontinuity at p(n)
     CALL Interp_LPoly( iAtm%p(n), Atm_In%Pressure(1:2), iAtm%elpoly )
@@ -234,6 +220,7 @@ CONTAINS
       CALL Shift_Profile( iAtm%elpoly, Atm_In%Absorber(1:2,j), iAtm%a(:,j) )
     END DO
 
+
     ! Make sure the absorber amounts are not negative.
     ! (Is a further, more physical, check needed here?)
     iAtm%a_save = iAtm%a
@@ -241,15 +228,11 @@ CONTAINS
     
 
     ! Copy over the atmosphere structure with extra layers
-    ! ----------------------------------------------------
-    Error_Status = CRTM_Assign_Atmosphere( Atm_In, Atm_Out, &
-                                           n_Added_Layers = n, &
-                                           Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error assigning Atmosphere structure with extra layers', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    atm_out = CRTM_Atmosphere_AddLayerCopy( Atm_In, n )
+    IF ( .NOT. CRTM_Atmosphere_Associated( atm_out ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error copying Atmosphere structure with extra layers'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
 
@@ -259,16 +242,14 @@ CONTAINS
     !       zeroing is handled by the structure allocation) since
     !       at TOA, typically, there are not any clouds and/or
     !       aerosols.
-    ! -----------------------------------------------------------
-    ! Profile
+    ! ...Profile
     Atm_Out%Level_Pressure(0:n) = iAtm%pl
     Atm_Out%Pressure(1:n)       = iAtm%p
     Atm_Out%Temperature(1:n)    = iAtm%t
     DO j = 1, Atm_Out%n_Absorbers
       Atm_Out%Absorber(1:n,j)   = iAtm%a(:,j)
     END DO
-    
-    ! Clouds
+    ! ...Clouds
     IF ( Atm_In%n_Clouds > 0 ) THEN
       DO i = 1, Atm_In%n_Clouds
         Atm_Out%Cloud(i)%Effective_Radius(1:n)   = ZERO
@@ -276,8 +257,7 @@ CONTAINS
         Atm_Out%Cloud(i)%Water_Content(1:n)      = ZERO
       END DO
     END IF
-  
-    ! Aerosols
+    ! ...Aerosols
     IF ( Atm_In%n_Aerosols > 0 ) THEN
       DO i = 1, Atm_In%n_Aerosols
         Atm_Out%Aerosol(i)%Effective_Radius(1:n) = ZERO
@@ -285,27 +265,26 @@ CONTAINS
       END DO
     END IF
 
-  END FUNCTION CRTM_AddLayers_Atmosphere
+  END FUNCTION CRTM_Atmosphere_AddLayers
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_AddLayers_Atmosphere_TL
+!       CRTM_Atmosphere_AddLayers_TL
 !
 ! PURPOSE:
 !       Function to copy a tangent-linear atmosphere structure and add extra
 !       layers as required to supplement the upper atmosphere profile data.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_AddLayers_Atmosphere_TL( Atm_In                 , &  ! FWD Input
-!                                                    Atm_In_TL              , &  ! TL  Input
-!                                                    Atm_Out_TL             , &  ! TL  Output
-!                                                    iAtm                   , &  ! Internal variable input
-!                                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Atmosphere_AddLayers_TL( Atm_In    , &  ! FWD Input
+!                                                    Atm_In_TL , &  ! TL  Input
+!                                                    Atm_Out_TL, &  ! TL  Output
+!                                                    iAtm        )  ! Internal variable input
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Atm_In:          Forward model atmosphere structure.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Atmosphere_type
@@ -328,7 +307,7 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Atm_Out_TL:      Copy of the input tangent-linear atmosphere structure
 !                        with extra upper atmosphere layers added as required.
 !                        Note that the tangent-linear values of the added layers
@@ -337,16 +316,6 @@ CONTAINS
 !                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -365,24 +334,24 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_AddLayers_Atmosphere_TL( Atm_In     , &  ! FWD Input
-                                         Atm_In_TL  , &  ! TL  Input
-                                         Atm_Out_TL , &  ! TL  Output
-                                         iAtm       , &  ! Internal variable input
-                                         Message_Log) &  ! Error messaging
-                                       RESULT( Error_Status )
+  FUNCTION CRTM_Atmosphere_AddLayers_TL( &
+    Atm_In    , &  ! FWD Input
+    Atm_In_TL , &  ! TL  Input
+    Atm_Out_TL, &  ! TL  Output
+    iAtm      ) &  ! Internal variable input
+  RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_In
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_In_TL
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_Out_TL
     TYPE(iAtm_type)           , INTENT(IN)     :: iAtm
-    CHARACTER(*), OPTIONAL    , INTENT(IN)     :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AddLayers_Atmosphere_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Atmosphere_AddLayers_TL'
     ! Local variables
-    INTEGER :: Allocate_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: alloc_stat
     INTEGER :: i, j, k, n
     REAL(fp), ALLOCATABLE :: pl_TL(:), tl_TL(:), al_TL(:,:) ! Level arrays
     REAL(fp), ALLOCATABLE :: p_TL(:) , t_TL(:) , a_TL(:,:)  ! Layer arrays
@@ -393,59 +362,46 @@ CONTAINS
 
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
 
 
     ! If extra layers are NOT needed,
     ! then simply copy the structure
-    ! -------------------------------
     IF ( Atm_In%Level_Pressure(0) <= TOA_PRESSURE) THEN
-      Error_Status = CRTM_Assign_Atmosphere( Atm_In_TL, Atm_Out_TL, &
-                                             Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error assigning Atmosphere structure with NO extra layers', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+      Atm_Out_TL = Atm_In_TL
+      IF ( .NOT. CRTM_Atmosphere_Associated( Atm_Out_TL ) ) THEN
+        err_stat = FAILURE
+        msg = 'Error assigning Atmosphere structure with NO extra layers'
+        CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       END IF
       RETURN
     END IF
     
-    
     ! Determine how many extra layers are needed
-    ! ------------------------------------------
     n = Extra_Layers( Atm_In )
 
-
-    ! Get the extra layer profiles
-    ! ----------------------------
     ! Allocate temporary arrays
     ALLOCATE( pl_TL(0:n), tl_TL(0:n), al_TL(0:n,Atm_In%n_Absorbers), &  ! Level arrays
               p_TL(n)   , t_TL(n)   , a_TL(n,Atm_In%n_Absorbers)   , &  ! Layer arrays
-              STAT=Allocate_Status )
-    IF ( Allocate_Status/= 0 ) THEN 
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating temporary profile arrays', & 
-                            Error_Status, &
-                            Message_Log=Message_Log )  
+              STAT=alloc_stat )
+    IF ( alloc_stat/= 0 ) THEN 
+      err_stat = FAILURE
+      WRITE(msg,'("Error allocating temporary profile arrays. STAT=",i0)' ) alloc_stat
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
-
+    
     ! Initialise them
     pl_TL = ZERO
     tl_TL = ZERO
     al_TL = ZERO
     
     ! Copy the input internal variable structure for modification
-    Error_Status = Assign_iAtm( iAtm, l_iAtm, Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN 
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error copying iAtm internal variable structure', & 
-                            Error_Status, &
-                            Message_Log=Message_Log )  
+    l_iAtm = iAtm
+    IF ( .NOT. iAtm_Associated( l_iAtm ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error copying iAtm internal variable structure'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
     
@@ -491,35 +447,28 @@ CONTAINS
 
     ! Copy over the atmosphere structure with extra layers
     ! (which will be zero by definition)
-    ! ----------------------------------------------------
-    Error_Status = CRTM_Assign_Atmosphere( Atm_In_TL, Atm_Out_TL, &
-                                           n_Added_Layers = n, &
-                                           Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error assigning Atmosphere structure with extra layers', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    atm_out_TL = CRTM_Atmosphere_AddLayerCopy( Atm_In_TL, n )
+    IF ( .NOT. CRTM_Atmosphere_Associated( atm_out_TL ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error copying Atmosphere structure with extra layers'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
       RETURN
     END IF
     
-
 
     ! Slot the added layers into the output atmosphere structure
     ! Note: Cloud and Aerosol assignments not really needed (the
     !       zeroing is handled by the structure allocation) since
     !       at TOA, typically, there are not any clouds and/or
     !       aerosols.
-    ! -----------------------------------------------------------
-    ! Profile
+    ! ...Profile
     Atm_Out_TL%Level_Pressure(0:n) = pl_TL
     Atm_Out_TL%Pressure(1:n)       = p_TL
     Atm_Out_TL%Temperature(1:n)    = t_TL
     DO j = 1, Atm_In%n_Absorbers
       Atm_Out_TL%Absorber(1:n,j)   = a_TL(:,j)
     END DO
-    
-    ! Clouds
+    ! ...Clouds
     IF ( Atm_In%n_Clouds > 0 ) THEN
       DO i = 1, Atm_In%n_Clouds
         Atm_Out_TL%Cloud(i)%Effective_Radius(1:n)   = ZERO
@@ -527,8 +476,7 @@ CONTAINS
         Atm_Out_TL%Cloud(i)%Water_Content(1:n)      = ZERO
       END DO
     END IF
-  
-    ! Aerosols
+    ! ...Aerosols
     IF ( Atm_In%n_Aerosols > 0 ) THEN
       DO i = 1, Atm_In%n_Aerosols
         Atm_Out_TL%Aerosol(i)%Effective_Radius(1:n) = ZERO
@@ -538,38 +486,24 @@ CONTAINS
 
 
     ! Clean up
-    ! --------
-    ! Locally copied structures
-    Error_Status = Destroy_iAtm( l_iAtm, Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN 
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error destroying local iAtm internal variable structure', & 
-                            Error_Status, &
-                            Message_Log=Message_Log )  
-      RETURN
-    END IF
+    CALL iAtm_Destroy( l_iAtm )
     ! Local allocated arrays
     DEALLOCATE( pl_TL, tl_TL, al_TL, &  ! Level arrays
                 p_TL , t_TL , a_TL , &  ! Layer arrays
-                STAT=Allocate_Status )
-    IF ( Allocate_Status/= 0 ) THEN 
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating temporary profile arrays', & 
-                            Error_Status, &
-                            Message_Log=Message_Log )  
-      RETURN
+                STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      WRITE(msg,'("Error deallocating temporary profile arrays. STAT=",i0)' ) alloc_stat
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING )
     END IF
 
-  END FUNCTION CRTM_AddLayers_Atmosphere_TL
+  END FUNCTION CRTM_Atmosphere_AddLayers_TL
   
   
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_AddLayers_Atmosphere_AD
+!       CRTM_Atmosphere_AddLayers_AD
 !
 ! PURPOSE:
 !       Function to copy back an adjoint atmosphere structure removing added
@@ -577,13 +511,12 @@ CONTAINS
 !       profile data.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_AddLayers_Atmosphere_AD( Atm_In                 , &  ! FWD Input
-!                                                    Atm_Out_AD             , &  ! AD  Input
-!                                                    Atm_In_AD              , &  ! AD  Output
-!                                                    iAtm                   , &  ! Internal variable input
-!                                                    Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Atmosphere_AddLayers_AD( Atm_In    , &  ! FWD Input
+!                                                    Atm_Out_AD, &  ! AD  Input
+!                                                    Atm_In_AD , &  ! AD  Output
+!                                                    iAtm        )  ! Internal variable input
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Atm_In:          Forward model atmosphere structure.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Atmosphere_type
@@ -606,23 +539,13 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Atm_In_AD:       Adjoint atmosphere structure at the original, user
 !                        specified layering.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -645,24 +568,24 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_AddLayers_Atmosphere_AD( Atm_In     , &  ! FWD Input
-                                         Atm_Out_AD , &  ! AD  Input
-                                         Atm_In_AD  , &  ! AD  Output
-                                         iAtm       , &  ! Internal variable input
-                                         Message_Log) &  ! Error messaging
-                                       RESULT( Error_Status )
+  FUNCTION CRTM_Atmosphere_AddLayers_AD( &
+    Atm_In    , &  ! FWD Input
+    Atm_Out_AD, &  ! AD  Input
+    Atm_In_AD , &  ! AD  Output
+    iAtm      ) &  ! Internal variable input
+  RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_In
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_Out_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_In_AD
     TYPE(iAtm_type)           , INTENT(IN)     :: iAtm
-    CHARACTER(*), OPTIONAL    , INTENT(IN)     :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AddLayers_Atmosphere_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Atmosphere_AddLayers_AD'
     ! Local variables
-    INTEGER :: Allocate_Status
+    CHARACTER(ML) :: msg
+    INTEGER :: alloc_stat
     INTEGER :: i, j, k, n, no, nt
     REAL(fp), ALLOCATABLE :: pl_AD(:), tl_AD(:), al_AD(:,:) ! Level arrays
     REAL(fp), ALLOCATABLE :: p_AD(:) , t_AD(:) , a_AD(:,:)  ! Layer arrays
@@ -672,8 +595,7 @@ CONTAINS
 
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
 
 
     ! If extra layers are NOT needed, then simply perform
@@ -682,43 +604,30 @@ CONTAINS
     ! so the adjoint form is
     !   Atm_In_AD  = Atm_In_AD + Atm_Out_AD
     !   Atm_Out_AD = ZERO
-    ! -------------------------------
     IF ( Atm_In%Level_Pressure(0) <= TOA_PRESSURE) THEN
-      Error_Status = CRTM_Sum_Atmosphere( Atm_In_AD, Atm_Out_AD, &
-                                          Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error summing Atm_In_AD atmosphere structure with NO extra layers', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-      CALL CRTM_Zero_Atmosphere( Atm_Out_AD )
+      Atm_In_AD = Atm_In_AD + Atm_Out_AD
+      CALL CRTM_Atmosphere_Zero( Atm_Out_AD )
       RETURN
     END IF
     
     
     ! Determine how many extra layers have been used
-    ! ----------------------------------------------
     n = Extra_Layers( Atm_In )
 
 
     ! Allocate temporary arrays
-    ! -------------------------
     ALLOCATE( pl_AD(0:n), tl_AD(0:n), al_AD(0:n,Atm_In%n_Absorbers), &  ! Level arrays
               p_AD(n)   , t_AD(n)   , a_AD(n,Atm_In%n_Absorbers)   , &  ! Layer arrays
-              STAT=Allocate_Status )
-    IF ( Allocate_Status/= 0 ) THEN 
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating temporary profile arrays', & 
-                            Error_Status, &
-                            Message_Log=Message_Log )  
+              STAT=alloc_stat )
+    IF ( alloc_stat/= 0 ) THEN 
+      err_stat = FAILURE
+      msg = 'Error allocating temporary profile arrays'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )  
       RETURN
     END IF
     
     
     ! Initialise local adjoint variables
-    ! ----------------------------------
     pl_AD = ZERO
     tl_AD = ZERO
     al_AD = ZERO
@@ -730,8 +639,6 @@ CONTAINS
 
     ! Slot the added layers from the output adjoint
     ! atmosphere into the local arrays.
-    ! ---------------------------------------------
-    ! Profile
     DO j = 1, Atm_In%n_Absorbers
       a_AD(:,j) = a_AD(:,j) + Atm_Out_AD%Absorber(1:n,j)
       Atm_Out_AD%Absorber(1:n,j) = ZERO
@@ -748,60 +655,49 @@ CONTAINS
     
     ! Perform the adjoint summations
     ! This is the adjoint equivalent of the TL Assign_Atmosphere
-    ! ----------------------------------------------------------
     no = Atm_In_AD%n_Layers
     nt = n + no
-
-    ! Aerosols
+    ! ...Aerosols
     IF ( Atm_In_AD%n_Aerosols > 0 ) THEN
       DO i = 1, Atm_In_AD%n_Aerosols
         Atm_In_AD%Aerosol(i)%Concentration(1:no) = Atm_In_AD%Aerosol(i)%Concentration(1:no) + &
                                                    Atm_Out_AD%Aerosol(i)%Concentration(n+1:nt)
-        
         Atm_In_AD%Aerosol(i)%Effective_Radius(1:no) = Atm_In_AD%Aerosol(i)%Effective_Radius(1:no) + &
                                                       Atm_Out_AD%Aerosol(i)%Effective_Radius(n+1:nt)
-
         Atm_In_AD%Aerosol(i)%Type = Atm_Out_AD%Aerosol(i)%Type
       END DO
     END IF
-
-    ! Clouds    
+    ! ...Clouds    
     IF ( Atm_In_AD%n_Clouds > 0 ) THEN
       DO i = 1, Atm_In_AD%n_Clouds
         Atm_In_AD%Cloud(i)%Water_Content(1:no) = Atm_In_AD%Cloud(i)%Water_Content(1:no) + &
                                                  Atm_Out_AD%Cloud(i)%Water_Content(n+1:nt)
-        
         Atm_In_AD%Cloud(i)%Effective_Variance(1:no) = Atm_In_AD%Cloud(i)%Effective_Variance(1:no) + &
                                                       Atm_Out_AD%Cloud(i)%Effective_Variance(n+1:nt)
-
         Atm_In_AD%Cloud(i)%Effective_Radius(1:no) = Atm_In_AD%Cloud(i)%Effective_Radius(1:no) + &
                                                     Atm_Out_AD%Cloud(i)%Effective_Radius(n+1:nt)
-
         Atm_In_AD%Cloud(i)%Type = Atm_Out_AD%Cloud(i)%Type
       END DO
     END IF
-
-    ! Absorber data
+    ! ...Absorber data
     DO j = 1, Atm_In_AD%n_Absorbers
       Atm_In_AD%Absorber(1:no,j) = Atm_In_AD%Absorber(1:no,j) + Atm_Out_AD%Absorber(n+1:nt,j)
     END DO
-
-    ! Temperature data
+    ! ...Temperature data
     Atm_In_AD%Temperature(1:no) = Atm_In_AD%Temperature(1:no) + Atm_Out_AD%Temperature(n+1:nt)
-
-    ! Pressure data
+    ! ...Pressure data
     Atm_In_AD%Pressure(1:no)       = Atm_In_AD%Pressure(1:no) + Atm_Out_AD%Pressure(n+1:nt)
     Atm_In_AD%Level_Pressure(0:no) = Atm_In_AD%Level_Pressure(0:no) + Atm_Out_AD%Level_Pressure(n:nt)
 
+
     ! Zero the output atmosphere structure
-    CALL CRTM_Zero_Atmosphere( Atm_Out_AD )
+    CALL CRTM_Atmosphere_Zero( Atm_Out_AD )
 
 
-    ! Perform the adjoint extra layering
-    ! ----------------------------------
     ! Check for negative absorber amounts
     ! (Is a further, more physical, check needed here?)
     WHERE (iAtm%a_save <= ZERO) a_AD = ZERO
+
 
     ! The adjoint of the user layer profile extrapolation to get the "layer 0"
     ! value used to shift the model profile to avoid a discontinuity at p(n)
@@ -810,6 +706,7 @@ CONTAINS
     END DO
     CALL Shift_Profile_AD( iAtm%elpoly, Atm_In%Temperature(1:2), t_AD, lpoly_AD, Atm_In_AD%Temperature(1:2) )
     CALL Interp_LPoly_AD( iAtm%p(n), Atm_In%Pressure(1:2), lpoly_AD, p_AD(n), Atm_In_AD%Pressure(1:2) )
+
 
     ! Compute the adjoint of the model profile layer averages
     DO j = 1, Atm_In%n_Absorbers
@@ -821,6 +718,7 @@ CONTAINS
       CALL Layer_X_AD( t_AD(k), tl_AD(k-1:k) )
       CALL Layer_P_AD( iAtm%pl(k-1:k), p_AD(k), pl_AD(k-1:k))
     END DO
+
 
     ! Adjoint of the interpolation of the extra levels to the user
     ! top pressure replacing the model data at that array index
@@ -838,19 +736,15 @@ CONTAINS
     
 
     ! Clean up
-    ! --------
     DEALLOCATE( pl_AD, tl_AD, al_AD, &  ! Level arrays
                 p_AD , t_AD , a_AD , &  ! Layer arrays
-                STAT=Allocate_Status )
-    IF ( Allocate_Status/= 0 ) THEN 
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating temporary profile arrays', & 
-                            Error_Status, &
-                            Message_Log=Message_Log )  
-      RETURN
+                STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error deallocating temporary profile arrays'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING )
     END IF
-  END FUNCTION CRTM_AddLayers_Atmosphere_AD
+
+  END FUNCTION CRTM_Atmosphere_AddLayers_AD
 
 
 !##################################################################################

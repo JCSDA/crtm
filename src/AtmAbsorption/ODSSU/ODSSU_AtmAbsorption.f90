@@ -36,8 +36,8 @@ MODULE ODSSU_AtmAbsorption
   USE ODSSU_TauCoeff,            ONLY: TC
 
   USE SSU_Input_Define,   ONLY: SSU_Input_type, &
-                                SSU_Input_Get_Property, &
-                                SSU_Input_Cell_Pressure_Set
+                                SSU_Input_GetValue, &
+                                SSU_Input_CellPressureIsSet
   USE Search_Utility,     ONLY: Bisection_Search
 
   ! Disable implicit typing
@@ -60,23 +60,24 @@ MODULE ODSSU_AtmAbsorption
   ! Procedure overloads
   ! -------------------
   INTERFACE Compute_AtmAbsorption
-   MODULE PROCEDURE Compute_ODAS_AtmAbsorption
-   MODULE PROCEDURE Compute_ODPS_AtmAbsorption
+    MODULE PROCEDURE Compute_ODAS_AtmAbsorption
+    MODULE PROCEDURE Compute_ODPS_AtmAbsorption
   END INTERFACE Compute_AtmAbsorption
+
   INTERFACE Compute_AtmAbsorption_TL
-   MODULE PROCEDURE Compute_ODAS_AtmAbsorption_TL
-   MODULE PROCEDURE Compute_ODPS_AtmAbsorption_TL
+    MODULE PROCEDURE Compute_ODAS_AtmAbsorption_TL
+    MODULE PROCEDURE Compute_ODPS_AtmAbsorption_TL
   END INTERFACE Compute_AtmAbsorption_TL
+
   INTERFACE Compute_AtmAbsorption_AD
-   MODULE PROCEDURE Compute_ODAS_AtmAbsorption_AD
-   MODULE PROCEDURE Compute_ODPS_AtmAbsorption_AD
+    MODULE PROCEDURE Compute_ODAS_AtmAbsorption_AD
+    MODULE PROCEDURE Compute_ODPS_AtmAbsorption_AD
   END INTERFACE Compute_AtmAbsorption_AD
    
   ! ----------
   ! Parameters
   ! ----------
-  ! RCS Id for the module
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
@@ -158,11 +159,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
-! COMMENTS:
-!       Note the INTENT on the structure arguments are IN OUT rather
-!       than just OUT. This is necessary because the argument is defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
 !------------------------------------------------------------------------------
   SUBROUTINE ODSSU_Compute_AAV( SSU_Input    , &  ! Input                      
                                 SensorIndex  , &  ! Input                      
@@ -180,16 +176,16 @@ CONTAINS
     REAL(fp) :: Time, Cell_Pressure
 
     ! Compute the CO2 cell pressure
-    IF( SSU_Input_Cell_Pressure_Set(SSU_Input) ) THEN
+    IF( SSU_Input_CellPressureIsSet(SSU_Input) ) THEN
       ! Use cell pressure data
-      CALL SSU_Input_Get_Property( SSU_Input, &
-                                   ChannelIndex=ChannelIndex, &
-                                   Cell_Pressure=Cell_Pressure )
+      CALL SSU_Input_GetValue( SSU_Input, &
+                               Channel = ChannelIndex, &
+                               Cell_Pressure = Cell_Pressure )
       AAV%CO2_Cell = Cell_Pressure
       AAV%Index_low = Bisection_Search( TC(SensorIndex)%TC_CellPressure(:,ChannelIndex), AAV%CO2_Cell )
     ELSE
       ! Use mission time data
-      CALL SSU_Input_Get_Property( SSU_Input, Time=Time )
+      CALL SSU_Input_GetValue( SSU_Input, Time=Time )
       IF( Time < TC(SensorIndex)%Ref_Time(1) )THEN
         Time = TC(SensorIndex)%Ref_Time(1)
         WRITE( msg,'("Invalid time. Reset to ",f8.2)' ) Time

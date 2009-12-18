@@ -47,12 +47,12 @@ PROGRAM Test_DateTime
   CALL Init_Test(UTest,'Get_DateTime procedure tests')
   CALL DATE_AND_TIME(VALUES=DT_Values)
   DateTime = Get_DateTime()
-  CALL Assert_Equal( DT_Values(1), DateTime%Year       , UTest )
-  CALL Assert_Equal( DT_Values(2), DateTime%Month      , UTest )
-  CALL Assert_Equal( DT_Values(3), DateTime%Day        , UTest )
-  CALL Assert_Equal( DT_Values(4), DateTime%UTC_Delta  , UTest )
-  CALL Assert_Equal( DT_Values(5), DateTime%Hour       , UTest )
-  CALL Assert_Equal( DT_Values(6), DateTime%Minute     , UTest )
+  CALL Is_Equal( DT_Values(1), DateTime%Year       , UTest )
+  CALL Is_Equal( DT_Values(2), DateTime%Month      , UTest )
+  CALL Is_Equal( DT_Values(3), DateTime%Day        , UTest )
+  CALL Is_Equal( DT_Values(4), DateTime%UTC_Delta  , UTest )
+  CALL Is_Equal( DT_Values(5), DateTime%Hour       , UTest )
+  CALL Is_Equal( DT_Values(6), DateTime%Minute     , UTest )
   
   CALL Report_Test(UTest)
   
@@ -81,22 +81,22 @@ PROGRAM Test_DateTime
   DateTime%Year  = 2007
   DateTime%Month = 1
   DateTime%Day   = 1
-  CALL Assert_Equal(1, Day_of_Year(DateTime), UTest)
+  CALL Is_Equal(1, Day_of_Year(DateTime), UTest)
 
   DateTime%Year  = 2007
   DateTime%Month = 12
   DateTime%Day   = 31
-  CALL Assert_Equal(365, Day_of_Year(DateTime), UTest)
+  CALL Is_Equal(365, Day_of_Year(DateTime), UTest)
   
   DateTime%Year  = 2000
   DateTime%Month = 12
   DateTime%Day   = 31
-  CALL Assert_Equal(366, Day_of_Year(DateTime), UTest)
+  CALL Is_Equal(366, Day_of_Year(DateTime), UTest)
   
   DateTime%Year  = 2006
   DateTime%Month = 12
   DateTime%Day   = 31
-  CALL Assert_Equal(365, Day_of_Year(DateTime), UTest)
+  CALL Is_Equal(365, Day_of_Year(DateTime), UTest)
   
   CALL Report_Test(UTest)
 

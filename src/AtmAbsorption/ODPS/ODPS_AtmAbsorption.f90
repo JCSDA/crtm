@@ -21,7 +21,8 @@ MODULE ODPS_AtmAbsorption
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,           ONLY: ZERO, ONE, TWO, LIMIT_EXP, LIMIT_LOG
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
-  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type, &
+                                       CRTM_GeometryInfo_GetValue
   USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
   USE ODPS_Define,               ONLY: ODPS_type,                &
                                        SIGNIFICANCE_OPTRAN
@@ -1076,13 +1077,13 @@ CONTAINS
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
     TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
-
     ! Local variables
-
     REAL(fp) :: Temperature(Predictor%n_Layers)
     REAL(fp) :: Absorber(Predictor%n_Layers, TC%n_Absorbers)
     INTEGER  :: H2O_idx
-
+    REAL(fp) :: Secant_Sensor_Zenith
+    
+    
     !------------------------------------------------------------------
     ! Mapping data from user to internal fixed pressure layers/levels.
     !------------------------------------------------------------------
@@ -1098,7 +1099,8 @@ CONTAINS
                    Predictor%PAFV)                     ! structure holding FW parameters
                    
     ! store the surface secant zenith angle
-    Predictor%Secant_Zenith_Surface = GeoInfo%Secant_Sensor_Zenith
+    CALL CRTM_GeometryInfo_GetValue( GeoInfo, Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+    Predictor%Secant_Zenith_Surface = Secant_Sensor_Zenith
                                   
     !-------------------------------------------
     ! Compute predictor

@@ -5,8 +5,11 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 19-May-2004
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 19-May-2004
+!                       paul.vandelst@noaa.gov
+!
+!                       Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
 !
 
 MODULE CRTM_GeometryInfo
@@ -15,22 +18,17 @@ MODULE CRTM_GeometryInfo
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds, ONLY: fp
+  USE Type_Kinds     , ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, WARNING, FAILURE, Display_Message
-  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO, PI      , &
-                             EARTH_RADIUS            , &
-                             SATELLITE_HEIGHT        , &
-                             DEGREES_TO_RADIANS      , &
-                             MAX_SENSOR_ZENITH_ANGLE , &
-                             MAX_SENSOR_AZIMUTH_ANGLE, &
-                             MAX_SOURCE_AZIMUTH_ANGLE, &
-                             MAX_FLUX_ZENITH_ANGLE   , &
-                             DIFFUSIVITY_ANGLE       , &
-                             DIFFUSIVITY_RADIAN      , &
-                             SECANT_DIFFUSIVITY
-  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type  , &
-                                      CRTM_Assign_GeometryInfo, &
-                                      CRTM_Equal_GeometryInfo
+  USE Date_Utility   , ONLY: Day_Of_Year
+  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO  , &
+                             TWOPI           , &
+                             EARTH_RADIUS    , &
+                             SATELLITE_HEIGHT, &
+                             DEGREES_TO_RADIANS
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_Geometry_type    , &
+                                      CRTM_GeometryInfo_type, &
+                                      CRTM_GeometryInfo_IsValid
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -39,592 +37,716 @@ MODULE CRTM_GeometryInfo
   ! Visibilities
   ! ------------
   PRIVATE
-  ! CRTM_GeometryInfo structure data type
-  ! in the CRTM_GeometryInfo_Define module
-  PUBLIC :: CRTM_GeometryInfo_type
-  ! CRTM_GeometryInfo structure routines inherited
-  ! from the CRTM_GeometryInfo_Define module
-  PUBLIC :: CRTM_Assign_GeometryInfo
-  PUBLIC :: CRTM_Equal_GeometryInfo
-  ! Public procedures
-  PUBLIC :: CRTM_Compute_GeometryInfo
-
-  PUBLIC :: SACONV 
-  PUBLIC :: VACONV
-  PUBLIC :: SACONV_TL 
-  PUBLIC :: VACONV_TL
-  PUBLIC :: SACONV_AD 
-  PUBLIC :: VACONV_AD
- 
-  REAL(fp), PRIVATE,  PARAMETER :: THOUSAND = 1000.0_fp 
-
+  PUBLIC :: CRTM_GeometryInfo_Compute
+  PUBLIC :: SACONV, SACONV_TL, SACONV_AD 
+  PUBLIC :: VACONV, VACONV_TL, VACONV_AD 
+  PUBLIC :: CRTM_GeometryInfo_Version 
+  
+  
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Metres->kilometres conversion factor
+  REAL(fp), PARAMETER :: M_TO_KM = 1.0e-03_fp
 
 
 CONTAINS
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                           ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_GeometryInfo_Compute
+! 
+! PURPOSE:
+!       Elemental subroutine to compute the derived geometry from the user
+!       specified components of the CRTM GeometryInfo structure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_GeometryInfo_Compute( GeometryInfo )
+!
+! INPUTS:
+!       GeometryInfo:  The GeometryInfo object containing the user
+!                      defined inputs
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_GeometryInfo_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! OUTPUTS:
+!       GeometryInfo:  The GeometryInfo structure with the non-user
+!                      components filled.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_GeometryInfo_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! SIDE EFFECTS:
+!       This function changes the values of the non-user components of the
+!       GeometryInfo object.
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE CRTM_GeometryInfo_Compute( gInfo )
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN OUT) :: gInfo
+
+    ! Compute the derived values
+    ! ...Derived sensor angles
+    gInfo%Sensor_Scan_Radian    = DEGREES_TO_RADIANS * gInfo%user%Sensor_Scan_Angle
+    gInfo%Sensor_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%user%Sensor_Zenith_Angle
+    gInfo%Sensor_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%user%Sensor_Azimuth_Angle
+    gInfo%Secant_Sensor_Zenith  = ONE / COS(gInfo%Sensor_Zenith_Radian)
+    ! ...Distance ratio, but only if zenith angle is large enough
+    IF ( ABS(gInfo%user%Sensor_Zenith_Angle) > ONE ) THEN
+      gInfo%Distance_Ratio = ABS(SIN(gInfo%Sensor_Scan_Radian)/SIN(gInfo%Sensor_Zenith_Radian))
+    END IF
+    ! ...Derived source angles
+    gInfo%Source_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%user%Source_Zenith_Angle
+    gInfo%Source_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%user%Source_Azimuth_Angle
+    gInfo%Secant_Source_Zenith  = ONE / COS(gInfo%Source_Zenith_Radian)
+    ! ...Derived flux angles
+    gInfo%Flux_Zenith_Radian = DEGREES_TO_RADIANS * gInfo%user%Flux_Zenith_Angle
+    gInfo%Secant_Flux_Zenith = ONE / COS(gInfo%Flux_Zenith_Radian)
+    ! ...AU ratio term
+    gInfo%AU_ratio2 = Compute_AU_ratio2( gInfo%user%Year, gInfo%user%Month, gInfo%user%Day )
+                    
+  END SUBROUTINE CRTM_GeometryInfo_Compute
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!      SACONV  
+!
+! PURPOSE:
+!      Elemental subroutine to compute the sensor zenith angle at a given altitude
+!      for a given surface sensor zenith angle.
+!
+! CALLING SEQUENCE:
+!        CALL SACONV( Sensor_Zenith_Radian, &  ! Input
+!                     Altitude            , &  ! Input
+!                     Local_Zenith_Radian   )  ! Output
+!
+! INPUTS:
+!       Sensor_Zenith_Radian: Sensor zenith angle at the Earth's surface
+!                             UNITS:      radians
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Scalar or any rank
+!                             ATTRIBUTES: INTENT(IN) 
+!
+!       Altitude:             The altitude at which the local sensor zenith angle
+!                             is required 
+!                             UNITS:      metres
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Scalar or any rank
+!                             ATTRIBUTES: INTENT(IN)
+!  
+! OUTPUTS:
+!       Local_Zenith_Radian:  The sensor zenith angle at the supplied altitude.
+!                             UNITS:      radians
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Same as input
+!                             ATTRIBUTES: INTENT(OUT)
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!                       Paul van Delst, 18-Nov-2009
+!                       paul.vandelst@noaa.gov
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE SACONV( &
+    Sensor_Zenith_Radian, &  ! Input
+    Altitude            , &  ! Input
+    Local_Zenith_Radian   )  ! Output
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: Sensor_Zenith_Radian
+    REAL(fp), INTENT(IN)  :: Altitude 
+    REAL(fp), INTENT(OUT) :: Local_Zenith_Radian
+    ! Local variables
+    REAL(fp) :: ra
+
+    ! Compute the radius, in km, of the point at which to calc the angle
+    ra = EARTH_RADIUS + (M_TO_KM * Altitude)
+
+    ! Compute the angle
+    Local_Zenith_Radian = ASIN((EARTH_RADIUS / ra) * SIN(Sensor_Zenith_Radian))
+  
+  END SUBROUTINE SACONV
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!      SACONV_TL  
+!
+! PURPOSE:
+!      Tangent-linear form of elemental subroutine to compute the sensor zenith
+!      angle at a given altitude for a given surface sensor zenith angle.
+!
+! CALLING SEQUENCE:
+!        CALL SACONV_TL( Sensor_Zenith_Radian , &  ! FWD Input
+!                        Altitude             , &  ! FWD Input
+!                        Altitude_TL          , &  ! TL  Input
+!                        Local_Zenith_Radian_TL )  ! TL  Output
+!
+! INPUTS:
+!       Sensor_Zenith_Radian:    Sensor zenith angle at the Earth's surface
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN) 
+!
+!       Altitude:                The altitude at which the local sensor zenith
+!                                angle is required 
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!  
+!       Altitude_TL:             Tangent-linear altitude. 
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!  
+! OUTPUTS:
+!       Local_Zenith_Radian_TL:  The tangent-linear sensor zenith angle at the
+!                                supplied altitude.
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Same as input
+!                                ATTRIBUTES: INTENT(OUT)
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!                       Paul van Delst, 20-Nov-2009
+!                       paul.vandelst@noaa.gov
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE SACONV_TL( &
+    Sensor_Zenith_Radian,  &  ! FWD Input
+    Altitude,              &  ! FWD Input
+    Altitude_TL,           &  ! TL  Input
+    Local_Zenith_Radian_TL )  ! TL  Output
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: Sensor_Zenith_Radian 
+    REAL(fp), INTENT(IN)  :: Altitude 
+    REAL(fp), INTENT(IN)  :: Altitude_TL 
+    REAL(fp), INTENT(OUT) :: Local_Zenith_Radian_TL
+    ! Local variables
+    REAL(fp) :: ra, ra_TL   
+    REAL(fp) :: Local_Zenith_Radian
+
+    ! Compute the radius, in km, of the point at which to calc the angle
+    ra    = EARTH_RADIUS + (M_TO_KM * Altitude)
+    ra_TL = M_TO_KM * Altitude_TL
+
+    ! Compute the tangent-linear angle
+    CALL SACONV( Sensor_Zenith_Radian, Altitude, Local_Zenith_Radian )
+    Local_Zenith_Radian_TL = -TAN(Local_Zenith_Radian) * ra_TL / ra
+  
+  END SUBROUTINE SACONV_TL
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!      SACONV_AD  
+!
+! PURPOSE:
+!      Adjoint form of elemental subroutine to compute the sensor zenith
+!      angle at a given altitude for a given surface sensor zenith angle.
+!
+! CALLING SEQUENCE:
+!        CALL SACONV_AD( Sensor_Zenith_Radian  , &  ! FWD Input
+!                        Altitude              , &  ! FWD Input
+!                        Local_Zenith_Radian_AD, &  ! AD  Input
+!                        Altitude_AD             )  ! AD  Output
+!
+! INPUTS:
+!       Sensor_Zenith_Radian:    Sensor zenith angle at the Earth's surface
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN) 
+!
+!       Altitude:                The altitude at which the local sensor zenith
+!                                angle is required 
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!  
+!       Local_Zenith_Radian_AD:  The adjoint sensor zenith angle at the
+!                                supplied altitude.
+!                                *** SET TO ZERO ON EXIT ***
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN OUT)
+!  
+! OUTPUTS:
+!       Altitude_AD:             Adjoint altitude. 
+!                                *** MUST HAVE VALUE ON ENTRY ***
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Same as input
+!                                ATTRIBUTES: INTENT(IN OUT)
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!                       Paul van Delst, 23-Nov-2009
+!                       paul.vandelst@noaa.gov
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE SACONV_AD( &
+    Sensor_Zenith_Radian,   &  ! FWD Input
+    Altitude,               &  ! FWD Input
+    Local_Zenith_Radian_AD, &  ! AD  Input
+    Altitude_AD             )  ! AD  Output
+    ! Arguments
+    REAL(fp), INTENT(IN)     :: Sensor_Zenith_Radian 
+    REAL(fp), INTENT(IN)     :: Altitude 
+    REAL(fp), INTENT(IN OUT) :: Local_Zenith_Radian_AD  
+    REAL(fp), INTENT(IN OUT) :: Altitude_AD
+    ! Local variables
+    REAL(fp) :: Local_Zenith_Radian  
+    REAL(fp) :: ra, ra_AD   
+
+    ! Forward model calculations
+    ra = EARTH_RADIUS + (M_TO_KM * Altitude)
+    CALL SACONV( Sensor_Zenith_Radian, Altitude, Local_Zenith_Radian )
+           
+    ! Compute the angle adjoint
+    ra_AD = -TAN(Local_Zenith_Radian) * Local_Zenith_Radian_AD / ra
+    Local_Zenith_Radian_AD = ZERO
+    Altitude_AD = Altitude_AD + (M_TO_KM * ra_AD)
+   
+  END SUBROUTINE SACONV_AD
+
+  
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!      VACONV  
+!
+! PURPOSE:
+!      Elemental subroutine to compute the sensor zenith angle at a given altitude
+!      for a given sensor scan angle.
+!
+! CALLING SEQUENCE:
+!        CALL VACONV( Sensor_Scan_Radian, & ! Input
+!                     Satellite_Altitude, & ! Input
+!                     Altitude,           & ! Input
+!                     Local_Zenith_Radian ) ! Output
+!
+! INPUTS:
+!       Sensor_Scan_Radian:   Sensor scan angle.
+!                             UNITS:      radians
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Scalar or any rank
+!                             ATTRIBUTES: INTENT(IN) 
+!
+!       Satellite_Altitude:   The satellite altitude 
+!                             UNITS:      kilometres
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Scalar or any rank
+!                             ATTRIBUTES: INTENT(IN)
+!  
+!       Altitude:             The altitude at which the local sensor zenith angle
+!                             is required 
+!                             UNITS:      metres
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Scalar or any rank
+!                             ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Local_Zenith_Radian:  The sensor zenith angle at the supplied altitude.
+!                             UNITS:      radians
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Same as input
+!                             ATTRIBUTES: INTENT(OUT)
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!                       Paul van Delst, 23-Nov-2009
+!                       paul.vandelst@noaa.gov
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE VACONV( &
+    Sensor_Scan_Radian, & ! Input
+    Satellite_Altitude, & ! Input
+    Altitude,           & ! Input
+    Local_Zenith_Radian ) ! Output
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: Sensor_Scan_Radian
+    REAL(fp), INTENT(IN)  :: Satellite_Altitude 
+    REAL(fp), INTENT(IN)  :: Altitude 
+    REAL(fp), INTENT(OUT) :: Local_Zenith_Radian
+    ! Local variables
+    REAL(fp) :: ra
+    REAL(fp) :: rs
+
+    ! Radius calculations
+    ! ...Compute the radius, in km, of the point at which to calc the angle
+    ra = EARTH_RADIUS + (M_TO_KM * Altitude)
+    ! ...The radius of the satellite orbit, in km.
+    rs = EARTH_RADIUS + Satellite_Altitude
+
+    ! Compute the angle
+    Local_Zenith_Radian = ASIN((rs / ra) * SIN(Sensor_Scan_Radian))
+  
+  END SUBROUTINE VACONV
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!      VACONV_TL
+!
+! PURPOSE:
+!      Tangent-linear form of elemental subroutine to compute the sensor zenith
+!      angle at a given altitude for a given sensor scan angle.
+!
+! CALLING SEQUENCE:
+!        CALL VACONV_TL( Sensor_Scan_Radian,    &  ! FWD Input
+!                        Satellite_Altitude,    &  ! FWD Input
+!                        Altitude,              &  ! FWD Input
+!                        Altitude_TL,           &  ! TL  Input
+!                        Local_Zenith_Radian_TL )  ! TL  Output
+!
+! INPUTS:
+!       Sensor_Scan_Radian:      Sensor scan angle.
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN) 
+!
+!       Satellite_Altitude:      The satellite altitude 
+!                                UNITS:      kilometres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!  
+!       Altitude:                The altitude at which the local sensor zenith
+!                                angle is required 
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!
+!       Altitude_TL:             Tangent-linear altitude. 
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!  
+! OUTPUTS:
+!       Local_Zenith_Radian_TL:  The tangent-linear sensor zenith angle at the
+!                                supplied altitude.
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Same as input
+!                                ATTRIBUTES: INTENT(OUT)
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!                       Paul van Delst, 23-Nov-2009
+!                       paul.vandelst@noaa.gov
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE VACONV_TL( &
+    Sensor_Scan_Radian,    &  ! FWD Input
+    Satellite_Altitude,    &  ! FWD Input
+    Altitude,              &  ! FWD Input
+    Altitude_TL,           &  ! TL  Input
+    Local_Zenith_Radian_TL )  ! TL  Output
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: Sensor_Scan_Radian 
+    REAL(fp), INTENT(IN)  :: Satellite_Altitude 
+    REAL(fp), INTENT(IN)  :: Altitude 
+    REAL(fp), INTENT(IN)  :: Altitude_TL 
+    REAL(fp), INTENT(OUT) :: Local_Zenith_Radian_TL
+    ! Local variables
+    REAL(fp) :: ra, ra_TL   
+    REAL(fp) :: rs   
+    REAL(fp) :: Local_Zenith_Radian
+
+    ! Radius calculations
+    ! ...Compute the radius, in km, of the point at which to calc the angle
+    ra    = EARTH_RADIUS + (M_TO_KM * Altitude)
+    ra_TL = M_TO_KM * Altitude_TL
+    ! ...The radius of the satellite orbit, in km.
+    rs = EARTH_RADIUS + Satellite_Altitude
+
+    ! Compute the tangent-linear angle
+    CALL VACONV( Sensor_Scan_Radian, Satellite_Altitude, Altitude, Local_Zenith_Radian )
+    Local_Zenith_Radian_TL = -TAN(Local_Zenith_Radian) * ra_TL / ra
+  
+  END SUBROUTINE VACONV_TL
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!      VACONV_AD
+!
+! PURPOSE:
+!      Adjoint form of elemental subroutine to compute the sensor zenith
+!      angle at a given altitude for a given sensor scan angle.
+!
+! CALLING SEQUENCE:
+!        CALL VACONV_AD( Sensor_Scan_Radian,    &  ! FWD Input
+!                        Satellite_Altitude,    &  ! FWD Input
+!                        Altitude,              &  ! FWD Input
+!                        Local_Zenith_Radian_AD )  ! TL  Output
+!                        Altitude_AD,           &  ! TL  Input
+!
+! INPUTS:
+!       Sensor_Scan_Radian:      Sensor scan angle.
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN) 
+!
+!       Satellite_Altitude:      The satellite altitude 
+!                                UNITS:      kilometres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!  
+!       Altitude:                The altitude at which the local sensor zenith
+!                                angle is required 
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN)
+!
+!       Local_Zenith_Radian_AD:  The adjoint sensor zenith angle at the
+!                                supplied altitude.
+!                                *** SET TO ZERO ON EXIT ***
+!                                UNITS:      radians
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar or any rank
+!                                ATTRIBUTES: INTENT(IN OUT)
+!  
+! OUTPUTS:
+!       Altitude_AD:             Adjoint altitude. 
+!                                *** MUST HAVE VALUE ON ENTRY ***
+!                                UNITS:      metres
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Same as input
+!                                ATTRIBUTES: INTENT(IN OUT)
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!                       Paul van Delst, 23-Nov-2009
+!                       paul.vandelst@noaa.gov
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE VACONV_AD( &
+    Sensor_Scan_Radian,     &  ! FWD Input
+    Satellite_Altitude,     &  ! FWD Input
+    Altitude,               &  ! FWD Input
+    Local_Zenith_Radian_AD, &  ! AD  Input
+    Altitude_AD             )  ! AD  Output
+    ! Arguments
+    REAL(fp), INTENT(IN)     :: Sensor_Scan_Radian 
+    REAL(fp), INTENT(IN)     :: Satellite_Altitude 
+    REAL(fp), INTENT(IN)     :: Altitude 
+    REAL(fp), INTENT(IN OUT) :: Local_Zenith_Radian_AD 
+    REAL(fp), INTENT(IN OUT) :: Altitude_AD
+    ! Local variables
+    REAL(fp) :: ra, ra_AD   
+    REAL(fp) :: rs   
+    REAL(fp) :: Local_Zenith_Radian
+
+    ! Forward model calcuations
+    ra = EARTH_RADIUS + (M_TO_KM * Altitude)
+    rs = EARTH_RADIUS + Satellite_Altitude
+    CALL VACONV( Sensor_Scan_Radian, Satellite_Altitude, Altitude, Local_Zenith_Radian )
+
+    ! Compute the angle adjoint
+    ra_AD = -TAN(Local_Zenith_Radian) * Local_Zenith_Radian_AD / ra
+    Local_Zenith_Radian_AD = ZERO
+    Altitude_AD = Altitude_AD + (M_TO_KM * ra_AD)
+  
+  END SUBROUTINE VACONV_AD
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Compute_GeometryInfo
-! 
+!       CRTM_GeometryInfo_Version
+!
 ! PURPOSE:
-!       Function to compute the derived geometry from the user specified
-!       components of the CRTM GeometryInfo structure.
+!       Subroutine to return the module version information.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_GeometryInfo( GeometryInfo           , &
-!                                                 Message_Log=Message_Log  )
-!
-! INPUT ARGUMENTS:
-!       GeometryInfo:  The GeometryInfo structure containing the user
-!                      defined inputs, in particular the angles.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_GeometryInfo_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!       CALL CRTM_GeometryInfo_Version( Id )
 !
 ! OUTPUT ARGUMENTS:
-!       GeometryInfo:  The GeometryInfo structure with the derived
-!                      angle components filled..
+!       Id:            Character string containing the version Id information
+!                      for the module.
 !                      UNITS:      N/A
-!                      TYPE:       CRTM_GeometryInfo_type
+!                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to the screen.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER( * )
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the ERROR_HANDLER module.
-!                       If == SUCCESS the computation was sucessful
-!                          == WARNING invalid data was found, but altered to default.
-!                          == FAILURE invalid data was found
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       This function changes the values of the derived components of the
-!       GeometryInfo structure argument.
+!                      ATTRIBUTES: INTENT(OUT)
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_GeometryInfo( gInfo      , &  ! In/Output
-                                      Message_Log) &  ! Optional input
-                                    RESULT( Error_Status )
+  SUBROUTINE CRTM_GeometryInfo_Version( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_GeometryInfo_Version
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       Compute_AU_ratio2
+!
+! PURPOSE:
+!       Elemental function to compute the square of the ratio between the
+!       semi-major axis of the Earth's elliptical orbit about the Sun, and
+!       the actual Earth-Sun distance.
+!
+! CALLING SEQUENCE:
+!       AU_ratio2 = Compute_AU_ratio2( Year, Month, Day )
+!
+! INPUTS:
+!       Year:          The year in 4-digit format, e.g. 1997.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as geo input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Month:         The month of the year (1-12).
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as geo input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Day:           The day of the month (1-28/29/30/31).
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as geo input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       AU_Ratio2:     The square of the ratio between the semi-major axis
+!                      of the Earth's elliptical orbit about the Sun, and
+!                      the actual Earth-Sun distance.
+!                      UNITS:      N/A
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Same as inputs.
+!
+! PROCEDURE:
+!       Adapted from eqn. 2.2.9 in 
+!
+!       Liou, K.N., 2002, "An Introduction to Atmospheric Radiation",
+!         2nd Ed., Academic Press, San Diego, California
+!
+!                  __ N 
+!       ( a )^2   \
+!       (---)   =  >  a(i).cos(i.t) + b(i).sin(i.t)
+!       ( r )     /__
+!                     i=0
+!
+!       where
+!       
+!         a = semi-major axis of Earth's orbit about the Sun
+!         
+!         r = Earth-Sun distance at time t
+!         
+!             2.PI.(DoY-1)
+!         t = ------------
+!               Max_DoY
+!
+!         DoY = day of the year
+!         
+!         Max_DoY = number of days in the year (365 or 366 for leap year)
+!                        
+!       and the coefficients are taken from table 2.2 in Liou(2002):
+!       
+!           i     a(i)       b(i)
+!         ---------------------------
+!           0   1.000110       0
+!           1   0.034221   0.001280
+!           2   0.000719   0.000077
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION Compute_AU_ratio2( Year, Month, Day ) RESULT( AU_ratio2 )
     ! Arguments
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN OUT) :: gInfo
-    CHARACTER(*),       OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER, INTENT(IN) :: Year 
+    INTEGER, INTENT(IN) :: Month
+    INTEGER, INTENT(IN) :: Day  
     ! Function result
-    INTEGER :: Error_Status
+    REAL(fp) :: AU_ratio2
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_GeometryInfo'
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Check sensor angles
-    IF ( ABS(gInfo%Sensor_Zenith_Angle) > MAX_SENSOR_ZENITH_ANGLE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid sensor zenith angle', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( gInfo%Sensor_Azimuth_Angle < ZERO                     .OR. &
-         gInfo%Sensor_Azimuth_Angle > MAX_SENSOR_AZIMUTH_ANGLE      ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid sensor azimuth angle. Setting to 0.0', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      gInfo%Sensor_Azimuth_Angle = ZERO
-    END IF
-
-    ! Check source angles
-    IF ( gInfo%Source_Azimuth_Angle < ZERO                     .OR. &
-         gInfo%Source_Azimuth_Angle > MAX_SOURCE_AZIMUTH_ANGLE      ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid source azimuth angle. Setting to 0.0', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      gInfo%Source_Azimuth_Angle = ZERO
-    END IF
-
-    ! Check flux angles
-    IF ( ABS(gInfo%Flux_Zenith_Angle) > MAX_FLUX_ZENITH_ANGLE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid flux zenith angle', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Compute the derived components
-    ! ------------------------------    
-    ! Sensor angles
-    gInfo%Sensor_Scan_Radian    = DEGREES_TO_RADIANS * gInfo%Sensor_Scan_Angle
-    gInfo%Sensor_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%Sensor_Zenith_Angle
-    gInfo%Sensor_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%Sensor_Azimuth_Angle
-    gInfo%Secant_Sensor_Zenith  = ONE / COS(gInfo%Sensor_Zenith_Radian)
-    
-    ! Distance ratio. Only modify if zenith angle large enough.
-    IF ( ABS(gInfo%Sensor_Zenith_Angle) > ONE ) THEN
-      gInfo%Distance_Ratio = ABS(SIN(gInfo%Sensor_Scan_Radian)/SIN(gInfo%Sensor_Zenith_Radian))
-    END IF
-
-    ! Source angles
-    gInfo%Source_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%Source_Zenith_Angle
-    gInfo%Source_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%Source_Azimuth_Angle
-    gInfo%Secant_Source_Zenith  = ONE / COS(gInfo%Source_Zenith_Radian)
-
-    ! Flux angles
-    gInfo%Flux_Zenith_Radian = DEGREES_TO_RADIANS * gInfo%Flux_Zenith_Angle
-    gInfo%Secant_Flux_Zenith = ONE / COS(gInfo%Flux_Zenith_Radian)
-
-    ! Square of ratio between mean and actual Sun-Earth distances
-    ! see Liou, 2002: An Introduction to Atmospheric Radiation
-    gInfo%AU_ratio2 = TWO * PI * (gInfo%Day_of_Year-ONE)/365.0_fp
-    gInfo%AU_ratio2 = 1.00011_fp + 0.034221_fp * cos(gInfo%AU_ratio2)  &
-                    + 0.00128_fp * sin(gInfo%AU_ratio2)  &
-                    + 0.000719_fp * cos(TWO*gInfo%AU_ratio2)  &
-                    + 0.000077_fp * sin(TWO*gInfo%AU_ratio2)
-                    
-  END FUNCTION CRTM_Compute_GeometryInfo
-
-!----------------------------------------------------------------------------------
-!S+
-! NAME:
-!      SACONV  
-!
-! PURPOSE:
-!      Convert the surface Sensor zenith angle SZA into the
-!      local Sensor angle at altitude ALT.
-!
-! CATEGORY:
-!       Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!        CALL    SACONV( Sensor_Zeith_Angle, & ! Input 
-!                        Altitude,          &  ! Input
-!                        Local_Sensor_Angle)   ! Output
-! INPUT ARGUMENTS:
-!       Sensor_Zeith_Angle: Sensor Zenith Angle SZA at the Earth's
-!       		   surface  
-!       		   UNITS:      degrees
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!       		   ATTRIBUTES: INTENT( IN )
-!
-!       Altitude:	   The Altitude in which the Sensor zenith 
-!       		   angle convert to 
-!       		   UNITS:      meters
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!       		   ATTRIBUTES: INTENT( IN )
-!  
-! OUTPUT ARGUMENTS:
-!       Local_Sensor_Angle: The return value is the local zenith angle
-!       		   UNITS:      RADIANS 
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-!       		    
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!--------------------------------------------------------------------------------
-  SUBROUTINE SACONV( Sensor_Zenith_Angle, & ! Input
-                     Altitude,           & ! Input
-                     Local_Zenith_Angle )  ! Output
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp ), INTENT( IN ) :: Sensor_Zenith_Angle 
-    REAL( fp ), INTENT( IN ) :: Altitude 
-    
-    ! -- Output
-    REAL( fp ), INTENT( OUT )  :: Local_Zenith_Angle
- 
-    ! ---------------
+    INTEGER , PARAMETER :: N = 2
+    REAL(fp), PARAMETER :: A(0:N) = (/ 1.000110_fp, 0.034221_fp, 0.000719_fp /)
+    REAL(fp), PARAMETER :: B(0:N) = (/ ZERO       , 0.001280_fp, 0.000077_fp /)
     ! Local variables
-    ! ---------------
- 
-    REAL( fp )  ::     RA   
+    INTEGER  :: i
+    REAL(fp) :: DoY, Max_DoY, t, it
 
-
-    !  ------------------
-    !  Assign some values
-    !  ------------------
-    !  RA = radius of the point to calc the angle at (in km)
-       RA = EARTH_RADIUS + (Altitude/THOUSAND)
-
-    !   -----------------
-    !   Do the conversion
-    !   -----------------
-       Local_Zenith_Angle = ASIN( (EARTH_RADIUS/RA) * &
-                      SIN(DEGREES_TO_RADIANS*Sensor_Zenith_Angle) )
- 
-  
-  END SUBROUTINE SACONV
-
-
-  SUBROUTINE SACONV_TL( Sensor_Zenith_Angle,     & ! Input
-                        Altitude,               & ! Input
-			Altitude_TL,            & ! Input
-			Local_Zenith_Angle,     & ! Output
-                        Local_Zenith_Angle_TL )   ! Output
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp ), INTENT( IN ) :: Sensor_Zenith_Angle 
-    REAL( fp ), INTENT( IN ) :: Altitude 
-    REAL( fp ), INTENT( IN ) :: Altitude_TL 
+    ! Determine the days-of-year
+    DoY     = REAL(Day_of_Year( Day, Month, Year ), fp)
+    Max_DoY = REAL(Day_of_Year( 31, 12, Year ), fp)
     
-    ! -- Output
-    REAL( fp ), INTENT( OUT )  :: Local_Zenith_Angle
-    REAL( fp ), INTENT( OUT )  :: Local_Zenith_Angle_TL
- 
-    ! ---------------
-    ! Local variables
-    ! ---------------
-    REAL( fp )  ::     RA, RA_TL   
-
-
-    !  ------------------
-    !  Assign some values
-    !  ------------------
-
-    !  RA = radius of the point to calc the angle at (in km)
-       RA = EARTH_RADIUS + (Altitude / THOUSAND)
-       
-       RA_TL = Altitude_TL/ THOUSAND 
-
-    !   -----------------
-    !   Do the conversion
-    !   -----------------
-       Local_Zenith_Angle = ASIN( (EARTH_RADIUS/RA) * &
-                      SIN(DEGREES_TO_RADIANS*Sensor_Zenith_Angle) )
- 
-       Local_Zenith_Angle_TL = - RA_TL * EARTH_RADIUS * SIN(DEGREES_TO_RADIANS*Sensor_Zenith_Angle) &
-                                / ( RA**TWO * COS( Local_Zenith_Angle ) ) 
-  
-  END SUBROUTINE SACONV_TL
-
-
-  SUBROUTINE SACONV_AD( Sensor_Zenith_Angle,     & ! Input
-                        Altitude,               & ! Input
-			Local_Zenith_Angle_AD,  & ! Input
-			Altitude_AD)              ! In/output
-			 
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp ), INTENT( IN ) :: Sensor_Zenith_Angle 
-    REAL( fp ), INTENT( IN ) :: Altitude 
-    REAL( fp ), INTENT( IN ) :: Local_Zenith_Angle_AD  
+    ! Location of Earth in orbit relative to perihelion
+    t = TWOPI * (DoY-ONE)/Max_DoY
     
-    ! -- Output
-    REAL( fp ), INTENT( IN OUT )  :: Altitude_AD
- 
-    ! ---------------
-    ! Local variables
-    ! ---------------
- 
-    REAL( fp )  ::     Local_Zenith_Angle  
-    REAL( fp )  ::     RA, RA_AD   
-
-
-    !  ------------------
-    !  Assign some values
-    !  ------------------
-    !  RA = radius of the point to calc the angle at (in km)
-       RA = EARTH_RADIUS + (Altitude / THOUSAND)
-       
-    !   -----------------
-    !   Do the conversion
-    !   -----------------
-       Local_Zenith_Angle = ASIN( (EARTH_RADIUS/RA) * &
-                      SIN(DEGREES_TO_RADIANS*Sensor_Zenith_Angle) )
-
-    ! Adjoint Model
-       RA_AD = - Local_Zenith_Angle_AD * EARTH_RADIUS * SIN(DEGREES_TO_RADIANS*Sensor_Zenith_Angle) &
-                                / ( RA**TWO * COS( Local_Zenith_Angle ) ) 
+    ! Compute the ratio term
+    AU_ratio2 = ZERO
+    DO i = 0, N
+      it = REAL(i,fp) * t
+      AU_ratio2 = AU_ratio2 + (A(i) * COS(it)) + (B(i) * SIN(it))
+    END DO
     
-       Altitude_AD = Altitude_AD + RA_AD / THOUSAND
-   
-  END SUBROUTINE SACONV_AD
+  END FUNCTION Compute_AU_ratio2
 
-  
-!----------------------------------------------------------------------------------
-!S+
-! NAME:
-!      VACONV  
-!
-! PURPOSE:
-!      Convert the AIRS satellite viewing angle into the
-!      local path angle. 
-!
-! CATEGORY:
-!       Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!        CALL       VACONV( Sensor_View_Angle,  & ! Input
-!                           Satellite_Altitude, & ! Input
-!                           Altitude,           & ! Input
-!                           Local_Path_Angle)     ! Output
-!
-! INPUT ARGUMENTS:
-!       Sensor_View_Angle: Sensor viewing Angle SVA at the Earth's
-!       		   surface  
-!       		   UNITS:      degrees
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!
-!       Satellite_Altitude:The Satellite altitude  
-!       		   UNITS:      kilometers
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!       		   ATTRIBUTES: INTENT( IN )
-!
-!       Altitude:	   The Altitude in which the local path  
-!       		   angle convert to 
-!       		   UNITS:      meters
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!       		   ATTRIBUTES: INTENT( IN )
-!  
-! OUTPUT ARGUMENTS:
-!       Local_Path_Angle:  The return value is the local path angle
-!       		   UNITS:      RADIANS 
-!       		   TYPE:       REAL
-!       		   DIMENSION:  Scalar
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 10-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!--------------------------------------------------------------------------------
-  SUBROUTINE VACONV(  Sensor_View_Angle,  & ! Input
-                      Satellite_Altitude, & ! Input
-                      Altitude,           & ! Input
-                      Local_Path_Angle )    ! Output
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp ), INTENT( IN ) :: Sensor_View_Angle 
-    REAL( fp ), INTENT( IN ) :: Satellite_Altitude 
-    REAL( fp ), INTENT( IN ) :: Altitude 
-    
-    ! -- Output
-    REAL( fp ), INTENT( OUT )  :: Local_Path_Angle
- 
-    ! ---------------
-    ! Local variables
-    ! ---------------
- 
-    REAL( fp )  ::     RA   
-    REAL( fp )  ::     RS   
-
-
-    !  ------------------
-    !  Assign some values
-    !  ------------------
-    !  RA = radius of the point to calc the angle at (in km)
-       RA = EARTH_RADIUS + (Altitude / THOUSAND)
-       
-    !  RS = radius of the satellite orbit (in km)
-       RS = EARTH_RADIUS + Satellite_Altitude
-
-    !   -----------------
-    !   Do the conversion
-    !   -----------------
-       Local_Path_Angle = ASIN( (RS/RA) * &
-                      SIN(DEGREES_TO_RADIANS*Sensor_View_Angle) )
- 
-  
-  END SUBROUTINE VACONV
-
-  SUBROUTINE VACONV_TL( Sensor_View_Angle,  & ! Input
-                        Satellite_Altitude, & ! Input
-                        Altitude,           & ! Input
-			Altitude_TL,        & ! Input
-			Local_Path_Angle,   & ! Output
-                        Local_Path_Angle_TL )   ! Output
- 
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp ), INTENT( IN ) :: Sensor_View_Angle 
-    REAL( fp ), INTENT( IN ) :: Satellite_Altitude 
-    REAL( fp ), INTENT( IN ) :: Altitude 
-    REAL( fp ), INTENT( IN ) :: Altitude_TL 
-    
-    ! -- Output
-    REAL( fp ), INTENT( OUT )  :: Local_Path_Angle
-    REAL( fp ), INTENT( OUT )  :: Local_Path_Angle_TL
- 
-    ! ---------------
-    ! Local variables
-    ! ---------------
- 
-    REAL( fp )  ::     RA, RA_TL   
-    REAL( fp )  ::     RS   
-
-
-    !  ------------------
-    !  Assign some values
-    !  ------------------
-    !  RA = radius of the point to calc the angle at (in km)
-       RA = EARTH_RADIUS + (Altitude / THOUSAND)
-       
-       RA_TL =  Altitude_TL / THOUSAND      
-    !  RS = radius of the satellite orbit (in km)
-       RS = EARTH_RADIUS + Satellite_Altitude
-
-    !   -----------------
-    !   Do the conversion
-    !   -----------------
-       Local_Path_Angle = ASIN( (RS/RA) * &
-                      SIN(DEGREES_TO_RADIANS*Sensor_View_Angle) )
- 
-       Local_Path_Angle_TL = - RA_TL * RS * SIN(DEGREES_TO_RADIANS*Sensor_View_Angle) &
-                                / ( RA**TWO * COS( Local_Path_Angle ) ) 
-  
-  END SUBROUTINE VACONV_TL
-
-
-  SUBROUTINE VACONV_AD( Sensor_View_Angle,        & ! Input
-                        Satellite_Altitude,       & ! Input
-                        Altitude,                 & ! Input
-			Local_PATH_Angle_AD,      & ! Input
-                        Altitude_AD )               ! In/Output
- 
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    REAL( fp ), INTENT( IN ) :: Sensor_View_Angle 
-    REAL( fp ), INTENT( IN ) :: Satellite_Altitude 
-    REAL( fp ), INTENT( IN ) :: Altitude 
-    REAL( fp ), INTENT( IN ) :: Local_Path_Angle_AD 
-    
-    ! -- Output
-    REAL( fp ), INTENT( IN OUT )  :: Altitude_AD
- 
-    ! ---------------
-    ! Local variables
-    ! ---------------
- 
-    REAL( fp )  ::     RA, RA_AD   
-    REAL( fp )  ::     RS   
-    REAL( fp )  :: Local_Path_Angle
-
-
-    !  ------------------
-    !  Assign some values
-    !  ------------------
-    !  RA = radius of the point to calc the angle at (in km)
-       RA = EARTH_RADIUS + (Altitude / THOUSAND)
-       
-    !  RS = radius of the satellite orbit (in km)
-       RS = EARTH_RADIUS + Satellite_Altitude
-
-    !   -----------------
-    !   Do the conversion
-    !   -----------------
-       Local_Path_Angle = ASIN( (RS/RA) * &
-                      SIN(DEGREES_TO_RADIANS*Sensor_View_Angle) )
- 
-    ! Adjoint Model
-       RA_AD = - Local_Path_Angle_AD * RS * SIN(DEGREES_TO_RADIANS*Sensor_View_Angle) &
-                                / ( RA**TWO * COS( Local_Path_Angle ) ) 
-    
-       Altitude_AD = Altitude_AD + RA_AD / THOUSAND
-  
-  END SUBROUTINE VACONV_AD
 END MODULE CRTM_GeometryInfo

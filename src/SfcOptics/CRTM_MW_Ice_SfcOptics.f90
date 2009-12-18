@@ -29,7 +29,8 @@ MODULE CRTM_MW_Ice_SfcOptics
   USE CRTM_Parameters,              ONLY: ZERO, ONE
   USE CRTM_SpcCoeff,                ONLY: SC
   USE CRTM_Surface_Define,          ONLY: CRTM_Surface_type
-  USE CRTM_GeometryInfo_Define,     ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define,     ONLY: CRTM_GeometryInfo_type, &
+                                          CRTM_GeometryInfo_GetValue
   USE CRTM_SfcOptics_Define,        ONLY: CRTM_SfcOptics_type
   USE CRTM_SensorInfo,              ONLY: WMO_AMSUA, &
                                           WMO_AMSUB, &
@@ -208,6 +209,7 @@ CONTAINS
     INTEGER,      PARAMETER :: SSMIS_INDEX(8)   = (/13,12,14,16,15,17,18,8/)  ! With swapped polarisations
     ! Local variables
     INTEGER :: i
+    REAL(fp) :: Sensor_Zenith_Angle
     TYPE(CRTM_Surface_type) :: Surface_Dummy  ! For access to default initial values
 
 
@@ -215,6 +217,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, Sensor_Zenith_Angle = Sensor_Zenith_Angle )
 
 
     ! --------------------------------
@@ -225,7 +228,7 @@ CONTAINS
       ! AMSU-A emissivity model
       CASE( WMO_AMSUA )
         DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_ICEEM_AMSU( GeometryInfo%Sensor_Zenith_Angle,        &  ! Input, Degree
+          CALL NESDIS_ICEEM_AMSU( Sensor_Zenith_Angle,                     &  ! Input, Degree
                                   SfcOptics%Angle(i),                      &  ! Input, Degree
                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                   Surface%Ice_Temperature,                 &  ! Input, K
@@ -238,7 +241,7 @@ CONTAINS
       ! AMSU-B emissivity model
       CASE( WMO_AMSUB )
         DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_ICEEM_AMSU( GeometryInfo%Sensor_Zenith_Angle,        &  ! Input, Degree
+          CALL NESDIS_ICEEM_AMSU( Sensor_Zenith_Angle,                     &  ! Input, Degree
                                   SfcOptics%Angle(i),                      &  ! Input, Degree
                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                   Surface%Ice_Temperature,                 &  ! Input, K
@@ -251,7 +254,7 @@ CONTAINS
       ! MHS emissivity model
       CASE (WMO_MHS)
         DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_ICEEM_MHS( GeometryInfo%Sensor_Zenith_Angle,        &  ! Input, Degree
+          CALL NESDIS_ICEEM_MHS( Sensor_Zenith_Angle,                     &  ! Input, Degree
                                  SfcOptics%Angle(i),                      &  ! Input, Degree
                                  SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                  Surface%Ice_Temperature,                 &  ! Input, K

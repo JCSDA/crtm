@@ -14,6 +14,14 @@ MODULE DateTime_Utility
   ! -----------------
   ! Environment setup
   ! -----------------
+  USE Date_Utility, ONLY: N_MONTHS, &
+                          DAYS_PER_MONTH_IN_NONLEAP, &
+                          MONTH_NAME, &
+                          N_DAYS, &
+                          DAY_NAME, &
+                          Date_Is_Leap_Year  => Is_Leap_Year, &
+                          Date_Day_of_Year   => Day_of_Year, &
+                          Date_Days_in_Month => Days_in_Month
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -28,34 +36,39 @@ MODULE DateTime_Utility
   PUBLIC :: Get_DateTime
   PUBLIC :: Is_Leap_Year
   PUBLIC :: Day_of_Year
+  PUBLIC :: Days_in_Month
+
+
+  ! -------------------
+  ! Procedure overloads
+  ! -------------------
+  INTERFACE Is_Leap_Year
+    MODULE PROCEDURE Date_Is_Leap_Year
+    MODULE PROCEDURE DateTime_Is_Leap_Year
+  END INTERFACE Is_Leap_Year
+
+  INTERFACE Day_of_Year
+    MODULE PROCEDURE Date_Day_of_Year
+    MODULE PROCEDURE DateTime_Day_of_Year
+  END INTERFACE Day_of_Year
+
+  INTERFACE Days_in_Month
+    MODULE PROCEDURE Date_Days_in_Month
+    MODULE PROCEDURE DateTime_Days_in_Month
+  END INTERFACE Days_in_Month
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
-  ! Number of Months in a Year
-  INTEGER, PARAMETER :: N_MONTHS = 12
-  ! Days per Month in a non leap Year
-  INTEGER, PARAMETER :: DAYS_PER_MONTH_IN_NONLEAP(N_MONTHS) = &
-  (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
-  ! Month names
-  CHARACTER(*), PARAMETER :: MONTH_NAME(N_MONTHS) = &
-  (/'January  ','February ','March    ','April    ','May      ','June     ', &
-    'July     ','August   ','September','October  ','November ','December ' /)
-
-  ! Number of Days in a Week
-  INTEGER, PARAMETER :: N_DAYS = 7
-  ! Day names
-  CHARACTER(*),PARAMETER :: DAY_NAME(N_DAYS) = &
-  (/'Sunday   ','Monday   ','Tuesday  ','Wednesday','Thursday ','Friday   ','Saturday '/)
-  
   
   ! -----------------------
   ! Derived type definition
   ! -----------------------
+  !:tdoc+:
   TYPE :: DateTime_type
     INTEGER :: Year        = 0
     INTEGER :: Month       = 0
@@ -67,43 +80,30 @@ MODULE DateTime_Utility
     INTEGER :: Millisecond = 0
     INTEGER :: DoY         = 0
   END TYPE DateTime_type
+  !:tdoc-:
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
-!
+!:sdoc+:
 ! NAME:
 !       Get_DateTime
 !
 ! PURPOSE:
-!       Routine to return a DateTime structure with the current date and time
+!       Function to return a DateTime structure with the current
+!       date and time
 !
 ! CALLING SEQUENCE:
 !       DateTime = Get_DateTime()
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       DateTime:  DateTime structure containing date information.
-!                  UNITS:      N/A
-!                  TYPE:       TYPE(DateTime_type)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Year:      Integer specifying the Year in the format YYYY.
-!                  This argument is ignored if the DateTime argument
-!                  is also specified.
-!                  UNITS:      N/A
-!                  TYPE:       INTEGER
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
 ! FUNCTION RESULT:
 !       DateTime:  DateTime structure containing current date and time.
 !                  UNITS:      N/A
-!                  TYPE:       TYPE(DateTime_type)
+!                  TYPE:       DateTime_type
 !                  DIMENSION:  Scalar
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION Get_DateTime() RESULT(DateTime)
@@ -123,84 +123,58 @@ CONTAINS
 
   
 !------------------------------------------------------------------------------
-!
+!:sdoc+:
 ! NAME:
 !       Is_Leap_Year
 !
 ! PURPOSE:
-!       Routine to determine if a specified year is a leap year.
+!       Elemental function to determine if a specified DateTime structure
+!       is for a leap year.
 !
 ! CALLING SEQUENCE:
-!       Result = Is_Leap_Year( DateTime=DateTime, & ! Optional input
-!                              Year    =Year      ) ! Optional input
+!       Result = Is_Leap_Year( DateTime )
 !
-! OPTIONAL INPUT ARGUMENTS:
+! INPUTS:
 !       DateTime:  DateTime structure containing date information.
 !                  UNITS:      N/A
-!                  TYPE:       TYPE(DateTime_type)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Year:      Integer specifying the Year in the format YYYY.
-!                  This argument is ignored if the DateTime argument
-!                  is also specified.
-!                  UNITS:      N/A
-!                  TYPE:       INTEGER
-!                  DIMENSION:  Scalar
+!                  TYPE:       DateTime_type
+!                  DIMENSION:  Scalar or any rank
 !                  ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Result:    The return value is a logical value indicating whether
 !                  the specified year is a leap year.
 !                  If .TRUE.  the specified year IS a leap year.
-!                     .FALSE. - the specified year is NOT a leap year, or
-!                             - no date or year was specified.
+!                     .FALSE. the specified year is NOT a leap year
 !                  UNITS:      N/A
 !                  TYPE:       LOGICAL
-!                  DIMENSION:  Scalar
-!
+!                  DIMENSION:  Same as input
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Is_Leap_Year( DateTime, Year )
-    ! Arguments
-    TYPE(DateTime_type), OPTIONAL, INTENT(IN) :: DateTime
-    INTEGER,             OPTIONAL, INTENT(IN) :: Year
-    ! Function result
+  ELEMENTAL FUNCTION DateTime_Is_Leap_Year( DateTime ) RESULT( Is_Leap_Year )
+    TYPE(DateTime_type), INTENT(IN) :: DateTime
     LOGICAL :: Is_Leap_Year
-    ! Local variables
-    INTEGER :: lYear
-    
-    ! Set up
-    Is_Leap_Year = .FALSE.
-    IF ( PRESENT(DateTime) ) THEN
-      lYear = DateTime%Year
-    ELSEIF ( PRESENT(Year) ) THEN
-      lYear = Year
-    ELSE
-      RETURN
-    END IF
-
-    ! Determine leap year-ness
-    IF ( ( (MOD(lYear,4) == 0) .AND. (MOD(lYear,100) /= 0) ) .OR. &
-         (MOD(lYear,400) == 0) ) Is_Leap_Year =  .TRUE.
-  END FUNCTION Is_Leap_Year
+    Is_Leap_Year = Date_Is_Leap_Year( DateTime%Year )
+  END FUNCTION DateTime_Is_Leap_Year
 
 
 !------------------------------------------------------------------------------
-!
+!:sdoc+:
 ! NAME:
 !       Day_of_Year
 !
 ! PURPOSE:
-!       Routine to determine the day-of-year value given a DateTime structure.
+!       Elemental function to determine the day-of-year value for a
+!       a DateTime structure.
 !
 ! CALLING SEQUENCE:
 !       DoY = Day_of_Year( DateTime )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       DateTime:  DateTime structure containing date information.
 !                  UNITS:      N/A
-!                  TYPE:       TYPE(DateTime_type)
+!                  TYPE:       DateTime_type
 !                  DIMENSION:  Scalar
 !                  ATTRIBUTES: INTENT(IN)
 !
@@ -210,36 +184,48 @@ CONTAINS
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
 !                  DIMENSION:  Scalar
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Day_of_Year(DateTime) RESULT(DoY)
-    ! Arguments
+  ELEMENTAL FUNCTION DateTime_Day_of_Year( DateTime ) RESULT( DoY )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
-    ! Function result
     INTEGER :: DoY
-    ! Local variables
-    INTEGER :: Days_per_Month(N_MONTHS)
-
-    ! Set up
-    ! ------
-    DoY = 0
-    
-    ! Check year and month input
-    IF ( DateTime%Year  < 1 .OR. &
-         DateTime%Month < 1 .OR. &
-         DateTime%Month > N_MONTHS ) RETURN
-
-    ! Check the day of month
-    Days_per_Month = DAYS_PER_MONTH_IN_NONLEAP
-    IF ( Is_Leap_Year(Year=DateTime%Year) ) Days_per_Month(2) = 29
-    IF ( DateTime%Day > Days_per_Month(DateTime%Month) ) RETURN
+    DoY = Date_Day_of_Year( DateTime%Day, DateTime%Month, DateTime%Year )
+  END FUNCTION DateTime_Day_of_Year
 
 
-    ! Compute the day of year
-    ! -----------------------
-    DoY = SUM(Days_per_Month(1:DateTime%Month-1)) + DateTime%Day
+!------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       Days_in_Month
+!
+! PURPOSE:
+!       Elemental function to return the number of days in a given
+!       month and year.
+!
+! CALLING SEQUENCE:
+!       n_Days = Days_in_Month( DateTime )
+!
+! INPUTS:
+!       DateTime:  DateTime structure containing date information.
+!                  UNITS:      N/A
+!                  TYPE:       DateTime_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       n_Days:    The number of days in the month.
+!                  Return value is 0 for invalid input.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as input
+!:sdoc-:
+!------------------------------------------------------------------------------
 
-  END FUNCTION Day_of_Year
+  ELEMENTAL FUNCTION DateTime_Days_in_Month( DateTime ) RESULT( n_Days )
+    TYPE(DateTime_type), INTENT(IN) :: DateTime
+    INTEGER :: n_Days
+    n_Days = Date_Days_in_Month( DateTime%Month, DateTime%Year )
+  END FUNCTION DateTime_Days_in_Month
 
 END MODULE DateTime_Utility

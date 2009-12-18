@@ -50,6 +50,7 @@ MODULE Profile_Utility_Parameters
   REAL(fp), PUBLIC, PARAMETER :: ZERO      = 0.0_fp
   REAL(fp), PUBLIC, PARAMETER :: ONE       = 1.0_fp
   REAL(fp), PUBLIC, PARAMETER :: TWO       = 2.0_fp
+  REAL(fp), PUBLIC, PARAMETER :: HUNDRED   = 100.0_fp
 
   ! Precision
   REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = EPSILON(ONE)
@@ -64,6 +65,8 @@ MODULE Profile_Utility_Parameters
   REAL(fp), PUBLIC, PARAMETER :: PPV_TO_PPMV       = 1.0e+06_fp
   REAL(fp), PUBLIC, PARAMETER :: CM_TO_M           = 1.0e-02_fp
   REAL(fp), PUBLIC, PARAMETER :: M_TO_CM           = 1.0e+02_fp
+  REAL(fp), PUBLIC, PARAMETER :: FROM_PERCENT      = 1.0e-02_fp
+  REAL(fp), PUBLIC, PARAMETER :: TO_PERCENT        = 1.0e+02_fp
 
   ! Units specifiers. Same as for LBLRTM
   INTEGER, PUBLIC, PARAMETER :: PPMV_UNITS = 1  ! Units in ppmv
@@ -152,9 +155,9 @@ MODULE Profile_Utility_Parameters
   REAL(fp), PUBLIC, PARAMETER :: EPS       = MW_H2O / MW_DRYAIR
 
   ! Gas constant for dry air. Units are J.K-1.kg-1
-  REAL(fp), PUBLIC, PARAMETER :: R_DRYAIR = R0 / ( MW_DRYAIR * G_TO_KG )
+  REAL(fp), PUBLIC, PARAMETER :: R_DRYAIR  = R0 / ( MW_DRYAIR * G_TO_KG )
 
   ! Specific heat of dry air. Units are J.K-1.kg-1
-  REAL(fp), PUBLIC,  PARAMETER :: Cp_DRYAIR = ( 7.0_fp/TWO ) * R_DRYAIR
+  REAL(fp), PUBLIC, PARAMETER :: Cp_DRYAIR = ( 7.0_fp/TWO ) * R_DRYAIR
 
 END MODULE Profile_Utility_Parameters

@@ -1,91 +1,14 @@
 !
 ! CRTM_Surface_Define
 !
-! Module defining the CRTM Surface data structure and containing routines
+! Module defining the CRTM Surface structure and containing routines
 ! to manipulate it.
 !
 !
-! PUBLIC PARAMETERS:
-!       1) The type of land surface using in the Surface%Land_Type field:
-!
-!                  Land type                Parameter Name
-!         --------------------------------------------------------
-!                   Invalid                 INVALID_LAND            
-!                Compacted soil             COMPACTED_SOIL          
-!                  Tilled soil              TILLED_SOIL             
-!                    Sand                   SAND                      
-!                    Rock                   ROCK                      
-!           Irrigated low vegetation        IRRIGATED_LOW_VEGETATION
-!                 Meadow grass              MEADOW_GRASS            
-!                    Scrub                  SCRUB                     
-!               Broadleaf forest            BROADLEAF_FOREST        
-!                 Pine forest               PINE_FOREST             
-!                   Tundra                  TUNDRA                   
-!                 Grass-soil                GRASS_SOIL              
-!             Broadleaf-pine forest         BROADLEAF_PINE_FOREST   
-!                 Grass-scrub               GRASS_SCRUB             
-!                  Soil-grass-scrub         SOIL_GRASS_SCRUB
-!                Urban concrete             URBAN_CONCRETE          
-!                  Pine brush               PINE_BRUSH              
-!                Broadleaf brush            BROADLEAF_BRUSH         
-!                   Wet soil                WET_SOIL                 
-!                  Scrub-soil               SCRUB_SOIL              
-!            Broadleaf(70)-Pine(30)         BROADLEAF70_PINE30
-!
-!
-!
-!       2) The type of water surface using in the Surface%Water_Type field:
-!
-!           Water type        Parameter Name
-!         ------------------------------------
-!             Invalid         INVALID_WATER 
-!            Sea water        SEA_WATER     
-!           Fresh water       FRESH_WATER   
-!
-!
-!
-!       3) The type of snow surface using in the Surface%Snow_Type field:
-!
-!               Snow type            Parameter Name
-!         -----------------------------------------------
-!
-!                Invalid             INVALID_SNOW       
-!               Wet snow             WET_SNOW           
-!            Grass after snow        GRASS_AFTER_SNOW   
-!              Powder snow           POWDER_SNOW        
-!               RS snow(A)           RS_SNOW_A          
-!               RS snow(B)           RS_SNOW_B          
-!               RS snow(C)           RS_SNOW_C          
-!               RS snow(D)           RS_SNOW_D          
-!               RS snow(E)           RS_SNOW_E          
-!            Thin Crust snow         THIN_CRUST_SNOW    
-!            Thick crust snow        THICK_CRUST_SNOW   
-!              Shallow snow          SHALLOW_SNOW       
-!               Deep snow            DEEP_SNOW          
-!              Crust snow            CRUST_SNOW         
-!              Medium snow           MEDIUM_SNOW        
-!           Bottom crust snow(A)     BOTTOM_CRUST_SNOW_A
-!           Bottom crust snow(B)     BOTTOM_CRUST_SNOW_B
-!
-!
-!
-!       4) The type of ice surface using in the Surface%Ice_Type field:
-!
-!                  Ice type           Parameter Name
-!         ------------------------------------------------
-!                  Invalid            INVALID_ICE       
-!                 Fresh ice           FRESH_ICE         
-!             First year sea ice      FIRST_YEAR_SEA_ICE
-!           Multiple year sea ice     MULTI_YEAR_SEA_ICE
-!                 Ice floe            ICE_FLOE            
-!                 Ice ridge           ICE_RIDGE           
-!
-!
-!
 ! CREATION HISTORY:
-!       Written by:  Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                    Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov
-!                    Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!       Written by:  Yong Han,       yong.han@noaa.gov
+!                    Quanhua Liu,    quanhua.liu@noaa.gov
+!                    Paul van Delst, paul.vandelst@noaa.gov
 !                    07-May-2004
 !
 
@@ -96,15 +19,22 @@ MODULE CRTM_Surface_Define
   ! -----------------
   ! Module use
   USE Type_Kinds            , ONLY: fp
-  USE Message_Handler       , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Compare_Float_Numbers , ONLY: Compare_Float
+  USE Message_Handler       , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Compare_Float_Numbers , ONLY: DEFAULT_N_SIGFIG, &
+                                    OPERATOR(.EqualTo.), &
+                                    Compares_Within_Tolerance
   USE CRTM_Parameters       , ONLY: ZERO, ONE, NO, YES, SET
   USE CRTM_SensorData_Define, ONLY: CRTM_SensorData_type, &
-                                    CRTM_Associated_SensorData, &
-                                    CRTM_Destroy_SensorData, &
-                                    CRTM_Allocate_SensorData, &
-                                    CRTM_Assign_SensorData, &
-                                    CRTM_Equal_SensorData
+                                    OPERATOR(==), &          
+                                    OPERATOR(+), &           
+                                    CRTM_SensorData_Associated, & 
+                                    CRTM_SensorData_Destroy, &    
+                                    CRTM_SensorData_Create, &     
+                                    CRTM_SensorData_Zero, &       
+                                    CRTM_SensorData_IsValid, &    
+                                    CRTM_SensorData_Inspect, &    
+                                    CRTM_SensorData_DefineVersion, &    
+                                    CRTM_SensorData_Compare 
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -114,33 +44,23 @@ MODULE CRTM_Surface_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-
-  ! Public types
-  ! ------------
-  PUBLIC :: CRTM_Surface_type
-
-  ! Public procedures
-  ! -----------------
-  ! CRTM_SensorData structure procedures inherited
-  ! from the CRTM_SensorData_Define module.
-  PUBLIC :: CRTM_Associated_SensorData
-  PUBLIC :: CRTM_Destroy_SensorData
-  PUBLIC :: CRTM_Allocate_SensorData
-  PUBLIC :: CRTM_Assign_SensorData
-  PUBLIC :: CRTM_Equal_SensorData
-  ! Surface procedures in this module
-  PUBLIC :: CRTM_Destroy_Surface
-  PUBLIC :: CRTM_Allocate_Surface
-  PUBLIC :: CRTM_Assign_Surface
-  PUBLIC :: CRTM_Equal_Surface
-  PUBLIC :: CRTM_Sum_Surface
-  PUBLIC :: CRTM_Zero_Surface
-  ! Utility procedures in this module
-  PUBLIC :: CRTM_RCS_ID_Surface
-
-  ! Public parameters
-  ! -----------------
-  !  Goess surface parameters
+  ! Operators
+  PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(+)
+  ! SensorData enitities
+  ! ...Structures
+  PUBLIC :: CRTM_SensorData_type
+  ! ...Procedures
+  PUBLIC :: CRTM_SensorData_Associated
+  PUBLIC :: CRTM_SensorData_Destroy
+  PUBLIC :: CRTM_SensorData_Create
+  PUBLIC :: CRTM_SensorData_Zero
+  PUBLIC :: CRTM_SensorData_IsValid
+  PUBLIC :: CRTM_SensorData_Inspect
+  PUBLIC :: CRTM_SensorData_DefineVersion
+  PUBLIC :: CRTM_SensorData_Compare
+  ! Surface entities
+  ! ...Gross surface parameters
   PUBLIC :: INVALID_SURFACE
   PUBLIC :: LAND_SURFACE
   PUBLIC :: WATER_SURFACE
@@ -148,7 +68,7 @@ MODULE CRTM_Surface_Define
   PUBLIC :: ICE_SURFACE
   PUBLIC :: N_VALID_SURFACE_TYPES
   PUBLIC :: SURFACE_TYPE_NAME
-  ! Land surface parameters
+  ! ...Land surface parameters
   PUBLIC :: N_VALID_LAND_TYPES
   PUBLIC :: INVALID_LAND
   PUBLIC :: COMPACTED_SOIL
@@ -172,13 +92,13 @@ MODULE CRTM_Surface_Define
   PUBLIC :: SCRUB_SOIL
   PUBLIC :: BROADLEAF70_PINE30
   PUBLIC :: LAND_TYPE_NAME
-  ! Water surface parameters
+  ! ...Water surface parameters
   PUBLIC :: N_VALID_WATER_TYPES
   PUBLIC :: INVALID_WATER
   PUBLIC :: SEA_WATER
   PUBLIC :: FRESH_WATER
   PUBLIC :: WATER_TYPE_NAME
-  ! Snow surface parameters
+  ! ...Snow surface parameters
   PUBLIC :: N_VALID_SNOW_TYPES
   PUBLIC :: INVALID_SNOW
   PUBLIC :: WET_SNOW
@@ -200,7 +120,7 @@ MODULE CRTM_Surface_Define
   PUBLIC :: NEW_SNOW
   PUBLIC :: OLD_SNOW
   PUBLIC :: SNOW_TYPE_NAME
-  ! Ice surface parameters
+  ! ...Ice surface parameters
   PUBLIC :: N_VALID_ICE_TYPES
   PUBLIC :: INVALID_ICE
   PUBLIC :: FRESH_ICE
@@ -209,46 +129,30 @@ MODULE CRTM_Surface_Define
   PUBLIC :: ICE_FLOE
   PUBLIC :: ICE_RIDGE
   PUBLIC :: ICE_TYPE_NAME
-
+  ! ...Structures
+  PUBLIC :: CRTM_Surface_type
+  ! ...Procedures
+  PUBLIC :: CRTM_Surface_Associated
+  PUBLIC :: CRTM_Surface_Destroy
+  PUBLIC :: CRTM_Surface_Create
+  PUBLIC :: CRTM_Surface_Zero
+  PUBLIC :: CRTM_Surface_IsValid
+  PUBLIC :: CRTM_Surface_Inspect
+  PUBLIC :: CRTM_Surface_IsCoverageValid
+  PUBLIC :: CRTM_Surface_CoverageType
+  PUBLIC :: CRTM_Surface_DefineVersion
+  PUBLIC :: CRTM_Surface_Compare
 
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-  INTERFACE CRTM_Destroy_Surface
-    MODULE PROCEDURE Destroy_Scalar
-    MODULE PROCEDURE Destroy_Rank1
-    MODULE PROCEDURE Destroy_Rank2
-  END INTERFACE CRTM_Destroy_Surface
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE CRTM_Surface_Equal
+  END INTERFACE OPERATOR(==)
 
-  INTERFACE CRTM_Allocate_Surface
-    MODULE PROCEDURE Allocate_Scalar
-    MODULE PROCEDURE Allocate_Rank01
-    MODULE PROCEDURE Allocate_Rank11
-  END INTERFACE CRTM_Allocate_Surface
-
-  INTERFACE CRTM_Assign_Surface
-    MODULE PROCEDURE Assign_Scalar
-    MODULE PROCEDURE Assign_Rank1
-    MODULE PROCEDURE Assign_Rank2
-  END INTERFACE CRTM_Assign_Surface
-
-  INTERFACE CRTM_Equal_Surface
-    MODULE PROCEDURE Equal_Scalar
-    MODULE PROCEDURE Equal_Rank1
-    MODULE PROCEDURE Equal_Rank2
-  END INTERFACE CRTM_Equal_Surface
-
-  INTERFACE CRTM_Sum_Surface
-    MODULE PROCEDURE Sum_Scalar
-    MODULE PROCEDURE Sum_Rank1
-    MODULE PROCEDURE Sum_Rank2
-  END INTERFACE CRTM_Sum_Surface
-
-  INTERFACE CRTM_Zero_Surface
-    MODULE PROCEDURE Zero_Scalar
-    MODULE PROCEDURE Zero_Rank1
-    MODULE PROCEDURE Zero_Rank2
-  END INTERFACE CRTM_Zero_Surface
+  INTERFACE OPERATOR(+)
+    MODULE PROCEDURE CRTM_Surface_Add
+  END INTERFACE OPERATOR(+)
 
 
   ! -----------------
@@ -397,23 +301,16 @@ MODULE CRTM_Surface_Define
                         'Ice floe                 ', &
                         'Ice ridge                '/)
 
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-
-  ! Surface scalar member invalid values
-  INTEGER, PARAMETER ::    INVALID = -1
-  INTEGER, PARAMETER :: FP_INVALID = -ONE
-
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
+
 
   ! ------------------------
   ! Default value parameters
   ! ------------------------
-  ! Surface type independent data
-  REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED     = 5.0_fp  ! m/s
-  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION = 0.0_fp  ! North
   ! Land surface type data
   INTEGER,  PARAMETER :: DEFAULT_LAND_TYPE             = GRASS_SOIL
   REAL(fp), PARAMETER :: DEFAULT_LAND_TEMPERATURE      = 283.0_fp  ! K
@@ -424,6 +321,8 @@ MODULE CRTM_Surface_Define
   ! Water type data
   INTEGER,  PARAMETER :: DEFAULT_WATER_TYPE        = SEA_WATER
   REAL(fp), PARAMETER :: DEFAULT_WATER_TEMPERATURE = 283.0_fp   ! K
+  REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED        = 5.0_fp     ! m/s
+  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! North
   REAL(fp), PARAMETER :: DEFAULT_SALINITY          = 33.0_fp    ! ppmv
   ! Snow surface type data
   INTEGER,  PARAMETER :: DEFAULT_SNOW_TYPE        = NEW_SNOW
@@ -444,18 +343,13 @@ MODULE CRTM_Surface_Define
   ! ----------------------------
   !:tdoc+:
   TYPE :: CRTM_Surface_type
-    INTEGER :: n_Allocates = 0
     ! Dimension values
-    INTEGER :: Max_Sensors  = 0  ! N dimension
-    INTEGER :: n_Sensors    = 0  ! Nuse dimension
+    ! ...None yet
     ! Gross type of surface determined by coverage
     REAL(fp) :: Land_Coverage  = ZERO
     REAL(fp) :: Water_Coverage = ZERO
     REAL(fp) :: Snow_Coverage  = ZERO
     REAL(fp) :: Ice_Coverage   = ZERO
-    ! Surface type independent data
-    REAL(fp) :: Wind_Speed     = DEFAULT_WIND_SPEED
-    REAL(fp) :: Wind_Direction = DEFAULT_WIND_DIRECTION
     ! Land surface type data
     INTEGER  :: Land_Type             = DEFAULT_LAND_TYPE
     REAL(fp) :: Land_Temperature      = DEFAULT_LAND_TEMPERATURE
@@ -466,6 +360,8 @@ MODULE CRTM_Surface_Define
     ! Water type data
     INTEGER  :: Water_Type        = DEFAULT_WATER_TYPE
     REAL(fp) :: Water_Temperature = DEFAULT_WATER_TEMPERATURE
+    REAL(fp) :: Wind_Speed        = DEFAULT_WIND_SPEED
+    REAL(fp) :: Wind_Direction    = DEFAULT_WIND_DIRECTION
     REAL(fp) :: Salinity          = DEFAULT_SALINITY
     ! Snow surface type data
     INTEGER  :: Snow_Type        = DEFAULT_SNOW_TYPE
@@ -480,7 +376,7 @@ MODULE CRTM_Surface_Define
     REAL(fp) :: Ice_Density     = DEFAULT_ICE_DENSITY
     REAL(fp) :: Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
     ! SensorData containing channel brightness temperatures
-    TYPE(CRTM_SensorData_type) :: SensorData  ! N
+    TYPE(CRTM_SensorData_type) :: SensorData
   END TYPE CRTM_Surface_type
   !:tdoc-:
 
@@ -500,1714 +396,404 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Destroy_Surface
-! 
-! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of Surface
-!       data structures.
+!       CRTM_Surface_Associated
 !
-!       NOTE: This function is mostly a wrapper for the CRTM_SensorData
-!             destruction routine to provide the functionality and convenience
-!             of allocation of both scalar and rank-1 Surface structures in
-!             the same manner as for CRTM_Atmosphere_type structures.
+! PURPOSE:
+!       Elemental function to test the status of the allocatable components
+!       of a CRTM Surface object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_Surface( Surface                , &
-!                                            Message_Log=Message_Log  )
+!       Status = CRTM_Surface_Associated( Sfc )
 !
-! OUTPUT ARGUMENTS:
-!       Surface:      Re-initialized Surface structure. In the context of
-!                     the CRTM, rank-1 corresponds to an vector of profiles,
-!                     and rank-2 corresponds to an array of channels x profiles.
-!                     The latter is used in the K-matrix model.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar, Rank-1, OR Rank-2 array
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+! OBJECTS:
+!       Sfc:       Surface structure which is to have its member's
+!                  status tested.
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_Surface_type
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Surface argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       Status:    The return value is a logical value indicating the
+!                  status of the Surface members.
+!                  .TRUE.  - if ANY of the allocatable or
+!                            pointer members are in use.
+!                  .FALSE. - if ALL of the allocatable or
+!                            pointer members are not in use.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Same as input
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( Surface    , &  ! Output
-                           No_Clear   , &  ! Optional input
-                           Message_Log) &  ! Error messaging
-                         RESULT( Error_Status )
+  ELEMENTAL FUNCTION CRTM_Surface_Associated( Sfc ) RESULT( Status )
     ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
-    INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
     ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Surface(Scalar)'
-    ! Local variables
-    LOGICAL :: Clear
+    LOGICAL :: Status
 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
+    ! Test the structure members
+    !.... ! No allocatable components yet
 
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
-    IF ( Clear ) CALL CRTM_Clear_Surface( Surface )
+    ! Test the substructures
+    ! ...SensorData
+    Status = CRTM_SensorData_Associated(Sfc%SensorData)
+    
+  END FUNCTION CRTM_Surface_Associated
 
 
-    ! Destroy the SensorData structure component
-    ! ------------------------------------------
-    Error_Status = CRTM_Destroy_SensorData( Surface%SensorData, &
-                                            No_Clear   =No_Clear, &
-                                            Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error destroying Surface SensorData structure.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-    END IF
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Surface_Destroy
+! 
+! PURPOSE:
+!       Elemental subroutine to re-initialize CRTM Surface objects.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Surface_Destroy( Sfc )
+!
+! OBJECTS:
+!       Sfc:          Re-initialized Surface structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Surface_type
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  END FUNCTION Destroy_Scalar
-
-  FUNCTION Destroy_Rank1( Surface    , &  ! Output
-                          No_Clear   , &  ! Optional input
-                          Message_Log) &  ! Error messaging
-                        RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:)
-    INTEGER,       OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Surface(Rank-1)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: n
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Reinitialise array
-    ! ------------------
-    DO n = 1, SIZE( Surface )
-      Scalar_Status = Destroy_Scalar( Surface(n), &
-                                      No_Clear   =No_Clear, &
-                                      Message_Log=Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error destroying element (",i0,")", &
-                          &" of Surface structure array." )' ) n
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Destroy_Rank1
-
-  FUNCTION Destroy_Rank2( Surface    , &  ! Output
-                          No_Clear   , &  ! Optional input
-                          Message_Log) &  ! Error messaging
-                        RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:,:)
-    INTEGER     ,  OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_Surface(Rank-2)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: l, m
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Reinitialise array
-    ! ------------------
-    DO m = 1, SIZE(Surface,2)
-      DO l = 1, SIZE(Surface,1)
-        Scalar_Status = Destroy_Scalar( Surface(l,m), &
-                                        No_Clear   =No_Clear, &
-                                        Message_Log=Message_Log )
-        IF ( Scalar_Status /= SUCCESS ) THEN
-          Error_Status = Scalar_Status
-          WRITE( Message, '( "Error destroying element (",i0,",",i0,")", &
-                            &" of Surface structure array." )' ) l, m
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-        END IF
-      END DO
-    END DO
-
-  END FUNCTION Destroy_Rank2
+  ELEMENTAL SUBROUTINE CRTM_Surface_Destroy( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(OUT) :: Sfc
+  END SUBROUTINE CRTM_Surface_Destroy
   
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Allocate_Surface
+!       CRTM_Surface_Create
 ! 
 ! PURPOSE:
-!       Function to allocate CRTM Surface data structures.
-!
-!       NOTE: This function is a wrapper for the CRTM_SensorData allocation 
-!             routine to provide the functionality and convenience for
-!             allocation of both scalar and rank-1 Surface structures in
-!             the same manner as for CRTM_Atmosphere_type structures.
+!       Elemental subroutine to create an instance of the CRTM Surface object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_Surface( n_Channels             , &
-!                                             Surface                , &
-!                                             Message_Log=Message_Log  )
+!       CALL CRTM_Surface_Create( Sfc       , &
+!                                 n_Channels  )
+!
+! OBJECTS:
+!       Sfc:          Surface structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Surface_type
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(OUT)
 !
 ! INPUT ARGUMENTS:
-!       n_Channels:   Number of channels dimension of Surface%SensorData
-!                     structure
+!       n_Channels:   Number of channels dimension of SensorData
+!                     substructure
 !                     ** Note: Can be = 0 (i.e. no sensor data). **
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar OR Rank-1
-!                                 See output Surface dimensionality table
+!                     DIMENSION:  Same as Surface object
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       Surface:      Surface structure with allocated SensorData pointer
-!                     members. The following table shows the allowable dimension
-!                     combinations for the calling routine, where M == number of
-!                     profiles/surface locations:
-!
-!                        Input       Output
-!                      n_Channels   Surface
-!                       dimension   dimension
-!                     --------------------------
-!                        scalar      scalar
-!                        scalar        M
-!                          M           M
-!
-!                     These multiple interfaces are supplied purely for ease of
-!                     use depending on what data is available.
-!                     
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar or Rank-1
-!                                 See chart above.
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Surface argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_Scalar( n_Channels,   &  ! Input
-                            Surface,      &  ! Output
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
+  ELEMENTAL SUBROUTINE CRTM_Surface_Create( &
+    Sfc       , &  ! Output
+    n_Channels  )  ! Input
     ! Arguments
-    INTEGER,                 INTENT(IN)     :: n_Channels   
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Surface(Scalar)'
+    TYPE(CRTM_Surface_type), INTENT(OUT) :: Sfc
+    INTEGER                , INTENT(IN)  :: n_Channels
 
+    ! Check input
+    IF ( n_Channels < 0 ) RETURN
+    
+    ! Perform the substructure allocation
+    ! ...SensorData
+    IF ( n_Channels > 0 ) CALL CRTM_SensorData_Create( Sfc%SensorData, n_Channels )
 
-    ! ------
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! If no channel data, do nothing
-    IF ( n_Channels == 0 ) RETURN
-
-    ! Check for invalid channel number
-    IF ( n_Channels < 0 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Channels must be > or = 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! ---------------------------------
-    ! Allocate the SensorData structure
-    ! ---------------------------------
-    Error_Status = CRTM_Allocate_SensorData( n_Channels,         &
-                                             Surface%SensorData, &
-                                             Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error allocating CRTM_SensorData structure.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-  END FUNCTION Allocate_Scalar
-
-  FUNCTION Allocate_Rank01( n_Channels,   &  ! Input
-                            Surface,      &  ! Output
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                               INTENT(IN)     :: n_Channels
-    TYPE(CRTM_Surface_type), DIMENSION(:), INTENT(IN OUT) :: Surface
-    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Surface(Rank-01)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i
-
-    ! Set up
-    Error_Status = SUCCESS
-
-    ! Perform the allocation
-    DO i = 1, SIZE(Surface)
-      Scalar_Status = Allocate_Scalar( n_Channels, &
-                                       Surface(i), &
-                                       Message_Log=Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of Surface structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Allocate_Rank01
-
-  FUNCTION Allocate_Rank11( n_Channels,   &  ! Input
-                            Surface,      &  ! Output
-                            Message_Log ) &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                 DIMENSION(:), INTENT(IN)     :: n_Channels
-    TYPE(CRTM_Surface_type), DIMENSION(:), INTENT(IN OUT) :: Surface
-    CHARACTER(*),            OPTIONAL,     INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_Surface(Rank-11)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, n
-
-    ! Set up
-    Error_Status = SUCCESS
-
-    ! Array arguments must conform
-    n = SIZE( n_Channels )
-    IF ( SIZE( Surface ) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Channels and Surface arrays have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Perform the allocation
-    DO i = 1, n
-      Scalar_Status = Allocate_Scalar( n_Channels(i), &
-                                       Surface(i), &
-                                       Message_Log=Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error allocating element #", i5, &
-                          &" of Surface structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Allocate_Rank11
+  END SUBROUTINE CRTM_Surface_Create
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Assign_Surface
-!
-! PURPOSE:
-!       Function to copy valid Surface structures.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_Surface( Surface_in             , &
-!                                           Surface_out            , &
-!                                           Message_Log=Message_Log  )
-!
-! INPUT ARGUMENTS:
-!       Surface_in:   Surface structure which is to be copied. In the context of
-!                     the CRTM, rank-1 corresponds to an vector of profiles,
-!                     and rank-2 corresponds to an array of channels x profiles.
-!                     The latter is used in the K-matrix model.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar, Rank-1, OR Rank-2 array
-!                     ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       Surface_out:  Copy of the input structure, Surface_in.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Same as Surface_in
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure assignment was successful
-!                        == FAILURE an error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Surface argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  FUNCTION Assign_Scalar( Surface_in , &  ! Input
-                          Surface_out, &  ! Output
-                          Message_Log) &  ! Error messaging
-                        RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN)     :: Surface_in
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface_out
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Surface(Scalar)'
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-
-    ! Assign scalar members
-    ! ---------------------
-    Surface_out%Land_Coverage         = Surface_in%Land_Coverage
-    Surface_out%Water_Coverage        = Surface_in%Water_Coverage
-    Surface_out%Snow_Coverage         = Surface_in%Snow_Coverage
-    Surface_out%Ice_Coverage          = Surface_in%Ice_Coverage
-
-    Surface_out%Wind_Speed            = Surface_in%Wind_Speed
-    Surface_out%Wind_Direction        = Surface_in%Wind_Direction
-
-    Surface_out%Land_Type             = Surface_in%Land_Type
-    Surface_out%Land_Temperature      = Surface_in%Land_Temperature
-    Surface_out%Soil_Moisture_Content = Surface_in%Soil_Moisture_Content
-    Surface_out%Canopy_Water_Content  = Surface_in%Canopy_Water_Content
-    Surface_out%Vegetation_Fraction   = Surface_in%Vegetation_Fraction
-    Surface_out%Soil_Temperature      = Surface_in%Soil_Temperature
-
-    Surface_out%Water_Type            = Surface_in%Water_Type
-    Surface_out%Water_Temperature     = Surface_in%Water_Temperature
-    Surface_out%Salinity              = Surface_in%Salinity
-
-    Surface_out%Snow_Type             = Surface_in%Snow_Type
-    Surface_out%Snow_Temperature      = Surface_in%Snow_Temperature
-    Surface_out%Snow_Depth            = Surface_in%Snow_Depth
-    Surface_out%Snow_Density          = Surface_in%Snow_Density
-    Surface_out%Snow_Grain_Size       = Surface_in%Snow_Grain_Size
-
-    Surface_out%Ice_Type              = Surface_in%Ice_Type
-    Surface_out%Ice_Temperature       = Surface_in%Ice_Temperature
-    Surface_out%Ice_Thickness         = Surface_in%Ice_Thickness
-    Surface_out%Ice_Density           = Surface_in%Ice_Density
-    Surface_out%Ice_Roughness         = Surface_in%Ice_Roughness
-
-
-    ! Assign the SensorData structure
-    ! -------------------------------
-    IF ( Surface_In%SensorData%n_Channels > 0 ) THEN
-
-      ! If there is data to copy, then do it....
-      Error_Status = CRTM_Assign_SensorData( Surface_In%SensorData, &
-                                             Surface_Out%SensorData, &
-                                             Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error copying Surface SensorData structure.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    ELSE
-
-      ! ...otherwise simply clear the structure
-      Error_Status = CRTM_Destroy_SensorData( Surface_Out%SensorData, &
-                                              Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error destroying output Surface SensorData structure.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    END IF
-
-  END FUNCTION Assign_Scalar
-
-  FUNCTION Assign_Rank1( Surface_in , &  ! Input
-                         Surface_out, &  ! Output
-                         Message_Log) &  ! Error messaging
-                       RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN)     :: Surface_in(:)
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface_out(:)
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Surface(Rank-1)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, n
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Array arguments must conform
-    n = SIZE( Surface_in )
-    IF ( SIZE( Surface_out ) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Surface_in and Surface_out arrays'//&
-                            ' have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Perform the assignment
-    ! ----------------------
-    DO i = 1, n
-      Scalar_Status = Assign_Scalar( Surface_in(i), &
-                                     Surface_out(i), &
-                                     Message_Log=Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error copying element (",i0,")", &
-                          &" of Surface structure array." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-    END DO
-
-  END FUNCTION Assign_Rank1
-
-  FUNCTION Assign_Rank2( Surface_in , &  ! Input
-                         Surface_out, &  ! Output
-                         Message_Log) &  ! Error messaging
-                       RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN)     :: Surface_in(:,:)
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface_out(:,:)
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_Surface(Rank-2)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, j, l, m
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Array arguments must conform
-    l = SIZE(Surface_in,1)
-    m = SIZE(Surface_in,2)
-    IF ( SIZE(Surface_out,1) /= l .OR. &
-         SIZE(Surface_out,2) /= m      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Surface_in and Surface_out arrays'//&
-                            ' have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Perform the assignment
-    ! ----------------------
-    DO j = 1, m
-      DO i = 1, l
-        Scalar_Status = Assign_Scalar( Surface_in(i,j), &
-                                       Surface_out(i,j), &
-                                       Message_Log=Message_Log )
-        IF ( Scalar_Status /= SUCCESS ) THEN
-          Error_Status = Scalar_Status
-          WRITE( Message, '( "Error copying element (",i0,",",i0,")",&
-                            &" of Surface structure array." )' ) i,j
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-        END IF
-      END DO
-    END DO
-
-  END FUNCTION Assign_Rank2
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Equal_Surface
-!
-! PURPOSE:
-!       Function to test if two Surface structures are equal.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_Equal_Surface( Surface_LHS                          , &
-!                                          Surface_RHS                          , &
-!                                          ULP_Scale         =ULP_Scale         , &
-!                                          Percent_Difference=Percent_Difference, &
-!                                          Check_All         =Check_All         , &
-!                                          Message_Log       =Message_Log         )
-!
-!
-! INPUT ARGUMENTS:
-!       Surface_LHS:        Surface structure to be compared; equivalent to the
-!                           left-hand side of a lexical comparison, e.g.
-!                             IF ( Surface_LHS == Surface_RHS ).
-!                           UNITS:      N/A
-!                           TYPE:       CRTM_Surface_type
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Surface_RHS:        Surface structure to be compared to; equivalent to
-!                           right-hand side of a lexical comparison, e.g.
-!                             IF ( Surface_LHS == Surface_RHS ).
-!                           UNITS:      N/A
-!                           TYPE:       CRTM_Surface_type
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:          Unit of data precision used to scale the floating
-!                           point comparison. ULP stands for "Unit in the Last Place,"
-!                           the smallest possible increment or decrement that can be
-!                           made using a machine's floating point arithmetic.
-!                           Value must be positive - if a negative value is supplied,
-!                           the absolute value is used. If not specified, the default
-!                           value is 1.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Percent_Differnece: Percentage difference value to use in comparing
-!                           the numbers rather than testing within some numerical
-!                           limit. The ULP_Scale argument is ignored if this argument is
-!                           specified.
-!                           UNITS:      N/A
-!                           TYPE:       REAL(fp)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Check_All:          Set this argument to check ALL the floating point
-!                           channel data of the Surface structures. The default
-!                           action is return with a FAILURE status as soon as
-!                           any difference is found. This optional argument can
-!                           be used to get a listing of ALL the differences
-!                           between data in Surface structures.
-!                           If == 0, Return with FAILURE status as soon as
-!                                    ANY difference is found  *DEFAULT*
-!                              == 1, Set FAILURE status if ANY difference is
-!                                    found, but continue to check ALL data.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the Message_Handler module.
-!                           If == SUCCESS the structures were equal
-!                              == FAILURE - an error occurred, or
-!                                         - the structures were different.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  FUNCTION Equal_Scalar( Surface_LHS       , &  ! Input
-                         Surface_RHS       , &  ! Input
-                         ULP_Scale         , &  ! Optional input
-                         Percent_Difference, &  ! Optional input
-                         Check_All         , &  ! Optional input
-                         Message_Log       ) &  ! Error messaging
-                       RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_LHS
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_RHS
-    INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
-    REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
-    INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(scalar)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    LOGICAL :: Check_Once
-    INTEGER :: SensorData_Status
-    
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Default action is to return on ANY difference...
-    Check_Once = .TRUE.
-    ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Check_Once = .FALSE.
-    END IF
-
-
-    ! Check dimensions
-    ! ----------------
-    IF ( Surface_LHS%n_Sensors /= Surface_RHS%n_Sensors ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Structure dimensions are different', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Compare the values
-    ! ------------------
-    ! The coverage components
-    IF ( .NOT. Compare_Float( Surface_LHS%Land_Coverage, &
-                              Surface_RHS%Land_Coverage, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Land coverage values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Land_Coverage, &
-                     Surface_RHS%Land_Coverage, &
-                     Surface_LHS%Land_Coverage-Surface_RHS%Land_Coverage
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Water_Coverage, &
-                              Surface_RHS%Water_Coverage, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Water coverage values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Water_Coverage, &
-                     Surface_RHS%Water_Coverage, &
-                     Surface_LHS%Water_Coverage-Surface_RHS%Water_Coverage
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Snow_Coverage, &
-                              Surface_RHS%Snow_Coverage, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Snow coverage values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Snow_Coverage, &
-                     Surface_RHS%Snow_Coverage, &
-                     Surface_LHS%Snow_Coverage-Surface_RHS%Snow_Coverage
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Ice_Coverage, &
-                              Surface_RHS%Ice_Coverage, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Ice coverage values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Ice_Coverage, &
-                     Surface_RHS%Ice_Coverage, &
-                     Surface_LHS%Ice_Coverage-Surface_RHS%Ice_Coverage
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    ! Surface type independent components
-    IF ( .NOT. Compare_Float( Surface_LHS%Wind_Speed, &
-                              Surface_RHS%Wind_Speed, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Wind_Speed values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Wind_Speed, &
-                     Surface_RHS%Wind_Speed, &
-                     Surface_LHS%Wind_Speed-Surface_RHS%Wind_Speed
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Wind_Direction, &
-                              Surface_RHS%Wind_Direction, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Wind_Direction values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Wind_Direction, &
-                     Surface_RHS%Wind_Direction, &
-                     Surface_LHS%Wind_Direction-Surface_RHS%Wind_Direction
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-
-    ! The land components
-    IF ( Surface_LHS%Land_Type /= Surface_RHS%Land_Type ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Land_Type values are different:",2(1x,a,"(",i0,")"))') &
-                     TRIM(LAND_TYPE_NAME(Surface_LHS%Land_Type)), Surface_LHS%Land_Type, &
-                     TRIM(LAND_TYPE_NAME(Surface_RHS%Land_Type)), Surface_RHS%Land_Type
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Land_Temperature, &
-                              Surface_RHS%Land_Temperature, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Land_Temperature values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Land_Temperature, &
-                     Surface_RHS%Land_Temperature, &
-                     Surface_LHS%Land_Temperature-Surface_RHS%Land_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Soil_Moisture_Content, &
-                              Surface_RHS%Soil_Moisture_Content, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Soil_Moisture_Content values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Soil_Moisture_Content, &
-                     Surface_RHS%Soil_Moisture_Content, &
-                     Surface_LHS%Soil_Moisture_Content-Surface_RHS%Soil_Moisture_Content
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Canopy_Water_Content, &
-                              Surface_RHS%Canopy_Water_Content, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Canopy_Water_Content values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Canopy_Water_Content, &
-                     Surface_RHS%Canopy_Water_Content, &
-                     Surface_LHS%Canopy_Water_Content-Surface_RHS%Canopy_Water_Content
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Vegetation_Fraction, &
-                              Surface_RHS%Vegetation_Fraction, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Vegetation_Fraction values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Vegetation_Fraction, &
-                     Surface_RHS%Vegetation_Fraction, &
-                     Surface_LHS%Vegetation_Fraction-Surface_RHS%Vegetation_Fraction
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Soil_Temperature, &
-                              Surface_RHS%Soil_Temperature, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Soil_Temperature values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Soil_Temperature, &
-                     Surface_RHS%Soil_Temperature, &
-                     Surface_LHS%Soil_Temperature-Surface_RHS%Soil_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-
-    ! The water components
-    IF ( Surface_LHS%Water_Type /= Surface_RHS%Water_Type ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Water_Type values are different:",2(1x,a,"(",i0,")"))') &
-                     TRIM(WATER_TYPE_NAME(Surface_LHS%Water_Type)), Surface_LHS%Water_Type, &
-                     TRIM(WATER_TYPE_NAME(Surface_RHS%Water_Type)), Surface_RHS%Water_Type
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Water_Temperature, &
-                              Surface_RHS%Water_Temperature, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Water_Temperature values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Water_Temperature, &
-                     Surface_RHS%Water_Temperature, &
-                     Surface_LHS%Water_Temperature-Surface_RHS%Water_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Salinity, &
-                              Surface_RHS%Salinity, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Salinity values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Salinity, &
-                     Surface_RHS%Salinity, &
-                     Surface_LHS%Salinity-Surface_RHS%Salinity
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-
-    ! The snow components
-    IF ( Surface_LHS%Snow_Type /= Surface_RHS%Snow_Type ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Snow_Type values are different:",2(1x,a,"(",i0,")"))') &
-                     TRIM(SNOW_TYPE_NAME(Surface_LHS%Snow_Type)), Surface_LHS%Snow_Type, &
-                     TRIM(SNOW_TYPE_NAME(Surface_RHS%Snow_Type)), Surface_RHS%Snow_Type
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Snow_Temperature, &
-                              Surface_RHS%Snow_Temperature, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Snow_Temperature values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Snow_Temperature, &
-                     Surface_RHS%Snow_Temperature, &
-                     Surface_LHS%Snow_Temperature-Surface_RHS%Snow_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Snow_Depth, &
-                              Surface_RHS%Snow_Depth, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Snow_Depth values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Snow_Depth, &
-                     Surface_RHS%Snow_Depth, &
-                     Surface_LHS%Snow_Depth-Surface_RHS%Snow_Depth
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Snow_Density, &
-                              Surface_RHS%Snow_Density, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Snow_Density values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Snow_Density, &
-                     Surface_RHS%Snow_Density, &
-                     Surface_LHS%Snow_Density-Surface_RHS%Snow_Density
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Snow_Grain_Size, &
-                              Surface_RHS%Snow_Grain_Size, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Snow_Grain_Size values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Snow_Grain_Size, &
-                     Surface_RHS%Snow_Grain_Size, &
-                     Surface_LHS%Snow_Grain_Size-Surface_RHS%Snow_Grain_Size
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-
-    ! The ice components
-    IF ( Surface_LHS%Ice_Type /= Surface_RHS%Ice_Type ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Ice_Type values are different:",2(1x,a,"(",i0,")"))') &
-                     TRIM(ICE_TYPE_NAME(Surface_LHS%Ice_Type)), Surface_LHS%Ice_Type, &
-                     TRIM(ICE_TYPE_NAME(Surface_RHS%Ice_Type)), Surface_RHS%Ice_Type
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Ice_Temperature, &
-                              Surface_RHS%Ice_Temperature, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Ice_Temperature values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Ice_Temperature, &
-                     Surface_RHS%Ice_Temperature, &
-                     Surface_LHS%Ice_Temperature-Surface_RHS%Ice_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Ice_Thickness, &
-                              Surface_RHS%Ice_Thickness, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Ice_Thickness values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Ice_Thickness, &
-                     Surface_RHS%Ice_Thickness, &
-                     Surface_LHS%Ice_Thickness-Surface_RHS%Ice_Thickness
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Ice_Density, &
-                              Surface_RHS%Ice_Density, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Ice_Density values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Ice_Density, &
-                     Surface_RHS%Ice_Density, &
-                     Surface_LHS%Ice_Density-Surface_RHS%Ice_Density
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    IF ( .NOT. Compare_Float( Surface_LHS%Ice_Roughness, &
-                              Surface_RHS%Ice_Roughness, &
-                              ULP    =ULP_Scale, &
-                              Percent=Percent_Difference ) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Ice_Roughness values are different:",3(1x,es13.6))') &
-                     Surface_LHS%Ice_Roughness, &
-                     Surface_RHS%Ice_Roughness, &
-                     Surface_LHS%Ice_Roughness-Surface_RHS%Ice_Roughness
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-
-    ! The SensorData component
-    IF ( Surface_LHS%n_Sensors > 0 ) THEN
-      SensorData_Status = CRTM_Equal_SensorData( Surface_LHS%SensorData, &
-                                                 Surface_RHS%SensorData, &
-                                                 ULP_Scale  =ULP_Scale, &
-                                                 Check_All  =Check_All, &
-                                                 Message_Log=Message_Log )
-      IF ( SensorData_Status /= SUCCESS ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'SensorData structures are different', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END IF
-  END FUNCTION Equal_Scalar
-
-  FUNCTION Equal_Rank1( Surface_LHS       , &  ! Input
-                        Surface_RHS       , &  ! Output
-                        ULP_Scale         , &  ! Optional input
-                        Percent_Difference, &  ! Optional input
-                        Check_All         , &  ! Optional input
-                        Message_Log       ) &  ! Error messaging
-                      RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_LHS(:)
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_RHS(:)
-    INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
-    REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
-    INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(Rank-1)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    LOGICAL :: Check_Once
-    INTEGER :: Scalar_Status
-    INTEGER :: m, nProfiles
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Default action is to return on ANY difference...
-    Check_Once = .TRUE.
-    ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Check_Once = .FALSE.
-    END IF
-
-    ! Arguments must conform
-    nProfiles = SIZE( Surface_LHS )
-    IF ( SIZE( Surface_RHS ) /= nProfiles ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Surface_LHS and Surface_RHS arrays'//&
-                            ' have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Test for equality
-    ! -----------------
-    DO m = 1, nProfiles
-      Scalar_Status = Equal_Scalar( Surface_LHS(m), &
-                                    Surface_RHS(m), &
-                                    ULP_Scale         =ULP_Scale, &
-                                    Percent_Difference=Percent_Difference, &
-                                    Check_All         =Check_All, &
-                                    Message_Log       =Message_Log )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error comparing element (",i0,")", &
-                          &" of rank-1 Surface structure array." )' ) m
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-  END FUNCTION Equal_Rank1
-
-  FUNCTION Equal_Rank2( Surface_LHS       , &  ! Input
-                        Surface_RHS       , &  ! Output
-                        ULP_Scale         , &  ! Optional input
-                        Percent_Difference, &  ! Optional input
-                        Check_All         , &  ! Optional input
-                        Message_Log       ) &  ! Error messaging
-                      RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_LHS(:,:)
-    TYPE(CRTM_Surface_type), INTENT(IN)  :: Surface_RHS(:,:)
-    INTEGER,       OPTIONAL, INTENT(IN)  :: ULP_Scale
-    REAL(fp),      OPTIONAL, INTENT(IN)  :: Percent_Difference
-    INTEGER,       OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*),  OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Equal_Surface(Rank-2)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    LOGICAL :: Check_Once
-    INTEGER :: Scalar_Status
-    INTEGER :: l, nChannels
-    INTEGER :: m, nProfiles
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Default action is to return on ANY difference...
-    Check_Once = .TRUE.
-    ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Check_Once = .FALSE.
-    END IF
-
-    ! Arguments must conform
-    nChannels = SIZE(Surface_LHS,1)
-    nProfiles = SIZE(Surface_LHS,2)
-    IF ( SIZE(Surface_RHS,1) /= nChannels .OR. &
-         SIZE(Surface_RHS,2) /= nProfiles      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Surface_LHS and Surface_RHS arrays'//&
-                            ' have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Test for equality
-    ! -----------------
-    DO m = 1, nProfiles
-      DO l = 1, nChannels
-        Scalar_Status = Equal_Scalar( Surface_LHS(l,m), &
-                                      Surface_RHS(l,m), &
-                                      ULP_Scale         =ULP_Scale, &
-                                      Percent_Difference=Percent_Difference, &
-                                      Check_All         =Check_All, &
-                                      Message_Log       =Message_Log )
-        IF ( Scalar_Status /= SUCCESS ) THEN
-          Error_Status = Scalar_Status
-          WRITE( Message, '( "Error comparing element (",i0,",",i0,")", &
-                            &" of rank-2 Surface structure array." )' ) l,m
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          IF ( Check_Once ) RETURN
-        END IF
-      END DO
-    END DO
-  END FUNCTION Equal_Rank2
-  
-  
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Sum_Surface
-!
-! PURPOSE:
-!       Function to perform a sum of two valid CRTM Surface structures. The
-!       summation performed is:
-!         A = A + Scale_Factor*B + Offset
-!       where A and B are the CRTM Surface structures, and Scale_Factor and
-!       Offset are optional weighting factors.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_Sum_Surface( A                        , &
-!                                        B                        , &
-!                                        Scale_Factor=Scale_Factor, &
-!                                        Offset      =Offset      , &
-!                                        Message_Log =Message_Log   )
-!
-! INPUT ARGUMENTS:
-!       A:               Surface structure that is to be added to.
-!                        In the context of the CRTM, rank-1 corresponds to an
-!                        vector of profiles, and rank-2 corresponds to an array
-!                        of channels x profiles. The latter is used in the
-!                        K-matrix model.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Scalar, Rank-1, or Rank-2 array
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!       B:               Surface structure that is to be weighted and
-!                        added to structure A.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Same as A
-!                        ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       A:               Structure containing the weight sum result,
-!                          A = A + Scale_Factor*B + Offset
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Same as B
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Scale_Factor:    The first weighting factor used to scale the
-!                        contents of the input structure, B.
-!                        If not specified, Scale_Factor = 1.0.
-!                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Offset:          The second weighting factor used to offset the
-!                        sum of the input structures.
-!                        If not specified, Offset = 0.0.
-!                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the structure assignment was successful
-!                           == FAILURE an error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The argument A is INTENT(IN OUT) and is modified upon output.
-!
-! COMMENTS:
-!       The SensorData component of the Surface structures are not operated on.
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  FUNCTION Sum_Scalar( A           , &  ! Input/Output
-                       B           , &  ! Input
-                       Scale_Factor, &  ! Optional Input
-                       Offset      , &  ! Optional Input
-                       Message_Log ) &  ! Error messaging
-                     RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A
-    TYPE(CRTM_Surface_type), INTENT(IN)     :: B
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Surface(Scalar)'
-    ! Local variables
-    REAL(fp) :: m, c
-
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Assign the optional weights
-    m = ONE; c = ZERO
-    IF ( PRESENT(Scale_Factor) ) m = Scale_Factor
-    IF ( PRESENT(Offset      ) ) c = Offset
-
-
-    ! Perform the summation
-    ! ---------------------
-    A%Wind_Speed     = A%Wind_Speed     + (m*B%Wind_Speed    ) + c
-    A%Wind_Direction = A%Wind_Direction + (m*B%Wind_Direction) + c
-    
-    A%Land_Temperature      = A%Land_Temperature      + (m*B%Land_Temperature     ) + c
-    A%Soil_Moisture_Content = A%Soil_Moisture_Content + (m*B%Soil_Moisture_Content) + c
-    A%Canopy_Water_Content  = A%Canopy_Water_Content  + (m*B%Canopy_Water_Content ) + c
-    A%Vegetation_Fraction   = A%Vegetation_Fraction   + (m*B%Vegetation_Fraction  ) + c
-    A%Soil_Temperature      = A%Soil_Temperature      + (m*B%Soil_Temperature     ) + c
-    
-    A%Water_Temperature = A%Water_Temperature + (m*B%Water_Temperature) + c
-    A%Salinity          = A%Salinity          + (m*B%Salinity         ) + c
-    
-    A%Snow_Temperature = A%Snow_Temperature + (m*B%Snow_Temperature) + c
-    A%Snow_Depth       = A%Snow_Depth       + (m*B%Snow_Depth      ) + c
-    A%Snow_Density     = A%Snow_Density     + (m*B%Snow_Density    ) + c
-    A%Snow_Grain_Size  = A%Snow_Grain_Size  + (m*B%Snow_Grain_Size ) + c
-    
-    A%Ice_Temperature = A%Ice_Temperature + (m*B%Ice_Temperature) + c
-    A%Ice_Thickness   = A%Ice_Thickness   + (m*B%Ice_Thickness  ) + c
-    A%Ice_Density     = A%Ice_Density     + (m*B%Ice_Density    ) + c
-    A%Ice_Roughness   = A%Ice_Roughness   + (m*B%Ice_Roughness  ) + c
-
-  END FUNCTION Sum_Scalar
-
-
-  FUNCTION Sum_Rank1( A           , &  ! Input/Output
-                      B           , &  ! Input
-                      Scale_Factor, &  ! Optional Input
-                      Offset      , &  ! Optional Input
-                      Message_Log ) &  ! Error messaging
-                    RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A(:)
-    TYPE(CRTM_Surface_type), INTENT(IN)     :: B(:)
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Surface(Rank-1)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: i, n
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Array arguments must conform
-    n = SIZE(A)
-    IF ( SIZE(B) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input structure arguments have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Perform the summation
-    ! ---------------------
-    DO i = 1, n
-      Scalar_Status = Sum_Scalar( A(i), &
-                                  B(i), &
-                                  Scale_Factor=Scale_Factor, &
-                                  Offset      =Offset      , &
-                                  Message_Log =Message_Log   )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        Error_Status = Scalar_Status
-        WRITE( Message, '( "Error computing sum for element (",i0,")", &
-                          &" of Surface structure arrays." )' ) i
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-    END DO
-  END FUNCTION Sum_Rank1
-
-  FUNCTION Sum_Rank2( A           , &  ! Input/Output
-                      B           , &  ! Input
-                      Scale_Factor, &  ! Optional Input
-                      Offset      , &  ! Optional Input
-                      Message_Log ) &  ! Error messaging
-                    RESULT( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: A(:,:)
-    TYPE(CRTM_Surface_type), INTENT(IN)     :: B(:,:)
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Scale_Factor
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Offset
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Sum_Surface(Rank-2)'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: l, nChannels
-    INTEGER :: m, nProfiles
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Arguments must conform
-    nChannels = SIZE(A,1)
-    nProfiles = SIZE(A,2)
-    IF ( SIZE(B,1) /= nChannels .OR. &
-         SIZE(B,2) /= nProfiles      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input structure arguments have different dimensions', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Perform the summation
-    ! ---------------------
-    DO m = 1, nProfiles
-      DO l = 1, nChannels
-        Scalar_Status = Sum_Scalar( A(l,m), &
-                                    B(l,m), &
-                                    Scale_Factor=Scale_Factor, &
-                                    Offset      =Offset      , &
-                                    Message_Log =Message_Log   )
-        IF ( Scalar_Status /= SUCCESS ) THEN
-          Error_Status = Scalar_Status
-          WRITE( Message, '( "Error computing sum for element (",i0,",",i0,")", &
-                            &" of Surface structure arrays." )' ) l,m
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-        END IF
-      END DO
-    END DO
-  END FUNCTION Sum_Rank2
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Zero_Surface
+!       CRTM_Surface_Zero
 ! 
 ! PURPOSE:
-!       Subroutine to zero-out members of a CRTM Surface structure.
+!       Elemental subroutine to zero out the data arrays
+!       in a CRTM Surface object.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Zero_Surface( Surface )
+!       CALL CRTM_Surface_Zero( Sfc )
 !
 ! OUTPUT ARGUMENTS:
-!       Surface:      Zeroed out Surface structure.
-!                     In the context of the CRTM, rank-1 corresponds to an
-!                     vector of profiles, and rank-2 corresponds to an array
-!                     of channels x profiles. The latter is used in the
-!                     K-matrix model.
+!       Sfc:          CRTM Surface structure in which the data arrays
+!                     are to be zeroed out.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                     DIMENSION:  Scalar or any rank
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
-!       - No checking of the input structure is performed.
-!
-!       - The SensorData dimension and structure components are *NOT*
-!         reset.
-!
-!       - Note the INTENT on the output Surface argument is IN OUT rather than
-!         just OUT. This is necessary because the argument must be defined upon
-!         input.
+!       - The various surface type indicator flags are
+!         *NOT* reset in this routine.
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Zero_Scalar( Surface )  ! Output
-    TYPE(CRTM_Surface_type),  INTENT(IN OUT) :: Surface
-    ! Gross surface type
-    Surface%Land_Coverage  = ZERO
-    Surface%Water_Coverage = ZERO
-    Surface%Snow_Coverage  = ZERO
-    Surface%Ice_Coverage   = ZERO
-    ! Surface type independent data
-    Surface%Wind_Speed     = ZERO
-    Surface%Wind_Direction = ZERO
-    ! Land surface type data
-    Surface%Land_Type = INVALID_LAND
-    Surface%Land_Temperature      = ZERO
-    Surface%Soil_Moisture_Content = ZERO
-    Surface%Canopy_Water_Content  = ZERO
-    Surface%Vegetation_Fraction   = ZERO
-    Surface%Soil_Temperature      = ZERO
-    ! Water surface type data
-    Surface%Water_Type = INVALID_WATER
-    Surface%Water_Temperature = ZERO
-    Surface%Salinity          = ZERO
-    ! Snow surface type data
-    Surface%Snow_Type = INVALID_SNOW
-    Surface%Snow_Temperature = ZERO
-    Surface%Snow_Depth       = ZERO
-    Surface%Snow_Density     = ZERO
-    Surface%Snow_Grain_Size  = ZERO
-    ! Ice surface type data
-    Surface%Ice_Type = INVALID_ICE
-    Surface%Ice_Temperature = ZERO
-    Surface%Ice_Thickness   = ZERO
-    Surface%Ice_Density     = ZERO
-    Surface%Ice_Roughness   = ZERO
-  END SUBROUTINE Zero_Scalar
+  ELEMENTAL SUBROUTINE CRTM_Surface_Zero( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Sfc
 
+    ! Zero the components
+    ! ...Coverage fractions
+    Sfc%Land_Coverage  = ZERO
+    Sfc%Water_Coverage = ZERO
+    Sfc%Snow_Coverage  = ZERO
+    Sfc%Ice_Coverage   = ZERO
+    ! ...The various surface types
+    CALL CRTM_LandSurface_Zero(sfc)
+    CALL CRTM_WaterSurface_Zero(sfc)
+    CALL CRTM_SnowSurface_Zero(sfc)
+    CALL CRTM_IceSurface_Zero(sfc)
 
-  SUBROUTINE Zero_Rank1( Surface )  ! Output
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:)
-    INTEGER :: m
-    DO m = 1, SIZE( Surface )
-      CALL Zero_Scalar( Surface(m) )
-    END DO
-  END SUBROUTINE Zero_Rank1
+    ! Reset the structure components
+    IF ( CRTM_SensorData_Associated(Sfc%SensorData) ) CALL CRTM_SensorData_Zero(Sfc%SensorData)
 
-
-  SUBROUTINE Zero_Rank2( Surface )  ! Output
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface(:,:)
-    INTEGER :: l, m
-    DO m = 1, SIZE(Surface,2)
-      DO l = 1, SIZE(Surface,1)
-        CALL Zero_Scalar( Surface(l,m) )
-      END DO
-    END DO
-  END SUBROUTINE Zero_Rank2
+  END SUBROUTINE CRTM_Surface_Zero
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_RCS_ID_Surface
+!       CRTM_Surface_IsValid
 !
 ! PURPOSE:
-!       Subroutine to return the module RCS Id information.
+!       Non-pure function to perform some simple validity checks on a
+!       CRTM Surface object. 
+!
+!       If invalid data is found, a message is printed to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_RCS_Id_Surface( RCS_Id )
+!       result = CRTM_Surface_IsValid( Sfc )
+!
+!         or
+!
+!       IF ( CRTM_Surface_IsValid( Sfc ) ) THEN....
+!
+! OBJECTS:
+!       Sfc:       CRTM Surface object which is to have its
+!                  contents checked.
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_Surface_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:    Logical variable indicating whether or not the input
+!                  passed the check.
+!                  If == .FALSE., Surface object is unused or contains
+!                                 invalid data.
+!                     == .TRUE.,  Surface object can be used in CRTM.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Surface_IsValid( Sfc ) RESULT( IsValid )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_IsValid'
+    CHARACTER(ML) :: msg
+    
+    ! Check the gross surface type indicators
+    IsValid = CRTM_Surface_IsCoverageValid(sfc)
+    IF ( .NOT. IsValid ) THEN
+      msg = 'Invalid surface coverage fraction(s) found'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+    ENDIF
+
+    ! Check the various surface types
+    IF ( Sfc%Land_Coverage  > ZERO ) IsValid = CRTM_LandSurface_IsValid(sfc)  .AND. IsValid
+    IF ( Sfc%Water_Coverage > ZERO ) IsValid = CRTM_WaterSurface_IsValid(sfc) .AND. IsValid
+    IF ( Sfc%Snow_Coverage  > ZERO ) IsValid = CRTM_SnowSurface_IsValid(sfc)  .AND. IsValid
+    IF ( Sfc%Ice_Coverage   > ZERO ) IsValid = CRTM_IceSurface_IsValid(sfc)   .AND. IsValid
+
+    ! Structure components
+    IF ( CRTM_SensorData_Associated(Sfc%SensorData) ) &
+      IsValid = CRTM_SensorData_IsValid( Sfc%SensorData ) .AND. IsValid
+
+  END FUNCTION CRTM_Surface_IsValid
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Surface_Inspect
+!
+! PURPOSE:
+!       Subroutine to print the contents of a CRTM Surface object to stdout.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Surface_Inspect( Sfc )
+!
+! INPUTS:
+!       Sfc:  CRTM Surface object to display.
+!             UNITS:      N/A
+!             TYPE:       CRTM_Surface_type
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Surface_Inspect( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    WRITE(*, '(1x,"Surface OBJECT")')
+    ! Surface coverage
+    WRITE(*, '(3x,"Land Coverage :",1x,f6.3)') Sfc%Land_Coverage 
+    WRITE(*, '(3x,"Water Coverage:",1x,f6.3)') Sfc%Water_Coverage
+    WRITE(*, '(3x,"Snow Coverage :",1x,f6.3)') Sfc%Snow_Coverage 
+    WRITE(*, '(3x,"Ice Coverage  :",1x,f6.3)') Sfc%Ice_Coverage  
+    ! The various surface types
+    CALL CRTM_LandSurface_Inspect(sfc)
+    CALL CRTM_WaterSurface_Inspect(sfc)
+    CALL CRTM_SnowSurface_Inspect(sfc)
+    CALL CRTM_IceSurface_Inspect(sfc)
+    ! SensorData information
+    IF ( CRTM_SensorData_Associated(Sfc%SensorData) ) &
+      CALL CRTM_SensorData_Inspect(Sfc%SensorData)
+
+  END SUBROUTINE CRTM_Surface_Inspect
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Surface_IsCoverageValid
+!
+! PURPOSE:
+!       Elemental function to determine if the coverage fractions are valid
+!       for a CRTM Surface object. 
+!
+! CALLING SEQUENCE:
+!       result = CRTM_Surface_IsCoverageValid( Sfc )
+!
+! OBJECTS:
+!       Sfc:       CRTM Surface object which is to have its
+!                  coverage fractions checked.
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_Surface_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:    Logical variable indicating whether or not the input
+!                  passed the check.
+!                  If == .FALSE., Surface object coverage fractions are invalid.
+!                     == .TRUE.,  Surface object coverage fractions are valid.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Surface_IsCoverageValid( Sfc ) RESULT( IsValid )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    LOGICAL :: IsValid
+    REAL(fp) :: Total_Coverage
+
+    ! Testing is ass-about here (i.e. using .NOT.) but it's easier
+    ! to test for less- or greater-than, rather than greater-than-or-equal
+    ! and less-than-or-equal.
+    
+    ! Check for invalid individual coverage fraction
+    IsValid = .NOT. ( (Sfc%Land_Coverage  < ZERO .OR. Sfc%Land_Coverage  > ONE) .OR. &
+                      (Sfc%Water_Coverage < ZERO .OR. Sfc%Water_Coverage > ONE) .OR. &
+                      (Sfc%Snow_Coverage  < ZERO .OR. Sfc%Snow_Coverage  > ONE) .OR. &
+                      (Sfc%Ice_Coverage   < ZERO .OR. Sfc%Ice_Coverage   > ONE)      )
+
+    ! Check for invalid total coverage
+    Total_Coverage = Sfc%Land_Coverage + Sfc%Water_Coverage + &
+                     Sfc%Snow_Coverage + Sfc%Ice_Coverage
+    IsValid = IsValid .AND. (.NOT. ((Total_Coverage < 0.999_fp) .OR. (Total_Coverage > ONE)))
+
+  END FUNCTION CRTM_Surface_IsCoverageValid
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Surface_CoverageType
+!
+! PURPOSE:
+!       Elemental function to return the gross surface type based on coverage.
+!
+! CALLING SEQUENCE:
+!       type = CRTM_Surface_CoverageType( sfc )
+!
+! INPUTS:
+!       Sfc:  CRTM Surface object for which the gross surface type is required.
+!             UNITS:      N/A
+!             TYPE:       CRTM_Surface_type
+!             DIMENSION:  Scalar or any rank
+!             ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION:
+!       type: Surface type indicator for the passed CRTM Surface object.
+!             UNITS:      N/A
+!             TYPE:       INTEGER
+!             DIMENSION:  Same as input
+!
+! COMMENTS:
+!       For a scalar Surface object, this function result can be used to
+!       determine what gross surface types are included by using it to
+!       index the SURFACE_TYPE_NAME parameter arrays, e.g.
+!
+!         WRITE(*,*) SURFACE_TYPE_NAME(CRTM_Surface_CoverageType(sfc))
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Surface_CoverageType( sfc ) RESULT( Coverage_Type )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: sfc
+    INTEGER :: Coverage_Type
+    Coverage_Type = 0
+    IF ( sfc%Land_Coverage  > ZERO ) Coverage_Type = LAND_SURFACE
+    IF ( sfc%Water_Coverage > ZERO ) Coverage_Type = Coverage_Type + WATER_SURFACE
+    IF ( sfc%Snow_Coverage  > ZERO ) Coverage_Type = Coverage_Type + SNOW_SURFACE
+    IF ( sfc%Ice_Coverage   > ZERO ) Coverage_Type = Coverage_Type + ICE_SURFACE
+  END FUNCTION CRTM_Surface_CoverageType
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Surface_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Surface_DefineVersion( Id )
 !
 ! OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
+!       Id:            Character string containing the version Id information
+!                      for the module.
 !                      UNITS:      N/A
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
@@ -2216,10 +802,94 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_RCS_ID_Surface( RCS_Id )
-    CHARACTER(*), INTENT(OUT) :: RCS_Id
-    RCS_Id = MODULE_RCS_ID
-  END SUBROUTINE CRTM_RCS_ID_Surface
+  SUBROUTINE CRTM_Surface_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_Surface_DefineVersion
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       CRTM_Surface_Compare
+!
+! PURPOSE:
+!       Elemental function to compare two CRTM_Surface objects to within
+!       a user specified number of significant figures.
+!
+! CALLING SEQUENCE:
+!       is_comparable = CRTM_Surface_Compare( x, y, n_SigFig=n_SigFig )
+!
+! OBJECTS:
+!       x, y:          Two CRTM Surface objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_Surface_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       n_SigFig:      Number of significant figure to compare floating point
+!                      components.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Surface_Compare( &
+    x, &
+    y, &
+    n_SigFig ) &
+  RESULT( is_comparable )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: x, y
+    INTEGER,       OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+    
+    ! Compare gross surface type coverage
+    IF ( (.NOT. Compares_Within_Tolerance(x%Land_Coverage ,y%Land_Coverage ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Water_Coverage,y%Water_Coverage,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Snow_Coverage ,y%Snow_Coverage ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Ice_Coverage  ,y%Ice_Coverage  ,n)) ) RETURN
+
+    ! Compare the land surface type data
+    IF ( .NOT. CRTM_LandSurface_Compare(x,y,n_SigFig=n) ) RETURN
+
+    ! Compare the water surface type data
+    IF ( .NOT. CRTM_WaterSurface_Compare(x,y,n_SigFig=n) ) RETURN
+
+    ! Compare the snow surface type data
+    IF ( .NOT. CRTM_SnowSurface_Compare(x,y,n_SigFig=n) ) RETURN
+
+    ! Compare the ice surface type data
+    IF ( .NOT. CRTM_IceSurface_Compare(x,y,n_SigFig=n) ) RETURN
+
+    ! Check the SensorData
+    IF ( CRTM_SensorData_Associated(x%SensorData) .AND. &
+         CRTM_SensorData_Associated(y%SensorData) ) THEN
+      IF ( .NOT. CRTM_SensorData_Compare(x%SensorData,y%SensorData,n_SigFig=n) ) RETURN
+    END IF
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+    
+  END FUNCTION CRTM_Surface_Compare
 
 
 !##################################################################################
@@ -2230,66 +900,527 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-!----------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Clear_Surface
+!       CRTM_Surface_Equal
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM Surface structure to
-!       their default values.
+!       Elemental function to test the equality of two CRTM_Surface objects.
+!       Used in OPERATOR(==) interface block.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Clear_Surface( Surface )
+!       is_equal = CRTM_Surface_Equal( x, y )
 !
-! OUTPUT ARGUMENTS:
-!       Surface:     Surface structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_Surface_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
+!         or
 !
-! COMMENTS:
-!       Note the INTENT on the output Surface argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
 !
-!----------------------------------------------------------------------------------
+! OBJECTS:
+!       x, y:          Two CRTM Surface objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_Surface_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Clear_Surface( Surface )
-    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Surface
-    ! Gross surface type
-    Surface%Land_Coverage  = ZERO
-    Surface%Water_Coverage = ZERO
-    Surface%Snow_Coverage  = ZERO
-    Surface%Ice_Coverage   = ZERO
-    ! Surface type independent data
-    Surface%Wind_Speed     = DEFAULT_WIND_SPEED
-    Surface%Wind_Direction = DEFAULT_WIND_DIRECTION
-    ! Land surface type data
-    Surface%Land_Type             = DEFAULT_LAND_TYPE
-    Surface%Land_Temperature      = DEFAULT_LAND_TEMPERATURE
-    Surface%Soil_Moisture_Content = DEFAULT_SOIL_MOISTURE_CONTENT
-    Surface%Canopy_Water_Content  = DEFAULT_CANOPY_WATER_CONTENT
-    Surface%Vegetation_Fraction   = DEFAULT_VEGETATION_FRACTION
-    Surface%Soil_Temperature      = DEFAULT_SOIL_TEMPERATURE
-    ! Water surface type data
-    Surface%Water_Type        = DEFAULT_WATER_TYPE
-    Surface%Water_Temperature = DEFAULT_WATER_TEMPERATURE
-    Surface%Salinity          = DEFAULT_SALINITY
-    ! Snow surface type data
-    Surface%Snow_Type        = DEFAULT_SNOW_TYPE
-    Surface%Snow_Temperature = DEFAULT_SNOW_TEMPERATURE
-    Surface%Snow_Depth       = DEFAULT_SNOW_DEPTH
-    Surface%Snow_Density     = DEFAULT_SNOW_DENSITY
-    Surface%Snow_Grain_Size  = DEFAULT_SNOW_GRAIN_SIZE
-    ! Ice surface type data
-    Surface%Ice_Type        = DEFAULT_ICE_TYPE
-    Surface%Ice_Temperature = DEFAULT_ICE_TEMPERATURE
-    Surface%Ice_Thickness   = DEFAULT_ICE_THICKNESS
-    Surface%Ice_Density     = DEFAULT_ICE_DENSITY
-    Surface%Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
-  END SUBROUTINE CRTM_Clear_Surface
+  ELEMENTAL FUNCTION CRTM_Surface_Equal( x, y ) RESULT( is_equal )
+    TYPE(CRTM_Surface_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
 
+    ! Check the gross surface type coverage
+    is_equal = ( (x%Land_Coverage  .EqualTo. y%Land_Coverage ) .AND. &
+                 (x%Water_Coverage .EqualTo. y%Water_Coverage) .AND. &
+                 (x%Snow_Coverage  .EqualTo. y%Snow_Coverage ) .AND. &
+                 (x%Ice_Coverage   .EqualTo. y%Ice_Coverage  )       )
+    IF ( .NOT. is_equal ) RETURN
+
+    ! Check the land surface type data
+    is_equal = is_equal .AND. CRTM_LandSurface_Equal(x,y)
+    IF ( .NOT. is_equal ) RETURN
+
+    ! Check the water surface type data
+    is_equal = is_equal .AND. CRTM_WaterSurface_Equal(x,y)
+    IF ( .NOT. is_equal ) RETURN
+
+    ! Check the snow surface type data
+    is_equal = is_equal .AND. CRTM_SnowSurface_Equal(x,y)
+    IF ( .NOT. is_equal ) RETURN
+
+    ! Check the ice surface type data
+    is_equal = is_equal .AND. CRTM_IceSurface_Equal(x,y)
+    IF ( .NOT. is_equal ) RETURN
+
+    ! Check the SensorData
+    IF ( CRTM_SensorData_Associated(x%SensorData) .AND. &
+         CRTM_SensorData_Associated(y%SensorData) ) THEN
+      is_equal = is_equal .AND. (x%SensorData == y%SensorData)
+    END IF
+    
+  END FUNCTION CRTM_Surface_Equal
+  
+  
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Surface_Add
+!
+! PURPOSE:
+!       Pure function to add two CRTM Surface objects.
+!       Used in OPERATOR(+) interface block.
+!
+! CALLING SEQUENCE:
+!       sfcsum = CRTM_Surface_Add( sfc1, sfc2 )
+!
+!         or
+!
+!       sfcsum = sfc1 + sfc2
+!
+!
+! INPUTS:
+!       sfc1, sfc2: The Surface objects to add.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Surface_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       sfcsum:     Surface structure containing the added components.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Surface_type
+!                   DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Surface_Add( sfc1, sfc2 ) RESULT( sfcsum )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: sfc1, sfc2
+    TYPE(CRTM_Surface_type) :: sfcsum
+
+    ! Copy the first structure
+    sfcsum = sfc1
+
+    ! And add its components to the second one
+    sfcsum%Land_Temperature      = sfcsum%Land_Temperature      + sfc2%Land_Temperature     
+    sfcsum%Soil_Moisture_Content = sfcsum%Soil_Moisture_Content + sfc2%Soil_Moisture_Content
+    sfcsum%Canopy_Water_Content  = sfcsum%Canopy_Water_Content  + sfc2%Canopy_Water_Content 
+    sfcsum%Vegetation_Fraction   = sfcsum%Vegetation_Fraction   + sfc2%Vegetation_Fraction  
+    sfcsum%Soil_Temperature      = sfcsum%Soil_Temperature      + sfc2%Soil_Temperature 
+    sfcsum%Water_Temperature     = sfcsum%Water_Temperature     + sfc2%Water_Temperature
+    sfcsum%Wind_Speed            = sfcsum%Wind_Speed            + sfc2%Wind_Speed       
+    sfcsum%Wind_Direction        = sfcsum%Wind_Direction        + sfc2%Wind_Direction   
+    sfcsum%Salinity              = sfcsum%Salinity              + sfc2%Salinity         
+    sfcsum%Snow_Temperature      = sfcsum%Snow_Temperature      + sfc2%Snow_Temperature 
+    sfcsum%Snow_Depth            = sfcsum%Snow_Depth            + sfc2%Snow_Depth     
+    sfcsum%Snow_Density          = sfcsum%Snow_Density          + sfc2%Snow_Density   
+    sfcsum%Snow_Grain_Size       = sfcsum%Snow_Grain_Size       + sfc2%Snow_Grain_Size
+    sfcsum%Ice_Temperature       = sfcsum%Ice_Temperature       + sfc2%Ice_Temperature
+    sfcsum%Ice_Thickness         = sfcsum%Ice_Thickness         + sfc2%Ice_Thickness  
+    sfcsum%Ice_Density           = sfcsum%Ice_Density           + sfc2%Ice_Density    
+    sfcsum%Ice_Roughness         = sfcsum%Ice_Roughness         + sfc2%Ice_Roughness  
+    ! ...SensorData component
+    IF ( CRTM_SensorData_Associated(sfc1%SensorData) .AND. &
+         CRTM_SensorData_Associated(sfc2%SensorData)       ) THEN
+      sfcsum%SensorData = sfcsum%SensorData + sfc2%SensorData
+    END IF
+
+  END FUNCTION CRTM_Surface_Add
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##     ## PROCEDURES BELOW WILL EVENTUALLY BE MOVED TO THEIR OWN MODULE ##      ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+! =============================
+! LAND TYPE SPECIFIC PROCEDURES
+! =============================
+  ELEMENTAL SUBROUTINE CRTM_LandSurface_Zero( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Sfc
+    ! Zero land surface type data
+    Sfc%Land_Temperature      = ZERO
+    Sfc%Soil_Moisture_Content = ZERO
+    Sfc%Canopy_Water_Content  = ZERO
+    Sfc%Vegetation_Fraction   = ZERO
+    Sfc%Soil_Temperature      = ZERO
+  END SUBROUTINE CRTM_LandSurface_Zero
+
+  
+  FUNCTION CRTM_LandSurface_IsValid( Sfc ) RESULT( IsValid )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_LandSurface_IsValid'
+    CHARACTER(ML) :: msg
+    
+    ! Setup
+    IsValid = .TRUE.
+    
+    ! Check the data
+    IF ( Sfc%Land_Type < 1 .OR. Sfc%Land_Type > N_VALID_LAND_TYPES ) THEN
+      msg = 'Invalid Land Surface type'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( Sfc%Land_Temperature      < ZERO .OR. &
+         Sfc%Soil_Moisture_Content < ZERO .OR. &
+         Sfc%Canopy_Water_Content  < ZERO .OR. &
+         Sfc%Vegetation_Fraction   < ZERO .OR. &
+         Sfc%Soil_Temperature      < ZERO      ) THEN
+      msg = 'Invalid Land Surface data'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    
+  END FUNCTION CRTM_LandSurface_IsValid
+
+
+  SUBROUTINE CRTM_LandSurface_Inspect( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    INTEGER :: lType
+    lType = Sfc%Land_Type
+    IF ( lType < 1 .OR. lType > N_VALID_LAND_TYPES ) lType = INVALID_LAND
+    WRITE(*, '(3x,"Land type            :",1x,a)') TRIM(LAND_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Land Temperature     :",1x,es13.6)') Sfc%Land_Temperature     
+    WRITE(*, '(3x,"Soil Moisture Content:",1x,es13.6)') Sfc%Soil_Moisture_Content
+    WRITE(*, '(3x,"Canopy Water Content :",1x,es13.6)') Sfc%Canopy_Water_Content 
+    WRITE(*, '(3x,"Vegetation Fraction  :",1x,es13.6)') Sfc%Vegetation_Fraction  
+    WRITE(*, '(3x,"Soil Temperature     :",1x,es13.6)') Sfc%Soil_Temperature     
+  END SUBROUTINE CRTM_LandSurface_Inspect
+
+
+  ELEMENTAL FUNCTION CRTM_LandSurface_Compare( x, y, n_SigFig ) RESULT( is_comparable )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: x, y
+    INTEGER,       OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+    
+    ! Check integers
+    IF ( x%Land_Type /= y%Land_Type ) RETURN
+
+    ! Check floats
+    IF ( (.NOT. Compares_Within_Tolerance(x%Land_Temperature     ,y%Land_Temperature     ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Soil_Moisture_Content,y%Soil_Moisture_Content,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Canopy_Water_Content ,y%Canopy_Water_Content ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Vegetation_Fraction  ,y%Vegetation_Fraction  ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Soil_Temperature     ,y%Soil_Temperature     ,n)) ) RETURN
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+    
+  END FUNCTION CRTM_LandSurface_Compare
+  
+  
+  ELEMENTAL FUNCTION CRTM_LandSurface_Equal( x, y ) RESULT( is_equal )
+    TYPE(CRTM_Surface_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+    is_equal = ( (x%Land_Type                ==     y%Land_Type            ) .AND. &
+                 (x%Land_Temperature      .EqualTo. y%Land_Temperature     ) .AND. &
+                 (x%Soil_Moisture_Content .EqualTo. y%Soil_Moisture_Content) .AND. &
+                 (x%Canopy_Water_Content  .EqualTo. y%Canopy_Water_Content ) .AND. &
+                 (x%Vegetation_Fraction   .EqualTo. y%Vegetation_Fraction  ) .AND. &
+                 (x%Soil_Temperature      .EqualTo. y%Soil_Temperature     )       )
+  END FUNCTION CRTM_LandSurface_Equal
+  
+  
+! ==============================
+! WATER TYPE SPECIFIC PROCEDURES
+! ==============================
+  ELEMENTAL SUBROUTINE CRTM_WaterSurface_Zero( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Sfc
+    ! Zero the water surface type data
+    Sfc%Water_Temperature = ZERO
+    Sfc%Wind_Speed        = ZERO
+    Sfc%Wind_Direction    = ZERO
+    Sfc%Salinity          = ZERO
+  END SUBROUTINE CRTM_WaterSurface_Zero
+  
+  
+  FUNCTION CRTM_WaterSurface_IsValid( Sfc ) RESULT( IsValid )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_WaterSurface_IsValid'
+    CHARACTER(ML) :: msg
+    
+    ! Setup
+    IsValid = .TRUE.
+    
+    ! Check the data
+    IF ( Sfc%Water_Type < 1 .OR. Sfc%Water_Type > N_VALID_WATER_TYPES ) THEN
+      msg = 'Invalid Water Surface type'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( Sfc%Water_Temperature < ZERO .OR. &
+         Sfc%Wind_Speed        < ZERO .OR. &
+         Sfc%Wind_Direction    < ZERO .OR. &
+         Sfc%Salinity          < ZERO      ) THEN
+      msg = 'Invalid Water Surface data'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    END IF
+    
+  END FUNCTION CRTM_WaterSurface_IsValid
+
+
+  SUBROUTINE CRTM_WaterSurface_Inspect( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    INTEGER :: lType
+    lType = Sfc%Water_Type
+    IF ( lType < 1 .OR. lType > N_VALID_WATER_TYPES ) lType = INVALID_WATER
+    WRITE(*, '(3x,"Water Type       :",1x,a)') TRIM(WATER_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Water Temperature:",1x,es13.6)') Sfc%Water_Temperature
+    WRITE(*, '(3x,"Wind Speed       :",1x,es13.6)') Sfc%Wind_Speed    
+    WRITE(*, '(3x,"Wind Direction   :",1x,es13.6)') Sfc%Wind_Direction
+    WRITE(*, '(3x,"Salinity         :",1x,es13.6)') Sfc%Salinity         
+  END SUBROUTINE CRTM_WaterSurface_Inspect
+
+
+  ELEMENTAL FUNCTION CRTM_WaterSurface_Compare( x, y, n_SigFig ) RESULT( is_comparable )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: x, y
+    INTEGER,       OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+    
+    ! Check integers
+    IF ( x%Water_Type /= y%Water_Type ) RETURN
+
+    ! Check floats
+    IF ( (.NOT. Compares_Within_Tolerance(x%Water_Temperature,y%Water_Temperature,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Wind_Speed       ,y%Wind_Speed       ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Wind_Direction   ,y%Wind_Direction   ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Salinity         ,y%Salinity         ,n)) ) RETURN
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+    
+  END FUNCTION CRTM_WaterSurface_Compare
+  
+  
+  ELEMENTAL FUNCTION CRTM_WaterSurface_Equal( x, y ) RESULT( is_equal )
+    TYPE(CRTM_Surface_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+    is_equal = ( (x%Water_Type           ==     y%Water_Type       ) .AND. &
+                 (x%Water_Temperature .EqualTo. y%Water_Temperature) .AND. &
+                 (x%Wind_Speed        .EqualTo. y%Wind_Speed       ) .AND. &
+                 (x%Wind_Direction    .EqualTo. y%Wind_Direction   ) .AND. &
+                 (x%Salinity          .EqualTo. y%Salinity         )       )
+  END FUNCTION CRTM_WaterSurface_Equal
+  
+  
+! =============================
+! SNOW TYPE SPECIFIC PROCEDURES
+! =============================
+  ELEMENTAL SUBROUTINE CRTM_SnowSurface_Zero( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Sfc
+    ! Zero the snow surface type data
+    Sfc%Snow_Temperature = ZERO
+    Sfc%Snow_Depth       = ZERO
+    Sfc%Snow_Density     = ZERO
+    Sfc%Snow_Grain_Size  = ZERO
+  END SUBROUTINE CRTM_SnowSurface_Zero
+
+
+  FUNCTION CRTM_SnowSurface_IsValid( Sfc ) RESULT( IsValid )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SnowSurface_IsValid'
+    CHARACTER(ML) :: msg
+    
+    ! Setup
+    IsValid = .TRUE.
+    
+    ! Check the data
+    IF ( Sfc%Snow_Type < 1 .OR. Sfc%Snow_Type > N_VALID_Snow_TYPES ) THEN
+      msg = 'Invalid Snow Surface type'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( Sfc%Snow_Temperature < ZERO .OR. &
+         Sfc%Snow_Depth       < ZERO .OR. &
+         Sfc%Snow_Density     < ZERO .OR. &
+         Sfc%Snow_Grain_Size  < ZERO      ) THEN
+      msg = 'Invalid Snow Surface data'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    END IF
+    
+  END FUNCTION CRTM_SnowSurface_IsValid
+
+
+  SUBROUTINE CRTM_SnowSurface_Inspect( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    INTEGER :: lType
+    lType = Sfc%Snow_Type
+    IF ( lType < 1 .OR. lType > N_VALID_SNOW_TYPES ) lType = INVALID_SNOW
+    WRITE(*, '(3x,"Snow Type       :",1x,a)') TRIM(SNOW_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Snow Temperature:",1x,es13.6)') Sfc%Snow_Temperature
+    WRITE(*, '(3x,"Snow Depth      :",1x,es13.6)') Sfc%Snow_Depth      
+    WRITE(*, '(3x,"Snow Density    :",1x,es13.6)') Sfc%Snow_Density    
+    WRITE(*, '(3x,"Snow Grain_Size :",1x,es13.6)') Sfc%Snow_Grain_Size 
+  END SUBROUTINE CRTM_SnowSurface_Inspect
+
+
+  ELEMENTAL FUNCTION CRTM_SnowSurface_Compare( x, y, n_SigFig ) RESULT( is_comparable )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: x, y
+    INTEGER,       OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+    
+    ! Check integers
+    IF ( x%Snow_Type /= y%Snow_Type ) RETURN
+
+    ! Check floats
+    IF ( (.NOT. Compares_Within_Tolerance(x%Snow_Temperature,y%Snow_Temperature,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Snow_Depth      ,y%Snow_Depth      ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Snow_Density    ,y%Snow_Density    ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Snow_Grain_Size ,y%Snow_Grain_Size ,n)) ) RETURN
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+    
+  END FUNCTION CRTM_SnowSurface_Compare
+  
+  
+  ELEMENTAL FUNCTION CRTM_SnowSurface_Equal( x, y ) RESULT( is_equal )
+    TYPE(CRTM_Surface_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+    is_equal = ( (x%Snow_Type           ==     y%Snow_Type       ) .AND. &
+                 (x%Snow_Temperature .EqualTo. y%Snow_Temperature) .AND. &
+                 (x%Snow_Depth       .EqualTo. y%Snow_Depth      ) .AND. &
+                 (x%Snow_Density     .EqualTo. y%Snow_Density    ) .AND. &
+                 (x%Snow_Grain_Size  .EqualTo. y%Snow_Grain_Size )       )
+  END FUNCTION CRTM_SnowSurface_Equal
+  
+  
+! ============================
+! ICE TYPE SPECIFIC PROCEDURES
+! ============================
+  ELEMENTAL SUBROUTINE CRTM_IceSurface_Zero( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: Sfc
+    ! Zero the ice surface type data
+    Sfc%Ice_Temperature = ZERO
+    Sfc%Ice_Thickness   = ZERO
+    Sfc%Ice_Density     = ZERO
+    Sfc%Ice_Roughness   = ZERO
+  END SUBROUTINE CRTM_IceSurface_Zero
+  
+  
+  FUNCTION CRTM_IceSurface_IsValid( Sfc ) RESULT( IsValid )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_IceSurface_IsValid'
+    CHARACTER(ML) :: msg
+    
+    ! Setup
+    IsValid = .TRUE.
+    
+    ! Check the data
+    IF ( Sfc%Ice_Type < 1 .OR. Sfc%Ice_Type > N_VALID_Ice_TYPES ) THEN
+      msg = 'Invalid Ice Surface type'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( Sfc%Ice_Temperature < ZERO .OR. &
+         Sfc%Ice_Thickness   < ZERO .OR. &
+         Sfc%Ice_Density     < ZERO .OR. &
+         Sfc%Ice_Roughness   < ZERO      ) THEN
+      msg = 'Invalid Ice Surface data'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    END IF
+    
+  END FUNCTION CRTM_IceSurface_IsValid
+
+
+  SUBROUTINE CRTM_IceSurface_Inspect( Sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
+    INTEGER :: lType
+    lType = Sfc%Ice_Type
+    IF ( lType < 1 .OR. lType > N_VALID_ICE_TYPES ) lType = INVALID_ICE
+    WRITE(*, '(3x,"Ice Type       :",1x,a)') TRIM(ICE_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Ice Temperature:",1x,es13.6)') Sfc%Ice_Temperature
+    WRITE(*, '(3x,"Ice Thickness  :",1x,es13.6)') Sfc%Ice_Thickness  
+    WRITE(*, '(3x,"Ice Density    :",1x,es13.6)') Sfc%Ice_Density    
+    WRITE(*, '(3x,"Ice Roughness  :",1x,es13.6)') Sfc%Ice_Roughness  
+  END SUBROUTINE CRTM_IceSurface_Inspect
+
+
+  ELEMENTAL FUNCTION CRTM_IceSurface_Compare( x, y, n_SigFig ) RESULT( is_comparable )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: x, y
+    INTEGER,       OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+    
+    ! Check integers
+    IF ( x%Ice_Type /= y%Ice_Type ) RETURN
+
+    ! Check floats
+    IF ( (.NOT. Compares_Within_Tolerance(x%Ice_Temperature,y%Ice_Temperature,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Ice_Thickness  ,y%Ice_Thickness  ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Ice_Density    ,y%Ice_Density    ,n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Ice_Roughness  ,y%Ice_Roughness  ,n)) ) RETURN
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+    
+  END FUNCTION CRTM_IceSurface_Compare
+  
+  
+  ELEMENTAL FUNCTION CRTM_IceSurface_Equal( x, y ) RESULT( is_equal )
+    TYPE(CRTM_Surface_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+    is_equal = ( (x%Ice_Type           ==     y%Ice_Type       ) .AND. &
+                 (x%Ice_Temperature .EqualTo. y%Ice_Temperature) .AND. &
+                 (x%Ice_Thickness   .EqualTo. y%Ice_Thickness  ) .AND. &
+                 (x%Ice_Density     .EqualTo. y%Ice_Density    ) .AND. &
+                 (x%Ice_Roughness   .EqualTo. y%Ice_Roughness  )       )
+  END FUNCTION CRTM_IceSurface_Equal
+  
 END MODULE CRTM_Surface_Define

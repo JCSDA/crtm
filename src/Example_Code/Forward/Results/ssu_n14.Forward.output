@@ -5,11 +5,14 @@
       Program to provide an example of CRTM Forward function 
       usage.
 
-      $Revision: 5827 $
+      CRTM Version: alpha.REL-2.0
      **********************************************************
 
 
      Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: 
+
+     Running CRTM for ssu_n14 sensor...
+
      Initializing the CRTM...
  Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/ssu_n14.SpcCoeff.bin; 
  SpcCoeff RELEASE.VERSION:  7.02  N_CHANNELS=3
@@ -22,16 +25,79 @@
  Read_EmisCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/EmisCoeff.bin; 
  EmisCoeff RELEASE.VERSION:  2.01  N_ANGLES= 67  N_FREQUENCIES=  153  N_WIND_SPEEDS= 23
 
-       Profile 1 FWD output
-       Sensor_Id   Channel         R            Tb
-       ssu_n14        1      5.457889E+01     229.567
-       ssu_n14        2      6.547511E+01     239.762
-       ssu_n14        3      7.712043E+01     249.708
 
-       Profile 2 FWD output
-       Sensor_Id   Channel         R            Tb
-       ssu_n14        1      6.477349E+01     239.168
-       ssu_n14        2      6.621500E+01     240.423
-       ssu_n14        3      6.815054E+01     242.097
+       Profile 1 output for ssu_n14
+
+     Channel 1 results
+ RTSolution OBJECT
+   n_Layers : 0
+   Surface Emissivity      :  9.321736E-01
+   Up Radiance             :  0.000000E+00
+   Down Radiance           :  0.000000E+00
+   Down Solar Radiance     :  0.000000E+00
+   Surface Planck Radiance :  0.000000E+00
+   Radiance                :  5.457889E+01
+   Brightness Temperature  :  2.295675E+02
+
+     Channel 2 results
+ RTSolution OBJECT
+   n_Layers : 0
+   Surface Emissivity      :  9.319460E-01
+   Up Radiance             :  0.000000E+00
+   Down Radiance           :  0.000000E+00
+   Down Solar Radiance     :  0.000000E+00
+   Surface Planck Radiance :  0.000000E+00
+   Radiance                :  6.547511E+01
+   Brightness Temperature  :  2.397622E+02
+
+     Channel 3 results
+ RTSolution OBJECT
+   n_Layers : 0
+   Surface Emissivity      :  9.317160E-01
+   Up Radiance             :  0.000000E+00
+   Down Radiance           :  0.000000E+00
+   Down Solar Radiance     :  0.000000E+00
+   Surface Planck Radiance :  0.000000E+00
+   Radiance                :  7.712043E+01
+   Brightness Temperature  :  2.497083E+02
+
+
+       Profile 2 output for ssu_n14
+
+     Channel 1 results
+ RTSolution OBJECT
+   n_Layers : 0
+   Surface Emissivity      :  9.605864E-01
+   Up Radiance             :  0.000000E+00
+   Down Radiance           :  0.000000E+00
+   Down Solar Radiance     :  0.000000E+00
+   Surface Planck Radiance :  0.000000E+00
+   Radiance                :  6.477349E+01
+   Brightness Temperature  :  2.391684E+02
+
+     Channel 2 results
+ RTSolution OBJECT
+   n_Layers : 0
+   Surface Emissivity      :  9.605422E-01
+   Up Radiance             :  0.000000E+00
+   Down Radiance           :  0.000000E+00
+   Down Solar Radiance     :  0.000000E+00
+   Surface Planck Radiance :  0.000000E+00
+   Radiance                :  6.621500E+01
+   Brightness Temperature  :  2.404227E+02
+
+     Channel 3 results
+ RTSolution OBJECT
+   n_Layers : 0
+   Surface Emissivity      :  9.604976E-01
+   Up Radiance             :  0.000000E+00
+   Down Radiance           :  0.000000E+00
+   Down Solar Radiance     :  0.000000E+00
+   Surface Planck Radiance :  0.000000E+00
+   Radiance                :  6.815054E+01
+   Brightness Temperature  :  2.420969E+02
 
      Destroying the CRTM...
+
+     Comparing calculated results with saved ones...
+ Example_Forward(INFORMATION) : RTSolution results are the same!

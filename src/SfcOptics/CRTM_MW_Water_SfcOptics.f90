@@ -26,7 +26,8 @@ MODULE CRTM_MW_Water_SfcOptics
   USE CRTM_Parameters,          ONLY: ZERO, ONE, MAX_N_ANGLES
   USE CRTM_SpcCoeff,            ONLY: SC
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
-  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type, &
+                                      CRTM_GeometryInfo_GetValue
   USE CRTM_SfcOptics_Define,    ONLY: CRTM_SfcOptics_type
   USE CRTM_LowFrequency_MWSSEM, ONLY: LF_MWSSEM_type => iVar_type, &
                                       LowFrequency_MWSSEM, &
@@ -206,8 +207,9 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_MW_Water_SfcOptics'
     ! Local variables
-    INTEGER        :: i
-    REAL(fp)       :: Emissivity(4), Reflectivity(4)
+    INTEGER  :: i
+    REAL(fp) :: Source_Azimuth_Angle
+    REAL(fp) :: Emissivity(4), Reflectivity(4)
 
 
     ! ------
@@ -215,6 +217,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     SfcOptics%Reflectivity = ZERO
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, Source_Azimuth_Angle = Source_Azimuth_Angle )
 
 
     ! --------------------------------------
@@ -241,7 +244,7 @@ CONTAINS
       DO i = 1, SfcOptics%n_Angles
         CALL Fastem3( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
                       SfcOptics%Angle(i)                     , & ! Input
-                      GeometryInfo%Source_Azimuth_Angle      , & ! Input
+                      Source_Azimuth_Angle                   , & ! Input
                       Surface%Water_Temperature              , & ! Input
                       Surface%Wind_Speed                     , & ! Input
                       Surface%Wind_Direction                 , & ! Input
@@ -262,7 +265,7 @@ CONTAINS
 !    DO i = 1, SfcOptics%n_Angles
 !      CALL Fastem3( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
 !                    SfcOptics%Angle(i)                     , & ! Input
-!                    GeometryInfo%Source_Azimuth_Angle      , & ! Input
+!                    Source_Azimuth_Angle                   , & ! Input
 !                    Surface%Water_Temperature              , & ! Input
 !                    Surface%Wind_Speed                     , & ! Input
 !                    Surface%Wind_Direction                 , & ! Input
@@ -454,6 +457,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_MW_Water_SfcOptics_TL'
     ! Local variables
     INTEGER :: i
+    REAL(fp) :: Source_Azimuth_Angle
     REAL(fp) :: Reflectivity(4), Reflectivity_TL(4)
     REAL(fp) :: Transmittance_TL
 
@@ -463,6 +467,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     SfcOptics_TL%Reflectivity = ZERO
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, Source_Azimuth_Angle = Source_Azimuth_Angle )
 
 
     ! -----------------------------------------------------
@@ -492,7 +497,7 @@ CONTAINS
       DO i = 1, SfcOptics%n_Angles
         CALL Fastem3_TL( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
                          SfcOptics%Angle(i)                     , & ! Input
-                         GeometryInfo%Source_Azimuth_Angle      , & ! Input
+                         Source_Azimuth_Angle                   , & ! Input
                          Surface%Water_Temperature              , & ! Input
                          Surface%Wind_Speed                     , & ! Input
                          Surface%Wind_Direction                 , & ! Input
@@ -517,7 +522,7 @@ CONTAINS
 !    DO i = 1, SfcOptics%n_Angles
 !      CALL Fastem3_TL( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
 !                       SfcOptics%Angle(i)                     , & ! Input
-!                       GeometryInfo%Source_Azimuth_Angle      , & ! Input
+!                       Source_Azimuth_Angle                   , & ! Input
 !                       Surface%Water_Temperature              , & ! Input
 !                       Surface%Wind_Speed                     , & ! Input
 !                       Surface%Wind_Direction                 , & ! Input
@@ -695,6 +700,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_MW_Water_SfcOptics_AD'
     ! Local variables
     INTEGER :: i, j
+    REAL(fp) :: Source_Azimuth_Angle
     REAL(fp) :: Emissivity(4), Reflectivity(4), Reflectivity_AD(4)
     REAL(fp) :: Transmittance_AD
 
@@ -703,6 +709,7 @@ CONTAINS
     ! ------
     Error_Status = SUCCESS
     Transmittance_AD = ZERO
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, Source_Azimuth_Angle = Source_Azimuth_Angle )
 
 
     ! ----------------------------------------------
@@ -735,7 +742,7 @@ CONTAINS
         END DO
         CALL Fastem3_AD( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
                          SfcOptics%Angle(i)                      , & ! Input
-                         GeometryInfo%Source_Azimuth_Angle       , & ! Input
+                         Source_Azimuth_Angle                    , & ! Input
                          Surface%Water_Temperature               , & ! Input
                          Surface%Wind_Speed                      , & ! Input
                          Surface%Wind_Direction                  , & ! Input
@@ -761,7 +768,7 @@ CONTAINS
 !      END DO
 !      CALL Fastem3_AD( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
 !                       SfcOptics%Angle(i),                     , & ! Input
-!                       GeometryInfo%Source_Azimuth_Angle,      , & ! Input
+!                       Source_Azimuth_Angle,                   , & ! Input
 !                       Surface%Water_Temperature,              , & ! Input
 !                       Surface%Wind_Speed ,                    , & ! Input
 !                       Surface%Wind_Direction,                 , & ! Input

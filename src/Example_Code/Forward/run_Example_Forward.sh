@@ -16,24 +16,54 @@ fi
 # Specify test sensor ids
 SENSOR_ID="amsua_metop-a mhs_n18 hirs4_n18 ssu_n14 ssmis_f16 v.seviri_m09 hirs3_n17 amsre_aqua"
 
+# Initialise counters
+N_PASS=0
+N_FAIL=0
+
 # Loop over test sensors
+echo
+echo "Running Example_Forward for all test instruments..."
+echo "---------------------------------------------------"
 for SID in ${SENSOR_ID}; do
-  OUTFILE="${SID}.Forward.output"
+  # Delete the sensor signal file
+  SIGNALFILE="Results/${SID}.signal"
+  if [ -f ${SIGNALFILE} ]; then
+    rm -f ${SIGNALFILE}
+  fi
   echo
   # Run the example code
-  echo "Running Example_Forward for the ${SID} instrument..."
-  ${EXE_FILE} -Wl,-T <<-NoMoreInput > ${OUTFILE}
+  OUTFILE="${SID}.Forward.output"
+  ${EXE_FILE} <<-NoMoreInput > ${OUTFILE}
 	${SID}
 	NoMoreInput
-  # Diff the outputs
-  echo "Diff'ing the result files for the ${SID} instrument..."
-  diff Results/${OUTFILE} ${OUTFILE} > ${OUTFILE}.diff
-  # Check the file size...
-  OUTFILE_SIZE=`ls -l ${OUTFILE}.diff | awk '{print $5}'`
-  if [ ${OUTFILE_SIZE} -eq 0 ]; then
-    echo "  The results are the same!"
-    rm -f ${OUTFILE}.diff
-  else
-    echo "  The results are different! Check the diff output in ${OUTFILE}.diff"
+  if [ $? -ne 0 ]; then
+    echo "  Run failed for the ${SID} instrument!"
+    ((N_FAIL = N_FAIL + 1))
+    continue
   fi
+  # Check the output results
+  echo "Checking results for the ${SID} instrument..."
+  if [ -f ${SIGNALFILE} ]; then
+    echo "  The results are the same!"
+    ((N_PASS = N_PASS + 1))
+  else
+    echo "  The results are different! Check the output in ${OUTFILE}"
+    ((N_FAIL = N_FAIL + 1))
+  fi
+  ((N_TOTAL = N_PASS + N_FAIL))
 done
+
+# Output comnparison results
+if [ ${N_FAIL} -gt 0 ]; then
+  WARNING="  <----<<<  **WARNING**"
+else
+  WARNING=""
+fi
+echo
+echo "  ======================="
+echo "  SUMMARY of test results"
+echo "  ======================="
+echo
+echo "  Passed ${N_PASS} of ${N_TOTAL} tests."
+echo "  Failed ${N_FAIL} of ${N_TOTAL} tests.${WARNING}"
+echo

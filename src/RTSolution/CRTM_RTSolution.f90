@@ -24,16 +24,27 @@ MODULE CRTM_RTSolution
                                        SECANT_DIFFUSIVITY, &
                                        SCATTERING_ALBEDO_THRESHOLD, &
                                        OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SpcCoeff,             ONLY: SC, &
-                                       INFRARED_SENSOR, &
-                                       SOLAR_FLAG, IsFlagSet_SpcCoeff
+  USE CRTM_SpcCoeff,             ONLY: SC, INFRARED_SENSOR, SOLAR_FLAG, IsFlagSet_SpcCoeff
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
-  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmScatter_type
-  USE CRTM_Planck_Functions
+  USE CRTM_Planck_Functions,     ONLY: CRTM_Planck_Radiance      , &
+                                       CRTM_Planck_Radiance_TL   , &
+                                       CRTM_Planck_Radiance_AD   , &
+                                       CRTM_Planck_Temperature   , &
+                                       CRTM_Planck_Temperature_TL, &
+                                       CRTM_Planck_Temperature_AD
+! **** REPLACE 
+  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmOptics_type => CRTM_AtmScatter_type 
+! **** WITH THE FOLLOWING 
+!  USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type 
+! ****
   USE CRTM_SfcOptics
-  USE CRTM_RTSolution_Define
+  USE CRTM_RTSolution_Define, ONLY: CRTM_RTSolution_type      , &
+                                    OPERATOR(==)              , &
+                                    CRTM_RTSolution_Associated, &
+                                    CRTM_RTSolution_Destroy   , &
+                                    CRTM_RTSolution_Create
   USE CRTM_Utility
   USE RTV_Define
   ! Disable all implicit typing
@@ -45,35 +56,1489 @@ MODULE CRTM_RTSolution
   ! --------------------
   ! Everything private by default
   PRIVATE
-  ! CRTM_RTSolution structure data type
-  ! in the CRTM_RTSolution_Define module
+  ! RTSolution structure entities
+  ! ...Datatypes
   PUBLIC :: CRTM_RTSolution_type
-  ! CRTM_RTSolution structure routines inherited
-  ! from the CRTM_RTSolution_Define module
-  PUBLIC :: CRTM_Associated_RTSolution
-  PUBLIC :: CRTM_Destroy_RTSolution
-  PUBLIC :: CRTM_Allocate_RTSolution
-  PUBLIC :: CRTM_Assign_RTSolution
-  PUBLIC :: CRTM_Equal_RTSolution
-  ! Forward variable container data type
+  ! ...Operators
+  PUBLIC :: OPERATOR(==)
+  ! ...Procedures
+  PUBLIC :: CRTM_RTSolution_Associated
+  PUBLIC :: CRTM_RTSolution_Destroy
+  PUBLIC :: CRTM_RTSolution_Create
+  ! RTV structure entities
+  ! ...Datatypes
   PUBLIC :: CRTM_RTVariables_type
-  ! Public procedures
+  ! Module procedures
   PUBLIC :: CRTM_Compute_RTSolution
   PUBLIC :: CRTM_Compute_RTSolution_TL
   PUBLIC :: CRTM_Compute_RTSolution_AD
   PUBLIC :: CRTM_Compute_nStreams
+  PUBLIC :: CRTM_RTSolution_Version
 
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! RCS Id for the module
-  CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
 
 CONTAINS
 
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Compute_RTSolution
+!
+! PURPOSE:
+!       Function to solve the radiative transfer equation.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Compute_RTSolution( Atmosphere  , &  ! Input
+!                                               Surface     , &  ! Input
+!                                               AtmOptics   , &  ! Input
+!                                               SfcOptics   , &  ! Input
+!                                               GeometryInfo, &  ! Input
+!                                               SensorIndex , &  ! Input
+!                                               ChannelIndex, &  ! Input
+!                                               RTSolution  , &  ! Output
+!                                               RTVariables   )  ! Internal variable output
+!
+! INPUT ARGUMENTS:
+!       Atmosphere:     Structure containing the atmospheric state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       Surface:        Structure containing the surface state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Surface_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       AtmOptics:      Structure containing the combined atmospheric
+!                       optical properties for gaseous absorption, clouds,
+!                       and aerosols.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_AtmOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SfcOptics:      Structure containing the surface optical properties
+!                       data. Argument is defined as INTENT (IN OUT ) as
+!                       different RT algorithms may compute the surface
+!                       optics properties before this routine is called.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SfcOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       GeometryInfo:   Structure containing the view geometry data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_GeometryInfo_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SensorIndex:    Sensor index id. This is a unique index associated
+!                       with a (supported) sensor used to access the
+!                       shared coefficient data for a particular sensor.
+!                       See the ChannelIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:   Channel index id. This is a unique index associated
+!                       with a (supported) sensor channel used to access the
+!                       shared coefficient data for a particular sensor's
+!                       channel.
+!                       See the SensorIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       RTSolution:     Structure containing the soluition to the RT equation
+!                       for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       RTVariables:    Structure containing internal variables required for
+!                       subsequent tangent-linear or adjoint model calls.
+!                       The contents of this structure are NOT accessible
+!                       outside of the CRTM_RTSolution module.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTVariables_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the computation was sucessful
+!                          == FAILURE an unrecoverable error occurred
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+! COMMENTS:
+!       Note the INTENT on the output RTSolution argument is IN OUT rather than
+!       just OUT. This is necessary because the argument is defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Compute_RTSolution( &
+    Atmosphere  , &  ! Input
+    Surface     , &  ! Input
+    AtmOptics   , &  ! Input
+    SfcOptics   , &  ! Input
+    GeometryInfo, &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    RTSolution  , &  ! Output
+    RTV         ) &  ! Internal variable output
+  RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
+    TYPE(CRTM_AtmOptics_type),    INTENT(IN)     :: AtmOptics 
+    TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution
+    TYPE(CRTM_RTVariables_type),  INTENT(IN OUT) :: RTV
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_RTSolution'
+    ! Local variables
+    CHARACTER(256) :: Message 
+    INTEGER :: i, k, nZ
+    INTEGER :: no, na, nt
+    REAL(fp) :: u       ! COS( sensor zenith angle )
+    REAL(fp) :: Factor  ! SfcOptics quadrature weights normalisation factor
+    REAL(fp) :: User_Emissivity, Direct_Reflectivity
+    REAL(fp) :: Cosmic_Background_Radiance
+    REAL(fp) :: Radiance
+    INTEGER  :: Sensor_Type
+    LOGICAL  :: Is_Solar_Channel
+
+    ! ------
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    ! Short named local copies
+    u = ONE / GeometryInfo%Secant_Sensor_Zenith
+    ! Populate the RTV structure
+    RTV%n_Added_Layers = Atmosphere%n_Added_Layers
+    RTV%n_Layers       = Atmosphere%n_Layers
+    RTV%n_Streams      = RTSolution%n_Full_Streams/2
+    ! Save the optical depth if required
+    IF ( CRTM_RTSolution_Associated( RTSolution ) ) THEN
+      ! Shorter names for indexing
+      no = RTSolution%n_Layers  ! Original no. of layers
+      na = RTV%n_Added_Layers   ! No. of added layers
+      nt = RTV%n_Layers         ! Current total no. of layers
+      ! Assign only the optical depth profile
+      ! defined by the user input layering
+      RTSolution%Layer_Optical_Depth(1:no) = AtmOptics%Optical_Depth(na+1:nt)
+    END IF
+    ! Required SpcCoeff components
+    Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
+    Sensor_Type                = SC(SensorIndex)%Sensor_Type
+    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
+    RTV%COS_SUN                = cos(GeometryInfo%Source_Zenith_Radian)
+    RTV%Solar_Irradiance       = SC(SensorIndex)%Solar_Irradiance(ChannelIndex) * GeometryInfo%AU_ratio2
+   
+    ! Determine the surface emission behavior
+    !   By default, surface is SPECULAR.
+    !   If IR sensor AND water coverage < 50%, surface is DIFFUSE
+    RTV%Diffuse_Surface = .FALSE.
+    IF( Sensor_Type == INFRARED_SENSOR .AND. Surface%Water_Coverage < 0.5_fp) &
+      RTV%Diffuse_Surface = .TRUE.
+
+
+    ! -------------------------------------------
+    ! Determine the quadrature angles and weights
+    ! -------------------------------------------
+    ! Default is to assume scattering RT
+    RTV%Scattering_RT = .FALSE.
+
+    ! Check for scattering conditions
+    Determine_Stream_Angles: IF( RTSolution%Scattering_FLAG .AND. &
+                                 MAXVAL(AtmOptics%Single_Scatter_Albedo) >= SCATTERING_ALBEDO_THRESHOLD ) THEN 
+
+      ! --------------------------
+      ! Set the scattering RT flag
+      ! --------------------------
+      RTV%Scattering_RT = .TRUE.
+
+
+      ! ---------------------------------------
+      ! Compute the Gaussian angles and weights
+      ! ---------------------------------------
+      CALL Double_Gauss_Quadrature( RTV%n_Streams, RTV%COS_Angle, RTV%COS_Weight )
+
+
+      ! ----------------------------------------------------------------
+      ! Is an additional stream required for the satellite zenith angle?
+      ! That is, is the satellite zenith angle sufficiently different
+      ! from the stream angles?
+      ! ----------------------------------------------------------------
+      ! Search for a matching angle
+      DO i = 1, RTV%n_Streams
+        IF( ABS( RTV%COS_Angle(i) - u ) < ANGLE_THRESHOLD ) THEN
+          SfcOptics%Index_Sat_Ang = i         ! Identify the sensor zenith angle
+          RTV%n_Angles = RTV%n_Streams
+          ! *****FLAW*****
+          ! CAN WE REPLACE THIS CONSTRUCT WITH ANOTHER
+          GO TO 100
+          ! *****FLAW*****
+        END IF
+      END DO
+
+      ! No match found, so flag an additional
+      ! spot for the satellite zenith angle
+      RTV%n_Angles = RTV%n_Streams + 1
+      SfcOptics%Index_Sat_Ang = RTV%n_Angles      ! Identify the sensor zenith angle
+      RTV%COS_Angle( RTV%n_Angles )  = u
+      RTV%COS_Weight( RTV%n_Angles ) = ZERO
+
+      100 CONTINUE
+
+
+      ! ------------------------
+      ! Compute the phase matrix
+      ! ------------------------
+      CALL CRTM_Phase_Matrix( AtmOptics, & ! Input
+                              RTV        ) ! Internal variable
+
+
+    ELSE IF( RTV%Diffuse_Surface) THEN
+
+      ! ------------------
+      ! Lambertian surface
+      ! ------------------
+      ! The default diffusivity angle
+      RTV%n_Streams       = 1
+      RTV%COS_Angle( 1 )  = ONE/SECANT_DIFFUSIVITY
+      RTV%COS_Weight( 1 ) = ONE
+      ! The satellite zenith angle
+      RTV%n_Angles                   = RTV%n_Streams + 1
+      SfcOptics%Index_Sat_Ang        = RTV%n_Angles      ! Identify the sensor zenith angle
+      RTV%COS_Angle( RTV%n_Angles )  = u
+      RTV%COS_Weight( RTV%n_Angles ) = ZERO
+
+
+    ELSE
+
+      ! ----------------
+      ! Specular surface
+      ! ----------------
+      RTV%n_Streams = 0
+      RTV%n_Angles  = 1
+      RTV%COS_Angle( RTV%n_Angles ) = u
+      SfcOptics%Index_Sat_Ang       = RTV%n_Angles
+
+    END IF Determine_Stream_Angles
+
+
+    ! -------------------------------------------------
+    ! Copy the RTV angles to a short name for use below
+    ! -------------------------------------------------
+    nZ = RTV%n_Angles
+
+
+    ! ---------------------------------------------------------------------
+    ! Assign the number of Stokes parameters. Currently, this is set to 1
+    ! for decoupled polarization between surface and atmosphere.
+    ! Remember for polarised microwave instruments, each frequency's Stokes
+    ! parameter is treated as a separate channel.
+    ! ---------------------------------------------------------------------
+    SfcOptics%n_Stokes = 1
+
+    
+    ! ----------------------------------------------------
+    ! Assign the angles and weights to SfcOptics structure
+    ! ----------------------------------------------------
+    SfcOptics%n_Angles = RTV%n_Angles
+    Factor = ZERO
+    DO i = 1, nZ
+      SfcOptics%Angle(i)  = ACOS( RTV%COS_Angle(i) ) / DEGREES_TO_RADIANS
+      SfcOptics%Weight(i) = RTV%COS_Angle(i) * RTV%COS_Weight(i)
+      ! Compute the weight normalisation factor
+      Factor = Factor + SfcOptics%Weight(i)
+    END DO
+    ! Normalise the quadrature weights                                               
+    IF( Factor > ZERO) SfcOptics%Weight(1:nZ) = SfcOptics%Weight(1:nZ) / Factor
+
+
+    ! --------------------------------
+    ! Populate the SfcOptics structure
+    ! --------------------------------
+    IF ( SfcOptics%Compute_Switch == SET ) THEN
+      Error_Status = CRTM_Compute_SfcOptics( &
+                       Surface     , & ! Input
+                       GeometryInfo, & ! Input
+                       SensorIndex , & ! Input
+                       ChannelIndex, & ! Input
+                       SfcOptics   , & ! In/Output
+                       RTV%SOV       ) ! Internal variable output
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message,'("Error computing SfcOptics for ",a," channel ",i0)' ) &
+               TRIM(SC(SensorIndex)%Sensor_Id), &
+               SC(SensorIndex)%Sensor_Channel(ChannelIndex)
+        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        RETURN
+      END IF
+
+    ELSE
+
+      IF( RTV%Scattering_RT ) THEN
+        ! Replicate the user emissivity for all angles
+        SfcOptics%Reflectivity = ZERO
+        User_Emissivity = SfcOptics%Emissivity(1,1)
+        SfcOptics%Emissivity(1,1) = ZERO
+        Direct_Reflectivity = SfcOptics%Direct_Reflectivity(1,1)/PI
+        SfcOptics%Emissivity(1:nZ,1) = User_Emissivity
+        ! Replicate the user reflectivities for all angles
+        SfcOptics%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity
+        IF( RTV%Diffuse_Surface) THEN
+          DO i = 1, nZ 
+            SfcOptics%Reflectivity(1:nZ, 1, i, 1) = (ONE-SfcOptics%Emissivity(i,1))*SfcOptics%Weight(i)   
+          END DO
+        ELSE ! Specular surface
+          DO i = 1, nZ 
+            SfcOptics%Reflectivity(i, 1, i, 1) = (ONE-SfcOptics%Emissivity(i,1))
+          END DO
+        END IF
+      ELSE
+        User_Emissivity = SfcOptics%Emissivity(1,1)
+        SfcOptics%Emissivity( SfcOptics%Index_Sat_Ang,1 ) = User_Emissivity
+        SfcOptics%Reflectivity(1,1,1,1) = ONE - User_Emissivity
+      END IF
+
+    END IF
+
+
+    ! ------------------------------------------------------
+    ! Save the emissivity in the RTSolution output structure
+    ! ------------------------------------------------------
+    RTSolution%Surface_Emissivity = SfcOptics%Emissivity( SfcOptics%Index_Sat_Ang, 1 )
+
+
+    ! ------------------------
+    ! Compute Planck radiances
+    ! ------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
+      DO k = 1, Atmosphere%n_Layers 
+        CALL CRTM_Planck_Radiance( &
+               SensorIndex              , & ! Input
+               ChannelIndex             , & ! Input
+               Atmosphere%Temperature(k), & ! Input
+               RTV%Planck_Atmosphere(k)   ) ! Output
+      END DO
+      ! Surface radiance
+      CALL CRTM_Planck_Radiance( &
+             SensorIndex                  , & ! Input
+             ChannelIndex                 , & ! Input
+             SfcOptics%Surface_Temperature, & ! Input
+             RTV%Planck_Surface             ) ! Output
+    ELSE
+      RTV%Planck_Atmosphere = ZERO
+      RTV%Planck_Surface = ZERO
+    END IF
+
+
+    ! ------------------------------
+    ! Perform the radiative transfer
+    ! ------------------------------
+    ! Select the RT model
+    IF( RTV%Scattering_RT ) THEN
+
+      ! -----------------------------------------------------
+      ! Scattering RT. NESDIS advanced adding-doubling method 
+      ! -----------------------------------------------------
+      CALL CRTM_ADA( &
+             Atmosphere%n_Layers                       , & ! Input, number of atmospheric layers
+             AtmOptics%Single_Scatter_Albedo           , & ! Input, layer single scattering albedo
+             AtmOptics%Asymmetry_Factor                , & ! Input, layer asymmetry factor
+             AtmOptics%Optical_Depth                   , & ! Input, layer optical depth
+             Cosmic_Background_Radiance                , & ! Input, cosmic background radiation
+             SfcOptics%Emissivity( 1:nZ, 1 )           , & ! Input, surface emissivity
+             SfcOptics%Reflectivity( 1:nZ, 1, 1:nZ, 1 ), & ! Input, surface reflectivity
+             SfcOptics%Direct_Reflectivity(1:nZ,1)     , & ! Input, surface reflectivity for a point source
+             RTV                                         ) ! Output, Internal variables
+      ! The output radiance
+      Radiance = RTV%s_Level_Rad_UP( SfcOptics%Index_Sat_Ang, 0 )
+ 
+    ELSE
+
+
+      ! -----------------
+      ! Emission model RT
+      ! -----------------
+      CALL CRTM_Emission( &
+             Atmosphere%n_Layers,                   & ! Input, number of atmospheric layers
+             RTV%n_Angles,                          & ! Input, number of discrete zenith angles
+             RTV%Diffuse_Surface,                   & ! Input, surface behavior
+             u,                                     & ! Input, cosine of sensor zenith angle
+             AtmOptics%Optical_Depth,               & ! Input, layer optical depth
+             RTV%Planck_Atmosphere,                 & ! Input, layer radiances
+             RTV%Planck_Surface,                    & ! Input, surface radiance
+             SfcOptics%Emissivity(1:nZ,1),          & ! Input, surface emissivity
+             SfcOptics%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, surface reflectivity                
+             SfcOptics%Direct_Reflectivity(1:nZ,1), & ! Input, surface reflectivity for a point source
+             Cosmic_Background_Radiance,            & ! Input, cosmic background radiation 
+             RTV%Solar_Irradiance,                  & ! Input, Source irradiance at TOA
+             Is_Solar_Channel,                      & ! Input, Source sensitive channel info.
+             GeometryInfo%Source_Zenith_Radian,     & ! Input, Source zenith angle
+             RTV                                    ) ! Output, Internal variables
+      ! The output radiance
+      Radiance = RTV%e_Level_Rad_UP(0)
+
+      ! Other emission-only output
+      RTSolution%Up_Radiance             = RTV%Up_Radiance
+      RTSolution%Down_Radiance           = RTV%e_Level_Rad_DOWN(Atmosphere%n_Layers)
+      RTSolution%Down_Solar_Radiance     = RTV%Down_Solar_Radiance
+      RTSolution%Surface_Planck_Radiance = RTV%Planck_Surface
+      IF ( CRTM_RTSolution_Associated( RTSolution ) ) THEN
+        ! Shorter names for indexing
+        no = RTSolution%n_Layers  ! Original no. of layers
+        na = RTV%n_Added_Layers   ! No. of added layers
+        nt = RTV%n_Layers         ! Current total no. of layers
+        ! Assign only the upwelling radiance profile
+        ! defined by the user input layering
+        RTSolution%Upwelling_Radiance(1:no) = RTV%e_Level_Rad_UP(na+1:nt)
+      END IF
+    END IF
+ 
+    ! accumulate Fourier component
+    RTSolution%Radiance = RTSolution%Radiance + Radiance*  &
+       cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
+
+    ! ------------------------------------------------
+    ! Compute the corresponding brightness temperature
+    ! ------------------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
+    CALL CRTM_Planck_Temperature( &
+           SensorIndex,                      & ! Input
+           ChannelIndex,                     & ! Input
+           RTSolution%Radiance,              & ! Input
+           RTSolution%Brightness_Temperature ) ! Output
+    END IF
+
+  END FUNCTION CRTM_Compute_RTSolution
+
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Compute_RTSolution_TL
+!
+! PURPOSE:
+!       Function to solve the tangent-linear radiative transfer equation.
+!
+! CALLING SEQUENCE:
+!      Error_Status = CRTM_Compute_RTSolution_TL( Atmosphere   , &  ! FWD Input
+!                                                 Surface      , &  ! FWD Input
+!                                                 AtmOptics    , &  ! FWD Input
+!                                                 SfcOptics    , &  ! FWD Input
+!                                                 RTSolution   , &  ! FWD Input
+!                                                 Atmosphere_TL, &  ! TL Input
+!                                                 Surface_TL   , &  ! TL Input
+!                                                 AtmOptics_TL , &  ! TL Input
+!                                                 SfcOptics_TL , &  ! TL Input 
+!                                                 GeometryInfo , &  ! Input
+!                                                 SensorIndex  , &  ! Input
+!                                                 ChannelIndex , &  ! Input
+!                                                 RTSolution_TL, &  ! TL Output
+!                                                 RTVariables    )  ! Internal variable input
+!
+! INPUT ARGUMENTS:
+!       Atmosphere:     Structure containing the atmospheric state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       Surface:        Structure containing the surface state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Surface_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       AtmOptics:      Structure containing the combined atmospheric
+!                       optical properties for gaseous absorption, clouds,
+!                       and aerosols.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_AtmOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SfcOptics:      Structure containing the surface optical properties
+!                       data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SfcOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       RTSolution:     Structure containing the solution to the RT equation
+!                       for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       Atmosphere_TL:  Structure containing the tangent-linear atmospheric
+!                       state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       Surface_TL:     Structure containing the tangent-linear surface state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Surface_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       AtmOptics_TL:   Structure containing the tangent-linear atmospheric  
+!                       optical properties.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_AtmOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SfcOptics_TL:   Structure containing the tangent-linear surface optical
+!                       properties. Argument is defined as INTENT (IN OUT ) as
+!                       different RT algorithms may compute the surface optics
+!                       properties before this routine is called.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SfcOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT( IN OUT)
+!
+!       GeometryInfo:   Structure containing the view geometry data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_GeometryInfo_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SensorIndex:    Sensor index id. This is a unique index associated
+!                       with a (supported) sensor used to access the
+!                       shared coefficient data for a particular sensor.
+!                       See the ChannelIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:   Channel index id. This is a unique index associated
+!                       with a (supported) sensor channel used to access the
+!                       shared coefficient data for a particular sensor's
+!                       channel.
+!                       See the SensorIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       RTVariables:    Structure containing internal forward model variables
+!                       required for subsequent tangent-linear or adjoint model
+!                       calls. The contents of this structure are NOT accessible
+!                       outside of the CRTM_RTSolution module.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTVariables_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
+!
+! OUTPUT ARGUMENTS:
+!       RTSolution_TL:  Structure containing the solution to the tangent-linear
+!                       RT equation for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:   The return value is an integer defining the error status
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the computation was sucessful
+!                          == FAILURE an unrecoverable error occurred
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+! COMMENTS:
+!       Note the INTENT on the output RTSolution_TL argument is IN OUT rather
+!       than just OUT. This is necessary because the argument may be defined
+!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Compute_RTSolution_TL( &
+    Atmosphere   , &  ! FWD Input
+    Surface      , &  ! FWD Input
+    AtmOptics    , &  ! FWD Input
+    SfcOptics    , &  ! FWD Input
+    RTSolution   , &  ! FWD Input
+    Atmosphere_TL, &  ! TL Input
+    Surface_TL   , &  ! TL Input
+    AtmOptics_TL , &  ! TL Input
+    SfcOptics_TL , &  ! TL Input 
+    GeometryInfo , &  ! Input
+    SensorIndex  , &  ! Input
+    ChannelIndex , &  ! Input
+    RTSolution_TL, &  ! TL Output
+    RTV          ) &  ! Internal variable input
+  RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
+    TYPE(CRTM_AtmOptics_type),    INTENT(IN)     :: AtmOptics 
+    TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
+    TYPE(CRTM_RTSolution_type),   INTENT(IN)     :: RTSolution
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere_TL
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL 
+    TYPE(CRTM_AtmOptics_type),    INTENT(IN)     :: AtmOptics_TL
+    TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution_TL
+    TYPE(CRTM_RTVariables_type),  INTENT(IN)     :: RTV
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_RTSolution_TL'
+    ! Local variables
+    CHARACTER(256) :: Message 
+    INTEGER :: i, k, nZ
+    INTEGER :: no, na, nt
+    REAL(fp) :: u       ! COS( sensor zenith angle )
+    REAL(fp) :: Cosmic_Background_Radiance
+    LOGICAL  :: Is_Solar_Channel
+    REAL(fp) :: User_Emissivity_TL, Direct_Reflectivity_TL
+    REAL(fp)                                     :: Planck_Surface_TL    ! Surface TL radiance
+    REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_TL ! *LAYER* TL radiances
+
+    ! The following variables are RT model specific
+    REAL(fp), DIMENSION( MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
+                         Atmosphere%n_Layers ) :: Pff_TL ! Forward scattering TL phase matrix
+    REAL(fp), DIMENSION( MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
+                         Atmosphere%n_Layers ) :: Pbb_TL ! Backward scattering TL phase matrix
+    REAL(fp), DIMENSION( MAX_N_ANGLES ) :: Scattering_Radiance_TL
+    REAL(fp) :: Radiance_TL
+
+    ! ------
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    ! Short named local varibale copies
+    u  = ONE / GeometryInfo%Secant_Sensor_Zenith
+    nz = RTV%n_Angles
+    ! Set the sensor zenith angle index
+    SfcOptics_TL%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
+    ! Save the TL optical depth if required
+    IF ( CRTM_RTSolution_Associated( RTSolution_TL ) ) THEN
+      ! Shorter names for indexing
+      no = RTSolution_TL%n_Layers  ! Original no. of layers
+      na = RTV%n_Added_Layers      ! No. of added layers
+      nt = RTV%n_Layers            ! Current total no. of layers
+      ! Assign only the optical depth profile
+      ! defined by the user input layering
+      RTSolution_TL%Layer_Optical_Depth(1:no) = AtmOptics_TL%Optical_Depth(na+1:nt)
+    END IF
+    ! Required SpcCoeff components
+    Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
+    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
+
+
+    ! ---------------------------------------------------
+    ! Compute the tangent-linear phase matrix if required
+    ! ---------------------------------------------------
+    IF ( RTV%Scattering_RT ) THEN
+      CALL CRTM_Phase_Matrix_TL( &
+             AtmOptics,    & ! Input
+             AtmOptics_TL, & ! Input
+             Pff_TL,       & ! Output - TL forward scattering
+             Pbb_TL,       & ! Output - TL backward scattering
+             RTV           ) ! Internal variable
+    END IF
+
+
+    ! ---------------------------------------------------------------------
+    ! Assign the number of Stokes parameters. Currently, this is set to 1
+    ! for decoupled polarization between surface and atmosphere.
+    ! Remember for polarised microwave instruments, each frequency's Stokes
+    ! parameter is treated as a separate channel.
+    ! ---------------------------------------------------------------------
+    SfcOptics_TL%n_Stokes = 1
+
+    
+    ! ----------------------------------------------------
+    ! Assign the angles and weights to SfcOptics structure
+    ! ----------------------------------------------------
+    SfcOptics_TL%n_Angles = SfcOptics%n_Angles
+    SfcOptics_TL%Angle    = SfcOptics%Angle 
+    SfcOptics_TL%Weight   = SfcOptics%Weight
+
+
+    ! -----------------------------------------
+    ! Populate the SfcOptics_TL structure based
+    ! on FORWARD model SfcOptics Compute_Switch
+    ! -----------------------------------------
+    IF ( SfcOptics%Compute_Switch == SET ) THEN
+      Error_Status = CRTM_Compute_SfcOptics_TL( &
+                       Surface     , & ! Input
+                       SfcOptics   , & ! Input
+                       Surface_TL  , & ! Input
+                       GeometryInfo, & ! Input
+                       SensorIndex , & ! Input
+                       ChannelIndex, & ! Input
+                       SfcOptics_TL, & ! In/Output
+                       RTV%SOV       ) ! Internal variable input
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message,'("Error computing SfcOptics_TL for ",a," channel ",i0)' ) &
+               TRIM(SC(SensorIndex)%Sensor_Id), &
+               SC(SensorIndex)%Sensor_Channel(ChannelIndex)
+        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        RETURN
+      END IF
+    ELSE
+      IF( RTV%Scattering_RT ) THEN
+        ! Replicate the user emissivity for all angles
+        SfcOptics_TL%Reflectivity       = ZERO
+        User_Emissivity_TL              = SfcOptics_TL%Emissivity(1,1)
+        SfcOptics_TL%Emissivity(1,1)    = ZERO
+        Direct_Reflectivity_TL          = SfcOptics_TL%Direct_Reflectivity(1,1)/PI
+        SfcOptics_TL%Emissivity(1:nZ,1) = User_Emissivity_TL
+        ! Replicate the user reflectivities for all angles
+        SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity_TL
+        IF( RTV%Diffuse_Surface) THEN
+          DO i = 1, nZ 
+            SfcOptics_TL%Reflectivity(1:nZ, 1, i, 1) = -SfcOptics_TL%Emissivity(i,1)*SfcOptics%Weight(i)   
+          END DO
+        ELSE ! Specular surface
+          DO i = 1, nZ 
+            SfcOptics_TL%Reflectivity(i, 1, i, 1) = -SfcOptics_TL%Emissivity(i,1)
+          END DO
+        END IF
+      ELSE
+        User_Emissivity_TL = SfcOptics_TL%Emissivity(1,1)
+        SfcOptics_TL%Emissivity( SfcOptics%Index_Sat_Ang,1 ) = User_Emissivity_TL
+        SfcOptics_TL%Reflectivity(1,1,1,1) = - User_Emissivity_TL
+      END IF
+    END IF
+
+
+    ! ------------------------------------------------------------
+    ! Save the TL emissivity in the RTSolution_TL output structure
+    ! ------------------------------------------------------------
+    RTSolution_TL%Surface_Emissivity = SfcOptics_TL%Emissivity( SfcOptics_TL%Index_Sat_Ang, 1 )
+
+
+    ! -------------------------------------------
+    ! Compute the tangent-linear planck radiances
+    ! -------------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
+      ! Atmospheric layer TL radiances
+      DO k = 1, Atmosphere%n_Layers 
+        CALL CRTM_Planck_Radiance_TL( &
+               SensorIndex                 , & ! Input
+               ChannelIndex                , & ! Input
+               Atmosphere%Temperature(k)   , & ! Input
+               Atmosphere_TL%Temperature(k), & ! Input
+               Planck_Atmosphere_TL(k)       ) ! Output
+      END DO
+      ! Surface TL radiance
+      CALL CRTM_Planck_Radiance_TL( &
+             SensorIndex                     , & ! Input
+             ChannelIndex                    , & ! Input
+             SfcOptics%Surface_Temperature   , & ! Input
+             SfcOptics_TL%Surface_Temperature, & ! Input
+             Planck_Surface_TL                 ) ! Output
+    ELSE
+      Planck_Atmosphere_TL = ZERO
+      Planck_Surface_TL = ZERO
+    END IF
+
+
+    ! ---------------------------------------------
+    ! Perform the tangent-linear radiative transfer
+    ! ---------------------------------------------
+    ! Select the RT model
+    IF( RTV%Scattering_RT ) THEN
+
+
+      ! -----------------------------------------------------
+      ! Scattering RT. NESDIS advanced adding-doubling method 
+      ! -----------------------------------------------------
+      CALL CRTM_ADA_TL( &
+             Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
+             AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
+             AtmOptics%Asymmetry_Factor,               & ! Input, FWD layer asymmetry factor
+             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
+             Cosmic_Background_Radiance,               & ! cosmic background radiation
+             SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
+             SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, surface direct reflectivity
+             RTV,                                      & ! Input, structure containing forward results 
+             Planck_Atmosphere_TL,                     & ! Input, TL layer radiances
+             Planck_Surface_TL,                        & ! Input, TL surface radiance
+             AtmOptics_TL%Single_Scatter_Albedo,       & ! Input, TL layer single scattering albedo
+             AtmOptics_TL%Asymmetry_Factor,            & ! Input, TL layer asymmetry factor
+             AtmOptics_TL%Optical_Depth,               & ! Input, TL layer optical depth
+             SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
+             SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
+             SfcOptics_TL%Direct_Reflectivity(1:nZ,1), & ! Input, TL surface direct reflectivity
+             Pff_TL(1:nZ,1:(nZ+1),:),                  & ! Input, TL layer forward phase matrix
+             Pbb_TL(1:nZ,1:(nZ+1),:),                  & ! Input, TL layer backward phase matrix
+             Scattering_Radiance_TL(1:nZ)              ) ! Output, TL radiances
+      ! The output TL radiance for the sensor zenith angle
+      Radiance_TL = Scattering_Radiance_TL( SfcOptics%Index_Sat_Ang )
+
+    ELSE
+
+
+      ! -----------------
+      ! Emission model RT
+      ! -----------------
+      CALL CRTM_Emission_TL( &
+             Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
+             RTV%n_Angles,                             & ! Input, number of discrete zenith angles
+             u,                                        & ! Input, cosine of sensor zenith angle
+             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
+             RTV%Planck_Atmosphere,                    & ! Input, FWD layer radiances
+             RTV%Planck_Surface,                       & ! Input, FWD surface radiance
+             SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
+             SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
+             SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
+             RTV%Solar_Irradiance,                     & ! Input, Source irradiance at TOA
+             Is_Solar_Channel,                         & ! Input, Source sensitive channel info.
+             GeometryInfo%Source_Zenith_Radian,        & ! Input, Source zenith angle
+             RTV,                                      & ! Input, internal variables
+             AtmOptics_TL%Optical_Depth,               & ! Input, TL layer optical depth
+             Planck_Atmosphere_TL,                     & ! Input, TL layer radiances
+             Planck_Surface_TL,                        & ! Input, TL surface radiance
+             SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
+             SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
+             SfcOptics_TL%Direct_Reflectivity(1:nZ,1), & ! Input, TL surface reflectivity for a point source
+             Radiance_TL                               ) ! Output, TL radiances
+    END IF
+
+    ! accumulate Fourier component
+    RTSolution_TL%Radiance = RTSolution_TL%Radiance + Radiance_TL*  &
+       COS( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
+
+     
+    ! ---------------------------------------------------------------
+    ! Compute the corresponding tangent-linear brightness temperature
+    ! ---------------------------------------------------------------
+    IF( RTV%mth_Azi == 0 ) &
+      CALL CRTM_Planck_Temperature_TL( &
+             SensorIndex                        , & ! Input
+             ChannelIndex                       , & ! Input
+             RTSolution%Radiance                , & ! Input
+             RTSolution_TL%Radiance             , & ! Input
+             RTSolution_TL%Brightness_Temperature ) ! Output
+    
+  END FUNCTION CRTM_Compute_RTSolution_TL
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Compute_RTSolution_AD
+!
+! PURPOSE:
+!       Function to solve the adjoint radiative transfer equation.
+!
+! CALLING SEQUENCE:
+!      Error_Status = CRTM_Compute_RTSolution_AD( Atmosphere   , &  ! FWD Input
+!                                                 Surface      , &  ! FWD Input
+!                                                 AtmOptics    , &  ! FWD Input
+!                                                 SfcOptics    , &  ! FWD Input
+!                                                 RTSolution   , &  ! FWD Input
+!                                                 RTSolution_AD, &  ! AD Input
+!                                                 GeometryInfo , &  ! Input
+!                                                 SensorIndex  , &  ! Input
+!                                                 ChannelIndex , &  ! Input
+!                                                 Atmosphere_AD, &  ! AD Output
+!                                                 Surface_AD   , &  ! AD Output
+!                                                 AtmOptics_AD , &  ! AD Output
+!                                                 SfcOptics_AD , &  ! AD Output
+!                                                 RTVariables    )  ! Internal variable input
+!
+! INPUT ARGUMENTS:
+!       Atmosphere:     Structure containing the atmospheric state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       Surface:        Structure containing the surface state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Surface_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       AtmOptics:      Structure containing the combined atmospheric
+!                       optical properties for gaseous absorption, clouds,
+!                       and aerosols.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_AtmOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SfcOptics:      Structure containing the surface optical properties
+!                       data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SfcOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       RTSolution:     Structure containing the solution to the RT equation
+!                       for the given inputs.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       RTSolution_AD:  Structure containing the RT solution adjoint inputs. 
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       GeometryInfo:   Structure containing the view geometry data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_GeometryInfo_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SensorIndex:    Sensor index id. This is a unique index associated
+!                       with a (supported) sensor used to access the
+!                       shared coefficient data for a particular sensor.
+!                       See the ChannelIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:   Channel index id. This is a unique index associated
+!                       with a (supported) sensor channel used to access the
+!                       shared coefficient data for a particular sensor's
+!                       channel.
+!                       See the SensorIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       RTVariables:    Structure containing internal forward model variables
+!                       required for subsequent tangent-linear or adjoint model
+!                       calls. The contents of this structure are NOT accessible
+!                       outside of the CRTM_RTSolution module.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTVariables_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
+!
+! OUTPUT ARGUMENTS:
+!       Atmosphere_AD:  Structure containing the adjoint atmospheric
+!                       state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       Surface_AD:     Structure containing the adjoint surface state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Surface_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       AtmOptics_AD:   Structure containing the adjoint combined atmospheric
+!                       optical properties for gaseous absorption, clouds,
+!                       and aerosols.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_AtmOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+!       SfcOptics_AD:   Structure containing the adjoint surface optical
+!                       properties data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SfcOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT( IN OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:   The return value is an integer defining the error status
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the computation was sucessful
+!                          == FAILURE an unrecoverable error occurred
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+! COMMENTS:
+!       Note the INTENT on all of the adjoint arguments (whether input or output)
+!       is IN OUT rather than just OUT. This is necessary because the Input
+!       adjoint arguments are modified, and the Output adjoint arguments must
+!       be defined prior to entry to this routine. So, anytime a structure is
+!       to be output, to prevent memory leaks the IN OUT INTENT is a must.
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Compute_RTSolution_AD( &
+    Atmosphere   , &  ! FWD Input
+    Surface      , &  ! FWD Input
+    AtmOptics    , &  ! FWD Input
+    SfcOptics    , &  ! FWD Input
+    RTSolution   , &  ! FWD Input
+    RTSolution_AD, &  ! AD Input
+    GeometryInfo , &  ! Input
+    SensorIndex  , &  ! Input
+    ChannelIndex , &  ! Input
+    Atmosphere_AD, &  ! AD Output
+    Surface_AD   , &  ! AD Output
+    AtmOptics_AD , &  ! AD Output
+    SfcOptics_AD , &  ! AD Output
+    RTV          ) &  ! Internal variable input
+  RESULT( Error_Status )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
+    TYPE(CRTM_AtmOptics_type),    INTENT(IN)     :: AtmOptics
+    TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
+    TYPE(CRTM_RTSolution_type),   INTENT(IN)     :: RTSolution
+    TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution_AD
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: SensorIndex
+    INTEGER,                      INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN OUT) :: Atmosphere_AD
+    TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
+    TYPE(CRTM_AtmOptics_type),    INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
+    TYPE(CRTM_RTVariables_type),  INTENT(IN)     :: RTV
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_RTSolution_AD'
+    ! Local variables
+    CHARACTER(256) :: Message 
+    INTEGER :: i, k, nZ
+    INTEGER :: no, na, nt
+    REAL(fp) :: u       ! COS( sensor zenith angle )
+    REAL(fp) :: Cosmic_Background_Radiance
+    LOGICAL  :: Is_Solar_Channel
+    REAL(fp)                                     :: Planck_Surface_AD    ! Surface AD radiance
+    REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_AD ! *LAYER* AD radiances
+    REAL(fp) :: User_Emissivity_AD    ! Temporary adjoint variable for SfcOptics calcs.
+    ! The following variables are RT model specific
+    REAL(fp), DIMENSION( MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
+                         Atmosphere%n_Layers ) :: Pff_AD ! Forward scattering AD phase matrix
+    REAL(fp), DIMENSION( MAX_N_ANGLES, &
+                         MAX_N_ANGLES+1, &
+                         Atmosphere%n_Layers ) :: Pbb_AD ! Backward scattering AD phase matrix
+    REAL (fp),DIMENSION( MAX_N_ANGLES ) :: Scattering_Radiance_AD
+    REAL (fp) :: Radiance_AD
+
+    ! -----
+    ! Setup
+    ! -----
+    Error_Status = SUCCESS
+    ! Short named local copies
+    u  = ONE / GeometryInfo%Secant_Sensor_Zenith
+    nZ = RTV%n_Angles
+    ! Set the sensor zenith angle index
+    SfcOptics_AD%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
+    ! Required SpcCoeff components
+    Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
+    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
+    ! Initialise local adjoint variables
+    Planck_Surface_AD    = ZERO
+    Planck_Atmosphere_AD = ZERO
+    Radiance_AD = ZERO
+
+    ! ------------------------------------------
+    ! Compute the brightness temperature adjoint
+    ! ------------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
+      CALL CRTM_Planck_Temperature_AD( &
+             SensorIndex                         , & ! Input
+             ChannelIndex                        , & ! Input
+             RTSolution%Radiance                 , & ! Input
+             RTSolution_AD%Brightness_Temperature, & ! Input
+             Radiance_AD                           ) ! Output
+      RTSolution_AD%Brightness_Temperature = ZERO 
+    END IF
+
+    ! accumulate Fourier component
+    Radiance_AD = Radiance_AD + RTSolution_AD%Radiance * &
+         COS( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
+
+
+    ! --------------------------------------
+    ! Perform the adjoint radiative transfer
+    ! --------------------------------------
+    ! Select the RT model
+    IF( RTV%Scattering_RT ) THEN
+
+
+      ! -----------------------------------------------------
+      ! Scattering RT. NESDIS advanced adding-doubling method 
+      ! -----------------------------------------------------
+      ! Initialise the input adjoint radiance
+      Scattering_Radiance_AD = ZERO
+      Scattering_Radiance_AD( SfcOptics%Index_Sat_Ang ) = Radiance_AD
+!!      RTSolution_AD%Radiance = ZERO
+      ! Call the RT Solver
+      CALL CRTM_ADA_AD( &
+             Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
+             AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
+             AtmOptics%Asymmetry_Factor,               & ! Input, FWD layer asymmetry factor
+             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
+             Cosmic_Background_Radiance,               & ! Input, cosmic background radiation
+             SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
+             SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
+             RTV,                                      & ! In/Output, internal variables
+             Scattering_Radiance_AD(1:nZ),             & ! Input, AD radiances
+             Planck_Atmosphere_AD,                     & ! Output, AD layer radiances
+             Planck_Surface_AD,                        & ! Output, AD surface radiance
+             AtmOptics_AD%Single_Scatter_Albedo,       & ! Output, AD layer single scattering albedo
+             AtmOptics_AD%Asymmetry_Factor,            & ! Output, AD layer asymmetry factor
+             AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
+             SfcOptics_AD%Emissivity(1:nZ,1),          & ! Output, AD surface emissivity
+             SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1), & ! Output, AD surface reflectivity
+             SfcOptics_AD%Direct_Reflectivity(1:nZ,1), & ! Output, AD surface reflectivity for a point source
+             Pff_AD(1:nZ,1:(nZ+1),:),                  & ! Output, AD layer forward phase matrix
+             Pbb_AD(1:nZ,1:(nZ+1),:)                   ) ! Output, AD layer backward phase matrix
+
+    ELSE
+
+
+      ! -----------------
+      ! Emission model RT
+      ! -----------------
+      CALL CRTM_Emission_AD( &
+             Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
+             RTV%n_Angles,                             & ! Input, number of discrete zenith angles
+             u,                                        & ! Input, cosine of sensor zenith angle
+             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
+             RTV%Planck_Atmosphere,                    & ! Input, FWD layer radiances
+             RTV%Planck_Surface,                       & ! Input, FWD surface radiance
+             SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
+             SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
+             SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
+             RTV%Solar_Irradiance,                     & ! Input, Source irradiance at TOA
+             Is_Solar_Channel,                         & ! Input, Source sensitive channel info.
+             GeometryInfo%Source_Zenith_Radian,        & ! Input, Source zenith angle
+             RTV,                                      & ! Input, internal variables
+             Radiance_AD,                              & ! Input, AD radiance
+             AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
+             Planck_Atmosphere_AD,                     & ! Output, AD layer radiances
+             Planck_Surface_AD,                        & ! Output, AD surface radiance
+             SfcOptics_AD%Emissivity(1:nZ,1),          & ! Output, AD surface emissivity
+             SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1), & ! Output, AD surface reflectivity
+             SfcOptics_AD%Direct_Reflectivity(1:nZ,1)  ) ! Output, AD surface reflectivity for a point source
+    END IF
+
+
+
+    ! ------------------------------------
+    ! Compute the adjoint planck radiances
+    ! ------------------------------------
+    IF( RTV%mth_Azi == 0 ) THEN
+      ! Surface AD radiance
+      CALL CRTM_Planck_Radiance_AD( &
+             SensorIndex                    , & ! Input
+             ChannelIndex                   , & ! Input
+             SfcOptics%Surface_Temperature  , & ! Input
+             Planck_Surface_AD              , & ! Input
+             SfcOptics_AD%Surface_Temperature ) ! In/Output
+      Planck_Surface_AD = ZERO
+      ! Atmospheric layer AD radiances
+      DO k = 1, Atmosphere%n_Layers
+        CALL CRTM_Planck_Radiance_AD( &
+               SensorIndex                , & ! Input
+               ChannelIndex               , & ! Input
+               Atmosphere%Temperature(k)  , & ! Input
+               Planck_Atmosphere_AD(k)    , & ! Input
+               Atmosphere_AD%Temperature(k) ) ! In/Output
+        Planck_Atmosphere_AD(k) = ZERO
+      END DO
+    ELSE
+      Planck_Surface_AD = ZERO
+      Planck_Atmosphere_AD = ZERO
+    END IF
+
+
+    ! ---------------------------------------------------------------------
+    ! Assign the number of Stokes parameters. Currently, this is set to 1
+    ! for decoupled polarization between surface and atmosphere.
+    ! Remember for polarised microwave instruments, each frequency's Stokes
+    ! parameter is treated as a separate channel.
+    ! ---------------------------------------------------------------------
+    SfcOptics_AD%n_Stokes = 1
+
+    
+    ! ----------------------------------------------------
+    ! Assign the angles and weights to SfcOptics structure
+    ! ----------------------------------------------------
+    SfcOptics_AD%n_Angles = SfcOptics%n_Angles
+    SfcOptics_AD%Angle    = SfcOptics%Angle 
+    SfcOptics_AD%Weight   = SfcOptics%Weight
+
+
+    ! --------------------------------------------------------------------------------
+    ! This part is designed for specific requirement for the total sensitivity
+    ! of emissivity. The requirement is regardless whether having user input or not.
+    ! Therefore, this part is common part with/without optional input.
+    ! The outputs of CRTM_Compute_RTSolution are the partial derivative
+    ! of emissivity and reflectivity. Since SfcOptics_AD is used as input only in 
+    ! CRTM_Compute_SfcOptics_AD, the total sensitivity of the emissivity is taken into
+    ! account for here.
+    ! --------------------------------------------------------------------------------
+    IF( RTV%Scattering_RT ) THEN
+      User_Emissivity_AD = ZERO
+      IF( RTV%Diffuse_Surface) THEN
+        DO i = nZ, 1, -1
+          User_Emissivity_AD = User_Emissivity_AD - &
+            (SUM(SfcOptics_AD%Reflectivity(1:nZ,1,i,1))*SfcOptics%Weight(i))
+        END DO
+      ELSE ! Specular surface
+        DO i = nZ, 1, -1
+          User_Emissivity_AD = User_Emissivity_AD - SfcOptics_AD%Reflectivity(i,1,i,1)
+        END DO
+      END IF
+!      Direct_Reflectivity_AD = SUM(SfcOptics_AD%Direct_Reflectivity(1:nZ,1))
+!      SfcOptics_AD%Direct_Reflectivity(1,1) = SfcOptics_AD%Direct_Reflectivity(1,1) +
+!                                              (Direct_Reflectivity_AD/PI)
+      RTSolution_AD%Surface_Emissivity = User_Emissivity_AD
+    ELSE
+      RTSolution_AD%Surface_Emissivity = SfcOptics_AD%Emissivity(SfcOptics_AD%Index_Sat_Ang,1) - &
+                                         SfcOptics_AD%Reflectivity(1,1,1,1)
+    END IF
+
+
+    ! -----------------------------------------
+    ! Populate the SfcOptics_AD structure based
+    ! on FORWARD model SfcOptics Compute_Switch
+    ! -----------------------------------------
+    IF ( SfcOptics%Compute_Switch == SET ) THEN
+      Error_Status = CRTM_Compute_SfcOptics_AD( &
+                       Surface     , & ! Input
+                       SfcOptics   , & ! Input
+                       SfcOptics_AD, & ! Input
+                       GeometryInfo, & ! Input
+                       SensorIndex , & ! Input
+                       ChannelIndex, & ! Input
+                       Surface_AD  , & ! In/Output
+                       RTV%SOV       ) ! Internal variable input
+      IF ( Error_Status /= SUCCESS ) THEN
+        WRITE( Message,'("Error computing SfcOptics_AD for ",a," channel ",i0)' ) &
+               TRIM(SC(SensorIndex)%Sensor_Id), &
+               SC(SensorIndex)%Sensor_Channel(ChannelIndex)
+        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        RETURN
+      END IF
+    END IF
+
+
+
+    ! --------------------------------------------
+    ! Compute the adjoint phase matrix if required
+    ! --------------------------------------------
+    IF ( RTV%Scattering_RT ) THEN
+      CALL CRTM_Phase_Matrix_AD( &
+             AtmOptics,    &  ! Input - FWD
+             Pff_AD,       &  ! Input - AD forward scattering
+             Pbb_AD,       &  ! Input - AD backward scattering
+             AtmOptics_AD, &  ! Output - AD
+             RTV           )  ! Internal variable
+    END IF
+
+
+    ! ------------------------------------------
+    ! Save the adjoint optical depth if required
+    ! ------------------------------------------
+    IF ( CRTM_RTSolution_Associated( RTSolution_AD ) ) THEN
+      ! Shorter names for indexing
+      no = RTSolution_AD%n_Layers  ! Original no. of layers
+      na = RTV%n_Added_Layers      ! No. of added layers
+      nt = RTV%n_Layers            ! Current total no. of layers
+      ! Assign only the optical depth profile
+      ! defined by the user input layering
+      RTSolution_AD%Layer_Optical_Depth(1:no) = AtmOptics_AD%Optical_Depth(na+1:nt)
+    END IF
+
+  END FUNCTION CRTM_Compute_RTSolution_AD
+
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Compute_n_Streams
+!
+! PURPOSE:
+!       Function to compute the number of streams required for subsequent
+!       radiative transfer calculations
+!
+! CALLING SEQUENCE:
+!       nStreams = CRTM_Compute_n_Streams( Atmosphere,   &  ! Input
+!                                          SensorIndex,  &  ! Input
+!                                          ChannelIndex, &  ! Input
+!                                          RTSolution    )  ! Output
+!
+! INPUT ARGUMENTS:
+!       Atmosphere:     Structure containing the atmospheric state data.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_Atmosphere_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SensorIndex:    Sensor index id. This is a unique index associated
+!                       with a (supported) sensor used to access the
+!                       shared coefficient data for a particular sensor.
+!                       See the ChannelIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       ChannelIndex:   Channel index id. This is a unique index associated
+!                       with a (supported) sensor channel used to access the
+!                       shared coefficient data for a particular sensor's
+!                       channel.
+!                       See the SensorIndex argument.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT ARGUMENTS:
+!       RTSolution:     Structure containing the scattering flag to be set
+!                       for the RT calcs.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_RTSolution_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! FUNCTION RESULT:
+!       nStreams:       The number of RT streams required to perform radiative
+!                       transfer in a scattering atmosphere.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Compute_nStreams( &
+    Atmosphere  , &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    RTSolution  ) &  ! Output
+  RESULT( nStreams )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere
+    INTEGER,                    INTENT(IN)     :: SensorIndex
+    INTEGER,                    INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
+    ! Function result
+    INTEGER :: nStreams
+    ! Local variables
+    REAL(fp) :: maxReff, Reff, MieParameter
+    INTEGER :: n
+    
+    ! Set up
+    nStreams = 0
+    RTSolution%n_full_Streams = nStreams
+    RTSolution%Scattering_FLAG = .FALSE.
+
+    ! If no clouds and no aerosols, no scattering, so return
+    IF ( Atmosphere%n_Clouds   == 0 .AND. &
+         Atmosphere%n_Aerosols == 0       ) RETURN
+    
+    ! Determine the maximum cloud particle size
+    maxReff = ZERO
+    DO n = 1, Atmosphere%n_Clouds
+      Reff = MAXVAL(Atmosphere%Cloud(n)%Effective_Radius)
+      IF( Reff > maxReff) maxReff = Reff
+    END DO
+    DO n = 1, Atmosphere%n_Aerosols
+      Reff = MAXVAL(Atmosphere%Aerosol(n)%Effective_Radius)
+      IF( Reff > maxReff) maxReff = Reff
+    END DO
+
+    ! Compute the Mie parameter, 2.pi.Reff/lambda
+    MieParameter = TWO * PI * maxReff * SC(SensorIndex)%Wavenumber(ChannelIndex)/10000.0_fp
+    
+    ! Determine the number of streams based on Mie parameter
+    IF ( MieParameter < 0.01_fp ) THEN
+      nStreams = 2
+    ELSE IF( MieParameter < ONE ) THEN
+      nStreams = 4
+    ELSE
+      nStreams = 6
+    END IF
+
+    ! Set RTSolution scattering info
+    RTSolution%Scattering_Flag = .TRUE.
+    RTSolution%n_full_Streams  = nStreams + 2
+
+  END FUNCTION CRTM_Compute_nStreams
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_RTSolution_Version
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RTSolution_Version( Id )
+!
+! OUTPUT ARGUMENTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_RTSolution_Version( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_RTSolution_Version
 
 
 !################################################################################
@@ -1906,21 +3371,15 @@ CONTAINS
      RETURN
 
      END SUBROUTINE CRTM_AMOM_layer_AD
-!
-!
+
+
 !--------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Phase_Matrix
 !
 ! PURPOSE:
 !       Subroutine to calculate the phase function for the scattering model.
-!
-! CATEGORY:
-!       CRTM : RT Solution
-!
-! LANGUAGE:
-!       Fortran-95
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_Phase_Matrix( AtmOptics,  &  ! Input
@@ -1930,7 +3389,7 @@ CONTAINS
 !       AtmOptics:      Structure containing the atmospheric optical
 !                       parameters
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
+!                       TYPE:       CRTM_AtmOptics_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -1943,9 +3402,6 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
 ! OUTPUT ARGUMENTS:
 !       RTVariables:    Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
@@ -1954,17 +3410,7 @@ CONTAINS
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_RTVariables_type
 !                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       There is no argument checking or structure allocation performed in
-!       this subroutine.
+!                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
 !       Note that the INTENT on the RTVariables argument is IN OUT as it 
@@ -1974,37 +3420,13 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Phase_Matrix( AtmOptics, &  ! Input
-                                RTV        )  ! Internal variable
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  SUBROUTINE CRTM_Phase_Matrix( &
+    AtmOptics, &  ! Input
+    RTV        )  ! Internal variable
     ! Arguments
-    ! ---------
-
-    ! Inputs
-    TYPE(CRTM_AtmScatter_type),  INTENT(IN)     :: AtmOptics
-
-    ! Internal variable
+    TYPE(CRTM_AtmOptics_type),   INTENT(IN)     :: AtmOptics
     TYPE(CRTM_RTVariables_type), INTENT(IN OUT) :: RTV
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Phase_Matrix'
-
-
-    ! ---------------
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, j, k, l, ifac, jn
 
 
@@ -2016,17 +3438,24 @@ CONTAINS
     !#--------------------------------------------------------------------------#
 
     DO i = 1, RTV%n_Angles 
-       CALL Legendre_M(RTV%mth_Azi,AtmOptics%n_Legendre_Terms, RTV%COS_Angle(i), RTV%Pleg(0:,i) )
+       CALL Legendre_M( RTV%mth_Azi               , &
+                        AtmOptics%n_Legendre_Terms, &
+                        RTV%COS_Angle(i)          , &
+                        RTV%Pleg(0:,i)              )
     END DO
 
     IF(RTV%Solar_Flag_true) &
-    CALL Legendre_M(RTV%mth_Azi,AtmOptics%n_Legendre_Terms, RTV%COS_SUN, RTV%Pleg(0:,RTV%n_Angles+1) )
+      CALL Legendre_M( RTV%mth_Azi                , &
+                       AtmOptics%n_Legendre_Terms , &
+                       RTV%COS_SUN                , &
+                       RTV%Pleg(0:,RTV%n_Angles+1)  )
 
     IF( RTV%Solar_Flag_true ) THEN
       jn = RTV%n_Angles + 1
     ELSE
       jn = RTV%n_Angles
     END IF
+
 
     !#--------------------------------------------------------------------------#
     !#                    -- COMPUTE THE PHASE MATRICES --                      #
@@ -2078,19 +3507,13 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Phase_Matrix_TL
 !
 ! PURPOSE:
 !       Subroutine to calculate the tangent-linear phase function for the
 !       scattering model.
-!
-! CATEGORY:
-!       CRTM : RT Solution                                                 
-!
-! LANGUAGE:
-!       Fortran-95                                                         
 !
 ! CALLING SEQUENCE:                                                        
 !       CALL CRTM_Phase_Matrix_TL( AtmOptics,    &  ! FWD Input
@@ -2103,14 +3526,14 @@ CONTAINS
 !       AtmOptics:      Structure containing the atmospheric optical         
 !                       parameters                                         
 !                       UNITS:      N/A                                    
-!                       TYPE:       CRTM_AtmScatter_type                     
+!                       TYPE:       CRTM_AtmOptics_type                     
 !                       DIMENSION:  Scalar                                 
 !                       ATTRIBUTES: INTENT(IN)                             
 !
 !       AtmOptics_TL:   Structure containing the tangent-linear atmospheric  
 !                       optical parameters                                 
 !                       UNITS:      N/A                                    
-!                       TYPE:       CRTM_AtmScatter_type                     
+!                       TYPE:       CRTM_AtmOptics_type                     
 !                       DIMENSION:  Scalar                                 
 !                       ATTRIBUTES: INTENT(IN)                             
 !
@@ -2122,9 +3545,6 @@ CONTAINS
 !                       TYPE:       CRTM_RTVariables_type                    
 !                       DIMENSION:  Scalar                                 
 !                       ATTRIBUTES: INTENT(IN)                             
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
 !
 ! OUTPUT ARGUMENTS:
 !       Pff_TL:         Array containing the tangent-linear of the 
@@ -2141,58 +3561,21 @@ CONTAINS
 !                       DIMENSION:  Rank-3, n_Angles x n_Angles x n_Layers
 !                       ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       There is no argument checking or structure allocation performed in
-!       this subroutine.
-!
-!S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Phase_Matrix_TL( AtmOptics,    &  ! FWD Input
-                                   AtmOptics_TL, &  ! TL  Input
-                                   Pff_TL,       &  ! TL Output
-                                   Pbb_TL,       &  ! TL Output
-                                   RTV           )  ! Internal variable
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  SUBROUTINE CRTM_Phase_Matrix_TL( &
+    AtmOptics,    &  ! FWD Input
+    AtmOptics_TL, &  ! TL  Input
+    Pff_TL,       &  ! TL Output
+    Pbb_TL,       &  ! TL Output
+    RTV           )  ! Internal variable
     ! Arguments
-    ! ---------
-
-    ! Inputs
-    TYPE(CRTM_AtmScatter_type),          INTENT(IN) :: AtmOptics
-    TYPE(CRTM_AtmScatter_type),          INTENT(IN) :: AtmOptics_TL
-
-    ! Outputs
-    REAL(fp), DIMENSION( :, :, : ), INTENT(OUT) :: Pff_TL ! n_Angles x n_Angles x n_Layers
-    REAL(fp), DIMENSION( :, :, : ), INTENT(OUT) :: Pbb_TL ! n_Angles x n_Angles x n_Layers
-
-    ! Internal variable
-    TYPE(CRTM_RTVariables_type),         INTENT(IN)  :: RTV
-
-    
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Phase_Matrix_TL'
-
-
-    ! ---------------
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)  :: AtmOptics
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)  :: AtmOptics_TL
+    REAL(fp)                   , INTENT(OUT) :: Pff_TL(:,:,:) ! n_Angles x n_Angles x n_Layers
+    REAL(fp)                   , INTENT(OUT) :: Pbb_TL(:,:,:) ! n_Angles x n_Angles x n_Layers
+    TYPE(CRTM_RTVariables_type), INTENT(IN)  :: RTV
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, j, k, l, nZ, ifac, jn
     REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles+1) :: Lff, Lbb
 
@@ -2236,28 +3619,29 @@ CONTAINS
               
             ! For intensity, the FWD phase matrix element must >= ZERO
             ! so the TL form is always == zero.
-          IF ( RTV%mth_Azi == 0 ) THEN
-            IF ( RTV%Off(i,j,k) < ZERO ) THEN
-              Pff_TL(i,j,k) = ZERO
-              Lff(i,j)      = PHASE_THRESHOLD 
-            END IF
+            IF ( RTV%mth_Azi == 0 ) THEN
+              IF ( RTV%Off(i,j,k) < ZERO ) THEN
+                Pff_TL(i,j,k) = ZERO
+                Lff(i,j)      = PHASE_THRESHOLD 
+              END IF
 
-            IF ( RTV%Obb(i,j,k) < ZERO ) THEN
-              Pbb_TL(i,j,k) = ZERO
-              Lbb(i,j) = PHASE_THRESHOLD 
+              IF ( RTV%Obb(i,j,k) < ZERO ) THEN
+                Pbb_TL(i,j,k) = ZERO
+                Lbb(i,j) = PHASE_THRESHOLD 
+              END IF
             END IF
-          END IF
              
           END DO
         END DO
 
         IF ( RTV%mth_Azi == 0 ) THEN
-        ! Normalisation for energy conservation
-          CALL Normalize_Phase_TL( k, RTV, &
-                                 Lff,           & ! FWD Input
-                                 Lbb,           & ! FWD Input
-                                 Pff_TL(:,:,k), & ! TL  Output
-                                 Pbb_TL(:,:,k)  ) ! TL  Output
+          ! Normalisation for energy conservation
+          CALL Normalize_Phase_TL( &
+                 k, RTV, &
+                 Lff,           & ! FWD Input
+                 Lbb,           & ! FWD Input
+                 Pff_TL(:,:,k), & ! TL  Output
+                 Pbb_TL(:,:,k)  ) ! TL  Output
         END IF
       END IF Significant_Scattering
     
@@ -2267,19 +3651,13 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!
 ! NAME:
 !       CRTM_Phase_Matrix_AD
 !
 ! PURPOSE:
 !       Subroutine to calculate the adjoint of the phase function for the
 !       scattering model.
-!
-! CATEGORY:
-!       CRTM : RT Solution
-!
-! LANGUAGE:
-!       Fortran-95
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_Phase_Matrix_AD( AtmOptics,    &  ! FWD Input
@@ -2292,7 +3670,7 @@ CONTAINS
 !       AtmOptics:      Structure containing the atmospheric optical
 !                       parameters
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
+!                       TYPE:       CRTM_AtmOptics_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -2323,26 +3701,13 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
 ! OUTPUT ARGUMENTS:
 !       AtmOptics_AD:   Structure containing the adjoint atmospheric optical
 !                       parameters
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
+!                       TYPE:       CRTM_AtmOptics_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       There is no argument checking or structure allocation performed in
-!       this subroutine.
 !
 ! COMMENTS:
 !       Note the INTENT on the output AtmOptics argument is IN OUT rather than
@@ -2353,45 +3718,19 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Phase_Matrix_AD( AtmOptics,    &  ! FWD Input
-                                   Pff_AD,       &  ! AD Input
-                                   Pbb_AD,       &  ! AD Input
-                                   AtmOptics_AD, &  ! AD Output
-                                   RTV           )  ! Internal variable
- 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  SUBROUTINE CRTM_Phase_Matrix_AD( &
+    AtmOptics,    &  ! FWD Input
+    Pff_AD,       &  ! AD Input
+    Pbb_AD,       &  ! AD Input
+    AtmOptics_AD, &  ! AD Output
+    RTV           )  ! Internal variable
     ! Arguments
-    ! ---------
-
-    ! Inputs
-    TYPE(CRTM_AtmScatter_type),          INTENT(IN)     :: AtmOptics
-    REAL(fp), DIMENSION( :, :, : ), INTENT(IN OUT) :: Pff_AD ! n_Angles x n_Angles x n_Layers
-    REAL(fp), DIMENSION( :, :, : ), INTENT(IN OUT) :: Pbb_AD ! n_Angles x n_Angles x n_Layers
-
-    ! Outputs
-    TYPE(CRTM_AtmScatter_type),          INTENT(IN OUT) :: AtmOptics_AD
-
-    ! Internal variable
-    TYPE(CRTM_RTVariables_type),         INTENT(IN)     :: RTV
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Phase_Matrix_AD'
-
-
-    ! ---------------
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: AtmOptics
+    REAL(fp)                   , INTENT(IN OUT) :: Pff_AD(:,:,:) ! n_Angles x n_Angles x n_Layers
+    REAL(fp)                   , INTENT(IN OUT) :: Pbb_AD(:,:,:) ! n_Angles x n_Angles x n_Layers
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(CRTM_RTVariables_type), INTENT(IN)     :: RTV
     ! Local variables
-    ! ---------------
-
     INTEGER :: i, j, k, l, nZ, ifac, jn
     REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles+1) :: Lff, Lbb
 
@@ -2425,41 +3764,42 @@ CONTAINS
         Lff(1:nZ,1:jn) = RTV%Off(1:nZ,1:jn,k)
         Lbb(1:nZ,1:jn) = RTV%Obb(1:nZ,1:jn,k)
 
-      IF ( RTV%mth_Azi == 0 ) THEN              
-        DO j = 1, jn
-          DO i = 1, RTV%n_Angles
-         
-            ! For intensity, the FWD phase matrix element must >= ZERO
-            ! so the TL, and thus the AD, for is always == zero.
-
-              IF ( RTV%Off(i,j,k) < ZERO) Lff(i,j) = PHASE_THRESHOLD
-              IF ( RTV%Obb(i,j,k) < ZERO) Lbb(i,j) = PHASE_THRESHOLD
+        IF ( RTV%mth_Azi == 0 ) THEN              
+          DO j = 1, jn
+            DO i = 1, RTV%n_Angles
            
-          END DO
-        END DO
+              ! For intensity, the FWD phase matrix element must >= ZERO
+              ! so the TL, and thus the AD, for is always == zero.
 
-        CALL Normalize_Phase_AD(k, RTV, &
-                                Lff, Lbb,      & ! FWD Input
-                                Pff_AD(:,:,k), & ! AD  Output
-                                Pbb_AD(:,:,k)  ) ! AD  Output
-      END IF
+                IF ( RTV%Off(i,j,k) < ZERO) Lff(i,j) = PHASE_THRESHOLD
+                IF ( RTV%Obb(i,j,k) < ZERO) Lbb(i,j) = PHASE_THRESHOLD
+             
+            END DO
+          END DO
+
+          CALL Normalize_Phase_AD( &
+                 k, RTV, &
+                 Lff, Lbb,      & ! FWD Input
+                 Pff_AD(:,:,k), & ! AD  Output
+                 Pbb_AD(:,:,k)  ) ! AD  Output
+        END IF
 
         DO j = 1, jn
           DO i = 1, RTV%n_Angles
          
             ! For intensity, the FWD phase matrix element must >= ZERO
             ! so the TL, and thus the AD, for is always == zero.
-          IF ( RTV%mth_Azi == 0 ) THEN
-            IF ( RTV%Off(i,j,k) < ZERO) Pff_AD(i,j,k) = ZERO
-            IF ( RTV%Obb(i,j,k) < ZERO) Pbb_AD(i,j,k) = ZERO
-          END IF
+            IF ( RTV%mth_Azi == 0 ) THEN
+              IF ( RTV%Off(i,j,k) < ZERO) Pff_AD(i,j,k) = ZERO
+              IF ( RTV%Obb(i,j,k) < ZERO) Pbb_AD(i,j,k) = ZERO
+            END IF
 
             DO l = RTV%mth_Azi, AtmOptics%n_Legendre_Terms - 1
-               ifac = (-1) ** (l - RTV%mth_Azi)
-               AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
-                                                       ( Pff_AD(i,j,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j) )
-               AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
-                                                       ( Pbb_AD(i,j,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j)*ifac ) 
+              ifac = (-1) ** (l - RTV%mth_Azi)
+              AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
+                                                      ( Pff_AD(i,j,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j) )
+              AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
+                                                      ( Pbb_AD(i,j,k)*RTV%Pleg(l,i)*RTV%Pleg(l,j)*ifac ) 
             END DO
 
             Pff_AD(i,j,k) = ZERO
@@ -2473,40 +3813,34 @@ CONTAINS
     END DO Layer_Loop
 
   END SUBROUTINE CRTM_Phase_Matrix_AD
-!
+
 
   SUBROUTINE Normalize_Phase( k, RTV )
-    INTEGER,                       INTENT(IN)     :: k
+    ! Arguments
+    INTEGER,                     INTENT(IN)     :: k
     TYPE(CRTM_RTVariables_type), INTENT(IN OUT) :: RTV
-    INTEGER :: i,j, nZ                                           
+    ! Local variables
+    INTEGER :: i, j, nZ                                           
 
     nZ = RTV%n_Angles
 
-
-    ! -------------------------------
     ! Normalisation for stream angles
-    ! -------------------------------
-
     RTV%Sum_Fac(0,k)=ZERO
-
     DO i = 1, RTV%n_Streams
       RTV%n_Factor(i,k)=ZERO
       DO j = i,nZ
         RTV%n_Factor(i,k)=RTV%n_Factor(i,k)+(RTV%Pff(i,j,k)+RTV%Pbb(i,j,k))*RTV%COS_Weight(j)
       END DO
-
       DO j=i,nZ
         RTV%Pff(i,j,k)=RTV%Pff(i,j,k)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))
         RTV%Pbb(i,j,k)=RTV%Pbb(i,j,k)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))
       END DO
-      
       RTV%Sum_Fac(i,k)=ZERO
       IF( i < nZ ) THEN
         DO j=i+1,nZ
           RTV%Pff(j,i,k)=RTV%Pff(i,j,k)
           RTV%Pbb(j,i,k)=RTV%Pbb(i,j,k)
         END DO
-      
         DO j = 1, i
           RTV%Sum_Fac(i,k)=RTV%Sum_Fac(i,k) + (RTV%Pff(i+1,j,k)+RTV%Pbb(i+1,j,k))*RTV%COS_Weight(j)
         END DO
@@ -2516,19 +3850,14 @@ CONTAINS
     IF( RTV%n_Streams < nZ ) THEN 
       ! Sensor viewing angle differs from the Gaussian angles
       RTV%n_Factor(nZ,k) =  RTV%Sum_Fac(nZ-1,k)
-
       DO j = 1, nZ
         RTV%Pff(j,nZ,k) = RTV%Pff(j,nZ,k)/RTV%n_Factor(nZ,k)
         RTV%Pbb(j,nZ,k) = RTV%Pbb(j,nZ,k)/RTV%n_Factor(nZ,k)
-
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
+        ! Symmetric condition
         IF( j < nZ ) THEN
           RTV%Pff(nZ,j,k) = RTV%Pff(j,nZ,k)
           RTV%Pbb(nZ,j,k) = RTV%Pbb(j,nZ,k)
         END IF
-        
       END DO      
     END IF
 
@@ -2536,47 +3865,38 @@ CONTAINS
 
 
   SUBROUTINE Normalize_Phase_TL( k, RTV, Pff, Pbb, Pff_TL, Pbb_TL )
-    INTEGER,                           INTENT(IN)     :: k
-    TYPE(CRTM_RTVariables_type),     INTENT(IN)     :: RTV
-    REAL(fp), DIMENSION( :,: ), INTENT(IN)     :: Pff, Pbb
-    REAL(fp), DIMENSION( :,: ), INTENT(IN OUT) :: Pff_TL, Pbb_TL
+    ! Arguments
+    INTEGER                    , INTENT(IN)     :: k
+    TYPE(CRTM_RTVariables_type), INTENT(IN)     :: RTV
+    REAL(fp)                   , INTENT(IN)     :: Pff(:,:)
+    REAL(fp)                   , INTENT(IN)     :: Pbb(:,:)
+    REAL(fp)                   , INTENT(IN OUT) :: Pff_TL(:,:)
+    REAL(fp)                   , INTENT(IN OUT) :: Pbb_TL(:,:)
+    ! Local variables
     REAL(fp) :: n_Factor_TL
-    
-    REAL(fp), DIMENSION( 0: RTV%n_Angles ) :: Sum_Fac_TL
-
-    INTEGER :: i,j, nZ                                           
+    REAL(fp) :: Sum_Fac_TL(0:RTV%n_Angles)
+    INTEGER :: i, j, nZ                                           
 
     nZ = RTV%n_Angles
- 
 
-    ! -------------------------------
     ! Normalisation for stream angles
-    ! -------------------------------
-
     Sum_Fac_TL(0) = ZERO
-
     DO i = 1, RTV%n_Streams
       n_Factor_TL = ZERO
       DO j = i,nZ
         n_Factor_TL=n_Factor_TL+(Pff_TL(i,j)+Pbb_TL(i,j))*RTV%COS_Weight(j)
       END DO
-
       DO j=i,nZ
-      
-        Pff_TL(i,j)=Pff_TL(i,j)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))  &
-                   -Pff(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k)*n_Factor_TL*(ONE-RTV%Sum_Fac(i-1,k))  &
-                   -Pff(i,j)/RTV%n_Factor(i,k)*Sum_Fac_TL(i-1)
+        Pff_TL(i,j) = Pff_TL(i,j)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k)) - &
+                      Pff(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k)*n_Factor_TL*(ONE-RTV%Sum_Fac(i-1,k)) - &
+                      Pff(i,j)/RTV%n_Factor(i,k)*Sum_Fac_TL(i-1)
         
-        Pbb_TL(i,j)=Pbb_TL(i,j)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))  &
-                   -Pbb(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k)*n_Factor_TL*(ONE-RTV%Sum_Fac(i-1,k))  &
-                   -Pbb(i,j)/RTV%n_Factor(i,k)*Sum_Fac_TL(i-1)
-
+        Pbb_TL(i,j) = Pbb_TL(i,j)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k)) - &
+                      Pbb(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k)*n_Factor_TL*(ONE-RTV%Sum_Fac(i-1,k)) - &
+                      Pbb(i,j)/RTV%n_Factor(i,k)*Sum_Fac_TL(i-1)
       END DO
-
       Sum_Fac_TL(i)=ZERO
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
+      ! Symmetric condition
       IF( i < nZ ) THEN
         DO j = i+1, nZ
           Pff_TL(j,i) = Pff_TL(i,j)
@@ -2591,93 +3911,69 @@ CONTAINS
     IF( RTV%n_Streams < nZ ) THEN 
       ! Sensor viewing angle differs from the Gaussian angles
       n_Factor_TL = Sum_Fac_TL(nZ-1)
-
       DO j = 1, nZ
-      
-        Pff_TL(j,nZ) = Pff_TL(j,nZ)/RTV%n_Factor(nZ,k)  &
-                     - Pff(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL
+        Pff_TL(j,nZ) = Pff_TL(j,nZ)/RTV%n_Factor(nZ,k) - &
+                       Pff(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL
                      
-        Pbb_TL(j,nZ) = Pbb_TL(j,nZ)/RTV%n_Factor(nZ,k)  &
-                     - Pbb(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL             
-
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
+        Pbb_TL(j,nZ) = Pbb_TL(j,nZ)/RTV%n_Factor(nZ,k) - &
+                       Pbb(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*n_Factor_TL             
+        ! Symmetric condition
         IF( j < nZ ) THEN
-        Pff_TL(nZ,j) = Pff_TL(j,nZ)
-        Pbb_TL(nZ,j) = Pbb_TL(j,nZ)
+          Pff_TL(nZ,j) = Pff_TL(j,nZ)
+          Pbb_TL(nZ,j) = Pbb_TL(j,nZ)
         END IF
-        
       END DO
-      
     END IF
-                     
 
   END SUBROUTINE Normalize_Phase_TL
 
 
   SUBROUTINE Normalize_Phase_AD( k, RTV, Pff, Pbb, Pff_AD, Pbb_AD )
-    INTEGER,                           INTENT(IN)     :: k
-    TYPE(CRTM_RTVariables_type),     INTENT(IN)     :: RTV
-    REAL(fp), DIMENSION( :,: ), INTENT(IN)     :: Pff, Pbb
-    REAL(fp), DIMENSION( :,: ), INTENT(IN OUT) :: Pff_AD, Pbb_AD
-
-    INTEGER :: i,j, nZ                                           
+    ! Arguments
+    INTEGER                    , INTENT(IN)     :: k
+    TYPE(CRTM_RTVariables_type), INTENT(IN)     :: RTV
+    REAL(fp)                   , INTENT(IN)     :: Pff(:,:)
+    REAL(fp)                   , INTENT(IN)     :: Pbb(:,:)
+    REAL(fp)                   , INTENT(IN OUT) :: Pff_AD(:,:)
+    REAL(fp)                   , INTENT(IN OUT) :: Pbb_AD(:,:)
+    ! Local variables
+    INTEGER :: i, j, nZ                                           
     REAL(fp) :: n_Factor_AD
-    REAL(fp), DIMENSION( 0: RTV%n_Angles ) :: Sum_Fac_AD
+    REAL(fp) :: Sum_Fac_AD(0:RTV%n_Angles)
 
 
     nZ = RTV%n_Angles
     Sum_Fac_AD = ZERO
 
-    
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
-
     n_Factor_AD = ZERO
-
     IF( RTV%n_Streams < nZ ) THEN 
       ! Sensor viewing angle diffs from the Gaussian angles
-      
       DO j = nZ, 1, -1
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
+        ! Symmetric condition
         IF( j < nZ ) THEN
           Pff_AD(j,nZ) = Pff_AD(j,nZ) + Pff_AD(nZ,j)
           Pff_AD(nZ,j) = ZERO
           Pbb_AD(j,nZ) = Pbb_AD(j,nZ) + Pbb_AD(nZ,j)
           Pbb_AD(nZ,j) = ZERO
         END IF
-      
+
         n_Factor_AD = n_Factor_AD - Pff(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*Pff_AD(j,nZ)
         Pff_AD(j,nZ) = Pff_AD(j,nZ)/RTV%n_Factor(nZ,k)
-                     
+
         n_Factor_AD = n_Factor_AD - Pbb(j,nZ)/RTV%n_Factor(nZ,k)/RTV%n_Factor(nZ,k)*Pbb_AD(j,nZ)
         Pbb_AD(j,nZ) = Pbb_AD(j,nZ)/RTV%n_Factor(nZ,k)             
-        
       END DO   
-
       Sum_Fac_AD(nZ-1) = n_Factor_AD      
       n_Factor_AD = ZERO
-
     END IF
     
     DO i = RTV%n_Streams, 1, -1 
- 
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
+      ! Symmetric condition
       IF( i < nZ ) THEN
         DO j = i, 1, -1       
           Pbb_AD(j,i+1) = Pbb_AD(j,i+1) + Sum_Fac_AD(i)*RTV%COS_Weight(j)
           Pff_AD(j,i+1) = Pff_AD(j,i+1) + Sum_Fac_AD(i)*RTV%COS_Weight(j)        
         END DO
-        
-    ! -------------------
-    ! Symmetric condition
-    ! -------------------
         DO j = nZ,i+1,-1
           Pff_AD(i,j) = Pff_AD(i,j) + Pff_AD(j,i)
           Pff_AD(j,i) = ZERO
@@ -2685,1494 +3981,25 @@ CONTAINS
           Pbb_AD(j,i) = ZERO
         END DO
       END IF
-       
       Sum_Fac_AD(i) = ZERO
-    
       DO j = nZ, i, -1
-      
         Sum_Fac_AD(i-1) = Sum_Fac_AD(i-1) - Pbb(i,j)/RTV%n_Factor(i,k)*Pbb_AD(i,j)
-        n_Factor_AD = n_Factor_AD -Pbb(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k) &
-                    * Pbb_AD(i,j)*(ONE-RTV%Sum_Fac(i-1,k))
+        n_Factor_AD = n_Factor_AD -Pbb(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k) * &
+                      Pbb_AD(i,j)*(ONE-RTV%Sum_Fac(i-1,k))
         Pbb_AD(i,j) = Pbb_AD(i,j)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))
         
         Sum_Fac_AD(i-1) = Sum_Fac_AD(i-1) - Pff(i,j)/RTV%n_Factor(i,k)*Pff_AD(i,j)
-        n_Factor_AD = n_Factor_AD -Pff(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k) &
-                    * Pff_AD(i,j)*(ONE-RTV%Sum_Fac(i-1,k))
+        n_Factor_AD = n_Factor_AD -Pff(i,j)/RTV%n_Factor(i,k)/RTV%n_Factor(i,k) * &
+                      Pff_AD(i,j)*(ONE-RTV%Sum_Fac(i-1,k))
         Pff_AD(i,j) = Pff_AD(i,j)/RTV%n_Factor(i,k)*(ONE-RTV%Sum_Fac(i-1,k))
-        
       END DO
-         
       DO j = nZ, i, -1
-        
         Pbb_AD(i,j) = Pbb_AD(i,j) + n_Factor_AD*RTV%COS_Weight(j)
         Pff_AD(i,j) = Pff_AD(i,j) + n_Factor_AD*RTV%COS_Weight(j)
-        
       END DO
-      
       n_Factor_AD = ZERO
-
     END DO    
-    
     Sum_Fac_AD(0) = ZERO
- 
   END SUBROUTINE Normalize_Phase_AD
-
-
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Compute_RTSolution
-!
-! PURPOSE:
-!       Function to solve the radiative transfer equation.
-!
-! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_RTSolution( Atmosphere            , &  ! Input
-!                                               Surface               , &  ! Input
-!                                               AtmOptics             , &  ! Input
-!                                               SfcOptics             , &  ! Input
-!                                               GeometryInfo          , &  ! Input
-!                                               SensorIndex           , &  ! Input
-!                                               ChannelIndex          , &  ! Input
-!                                               RTSolution            , &  ! Output
-!                                               RTVariables           , &  ! Internal variable output
-!                                               Message_Log=Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:     Structure containing the atmospheric state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Atmosphere_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Surface:        Structure containing the surface state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Surface_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       AtmOptics:      Structure containing the combined atmospheric
-!                       optical properties for gaseous absorption, clouds,
-!                       and aerosols.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SfcOptics:      Structure containing the surface optical properties
-!                       data. Argument is defined as INTENT (IN OUT ) as
-!                       different RT algorithms may compute the surface
-!                       optics properties before this routine is called.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_SfcOptics_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       GeometryInfo:   Structure containing the view geometry data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_GeometryInfo_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SensorIndex:    Sensor index id. This is a unique index associated
-!                       with a (supported) sensor used to access the
-!                       shared coefficient data for a particular sensor.
-!                       See the ChannelIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       ChannelIndex:   Channel index id. This is a unique index associated
-!                       with a (supported) sensor channel used to access the
-!                       shared coefficient data for a particular sensor's
-!                       channel.
-!                       See the SensorIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL Input ARGUMENTS
-!       Message_Log:    Character string specifying a filename in which any
-!                       messages will be logged. If not specified, or if an
-!                       error occurs opening the log file, the default action
-!                       is to output messages to standard output.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution:     Structure containing the soluition to the RT equation
-!                       for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTSolution_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       RTVariables:    Structure containing internal variables required for
-!                       subsequent tangent-linear or adjoint model calls.
-!                       The contents of this structure are NOT accessible
-!                       outside of the CRTM_RTSolution module.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the Message_Handler module.
-!                       If == SUCCESS the computation was sucessful
-!                          == FAILURE an unrecoverable error occurred
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output RTSolution argument is IN OUT rather than
-!       just OUT. This is necessary because the argument is defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_Compute_RTSolution( Atmosphere  , &  ! Input
-                                    Surface     , &  ! Input
-                                    AtmOptics   , &  ! Input
-                                    SfcOptics   , &  ! Input
-                                    GeometryInfo, &  ! Input
-                                    SensorIndex , &  ! Input
-                                    ChannelIndex, &  ! Input
-                                    RTSolution  , &  ! Output
-                                    RTV         , &  ! Internal variable output
-                                    Message_Log ) &  ! Error messaging
-                                  RESULT ( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
-    TYPE(CRTM_AtmScatter_type),   INTENT(IN)     :: AtmOptics 
-    TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: SensorIndex
-    INTEGER,                      INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution
-    TYPE(CRTM_RTVariables_type),  INTENT(IN OUT) :: RTV
-    CHARACTER(*),       OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_RTSolution'
-    ! Local variables
-    CHARACTER(256) :: Message 
-    INTEGER :: i, k, nZ
-    INTEGER :: no, na, nt
-    REAL(fp) :: u       ! COS( sensor zenith angle )
-    REAL(fp) :: Factor  ! SfcOptics quadrature weights normalisation factor
-    REAL(fp) :: User_Emissivity, Direct_Reflectivity
-    REAL(fp) :: Cosmic_Background_Radiance
-    REAL(fp) :: Radiance
-    INTEGER  :: Sensor_Type
-    LOGICAL  :: Is_Solar_Channel
-
-    ! ------
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    ! Short named local copies
-    u = ONE / GeometryInfo%Secant_Sensor_Zenith
-    ! Populate the RTV structure
-    RTV%n_Added_Layers = Atmosphere%n_Added_Layers
-    RTV%n_Layers       = Atmosphere%n_Layers
-    RTV%n_Streams      = RTSolution%n_Full_Streams/2
-    ! Save the optical depth if required
-    IF ( ASSOCIATED( RTSolution%Layer_Optical_Depth ) ) THEN
-      ! Shorter names for indexing
-      no = RTSolution%n_Layers  ! Original no. of layers
-      na = RTV%n_Added_Layers   ! No. of added layers
-      nt = RTV%n_Layers         ! Current total no. of layers
-      ! Assign only the optical depth profile
-      ! defined by the user input layering
-      RTSolution%Layer_Optical_Depth(1:no) = AtmOptics%Optical_Depth(na+1:nt)
-    END IF
-    ! Required SpcCoeff components
-    Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Sensor_Type                = SC(SensorIndex)%Sensor_Type
-    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
-    RTV%COS_SUN                = cos(GeometryInfo%Source_Zenith_Radian)
-    RTV%Solar_Irradiance       = SC(SensorIndex)%Solar_Irradiance(ChannelIndex) * GeometryInfo%AU_ratio2
-   
-    ! Determine the surface emission behavior
-    !   By default, surface is SPECULAR.
-    !   If IR sensor AND water coverage < 50%, surface is DIFFUSE
-    RTV%Diffuse_Surface = .FALSE.
-    IF( Sensor_Type == INFRARED_SENSOR .AND. Surface%Water_Coverage < 0.5_fp) &
-      RTV%Diffuse_Surface = .TRUE.
-
-
-    ! -------------------------------------------
-    ! Determine the quadrature angles and weights
-    ! -------------------------------------------
-    ! Default is to assume scattering RT
-    RTV%Scattering_RT = .FALSE.
-
-    ! Check for scattering conditions
-    Determine_Stream_Angles: IF( RTSolution%Scattering_FLAG .AND. &
-                                 MAXVAL(AtmOptics%Single_Scatter_Albedo) >= SCATTERING_ALBEDO_THRESHOLD ) THEN 
-
-      ! --------------------------
-      ! Set the scattering RT flag
-      ! --------------------------
-      RTV%Scattering_RT = .TRUE.
-
-
-      ! ---------------------------------------
-      ! Compute the Gaussian angles and weights
-      ! ---------------------------------------
-      CALL Double_Gauss_Quadrature( RTV%n_Streams, RTV%COS_Angle, RTV%COS_Weight )
-
-
-      ! ----------------------------------------------------------------
-      ! Is an additional stream required for the satellite zenith angle?
-      ! That is, is the satellite zenith angle sufficiently different
-      ! from the stream angles?
-      ! ----------------------------------------------------------------
-      ! Search for a matching angle
-      DO i = 1, RTV%n_Streams
-        IF( ABS( RTV%COS_Angle(i) - u ) < ANGLE_THRESHOLD ) THEN
-          SfcOptics%Index_Sat_Ang = i         ! Identify the sensor zenith angle
-          RTV%n_Angles = RTV%n_Streams
-          GO TO 100
-        END IF
-      END DO
-
-      ! No match found, so flag an additional
-      ! spot for the satellite zenith angle
-      RTV%n_Angles = RTV%n_Streams + 1
-      SfcOptics%Index_Sat_Ang = RTV%n_Angles      ! Identify the sensor zenith angle
-      RTV%COS_Angle( RTV%n_Angles )  = u
-      RTV%COS_Weight( RTV%n_Angles ) = ZERO
-
-      100 CONTINUE
-
-
-      ! ------------------------
-      ! Compute the phase matrix
-      ! ------------------------
-      CALL CRTM_Phase_Matrix( AtmOptics, & ! Input
-                              RTV        ) ! Internal variable
-
-
-    ELSE IF( RTV%Diffuse_Surface) THEN
-
-      ! ------------------
-      ! Lambertian surface
-      ! ------------------
-      ! The default diffusivity angle
-      RTV%n_Streams       = 1
-      RTV%COS_Angle( 1 )  = ONE/SECANT_DIFFUSIVITY
-      RTV%COS_Weight( 1 ) = ONE
-      ! The satellite zenith angle
-      RTV%n_Angles                   = RTV%n_Streams + 1
-      SfcOptics%Index_Sat_Ang        = RTV%n_Angles      ! Identify the sensor zenith angle
-      RTV%COS_Angle( RTV%n_Angles )  = u
-      RTV%COS_Weight( RTV%n_Angles ) = ZERO
-
-
-    ELSE
-
-      ! ----------------
-      ! Specular surface
-      ! ----------------
-      RTV%n_Streams = 0
-      RTV%n_Angles  = 1
-      RTV%COS_Angle( RTV%n_Angles ) = u
-      SfcOptics%Index_Sat_Ang       = RTV%n_Angles
-
-    END IF Determine_Stream_Angles
-
-
-    ! -------------------------------------------------
-    ! Copy the RTV angles to a short name for use below
-    ! -------------------------------------------------
-    nZ = RTV%n_Angles
-
-
-    ! ---------------------------------------------------------------------
-    ! Assign the number of Stokes parameters. Currently, this is set to 1
-    ! for decoupled polarization between surface and atmosphere.
-    ! Remember for polarised microwave instruments, each frequency's Stokes
-    ! parameter is treated as a separate channel.
-    ! ---------------------------------------------------------------------
-    SfcOptics%n_Stokes = 1
-
-    
-    ! ----------------------------------------------------
-    ! Assign the angles and weights to SfcOptics structure
-    ! ----------------------------------------------------
-    SfcOptics%n_Angles = RTV%n_Angles
-    Factor = ZERO
-    DO i = 1, nZ
-      SfcOptics%Angle(i)  = ACOS( RTV%COS_Angle(i) ) / DEGREES_TO_RADIANS
-      SfcOptics%Weight(i) = RTV%COS_Angle(i) * RTV%COS_Weight(i)
-      ! Compute the weight normalisation factor
-      Factor = Factor + SfcOptics%Weight(i)
-    END DO
-    ! Normalise the quadrature weights                                               
-    IF( Factor > ZERO) SfcOptics%Weight(1:nZ) = SfcOptics%Weight(1:nZ) / Factor
-
-
-    ! --------------------------------
-    ! Populate the SfcOptics structure
-    ! --------------------------------
-    IF ( SfcOptics%Compute_Switch == SET ) THEN
-      Error_Status = CRTM_Compute_SfcOptics( Surface               , & ! Input
-                                             GeometryInfo          , & ! Input
-                                             SensorIndex           , & ! Input
-                                             ChannelIndex          , & ! Input
-                                             SfcOptics             , & ! In/Output
-                                             RTV%SOV               , & ! Internal variable output
-                                             Message_Log=Message_Log ) ! Error messaging
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error computing SfcOptics for ",a," channel ",i0)' ) &
-                        TRIM(SC(SensorIndex)%Sensor_Id), &
-                        SC(SensorIndex)%Sensor_Channel(ChannelIndex)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-
-    ELSE
-
-      IF( RTV%Scattering_RT ) THEN
-        ! Replicate the user emissivity for all angles
-        SfcOptics%Reflectivity = ZERO
-        User_Emissivity = SfcOptics%Emissivity(1,1)
-        SfcOptics%Emissivity(1,1) = ZERO
-        Direct_Reflectivity = SfcOptics%Direct_Reflectivity(1,1)/PI
-        SfcOptics%Emissivity(1:nZ,1) = User_Emissivity
-        ! Replicate the user reflectivities for all angles
-        SfcOptics%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity
-        IF( RTV%Diffuse_Surface) THEN
-          DO i = 1, nZ 
-            SfcOptics%Reflectivity(1:nZ, 1, i, 1) = (ONE-SfcOptics%Emissivity(i,1))*SfcOptics%Weight(i)   
-          END DO
-        ELSE ! Specular surface
-          DO i = 1, nZ 
-            SfcOptics%Reflectivity(i, 1, i, 1) = (ONE-SfcOptics%Emissivity(i,1))
-          END DO
-        END IF
-      ELSE
-        User_Emissivity = SfcOptics%Emissivity(1,1)
-        SfcOptics%Emissivity( SfcOptics%Index_Sat_Ang,1 ) = User_Emissivity
-        SfcOptics%Reflectivity(1,1,1,1) = ONE - User_Emissivity
-      END IF
-
-    END IF
-
-
-    ! ------------------------------------------------------
-    ! Save the emissivity in the RTSolution output structure
-    ! ------------------------------------------------------
-    RTSolution%Surface_Emissivity = SfcOptics%Emissivity( SfcOptics%Index_Sat_Ang, 1 )
-
-
-    ! ------------------------
-    ! Compute Planck radiances
-    ! ------------------------
-    ! Atmospheric layer radiances
-    IF( RTV%mth_Azi == 0 ) THEN
-      DO k = 1, Atmosphere%n_Layers 
-        CALL CRTM_Planck_Radiance( SensorIndex              , & ! Input
-                                 ChannelIndex             , & ! Input
-                                 Atmosphere%Temperature(k), & ! Input
-                                 RTV%Planck_Atmosphere(k)   ) ! Output
-      END DO
-    ! Surface radiance
-      CALL CRTM_Planck_Radiance( SensorIndex                  , & ! Input
-                               ChannelIndex                 , & ! Input
-                               SfcOptics%Surface_Temperature, & ! Input
-                               RTV%Planck_Surface             ) ! Output
-    ELSE
-      RTV%Planck_Atmosphere = ZERO
-      RTV%Planck_Surface = ZERO
-    END IF
-
-
-    ! ------------------------------
-    ! Perform the radiative transfer
-    ! ------------------------------
-    ! Select the RT model
-    IF( RTV%Scattering_RT ) THEN
-
-      ! -----------------------------------------------------
-      ! Scattering RT. NESDIS advanced adding-doubling method 
-      ! -----------------------------------------------------
-      CALL CRTM_ADA( Atmosphere%n_Layers                       , & ! Input, number of atmospheric layers
-                     AtmOptics%Single_Scatter_Albedo           , & ! Input, layer single scattering albedo
-                     AtmOptics%Asymmetry_Factor                , & ! Input, layer asymmetry factor
-                     AtmOptics%Optical_Depth                   , & ! Input, layer optical depth
-                     Cosmic_Background_Radiance                , & ! Input, cosmic background radiation
-                     SfcOptics%Emissivity( 1:nZ, 1 )           , & ! Input, surface emissivity
-                     SfcOptics%Reflectivity( 1:nZ, 1, 1:nZ, 1 ), & ! Input, surface reflectivity
-                     SfcOptics%Direct_Reflectivity(1:nZ,1)     , & ! Input, surface reflectivity for a point source
-                     RTV                                         ) ! Output, Internal variables
-      ! The output radiance
-      Radiance = RTV%s_Level_Rad_UP( SfcOptics%Index_Sat_Ang, 0 )
- 
-    ELSE
-
-
-      ! -----------------
-      ! Emission model RT
-      ! -----------------
-      CALL CRTM_Emission( Atmosphere%n_Layers,                   & ! Input, number of atmospheric layers
-                          RTV%n_Angles,                          & ! Input, number of discrete zenith angles
-                          RTV%Diffuse_Surface,                   & ! Input, surface behavior
-                          u,                                     & ! Input, cosine of sensor zenith angle
-                          AtmOptics%Optical_Depth,               & ! Input, layer optical depth
-                          RTV%Planck_Atmosphere,                 & ! Input, layer radiances
-                          RTV%Planck_Surface,                    & ! Input, surface radiance
-                          SfcOptics%Emissivity(1:nZ,1),          & ! Input, surface emissivity
-                          SfcOptics%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, surface reflectivity                
-                          SfcOptics%Direct_Reflectivity(1:nZ,1), & ! Input, surface reflectivity for a point source
-                          Cosmic_Background_Radiance,            & ! Input, cosmic background radiation 
-                          RTV%Solar_Irradiance,                  & ! Input, Source irradiance at TOA
-                          Is_Solar_Channel,                      & ! Input, Source sensitive channel info.
-                          GeometryInfo%Source_Zenith_Radian,     & ! Input, Source zenith angle
-                          RTV                                    ) ! Output, Internal variables
-      ! The output radiance
-      Radiance = RTV%e_Level_Rad_UP(0)
-
-      ! Other emission-only output
-      RTSolution%Up_Radiance             = RTV%Up_Radiance
-      RTSolution%Down_Radiance           = RTV%e_Level_Rad_DOWN(Atmosphere%n_Layers)
-      RTSolution%Down_Solar_Radiance     = RTV%Down_Solar_Radiance
-      RTSolution%Surface_Planck_Radiance = RTV%Planck_Surface
-      IF ( ASSOCIATED( RTSolution%Upwelling_Radiance ) ) THEN
-        ! Shorter names for indexing
-        no = RTSolution%n_Layers  ! Original no. of layers
-        na = RTV%n_Added_Layers   ! No. of added layers
-        nt = RTV%n_Layers         ! Current total no. of layers
-        ! Assign only the upwelling radiance profile
-        ! defined by the user input layering
-        RTSolution%Upwelling_Radiance(1:no) = RTV%e_Level_Rad_UP(na+1:nt)
-      END IF
-    END IF
- 
-    ! accumulate Fourier component
-    RTSolution%Radiance = RTSolution%Radiance + Radiance*  &
-       cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
-
-    ! ------------------------------------------------
-    ! Compute the corresponding brightness temperature
-    ! ------------------------------------------------
-    IF( RTV%mth_Azi == 0 ) THEN
-    CALL CRTM_Planck_Temperature( SensorIndex,                      & ! Input
-                                  ChannelIndex,                     & ! Input
-                                  RTSolution%Radiance,              & ! Input
-                                  RTSolution%Brightness_Temperature ) ! Output
-    END IF
-
-  END FUNCTION CRTM_Compute_RTSolution
-
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Compute_RTSolution_TL
-!
-! PURPOSE:
-!       Function to solve the tangent-linear radiative transfer equation.
-!
-! CALLING SEQUENCE:
-!      Error_Status = CRTM_Compute_RTSolution_TL( Atmosphere            , &  ! FWD Input
-!                                                 Surface               , &  ! FWD Input
-!                                                 AtmOptics             , &  ! FWD Input
-!                                                 SfcOptics             , &  ! FWD Input
-!                                                 RTSolution            , &  ! FWD Input
-!                                                 Atmosphere_TL         , &  ! TL Input
-!                                                 Surface_TL            , &  ! TL Input
-!                                                 AtmOptics_TL          , &  ! TL Input
-!                                                 SfcOptics_TL          , &  ! TL Input 
-!                                                 GeometryInfo          , &  ! Input
-!                                                 SensorIndex           , &  ! Input
-!                                                 ChannelIndex          , &  ! Input
-!                                                 RTSolution_TL         , &  ! TL Output
-!                                                 RTVariables           , &  ! Internal variable input
-!                                                 Message_Log=Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:     Structure containing the atmospheric state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Atmosphere_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Surface:        Structure containing the surface state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Surface_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       AtmOptics:      Structure containing the combined atmospheric
-!                       optical properties for gaseous absorption, clouds,
-!                       and aerosols.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SfcOptics:      Structure containing the surface optical properties
-!                       data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_SfcOptics_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       RTSolution:     Structure containing the solution to the RT equation
-!                       for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTSolution_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Atmosphere_TL:  Structure containing the tangent-linear atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Atmosphere_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Surface_TL:     Structure containing the tangent-linear surface state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Surface_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       AtmOptics_TL:   Structure containing the tangent-linear atmospheric  
-!                       optical properties.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SfcOptics_TL:   Structure containing the tangent-linear surface optical
-!                       properties. Argument is defined as INTENT (IN OUT ) as
-!                       different RT algorithms may compute the surface optics
-!                       properties before this routine is called.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_SfcOptics_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN OUT)
-!
-!       GeometryInfo:   Structure containing the view geometry data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_GeometryInfo_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SensorIndex:    Sensor index id. This is a unique index associated
-!                       with a (supported) sensor used to access the
-!                       shared coefficient data for a particular sensor.
-!                       See the ChannelIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       ChannelIndex:   Channel index id. This is a unique index associated
-!                       with a (supported) sensor channel used to access the
-!                       shared coefficient data for a particular sensor's
-!                       channel.
-!                       See the SensorIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       RTVariables:    Structure containing internal forward model variables
-!                       required for subsequent tangent-linear or adjoint model
-!                       calls. The contents of this structure are NOT accessible
-!                       outside of the CRTM_RTSolution module.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:    Character string specifying a filename in which any
-!                       messages will be logged. If not specified, or if an
-!                       error occurs opening the log file, the default action
-!                       is to output messages to standard output.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution_TL:  Structure containing the solution to the tangent-linear
-!                       RT equation for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTSolution_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status
-!                       The error codes are defined in the Message_Handler module.
-!                       If == SUCCESS the computation was sucessful
-!                          == FAILURE an unrecoverable error occurred
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output RTSolution_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_Compute_RTSolution_TL( Atmosphere   , &  ! FWD Input
-                                       Surface      , &  ! FWD Input
-                                       AtmOptics    , &  ! FWD Input
-                                       SfcOptics    , &  ! FWD Input
-                                       RTSolution   , &  ! FWD Input
-                                       Atmosphere_TL, &  ! TL Input
-                                       Surface_TL   , &  ! TL Input
-                                       AtmOptics_TL , &  ! TL Input
-                                       SfcOptics_TL , &  ! TL Input 
-                                       GeometryInfo , &  ! Input
-                                       SensorIndex  , &  ! Input
-                                       ChannelIndex , &  ! Input
-                                       RTSolution_TL, &  ! TL Output
-                                       RTV          , &  ! Internal variable input
-                                       Message_Log  ) &  ! Error messaging
-                                     RESULT ( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
-    TYPE(CRTM_AtmScatter_type),   INTENT(IN)     :: AtmOptics 
-    TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
-    TYPE(CRTM_RTSolution_type),   INTENT(IN)     :: RTSolution
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere_TL
-    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL 
-    TYPE(CRTM_AtmScatter_type),   INTENT(IN)     :: AtmOptics_TL
-    TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: SensorIndex
-    INTEGER,                      INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution_TL
-    TYPE(CRTM_RTVariables_type),  INTENT(IN)     :: RTV
-    CHARACTER(*),       OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_RTSolution_TL'
-    ! Local variables
-    CHARACTER(256) :: Message 
-    INTEGER :: i, k, nZ
-    INTEGER :: no, na, nt
-    REAL(fp) :: u       ! COS( sensor zenith angle )
-    REAL(fp) :: Cosmic_Background_Radiance
-    LOGICAL  :: Is_Solar_Channel
-    REAL(fp) :: User_Emissivity_TL, Direct_Reflectivity_TL
-    REAL(fp)                                     :: Planck_Surface_TL    ! Surface TL radiance
-    REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_TL ! *LAYER* TL radiances
-
-    ! The following variables are RT model specific
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES+1, &
-                         Atmosphere%n_Layers ) :: Pff_TL ! Forward scattering TL phase matrix
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES+1, &
-                         Atmosphere%n_Layers ) :: Pbb_TL ! Backward scattering TL phase matrix
-    REAL(fp), DIMENSION( MAX_N_ANGLES ) :: Scattering_Radiance_TL
-    REAL(fp) :: Radiance_TL
-
-    ! ------
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    ! Short named local varibale copies
-    u  = ONE / GeometryInfo%Secant_Sensor_Zenith
-    nz = RTV%n_Angles
-    ! Set the sensor zenith angle index
-    SfcOptics_TL%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
-    ! Save the TL optical depth if required
-    IF ( ASSOCIATED( RTSolution_TL%Layer_Optical_Depth ) ) THEN
-      ! Shorter names for indexing
-      no = RTSolution_TL%n_Layers  ! Original no. of layers
-      na = RTV%n_Added_Layers      ! No. of added layers
-      nt = RTV%n_Layers            ! Current total no. of layers
-      ! Assign only the optical depth profile
-      ! defined by the user input layering
-      RTSolution_TL%Layer_Optical_Depth(1:no) = AtmOptics_TL%Optical_Depth(na+1:nt)
-    END IF
-    ! Required SpcCoeff components
-    Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
-
-
-    ! ---------------------------------------------------
-    ! Compute the tangent-linear phase matrix if required
-    ! ---------------------------------------------------
-    IF ( RTV%Scattering_RT ) THEN
-      CALL CRTM_Phase_Matrix_TL( AtmOptics,    & ! Input
-                                 AtmOptics_TL, & ! Input
-                                 Pff_TL,       & ! Output - TL forward scattering
-                                 Pbb_TL,       & ! Output - TL backward scattering
-                                 RTV           ) ! Internal variable
-    END IF
-
-
-    ! ---------------------------------------------------------------------
-    ! Assign the number of Stokes parameters. Currently, this is set to 1
-    ! for decoupled polarization between surface and atmosphere.
-    ! Remember for polarised microwave instruments, each frequency's Stokes
-    ! parameter is treated as a separate channel.
-    ! ---------------------------------------------------------------------
-    SfcOptics_TL%n_Stokes = 1
-
-    
-    ! ----------------------------------------------------
-    ! Assign the angles and weights to SfcOptics structure
-    ! ----------------------------------------------------
-    SfcOptics_TL%n_Angles = SfcOptics%n_Angles
-    SfcOptics_TL%Angle    = SfcOptics%Angle 
-    SfcOptics_TL%Weight   = SfcOptics%Weight
-
-
-    ! -----------------------------------------
-    ! Populate the SfcOptics_TL structure based
-    ! on FORWARD model SfcOptics Compute_Switch
-    ! -----------------------------------------
-    IF ( SfcOptics%Compute_Switch == SET ) THEN
-      Error_Status = CRTM_Compute_SfcOptics_TL( Surface     , & ! Input
-                                                SfcOptics   , & ! Input
-                                                Surface_TL  , & ! Input
-                                                GeometryInfo, & ! Input
-                                                SensorIndex , & ! Input
-                                                ChannelIndex, & ! Input
-                                                SfcOptics_TL, & ! In/Output
-                                                RTV%SOV     , & ! Internal variable input
-                                                Message_Log=Message_Log ) ! Error messaging
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error computing SfcOptics_TL for ",a," channel ",i0)' ) &
-                        TRIM(SC(SensorIndex)%Sensor_Id), &
-                        SC(SensorIndex)%Sensor_Channel(ChannelIndex)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    ELSE
-      IF( RTV%Scattering_RT ) THEN
-        ! Replicate the user emissivity for all angles
-        SfcOptics_TL%Reflectivity       = ZERO
-        User_Emissivity_TL              = SfcOptics_TL%Emissivity(1,1)
-        SfcOptics_TL%Emissivity(1,1)    = ZERO
-        Direct_Reflectivity_TL          = SfcOptics_TL%Direct_Reflectivity(1,1)/PI
-        SfcOptics_TL%Emissivity(1:nZ,1) = User_Emissivity_TL
-        ! Replicate the user reflectivities for all angles
-        SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity_TL
-        IF( RTV%Diffuse_Surface) THEN
-          DO i = 1, nZ 
-            SfcOptics_TL%Reflectivity(1:nZ, 1, i, 1) = -SfcOptics_TL%Emissivity(i,1)*SfcOptics%Weight(i)   
-          END DO
-        ELSE ! Specular surface
-          DO i = 1, nZ 
-            SfcOptics_TL%Reflectivity(i, 1, i, 1) = -SfcOptics_TL%Emissivity(i,1)
-          END DO
-        END IF
-      ELSE
-        User_Emissivity_TL = SfcOptics_TL%Emissivity(1,1)
-        SfcOptics_TL%Emissivity( SfcOptics%Index_Sat_Ang,1 ) = User_Emissivity_TL
-        SfcOptics_TL%Reflectivity(1,1,1,1) = - User_Emissivity_TL
-      END IF
-    END IF
-
-
-    ! ------------------------------------------------------------
-    ! Save the TL emissivity in the RTSolution_TL output structure
-    ! ------------------------------------------------------------
-    RTSolution_TL%Surface_Emissivity = SfcOptics_TL%Emissivity( SfcOptics_TL%Index_Sat_Ang, 1 )
-
-
-    ! -------------------------------------------
-    ! Compute the tangent-linear planck radiances
-    ! -------------------------------------------
-    
-    IF( RTV%mth_Azi == 0 ) THEN
-    ! Atmospheric layer TL radiances
-      DO k = 1, Atmosphere%n_Layers 
-        CALL CRTM_Planck_Radiance_TL( SensorIndex                 , & ! Input
-                                    ChannelIndex                , & ! Input
-                                    Atmosphere%Temperature(k)   , & ! Input
-                                    Atmosphere_TL%Temperature(k), & ! Input
-                                    Planck_Atmosphere_TL(k)       ) ! Output
-      END DO
-    ! Surface TL radiance
-      CALL CRTM_Planck_Radiance_TL( SensorIndex                     , & ! Input
-                                  ChannelIndex                    , & ! Input
-                                  SfcOptics%Surface_Temperature   , & ! Input
-                                  SfcOptics_TL%Surface_Temperature, & ! Input
-                                  Planck_Surface_TL                 ) ! Output
-    ELSE
-      Planck_Atmosphere_TL = ZERO
-      Planck_Surface_TL = ZERO
-    END IF
-
-
-    ! ---------------------------------------------
-    ! Perform the tangent-linear radiative transfer
-    ! ---------------------------------------------
-    ! Select the RT model
-    IF( RTV%Scattering_RT ) THEN
-
-
-      ! -----------------------------------------------------
-      ! Scattering RT. NESDIS advanced adding-doubling method 
-      ! -----------------------------------------------------
-      CALL CRTM_ADA_TL( Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
-                        AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
-                        AtmOptics%Asymmetry_Factor,               & ! Input, FWD layer asymmetry factor
-                        AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
-                        Cosmic_Background_Radiance,               & ! cosmic background radiation
-                        SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
-                        SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, surface direct reflectivity
-                        RTV,                                      & ! Input, structure containing forward results 
-                        Planck_Atmosphere_TL,                     & ! Input, TL layer radiances
-                        Planck_Surface_TL,                        & ! Input, TL surface radiance
-                        AtmOptics_TL%Single_Scatter_Albedo,       & ! Input, TL layer single scattering albedo
-                        AtmOptics_TL%Asymmetry_Factor,            & ! Input, TL layer asymmetry factor
-                        AtmOptics_TL%Optical_Depth,               & ! Input, TL layer optical depth
-                        SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
-                        SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
-                        SfcOptics_TL%Direct_Reflectivity(1:nZ,1), & ! Input, TL surface direct reflectivity
-                        Pff_TL(1:nZ,1:(nZ+1),:),                      & ! Input, TL layer forward phase matrix
-                        Pbb_TL(1:nZ,1:(nZ+1),:),                      & ! Input, TL layer backward phase matrix
-                        Scattering_Radiance_TL(1:nZ)              ) ! Output, TL radiances
-      ! The output TL radiance for the sensor zenith angle
-      Radiance_TL = Scattering_Radiance_TL( SfcOptics%Index_Sat_Ang )
-
-    ELSE
-
-
-      ! -----------------
-      ! Emission model RT
-      ! -----------------
-      CALL CRTM_Emission_TL( Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
-                             RTV%n_Angles,                             & ! Input, number of discrete zenith angles
-                             u,                                        & ! Input, cosine of sensor zenith angle
-                             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
-                             RTV%Planck_Atmosphere,                    & ! Input, FWD layer radiances
-                             RTV%Planck_Surface,                       & ! Input, FWD surface radiance
-                             SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
-                             SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
-                             SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
-                             RTV%Solar_Irradiance,                     & ! Input, Source irradiance at TOA
-                             Is_Solar_Channel,                         & ! Input, Source sensitive channel info.
-                             GeometryInfo%Source_Zenith_Radian,        & ! Input, Source zenith angle
-                             RTV,                                      & ! Input, internal variables
-                             AtmOptics_TL%Optical_Depth,               & ! Input, TL layer optical depth
-                             Planck_Atmosphere_TL,                     & ! Input, TL layer radiances
-                             Planck_Surface_TL,                        & ! Input, TL surface radiance
-                             SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
-                             SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
-                             SfcOptics_TL%Direct_Reflectivity(1:nZ,1), & ! Input, TL surface reflectivity for a point source
-                             Radiance_TL                               ) ! Output, TL radiances
-    END IF
-
-    ! accumulate Fourier component
-    RTSolution_TL%Radiance = RTSolution_TL%Radiance + Radiance_TL*  &
-       cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
-     
-    ! ---------------------------------------------------------------
-    ! Compute the corresponding tangent-linear brightness temperature
-    ! ---------------------------------------------------------------
-    IF( RTV%mth_Azi == 0 ) THEN
-    CALL CRTM_Planck_Temperature_TL( SensorIndex                        , & ! Input
-                                     ChannelIndex                       , & ! Input
-                                     RTSolution%Radiance                , & ! Input
-                                     RTSolution_TL%Radiance             , & ! Input
-                                     RTSolution_TL%Brightness_Temperature ) ! Output
-    END IF
-    
-  END FUNCTION CRTM_Compute_RTSolution_TL
-
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Compute_RTSolution_AD
-!
-! PURPOSE:
-!       Function to solve the adjoint radiative transfer equation.
-!
-! CALLING SEQUENCE:
-!      Error_Status = CRTM_Compute_RTSolution_AD( Atmosphere            , &  ! FWD Input
-!                                                 Surface               , &  ! FWD Input
-!                                                 AtmOptics             , &  ! FWD Input
-!                                                 SfcOptics             , &  ! FWD Input
-!                                                 RTSolution            , &  ! FWD Input
-!                                                 RTSolution_AD         , &  ! AD Input
-!                                                 GeometryInfo          , &  ! Input
-!                                                 SensorIndex           , &  ! Input
-!                                                 ChannelIndex          , &  ! Input
-!                                                 Atmosphere_AD         , &  ! AD Output
-!                                                 Surface_AD            , &  ! AD Output
-!                                                 AtmOptics_AD          , &  ! AD Output
-!                                                 SfcOptics_AD          , &  ! AD Output
-!                                                 RTVariables           , &  ! Internal variable input
-!                                                 Message_Log=Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:     Structure containing the atmospheric state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Atmosphere_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Surface:        Structure containing the surface state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Surface_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       AtmOptics:      Structure containing the combined atmospheric
-!                       optical properties for gaseous absorption, clouds,
-!                       and aerosols.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SfcOptics:      Structure containing the surface optical properties
-!                       data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_SfcOptics_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       RTSolution:     Structure containing the solution to the RT equation
-!                       for the given inputs.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTSolution_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       RTSolution_AD:  Structure containing the RT solution adjoint inputs. 
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTSolution_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       GeometryInfo:   Structure containing the view geometry data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_GeometryInfo_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SensorIndex:    Sensor index id. This is a unique index associated
-!                       with a (supported) sensor used to access the
-!                       shared coefficient data for a particular sensor.
-!                       See the ChannelIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       ChannelIndex:   Channel index id. This is a unique index associated
-!                       with a (supported) sensor channel used to access the
-!                       shared coefficient data for a particular sensor's
-!                       channel.
-!                       See the SensorIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       RTVariables:    Structure containing internal forward model variables
-!                       required for subsequent tangent-linear or adjoint model
-!                       calls. The contents of this structure are NOT accessible
-!                       outside of the CRTM_RTSolution module.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:    Character string specifying a filename in which any
-!                       messages will be logged. If not specified, or if an
-!                       error occurs opening the log file, the default action
-!                       is to output messages to standard output.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Atmosphere_AD:  Structure containing the adjoint atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Atmosphere_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       Surface_AD:     Structure containing the adjoint surface state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Surface_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       AtmOptics_AD:   Structure containing the adjoint combined atmospheric
-!                       optical properties for gaseous absorption, clouds,
-!                       and aerosols.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_AtmScatter_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       SfcOptics_AD:   Structure containing the adjoint surface optical
-!                       properties data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_SfcOptics_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status
-!                       The error codes are defined in the Message_Handler module.
-!                       If == SUCCESS the computation was sucessful
-!                          == FAILURE an unrecoverable error occurred
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on all of the adjoint arguments (whether input or output)
-!       is IN OUT rather than just OUT. This is necessary because the Input
-!       adjoint arguments are modified, and the Output adjoint arguments must
-!       be defined prior to entry to this routine. So, anytime a structure is
-!       to be output, to prevent memory leaks the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_Compute_RTSolution_AD( Atmosphere   , &  ! FWD Input
-                                       Surface      , &  ! FWD Input
-                                       AtmOptics    , &  ! FWD Input
-                                       SfcOptics    , &  ! FWD Input
-                                       RTSolution   , &  ! FWD Input
-                                       RTSolution_AD, &  ! AD Input
-                                       GeometryInfo , &  ! Input
-                                       SensorIndex  , &  ! Input
-                                       ChannelIndex , &  ! Input
-                                       Atmosphere_AD, &  ! AD Output
-                                       Surface_AD   , &  ! AD Output
-                                       AtmOptics_AD , &  ! AD Output
-                                       SfcOptics_AD , &  ! AD Output
-                                       RTV          , &  ! Internal variable input
-                                       Message_Log  ) &  ! Error messaging
-                                     RESULT ( Error_Status )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
-    TYPE(CRTM_AtmScatter_type),   INTENT(IN)     :: AtmOptics
-    TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
-    TYPE(CRTM_RTSolution_type),   INTENT(IN)     :: RTSolution
-    TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution_AD
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: SensorIndex
-    INTEGER,                      INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN OUT) :: Atmosphere_AD
-    TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
-    TYPE(CRTM_AtmScatter_type),   INTENT(IN OUT) :: AtmOptics_AD
-    TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
-    TYPE(CRTM_RTVariables_type),  INTENT(IN)     :: RTV
-    CHARACTER(*),       OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_RTSolution_AD'
-    ! Local variables
-    CHARACTER(256) :: Message 
-    INTEGER :: i, k, nZ
-    INTEGER :: no, na, nt
-    REAL(fp) :: u       ! COS( sensor zenith angle )
-    REAL(fp) :: Cosmic_Background_Radiance
-    LOGICAL  :: Is_Solar_Channel
-    REAL(fp)                                     :: Planck_Surface_AD    ! Surface AD radiance
-    REAL(fp), DIMENSION( 0:Atmosphere%n_Layers ) :: Planck_Atmosphere_AD ! *LAYER* AD radiances
-    REAL(fp) :: User_Emissivity_AD    ! Temporary adjoint variable for SfcOptics calcs.
-    ! The following variables are RT model specific
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES+1, &
-                         Atmosphere%n_Layers ) :: Pff_AD ! Forward scattering AD phase matrix
-    REAL(fp), DIMENSION( MAX_N_ANGLES, &
-                         MAX_N_ANGLES+1, &
-                         Atmosphere%n_Layers ) :: Pbb_AD ! Backward scattering AD phase matrix
-    REAL (fp),DIMENSION( MAX_N_ANGLES ) :: Scattering_Radiance_AD
-    REAL (fp) :: Radiance_AD
-
-    ! -----
-    ! Setup
-    ! -----
-    Error_Status = SUCCESS
-    ! Short named local copies
-    u  = ONE / GeometryInfo%Secant_Sensor_Zenith
-    nZ = RTV%n_Angles
-    ! Set the sensor zenith angle index
-    SfcOptics_AD%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
-    ! Required SpcCoeff components
-    Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
-    ! Initialise local adjoint variables
-    Planck_Surface_AD    = ZERO
-    Planck_Atmosphere_AD = ZERO
-
-    Radiance_AD = ZERO
-    ! ------------------------------------------
-    ! Compute the brightness temperature adjoint
-    ! ------------------------------------------
-    IF( RTV%mth_Azi == 0 ) THEN
-    CALL CRTM_Planck_Temperature_AD( SensorIndex                         , & ! Input
-                                     ChannelIndex                        , & ! Input
-                                     RTSolution%Radiance                 , & ! Input
-                                     RTSolution_AD%Brightness_Temperature, & ! Input
-                                     Radiance_AD                ) ! Output
-    RTSolution_AD%Brightness_Temperature = ZERO 
-    END IF
-
-    ! accumulate Fourier component
-    Radiance_AD = Radiance_AD + RTSolution_AD%Radiance   &
-         *cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
-
-    ! --------------------------------------
-    ! Perform the adjoint radiative transfer
-    ! --------------------------------------
-    ! Select the RT model
-    IF( RTV%Scattering_RT ) THEN
-
-
-      ! -----------------------------------------------------
-      ! Scattering RT. NESDIS advanced adding-doubling method 
-      ! -----------------------------------------------------
-      ! Initialise the input adjoint radiance
-      Scattering_Radiance_AD = ZERO
-      Scattering_Radiance_AD( SfcOptics%Index_Sat_Ang ) = Radiance_AD
-!!      RTSolution_AD%Radiance = ZERO
-      ! Call the RT Solver
-      CALL CRTM_ADA_AD( Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
-                        AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
-                        AtmOptics%Asymmetry_Factor,               & ! Input, FWD layer asymmetry factor
-                        AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
-                        Cosmic_Background_Radiance,               & ! Input, cosmic background radiation
-                        SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
-                        SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
-                        RTV,                                      & ! In/Output, internal variables
-                        Scattering_Radiance_AD(1:nZ),             & ! Input, AD radiances
-                        Planck_Atmosphere_AD,                     & ! Output, AD layer radiances
-                        Planck_Surface_AD,                        & ! Output, AD surface radiance
-                        AtmOptics_AD%Single_Scatter_Albedo,       & ! Output, AD layer single scattering albedo
-                        AtmOptics_AD%Asymmetry_Factor,            & ! Output, AD layer asymmetry factor
-                        AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
-                        SfcOptics_AD%Emissivity(1:nZ,1),          & ! Output, AD surface emissivity
-                        SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1), & ! Output, AD surface reflectivity
-                        SfcOptics_AD%Direct_Reflectivity(1:nZ,1), & ! Output, AD surface reflectivity for a point source
-                        Pff_AD(1:nZ,1:(nZ+1),:),                      & ! Output, AD layer forward phase matrix
-                        Pbb_AD(1:nZ,1:(nZ+1),:)                       ) ! Output, AD layer backward phase matrix
-    ELSE
-
-
-      ! -----------------
-      ! Emission model RT
-      ! -----------------
-      CALL CRTM_Emission_AD( Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
-                             RTV%n_Angles,                             & ! Input, number of discrete zenith angles
-                             u,                                        & ! Input, cosine of sensor zenith angle
-                             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
-                             RTV%Planck_Atmosphere,                    & ! Input, FWD layer radiances
-                             RTV%Planck_Surface,                       & ! Input, FWD surface radiance
-                             SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
-                             SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
-                             SfcOptics%Direct_Reflectivity(1:nZ,1),    & ! Input, FWD surface reflectivity for a point source
-                             RTV%Solar_Irradiance,                     & ! Input, Source irradiance at TOA
-                             Is_Solar_Channel,                         & ! Input, Source sensitive channel info.
-                             GeometryInfo%Source_Zenith_Radian,        & ! Input, Source zenith angle
-                             RTV,                                      & ! Input, internal variables
-                             Radiance_AD,                              & ! Input, AD radiance
-                             AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
-                             Planck_Atmosphere_AD,                     & ! Output, AD layer radiances
-                             Planck_Surface_AD,                        & ! Output, AD surface radiance
-                             SfcOptics_AD%Emissivity(1:nZ,1),          & ! Output, AD surface emissivity
-                             SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1), & ! Output, AD surface reflectivity
-                             SfcOptics_AD%Direct_Reflectivity(1:nZ,1)  ) ! Output, AD surface reflectivity for a point source
-    END IF
-
-
-
-    ! ------------------------------------
-    ! Compute the adjoint planck radiances
-    ! ------------------------------------
-    ! Surface AD radiance
-    IF( RTV%mth_Azi == 0 ) THEN
-      CALL CRTM_Planck_Radiance_AD( SensorIndex                    , & ! Input
-                                  ChannelIndex                   , & ! Input
-                                  SfcOptics%Surface_Temperature  , & ! Input
-                                  Planck_Surface_AD              , & ! Input
-                                  SfcOptics_AD%Surface_Temperature ) ! In/Output
-      Planck_Surface_AD = ZERO
-    ! Atmospheric layer AD radiances
-      DO k = 1, Atmosphere%n_Layers
-        CALL CRTM_Planck_Radiance_AD( SensorIndex                , & ! Input
-                                    ChannelIndex               , & ! Input
-                                    Atmosphere%Temperature(k)  , & ! Input
-                                    Planck_Atmosphere_AD(k)    , & ! Input
-                                    Atmosphere_AD%Temperature(k) ) ! In/Output
-      Planck_Atmosphere_AD(k) = ZERO
-      END DO
-    ELSE
-      Planck_Surface_AD = ZERO
-      Planck_Atmosphere_AD = ZERO
-    END IF
-
-
-    ! ---------------------------------------------------------------------
-    ! Assign the number of Stokes parameters. Currently, this is set to 1
-    ! for decoupled polarization between surface and atmosphere.
-    ! Remember for polarised microwave instruments, each frequency's Stokes
-    ! parameter is treated as a separate channel.
-    ! ---------------------------------------------------------------------
-    SfcOptics_AD%n_Stokes = 1
-
-    
-    ! ----------------------------------------------------
-    ! Assign the angles and weights to SfcOptics structure
-    ! ----------------------------------------------------
-    SfcOptics_AD%n_Angles = SfcOptics%n_Angles
-    SfcOptics_AD%Angle    = SfcOptics%Angle 
-    SfcOptics_AD%Weight   = SfcOptics%Weight
-
-
-    ! --------------------------------------------------------------------------------
-    ! This part is designed for specific requirement for the total sensitivity
-    ! of emissivity. The requirement is regardless whether having user input or not.
-    ! Therefore, this part is common part with/without optional input.
-    ! The outputs of CRTM_Compute_RTSolution are the partial derivative
-    ! of emissivity and reflectivity. Since SfcOptics_AD is used as input only in 
-    ! CRTM_Compute_SfcOptics_AD, the total sensitivity of the emissivity is taken into
-    ! account for here.
-    ! --------------------------------------------------------------------------------
-    IF( RTV%Scattering_RT ) THEN
-      User_Emissivity_AD = ZERO
-      IF( RTV%Diffuse_Surface) THEN
-        DO i = nZ, 1, -1
-          User_Emissivity_AD = User_Emissivity_AD - &
-            (SUM(SfcOptics_AD%Reflectivity(1:nZ,1,i,1))*SfcOptics%Weight(i))
-        END DO
-      ELSE ! Specular surface
-        DO i = nZ, 1, -1
-          User_Emissivity_AD = User_Emissivity_AD - SfcOptics_AD%Reflectivity(i,1,i,1)
-        END DO
-      END IF
-!      Direct_Reflectivity_AD = SUM(SfcOptics_AD%Direct_Reflectivity(1:nZ,1))
-!      SfcOptics_AD%Direct_Reflectivity(1,1) = SfcOptics_AD%Direct_Reflectivity(1,1) +
-!                                              (Direct_Reflectivity_AD/PI)
-      RTSolution_AD%Surface_Emissivity = User_Emissivity_AD
-    ELSE
-      RTSolution_AD%Surface_Emissivity = SfcOptics_AD%Emissivity(SfcOptics_AD%Index_Sat_Ang,1) - &
-                                         SfcOptics_AD%Reflectivity(1,1,1,1)
-    END IF
-
-
-    ! -----------------------------------------
-    ! Populate the SfcOptics_AD structure based
-    ! on FORWARD model SfcOptics Compute_Switch
-    ! -----------------------------------------
-    IF ( SfcOptics%Compute_Switch == SET ) THEN
-      Error_Status = CRTM_Compute_SfcOptics_AD( Surface     , & ! Input
-                                                SfcOptics   , & ! Input
-                                                SfcOptics_AD, & ! Input
-                                                GeometryInfo, & ! Input
-                                                SensorIndex , & ! Input
-                                                ChannelIndex, & ! Input
-                                                Surface_AD  , & ! In/Output
-                                                RTV%SOV     , & ! Internal variable input
-                                                Message_Log=Message_Log ) ! Error messaging
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error computing SfcOptics_AD for ",a," channel ",i0)' ) &
-                        TRIM(SC(SensorIndex)%Sensor_Id), &
-                        SC(SensorIndex)%Sensor_Channel(ChannelIndex)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    END IF
-
-
-
-    ! --------------------------------------------
-    ! Compute the adjoint phase matrix if required
-    ! --------------------------------------------
-    IF ( RTV%Scattering_RT ) THEN
-      CALL CRTM_Phase_Matrix_AD( AtmOptics,    &  ! Input - FWD
-                                 Pff_AD,       &  ! Input - AD forward scattering
-                                 Pbb_AD,       &  ! Input - AD backward scattering
-                                 AtmOptics_AD, &  ! Output - AD
-                                 RTV           )  ! Internal variable
-    END IF
-
-
-    ! ------------------------------------------
-    ! Save the adjoint optical depth if required
-    ! ------------------------------------------
-    IF ( ASSOCIATED( RTSolution_AD%Layer_Optical_Depth ) ) THEN
-      ! Shorter names for indexing
-      no = RTSolution_AD%n_Layers  ! Original no. of layers
-      na = RTV%n_Added_Layers      ! No. of added layers
-      nt = RTV%n_Layers            ! Current total no. of layers
-      ! Assign only the optical depth profile
-      ! defined by the user input layering
-      RTSolution_AD%Layer_Optical_Depth(1:no) = AtmOptics_AD%Optical_Depth(na+1:nt)
-    END IF
-
-  END FUNCTION CRTM_Compute_RTSolution_AD
-
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Compute_n_Streams
-!
-! PURPOSE:
-!       Function to compute the number of streams required for subsequent
-!       radiative transfer calculations
-!
-! CALLING SEQUENCE:
-!       nStreams = CRTM_Compute_n_Streams( Atmosphere,   &  ! Input
-!                                          SensorIndex,  &  ! Input
-!                                          ChannelIndex, &  ! Input
-!                                          RTSolution    )  ! Output
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:     Structure containing the atmospheric state data.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_Atmosphere_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       SensorIndex:    Sensor index id. This is a unique index associated
-!                       with a (supported) sensor used to access the
-!                       shared coefficient data for a particular sensor.
-!                       See the ChannelIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       ChannelIndex:   Channel index id. This is a unique index associated
-!                       with a (supported) sensor channel used to access the
-!                       shared coefficient data for a particular sensor's
-!                       channel.
-!                       See the SensorIndex argument.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       RTSolution:     Structure containing the scattering flag to be set
-!                       for the RT calcs.
-!                       UNITS:      N/A
-!                       TYPE:       CRTM_RTSolution_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       nStreams:       The number of RT streams required to perform radiative
-!                       transfer in a scattering atmosphere.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output RTSolution argument is IN OUT rather 
-!       than just OUT to prevent memory leaks.
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_Compute_nStreams( Atmosphere  , &  ! Input
-                                  SensorIndex , &  ! Input
-                                  ChannelIndex, &  ! Input
-                                  RTSolution  ) &  ! Output
-                                RESULT( nStreams )
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere
-    INTEGER,                    INTENT(IN)     :: SensorIndex
-    INTEGER,                    INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
-    ! Function result
-    INTEGER :: nStreams
-    ! Local variables
-    REAL(fp) :: maxReff, Reff, MieParameter
-    INTEGER :: n
-    
-    ! Set up
-    nStreams = 0
-    RTSolution%n_full_Streams = nStreams
-    RTSolution%Scattering_FLAG = .FALSE.
-
-    ! If no clouds and no aerosols, no scattering, so return
-    IF ( Atmosphere%n_Clouds   == 0 .AND. &
-         Atmosphere%n_Aerosols == 0       ) RETURN
-    
-    ! Determine the maximum cloud particle size
-    maxReff = ZERO
-    DO n = 1, Atmosphere%n_Clouds
-      Reff = MAXVAL(Atmosphere%Cloud(n)%Effective_Radius)
-      IF( Reff > maxReff) maxReff = Reff
-    END DO
-    DO n = 1, Atmosphere%n_Aerosols
-      Reff = MAXVAL(Atmosphere%Aerosol(n)%Effective_Radius)
-      IF( Reff > maxReff) maxReff = Reff
-    END DO
-
-    ! Compute the Mie parameter, 2.pi.Reff/lambda
-    MieParameter = TWO * PI * maxReff * SC(SensorIndex)%Wavenumber(ChannelIndex)/10000.0_fp
-    
-    ! Determine the number of streams based on Mie parameter
-    IF ( MieParameter < 0.01_fp ) THEN
-      nStreams = 2
-    ELSE IF( MieParameter < ONE ) THEN
-      nStreams = 4
-    ELSE
-      nStreams = 6
-    END IF
-
-    ! Set RTSolution scattering info
-    RTSolution%Scattering_Flag = .TRUE.
-    RTSolution%n_full_Streams  = nStreams + 2
-
-  END FUNCTION CRTM_Compute_nStreams
 
 END MODULE CRTM_RTSolution

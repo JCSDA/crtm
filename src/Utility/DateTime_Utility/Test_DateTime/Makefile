@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Test_Interp_2D program
+# Makefile for Test_DateTime program
 #
 #==============================================================================
 
@@ -17,6 +17,7 @@ EXE_FILE = Test_DateTime
 SRC_FILES = Type_Kinds.f90 \
             File_Utility.f90 \
             Message_Handler.f90 \
+            Date_Utility.f90 \
             Compare_Float_Numbers.f90 \
             Unit_Test.f90 \
             DateTime_Utility.f90

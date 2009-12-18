@@ -18,9 +18,11 @@ MODULE ODZeeman_AtmAbsorption
   ! Module use
   USE Type_Kinds,                ONLY: fp
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters,           ONLY: ZERO, ONE
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
   USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
-  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
+  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type, &
+                                       CRTM_GeometryInfo_GetValue
   USE ODPS_Predictor_Define,     ONLY: Predictor_type
   USE ODPS_Define,               ONLY: ODPS_type
   USE ODZeeman_Predictor,        ONLY: Compute_Predictors_zssmis,     &
@@ -37,8 +39,8 @@ MODULE ODZeeman_AtmAbsorption
                                        N_ZABSORBERS,                  &
                                        MAX_N_PREDICTORS_ZSSMIS,       &
                                        MAX_N_PREDICTORS_ZAMSUA
-  USE CRTM_SensorInput_Define,   ONLY: CRTM_SensorInput_type, &
-                                       CRTM_SensorInput_Get_Property
+  USE Zeeman_Input_Define,       ONLY: Zeeman_Input_type, &
+                                       Zeeman_Input_GetValue
   USE ODPS_CoordinateMapping,    ONLY: Map_Input, Map_Input_TL, Map_Input_AD, &
                                        Interpolate_Profile,    &
                                        Interpolate_Profile_F1_TL, &
@@ -60,20 +62,22 @@ MODULE ODZeeman_AtmAbsorption
   PUBLIC :: Zeeman_Compute_AtmAbsorption
   PUBLIC :: Zeeman_Compute_AtmAbsorption_TL
   PUBLIC :: Zeeman_Compute_AtmAbsorption_AD
-  ! routines from other modules
   PUBLIC :: Is_Zeeman_Channel
   PUBLIC :: Is_ODZeeman
   PUBLIC :: Get_NumOfZPredictors
   PUBLIC :: Get_NumOfZComponents
   PUBLIC :: Get_NumOfZAbsorbers
   
+
   ! ----------
   ! Parameters
   ! ----------
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
-  REAL(fp), PARAMETER :: ZERO = 0.0_fp, ONE = 1.0_fp
 
 CONTAINS
+
 
 !------------------------------------------------------------------------------
 !
@@ -1209,127 +1213,138 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL Zeeman_Compute_Predictors ( SensorInput   &  ! Input
-!                                        TC,           &  ! Input                   
-!                                        Atm,          &  ! Input                   
-!                                        GeoInfo,      &  ! Input                      
-!                                        Predictor,    )  ! Output                  
+!       CALL Zeeman_Compute_Predictors( Zeeman   , &  ! Input
+!                                       TC       , &  ! Input                   
+!                                       Atm      , &  ! Input                   
+!                                       GeoInfo  , &  ! Input                      
+!                                       Predictor  )  ! Output                  
 !
 ! INPUT ARGUMENTS:
-!     SensorInput :     Structure holding sensor specific user inputs
+!       Zeeman:          Structure holding Zeeman-specific user inputs
 !                        UNITS:      N/A
-!                        TYPE:       SensorInput_type
+!                        TYPE:       Zeeman_Input_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!          TC:           ODPS structure holding tau coefficients
+!       TC:              ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Atm:             CRTM Atmosphere structure containing the atmospheric
+!                        state data.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       GeoInfo     :   CRTM_GeometryInfo structure containing the 
-!                       view geometry information.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       GeoInfo:         CRTM_GeometryInfo structure containing the 
+!                        view geometry information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_GeometryInfo_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor:      Predictor structure containing the integrated absorber
-!                       and predictor profiles.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
+!       Predictor:       Predictor structure containing the integrated absorber
+!                        and predictor profiles.
+!                        UNITS:      N/A
+!                        TYPE:       Predictor_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Zeeman_Compute_Predictors(SensorInput,  &
-                                       TC,           &  
-                                       Atm,          &  
-                                       GeoInfo,      &  
-                                       Predictor)       
+  SUBROUTINE Zeeman_Compute_Predictors( &
+    Zeeman   ,  &
+    TC       ,  &  
+    Atm      ,  &  
+    GeoInfo  ,  &  
+    Predictor   )       
     ! Arguments
-    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
-    TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
-    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
-    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
-
+    TYPE(Zeeman_Input_type)     , INTENT(IN)     :: Zeeman
+    TYPE(ODPS_type)             , INTENT(IN)     :: TC
+    TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atm
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeoInfo
+    TYPE(Predictor_type)        , INTENT(IN OUT) :: Predictor
     ! Local variables
-
-    ! SSMIS SensorInput data
     REAL(fp) :: Temperature(Predictor%n_Layers)
     REAL(fp) :: Absorber(Predictor%n_Layers, TC%n_Absorbers)
     INTEGER  :: H2O_idx
-    REAL(fp) :: Be, CosBK, CosPhiB, Doppler_Shift
+    REAL(fp) :: Sensor_Scan_Radian, Secant_Sensor_Zenith
+    REAL(fp) :: Be, COS_ThetaB, COS_PhiB, Doppler_Shift
     REAL(fp) :: COS2_ScanA, COS2_PhiB
 
-    !------------------------------------------------------------------
+    ! Retrieve required geometry values
+    CALL CRTM_GeometryInfo_GetValue( &
+           GeoInfo                                    , &  ! Input
+           Sensor_Scan_Radian   = Sensor_Scan_Radian  , &  ! Output
+           Secant_Sensor_Zenith = Secant_Sensor_Zenith  )  ! Output
+    ! ...Store the surface secant zenith angle
+    Predictor%Secant_Zenith_Surface = Secant_Sensor_Zenith
+           
     ! Mapping data from user to internal fixed pressure layers/levels.
-    !------------------------------------------------------------------
-    CALL Map_Input(Atm,                             &  ! Input
-                   TC,                              &  ! Input
-                   GeoInfo,                         &  ! Input
-                   Temperature,                     &  ! Output 
-                   Absorber,                        &  ! output
-                   Predictor%User_Level_LnPressure, &  ! Output, non variable
-                   Predictor%Ref_Level_LnPressure,  &  ! Output, non variable
-                   Predictor%Secant_Zenith,         &  ! Output, non variable
-                   H2O_idx,                         &
-                   Predictor%PAFV)                     ! structure holding FW parameters
-                   
-    ! store the surface secant zenith angle
-    Predictor%Secant_Zenith_Surface = GeoInfo%Secant_Sensor_Zenith
-                                  
-    !-------------------------------------------
-    ! Compute predictor
-    !-------------------------------------------
-    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
-      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &            
-                                          Field_Strength = Be, &          
-                                          COS_ThetaB     = CosBk, &       
-                                          Doppler_Shift  = Doppler_Shift )
-      CALL Compute_Predictors_zssmis(Temperature,    &                    
-                                     Be,             &                    
-                                     CosBK,          &                    
-                                     Doppler_Shift,  &                    
-                                     Predictor%Secant_Zenith,&            
-                                     Predictor)                           
-    ELSE
-      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &            
-                                          Field_Strength = Be, &          
-                                          COS_ThetaB     = CosBk, &
-                                          COS_PhiB       = CosPhiB)      
-      CALL Compute_Predictors_zamsua(Temperature,    &
-                                     TC%Ref_Temperature, &                   
-                                     Be,             &                    
-                                     CosBK,          &                    
-                                     Predictor%Secant_Zenith,&            
-                                     Predictor) 
-      ! weights for combining transmittances at the two special polarizations
-      COS2_ScanA = COS(GeoInfo%Sensor_Scan_Radian)
-      COS2_ScanA = COS2_ScanA*COS2_ScanA 
-      COS2_PhiB  = CosPhiB*CosPhiB
-      Predictor%w = (ONE-COS2_ScanA)*COS2_PhiB + COS2_ScanA*(ONE-COS2_PhiB)
-    END IF                           
+    CALL Map_Input( &
+           Atm                            , &  ! Input
+           TC                             , &  ! Input
+           GeoInfo                        , &  ! Input
+           Temperature                    , &  ! Output 
+           Absorber                       , &  ! output
+           Predictor%User_Level_LnPressure, &  ! Output, non variable
+           Predictor%Ref_Level_LnPressure , &  ! Output, non variable
+           Predictor%Secant_Zenith        , &  ! Output, non variable
+           H2O_idx                        , &
+           Predictor%PAFV                   )  ! structure holding FW parameters
+
+    ! Compute predictor for specific instruments
+    SELECT CASE ( TC%Group_Index )
+      CASE ( ODPS_gINDEX_ZSSMIS )
+        CALL Zeeman_Input_GetValue( &
+               Zeeman                        , &  ! Input
+               Field_Strength = Be           , &  ! Output
+               COS_ThetaB     = COS_ThetaB   , &  ! Output
+               Doppler_Shift  = Doppler_Shift  )  ! Output
+        CALL Compute_Predictors_zssmis( &
+               Temperature            , &
+               Be                     , &
+               COS_ThetaB             , &
+               Doppler_Shift          , &
+               Predictor%Secant_Zenith, &
+               Predictor                )
+
+      CASE ( ODPS_gINDEX_ZAMSUA )
+        CALL Zeeman_Input_GetValue( &
+               Zeeman                     , &  ! Input
+               Field_Strength = Be        , &  ! Output
+               COS_ThetaB     = COS_ThetaB, &  ! Output
+               COS_PhiB       = COS_PhiB    )  ! Output
+        CALL Compute_Predictors_zamsua( &
+               Temperature            , &
+               TC%Ref_Temperature     , &
+               Be                     , &
+               COS_ThetaB             , &
+               Predictor%Secant_Zenith, &
+               Predictor                )
+        ! Weights for combining transmittances at the two special polarizations
+        COS2_ScanA = COS(Sensor_Scan_Radian)**2
+        COS2_PhiB  = COS_PhiB**2
+        Predictor%w = (ONE-COS2_ScanA)*COS2_PhiB + COS2_ScanA*(ONE-COS2_PhiB)
+        
+      CASE DEFAULT
+        ! This is a NOOP - does checking need to
+        ! be done upon entry to this routine?
+    END SELECT
          
-    IF(Predictor%PAFV%Active)THEN
+    IF ( Predictor%PAFV%Active ) THEN
       ! Set and save the interpolation index array for absorption
       ! calculations. Since the indexes do not depend on channel but
       ! the absorption calculations do, put the index calculation here
       ! can improve efficency.
-      CALL Compute_Interp_Index(Predictor%Ref_Level_LnPressure ,  &
-                                Predictor%User_Level_LnPressure,  &
-                                Predictor%PAFV%ODPS2User_Idx) 
+      CALL Compute_Interp_Index( &
+             Predictor%Ref_Level_LnPressure , &
+             Predictor%User_Level_LnPressure, &
+             Predictor%PAFV%ODPS2User_Idx     )
     END IF 
                     
   END SUBROUTINE Zeeman_Compute_Predictors     
@@ -1346,127 +1361,133 @@ CONTAINS
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL Zeeman_Compute_Predictors_TL (SensorInput      &  ! Input
-!                                          TC,              &  ! Input                    
-!                                          Atm,             &  ! Input                    
-!                                          GeoInfo,         &  ! Input                    
-!                                          Predictor,       &  ! Input                    
-!                                          Atm_TL,          &  ! Input                    
-!                                          Predictor_TL     )  ! Output                   
+!       CALL Zeeman_Compute_Predictors_TL( Zeeman      , &  ! Input
+!                                          TC          , &  ! Input                    
+!                                          Atm         , &  ! FWD Input                    
+!                                          GeoInfo     , &  ! Input                    
+!                                          Predictor   , &  ! FWD Input                    
+!                                          Atm_TL      , &  ! TL  Input                    
+!                                          Predictor_TL  )  ! TL  Output                   
 !
 ! INPUT ARGUMENTS:
-!     SensorInput :     Structure holding sensor specific user inputs
+!       Zeeman:          Structure holding Zeeman-specific user inputs
 !                        UNITS:      N/A
-!                        TYPE:       SensorInput_type
+!                        TYPE:       Zeeman_Input_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!          TC:           ODPS structure holding tau coefficients
+!       TC:              ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Atm:             CRTM Atmosphere structure containing the atmospheric
+!                        state data.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       Atm_TL    :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       GeoInfo:         CRTM_GeometryInfo structure containing the 
+!                        view geometry information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_GeometryInfo_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       GeoInfo     :   CRTM_GeometryInfo structure containing the 
-!                       view geometry information.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Predictor:       Predictor structure containing the integrated absorber
+!                        and predictor profiles.
+!                        UNITS:      N/A
+!                        TYPE:       Predictor_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       Predictor:      Predictor structure containing the integrated absorber
-!                       and predictor profiles.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Atm_TL:          CRTM Atmosphere structure containing the tangent-linear
+!                        atmospheric state data.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       Predictor_TL:   Predictor structure containing the integrated absorber
-!                       and predictor profiles.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
+!       Predictor_TL:    Predictor structure containing the tangent-linear
+!                        integrated absorber and predictor profiles.
+!                        UNITS:      N/A
+!                        TYPE:       Predictor_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Zeeman_Compute_Predictors_TL(SensorInput,    &
-                                          TC,             &  
-                                          Atm,            &  
-                                          GeoInfo,        &  
-                                          Predictor,      &  
-                                          Atm_TL,         &  
-                                          Predictor_TL)      
- 
-    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
-    TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm         
-    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
-    TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm_TL
-    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor_TL
-
+  SUBROUTINE Zeeman_Compute_Predictors_TL( &
+    Zeeman      , &
+    TC          , &  
+    Atm         , &  
+    GeoInfo     , &  
+    Predictor   , &  
+    Atm_TL      , &  
+    Predictor_TL)      
+    ! Arguments
+    TYPE(Zeeman_Input_type)     , INTENT(IN)     :: Zeeman
+    TYPE(ODPS_type)             , INTENT(IN)     :: TC
+    TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atm         
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeoInfo
+    TYPE(Predictor_type)        , INTENT(IN)     :: Predictor
+    TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atm_TL
+    TYPE(Predictor_type)        , INTENT(IN OUT) :: Predictor_TL
     ! Local variables
     REAL(fp) :: Absorber_TL(Predictor%n_Layers, TC%n_Absorbers)
     REAL(fp) :: Temperature_TL(Predictor%n_Layers)
-    ! SSMIS SensorInput data
-    REAL(fp) :: Be, CosBK, Doppler_Shift
+    REAL(fp) :: Be, COS_ThetaB, Doppler_Shift
 
-    !------------------------------------------------------------------
     ! Mapping data from user to internal fixed pressure layers/levels.
-    !------------------------------------------------------------------
-    CALL Map_Input_TL(Atm,            &  ! Input
-                      TC,             &  ! Input
-                      Atm_TL,         &  ! Input
-                      Temperature_TL, &  ! Output
-                      Absorber_TL,    &  ! Output
-                      Predictor%PAFV)    ! Input
+    CALL Map_Input_TL( &
+           Atm           , &  ! Input
+           TC            , &  ! Input
+           Atm_TL        , &  ! Input
+           Temperature_TL, &  ! Output
+           Absorber_TL   , &  ! Output
+           Predictor%PAFV  )  ! Input
 
-    !-------------------------------------------
-    ! Compute predictor
-    !-------------------------------------------
-    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
-      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,     &                 
-                                          Field_Strength = Be,    &               
-                                          COS_ThetaB     = CosBk, &            
-                                          Doppler_Shift  = Doppler_Shift )     
-      CALL Compute_Predictors_zssmis_TL(Predictor%PAFV%Temperature, &  
-                                        Be,                         &          
-                                        CosBK,                      &          
-                                        Doppler_Shift,              &          
-                                        Predictor%Secant_Zenith,    &     
-                                        Temperature_TL,             &     
-                                        Predictor_TL) 
-    ELSE
-      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &                 
-                                          Field_Strength = Be, &               
-                                          COS_ThetaB     = CosBk)            
-      CALL Compute_Predictors_zamsua_TL(Predictor%PAFV%Temperature, &
-                                        TC%Ref_Temperature,         &  
-                                        Be,                         &          
-                                        CosBK,                      &          
-                                        Predictor%Secant_Zenith,    &     
-                                        Temperature_TL,             &     
-                                        Predictor_TL) 
-    END IF                             
+    ! Compute predictor for specific instruments
+    SELECT CASE ( TC%Group_Index )
+      CASE ( ODPS_gINDEX_ZSSMIS )
+        CALL Zeeman_Input_GetValue( &
+               Zeeman                        , &  ! Input
+               Field_Strength = Be           , &  ! Output
+               COS_ThetaB     = COS_ThetaB   , &  ! Output
+               Doppler_Shift  = Doppler_Shift  )  ! Output
+        CALL Compute_Predictors_zssmis_TL( &
+               Predictor%PAFV%Temperature, &
+               Be                        , &
+               COS_ThetaB                , &
+               Doppler_Shift             , &
+               Predictor%Secant_Zenith   , &
+               Temperature_TL            , &
+               Predictor_TL                )
 
-    
+      CASE ( ODPS_gINDEX_ZAMSUA )
+        CALL Zeeman_Input_GetValue( &
+               Zeeman                     , &  ! Input
+               Field_Strength = Be        , &  ! Output
+               COS_ThetaB     = COS_ThetaB  )  ! Output
+        CALL Compute_Predictors_zamsua_TL( &
+               Predictor%PAFV%Temperature, &
+               TC%Ref_Temperature        , &
+               Be                        , &
+               COS_ThetaB                , &
+               Predictor%Secant_Zenith   , &
+               Temperature_TL            , &
+               Predictor_TL                )
+        
+      CASE DEFAULT
+        ! This is a NOOP - does checking need to
+        ! be done upon entry to this routine?
+    END SELECT
+
   END SUBROUTINE Zeeman_Compute_Predictors_TL     
+
 
 !--------------------------------------------------------------------------------
 !
@@ -1474,140 +1495,144 @@ CONTAINS
 !       Zeeman_Compute_Predictors_AD
 !
 ! PURPOSE:
-!       Subroutine to calculate the gas absorption model predictors. It first
+!       Subroutine to calculate the AD gas absorption model predictors. It first
 !       Interpolates the user temperature and absorber profiles on the
 !       internal pressure grids and then call the predictor computation
 !       routine to compute the predictors
 !
 ! CALLING SEQUENCE:
-!       CALL Zeeman_Compute_Predictors_AD ( SensorInput      &  ! Input
-!                                           TC,              &  ! Input                 
-!                                           Atm,             &  ! Input                 
-!                                           GeoInfo,         &  ! Input                 
-!                                           Predictor,       &  ! Input                 
-!                                           Predictor_AD,    &  ! Input                 
-!                                           Atm_AD)             ! Output                
+!       CALL Zeeman_Compute_Predictors_AD( Zeeman      , &  ! Input
+!                                          TC,         , &  ! Input                 
+!                                          Atm,        , &  ! FWD Input                 
+!                                          GeoInfo,    , &  ! Input                 
+!                                          Predictor,  , &  ! FWD Input                 
+!                                          Predictor_AD, &  ! AD  Input                 
+!                                          Atm_AD        )  ! AD  Output                
 !
 ! INPUT ARGUMENTS:
-!     SensorInput :     Structure holding sensor specific user inputs
+!       Zeeman:          Structure holding Zeeman-specific user inputs
 !                        UNITS:      N/A
-!                        TYPE:       SensorInput_type
+!                        TYPE:       Zeeman_Input_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!          TC:           ODPS structure holding tau coefficients
+!       TC:              ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Atm:             CRTM Atmosphere structure containing the atmospheric
+!                        state data.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       GeoInfo     :   CRTM_GeometryInfo structure containing the 
-!                       view geometry information.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       GeoInfo:         CRTM_GeometryInfo structure containing the 
+!                        view geometry information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_GeometryInfo_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       Predictor:      Predictor structure containing the integrated absorber
-!                       and predictor profiles.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Predictor:       Predictor structure containing the integrated absorber
+!                        and predictor profiles.
+!                        UNITS:      N/A
+!                        TYPE:       Predictor_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
-!       Predictor_AD:   Predictor structure containing the integrated absorber
-!                       and predictor profiles.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
+!       Predictor_AD:    Predictor structure containing the adjoint integrated
+!                        absorber and predictor profiles.
+!                        UNITS:      N/A
+!                        TYPE:       Predictor_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
 !
-!       Atm_AD    :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
+!       Atm_AD:          CRTM Atmosphere structure containing the adjoint
+!                        atmospheric state data.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Zeeman_Compute_Predictors_AD(SensorInput,    &
-                                          TC,             &  
-                                          Atm,            &  
-                                          GeoInfo,        &  
-                                          Predictor,      &  
-                                          Predictor_AD,   &  
-                                          Atm_AD)            
-
-    TYPE(CRTM_SensorInput_type)  , INTENT(IN)     :: SensorInput
+  SUBROUTINE Zeeman_Compute_Predictors_AD( &
+    Zeeman      , &
+    TC          , &  
+    Atm         , &  
+    GeoInfo     , &  
+    Predictor   , &  
+    Predictor_AD, &  
+    Atm_AD        )    
+    ! Arguments
+    TYPE(Zeeman_Input_type)      , INTENT(IN)     :: Zeeman
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
     TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(Predictor_type)         , INTENT(IN OUT) :: predictor_AD
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN OUT) :: Atm_AD
-
     ! Local variables
     REAL(fp) :: Absorber_AD(Predictor%n_Layers, TC%n_Absorbers)
     REAL(fp) :: Temperature_AD(Predictor%n_Layers)
-    ! SSMIS SensorInput data
-    REAL(fp) :: Be, CosBK, Doppler_Shift
+    REAL(fp) :: Be, COS_ThetaB, Doppler_Shift
 
-    ! initialization
+    ! Local adjoint variable initialization
     Temperature_AD = ZERO
     Absorber_AD    = ZERO
      
-    !-----------------------------------------------------------
-    ! adjoint part
-    !-----------------------------------------------------------
+    ! Compute predictor for specific instruments
+    SELECT CASE ( TC%Group_Index )
+      CASE ( ODPS_gINDEX_ZSSMIS )
+        CALL Zeeman_Input_GetValue( &
+               Zeeman                        , &  ! Input
+               Field_Strength = Be           , &  ! Output
+               COS_ThetaB     = COS_ThetaB   , &  ! Output
+               Doppler_Shift  = Doppler_Shift  )  ! Output
+        CALL Compute_Predictors_zssmis_AD( &
+               Predictor%PAFV%Temperature, &
+               Be                        , &
+               COS_ThetaB                , & 
+               Doppler_Shift             , & 
+               Predictor%Secant_Zenith   , &
+               Predictor_AD              , &
+               Temperature_AD              )
 
-    !-------------------------------------------
-    ! Compute predictor
-    !-------------------------------------------
-    IF(TC%Group_Index == ODPS_gINDEX_ZSSMIS)THEN   
-      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &
-                                          Field_Strength = Be, &
-                                          COS_ThetaB     = CosBk, &
-                                          Doppler_Shift  = Doppler_Shift )
-      CALL Compute_Predictors_zssmis_AD(Predictor%PAFV%Temperature, &
-                                        Be,                         &
-                                        CosBK,                      & 
-                                        Doppler_Shift,              & 
-                                        Predictor%Secant_Zenith,    &
-                                        Predictor_AD,               &
-                                        Temperature_AD )
-    ELSE
-      CALL CRTM_SensorInput_Get_Property( SensorInput%Zeeman,  &
-                                          Field_Strength = Be, &
-                                          COS_ThetaB     = CosBk)
-      CALL Compute_Predictors_zamsua_AD(Predictor%PAFV%Temperature, &
-                                        TC%Ref_Temperature,         &
-                                        Be,                         &
-                                        CosBK,                      & 
-                                        Predictor%Secant_Zenith,    &
-                                        Predictor_AD,               &
-                                        Temperature_AD )
-    END IF    
-    !------------------------------------------------------------------
+      CASE ( ODPS_gINDEX_ZAMSUA )
+        CALL Zeeman_Input_GetValue( &
+               Zeeman                     , &  ! Input
+               Field_Strength = Be        , &  ! Output
+               COS_ThetaB     = COS_ThetaB  )  ! Output
+        CALL Compute_Predictors_zamsua_AD( &
+               Predictor%PAFV%Temperature, &
+               TC%Ref_Temperature        , &
+               Be                        , &
+               COS_ThetaB                , & 
+               Predictor%Secant_Zenith   , &
+               Predictor_AD              , &
+               Temperature_AD              )
+        
+      CASE DEFAULT
+        ! This is a NOOP - does checking need to
+        ! be done upon entry to this routine?
+    END SELECT
+
     ! Mapping data from user to internal fixed pressure layers/levels.
-    !------------------------------------------------------------------
-    CALL Map_Input_AD(Atm,            & ! Input
-                      TC,             & ! Input
-                      Temperature_AD, & ! Input  
-                      Absorber_AD,    & ! Input
-                      Atm_AD,         & ! output
-                      Predictor%PAFV)   ! Input
+    CALL Map_Input_AD( &
+           Atm           , & ! Input
+           TC            , & ! Input
+           Temperature_AD, & ! Input  
+           Absorber_AD   , & ! Input
+           Atm_AD        , & ! output
+           Predictor%PAFV  ) ! Input
          
   END SUBROUTINE Zeeman_Compute_Predictors_AD
+
 
   !-------------------------------------------------
   ! Check if the given channel is a Zeeman channel
@@ -1619,15 +1644,21 @@ CONTAINS
   !    .FALSE. - not a Zeeman channel
   !-------------------------------------------------
   FUNCTION Is_Zeeman_Channel(TC, ChannelIndex) RESULT( ZChannel )
-    TYPE(ODPS_type), INTENT(IN)     :: TC
-    INTEGER,         INTENT(IN)     :: ChannelIndex
-    
+    TYPE(ODPS_type), INTENT(IN) :: TC
+    INTEGER,         INTENT(IN) :: ChannelIndex
     LOGICAL :: ZChannel
     
-    ZChannel = ( TC%Group_Index == ODPS_gINDEX_ZSSMIS .AND. ZSSMIS_ChannelMap(ChannelIndex) > 0 ) &
-          .OR. ( TC%Group_Index == ODPS_gINDEX_ZAMSUA .AND. ZAMSUA_ChannelMap(ChannelIndex) > 0 )
+    SELECT CASE ( TC%Group_Index )
+      CASE ( ODPS_gINDEX_ZSSMIS )
+        ZChannel = ZSSMIS_ChannelMap(ChannelIndex) > 0
+      CASE ( ODPS_gINDEX_ZAMSUA )
+        ZChannel = ZAMSUA_ChannelMap(ChannelIndex) > 0
+      CASE DEFAULT
+        ZChannel = .FALSE.
+    END SELECT
     
   END FUNCTION Is_Zeeman_Channel
+
 
   !---------------------------------------------------------
   ! Check if the given TC is associated with Zeeman algorithm
@@ -1637,48 +1668,48 @@ CONTAINS
   !    .TRUE.  - associated with the Zeeman algorithm
   !    .FALSE. - not associated with the Zeeman algorithm
   !-------------------------------------------------
-  FUNCTION Is_ODZeeman(TC) RESULT( ODZeeman )
-    TYPE(ODPS_type), INTENT(IN)     :: TC
-    
+  FUNCTION Is_ODZeeman( TC ) RESULT( ODZeeman )
+    TYPE(ODPS_type), INTENT(IN) :: TC
     LOGICAL :: ODZeeman
-    
-    ODZeeman = ( TC%Group_Index == ODPS_gINDEX_ZSSMIS .OR. TC%Group_Index == ODPS_gINDEX_ZAMSUA )
-    
+    ODZeeman = ( TC%Group_Index == ODPS_gINDEX_ZSSMIS .OR. &
+                 TC%Group_Index == ODPS_gINDEX_ZAMSUA      )
   END FUNCTION Is_ODZeeman
+
 
   !----------------------------------------------------------
   ! Obtain number of predictors, given an ODPS group index
   !----------------------------------------------------------
-  FUNCTION Get_NumOfZPredictors(gIndex)RESULT( n_Predictors )
+  FUNCTION Get_NumOfZPredictors( gIndex ) RESULT( n_Predictors )
     INTEGER, INTENT(IN) :: gIndex
-    
     INTEGER :: n_Predictors
     
-    IF( gIndex == ODPS_gINDEX_ZSSMIS )THEN      
-      n_Predictors = MAX_N_PREDICTORS_ZSSMIS
-    ELSE
-      n_Predictors = MAX_N_PREDICTORS_ZAMSUA
-    END IF
+    SELECT CASE ( gIndex )
+      CASE ( ODPS_gINDEX_ZSSMIS )
+        n_Predictors = MAX_N_PREDICTORS_ZSSMIS
+      CASE ( ODPS_gINDEX_ZAMSUA )
+        n_Predictors = MAX_N_PREDICTORS_ZAMSUA
+      CASE DEFAULT
+        n_Predictors = 0
+    END SELECT
+    
   END FUNCTION Get_NumOfZPredictors
+
 
   !----------------------------------------------------------
   ! Obtain number of compoents, given an ODPS group index
   !----------------------------------------------------------
-  FUNCTION Get_NumOfZComponents(gIndex)RESULT( n_Components )
+  FUNCTION Get_NumOfZComponents( gIndex ) RESULT( n_Components )
     INTEGER, INTENT(IN) :: gIndex
-    
     INTEGER :: n_Components
-    
     n_Components = N_ZCOMPONENTS
   END FUNCTION Get_NumOfZComponents
+
       
   ! Obtain number of compoents, given an ODPS group index
   !----------------------------------------------------------
-  FUNCTION Get_NumOfZAbsorbers(gIndex)RESULT( n_Absorbers )
+  FUNCTION Get_NumOfZAbsorbers( gIndex ) RESULT( n_Absorbers )
     INTEGER, INTENT(IN) :: gIndex
-    
     INTEGER :: n_Absorbers
-    
     n_Absorbers = N_ZABSORBERS
   END FUNCTION Get_NumOfZAbsorbers
   
