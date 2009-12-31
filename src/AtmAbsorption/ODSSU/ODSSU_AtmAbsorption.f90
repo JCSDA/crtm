@@ -198,10 +198,10 @@ CONTAINS
     END IF
 
     ! Compute the interpolation weights
-    AAV%Weight(2) = (AAV%CO2_Cell - TC(SensorIndex)%TC_CellPressure(AAV%Index_low,ChannelIndex))/ &
+    AAV%Weight(1) = (AAV%CO2_Cell - TC(SensorIndex)%TC_CellPressure(AAV%Index_low,ChannelIndex))/ &
                       (TC(SensorIndex)%TC_CellPressure(AAV%Index_low+1,ChannelIndex) - &
                        TC(SensorIndex)%TC_CellPressure(AAV%Index_low  ,ChannelIndex)   )
-    AAV%Weight(1) = ONE - AAV%Weight(2)
+    AAV%Weight(2) = ONE - AAV%Weight(1)
 
   END SUBROUTINE ODSSU_Compute_AAV
 
