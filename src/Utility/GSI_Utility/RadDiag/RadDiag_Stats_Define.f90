@@ -1,31 +1,33 @@
-
+!
+! RadDiag_Stats_Define
+!
 ! Module defining the RadDiag_Stats structure
 ! and containing routines to manipulate it.
+!
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, 28-Mar-2006
+!                       paul.vandelst@noaa.gov
+!
 
 MODULE RadDiag_Stats_Define
 
-  ! ------------
-  ! Module usage
-  ! ------------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
+  ! Module use
   USE Type_Kinds,      ONLY: sp=>Single
-  USE Message_Handler, ONLY: FAILURE, SUCCESS, WARNING, &
-                             Display_Message
-
-  ! -----------------------
+  USE Message_Handler, ONLY: FAILURE, SUCCESS, INFORMATION, Display_Message
   ! Disable implicit typing
-  ! -----------------------
   IMPLICIT NONE
 
 
   ! ---------------------
   ! Explicit visibilities
   ! ---------------------
+  ! Everything private by default
   PRIVATE
-  ! Module derived type definitions
-  PUBLIC :: RadDiag_Stats_type
-  ! Module parameters
-  PUBLIC :: invalidFOV
-  PUBLIC :: nVariables
+  ! Parameters
   PUBLIC :: iBC   
   PUBLIC :: iNBC  
   PUBLIC :: iScan 
@@ -34,18 +36,20 @@ MODULE RadDiag_Stats_Define
   PUBLIC :: iLpsR 
   PUBLIC :: iLpsR2
   PUBLIC :: iCLW
-  ! Module subprograms
-  PUBLIC :: Associated_RadDiag_Stats
-  PUBLIC :: Destroy_RadDiag_Stats
-  PUBLIC :: Allocate_RadDiag_Stats
-  PUBLIC :: Assign_RadDiag_Stats
+  ! Datatypes
+  PUBLIC :: RadDiag_Stats_type
+  ! Procedures
+  PUBLIC :: RadDiag_Stats_Associated
+  PUBLIC :: RadDiag_Stats_Destroy
+  PUBLIC :: RadDiag_Stats_Create
+  PUBLIC :: RadDiag_Stats_Inspect
+  PUBLIC :: RadDiag_Stats_DefineVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  INTEGER, PARAMETER :: invalidFOV = -1
-  INTEGER, PARAMETER :: nVariables = 8
+  INTEGER, PARAMETER :: N_VARIABLES = 8
   INTEGER, PARAMETER :: iBC    = 1
   INTEGER, PARAMETER :: iNBC   = 2
   INTEGER, PARAMETER :: iScan  = 3
@@ -54,810 +58,347 @@ MODULE RadDiag_Stats_Define
   INTEGER, PARAMETER :: iLpsR  = 6
   INTEGER, PARAMETER :: iLpsR2 = 7
   INTEGER, PARAMETER :: iCLW   = 8
-  CHARACTER(*), PARAMETER :: VariableNames(nVariables) = (/ 'Calc-Obs dTb [Bias Corrected]          ', &
-                                                            'Calc-Obs dTb [NOT Bias Corrected]      ', &
-                                                            'SatBias Angle term                     ', &
-                                                            'SatBias AirMass Constant term          ', &
-                                                            'SatBias AirMass Angle term             ', &
-                                                            'SatBias AirMass Lapse Rate term        ', &
-                                                            'SatBias AirMass (Lapse Late)^2 term    ', &
-                                                            'SatBias AirMass Cloud Liquid Water term' /)
-
-  INTEGER, PARAMETER :: SL = 80
-  INTEGER, PARAMETER :: SET = 1
-  REAL,    PARAMETER :: ZERO = 0.0_sp
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: VARIABLENAMES(N_VARIABLES) = &
+    (/ 'Obs-Calc dTb [Bias Corrected]          ', &
+       'Obs-Calc dTb [NOT Bias Corrected]      ', &
+       'SatBias Angle term                     ', &
+       'SatBias AirMass Constant term          ', &
+       'SatBias AirMass Angle term             ', &
+       'SatBias AirMass Lapse Rate term        ', &
+       'SatBias AirMass (Lapse Late)^2 term    ', &
+       'SatBias AirMass Cloud Liquid Water term' /)
+  ! Literal constants
+  REAL, PARAMETER :: ZERO = 0.0_sp
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
 
   ! --------------------
   ! Structure definition
   ! --------------------
+  !:tdoc+:
   TYPE :: RadDiag_Stats_type
-    ! Allocation counter
-    INTEGER :: nAllocates = 0
     ! Dimensions
-    INTEGER :: nPredictors = 0  ! I
-    INTEGER :: nChannels   = 0  ! L
-    INTEGER :: nFOVs       = 0  ! Is
-    INTEGER :: nTimes      = 0  ! It
-    INTEGER :: nVariables  = 0  ! N
-    INTEGER :: StrLen      = SL
-    ! The Air Mass bias correction coefficients
-    REAL(sp), DIMENSION(:,:,:),  POINTER :: AirMassCoefficients => NULL() ! I x L x It
+    INTEGER :: n_Predictors = 0  ! I
+    INTEGER :: n_Channels   = 0  ! L
+    INTEGER :: n_FOVs       = 0  ! Is
+    INTEGER :: n_Times      = 0  ! It
+    INTEGER :: n_Variables  = 0  ! N
     ! The variable names
-    CHARACTER(SL), DIMENSION(:), POINTER :: VariableNames       => NULL() ! N
+    CHARACTER(80), ALLOCATABLE :: VariableNames(:)  ! N
     ! The channel numbers
-    INTEGER,  DIMENSION(:),      POINTER :: Channel             => NULL() ! L
+    INTEGER,  ALLOCATABLE :: Channel(:)  ! L
+    ! The Air Mass bias correction coefficients
+    REAL(sp), ALLOCATABLE :: AirMassCoefficients(:,:,:)  ! I x L x It
     ! Scan position statistics
-    INTEGER,  DIMENSION(:),      POINTER :: FOV                 => NULL() ! Is
-    REAL(sp), DIMENSION(:,:,:),  POINTER :: scan_Data           => NULL() ! N x L x Is
-    INTEGER,  DIMENSION(:,:),    POINTER :: scan_nSamples       => NULL() ! L x Is
+    INTEGER,  ALLOCATABLE :: FOV(:)              ! Is
+    REAL(sp), ALLOCATABLE :: scan_Data(:,:,:)    ! N x L x Is
+    INTEGER,  ALLOCATABLE :: scan_nSamples(:,:)  ! L x Is
     ! Time series statistics
-    INTEGER,  DIMENSION(:),      POINTER :: DateTime            => NULL() ! It
-    REAL(sp), DIMENSION(:,:,:),  POINTER :: time_Data           => NULL() ! N x L x It
-    INTEGER,  DIMENSION(:,:),    POINTER :: time_nSamples       => NULL() ! L x It
+    INTEGER,  ALLOCATABLE :: DateTime(:)         ! It
+    REAL(sp), ALLOCATABLE :: time_Data(:,:,:)    ! N x L x It
+    INTEGER,  ALLOCATABLE :: time_nSamples(:,:)  ! L x It
   END TYPE RadDiag_Stats_type
+  !:tdoc-:
 
 
 CONTAINS
 
 
-  ! Subroutine to clear the scalar elements of
-  ! the radiance statistics structure
-  SUBROUTINE Clear_RadDiag_Stats( RadDiag_Stats )
-    TYPE( RadDiag_Stats_type ), INTENT( IN OUT ) :: RadDiag_Stats
-    RadDiag_Stats%StrLen = SL
-  END SUBROUTINE Clear_RadDiag_Stats
+!--------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       RadDiag_Stats_Associated
+!
+! PURPOSE:
+!       Elemental function to test the status of the allocatable components
+!       of a RadDiag_Stats object.
+!
+! CALLING SEQUENCE:
+!       Status = RadDiag_Stats_Associated( RadDiag_Stats )
+!
+! OBJECTS:
+!       RadDiag_Stats:   RadDiag_Stats structure which is to have its
+!                        member's status tested.
+!                        UNITS:      N/A
+!                        TYPE:       RadDiag_Stats_type
+!                        DIMENSION:  Scalar or any rank
+!                        ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:  The return value is a logical value indicating the
+!                status of the RadDiag_Stats members.
+!                .TRUE.  - if ANY of the RadDiag_Stats allocatable or
+!                          pointer members are in use.
+!                .FALSE. - if ALL of the RadDiag_Stats allocatable or
+!                          pointer members are not in use.
+!                UNITS:      N/A
+!                TYPE:       LOGICAL
+!                DIMENSION:  Same as input RadDiag_Stats argument
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION RadDiag_Stats_Associated( RadDiag_Stats ) RESULT( Status )
+    ! Arguments
+    TYPE(RadDiag_Stats_type), INTENT(IN) :: RadDiag_Stats
+    ! Function result
+    LOGICAL :: Status
+
+    ! Test the structure members
+    Status = &
+      ALLOCATED( RadDiag_Stats%VariableNames       ) .OR. &
+      ALLOCATED( RadDiag_Stats%Channel             ) .OR. &
+      ALLOCATED( RadDiag_Stats%AirMassCoefficients ) .OR. &
+      ALLOCATED( RadDiag_Stats%FOV                 ) .OR. &
+      ALLOCATED( RadDiag_Stats%scan_Data           ) .OR. &
+      ALLOCATED( RadDiag_Stats%scan_nSamples       ) .OR. &
+      ALLOCATED( RadDiag_Stats%DateTime            ) .OR. &
+      ALLOCATED( RadDiag_Stats%time_Data           ) .OR. &
+      ALLOCATED( RadDiag_Stats%time_nSamples       )
+
+  END FUNCTION RadDiag_Stats_Associated
 
 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RadDiag_Stats_Destroy
+! 
+! PURPOSE:
+!       Elemental subroutine to re-initialize RadDiag_Stats objects.
+!
+! CALLING SEQUENCE:
+!       CALL RadDiag_Stats_Destroy( RadDiag_Stats )
+!
+! OBJECTS:
+!       RadDiag_Stats:  Re-initialized RadDiag_Stats structure.
+!                       UNITS:      N/A
+!                       TYPE:       RadDiag_Stats_type
+!                       DIMENSION:  Scalar OR any rank
+!                       ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  ! Function to test the association status of the RadDiag_Stats structure
-  !
-  ! CALLING SEQUENCE:
-  !   Association_Status = Associated_RadDiag_Stats( &
-  !                          RadDiag_Stats,  &  ! Input
-  !                          ANY_Test = Any_Test )  ! Optional input
-  !
-  ! INPUT ARGUMENTS:
-  !   RadDiag_Stats:   RadDiag_Stats structure which is to have its
-  !                        pointer member's association status tested.
-  !                        UNITS:      N/A
-  !                        TYPE:       RadDiag_Stats_type
-  !                        DIMENSION:  Scalar
-  !                        ATTRIBUTES: INTENT( IN )
-  !
-  ! OPTIONAL INPUT ARGUMENTS:
-  !   ANY_Test:            Set this argument to test if ANY of the
-  !                        RadDiag_Stats structure pointer members are
-  !                        associated.
-  !                        The default is to test if ALL the pointer members
-  !                        are associated.
-  !                        If ANY_Test = 0, test if ALL the pointer members
-  !                                         are associated.  (DEFAULT)
-  !                           ANY_Test = 1, test if ANY of the pointer members
-  !                                         are associated.
-  !                        UNITS:      N/A
-  !                        TYPE:       INTEGER
-  !                        DIMENSION:  Scalar
-  !                        ATTRIBUTES: INTENT( IN ), OPTIONAL
-  !
-  ! FUNCTION RESULT:
-  !   Association_Status:  The return value is a logical value indicating
-  !                        the association status of the RadDiag_Stats
-  !                        pointer members.
-  !                        .TRUE.  - if ALL the RadDiag_Stats pointer
-  !                                  members are associated, or if the
-  !                                  ANY_Test argument is set and ANY of the
-  !                                  RadDiag_Stats pointer members are
-  !                                  associated.
-  !                        .FALSE. - some or all of the RadDiag_Stats
-  !                                  pointer members are NOT associated.
-  !                        UNITS:      N/A
-  !                        TYPE:       LOGICAL
-  !                        DIMENSION:  Scalar
-  !
-  ! CREATION HISTORY:
-  !   Written by:     Paul van Delst, CIMSS/SSEC 28-Mar-2006
-  !                   paul.vandelst@ssec.wisc.edu
+  ELEMENTAL SUBROUTINE RadDiag_Stats_Destroy( RadDiag_Stats )
+    TYPE(RadDiag_Stats_type), INTENT(OUT) :: RadDiag_Stats
+  END SUBROUTINE RadDiag_Stats_Destroy
+  
 
-  FUNCTION Associated_RadDiag_Stats( &
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RadDiag_Stats_Create
+! 
+! PURPOSE:
+!       Elemental subroutine to create an instance of the RadDiag_Stats object.
+!
+! CALLING SEQUENCE:
+!       CALL RadDiag_Stats_Create( RadDiag_Stats, &
+!                                  n_Predictors , &
+!                                  n_Channels   , &
+!                                  n_FOVs       , &
+!                                  n_Times        )
+!
+! OBJECTS:
+!       RadDiag_Stats:   RadDiag_Stats structure.
+!                        UNITS:      N/A
+!                        TYPE:       RadDiag_Stats_type
+!                        DIMENSION:  Scalar or any rank
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       n_Predictors:    Predictor dimension of RadDiag_Stats structure.
+!                        Must be > 0.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Conformable with RadDiag_Stats object
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       n_Channels:      Channel dimension of RadDiag_Stats structure.
+!                        Must be > 0.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Conformable with RadDiag_Stats object
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       n_FOVs:          Field-of-view dimension of RadDiag_Stats structure.
+!                        Must be > 0.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Conformable with RadDiag_Stats object
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       n_Times:         Time dimension of RadDiag_Stats structure.
+!                        Must be > 0.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Conformable with RadDiag_Stats object
+!                        ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE RadDiag_Stats_Create( &
     RadDiag_Stats, &  ! Output
-    ANY_Test ) & ! Optional input
-    RESULT( Association_Status )
-
-
-    ! -----------------
-    ! Type declarations
-    ! -----------------
-
+    n_Predictors , &  ! Input
+    n_Channels   , &  ! Input
+    n_FOVs       , &  ! Input
+    n_Times        )  ! Input
     ! Arguments
-    TYPE( RadDiag_Stats_type ), INTENT( IN ) :: RadDiag_Stats
-    INTEGER, OPTIONAL, INTENT( IN ) :: ANY_Test
-
-    ! Function result
-    LOGICAL :: Association_Status
-
+    TYPE(RadDiag_Stats_type), INTENT(OUT) :: RadDiag_Stats
+    INTEGER,                  INTENT(IN)  :: n_Predictors
+    INTEGER,                  INTENT(IN)  :: n_Channels
+    INTEGER,                  INTENT(IN)  :: n_FOVs
+    INTEGER,                  INTENT(IN)  :: n_Times
     ! Local variables
-    LOGICAL :: ALL_Test
+    INTEGER :: alloc_stat
 
+    ! Check input
+    IF ( n_Predictors < 1 .OR. &
+         n_Channels   < 1 .OR. &
+         n_FOVs       < 1 .OR. &
+         n_Times      < 1      ) RETURN
 
-    ! ------
-    ! Set up
-    ! ------
-
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
-    END IF
-
-
-    ! ---------------------------------------------
-    ! Test the structure pointer member association
-    ! ---------------------------------------------
-
-    Association_Status = .FALSE.
-    IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( RadDiag_Stats%AirMassCoefficients ) .AND. &
-           ASSOCIATED( RadDiag_Stats%VariableNames       ) .AND. &
-           ASSOCIATED( RadDiag_Stats%Channel             ) .AND. &
-           ASSOCIATED( RadDiag_Stats%FOV                 ) .AND. &
-           ASSOCIATED( RadDiag_Stats%scan_Data           ) .AND. &
-           ASSOCIATED( RadDiag_Stats%scan_nSamples       ) .AND. &
-           ASSOCIATED( RadDiag_Stats%DateTime            ) .AND. &
-           ASSOCIATED( RadDiag_Stats%time_Data           ) .AND. &
-           ASSOCIATED( RadDiag_Stats%time_nSamples       )       ) THEN
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF ( ASSOCIATED( RadDiag_Stats%AirMassCoefficients ) .OR. &
-           ASSOCIATED( RadDiag_Stats%VariableNames       ) .OR. &
-           ASSOCIATED( RadDiag_Stats%Channel             ) .OR. &
-           ASSOCIATED( RadDiag_Stats%FOV                 ) .OR. &
-           ASSOCIATED( RadDiag_Stats%scan_Data           ) .OR. &
-           ASSOCIATED( RadDiag_Stats%scan_nSamples       ) .OR. &
-           ASSOCIATED( RadDiag_Stats%DateTime            ) .OR. &
-           ASSOCIATED( RadDiag_Stats%time_Data           ) .OR. &
-           ASSOCIATED( RadDiag_Stats%time_nSamples       )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-
-  END FUNCTION Associated_RadDiag_Stats
-
-
-  ! Function to re-initialize the scalar and pointer members of
-  ! a RadDiag_Stats data structure.
-  !
-  ! CALLING SEQUENCE:
-  !   Error_Status = Destroy_RadDiag_Stats( RadDiag_Stats,            &  ! Output
-  !                                         RCS_Id = RCS_Id,          &  ! Revision control
-  !                                         Message_Log = Message_Log )  ! Error messaging
-  !
-  ! OPTIONAL INPUT ARGUMENTS:
-  !   Message_Log:        Character string specifying a filename in which any
-  !                       messages will be logged. If not specified, or if an
-  !                       error occurs opening the log file, the default action
-  !                       is to output messages to standard output.
-  !                       UNITS:      N/A
-  !                       TYPE:       CHARACTER(*)
-  !                       DIMENSION:  Scalar
-  !                       ATTRIBUTES: INTENT( IN ), OPTIONAL
-  !
-  ! OUTPUT ARGUMENTS:
-  !   RadDiag_Stats:  Re-initialized RadDiag_Stats structure.
-  !                       UNITS:      N/A
-  !                       TYPE:       RadDiag_Stats_type
-  !                       DIMENSION:  Scalar
-  !                       ATTRIBUTES: INTENT( IN OUT )
-  !
-  ! OPTIONAL OUTPUT ARGUMENTS:
-  !   RCS_Id:             Character string containing the Revision Control
-  !                       System Id field for the module.
-  !                       UNITS:      N/A
-  !                       TYPE:       CHARACTER(*)
-  !                       DIMENSION:  Scalar
-  !                       ATTRIBUTES: INTENT( OUT ), OPTIONAL
-  !
-  ! FUNCTION RESULT:
-  !   Error_Status:       The return value is an integer defining the error status.
-  !                       The error codes are defined in the ERROR_HANDLER module.
-  !                       If == SUCCESS the structure re-initialisation was successful
-  !                          == FAILURE - an error occurred, or
-  !                                     - the structure internal allocation counter
-  !                                       is not equal to zero (0) upon exiting this
-  !                                       function. This value is incremented and
-  !                                       decremented for every structure allocation
-  !                                       and deallocation respectively.
-  !                       UNITS:      N/A
-  !                       TYPE:       INTEGER
-  !                       DIMENSION:  Scalar
-  !
-  ! COMMENTS:
-  !   Note the INTENT on the output RadDiag_Stats argument is IN OUT 
-  !   rather than just OUT. This is necessary because the argument may be
-  !   defined upon input. To prevent memory leaks, the IN OUT INTENT is
-  !   a must.
-  !
-  ! CREATION HISTORY:
-  !       Written by:     Paul van Delst, CIMSS/SSEC 28-Mar-2006
-  !                       paul.vandelst@ssec.wisc.edu
-
-  FUNCTION Destroy_RadDiag_Stats( RadDiag_Stats, &  ! Output
-                                  No_Clear,      &  ! Optional input
-                                  RCS_Id,        &  ! Revision control
-                                  Message_Log )  &  ! Error messaging
-                                  RESULT( Error_Status )
-    ! Arguments
-    TYPE(RadDiag_Stats_type), INTENT(IN OUT) :: RadDiag_Stats
-    INTEGER,      OPTIONAL, INTENT(IN)  :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_RadDiag_Stats'
-    ! Local variables
-    CHARACTER(256) :: Message
-    LOGICAL :: Clear
-    INTEGER :: Allocate_Status
-
-    ! ------
-    ! Set up
-    ! ------
-
-    Error_Status = SUCCESS
-
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
-
-
-    ! ------------------------
-    ! Perform reinitialisation
-    ! ------------------------
-
-    ! Initialise the scalar members
-    IF ( Clear ) CALL Clear_RadDiag_Stats( RadDiag_Stats )
-
-    ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_RadDiag_Stats( RadDiag_Stats ) ) RETURN
-
-    ! -- Deallocate the RadDiag_Stats AirMassCoefficients member
-    IF ( ASSOCIATED( RadDiag_Stats%AirMassCoefficients ) ) THEN
-      DEALLOCATE( RadDiag_Stats%AirMassCoefficients, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats AirMassCoefficients ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats VariableNames member
-    IF ( ASSOCIATED( RadDiag_Stats%VariableNames ) ) THEN
-      DEALLOCATE( RadDiag_Stats%VariableNames, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats VariableNames ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats Channel member
-    IF ( ASSOCIATED( RadDiag_Stats%Channel ) ) THEN
-      DEALLOCATE( RadDiag_Stats%Channel, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats Channel ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats FOV member
-    IF ( ASSOCIATED( RadDiag_Stats%FOV ) ) THEN
-      DEALLOCATE( RadDiag_Stats%FOV, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats FOV ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats scan_Data member
-    IF ( ASSOCIATED( RadDiag_Stats%scan_Data ) ) THEN
-      DEALLOCATE( RadDiag_Stats%scan_Data, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats scan_Data ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats scan_nSamples member
-    IF ( ASSOCIATED( RadDiag_Stats%scan_nSamples ) ) THEN
-      DEALLOCATE( RadDiag_Stats%scan_nSamples, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats scan_nSamples ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats DateTime member
-    IF ( ASSOCIATED( RadDiag_Stats%DateTime ) ) THEN
-      DEALLOCATE( RadDiag_Stats%DateTime, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats DateTime ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats time_Data member
-    IF ( ASSOCIATED( RadDiag_Stats%time_Data ) ) THEN
-      DEALLOCATE( RadDiag_Stats%time_Data, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats time_Data ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-    ! -- Deallocate the RadDiag_Stats time_nSamples member
-    IF ( ASSOCIATED( RadDiag_Stats%time_nSamples ) ) THEN
-      DEALLOCATE( RadDiag_Stats%time_nSamples, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating RadDiag_Stats time_nSamples ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-
-    ! -------------------------------------
-    ! Decrement and test allocation counter
-    ! -------------------------------------
-
-    RadDiag_Stats%nAllocates = RadDiag_Stats%nAllocates - 1
-
-    IF ( RadDiag_Stats%nAllocates /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-                      RadDiag_Stats%nAllocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
-
-  END FUNCTION Destroy_RadDiag_Stats
-
-
-  ! Function to allocate the pointer members of the RadDiag_Stats
-  ! data structure.
-  !
-  ! CALLING SEQUENCE:
-  !   Error_Status = Allocate_RadDiag_Stats( nPredictors,              &  ! Input
-  !                                          nChannels,                &  ! Input
-  !                                          nFOVs,                    &  ! Input
-  !                                          nTimes,                   &  ! Input
-  !                                          nVariables,               &  ! Input
-  !                                          RadDiag_Stats,            &  ! Output
-  !                                          RCS_Id = RCS_Id,          &  ! Revision control
-  !                                          Message_Log = Message_Log )  ! Error messaging
-  !
-  ! INPUT ARGUMENTS:
-  !   nPredictors:     Predictor dimension of RadDiag_Stats structure pointer
-  !                    members.
-  !                    Must be > 0.
-  !                    UNITS:      N/A
-  !                    TYPE:       INTEGER
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN )
-  !
-  !   nChannels:       Channel dimension of RadDiag_Stats structure pointer
-  !                    members.
-  !                    Must be > 0.
-  !                    UNITS:      N/A
-  !                    TYPE:       INTEGER
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN )
-  !
-  !   nFOVs:           Field-of-view dimension of RadDiag_Stats structure pointer
-  !                    members.
-  !                    Must be > 0.
-  !                    UNITS:      N/A
-  !                    TYPE:       INTEGER
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN )
-  !
-  !   nTimes:          Time dimension of RadDiag_Stats structure pointer
-  !                    members.
-  !                    Must be > 0.
-  !                    UNITS:      N/A
-  !                    TYPE:       INTEGER
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN )
-  !
-  !   nVariables:      The number of data terms dimension of
-  !                    RadDiag_Stats structure pointer members.
-  !                    Must be > 0.
-  !                    UNITS:      N/A
-  !                    TYPE:       INTEGER
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN )
-  !
-  ! OPTIONAL INPUT ARGUMENTS:
-  !   Message_Log:     Character string specifying a filename in
-  !                    which any messages will be logged. If not
-  !                    specified, or if an error occurs opening the
-  !                    log file, the default action is to output
-  !                    messages to standard output.
-  !                    UNITS:      N/A
-  !                    TYPE:       CHARACTER(*)
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN ), OPTIONAL
-  !
-  ! OUTPUT ARGUMENTS:
-  !   RadDiag_Stats:   RadDiag_Stats structure with allocated pointer
-  !                    members
-  !                    UNITS:      N/A
-  !                    TYPE:       RadDiag_Stats_type
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( IN OUT )
-  !
-  ! OPTIONAL OUTPUT ARGUMENTS:
-  !   RCS_Id:          Character string containing the Revision
-  !                    Control System Id field for the module.
-  !                    UNITS:      N/A
-  !                    TYPE:       CHARACTER(*)
-  !                    DIMENSION:  Scalar
-  !                    ATTRIBUTES: INTENT( OUT ), OPTIONAL
-  !
-  ! FUNCTION RESULT:
-  !   Error_Status:    The return value is an integer defining the
-  !                    error status. The error codes are defined in
-  !                    the ERROR_HANDLER module.
-  !                    If == SUCCESS the structure pointer allocations
-  !                                  were successful
-  !                       == FAILURE - an error occurred, or
-  !                                  - the structure internal allocation
-  !                                    counter is not equal to one (1)
-  !                                    upon exiting this function. This
-  !                                    value is incremented and decre-
-  !                                    mented for every structure
-  !                                    allocation and deallocation
-  !                                    respectively.
-  !                    UNITS:      N/A
-  !                    TYPE:       INTEGER
-  !                    DIMENSION:  Scalar
-  !
-  ! COMMENTS:
-  !   Note the INTENT on the output RadDiag_Stats argument is IN OUT 
-  !   rather than just OUT. This is necessary because the argument may be
-  !   defined upon input. To prevent memory leaks, the IN OUT INTENT is
-  !   a must.
-  !
-  ! CREATION HISTORY:
-  !   Written by:     Paul van Delst, CIMSS/SSEC 28-Mar-2006
-  !                   paul.vandelst@ssec.wisc.edu
-
-  FUNCTION Allocate_RadDiag_Stats( nPredictors,   &  ! Input
-                                   nChannels,     &  ! Input
-                                   nFOVs,         &  ! Input
-                                   nTimes,        &  ! Input
-                                   nVariables,    &  ! Input
-                                   RadDiag_Stats, &  ! Output
-                                   RCS_Id,        &  ! Revision control
-                                   Message_Log )  &  ! Error messaging
-                                   RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                  INTENT(IN)     :: nPredictors
-    INTEGER,                  INTENT(IN)     :: nChannels
-    INTEGER,                  INTENT(IN)     :: nFOVs
-    INTEGER,                  INTENT(IN)     :: nTimes
-    INTEGER,                  INTENT(IN)     :: nVariables
-    TYPE(RadDiag_Stats_type), INTENT(IN OUT) :: RadDiag_Stats
-    CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_RadDiag_Stats'
-    ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
-
-    ! ------
-    ! Set up
-    ! ------
-
-    Error_Status = SUCCESS
-
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check dimensions
-    IF ( nPredictors < 1 .OR. &
-         nChannels   < 1 .OR. &
-         nFOVs       < 1 .OR. &
-         nTimes      < 1 .OR. &
-         nVariables  < 1      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input dimensions must ALL be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Check if ANY pointers are already associated
-    ! If they are, deallocate them but leave scalars.
-    IF ( Associated_RadDiag_Stats( RadDiag_Stats, ANY_Test=SET ) ) THEN
-      Error_Status = Destroy_RadDiag_Stats( RadDiag_Stats, &
-                                            No_Clear=SET, &
-                                            Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating RadDiag_Stats pointer members.', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-    END IF
-
-
-    ! ----------------------
     ! Perform the allocation
-    ! ----------------------
-
     ALLOCATE( &
-      RadDiag_Stats%AirMassCoefficients(nPredictors,nChannels,nTimes), &
-      RadDiag_Stats%VariableNames(nVariables), &
-      RadDiag_Stats%Channel(nChannels), &
-      RadDiag_Stats%FOV(nFOVs), &
-      RadDiag_Stats%scan_Data(nVariables,nChannels,nFOVs), &
-      RadDiag_Stats%scan_nSamples(nChannels,nFOVs), &
-      RadDiag_Stats%DateTime(nTimes), &
-      RadDiag_Stats%time_Data(nVariables,nChannels,nTimes), &
-      RadDiag_Stats%time_nSamples(nChannels,nTimes), &
-      STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating RadDiag_Stats data arrays. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+      RadDiag_Stats%VariableNames(N_VARIABLES), &
+      RadDiag_Stats%Channel(n_Channels), &
+      RadDiag_Stats%AirMassCoefficients(n_Predictors,n_Channels,n_Times), &
+      RadDiag_Stats%FOV(n_FOVs), &
+      RadDiag_Stats%scan_Data(N_VARIABLES,n_Channels,n_FOVs), &
+      RadDiag_Stats%scan_nSamples(n_Channels,n_FOVs), &
+      RadDiag_Stats%DateTime(n_Times), &
+      RadDiag_Stats%time_Data(N_VARIABLES,n_Channels,n_Times), &
+      RadDiag_Stats%time_nSamples(n_Channels,n_Times), &
+      STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
 
-
-    ! ------------------------------------------
-    ! Assign the dimensions and intialise arrays
-    ! ------------------------------------------
-
-    RadDiag_Stats%nPredictors = nPredictors
-    RadDiag_Stats%nChannels   = nChannels
-    RadDiag_Stats%nFOVs       = nFOVs
-    RadDiag_Stats%nTimes      = nTimes
-    RadDiag_Stats%nVariables  = nVariables
-
+    ! Initialise
+    ! ...Dimensions
+    RadDiag_Stats%n_Predictors = n_Predictors
+    RadDiag_Stats%n_Channels   = n_Channels
+    RadDiag_Stats%n_FOVs       = n_FOVs
+    RadDiag_Stats%n_Times      = n_Times
+    RadDiag_Stats%n_Variables  = N_VARIABLES
+    ! ...Arrays
+    RadDiag_Stats%VariableNames       = VARIABLENAMES
     RadDiag_Stats%AirMassCoefficients = ZERO
-    RadDiag_Stats%VariableNames       = VariableNames
-    RadDiag_Stats%Channel             = -1
-    RadDiag_Stats%FOV                 = invalidFOV
+    RadDiag_Stats%Channel             = 0
+    RadDiag_Stats%FOV                 = 0
     RadDiag_Stats%scan_Data           = ZERO
     RadDiag_Stats%scan_nSamples       = ZERO
     RadDiag_Stats%DateTime            = ZERO
     RadDiag_Stats%time_Data           = ZERO
     RadDiag_Stats%time_nSamples       = ZERO
 
-
-    ! -----------------------------------------
-    ! Increment and test the allocation counter
-    ! -----------------------------------------
-
-    RadDiag_Stats%nAllocates = RadDiag_Stats%nAllocates + 1
-    IF ( RadDiag_Stats%nAllocates /= 1 ) THEN
-      Error_Status = WARNING
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
-                      RadDiag_Stats%nAllocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
-
-  END FUNCTION Allocate_RadDiag_Stats
+  END SUBROUTINE RadDiag_Stats_Create
 
 
-  ! Function to copy valid RadDiag_Stats structures.
-  !
-  ! CALLING SEQUENCE:
-  !   Error_Status = Assign_RadDiag_Stats( RadDiag_Stats_in,         &  ! Input
-  !                                        RadDiag_Stats_out,        &  ! Output
-  !                                        RCS_Id = RCS_Id,          &  ! Revision control
-  !                                        Message_Log = Message_Log )  ! Error messaging
-  !
-  ! INPUT ARGUMENTS:
-  !   RadDiag_Stats_in:  RadDiag_Stats structure which is to be copied.
-  !                      UNITS:      N/A
-  !                      TYPE:       RadDiag_Stats_type
-  !                      DIMENSION:  Scalar
-  !                      ATTRIBUTES: INTENT( IN )
-  !
-  ! OPTIONAL INPUT ARGUMENTS:
-  !   Message_Log:       Character string specifying a filename in which any
-  !                      messages will be logged. If not specified, or if an
-  !                      error occurs opening the log file, the default action
-  !                      is to output messages to standard output.
-  !                      UNITS:      N/A
-  !                      TYPE:       CHARACTER(*)
-  !                      DIMENSION:  Scalar
-  !                      ATTRIBUTES: INTENT( IN ), OPTIONAL
-  !
-  ! OUTPUT ARGUMENTS:
-  !   RadDiag_Stats_out: Copy of the input structure, RadDiag_Stats_in.
-  !                      UNITS:      N/A
-  !                      TYPE:       Same as RadDiag_Stats_in
-  !                      DIMENSION:  Scalar
-  !                      ATTRIBUTES: INTENT( IN OUT )
-  !
-  ! OPTIONAL OUTPUT ARGUMENTS:
-  !   RCS_Id:            Character string containing the Revision Control
-  !                      System Id field for the module.
-  !                      UNITS:      N/A
-  !                      TYPE:       CHARACTER(*)
-  !                      DIMENSION:  Scalar
-  !                      ATTRIBUTES: INTENT( OUT ), OPTIONAL
-  !
-  ! FUNCTION RESULT:
-  !   Error_Status:      The return value is an integer defining the error status.
-  !                      The error codes are defined in the ERROR_HANDLER module.
-  !                      If == SUCCESS the structure assignment was successful
-  !                         == FAILURE an error occurred
-  !                      UNITS:      N/A
-  !                      TYPE:       INTEGER
-  !                      DIMENSION:  Scalar
-  !
-  ! COMMENTS:
-  !   Note the INTENT on the output RadDiag_Stats argument is IN OUT 
-  !   rather than just OUT. This is necessary because the argument may be
-  !   defined upon input. To prevent memory leaks, the IN OUT INTENT is
-  !   a must.
-  !
-  ! CREATION HISTORY:
-  !   Written by:     Paul van Delst, CIMSS/SSEC 28-Mar-2006
-  !                   paul.vandelst@ssec.wisc.edu
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RadDiag_Stats_Inspect
+!
+! PURPOSE:
+!       Subroutine to print the contents of a RadDiag_Stats object to stdout.
+!
+! CALLING SEQUENCE:
+!       CALL RadDiag_Stats_Inspect( rds )
+!
+! INPUTS:
+!       rds:    RadDiag_Stats object to display.
+!               UNITS:      N/A
+!               TYPE:       RadDiag_Stats_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  FUNCTION Assign_RadDiag_Stats( RadDiag_Stats_in,  &  ! Input
-                                 RadDiag_Stats_out, &  ! Output
-                                 RCS_Id,            &  ! Revision control
-                                 Message_Log )      &  ! Error messaging
-                               RESULT( Error_Status )
-    ! Arguments
-    TYPE(RadDiag_Stats_type), INTENT(IN)     :: RadDiag_Stats_in
-    TYPE(RadDiag_Stats_type), INTENT(IN OUT) :: RadDiag_Stats_out
-    CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_RadDiag_Stats'
-    ! Local variables
-    INTEGER :: i, l, is, it, n
+  SUBROUTINE RadDiag_Stats_Inspect( rds )
+    TYPE(RadDiag_Stats_type), INTENT(IN) :: rds
+    INTEGER :: i, j, k
 
+    WRITE(*, '(1x,"RADDIAG_STATS OBJECT")')
+    ! Dimensions
+    WRITE(*, '(3x,"n_Predictors:",1x,i0)') rds%n_Predictors
+    WRITE(*, '(3x,"n_Channels  :",1x,i0)') rds%n_Channels  
+    WRITE(*, '(3x,"n_FOVs      :",1x,i0)') rds%n_FOVs      
+    WRITE(*, '(3x,"n_Times     :",1x,i0)') rds%n_Times     
+    WRITE(*, '(3x,"n_Variables :",1x,i0)') rds%n_Variables 
+    IF ( .NOT. RadDiag_Stats_Associated(rds) ) RETURN
+    ! Variable names
+    WRITE(*, '(3x,"VariableNames :")')
+    DO i = 1, rds%n_Variables
+      WRITE(*, '(7x,i2,") ",a)') i, rds%VariableNames(i)
+    END DO
+    ! Channel number information
+    WRITE(*, '(3x,"Channel:")') 
+    WRITE(*, '(10(1x,i5,:))') rds%Channel
+    ! Air mass bias correction coefficients
+    WRITE(*, '(3x,"AirMassCoefficients:")')
+    DO j = 1, rds%n_Times
+      WRITE(*, '(5x,"Date/Time: ",i0)') rds%DateTime(j) 
+      DO i = 1, rds%n_Channels
+        WRITE(*, '(7x,"Channel: ",i0)') rds%Channel(i) 
+        WRITE(*, '(5(1x,es13.6,:))') rds%AirMassCoefficients(:,i,j)
+      END DO
+    END DO
+    ! Scan position statistics
+    WRITE(*, '(3x,"Scan position statistics:")')
+    DO j = 1, rds%n_FOVs
+      WRITE(*, '(5x,"FOV: ",i0)') rds%FOV(j) 
+      DO i = 1, rds%n_Channels
+        WRITE(*, '(7x,"Channel: ",i0,"; n_Samples: ",i0)') rds%Channel(i), rds%scan_nSamples(i,j)
+        WRITE(*, '(5(1x,es13.6,:))') rds%scan_Data(:,i,j)
+      END DO
+    END DO
+    ! Time series statistics
+    WRITE(*, '(3x,"Time series statistics:")')
+    DO j = 1, rds%n_Times
+      WRITE(*, '(5x,"Date/Time: ",i0)') rds%DateTime(j) 
+      DO i = 1, rds%n_Channels
+        WRITE(*, '(7x,"Channel: ",i0,"; n_Samples: ",i0)') rds%Channel(i), rds%time_nSamples(i,j)
+        WRITE(*, '(5(1x,es13.6,:))') rds%time_Data(:,i,j)
+      END DO
+    END DO
+        
+  END SUBROUTINE RadDiag_Stats_Inspect
+  
 
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RadDiag_Stats_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL RadDiag_Stats_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-    ! ALL *input* pointers must be associated.
-    ! If this test succeeds, then some or all of the
-    ! input pointers are NOT associated, so destroy
-    ! the output structure and return.
-    IF ( .NOT. Associated_RadDiag_Stats( RadDiag_Stats_In ) ) THEN
-      Error_Status = Destroy_RadDiag_Stats( RadDiag_Stats_Out, &
-                                                Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating output RadDiag_Stats_out pointer members.', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-      RETURN
-    END IF
-
-    ! Allocate the structure
-    Error_Status = Allocate_RadDiag_Stats( RadDiag_Stats_in%nPredictors, &
-                                           RadDiag_Stats_in%nChannels, &
-                                           RadDiag_Stats_in%nFOVs, &
-                                           RadDiag_Stats_in%nTimes, &
-                                           RadDiag_Stats_in%nVariables, &
-                                           RadDiag_Stats_out, &
-                                           Message_Log = Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output RadDiag_Stats arrays.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Assign non-dimension scalar members
-    RadDiag_Stats_out%StrLen = RadDiag_Stats_in%StrLen
-
-    ! Assign array data
-    i  = RadDiag_Stats_in%nPredictors
-    l  = RadDiag_Stats_in%nChannels
-    is = RadDiag_Stats_in%nFOVs
-    it = RadDiag_Stats_in%nTimes
-    n  = RadDiag_Stats_in%nVariables
-
-    RadDiag_Stats_out%AirMassCoefficients = RadDiag_Stats_in%AirMassCoefficients(:i,:l,:it)
-    RadDiag_Stats_out%VariableNames       = RadDiag_Stats_in%VariableNames(:n)
-    RadDiag_Stats_out%Channel             = RadDiag_Stats_in%Channel(:l)
-    RadDiag_Stats_out%FOV                 = RadDiag_Stats_in%FOV(:is)
-    RadDiag_Stats_out%scan_Data           = RadDiag_Stats_in%scan_Data(:n,:l,:is)
-    RadDiag_Stats_out%scan_nSamples       = RadDiag_Stats_in%scan_nSamples(:l,:is)
-    RadDiag_Stats_out%DateTime            = RadDiag_Stats_in%DateTime(:it)
-    RadDiag_Stats_out%time_Data           = RadDiag_Stats_in%time_Data(:n,:l,:it)
-    RadDiag_Stats_out%time_nSamples       = RadDiag_Stats_in%time_nSamples(:l,:it)
-
-  END FUNCTION Assign_RadDiag_Stats
+  SUBROUTINE RadDiag_Stats_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE RadDiag_Stats_DefineVersion
 
 END MODULE RadDiag_Stats_Define
