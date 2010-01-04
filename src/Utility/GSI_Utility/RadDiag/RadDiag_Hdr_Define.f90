@@ -103,7 +103,7 @@ CONTAINS
 !       Status = RadDiag_Hdr_Associated( RadDiag_Hdr )
 !
 ! OBJECTS:
-!       RadDiag_Hdr:   RadDiag_Hdr structure which is to have its
+!       RadDiag_Hdr:     RadDiag_Hdr structure which is to have its
 !                        member's status tested.
 !                        UNITS:      N/A
 !                        TYPE:       RadDiag_Hdr_type
@@ -124,7 +124,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION RadDiag_Hdr_Associated( RadDiag_Hdr ) RESULT( Status )
+  ELEMENTAL FUNCTION RadDiag_Hdr_Associated( RadDiag_Hdr ) RESULT( Status )
     ! Arguments
     TYPE(RadDiag_Hdr_type), INTENT(IN) :: RadDiag_Hdr
     ! Function result
@@ -240,7 +240,7 @@ CONTAINS
 
   SUBROUTINE RadDiag_Hdr_Inspect( rdh )
     TYPE(RadDiag_Hdr_type), INTENT(IN) :: rdh
-    INTEGER :: i, j, k
+    INTEGER :: i
     WRITE(*, '(1x,"RADDIAG_HDR OBJECT")')
     ! Scalar object
     CALL RadDiag_Hdr_Scalar_Inspect( rdh%Scalar )

@@ -27,9 +27,9 @@ MODULE RadDiag_Data_Define
   ! ---------------------
   PRIVATE
   ! Parameters
-  PUBLIC :: RadDiag_nFPelements
-  PUBLIC :: RadDiag_nCHelements
-  PUBLIC :: RadDiag_nPRelements
+  PUBLIC :: RADDIAG_N_FPELEMENTS
+  PUBLIC :: RADDIAG_N_CHELEMENTS
+  PUBLIC :: RADDIAG_N_PRELEMENTS
   ! Datatypes
   PUBLIC :: RadDiag_Data_Scalar_type
   PUBLIC :: RadDiag_Data_Channel_type
@@ -45,9 +45,9 @@ MODULE RadDiag_Data_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  INTEGER, PARAMETER :: RadDiag_nFPelements = 26 ! Number of floating point elements
-  INTEGER, PARAMETER :: RadDiag_nCHelements = 7  ! Number of channel elements
-  INTEGER, PARAMETER :: RadDiag_nPRelements = 5  ! Number of bias correction terms
+  INTEGER, PARAMETER :: RADDIAG_N_FPELEMENTS = 26 ! Number of floating point elements
+  INTEGER, PARAMETER :: RADDIAG_N_CHELEMENTS = 7  ! Number of channel elements
+  INTEGER, PARAMETER :: RADDIAG_N_PRELEMENTS = 5  ! Number of bias correction terms
   ! Literal constants
   REAL, PARAMETER :: ZERO = 0.0_sp
   ! Version Id for the module
@@ -150,7 +150,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION RadDiag_Data_Associated( RadDiag_Data ) RESULT( Status )
+  ELEMENTAL FUNCTION RadDiag_Data_Associated( RadDiag_Data ) RESULT( Status )
     ! Arguments
     TYPE(RadDiag_Data_type), INTENT(IN) :: RadDiag_Data
     ! Function result
@@ -266,7 +266,7 @@ CONTAINS
 
   SUBROUTINE RadDiag_Data_Inspect( rdd )
     TYPE(RadDiag_Data_type), INTENT(IN) :: rdd
-    INTEGER :: i, j, k
+    INTEGER :: i
     WRITE(*, '(1x,"RadDiag_Data OBJECT")')
     ! Scalar object
     CALL RadDiag_Data_Scalar_Inspect( rdd%Scalar )

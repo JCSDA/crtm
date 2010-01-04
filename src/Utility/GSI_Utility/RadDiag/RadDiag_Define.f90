@@ -18,7 +18,10 @@ MODULE RadDiag_Define
                                  RadDiag_Hdr_Create       , &
                                  RadDiag_Hdr_Inspect      , &
                                  RadDiag_Hdr_DefineVersion
-  USE RadDiag_Data_Define, ONLY: RadDiag_Data_Scalar_type  , &
+  USE RadDiag_Data_Define, ONLY: RADDIAG_N_FPELEMENTS, &
+                                 RADDIAG_N_CHELEMENTS, &
+                                 RADDIAG_N_PRELEMENTS, &
+                                 RadDiag_Data_Scalar_type  , &
                                  RadDiag_Data_Channel_type , &
                                  RadDiag_Data_type         , &
                                  RadDiag_Data_Associated   , &
@@ -47,6 +50,10 @@ MODULE RadDiag_Define
   PUBLIC :: RadDiag_Hdr_Inspect
   PUBLIC :: RadDiag_Hdr_DefineVersion
   ! RadDiag_Data entities
+  ! ...Parameters
+  PUBLIC :: RADDIAG_N_FPELEMENTS
+  PUBLIC :: RADDIAG_N_CHELEMENTS
+  PUBLIC :: RADDIAG_N_PRELEMENTS
   ! ...Datatypes
   PUBLIC :: RadDiag_Data_Scalar_type
   PUBLIC :: RadDiag_Data_Channel_type
@@ -64,7 +71,7 @@ MODULE RadDiag_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_Version_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
 
