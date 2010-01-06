@@ -22,8 +22,8 @@
 ;         f0                   = f0                  , $  ; Output keyword
 ;         Planck_Coeffs        = Planck_Coeffs       , $  ; Output keyword
 ;         Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Output keyword
-;         R                    = R                   , $  ; Output keyword
-;         T                    = T                   , $  ; Output keyword
+;         Convolved_R          = Convolved_R         , $  ; Output keyword
+;         Convolved_T          = Convolved_T         , $  ; Output keyword
 ;         f1                   = f1                  , $  ; Output keyword
 ;         f2                   = f2                  , $  ; Output keyword
 ;         n_Points             = n_Points            , $  ; Output keyword
@@ -122,13 +122,13 @@
 ;                              DIMENSION:  Rank-1
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       R:                     Convolved radiance from LBL or Planck radiance method (if called)
+;       Convolved_R:           Convolved radiance from LBL or Planck radiance method (if called)
 ;                              UNITS:      mW/(m^2.sr.cm^-1)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       T:                     Brightness temperature corresponding to R.
+;       Convolved_T:           Brightness temperature corresponding to Convolved_R.
 ;                              UNITS:      Kelvin
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Scalar
@@ -161,14 +161,14 @@
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  n_Points
-;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Response:              The response data for an SRF band.
 ;                              Used in conjunction with the Band keyword argument.
 ;                              UNITS:      N/A
 ;                              TYPE:       REAL
 ;                              DIMENSION:  n_Points
-;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
@@ -206,8 +206,8 @@ PRO OSRF::Get_Property, $
   f0                   = f0                  , $  ; Output keyword
   Planck_Coeffs        = Planck_Coeffs       , $  ; Output keyword
   Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Output keyword
-  R                    = R                   , $  ; Output keyword
-  T                    = T                   , $  ; Output keyword
+  Convolved_R          = Convolved_R         , $  ; Output keyword
+  Convolved_T          = Convolved_T         , $  ; Output keyword
   f1                   = f1                  , $  ; Output keyword
   f2                   = f2                  , $  ; Output keyword
   n_Points             = n_Points            , $  ; Output keyword
@@ -238,6 +238,7 @@ PRO OSRF::Get_Property, $
 
 
   ; Get data
+  ; ...Scalar data
   IF ( ARG_PRESENT(n_Bands             ) ) THEN n_Bands              = self.n_Bands
   IF ( ARG_PRESENT(Version             ) ) THEN Version              = self.Version         
   IF ( ARG_PRESENT(Sensor_Id           ) ) THEN Sensor_Id            = self.Sensor_Id       
@@ -250,13 +251,20 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(f0                  ) ) THEN f0                   = self.f0              
   IF ( ARG_PRESENT(Planck_Coeffs       ) ) THEN Planck_Coeffs        = self.Planck_Coeffs
   IF ( ARG_PRESENT(Polychromatic_Coeffs) ) THEN Polychromatic_Coeffs = self.Polychromatic_Coeffs
-  IF ( ARG_PRESENT(R                   ) ) THEN R                    = self.R
-  IF ( ARG_PRESENT(T                   ) ) THEN T                    = self.T
-  IF ( ARG_PRESENT(f1                  ) ) THEN f1                   = (*self.f1)[_Band]         
-  IF ( ARG_PRESENT(f2                  ) ) THEN f2                   = (*self.f2)[_Band]         
-  IF ( ARG_PRESENT(n_Points            ) ) THEN n_Points             = (*self.n_Points)[_Band]
-  IF ( ARG_PRESENT(Frequency           ) ) THEN Frequency            = *(*self.Frequency)[_Band]
-  IF ( ARG_PRESENT(Response            ) ) THEN Response             = *(*self.Response)[_Band]
+  IF ( ARG_PRESENT(Convolved_R         ) ) THEN Convolved_R          = self.Convolved_R
+  IF ( ARG_PRESENT(Convolved_T         ) ) THEN Convolved_T          = self.Convolved_T
+  ; ...Band specific data  
+  IF ( ARG_PRESENT(f1       ) ) THEN f1        = (*self.f1)[_Band]       
+  IF ( ARG_PRESENT(f2       ) ) THEN f2        = (*self.f2)[_Band]       
+  IF ( ARG_PRESENT(Frequency) ) THEN Frequency = *(*self.Frequency)[_Band]
+  IF ( ARG_PRESENT(Response ) ) THEN Response  = *(*self.Response)[_Band]
+  ; ...Band number of points is special case
+  IF ( N_ELEMENTS(Band) EQ 0 ) THEN BEGIN
+    IF ( ARG_PRESENT(n_Points) ) THEN n_Points = *self.n_Points
+  ENDIF ELSE BEGIN
+    IF ( ARG_PRESENT(n_Points) ) THEN n_Points = (*self.n_Points)[_Band]
+  ENDELSE
+
 
   
   ; Done

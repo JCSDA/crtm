@@ -63,6 +63,13 @@ PRO OSRF_File::Read, $
   
   ; Read the global attributes
   self->Read_GAtts, Debug = Debug
+  ; ...Pull out some for setting by oSRF 
+  self->Get_Property, $
+    Debug            = Debug           , $
+    Sensor_Id        = Sensor_Id       , $
+    WMO_Satellite_Id = WMO_Satellite_Id, $
+    WMO_Sensor_Id    = WMO_Sensor_Id   , $
+    Sensor_Type      = Sensor_Type     
   
   
   ; Loop over the number of channels
@@ -110,6 +117,15 @@ PRO OSRF_File::Read, $
     osrf->Allocate, n_Points, Debug = Debug
 
 
+    ; Set the global attribute properties for the current oSRF
+    osrf->OSRF::Set_Property, $
+      Debug = Debug, $
+      Sensor_Id        = Sensor_Id       , $
+      WMO_Satellite_ID = WMO_Satellite_ID, $
+      WMO_Sensor_ID    = WMO_Sensor_ID   , $
+      Sensor_Type      = Sensor_Type
+      
+    
     ; Read the channel dependent data
     ; ...The sensor channel
     osrf->OSRF::Set_Property, $

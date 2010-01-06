@@ -92,8 +92,8 @@ FUNCTION OSRF::Init, Debug=Debug  ; Input keyword
   self.f0                   = ZERO
   self.Planck_Coeffs        = ZERO
   self.Polychromatic_Coeffs = ZERO
-  self.R                    = ZERO
-  self.T                    = ZERO
+  self.Convolved_R          = ZERO
+  self.Convolved_T          = ZERO
 
 
   ; Done
