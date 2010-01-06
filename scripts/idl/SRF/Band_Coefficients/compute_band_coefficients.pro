@@ -93,10 +93,13 @@
 ;
 ;-
 
-FUNCTION Compute_Band_Coefficients, SRF         , $  ; Input SRF structure
-                                    Coefficients, $  ; Output coefficient array
-                                    Order=Order , $  ; Input keyword
-                                    NoPlot=NoPlot    ; Input keyword
+FUNCTION Compute_Band_Coefficients, SRF          , $  ; Input SRF structure
+                                    Coefficients , $  ; Output coefficient array
+                                    Order=Order  , $  ; Input keyword
+                                    NoPlot=NoPlot, $  ; Input keyword
+                                    f0=f0        , $  ; In/Output keyword
+                                    y=y          , $  ; Output keyword
+                                    fit=fit           ; Output keyword
 
   ; Setup
   ; -----
@@ -126,12 +129,13 @@ FUNCTION Compute_Band_Coefficients, SRF         , $  ; Input SRF structure
   nt = 17L
   t = dindgen(nt)/double(nt-1L)
   t = t*(tmax-tmin) + tmin
-
+  
     
   ; Compute the Y(t) vector
   ; -----------------------
   ; Compute the central frequency
-  f0 = Integral(*SRF.Frequency,*SRF.Frequency*(*SRF.Response))/SRF.Integrated_SRF
+  IF ( N_ELEMENTS(f0) EQ 0 ) THEN $
+    f0 = Integral(*SRF.Frequency,*SRF.Frequency*(*SRF.Response))/SRF.Integrated_SRF
   ; Effective temperature loop
   y = DBLARR(nt)
   FOR i = 0L, nt-1L DO BEGIN
@@ -150,11 +154,11 @@ FUNCTION Compute_Band_Coefficients, SRF         , $  ; Input SRF structure
     ; Save it.
     y[i] = efft
   ENDFOR
-  
-  
+
+
   ; Fit a polynomial to the data
   ; ----------------------------
-  Coefficients = POLY_FIT(t,y,Order,YFIT=yfit)
+  Coefficients = REFORM(POLY_FIT(t,y,Order,YFIT=fit))
 
 
   ; Plot some stuff
@@ -184,12 +188,12 @@ FUNCTION Compute_Band_Coefficients, SRF         , $  ; Input SRF structure
           XTITLE='Temperature (K)', $
           YTITLE='Effective!CTemperature (K)', $
           CHARSIZE=charsize,FONT=font,THICK=thick
-    OPLOT, t, yfit, $
+    OPLOT, t, fit, $
            COLOR=RED,PSYM=4,THICK=thick
     mylegend, 0.75, 0.45, ['Temperature','Fitted temperature'],$
              color=[!P.COLOR,RED], PSYM=[0,4], CHARSIZE=lcharsize
     ; The fit residual
-    PLOT, t, y-yfit,$
+    PLOT, t, y-fit,$
           TITLE='Residual for order='+STRTRIM(Order,2)+' fit',$
           XTITLE='Temperature (K)', $
           YTITLE=Delta+'T (K)', $
