@@ -53,7 +53,7 @@ MODULE SensorInfo_IO
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Input data formats
-  CHARACTER(*), PARAMETER ::  SENSORINFO_FORMAT = '(1x,2(1x,a12),1x,a20,1x,i1,6x,3(1x,i5))'
+  CHARACTER(*), PARAMETER ::  SENSORINFO_FORMAT = '(1x,2(1x,a12),1x,a20,1x,i1,6x,4(1x,i5))'
   CHARACTER(*), PARAMETER :: CHANNELINFO_FORMAT = '(i5,3x,i2,5x,es13.6)'
 
 
@@ -158,7 +158,7 @@ CONTAINS
     INTEGER :: FileID
     INTEGER :: n_Channels, l
     INTEGER :: n_Sensors
-    TYPE(SensorInfo_type) :: SensorInfo
+    TYPE(SensorInfo_type) :: SensorInfo, dummy
 
 
     ! Set up
@@ -297,13 +297,15 @@ CONTAINS
       ! Read the SensorInfo data line into variables
       ! --------------------------------------------
       READ( Line_Buffer, FMT   =SENSORINFO_FORMAT, &
-                         IOSTAT=IO_Status ) SensorInfo%Sensor_Name, &
-                                            SensorInfo%Satellite_Name, &
-                                            SensorInfo%Sensor_Id, &
-                                            SensorInfo%Sensor_Type, &
-                                            SensorInfo%WMO_Sensor_ID, &
-                                            SensorInfo%WMO_Satellite_ID, &
-                                            n_Channels
+                         IOSTAT=IO_Status ) dummy%Sensor_Name, &
+                                            dummy%Satellite_Name, &
+                                            dummy%Sensor_Id, &
+                                            dummy%Sensor_Type, &
+                                            dummy%WMO_Sensor_ID, &
+                                            dummy%WMO_Satellite_ID, &
+                                            dummy%n_Channels, &
+                                            dummy%n_FOVs
+
       IF ( IO_Status /= 0 ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error reading SensorInfo line buffer in sensor header read. ",&
@@ -320,18 +322,28 @@ CONTAINS
 
       ! Allocate the SensorInfo structure pointer components
       ! ----------------------------------------------------
-      Error_Status = Allocate_SensorInfo( n_Channels, &
+      Error_Status = Allocate_SensorInfo( dummy%n_Channels, &
                                           SensorInfo, &
                                           Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error allocating SensorInfo structure for '//&
-                              TRIM(SensorInfo%Sensor_Id), &
+                              TRIM(dummy%Sensor_Id), &
                               Error_Status, &
                               Message_Log=Message_Log )
         CLOSE( FileID )
         RETURN
       END IF
+
+
+      ! Assign the non-dimensional SensorInfo data
+      SensorInfo%Sensor_Name      = dummy%Sensor_Name
+      SensorInfo%Satellite_Name   = dummy%Satellite_Name
+      SensorInfo%Sensor_Id        = dummy%Sensor_Id
+      SensorInfo%Sensor_Type      = dummy%Sensor_Type
+      SensorInfo%WMO_Sensor_ID    = dummy%WMO_Sensor_ID
+      SensorInfo%WMO_Satellite_ID = dummy%WMO_Satellite_ID
+      SensorInfo%n_FOVs           = dummy%n_FOVs      
 
 
       ! Output an info message
@@ -349,7 +361,7 @@ CONTAINS
 
       ! Read the channel information
       ! ----------------------------
-      ChannelInfo_Read_loop: DO l = 1, n_Channels
+      ChannelInfo_Read_loop: DO l = 1, SensorInfo%n_Channels
 
         READ( FileID, FMT   =CHANNELINFO_FORMAT, &
                       IOSTAT=IO_Status ) SensorInfo%Sensor_Channel(l), &
@@ -622,7 +634,8 @@ CONTAINS
                                         SensorInfo%Sensor_Type, &
                                         SensorInfo%WMO_Sensor_ID, &
                                         SensorInfo%WMO_Satellite_ID, &
-                                        SensorInfo%n_Channels
+                                        SensorInfo%n_Channels, &
+                                        SensorInfo%n_FOVs
       IF ( IO_Status /= 0 ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error writing SensorInfo data for sensor # ",i0,&

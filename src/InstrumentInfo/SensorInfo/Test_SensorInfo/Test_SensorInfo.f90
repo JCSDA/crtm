@@ -83,11 +83,15 @@ PROGRAM Test_SensorInfo
   ! Loop over all sensor in the list
   WRITE( *,'( /5x, "Looping over SensorInfo list entries to extract data....",/)' )
   WRITE( *,'("    +------------------- Sensor name")' )
-  WRITE( *,'("    |            +------ Satellite/platform name +--------------------------- Sensor Type")' )
-  WRITE( *,'("    |            |  +--- Sensor_Id               |          +---------------- WMO sensor ID")' )
-  WRITE( *,'("    |            |  |                            |          |     +---------- WMO satellite ID")' )
-  WRITE( *,'("    |            |  +-------------+              |          |     |      +--- No. of channels")' )
-  WRITE( *,'("    |            |                |              |          |     |      |" )' )
+  WRITE( *,'("    |            +------ Satellite/platform name +--------------------------------- Sensor Type")' )
+  WRITE( *,'("    |            |  +--- Sensor_Id               |          +---------------------- WMO sensor ID")' )
+  WRITE( *,'("    |            |  |                            |          |     +---------------- WMO satellite ID")' )
+  WRITE( *,'("    |            |  +-------------+              |          |     |      +--------- No. of channels")' )
+  WRITE( *,'("    |            |                |              |          |     |      |     +--- No. of FOVs")' ) 
+  WRITE( *,'("    |            |                |              |          |     |      |     |" )' )
+  WRITE( *,'("    |            |                |              |          |     |      |     |" )' )
+  WRITE( *,'("    |            |                |              |          |     |      |     |" )' )
+  WRITE( *,'("    |            |                |              |          |     |      |     |" )' )
 
   n_Sensor_loop: DO n = 1, n_Sensors
 
@@ -107,7 +111,8 @@ PROGRAM Test_SensorInfo
                                      SensorInfo%Sensor_Type     , &
                                      SensorInfo%WMO_Satellite_ID, &
                                      SensorInfo%WMO_Sensor_ID   , &
-                                     SensorInfo%n_Channels
+                                     SensorInfo%n_Channels, &
+                                     SensorInfo%n_FOVs
 
 
     ! Destroy the current SensorInfo node in

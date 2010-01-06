@@ -90,6 +90,7 @@ MODULE SensorInfo_Define
     INTEGER :: n_Allocates = 0
     ! Dimensions
     INTEGER :: n_Channels = 0  ! L
+    INTEGER :: n_FOVs     = 0  ! I
     ! Descriptors
     CHARACTER(SL2) :: Sensor_Name    = ' '
     CHARACTER(SL2) :: Satellite_Name = ' '
@@ -291,6 +292,7 @@ CONTAINS
     
     ! Reset the dimension indicators
     SensorInfo%n_Channels = 0
+    SensorInfo%n_FOVs     = 0
 
     ! Default is to clear scalar members...
     Clear = .TRUE.
@@ -665,6 +667,7 @@ CONTAINS
 
     ! Assign non-dimension scalar members
     ! -----------------------------------
+    SensorInfo_out%n_FOVs           = SensorInfo_in%n_FOVs
     SensorInfo_out%Sensor_Name      = SensorInfo_in%Sensor_Name
     SensorInfo_out%Satellite_Name   = SensorInfo_in%Satellite_Name
     SensorInfo_out%Sensor_Id        = SensorInfo_in%Sensor_Id
