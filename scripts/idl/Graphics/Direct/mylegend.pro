@@ -224,7 +224,7 @@ PRO mylegend, x_legend_pos,          $
   ; -- Line thickness
   n_Thicknesses = N_ELEMENTS( Thick )
   IF ( n_Thicknesses EQ 0 ) THEN $
-    Thick = MAKE_ARRAY( n_Entries, VALUE = 1 ) $
+    Thick = MAKE_ARRAY( n_Entries, VALUE = !P.THICK ) $
   ELSE $
     IF ( n_Thicknesses NE n_Entries ) THEN $
       MESSAGE, 'Keyword THICK size different from LEGEND_TEXT', $

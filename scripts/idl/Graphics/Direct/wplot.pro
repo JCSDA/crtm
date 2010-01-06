@@ -160,18 +160,14 @@ pro wplot_ps_output, event
 
   loc = ( where( ( *state_ptr ).tlb_id eq event.top ) )[ 0 ]
 
-  set_plot, 'PS'
+  pson, filename='wplot.ps';, scale_factor=2.0
   psave = !p
   !p.font = 1
   !p.charsize=1.25
   !p.thick=3
-  device, /color, /portrait, bits_per_pixel=8
   wplot_replot, state_ptr, data_ptr, loc
-  device, /close
-  spawn, 'mv idl.ps wplot.ps'
   !p = psave
-  set_plot, 'X'
-
+  psoff
 
 end
 
