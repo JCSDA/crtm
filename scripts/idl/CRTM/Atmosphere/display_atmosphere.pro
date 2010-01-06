@@ -9,7 +9,6 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
 ;-
 
   ; Set up error handler
-  ; --------------------
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
@@ -19,11 +18,9 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
   ENDIF
 
   ; Save default plot info
-  ; ----------------------
   psave = !P
     
   ; Process inputs
-  ; --------------
   IF ( N_ELEMENTS(Selected_Profile) EQ 0 ) THEN m = 0 ELSE m = Selected_Profile-1
   IF ( N_ELEMENTS(Selected_Channel) EQ 0 ) THEN l = 0 ELSE l = Selected_Channel-1
   IF ( NOT KEYWORD_SET(Title) ) THEN Title=''
@@ -31,7 +28,6 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
   yTickformat = KEYWORD_SET(yLog) ? 'logticks' : ''
 
   ; Extract out the requested (or default) profile
-  ; ----------------------------------------------
   Info = SIZE(Atm, /STRUCTURE)
   IF ( Info.N_DIMENSIONS EQ 1 ) THEN BEGIN
     n_Channels = 0
@@ -47,7 +43,6 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
   ENDELSE
   
   ; Set the profile pressures
-  ; -------------------------
   IF ( N_ELEMENTS(Pressure) GT 0 ) THEN BEGIN
     p = Pressure
   ENDIF ELSE BEGIN
@@ -56,13 +51,12 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
   pRange = [1100,0.01] ;[MAX(p),MIN(p)]
 
   ; Define some default graphics parameters
-  ; ---------------------------------------
   charSize = 1.5
   pSym = -4
   
+
   ; Plot the "regular" profile data
-  ; -------------------------------
-  ; Plot the temperature profile
+  ; ...Plot the temperature profile
   PLOT, *a.temperature, p, $
         TITLE = Title + '!CTemperature', $
         XTITLE = 'Temperature (K)', $
@@ -74,13 +68,14 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
         PSYM = pSym
   q = GET_KBRD(1)
   IF ( STRUPCASE(q) EQ 'Q' ) THEN GOTO, Done
-  
-  ; Determine the number of absorber plot loops
+
+  ; ...Determine the number of absorber plot loops
   n = a.n_Absorbers
   nx = 2
   nPlots = (n MOD nx) EQ 0 ? n/nx : n/nx+1
   !P.MULTI = [0, nx, 1]
-  ; Plot the absorber profiles
+
+  ; ...Plot the absorber profiles
   FOR i = 0, a.n_Absorbers-1, nx DO BEGIN
     FOR i2 = 0, 1 DO BEGIN
       j = i+i2
@@ -95,6 +90,9 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
             YMARGIN = [4,4], $
             CHARSIZE = charSize, $
             PSYM = pSym
+      IF ( NOT KEYWORD_SET(xLog) ) THEN $
+        OPLOT, [0,0], KEYWORD_SET(yLog) ? 10^!Y.CRANGE : !Y.CRANGE, $
+               LINESTYLE = 2
     ENDFOR
     
     q = GET_KBRD(1)
@@ -106,9 +104,7 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
   ENDFOR
 
 
-   
   ; Plot the cloud profile data
-  ; ---------------------------
   !P.MULTI = [0,2,1]
   FOR n = 0, a.n_Clouds-1 DO BEGIN
     Cld = (*a.Cloud)[n]
@@ -147,7 +143,6 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
 
   
   ; Plot the aerosol profile data
-  ; -----------------------------
   !P.MULTI = [0,2,1]
   FOR n = 0, a.n_Aerosols-1 DO BEGIN
     Aero = (*a.Aerosol)[n]
@@ -186,7 +181,6 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
   
   
   ; Done
-  ; ----
   Done:
   !P = psave
   CATCH, /CANCEL
