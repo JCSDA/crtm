@@ -16,8 +16,10 @@ MODULE RadDiag_Stats_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,      ONLY: sp=>Single
-  USE Message_Handler, ONLY: FAILURE, SUCCESS, INFORMATION, Display_Message
+  USE Type_Kinds           , ONLY: sp=>Single
+  USE Message_Handler      , ONLY: FAILURE, SUCCESS, INFORMATION, Display_Message
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -28,14 +30,17 @@ MODULE RadDiag_Stats_Define
   ! Everything private by default
   PRIVATE
   ! Parameters
-  PUBLIC :: iBC   
-  PUBLIC :: iNBC  
-  PUBLIC :: iScan 
-  PUBLIC :: iConst
-  PUBLIC :: iAngle
-  PUBLIC :: iLpsR 
-  PUBLIC :: iLpsR2
-  PUBLIC :: iCLW
+  PUBLIC :: INVALID_FOV 
+  PUBLIC :: N_VARIABLES  
+  PUBLIC :: IBC   
+  PUBLIC :: INBC  
+  PUBLIC :: ISCAN 
+  PUBLIC :: ICONST
+  PUBLIC :: IANGLE
+  PUBLIC :: ILPSR 
+  PUBLIC :: ILPSR2
+  PUBLIC :: ICLW
+  PUBLIC :: VNSL
   ! Datatypes
   PUBLIC :: RadDiag_Stats_type
   ! Procedures
@@ -43,21 +48,24 @@ MODULE RadDiag_Stats_Define
   PUBLIC :: RadDiag_Stats_Destroy
   PUBLIC :: RadDiag_Stats_Create
   PUBLIC :: RadDiag_Stats_Inspect
+  PUBLIC :: RadDiag_Stats_ValidRelease
+  PUBLIC :: RadDiag_Stats_Info
   PUBLIC :: RadDiag_Stats_DefineVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
+  INTEGER, PARAMETER :: INVALID_FOV = -1
   INTEGER, PARAMETER :: N_VARIABLES = 8
-  INTEGER, PARAMETER :: iBC    = 1
-  INTEGER, PARAMETER :: iNBC   = 2
-  INTEGER, PARAMETER :: iScan  = 3
-  INTEGER, PARAMETER :: iConst = 4
-  INTEGER, PARAMETER :: iAngle = 5
-  INTEGER, PARAMETER :: iLpsR  = 6
-  INTEGER, PARAMETER :: iLpsR2 = 7
-  INTEGER, PARAMETER :: iCLW   = 8
+  INTEGER, PARAMETER :: IBC    = 1
+  INTEGER, PARAMETER :: INBC   = 2
+  INTEGER, PARAMETER :: ISCAN  = 3
+  INTEGER, PARAMETER :: ICONST = 4
+  INTEGER, PARAMETER :: IANGLE = 5
+  INTEGER, PARAMETER :: ILPSR  = 6
+  INTEGER, PARAMETER :: ILPSR2 = 7
+  INTEGER, PARAMETER :: ICLW   = 8
   CHARACTER(*), PARAMETER :: VARIABLENAMES(N_VARIABLES) = &
     (/ 'Obs-Calc dTb [Bias Corrected]          ', &
        'Obs-Calc dTb [NOT Bias Corrected]      ', &
@@ -67,26 +75,41 @@ MODULE RadDiag_Stats_Define
        'SatBias AirMass Lapse Rate term        ', &
        'SatBias AirMass (Lapse Late)^2 term    ', &
        'SatBias AirMass Cloud Liquid Water term' /)
+  INTEGER, PARAMETER :: VNSL = 80
   ! Literal constants
   REAL, PARAMETER :: ZERO = 0.0_sp
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-
-
+  ! Current valid release and version numbers
+  INTEGER, PARAMETER :: RADDIAG_STATS_RELEASE = 2  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: RADDIAG_STATS_VERSION = 1  ! This is just the data version for the release.
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
+  ! Sensor Id string length
+  INTEGER, PARAMETER :: SL = 20
+  
+  
   ! --------------------
   ! Structure definition
   ! --------------------
   !:tdoc+:
   TYPE :: RadDiag_Stats_type
+    ! Release and version information
+    INTEGER :: Release = RADDIAG_STATS_RELEASE
+    INTEGER :: Version = RADDIAG_STATS_VERSION
     ! Dimensions
     INTEGER :: n_Predictors = 0  ! I
     INTEGER :: n_Channels   = 0  ! L
     INTEGER :: n_FOVs       = 0  ! Is
     INTEGER :: n_Times      = 0  ! It
     INTEGER :: n_Variables  = 0  ! N
+    ! Sensor Ids
+    CHARACTER(SL) :: Sensor_Id        = ' '
+    INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     ! The variable names
-    CHARACTER(80), ALLOCATABLE :: VariableNames(:)  ! N
+    CHARACTER(VNSL), ALLOCATABLE :: VariableNames(:)  ! N
     ! The channel numbers
     INTEGER,  ALLOCATABLE :: Channel(:)  ! L
     ! The Air Mass bias correction coefficients
@@ -324,7 +347,7 @@ CONTAINS
 
   SUBROUTINE RadDiag_Stats_Inspect( rds )
     TYPE(RadDiag_Stats_type), INTENT(IN) :: rds
-    INTEGER :: i, j, k
+    INTEGER :: i, j
 
     WRITE(*, '(1x,"RADDIAG_STATS OBJECT")')
     ! Dimensions
@@ -371,7 +394,139 @@ CONTAINS
     END DO
         
   END SUBROUTINE RadDiag_Stats_Inspect
-  
+
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RadDiag_Stats_ValidRelease
+!
+! PURPOSE:
+!       Function to check the RadDiag_Stats Release value.
+!
+! CALLING SEQUENCE:
+!       IsValid = RadDiag_Stats_ValidRelease( RadDiag_Stats )
+!
+! INPUTS:
+!       RadDiag_Stats: RadDiag_Stats structure for which the Release component
+!                      is to be checked.
+!                      UNITS:      N/A
+!                      TYPE:       TYEP(RadDiag_Stats_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       IsValid:       Logical value defining the release validity.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!
+!----------------------------------------------------------------------------------
+
+  FUNCTION RadDiag_Stats_ValidRelease( RadDiag_Stats ) RESULT( IsValid )
+    ! Arguments
+    TYPE(RadDiag_Stats_type), INTENT(IN)  :: RadDiag_Stats
+    ! Function result
+    LOGICAL :: IsValid
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'RadDiag_Stats_ValidRelease'
+    ! Local variables
+    CHARACTER(ML) :: msg
+
+    ! Set up
+    IsValid = .TRUE.
+
+
+    ! Check release is not too old
+    IF ( RadDiag_Stats%Release < RADDIAG_STATS_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("A RadDiag_Stats data update is needed. ", &
+                  &"RadDiag_Stats release is ",i0, &
+                  &". Valid release is ",i0,"." )' ) &
+                  RadDiag_Stats%Release, RADDIAG_STATS_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      RETURN
+    END IF
+
+
+    ! Check release is not too new
+    IF ( RadDiag_Stats%Release > RADDIAG_STATS_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("A RadDiag_Stats software update is needed. ", &
+                  &"RadDiag_Stats release is ",i0, &
+                  &". Valid release is ",i0,"." )' ) &
+                  RadDiag_Stats%Release, RADDIAG_STATS_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      RETURN
+    END IF
+
+  END FUNCTION RadDiag_Stats_ValidRelease
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RadDiag_Stats_Info
+!
+! PURPOSE:
+!       Subroutine to return a string containing version and dimension
+!       information about the data structure.
+!
+! CALLING SEQUENCE:
+!       CALL RadDiag_Stats_Info( RadDiag_Stats, Info )
+!
+! INPUTS:
+!       RadDiag_Stats: Filled RadDiag_Stats structure.
+!                      UNITS:      N/A
+!                      TYPE:       RadDiag_Stats_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Info:          String containing version and dimension information
+!                      about the passed RadDiag_Stats data structure.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE RadDiag_Stats_Info( RadDiag_Stats, Info )
+    ! Arguments
+    TYPE(RadDiag_Stats_type), INTENT(IN)  :: RadDiag_Stats
+    CHARACTER(*)            , INTENT(OUT) :: Info
+    ! Local parameters
+    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+    INTEGER, PARAMETER :: LINEFEED = 10
+    ! Local variables
+    CHARACTER(2000) :: Long_String
+
+    ! Write the required data to the local string
+   WRITE( Long_String, &
+          '(a,1x,"RadDiag_Stats RELEASE.VERSION: ",i2,".",i2.2,2x,&
+          &"N_PREDICTORS=",i0,2x,&
+          &"N_CHANNELS=",i0,2x,&
+          &"N_FOVS=",i0,2x,&
+          &"N_TIMES=",i0,2x,&
+          &"N_VARIABLE=",i0 )' ) &
+          ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+          RadDiag_Stats%Release, RadDiag_Stats%Version, &
+          RadDiag_Stats%n_Predictors, &
+          RadDiag_Stats%n_Channels  , &
+          RadDiag_Stats%n_FOVs      , &
+          RadDiag_Stats%n_Times     , &
+          RadDiag_Stats%n_Variables 
+                       
+    ! Trim the output based on the
+    ! dummy argument string length
+    Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
+
+  END SUBROUTINE RadDiag_Stats_Info
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
