@@ -1,5 +1,5 @@
-PRO IFGtoSPC, x, ifg, $  ; Output
-              f, spc     ; Input
+PRO IFGtoSPC, x, ifg, $  ; Input
+              f, spc     ; Output
               
   n_Ifg = N_ELEMENTS(x)
   n_Spc = Compute_nSpc(n_Ifg)

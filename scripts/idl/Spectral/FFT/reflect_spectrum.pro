@@ -1,7 +1,11 @@
+;+
+; Procedure to reflect a spectrum in preparation for FFT'ing
+;
 PRO Reflect_Spectrum, rSpc     , $  ; Input
                       rIfg     , $  ; Output
                       iIfg     , $  ; Output
                       iSpc=iSpc     ; Optional input
+;-
 
   n_Spc = N_ELEMENTS(rSpc)
   n_Ifg = N_ELEMENTS(rIfg)
