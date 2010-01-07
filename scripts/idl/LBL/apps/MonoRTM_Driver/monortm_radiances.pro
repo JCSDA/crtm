@@ -8,7 +8,7 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
-    MESSAGE, !ERROR_STATE.MSG, /CONTINUE
+    MESSAGE, !ERROR_STATE.MSG
     RETURN, FAILURE
   ENDIF
 
@@ -49,22 +49,22 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
   ; Write the MONORTM.IN file
   OPENW, lun, MONORTM_INFILE, /GET_LUN, WIDTH = FILE_WIDTH
   ; ...Write the first three header lines
-  PRINTF, lun, Generic_Input[0:2]
+  PRINTF, lun, Generic_Input[0:2], FORMAT='(a)'
   ; ...Write the specific frequencies to compute
   PRINTF, lun, n_Frequencies, FORMAT='(i8)'
   PRINTF, lun, v, FORMAT='(e19.7)'
   ; ...Write the remainder of the initial input
-  PRINTF, lun, Generic_Input[3:], format='(a)'
+  PRINTF, lun, Generic_Input[3:*], FORMAT='(a)'
   FREE_LUN, lun
   
-  
+
   ; Run MonoRTM
   ; ...Check that spectral line file is present
   IF ( NOT (FILE_INFO(MONORTM_SPECTRALFILE)).EXISTS ) THEN $
     MESSAGE, MONORTM_SPECTRALFILE+' not found', /NONAME, /NOPRINT
   ; ...Spawn the executable
-  SPAWN, 'monortm_v4.0_dbl', EXIT_STATUS = EXit_Status
-  IF ( Exit_Status NE 0 ) THEN MEssage, 'Error running MonoRTM', /NONAME, /NOPRINT
+  SPAWN, 'monortm_v4.0_dbl', Std_Out, Std_Err, EXIT_STATUS = Exit_Status
+  IF ( Exit_Status NE 0 ) THEN MESSAGE, 'Error running MonoRTM:'+Std_Err, /NONAME, /NOPRINT
 
   
   ; Read the MonoRTM output file
