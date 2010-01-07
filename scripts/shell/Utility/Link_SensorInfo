@@ -93,7 +93,7 @@ fi
 
 # Check that the file to be linked exists
 # ---------------------------------------
-SENSORINFO_DIR="${CRTM_SOURCE_ROOT}/Utility/InstrumentInfo/SensorInfo"
+SENSORINFO_DIR="${CRTM_SOURCE_ROOT}/InstrumentInfo/SensorInfo"
 SENSORINFO_FILE=SensorInfo
 if [ ! -f ${SENSORINFO_DIR}/${SENSORINFO_FILE} ]; then
   error_message " Master SensorInfo file, ${SENSORINFO_FILE}, not found in ${SENSORINFO_DIR}"
