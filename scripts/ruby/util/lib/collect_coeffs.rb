@@ -80,7 +80,7 @@ rescue ArgumentError => error_message
 end
 
 
-puts("---> Collecting coefficient files...")
+puts("---> Collecting coefficient files from #{FIXFILE_ROOT}...")
 begin
   FileUtils.chdir(FIXFILE_ROOT) do
 
