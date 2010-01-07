@@ -6,6 +6,7 @@ PRO Plot_Surface, z, x, y, $
                   PIXELS=pixels
 
   @color_db
+  colors
   charsize = 3.0
   font     = (!D.NAME EQ 'PS') ? 1 : -1
   thick    = (!D.NAME EQ 'PS') ? 2 :  1
@@ -22,20 +23,20 @@ PRO Plot_Surface, z, x, y, $
               CHARSIZE=charsize, $
               FONT=font, $
               THICK=thick
-;  PLOTS, [x[0],x[0]],[y[0],y[0]],[!Z.CRANGE[0],z[0,0]], /T3D, $
-;         color=red, thick=thick
-;  PLOTS, [x[n_x-1],x[n_x-1]],[y[0],y[0]],[!Z.CRANGE[0],z[n_x-1,0]], /T3D, $
-;         color=red, thick=thick
-;  PLOTS, [x[0],x[0]],[y[n_y-1],y[n_y-1]],[!Z.CRANGE[0],z[0,n_y-1]], /T3D, $
-;         color=red, thick=thick
-;  PLOTS, [x[0],x[0]],[y[n_y-1],y[0]],[!Z.CRANGE[0],!Z.CRANGE[0]], /T3D, $
-;         color=red, thick=thick
-;  PLOTS, [x[0],x[n_x-1]],[y[0],y[0]],[!Z.CRANGE[0],!Z.CRANGE[0]], /T3D, $
-;         color=red, thick=thick
-;  PLOTS, replicate(x[0],n_y),y,z[0,*], /T3D, $
-;         color=red, thick=thick
-;  PLOTS, x,replicate(y[0],n_x),z[*,0], /T3D, $
-;         color=red, thick=thick
+  PLOTS, [x[0],x[0]],[y[0],y[0]],[!Z.CRANGE[0],z[0,0]], /T3D, $
+         color=red, thick=thick
+  PLOTS, [x[n_x-1],x[n_x-1]],[y[0],y[0]],[!Z.CRANGE[0],z[n_x-1,0]], /T3D, $
+         color=red, thick=thick
+  PLOTS, [x[0],x[0]],[y[n_y-1],y[n_y-1]],[!Z.CRANGE[0],z[0,n_y-1]], /T3D, $
+         color=red, thick=thick
+  PLOTS, [x[0],x[0]],[y[n_y-1],y[0]],[!Z.CRANGE[0],!Z.CRANGE[0]], /T3D, $
+         color=red, thick=thick
+  PLOTS, [x[0],x[n_x-1]],[y[0],y[0]],[!Z.CRANGE[0],!Z.CRANGE[0]], /T3D, $
+         color=red, thick=thick
+  PLOTS, replicate(x[0],n_y),y,z[0,*], /T3D, $
+         color=red, thick=thick
+  PLOTS, x,replicate(y[0],n_x),z[*,0], /T3D, $
+         color=red, thick=thick
 
   xlp = 0.5
   ylp = 0.96
@@ -58,7 +59,7 @@ PRO Display_CloudCoeff, NCfile, ps=ps, pixels=pixels
 
   ; Read the data
   result = Read_netCDF(NCfile,c)
-help, c, /struct
+
 
   ; ========
   ; IR plots
@@ -106,7 +107,7 @@ help, c, /struct
            END
         ; Phase coefficients
         ELSE: BEGIN
-              LOADCT, 7, /SILENT
+              LOADCT, 0, /SILENT
              l = iVar-4
              IF ( l LT 5 ) THEN BEGIN
                lsub=l
@@ -227,7 +228,7 @@ help, c, /struct
   ; SOLID PHASE PLOTS, Pcoeff ONLY
   ; ------------------------------
   Solid_Pcoeff:
-  LOADCT, 7, /SILENT
+  LOADCT, 0, /SILENT
   ; Loop over densities
   FOR i = 0, c.N_DENSITIES-1 DO BEGIN
   
@@ -360,7 +361,7 @@ help, c, /struct
   ; LIQUID PHASE PLOTS, Pcoeff ONLY
   ; -------------------------------
   Liquid_Pcoeff:
-  LOADCT, 7, /SILENT
+  LOADCT, 0, /SILENT
   ; Loop over temperatures
   FOR i = 0, c.N_TEMPERATURES-1 DO BEGIN
   
@@ -494,7 +495,7 @@ help, c, /struct
   ; LIQUID PHASE PLOTS, Pcoeff ONLY for each Reff
   ; ---------------------------------------------
   Liquid2_Pcoeff:
-  LOADCT, 7, /SILENT
+  LOADCT, 0, /SILENT
   ; Loop over temperatures
   FOR i = 0, c.N_MW_RADII-1 DO BEGIN
   
