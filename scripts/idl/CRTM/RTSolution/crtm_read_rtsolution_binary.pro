@@ -8,6 +8,7 @@ PRO CRTM_RTSolution__Define
            Surface_Planck_Radiance : 0.0d0, $
            Radiance                : 0.0d0, $
            Brightness_Temperature  : 0.0d0, $
+           Upwelling_Radiance      : PTR_NEW(), $
            Layer_Optical_Depth     : PTR_NEW() }
 END
 
@@ -15,7 +16,6 @@ END
 FUNCTION CRTM_Destroy_RTSolution, Rts
 
   ; Set up error handler
-  ; --------------------
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
@@ -24,16 +24,17 @@ FUNCTION CRTM_Destroy_RTSolution, Rts
     RETURN, FAILURE
   ENDIF    
 
+
   ; Reinitialise the dimensions
-  ; ---------------------------
   Rts.n_Layers = 0L
 
+
   ; Free the structure pointers
-  ; ---------------------------
-  PTR_FREE, Rts.Layer_Optical_Depth
+  PTR_FREE, Rts.Upwelling_Radiance, $
+            Rts.Layer_Optical_Depth
+
 
   ; Done
-  ; ----
   CATCH, /CANCEL
   RETURN, SUCCESS
   
@@ -44,7 +45,6 @@ FUNCTION CRTM_Allocate_RTSolution, n_Layers, $
                                    Rts
 
   ; Set up error handler
-  ; --------------------
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
@@ -53,23 +53,24 @@ FUNCTION CRTM_Allocate_RTSolution, n_Layers, $
     RETURN, FAILURE
   ENDIF    
 
+
   ; Destroy the structure first
-  ; ---------------------------
   result = CRTM_Destroy_RTSolution( Rts )
   IF ( result NE SUCCESS ) THEN $
      MESSAGE, 'Error destroying RTSolution structure', $
               /NONAME, /NOPRINT
+
               
   ; Allocate the arrays
-  ; -------------------
+  Rts.Upwelling_Radiance  = PTR_NEW(DBLARR( n_Layers ))
   Rts.Layer_Optical_Depth = PTR_NEW(DBLARR( n_Layers ))
+
   
   ; Assign the dimensions
-  ; ---------------------
-  Rts.n_Layers    = n_Layers
+  Rts.n_Layers = n_Layers
+
   
   ; Done
-  ; ----
   CATCH, /CANCEL
   RETURN, SUCCESS
 
@@ -80,7 +81,6 @@ FUNCTION Read_RTSolution_Record, FileID, $
                                  Rts
 
   ; Set up error handler
-  ; --------------------
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
@@ -90,49 +90,65 @@ FUNCTION Read_RTSolution_Record, FileID, $
     RETURN, FAILURE
   ENDIF    
 
+
   ; Read the data dimensions
-  ; ------------------------
   n_Layers = Rts.n_Layers
   READU, FileID, n_Layers
+
   
-  ; Allocate the RTSolution structure
-  ; ---------------------------------
-  result = CRTM_Allocate_RTSolution( n_Layers, $
-                                     Rts       )
-  IF ( result NE SUCCESS ) THEN $
-    MESSAGE, 'Error allocating RTSolution structure', $
-             /NONAME, /NOPRINT
+  ; If we have array data, then...
+  IF ( n_Layers GT 0 ) THEN BEGIN
+    ; ...Allocate the RTSolution structure
+    result = CRTM_Allocate_RTSolution( n_Layers, Rts )
+    IF ( result NE SUCCESS ) THEN $
+      MESSAGE, 'Error allocating RTSolution structure', $
+               /NONAME, /NOPRINT
+  ENDIF ELSE BEGIN
+    ; ...Otherwise destroy it
+    result = CRTM_Destroy_RTSolution( Rts )
+    IF ( result NE SUCCESS ) THEN $
+      MESSAGE, 'Error destroying RTSolution structure', $
+               /NONAME, /NOPRINT
+  ENDELSE
+
   
   ; Read the forward radiative transfer intermediate results
-  ; --------------------------------------------------------
+  ; ...Scalars
   Surface_Emissivity      = Rts.Surface_Emissivity     
   Up_Radiance             = Rts.Up_Radiance            
   Down_Radiance           = Rts.Down_Radiance          
   Down_Solar_Radiance     = Rts.Down_Solar_Radiance    
   Surface_Planck_Radiance = Rts.Surface_Planck_Radiance
-  READU, FileID, Surface_Emissivity     , $
-                 Up_Radiance            , $
-                 Down_Radiance          , $
-                 Down_Solar_Radiance    , $
-                 Surface_Planck_Radiance, $
-                 *Rts.Layer_Optical_Depth
+  READU, FileID, $
+         Surface_Emissivity     , $
+         Up_Radiance            , $
+         Down_Radiance          , $
+         Down_Solar_Radiance    , $
+         Surface_Planck_Radiance
   Rts.Surface_Emissivity      = Surface_Emissivity     
   Rts.Up_Radiance             = Up_Radiance            
   Rts.Down_Radiance           = Down_Radiance          
   Rts.Down_Solar_Radiance     = Down_Solar_Radiance    
   Rts.Surface_Planck_Radiance = Surface_Planck_Radiance
+  ; ...Arrays
+  IF ( n_Layers GT 0 ) THEN BEGIN
+    READU, FileID, $
+           *Rts.Upwelling_Radiance , $
+           *Rts.Layer_Optical_Depth
+  ENDIF
+
   
   ; Read the radiative transfer results
-  ; -----------------------------------
   Radiance               = Rts.Radiance
   Brightness_Temperature = Rts.Brightness_Temperature
-  READU, FileID, Radiance              , $
-                 Brightness_Temperature
+  READU, FileID, $
+         Radiance              , $
+         Brightness_Temperature
   Rts.Radiance               = Radiance
   Rts.Brightness_Temperature = Brightness_Temperature
 
+
   ; Done
-  ; ----
   CATCH, /CANCEL
   RETURN, SUCCESS
   
@@ -144,7 +160,6 @@ FUNCTION CRTM_Read_RTSolution_Binary, Filename, $  ; Input
 ;-
 
   ; Set up error handler
-  ; --------------------
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
@@ -154,21 +169,21 @@ FUNCTION CRTM_Read_RTSolution_Binary, Filename, $  ; Input
     RETURN, FAILURE
   ENDIF    
 
+
   ; Open the file
-  ; -------------
   FileID = Open_Binary_File( Filename )
   IF ( FileID < 0 ) THEN $
     MESSAGE, 'Error opening file '+Filename, $
              /NONAME, /NOPRINT
 
+
   ; Read the file dimensions
-  ; ------------------------
   n_Channels = 0L
   n_Profiles = 0L
   READU, FileID, n_Channels, n_Profiles
   
+
   ; Create the output array
-  ; -----------------------
   Rts = PTRARR( n_Channels, n_Profiles )
   FOR m = 0L, n_Profiles-1L DO BEGIN
     FOR l = 0L, n_Channels-1L DO BEGIN
@@ -183,7 +198,6 @@ FUNCTION CRTM_Read_RTSolution_Binary, Filename, $  ; Input
   
 
   ; Done
-  ; ----
   FREE_LUN, FileID
   CATCH, /CANCEL
   RETURN, SUCCESS

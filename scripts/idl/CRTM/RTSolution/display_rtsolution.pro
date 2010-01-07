@@ -3,7 +3,6 @@ PRO Display_RTSolution, Rts, Selected_Profile, Title=Title, TL=TL
 ;-
 
   ; Set up error handler
-  ; --------------------
   @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
@@ -68,7 +67,6 @@ PRO Display_RTSolution, Rts, Selected_Profile, Title=Title, TL=TL
   
 
   ; Done
-  ; ----
   CATCH, /CANCEL
   
 END
