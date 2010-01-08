@@ -64,6 +64,8 @@ MODULE Fundamental_Constants
   REAL(fp), PARAMETER, PUBLIC :: E_SQUARED      = 7.389056098930650227230427_fp
   REAL(fp), PARAMETER, PUBLIC :: E_LOG10        = 0.434294481903251827651129_fp
 
+  ! Other transcendentals
+  REAL(fp), PARAMETER, PUBLIC :: LN2            = 0.693147180559945309417232_fp
 
 
   !#----------------------------------------------------------------------------#
