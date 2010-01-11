@@ -38,13 +38,14 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
 create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
 remove_links:
-	@unlinkfiles $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Squeaky clean target
 realclean: clean remove_links
+	$(REMOVE) IASI_*.bin
 
 # Source dependency lists
 include make.dependencies

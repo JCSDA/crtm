@@ -40,13 +40,14 @@ MODULE IASI_Subset
   PUBLIC :: IASI_SUBSET_316_COMMENT, N_IASI_SUBSET_316, IASI_SUBSET_316
   PUBLIC :: IASI_SUBSET_616_COMMENT, N_IASI_SUBSET_616, IASI_SUBSET_616
   ! Procedures
-  PUBLIC :: Index_IASI_Subset
+  PUBLIC :: IASI_Subset_Index
+  PUBLIC :: IASI_SubsetVersion
 
 
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
   ! The EUMETSAT IASI subset 300 channel list
@@ -111,10 +112,9 @@ MODULE IASI_Subset
 
   ! The combined EUMETSAT/NESDIS IASI subset 616 channel list
   CHARACTER(*), PARAMETER :: IASI_SUBSET_616_COMMENT = 'Combined EUMETSAT/NESDIS IASI 616 channel SUBSET'
-  INTEGER, PARAMETER :: N_IASI_SUBSET_616 = 616
-  INTEGER, PARAMETER :: IASI_SUBSET_616(N_IASI_SUBSET_616) = RESHAPE((/ IASI_SUBSET_300, &
-                                                                        IASI_SUBSET_316 /), &
-                                                                     SHAPE=SHAPE(IASI_SUBSET_616))
+  INTEGER,      PARAMETER :: N_IASI_SUBSET_616 = 616
+  INTEGER,      PARAMETER :: IASI_SUBSET_616(N_IASI_SUBSET_616) = &
+    RESHAPE((/ IASI_SUBSET_300, IASI_SUBSET_316 /), SHAPE=SHAPE(IASI_SUBSET_616))
 
 
 CONTAINS
@@ -129,21 +129,20 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Index_IASI_Subset
+!       IASI_Subset_Index
 ! 
 ! PURPOSE:
 !       Function to index IASI channels for requested bands.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Index_IASI_Subset( Band                   , &  ! Input
-!                                         Subset_List            , &  ! Input
-!                                         Subset                 , &  ! Output
-!                                         RCS_Id     =RCS_Id     , &  ! Optional output
-!                                         Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = IASI_Subset_Index( Band       , &  ! Input
+!                                         Subset_List, &  ! Input
+!                                         Subset       )  ! Output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Bands:           The IASI band from which to subset channels.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
@@ -159,31 +158,13 @@ CONTAINS
 !                        DIMENSION:  Rank-1
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Subset:          The IASI Subset structure containing the indexed
 !                        subset channels for the specified IASI module.
 !                        UNITS:      N/A
 !                        TYPE:       TYPE(Channel_Subset_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -200,24 +181,22 @@ CONTAINS
 !       just OUT. This is necessary because the argument may be defined upon
 !       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Index_IASI_Subset( Band       , &  ! Input
-                              Subset_List, &  ! Input
-                              Subset     , &  ! Output
-                              RCS_Id     , &  ! Revision control
-                              Message_Log) &  ! Error mssaging
-                            RESULT( Error_Status )
+  FUNCTION IASI_Subset_Index( &
+    Band       , &  ! Input
+    Subset_List, &  ! Input
+    Subset     ) &  ! Output
+  RESULT( Error_Status )
     ! Arguments
     INTEGER                  , INTENT(IN)     :: Band
     INTEGER                  , INTENT(IN)     :: Subset_List(:)
     TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
-    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Index_IASI_Subset'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IASI_Subset_Index'
     ! Local variables
     INTEGER :: Sorted_List(SIZE(Subset_List))
     INTEGER :: n_Subset_Channels
@@ -227,112 +206,116 @@ CONTAINS
     INTEGER :: Channel
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check the band
+    ! ...Check the band
     IF ( Band < 1 .OR. Band > N_IASI_BANDS ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid IASI band.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
-
-    ! No channel list data?
+    ! ...No channel list data?
     n_Subset_Channels = SIZE(Subset_List)
     IF ( n_Subset_Channels < 1 ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input Subset_List contains no data.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
-
-    ! Any weird channel numbers?
+    ! ...Any weird channel numbers?
     IF ( ANY( Subset_List < 1 .OR. Subset_List > N_IASI_CHANNELS ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid channel in Subset_List input.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
 
     ! Sort the subset list
-    ! --------------------
     Sorted_List = Subset_List
     CALL InsertionSort( Sorted_List )
     
     
     ! Set the module limits
-    ! ---------------------
     l1 = IASI_BAND_BEGIN_CHANNEL( Band )
     l2 = IASI_BAND_END_CHANNEL( Band )
 
 
     ! Count the channels to subset
-    ! ----------------------------
     n_Channels = COUNT( Sorted_List >= l1 .AND. Sorted_List <= l2 )
     IF ( n_Channels == 0 ) RETURN
 
 
     ! Allocate the IASI Subset structure
-    ! ----------------------------------
-    Error_Status = Allocate_Channel_Subset( n_Channels, &
-                                            Subset, &
-                                            Message_Log=Message_Log )
+    Error_Status = Allocate_Channel_Subset( n_Channels, Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error allocating Subset structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
 
     ! Define the start points for the channel search
-    ! ----------------------------------------------
-    ! Determine the starting index in the SUBSET channel list array
+    ! ...Determine the starting index in the SUBSET channel list array
     l_Subset = MINLOC( Sorted_List - l1, &
-                       MASK=( (Sorted_List - l1) >= 0 ), &
-                       DIM =1 )
-
-    ! Set the starting index in the MODULE channel list array.
-    ! This is always 1.
+                       MASK = ( (Sorted_List - l1) >= 0 ), &
+                       DIM  = 1 )
+    ! ...Set the starting index in the MODULE channel list array. This is always 1.
     l_Extract = 1
 
 
     ! Loop over the number of channels in the current band
-    ! ----------------------------------------------------
     Channel_Loop: DO l = 1, N_IASI_CHANNELS_PER_BAND( Band )
-
       ! Determine the current channel number
       Channel = IASI_BAND_BEGIN_CHANNEL( Band ) + l - 1
-
       ! Is the current channel in the subset?
       IF ( Channel == Sorted_List( l_Subset ) ) THEN
-
         ! Save the channel index and number
         Subset%Channel_Index(  l_Extract ) = l
         Subset%Channel_Number( l_Extract ) = Channel
-
         ! Increment the subset and extract indices
         l_Extract = l_Extract + 1
         l_Subset  = l_Subset  + 1
-
         ! If subset index is greater than n_Subset_Channels
         ! then we've just found the last subset channel
         IF ( l_Subset > n_Subset_Channels ) EXIT Channel_Loop
-
       END IF
-
     END DO Channel_Loop
 
-  END FUNCTION Index_IASI_Subset
+  END FUNCTION IASI_Subset_Index
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       IASI_SubsetVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL IASI_SubsetVersion( Id )
+!
+! OUTPUTS:
+!       Id:   Character string containing the version Id information
+!             for the module.
+!             UNITS:      N/A
+!             TYPE:       CHARACTER(*)
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE IASI_SubsetVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE IASI_SubsetVersion
 
 END MODULE IASI_Subset

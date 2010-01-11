@@ -24,6 +24,7 @@ SRC_FILES = Type_Kinds.f90 \
             Channel_Subset_Define.f90 \
             IASI_Define.f90 \
             IASI_Subset.f90 \
+            SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90
@@ -37,10 +38,10 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source file link creation and removal
 create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
 remove_links:
-	@unlinkfiles $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Squeaky clean target
 realclean: remove_links clean

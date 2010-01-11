@@ -24,6 +24,7 @@ PROGRAM Write_IASI_SensorInfo
   USE Channel_Subset_Define
   USE IASI_Define
   USE IASI_Subset
+  USE SensorInfo_Parameters
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
   USE SensorInfo_IO
@@ -35,7 +36,7 @@ PROGRAM Write_IASI_SensorInfo
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Write_IASI_SensorInfo'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
 
   ! Channel subset selections
@@ -62,7 +63,6 @@ PROGRAM Write_IASI_SensorInfo
 
   ! SensorInfo default for IASI instrument
   CHARACTER(*), PARAMETER :: SATELLITE_NAME   = 'MetOp-A'
-  INTEGER,      PARAMETER :: MICROWAVE_FLAG   =   0
   INTEGER,      PARAMETER :: WMO_SENSOR_ID    = 221
   INTEGER,      PARAMETER :: WMO_SATELLITE_ID = 4
   REAL(fp),     PARAMETER :: DEFAULT_NOISE    = 100.0_fp
@@ -83,11 +83,11 @@ PROGRAM Write_IASI_SensorInfo
 
   ! Output program header
   ! ---------------------
-  CALL Program_Message(PROGRAM_NAME, &
-                       'Program to create IASI channel subset SensorInfo entries. '//&
-                       'A user specified channel subset list is read from the file '//&
-                       USER_SUBSET_FILENAME//' if it exists.', &
-                       '$Revision: ' )
+  CALL Program_Message( PROGRAM_NAME, &
+                        'Program to create IASI channel subset SensorInfo entries. '//&
+                        'A user specified channel subset list is read from the file '//&
+                        USER_SUBSET_FILENAME//' if it exists.', &
+                        '$Revision$' )
 
 
   ! Create a new SensorInfo list
@@ -201,9 +201,9 @@ PROGRAM Write_IASI_SensorInfo
     SensorInfo%Sensor_Name      = 'IASI'
     SensorInfo%Satellite_Name   = SATELLITE_NAME
     SensorInfo%Sensor_Id        = Sensor_Id
-    SensorInfo%Microwave_Flag   = MICROWAVE_FLAG
     SensorInfo%WMO_Sensor_ID    = WMO_SENSOR_ID   
     SensorInfo%WMO_Satellite_ID = WMO_SATELLITE_ID
+    SensorInfo%Sensor_Type      = INFRARED_SENSOR
     ! Assign the array members
     SensorInfo%Sensor_Channel = Channel_List
     SensorInfo%Use_Flag       = 1

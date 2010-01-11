@@ -17,7 +17,7 @@ MODULE IASI_Define
   ! Module usage
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Fundamental_Constants, ONLY: PI
+  USE Fundamental_Constants, ONLY: PI, LN2
   ! Disable implicit typing
   IMPLICIT NONE
   
@@ -26,7 +26,7 @@ MODULE IASI_Define
   ! ----------
   ! Everything is default private
   PRIVATE
-  ! Public parameters
+  ! Parameters
   PUBLIC :: N_IASI_FFT
   PUBLIC :: IASI_MIN_FREQUENCY
   PUBLIC :: IASI_MAX_FREQUENCY
@@ -41,19 +41,20 @@ MODULE IASI_Define
   PUBLIC :: IASI_BAND_END_CHANNEL
   PUBLIC :: N_IASI_CHANNELS_PER_BAND
   PUBLIC :: MAX_N_IASI_BAND_CHANNELS
-  ! Public module procedures
+  ! Procedures
   PUBLIC :: IASI_MaxX
   PUBLIC :: IASI_X
   PUBLIC :: IASI_F
   PUBLIC :: IASI_GFT
   PUBLIC :: IASI_nPts
   PUBLIC :: IASI_Channels
+  PUBLIC :: IASI_DefineVersion
   
   
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Keyword set value
   INTEGER,  PARAMETER :: SET = 1
@@ -65,62 +66,52 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: TWO       = 2.0_fp
   REAL(fp), PARAMETER :: HUNDRED   = 100.0_fp
   REAL(fp), PARAMETER :: M2CM      = HUNDRED
-  REAL(fp), PARAMETER :: LN2 = 0.693147180559945309417232_fp
   
-  ! Instrument parameters
-  ! ---------------------
-  ! Gaussian function FWHM (cm^-1)
-  REAL(fp), PARAMETER :: GFT_FWHM = POINT5
-  REAL(fp), PARAMETER :: GFT_HWHM = GFT_FWHM/TWO
-
-  ! Laser wavelength (m)
-  REAL(fp), PARAMETER :: LASER_WAVELENGTH_IN_M  = 1.537656349e-06_fp
-  REAL(fp), PARAMETER :: LASER_WAVELENGTH       = LASER_WAVELENGTH_IN_M*M2CM
-
-  ! Laser frequency (m^-1)
-  REAL(fp), PARAMETER :: LASER_FREQUENCY   = ONE/LASER_WAVELENGTH_IN_M
-  REAL(fp), PARAMETER :: NYQUIST_FREQUENCY = LASER_FREQUENCY/TWO
-
-  ! Field angle (rad)
-  REAL(fp), PARAMETER :: FIELD_ANGLE = 0.01605073_fp
-
-  ! Number of double-sided FFT points
-  INTEGER,  PARAMETER :: N_IASI_FFT = 51200
-
-  ! Nominal maximum optical path delay for N_IASI_FFT (m)
-  REAL(fp), PARAMETER :: NOMINAL_MAXX_IN_M = 1.9679466e-02_fp
-  REAL(fp), PARAMETER :: NOMINAL_MAXX      = NOMINAL_MAXX_IN_M*M2CM
-
-  ! Parameters for the resampled frequency grid
-  REAL(fp), PARAMETER :: IASI_MIN_FREQUENCY = 645.0_fp
-  REAL(fp), PARAMETER :: IASI_MAX_FREQUENCY = 2760.0_fp
-  REAL(fp), PARAMETER :: IASI_D_FREQUENCY   = 0.25_fp
-  REAL(fp), PARAMETER :: IASI_RESAMPLE_MAXX = TWO
-
 
   ! Band parameters
-  ! ---------------
   INTEGER,  PARAMETER :: N_IASI_BANDS    = 3
   INTEGER,  PARAMETER :: N_IASI_CHANNELS = 8461
-
-  ! Band frequencies
+  !..Band frequencies
   REAL(fp), PARAMETER :: IASI_BAND_F1(N_IASI_BANDS) = (/  645.00_fp, 1210.00_fp, 2000.0_fp /)
   REAL(fp), PARAMETER :: IASI_BAND_F2(N_IASI_BANDS) = (/ 1209.75_fp, 1999.75_fp, 2760.0_fp /)
-
-  ! The IASI band names
-  CHARACTER(*), PARAMETER :: IASI_BAND(N_IASI_BANDS) = (/ 'B1','B2','B3'/)
-
-  ! The channel numbering for each band
+  !..The channel numbering for each band
   INTEGER, PARAMETER :: IASI_BAND_BEGIN_CHANNEL( N_IASI_BANDS) = (/    1, 2261, 5421 /)
   INTEGER, PARAMETER :: IASI_BAND_END_CHANNEL(   N_IASI_BANDS) = (/ 2260, 5420, 8461 /)
   INTEGER, PARAMETER :: N_IASI_CHANNELS_PER_BAND(N_IASI_BANDS) = (/ 2260, 3160, 3041 /)
   INTEGER, PARAMETER :: MAX_N_IASI_BAND_CHANNELS = 3160
+  !..Band names
+  CHARACTER(*), PARAMETER :: IASI_BAND(N_IASI_BANDS) = (/ 'B1','B2','B3'/)
   
+  ! Instrument parameters
+  !..Gaussian function FWHM (cm^-1)
+  REAL(fp), PARAMETER :: GFT_FWHM = POINT5
+  REAL(fp), PARAMETER :: GFT_HWHM = GFT_FWHM/TWO
+  !..Laser wavelength (m)
+  REAL(fp), PARAMETER :: LASER_WAVELENGTH_IN_M = 1.537656349e-06_fp
+  REAL(fp), PARAMETER :: LASER_WAVELENGTH      = LASER_WAVELENGTH_IN_M*M2CM
+  !..Laser frequency (m^-1)
+  REAL(fp), PARAMETER :: LASER_FREQUENCY   = ONE/LASER_WAVELENGTH_IN_M
+  REAL(fp), PARAMETER :: NYQUIST_FREQUENCY = LASER_FREQUENCY/TWO
+  !..Field angle (rad)
+  REAL(fp), PARAMETER :: FIELD_ANGLE = 0.01605073_fp
+  !..Number of double-sided FFT points
+  INTEGER,  PARAMETER :: N_IASI_FFT(N_IASI_BANDS) = 51200
+  !..Nominal maximum optical path delay for N_IASI_FFT (m)
+  REAL(fp), PARAMETER :: NOMINAL_MAXX_IN_M(N_IASI_BANDS) = 1.9679466e-02_fp
+  REAL(fp), PARAMETER :: NOMINAL_MAXX(N_IASI_BANDS)      = NOMINAL_MAXX_IN_M*M2CM
+
+  ! Parameters for the resampled frequency grid
+  REAL(fp), PARAMETER :: IASI_MIN_FREQUENCY = 645.0_fp
+  REAL(fp), PARAMETER :: IASI_MAX_FREQUENCY = 2760.0_fp
+  REAL(fp), PARAMETER :: IASI_D_FREQUENCY(N_IASI_BANDS)   = 0.25_fp
+  REAL(fp), PARAMETER :: IASI_RESAMPLE_MAXX(N_IASI_BANDS) = TWO
+
   
 CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IASI_MaxX
@@ -128,37 +119,65 @@ CONTAINS
 ! PURPOSE:
 !       Pure function to return the IASI maximum optical path delay.
 !
-!         maxX = 
-!
 ! CALLING SEQUENCE:
-!       maxX = IASI_MaxX(nominal=nominal)
+!       maxX = IASI_MaxX(band, nominal=nominal)
+!
+! INPUT ARGUMENTS:
+!       band:     IASI band number (1, 2, or 3).
+!                 If Band < 1, then 1 is used.
+!                    Band > 3, then 3 is used.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  SCALAR
+!                 ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       nominal:  Set this argument to return the nominal value of the IASI
-!                 max. OPD rather than the computed one.
-!                 If == 0, the computed value of maxX is returned,
-!                            maxX = 0.5 * n_FFT *. laser_wavelength * cos(mean_field_angle)
-!                    == 1, the nominal fixed value is returned,
-!                            maxX = 1.9679466cm
+!       nominal:  Set this logical argument to return the nominal value of
+!                 the IASI maximum OPD rather than the computed one.
+!                 If == .FALSE., the computed value of maxX is returned,
+!                                maxX = 0.5 * n_FFT *. laser_wavelength * COS(field_angle)
+!                    == .TRUE.,  the nominal defined fixed value is returned
+!                 UNITS:      N/A
+!                 TYPE:       LOGICAL
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       maxX:   Maximum optical path delay of the IASI instrument.
-!               UNITS:      Centimetres (cm)
-!               TYPE:       REAL(fp)
-!               DIMENSION:  Scalar
-!
+!       maxX:     Maximum optical path delay of the IASI instrument.
+!                 UNITS:      Centimetres (cm)
+!                 TYPE:       REAL(fp)
+!                 DIMENSION:  Scalar
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_MaxX(nominal) RESULT(maxX)
-    INTEGER, OPTIONAL, INTENT(IN) :: nominal
+  PURE FUNCTION IASI_MaxX(band,nominal) RESULT(maxX)
+    ! Arguments
+    INTEGER,           INTENT(IN) :: band
+    LOGICAL, OPTIONAL, INTENT(IN) :: nominal
+    ! Function result
     REAL(fp) :: maxX
-    maxX = REAL((N_IASI_FFT/2),fp)*(LASER_WAVELENGTH/TWO)*COS(FIELD_ANGLE)
-    IF ( PRESENT(nominal) ) THEN
-      IF ( nominal == SET ) maxX = NOMINAL_MAXX
+    ! Variables
+    INTEGER  :: ib
+    LOGICAL  :: computed
+    
+    ! Setup
+    ! ...Check band
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
+    ! ...Check nominal argument
+    computed = .TRUE.
+    IF ( PRESENT(nominal) ) computed = .NOT. nominal
+    
+    ! Determine optical path delay
+    IF ( computed ) THEN
+      maxX = REAL((N_IASI_FFT(ib)/2),fp)*(LASER_WAVELENGTH/TWO)*COS(FIELD_ANGLE)
+    ELSE
+      maxX = NOMINAL_MAXX(ib)
     END IF
+    
   END FUNCTION IASI_MaxX
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IASI_X
@@ -167,9 +186,17 @@ CONTAINS
 !       Pure function to compute the IASI double-sided optical delay grid.
 !
 ! CALLING SEQUENCE:
-!       x = IASI_X(n)
+!       x = IASI_X(band, n)
 !
 ! INPUT ARGUMENTS:
+!       band:      IASI band number (1, 2, or 3).
+!                  If iBand < 1, then 1 is used.
+!                     iBand > 3, then 3 is used.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  SCALAR
+!                  ATTRIBUTES: INTENT(IN)
+!
 !       n:         The number of points in the double-sided interferogram
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
@@ -194,21 +221,21 @@ CONTAINS
 !                                   
 !                      --->|   |<---
 !                           dx
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_X(n) RESULT(X)
+  PURE FUNCTION IASI_X(band, n) RESULT(X)
     ! Arguments
+    INTEGER, INTENT(IN) :: band
     INTEGER, INTENT(IN) :: n
     ! Function result
     REAL(fp) :: X(n)
     ! Local variables
     REAL(fp) :: maxX
-    INTEGER :: i, nHalf
-    ! Get the number of positive delays
+    INTEGER :: ib, i, nHalf
+
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
     nHalf = n/2
-    ! Compute maximum optical delay
-    maxX = NOMINAL_MAXX
-    ! Fill the grid array
+    maxX = NOMINAL_MAXX(ib)
     X(nHalf:n) = (/(REAL(i,fp),i=0,nHalf)/)/REAL(nHalf,fp)
     X(1:nHalf-1) = -X(n-1:nHalf+1:-1)
     X = X*maxX
@@ -216,6 +243,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IASI_GFT
@@ -225,9 +253,17 @@ CONTAINS
 !       optical delay grid.
 !
 ! CALLING SEQUENCE:
-!       gft = IASI_GFT(x)
+!       gft = IASI_GFT(band,x)
 !
 ! INPUT ARGUMENTS:
+!       band:      IASI band number (1, 2, or 3).
+!                  If iBand < 1, then 1 is used.
+!                     iBand > 3, then 3 is used.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
 !       x:         Double-sided optical delay grid.
 !                  UNITS:      Centimetres (cm)
 !                  TYPE:       REAL(fp)
@@ -250,18 +286,21 @@ CONTAINS
 !       gft = EXP( -ln(2).[-------] )
 !                (        [ sigma ] )
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_GFT(x) RESULT(gft)
+  PURE FUNCTION IASI_GFT(band,x) RESULT(gft)
     ! Arguments
+    INTEGER,  INTENT(IN) :: band
     REAL(fp), INTENT(IN) :: x(:)
     ! Function result
     REAL(fp) :: gft(SIZE(x))
     ! Local variables
+    INTEGER  :: ib
     REAL(fp) :: sigma
 
-    ! Compute the IASI GFT
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
     sigma = LN2/(PI*GFT_HWHM)
-    WHERE ( ABS(x) <= NOMINAL_MAXX )
+    WHERE ( ABS(x) <= NOMINAL_MAXX(ib) )
       gft = EXP(-LN2*(x/sigma)**2)
     ELSEWHERE
       gft = ZERO
@@ -270,6 +309,7 @@ CONTAINS
   
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IASI_nPts
@@ -309,17 +349,19 @@ CONTAINS
 !       That is, the end frequenciues for these two bands are 1209.75 and
 !       1999.75cm-1 respectively.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION IASI_nPts(iBand) RESULT(n)
     INTEGER, INTENT(IN) :: iBand
     INTEGER :: n
     INTEGER :: ib
     ib = MAX(MIN(iBand,N_IASI_BANDS),1)
-    n = INT((IASI_BAND_F2(ib)-IASI_BAND_F1(ib))/IASI_D_FREQUENCY + ONEPOINT5)
+    n = INT((IASI_BAND_F2(ib)-IASI_BAND_F1(ib))/IASI_D_FREQUENCY(ib) + ONEPOINT5)
   END FUNCTION IASI_nPts
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IASI_F
@@ -362,6 +404,7 @@ CONTAINS
 !       The function, IASI_nPts(), can be used to compute the number of spectral
 !       points in each band.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION IASI_F(iBand) RESULT(f)
     INTEGER, INTENT(IN) :: iBand
@@ -370,12 +413,13 @@ CONTAINS
     ib = MAX(MIN(iBand,N_IASI_BANDS),1)
     n = IASI_nPts(ib)
     DO i = 1, n
-      f(i) = IASI_BAND_F1(ib) + (IASI_D_FREQUENCY*REAL(i-1,fp))
+      f(i) = IASI_BAND_F1(ib) + (IASI_D_FREQUENCY(ib)*REAL(i-1,fp))
     END DO
   END FUNCTION IASI_F
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IASI_Channels
@@ -405,6 +449,7 @@ CONTAINS
 !       The function, IASI_nPts(), can be used to compute the number of spectral
 !       channels in each band.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION IASI_Channels(iBand) RESULT(c)
     INTEGER, INTENT(IN) :: iBand
@@ -417,5 +462,34 @@ CONTAINS
     END DO
     c = (/(i,i=1,IASI_nPts(ib))/) + n
   END FUNCTION IASI_Channels
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       IASI_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL IASI_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:   Character string containing the version Id information
+!             for the module.
+!             UNITS:      N/A
+!             TYPE:       CHARACTER(*)
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE IASI_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE IASI_DefineVersion
 
 END MODULE IASI_Define
