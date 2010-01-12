@@ -12,14 +12,21 @@
 !
 !                 Apodisation type        Parameter Name
 !           ------------------------------------------------------
-!               Bartlett apodisation       BARTLETT_APOD
-!               Welch apodisation          WELCH_APOD
-!               Connes apodisation         CONNES_APOD  (DEFAULT)
-!               Cosine apodisation         COSINE_APOD
-!               Hamming apodisation        HAMMING_APOD
-!               Hanning apodisation        HANNING_APOD
-!               alias for WELCH_APOD       BEER_APOD
-!               alias for CONNES_APOD      STRONGBEER_APOD
+!               Bartlett                        BARTLETT
+!               Welch                           WELCH
+!               Connes                          CONNES  (DEFAULT)
+!               Cosine                          COSINE
+!               Hamming                         HAMMING
+!               Hanning                         HANNING
+!               Weak Norton-Beer                NORTONBEER_WEAK
+!               Medium Norton-Beer              NORTONBEER_MEDIUM
+!               Strong Norton-Beer              NORTONBEER_STRONG
+!               Blackman-Harris 3-term          BLACKMANHARRIS_3
+!               Blackman-Harris 4-term          BLACKMANHARRIS_4
+!               Blackman-Harris modified 4-term BLACKMANHARRIS_4M
+!               alias for WELCH                 BEER
+!               alias for CONNES                STRONGBEER
+!               alias for HAMMING               HAPPGENZEL
 !
 !        See the documentation for the "ApodFunction" function to see how
 !        to use the above parameters.
@@ -39,7 +46,7 @@ MODULE FFT_Spectral_Utility
   USE Type_Kinds           , ONLY: fp
   USE File_Utility         , ONLY: Get_Lun
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Fundamental_Constants, ONLY: PI
+  USE Fundamental_Constants, ONLY: PI, LN2
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   USE FFT
   ! Disable implicit typing
@@ -50,16 +57,23 @@ MODULE FFT_Spectral_Utility
   ! ----------
   ! Everything is default private
   PRIVATE
-  ! Public parameters
-  PUBLIC :: BARTLETT_APOD
-  PUBLIC :: WELCH_APOD
-  PUBLIC :: CONNES_APOD
-  PUBLIC :: COSINE_APOD
-  PUBLIC :: HAMMING_APOD
-  PUBLIC :: HANNING_APOD
-  PUBLIC :: BEER_APOD
-  PUBLIC :: STRONGBEER_APOD
-  ! Public procedures
+  ! Parameters
+  PUBLIC :: BARTLETT
+  PUBLIC :: WELCH
+  PUBLIC :: CONNES
+  PUBLIC :: COSINE
+  PUBLIC :: HAMMING
+  PUBLIC :: HANNING
+  PUBLIC :: NORTONBEER_WEAK
+  PUBLIC :: NORTONBEER_MEDIUM
+  PUBLIC :: NORTONBEER_STRONG
+  PUBLIC :: BLACKMANHARRIS_3
+  PUBLIC :: BLACKMANHARRIS_4
+  PUBLIC :: BLACKMANHARRIS_4M
+  PUBLIC :: BEER
+  PUBLIC :: STRONGBEER
+  PUBLIC :: HAPPGENZEL
+  ! Procedures
   PUBLIC :: ComputeNIFG
   PUBLIC :: ComputeNSPC
   PUBLIC :: ComputeMaxX
@@ -76,6 +90,7 @@ MODULE FFT_Spectral_Utility
   PUBLIC :: SPCtoIFG
   PUBLIC :: IFGtoSPC
   PUBLIC :: Fourier_Interpolate
+  PUBLIC :: FFT_Spectral_UtilityVersion
 
   ! ---------
   ! Overloads
@@ -94,8 +109,11 @@ MODULE FFT_Spectral_Utility
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: $'
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+  
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
   
   ! Keyword set value
   INTEGER,  PARAMETER :: SET = 1
@@ -106,19 +124,23 @@ MODULE FFT_Spectral_Utility
   REAL(fp), PARAMETER :: ONE       = 1.0_fp
   REAL(fp), PARAMETER :: ONEPOINT5 = 1.5_fp
   REAL(fp), PARAMETER :: TWO       = 2.0_fp
-  REAL(fp), PARAMETER :: POINT46   = 0.46_fp
-  REAL(fp), PARAMETER :: POINT54   = 0.54_fp
-  REAL(fp), PARAMETER :: LN2 = 0.693147180559945309417232_fp
 
   ! Apodisation function type values
-  INTEGER,  PARAMETER :: BARTLETT_APOD = 1
-  INTEGER,  PARAMETER :: WELCH_APOD    = 2
-  INTEGER,  PARAMETER :: CONNES_APOD   = 3
-  INTEGER,  PARAMETER :: COSINE_APOD   = 4
-  INTEGER,  PARAMETER :: HAMMING_APOD  = 5
-  INTEGER,  PARAMETER :: HANNING_APOD  = 6
-  INTEGER,  PARAMETER :: BEER_APOD       = WELCH_APOD
-  INTEGER,  PARAMETER :: STRONGBEER_APOD = CONNES_APOD
+  INTEGER,  PARAMETER :: BARTLETT          = 1
+  INTEGER,  PARAMETER :: WELCH             = 2
+  INTEGER,  PARAMETER :: CONNES            = 3
+  INTEGER,  PARAMETER :: COSINE            = 4
+  INTEGER,  PARAMETER :: HAMMING           = 5
+  INTEGER,  PARAMETER :: HANNING           = 6
+  INTEGER,  PARAMETER :: NORTONBEER_WEAK   = 7
+  INTEGER,  PARAMETER :: NORTONBEER_MEDIUM = 8
+  INTEGER,  PARAMETER :: NORTONBEER_STRONG = 9
+  INTEGER,  PARAMETER :: BLACKMANHARRIS_3  = 10
+  INTEGER,  PARAMETER :: BLACKMANHARRIS_4  = 11
+  INTEGER,  PARAMETER :: BLACKMANHARRIS_4M = 12
+  INTEGER,  PARAMETER :: BEER       = WELCH
+  INTEGER,  PARAMETER :: STRONGBEER = CONNES
+  INTEGER,  PARAMETER :: HAPPGENZEL = HAMMING
 
   ! Cos Filter default rolloff width
   REAL(fp), PARAMETER :: DEFAULT_WIDTH = 10.0_fp
@@ -139,6 +161,7 @@ CONTAINS
 !##################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeNIFG
@@ -150,7 +173,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       nIfg = ComputeNIFG(nSpc)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       nSpc:   Number of points in a spectrum.
 !               UNITS:      N/A
 !               TYPE:       INTEGER
@@ -163,6 +186,7 @@ CONTAINS
 !               TYPE:       INTEGER
 !               DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeNIFG(nSpc) RESULT(nIfg)
     ! Arguments
@@ -175,6 +199,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeNSPC
@@ -186,7 +211,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       nSpc = ComputeNSPC(nIFg)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       nIfg:   Number of points in the inteferogram.
 !               UNITS:      N/A
 !               TYPE:       INTEGER
@@ -199,6 +224,7 @@ CONTAINS
 !               TYPE:       INTEGER
 !               DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeNSPC(nIfg) RESULT(nSpc)
     ! Arguments
@@ -211,6 +237,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeMaxX
@@ -222,7 +249,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       maxX = ComputeMaxX(f)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       f:      Evenly spaced spectral frequency grid.
 !               UNITS:      Inverse centimetres (cm^-1)
 !               TYPE:       REAL(fp)
@@ -236,6 +263,7 @@ CONTAINS
 !               TYPE:       REAL(fp)
 !               DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeMaxX(f) RESULT(maxX)
     ! Arguments
@@ -248,6 +276,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeNyquistF
@@ -259,7 +288,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       nyquistF = ComputeNyquistF(x)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       x:         Evenly spaced interferometric optical delay grid
 !                  UNITS:      Centimetres (cm)
 !                  TYPE:       REAL(fp)
@@ -273,6 +302,7 @@ CONTAINS
 !                  TYPE:       REAL(fp)
 !                  DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeNyquistF(x) RESULT(nyquistF)
     ! Arguments
@@ -285,6 +315,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeX
@@ -296,7 +327,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       x = ComputeX(f)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       f:         Evenly spaced spectral frequency grid
 !                  UNITS:      Inverse centimetres (cm^-1)
 !                  TYPE:       REAL(fp)
@@ -313,6 +344,7 @@ CONTAINS
 ! COMMENTS:
 !       Use the ComputeNIFG function to compute the size of the result.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeX(f) RESULT(x)
     ! Arguments
@@ -335,6 +367,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeF
@@ -346,7 +379,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       f = ComputeF(x)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       x:         Double-sided optical delay grid.
 !                  UNITS:      Centimetres (cm)
 !                  TYPE:       REAL(fp)
@@ -363,6 +396,7 @@ CONTAINS
 ! COMMENTS:
 !       Use the ComputeNSPC function to compute the size of the result.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeF(x) RESULT(f)
     ! Arguments
@@ -383,6 +417,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeMeanDelta
@@ -394,7 +429,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       dA = ComputeMeanDelta(A)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       a:         Input array of evenly spaced, monotonically increasing
 !                  data points.
 !                  UNITS:      Variable
@@ -414,6 +449,7 @@ CONTAINS
 !       I've found a mean-delta approach to give more consistent results
 !       for different precisions.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeMeanDelta(a) RESULT(dA)
     ! Arguments
@@ -429,6 +465,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeNPoints
@@ -440,7 +477,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       n = ComputeNPoints(deltaA, dA)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       deltaA:    Range over which the data are spaced.
 !                  UNITS:      Variable
 !                  TYPE:       REAL(fp)
@@ -459,6 +496,7 @@ CONTAINS
 !                  TYPE:       INTEGER
 !                  DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeNPoints(deltaA, dA) RESULT(nPoints)
     ! Arguments
@@ -473,6 +511,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeIndex
@@ -484,7 +523,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       idx = ComputeIndex(a, da, a1=a1)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       a:         Value for which the index is to be determined.
 !                  UNITS:      Variable
 !                  TYPE:       REAL(fp)
@@ -497,7 +536,7 @@ CONTAINS
 !                  DIMENSION:  Scalar
 !                  ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       a1:        Value for begin index value.
 !                  If not specified, 0.0 is assumed.
 !                  UNITS:      Variable
@@ -513,6 +552,7 @@ CONTAINS
 !                  TYPE:       INTEGER
 !                  DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeIndex(a, da, a1) RESULT(idx)
     ! Arguments
@@ -532,6 +572,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ComputeNextPO2
@@ -544,7 +585,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       po2 = ComputeNextPO2(n)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       n:         Number of points for which the next power-of-two is required.
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
@@ -557,6 +598,7 @@ CONTAINS
 !                  TYPE:       INTEGER
 !                  DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION ComputeNextPO2(n) RESULT(po2)
     ! Arguments
@@ -579,6 +621,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Sinc
@@ -587,22 +630,22 @@ CONTAINS
 !       Pure function to compute a Sinc function.
 !
 ! CALLING SEQUENCE:
-!       y = Sinc(x, Normalized=Normalized)
+!       y = Sinc(x, Normalize=Normalize)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       x:           Abscissa values for which the Sinc function is required.
 !                    UNITS:      Variable
 !                    TYPE:       REAL(fp)
 !                    DIMENSION:  Rank-1
 !                    ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Normalized:  Set this argument to normalize (i.e. multiply by PI) the
-!                    abscissa values prior to computing the Sinc.
-!                    If == 0 No nomalization (DEFAULT)
-!                       == 1 Normalization is performed.
+! OPTIONAL INPUTS:
+!       Normalize:   Set this logical argument to normalize (i.e. multiply by PI)
+!                    the abscissa values prior to computing the Sinc.
+!                    If == .FALSE. No nomalization (DEFAULT)
+!                       == .TRUE.  Normalization is performed.
 !                    UNITS:      N/A
-!                    TYPE:       INTEGER
+!                    TYPE:       LOGICAL
 !                    DIMENSION:  Scalar
 !                    ATTRIBUTES: INTENT(IN), OPTIONAL
 !                    
@@ -612,11 +655,12 @@ CONTAINS
 !                    TYPE:       REAL(fp)
 !                    DIMENSION:  Same rank and size as input x.
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION Sinc(x, Normalized) RESULT(y)
+  PURE FUNCTION Sinc(x, Normalize) RESULT(y)
     ! Arguments
     REAL(fp),          INTENT(IN) :: x(:)
-    INTEGER, OPTIONAL, INTENT(IN) :: Normalized
+    LOGICAL, OPTIONAL, INTENT(IN) :: Normalize
     ! Function result
     REAL(fp), DIMENSION(SIZE(x)) :: y
     ! Local variables
@@ -624,8 +668,8 @@ CONTAINS
 
     ! Check normalisation
     xScale = x
-    IF ( PRESENT( Normalized ) ) THEN
-      IF ( Normalized == SET ) xScale = PI*x
+    IF ( PRESENT(Normalize) ) THEN
+      IF ( Normalize ) xScale = PI*x
     END IF
     
     ! Compute Sinc function    
@@ -638,6 +682,7 @@ CONTAINS
   
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       ApodFunction
@@ -649,7 +694,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       y = ApodFunction(nIfg, ApodType=ApodType)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       nIfg:        Number of points for which the apodisation function
 !                    is required. Note that the number of points is the 
 !                    same as required for a double-sided interferogram.
@@ -658,17 +703,24 @@ CONTAINS
 !                    DIMENSION:  Scalar
 !                    ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       ApodType:    Set this argument to the defined parameter values to
 !                    select the type of apodisation function.
-!                    If == BARTLETT_APOD    for Bartlett apodisation
-!                       == WELCH_APOD       for Welch apodisation
-!                       == CONNES_APOD      for Connes apodisation (DEFAULT)
-!                       == COSINE_APOD      for Cosine apodisation
-!                       == HAMMING_APOD     for Hamming apodisation
-!                       == HANNING_APOD     for Hanning apodisation
-!                       == BEER_APOD        alias for WELCH_APOD
-!                       == STRONGBEER_APOD  alias for CONNES_APOD
+!                    If == BARTLETT          for Bartlett apodisation
+!                       == WELCH             for Welch apodisation
+!                       == CONNES            for Connes apodisation (DEFAULT)
+!                       == COSINE            for Cosine apodisation
+!                       == HAMMING           for Hamming apodisation
+!                       == HANNING           for Hanning apodisation
+!                       == NORTONBEER_WEAK   for weak Norton-Beer apodisation  
+!                       == NORTONBEER_MEDIUM for medium Norton-Beer apodisation
+!                       == NORTONBEER_STRONG for strong Norton-Beer apodisation
+!                       == BLACKMANHARRIS_3  for Blackman-Harris 3-term         
+!                       == BLACKMANHARRIS_4  for Blackman-Harris 4-term         
+!                       == BLACKMANHARRIS_4M for Blackman-Harris modified 4-term
+!                       == BEER        alias for WELCH
+!                       == STRONGBEER  alias for CONNES
+!                       == HAPPGENZEL  alias for HAMMING
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
 !                    DIMENSION:  Scalar
@@ -686,18 +738,38 @@ CONTAINS
 !         From MathWorld--A Wolfram Web Resource.
 !         http://mathworld.wolfram.com/ApodizationFunction.html
 !
+!       and
+!
+!         Naylor,D.A. and M.K. Tahic, "Apodizing functions for Fourier
+!         transform spectroscopy, J.Opt.Soc.Am.A 24(11):3644-3648, 2007
+!
+!:sdoc-:
 !--------------------------------------------------------------------------------
+
   PURE FUNCTION ApodFunction(nIfg, apodType) RESULT(y)
     ! Arguments
     INTEGER,           INTENT(IN) :: nIfg
     INTEGER, OPTIONAL, INTENT(IN) :: apodType
     ! Function result
     REAL(fp), DIMENSION(nIfg) :: y
+    ! Local parameters
+    !..Hamming apodfn coefficients
+    REAL(fp), PARAMETER :: POINT46   = 0.46_fp
+    REAL(fp), PARAMETER :: POINT54   = 0.54_fp
+    !..Norton-Beer apodfn coefficients
+    REAL(fp), PARAMETER :: NBC_WEAK(0:2)   = (/ 0.384093_fp, -0.087577_fp, 0.703484_fp /)
+    REAL(fp), PARAMETER :: NBC_MEDIUM(0:2) = (/ 0.152442_fp, -0.136176_fp, 0.983734_fp /)
+    REAL(fp), PARAMETER :: NBC_STRONG(0:3) = (/ 0.045335_fp,  0.0_fp     , 0.554883_fp, 0.399782_fp /)
+    !..Blackman-Harris apodfn coefficients
+    REAL(fp), PARAMETER :: BHC_3(0:2)  = (/ 0.42323_fp, 0.49755_fp, 0.07922_fp /)
+    REAL(fp), PARAMETER :: BHC_4(0:3)  = (/ 0.35875_fp, 0.48829_fp, 0.14128_fp, 0.01168_fp /)
+    REAL(fp), PARAMETER :: BHC_4M(0:3) = (/ 0.355766_fp, 0.487395_fp, 0.144234_fp, 0.012605_fp /)
     ! Local variables
     INTEGER :: aType
-    INTEGER :: i, nHalf
+    INTEGER :: i, nHalf, n
     REAL(fp) :: aMax
     REAL(fp), DIMENSION(ComputeNSPC(nIfg)) :: a
+    REAL(fp) :: nbc(0:3), bhc(0:3)
 
     ! Set type
     aType = -1 ! Doesn't match any defined type, so force default
@@ -713,12 +785,36 @@ CONTAINS
     ! Compute apodisation function for +ve delays. The default
     ! apodisation function is CONNES_APOD
     SELECT CASE(aType)
-      CASE(BARTLETT_APOD); y(nHalf:nIfg) = ONE - (a/aMax)
-      CASE(WELCH_APOD)   ; y(nHalf:nIfg) = ONE - (a/aMax)**2
-      CASE(COSINE_APOD)  ; y(nHalf:nIfg) = COS(POINT5*PI*a/aMax)
-      CASE(HAMMING_APOD) ; y(nHalf:nIfg) = POINT54 + (POINT46*COS(PI*a/aMax))
-      CASE(HANNING_APOD) ; y(nHalf:nIfg) = POINT5*(ONE + COS(PI*a/aMax))
-      CASE DEFAULT       ; y(nHalf:nIfg) = (ONE - (a/aMax)**2)**2
+      !..Some standard functions
+      CASE(BARTLETT); y(nHalf:nIfg) = ONE - (a/aMax)
+      CASE(WELCH)   ; y(nHalf:nIfg) = ONE - (a/aMax)**2
+      CASE(COSINE)  ; y(nHalf:nIfg) = COS(POINT5*PI*a/aMax)
+      CASE(HAMMING) ; y(nHalf:nIfg) = POINT54 + (POINT46*COS(PI*a/aMax))
+      CASE(HANNING) ; y(nHalf:nIfg) = POINT5*(ONE + COS(PI*a/aMax))
+      !..Norton-Beer series
+      CASE(NORTONBEER_WEAK, NORTONBEER_MEDIUM, NORTONBEER_STRONG)
+        SELECT CASE(aType)
+          CASE(NORTONBEER_WEAK)  ; n = 2; nbc(0:n) = NBC_WEAK(0:n)
+          CASE(NORTONBEER_MEDIUM); n = 2; nbc(0:n) = NBC_MEDIUM(0:n)
+          CASE(NORTONBEER_STRONG); n = 3; nbc(0:n) = NBC_STRONG(0:n)
+        END SELECT
+        y(nHalf:nIfg) = nbc(0)
+        DO i = 1, n
+          y(nHalf:nIfg) = y(nHalf:nIfg) + nbc(i)*(ONE-(a/aMax)**2)**i
+        END DO
+      !..Blackman-Harris series
+      CASE(BLACKMANHARRIS_3, BLACKMANHARRIS_4, BLACKMANHARRIS_4M)
+        SELECT CASE(aType)
+          CASE(BLACKMANHARRIS_3) ; n = 2; bhc(0:n) = BHC_3(0:n)
+          CASE(BLACKMANHARRIS_4) ; n = 3; bhc(0:n) = BHC_4(0:n)
+          CASE(BLACKMANHARRIS_4M); n = 3; bhc(0:n) = BHC_4M(0:n)
+        END SELECT
+        y(nHalf:nIfg) = bhc(0)
+        DO i = 1, n
+          y(nHalf:nIfg) = y(nHalf:nIfg) + bhc(i)*COS(REAL(i,fp)*PI*a/aMax)
+        END DO
+      !..Default is CONNES
+      CASE DEFAULT  ; y(nHalf:nIfg) = (ONE - (a/aMax)**2)**2
     END SELECT
 
     ! Reflect for -ve delays
@@ -727,6 +823,7 @@ CONTAINS
   
   
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CosFilter
@@ -740,25 +837,23 @@ CONTAINS
 !                                 Filter                 , & ! Output
 !                                 FilterWidth=FilterWidth, & ! Optional Input
 !                                 Reverse    =Reverse    , & ! Optional Input
-!                                 nFilter    =nFilter    , & ! Optional output
-!                                 RCS_Id     =RCS_Id     , & ! Revision control
-!                                 Message_Log=Message_Log) & ! Error messaging
+!                                 nFilter    =nFilter      ) ! Optional output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Frequency:    The frequencies for which filter values are required.
 !                     UNITS:      Inverse centimetres (cm^-1)
 !                     TYPE:       REAL(fp)
 !                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Filter:       The cosine filter values for the specified frequencies.
 !                     UNITS:      N/A
 !                     TYPE:       REAL(fp)
 !                     DIMENSION:  Same as input Frequency.
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       FilterWidth:  Set this argument to the width to be used in
 !                     computing the filter values. If not specified,
 !                     the default is 10cm^-1
@@ -775,17 +870,8 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!                    
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to the screen.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
+! OPTIONAL OUTPUTS:
 !       nFilter:      Specify this argument to return the actual number of
 !                     filter points computed. The filter width determines
 !                     how the filter is calcuated, and that filter width
@@ -796,13 +882,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !                    
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -812,28 +891,28 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  FUNCTION CosFilter(Frequency  , & ! Input
-                     Filter     , & ! Output
-                     FilterWidth, & ! Optional Input
-                     Reverse    , & ! Optional Input
-                     nFilter    , & ! Optional output
-                     RCS_Id     , & ! Revision control
-                     Message_Log) & ! Error messaging
-                    RESULT(Error_Status)
+
+  FUNCTION CosFilter( &
+    Frequency  , & ! Input
+    Filter     , & ! Output
+    FilterWidth, & ! Optional Input
+    Reverse    , & ! Optional Input
+    nFilter    ) & ! Optional output
+  RESULT(Error_Status)
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Frequency(:)
-    REAL(fp),               INTENT(OUT) :: Filter(:)
-    REAL(fp),     OPTIONAL, INTENT(IN)  :: FilterWidth
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Reverse
-    INTEGER,      OPTIONAL, INTENT(OUT) :: nFilter
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),           INTENT(IN)  :: Frequency(:)
+    REAL(fp),           INTENT(OUT) :: Filter(:)
+    REAL(fp), OPTIONAL, INTENT(IN)  :: FilterWidth
+    INTEGER,  OPTIONAL, INTENT(IN)  :: Reverse
+    INTEGER,  OPTIONAL, INTENT(OUT) :: nFilter
     ! Function result
     INTEGER :: Error_Status
     ! Locall parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CosFilter'
     ! Local variables
+    CHARACTER(ML) :: Message
     REAL(fp) :: Width
     INTEGER  :: n, nPts
     INTEGER  :: i1, i2, i3
@@ -841,45 +920,30 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check input
+    ! ...Check input
     n = SIZE(Frequency)
     IF ( SIZE(Filter) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message(ROUTINE_NAME, &
-                           'Size of Frequency and Filter arguments inconsistent.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+      Message = 'Size of Frequency and Filter arguments inconsistent.'
+      CALL Cleanup(); RETURN
     END IF
-
-    ! Filter width
+    ! ...Filter width
     Width = DEFAULT_WIDTH
-    IF (PRESENT(FilterWidth)) Width=FilterWidth
+    IF ( PRESENT(FilterWidth) ) Width=FilterWidth
 
-    ! Mean frequency interval
+    ! Compute the number of points
+    ! ...Mean frequency interval
     dF = ComputeMeanDelta(Frequency)
-
-    ! How many points required for filter?
+    ! ...How many points required for filter?
     nPts = ComputeNPoints(Width, dF)
-    ! Not enough?
-    IF(nPts <= 1)THEN
-      Error_Status = FAILURE
-      CALL Display_Message(ROUTINE_NAME, &
-                           'Number of filter points too small', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+    ! ...Not enough?
+    IF ( nPts <= 1 ) THEN
+      Message = 'Number of filter points too small'
+      CALL Cleanup(); RETURN
     END IF
-    ! Too many?
-    IF(nPts > n)THEN
-      Error_Status = FAILURE
-      CALL Display_Message(ROUTINE_NAME, &
-                           'Number of filter points too large', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+    ! ...Too many?
+    IF ( nPts > n ) THEN
+      Message = 'Number of filter points too large'
+      CALL Cleanup(); RETURN
     END IF
     
     ! Return number of points if necessary
@@ -899,13 +963,22 @@ CONTAINS
 
     ! Initialise filter
     Filter = ONE
+
     ! Compute filter
     Filter(i1:i2:i3) = POINT5 * (ONE + COS((Frequency(i1:i2:i3)-Frequency(i1))*PI/Width))
-    
+
+  CONTAINS
+  
+    SUBROUTINE Cleanup()
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+    END SUBROUTINE Cleanup
+
   END FUNCTION CosFilter 
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       SPCtoIFG
@@ -915,12 +988,10 @@ CONTAINS
 !       interferogram (IFG)
 !
 ! CALLING SEQUENCE:
-!       Error_Status = SPCtoIFG(  f, spc,                  & ! Input
-!                                 x, ifg,                  & ! Output
-!                                 RCS_Id     =RCS_Id     , & ! Revision control
-!                                 Message_Log=Message_Log) & ! Error messaging
+!       Error_Status = SPCtoIFG( f, spc, & ! Input
+!                                x, ifg  ) ! Output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       f:            The spectral frequency grid.
 !                     UNITS:      Inverse centimetres (cm^-1)
 !                     TYPE:       REAL(fp)
@@ -933,7 +1004,7 @@ CONTAINS
 !                     DIMENSION:  Rank-1 (nSpc)
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       x:            The optical delay grid
 !                     UNITS:      Centimetres (cm)
 !                     TYPE:       REAL(fp)
@@ -946,24 +1017,6 @@ CONTAINS
 !                     DIMENSION:  Rank-1 (nIfg)
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to the screen.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -973,21 +1026,20 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  FUNCTION RealSPC_to_ComplexIFG( Frequency    , &  ! Input
-                                  Spectrum     , &  ! Input
-                                  OpticalDelay , &  ! Output
-                                  Interferogram, &  ! Output
-                                  RCS_Id       , &  ! Revision control
-                                  Message_Log  ) &  ! Error messaging
-                                RESULT(Error_Status)
+
+  FUNCTION RealSPC_to_ComplexIFG( &
+    Frequency    , &  ! Input
+    Spectrum     , &  ! Input
+    OpticalDelay , &  ! Output
+    Interferogram) &  ! Output
+  RESULT(Error_Status)
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Frequency(:)
-    REAL(fp),               INTENT(IN)  :: Spectrum(:)
-    REAL(fp),               INTENT(OUT) :: OpticalDelay(:)
-    COMPLEX(fp),            INTENT(OUT) :: Interferogram(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),    INTENT(IN)  :: Frequency(:)
+    REAL(fp),    INTENT(IN)  :: Spectrum(:)
+    REAL(fp),    INTENT(OUT) :: OpticalDelay(:)
+    COMPLEX(fp), INTENT(OUT) :: Interferogram(:)
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -999,15 +1051,13 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check input dimensions
     nSpc = SIZE(Frequency)
     nIfg = SIZE(OpticalDelay)
     Error_Status = CheckSPCIFGdims( nSpc, SIZE(Spectrum)     , &
                                     nIfg, SIZE(Interferogram), &
-                                    ROUTINE_NAME             , &
-                                    Message_Log=Message_Log    )
+                                    ROUTINE_NAME               )
     IF ( Error_Status /= SUCCESS ) RETURN
     
     ! Load the work IFG arrays.
@@ -1030,20 +1080,17 @@ CONTAINS
   END FUNCTION RealSPC_to_ComplexIFG
 
   
-  FUNCTION ComplexSPC_to_ComplexIFG( Frequency    , &
-                                     Spectrum     , &
-                                     OpticalDelay , &
-                                     Interferogram, &
-                                     RCS_Id       , &
-                                     Message_Log  ) &
-                                   RESULT(Error_Status)
+  FUNCTION ComplexSPC_to_ComplexIFG( &
+    Frequency    , &  ! Input
+    Spectrum     , &  ! Input
+    OpticalDelay , &  ! Output
+    Interferogram) &  ! Output
+  RESULT(Error_Status)
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Frequency(:)
-    COMPLEX(fp),            INTENT(IN)  :: Spectrum(:)
-    REAL(fp),               INTENT(OUT) :: OpticalDelay(:)
-    COMPLEX(fp),            INTENT(OUT) :: Interferogram(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),    INTENT(IN)  :: Frequency(:)
+    COMPLEX(fp), INTENT(IN)  :: Spectrum(:)
+    REAL(fp),    INTENT(OUT) :: OpticalDelay(:)
+    COMPLEX(fp), INTENT(OUT) :: Interferogram(:)
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1055,15 +1102,13 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check input dimensions
     nSpc = SIZE(Frequency)
     nIfg = SIZE(OpticalDelay)
     Error_Status = CheckSPCIFGdims( nSpc, SIZE(Spectrum)     , &
                                     nIfg, SIZE(Interferogram), &
-                                    ROUTINE_NAME             , &
-                                    Message_Log=Message_Log    )
+                                    ROUTINE_NAME               )
     IF ( Error_Status /= SUCCESS ) RETURN
     
     ! Load the work IFG arrays.
@@ -1087,6 +1132,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       IFGtoSPC
@@ -1095,12 +1141,10 @@ CONTAINS
 !       Function to FFT a double-sided interferogram (IFG) to a spectrum (SPC)
 !
 ! CALLING SEQUENCE:
-!       Error_Status = IFGtoSPC(  x, ifg,                  & ! Input
-!                                 f, spc,                  & ! Output
-!                                 RCS_Id     =RCS_Id     , & ! Revision control
-!                                 Message_Log=Message_Log) & ! Error messaging
+!       Error_Status = IFGtoSPC( x, ifg, & ! Input
+!                                f, spc  ) ! Output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       x:            The optical delay grid
 !                     UNITS:      Centimetres (cm)
 !                     TYPE:       REAL(fp)
@@ -1113,7 +1157,7 @@ CONTAINS
 !                     DIMENSION:  Rank-1 (nIfg)
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       f:            The spectral frequency grid.
 !                     UNITS:      Inverse centimetres (cm^-1)
 !                     TYPE:       REAL(fp)
@@ -1126,24 +1170,6 @@ CONTAINS
 !                     DIMENSION:  Rank-1 (nSpc)
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to the screen.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1153,21 +1179,20 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  FUNCTION RealIFG_to_ComplexSPC( OpticalDelay , &
-                                  Interferogram, &
-                                  Frequency    , &
-                                  Spectrum     , &
-                                  RCS_Id       , &
-                                  Message_Log  ) &
-                                RESULT(Error_Status)
+
+  FUNCTION RealIFG_to_ComplexSPC( &
+    OpticalDelay , &
+    Interferogram, &
+    Frequency    , &
+    Spectrum     ) &
+  RESULT(Error_Status)
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: OpticalDelay(:)
-    REAL(fp),               INTENT(IN)  :: Interferogram(:)
-    REAL(fp),               INTENT(OUT) :: Frequency(:)
-    COMPLEX(fp),            INTENT(OUT) :: Spectrum(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),    INTENT(IN)  :: OpticalDelay(:)
+    REAL(fp),    INTENT(IN)  :: Interferogram(:)
+    REAL(fp),    INTENT(OUT) :: Frequency(:)
+    COMPLEX(fp), INTENT(OUT) :: Spectrum(:)
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1179,15 +1204,13 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check input dimensions
     nSpc = SIZE(Frequency)
     nIfg = SIZE(OpticalDelay)
     Error_Status = CheckSPCIFGdims( nSpc, SIZE(Spectrum)     , &
                                     nIfg, SIZE(Interferogram), &
-                                    ROUTINE_NAME             , &
-                                    Message_Log=Message_Log    )
+                                    ROUTINE_NAME               )
     IF ( Error_Status /= SUCCESS ) RETURN
     
     ! Load the work IFG arrays.
@@ -1210,20 +1233,17 @@ CONTAINS
   END FUNCTION RealIFG_to_ComplexSPC
 
 
-  FUNCTION ComplexIFG_to_ComplexSPC( OpticalDelay , &
-                                     Interferogram, &
-                                     Frequency    , &
-                                     Spectrum     , &
-                                     RCS_Id       , &
-                                     Message_Log  ) &
-                                   RESULT(Error_Status)
+  FUNCTION ComplexIFG_to_ComplexSPC( &
+    OpticalDelay , &
+    Interferogram, &
+    Frequency    , &
+    Spectrum     ) &
+  RESULT(Error_Status)
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: OpticalDelay(:)
-    COMPLEX(fp),            INTENT(IN)  :: Interferogram(:)
-    REAL(fp),               INTENT(OUT) :: Frequency(:)
-    COMPLEX(fp),            INTENT(OUT) :: Spectrum(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),    INTENT(IN)  :: OpticalDelay(:)
+    COMPLEX(fp), INTENT(IN)  :: Interferogram(:)
+    REAL(fp),    INTENT(OUT) :: Frequency(:)
+    COMPLEX(fp), INTENT(OUT) :: Spectrum(:)
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1235,15 +1255,13 @@ CONTAINS
     
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Check input dimensions
     nSpc = SIZE(Frequency)
     nIfg = SIZE(OpticalDelay)
     Error_Status = CheckSPCIFGdims( nSpc, SIZE(Spectrum)     , &
                                     nIfg, SIZE(Interferogram), &
-                                    ROUTINE_NAME             , &
-                                    Message_Log=Message_Log    )
+                                    ROUTINE_NAME               )
     IF ( Error_Status /= SUCCESS ) RETURN
     
     ! Load the work IFG arrays.
@@ -1268,6 +1286,7 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Fourier_Interpolate
@@ -1276,18 +1295,16 @@ CONTAINS
 !       Function to fourier interpolate an input spectrum.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Fourier_Interpolate( InFrequency             , &  ! Input
-!                                           InSpectrum              , &  ! Input 
-!                                           nOutSpectrum            , &  ! Output
-!                                           OutFrequency            , &  ! Output
-!                                           OutSpectrum             , &  ! Output
-!                                           PowerOfTwo =PowerOfTwo  , &  ! Optional input   
-!                                           FilterWidth=FilterWidth , &  ! Optional input   
-!                                           RCS_Id     =RCS_Id      , &  ! Revision control 
-!                                           Message_Log=Message_Log ) &  ! Message handling 
+!       Error_Status = Fourier_Interpolate( InFrequency              , &  ! Input
+!                                           InSpectrum               , &  ! Input 
+!                                           nOutSpectrum             , &  ! Output
+!                                           OutFrequency             , &  ! Output
+!                                           OutSpectrum              , &  ! Output
+!                                           PowerOfTwo  = PowerOfTwo , &  ! Optional input   
+!                                           FilterWidth = FilterWidth  )  ! Optional input   
 !
-! INPUT ARGUMENTS:
-!      InFrequency:   The input spectral frequency grid.
+! INPUTS:
+!       InFrequency:  The input spectral frequency grid.
 !                     UNITS:      Inverse centimetres (cm^-1)
 !                     TYPE:       REAL(fp)
 !                     DIMENSION:  Rank-1
@@ -1299,7 +1316,7 @@ CONTAINS
 !                     DIMENSION:  Rank-1 (nSpc)
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       nOutSpectrum: The number of output interpolated spectrum points.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
@@ -1318,7 +1335,7 @@ CONTAINS
 !                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       PowerOfTwo:   Specify this argument to set the power-of-two used in
 !                     zerofilling the spectrum for the interpolation. If not
 !                     specified, the value used is 14.
@@ -1335,23 +1352,6 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to the screen.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1361,17 +1361,17 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
-  FUNCTION Fourier_Interpolate( InFrequency , &  ! Input
-                                InSpectrum  , &  ! Input
-                                nOutSpectrum, &  ! Output
-                                OutFrequency, &  ! Output
-                                OutSpectrum , &  ! Output
-                                PowerOfTwo  , &  ! Optional input
-                                FilterWidth , &  ! Optional input
-                                RCS_Id      , &  ! Revision control
-                                Message_Log ) &  ! Message handling
-                              RESULT( Error_Status )
+  FUNCTION Fourier_Interpolate( &
+    InFrequency , &  ! Input
+    InSpectrum  , &  ! Input
+    nOutSpectrum, &  ! Output
+    OutFrequency, &  ! Output
+    OutSpectrum , &  ! Output
+    PowerOfTwo  , &  ! Optional input
+    FilterWidth ) &  ! Optional input
+  RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: InFrequency(:)
     REAL(fp),               INTENT(IN)  :: InSpectrum(:)
@@ -1380,14 +1380,12 @@ CONTAINS
     REAL(fp),               INTENT(OUT) :: OutSpectrum(:)
     INTEGER,      OPTIONAL, INTENT(IN)  :: PowerOfTwo
     REAL(fp),     OPTIONAL, INTENT(IN)  :: FilterWidth
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Fourier_Interpolate'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     LOGICAL :: applyFilter
     INTEGER :: nIn, nOut
@@ -1411,28 +1409,17 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check input
+    ! ...Check input
     nIn = SIZE(InFrequency)
     IF ( SIZE(InSpectrum) /= nIn ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message(ROUTINE_NAME, &
-                           'Inconsistent input frequency and spectrum sizes.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+      Message = 'Inconsistent input frequency and spectrum sizes.'
+      CALL Cleanup(); RETURN
     END IF
-    
-    ! Check output size
+    ! ...Check output size
     nOut = SIZE(OutFrequency)
     IF ( SIZE(OutSpectrum) /= nOut ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message(ROUTINE_NAME, &
-                           'Inconsistent output frequency and spectrum sizes.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+      Message = 'Inconsistent output frequency and spectrum sizes.'
+      CALL Cleanup(); RETURN
     END IF
 
     ! Check output power-of-two
@@ -1464,13 +1451,9 @@ CONTAINS
     nIfgInPO2 = ComputeNIFG(nSpcInPO2)   ! No. of IFG points output from SPC->IFG FFT
 
     IF (inPO2 >= outPO2) THEN
-      Error_Status = FAILURE
-      CALL Display_Message(ROUTINE_NAME, &
-                           'Interpolation(zerofill) power of two too small '//&
-                           'for number of input spectral points.', &
-                           Error_Status, &
-                           Message_Log=Message_Log)
-      RETURN
+      Message = 'Interpolation(zerofill) power of two too small '//&
+                'for number of input spectral points.'
+      CALL Cleanup(); RETURN
     END IF
 
 
@@ -1482,14 +1465,9 @@ CONTAINS
     nIfgOutPO2 = ComputeNIFG(nSpcOutPO2)  ! No. of IFG points input to IFG->SPC FFT
 
     IF (nOut < nSpcOut ) THEN
-      Error_Status = FAILURE
       WRITE(Message,'("Output arrays too small (",i0,&
                      &") to contain interpolated data (",i0,")")') nOut, nSpcOut
-      CALL Display_Message(ROUTINE_NAME, &
-                           TRIM(Message), &
-                           Error_Status, &
-                           Message_Log=Message_Log)
-      RETURN
+      CALL Cleanup(); RETURN
     END IF
 
 print *, 'No. of input SPC points:               ', nIn
@@ -1509,13 +1487,8 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
               cspc(nSpcOutPO2), &  ! Output from IFG->SPC FFT
               STAT = Allocate_Status )
     IF (Allocate_Status /= 0) THEN
-      Error_Status = FAILURE
       WRITE(Message,'("Error allocating local work arrays. STAT=",i0)') Allocate_Status
-      CALL Display_Message(ROUTINE_NAME, &
-                           TRIM(Message), &
-                           Error_Status, &
-                           Message_Log=Message_Log)
-      RETURN
+      CALL Cleanup(); RETURN
     END IF
 
 
@@ -1537,18 +1510,16 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
     ! Apply filter to spectrum
     !
     ! Front-end
-    Error_Status = CosFilter( f(1:nFilter)           , & ! Input
-                              filter                 , & ! Output
-                              FilterWidth=width      , & ! Optional Input
-                              Message_Log=Message_Log  ) ! Error messaging
+    Error_Status = CosFilter( f(1:nFilter)     , & ! Input
+                              filter           , & ! Output
+                              FilterWidth=width  ) ! Optional Input
     spc(1:nFilter) = spc(nFilter) * filter
 
     ! Back-end
     Error_Status = CosFilter( f(nFilter+nIn-1:nSpcIn), & ! Input
                               filter                 , & ! Output
                               FilterWidth=width      , & ! Optional Input
-                              Reverse=1              , & ! Optional Input
-                              Message_Log=Message_Log  ) ! Error messaging
+                              Reverse=1                ) ! Optional Input
     spc(nFilter+nIn-1:nSpcIn) = spc(nFilter+nIn-1) * filter
 
 
@@ -1558,11 +1529,8 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
                             opd(1:nIfgInPO2), &  ! Output
                             ifg(1:nIfgInPO2)  )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message(ROUTINE_NAME, &
-                           'SPC->IFG FFT failed.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+      Message = 'SPC->IFG FFT failed.'
+      CALL Cleanup(); RETURN
     END IF
 
 
@@ -1579,16 +1547,11 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
 
 
     ! FFT zerofilled interferogram to a spectrum
-    Error_Status = IFGtoSPC(opd , &  ! Input
-                            ifg , &  ! Input
-                            f   , &  ! Output
-                            cspc  )  ! Output
+    Error_Status = IFGtoSPC(opd , ifg , &  ! Input
+                            f   , cspc  )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message(ROUTINE_NAME, &
-                           'IFG->SPC FFT failed.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
-      RETURN
+      Message = 'IFG->SPC FFT failed.'
+      CALL Cleanup(); RETURN
     END IF
 
 
@@ -1599,7 +1562,45 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
     OutFrequency(1:nSpcOut) = f(i1:i2) + InFrequency(1) - width
     OutSpectrum(1:nSpcOut)  = REAL(cspc(i1:i2),fp)
 
+  CONTAINS
+  
+    SUBROUTINE Cleanup()
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+    END SUBROUTINE Cleanup
+
   END FUNCTION Fourier_Interpolate
+
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       FFT_Spectral_UtilityVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL FFT_Spectral_UtilityVersion( Id )
+!
+! OUTPUTS:
+!       Id:   Character string containing the version Id information
+!             for the module.
+!             UNITS:      N/A
+!             TYPE:       CHARACTER(*)
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE FFT_Spectral_UtilityVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE FFT_Spectral_UtilityVersion
 
 
 !##################################################################################
@@ -1665,12 +1666,10 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
   END SUBROUTINE ReflectSpectrum
 
 
-  FUNCTION CheckSPCIFGdims(nF, nSpc, nX, nIfg, Routine_Name, Message_Log) &
-                          RESULT(Error_Status)
+  FUNCTION CheckSPCIFGdims(nF, nSpc, nX, nIfg, Routine_Name) RESULT(Error_Status)
     ! Arguments
-    INTEGER,                INTENT(IN) :: nF, nSpc, nX, nIfg
-    CHARACTER(*),           INTENT(IN) :: Routine_Name
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    INTEGER,      INTENT(IN) :: nF, nSpc, nX, nIfg
+    CHARACTER(*), INTENT(IN) :: Routine_Name
     ! Function result
     INTEGER :: Error_Status
     
@@ -1682,8 +1681,7 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
       Error_Status = FAILURE
       CALL Display_Message(Routine_Name, &
                            'Size of Frequency and Spectrum arguments inconsistent.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
+                           Error_Status )
       RETURN
     END IF
 
@@ -1692,8 +1690,7 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
       Error_Status = FAILURE
       CALL Display_Message(Routine_Name, &
                            'Size of OpticalDelay and Interferogram arguments inconsistent.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
+                           Error_Status )
       RETURN
     END IF
 
@@ -1702,8 +1699,7 @@ print *, 'No. of IFG points for IFG->SPC IFG:    ', nIfgOutPO2
       Error_Status = FAILURE
       CALL Display_Message(Routine_Name, &
                            'Size of Spectrum/Interferogram arguments inconsistent.', &
-                           Error_Status, &
-                           Message_Log=Message_Log )
+                           Error_Status )
       RETURN
     END IF 
   END FUNCTION CheckSPCIFGdims
