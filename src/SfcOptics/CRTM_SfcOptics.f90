@@ -818,8 +818,7 @@ CONTAINS
                                                      SensorIndex , &  ! Input
                                                      ChannelIndex, &  ! Input
                                                      SfcOptics   , &  ! In/Output
-                                                     SOV%IRWSOV  , &  ! Internal variable output
-                                                     Message_Log=Message_Log )
+                                                     SOV%IRWSOV    )  ! Internal variable output
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing IR water SfcOptics at ", &
                               &"channel index ", i4 )' ) ChannelIndex
@@ -1643,8 +1642,7 @@ CONTAINS
                                                         SensorIndex , &  ! Input
                                                         ChannelIndex, &  ! Input
                                                         SfcOptics_TL, &  ! In/Output
-                                                        SOV%IRWSOV  , &  ! Internal variable input
-                                                        Message_Log=Message_Log ) ! Error_message
+                                                        SOV%IRWSOV    )  ! Internal variable input
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing IR water SfcOptics at ", &
                               &"channel index ", i4 )' ) &
@@ -2414,8 +2412,7 @@ CONTAINS
                                                         SensorIndex , &  ! Input
                                                         ChannelIndex, &  ! Input
                                                         Surface_AD  , &  ! Output
-                                                        SOV%IRWSOV  , &  ! Internal variable input
-                                                        Message_Log=Message_Log )  ! Error messaging
+                                                        SOV%IRWSOV    )  ! Internal variable input
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message, '( "Error computing IR water SfcOptics_AD at ", &
                               &"channel index ", i4 )' ) &

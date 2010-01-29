@@ -60,10 +60,12 @@ MODULE CRTM_IR_Water_SfcOptics
   ! --------------------------------------
   TYPE :: IRWSOVariables_type
     PRIVATE
-    ! variables in routines rough sea BRDF
+    ! Variables in routines rough sea BRDF
     REAL(fp) :: pdf            ! slope distribution function 
     REAL(fp) :: W              ! BRDF = W*pdf
     REAL(fp) :: tan2_theta_f   ! tan(theta_f)**2
+    ! IRSSEM data structure
+    TYPE(IRSSEM_type) :: IRSSEM
   END TYPE IRWSOVariables_type
 
   ! Coefficients for Sigma**2 in the Cox & Munk slope probability density function 
@@ -83,13 +85,12 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics( Surface               , &  ! Input
-!                                                  GeometryInfo          , &  ! Input
-!                                                  SensorIndex           , &  ! Input
-!                                                  ChannelIndex          , &  ! Output     
-!                                                  SfcOptics             , &  ! Output     
-!                                                  IRWSOVariables        , &  ! Internal variable output
-!                                                  Message_Log=Message_Log )  ! Error messaging 
+!       Error_Status = Compute_IR_Water_SfcOptics( Surface       , &  ! Input
+!                                                  GeometryInfo  , &  ! Input
+!                                                  SensorIndex   , &  ! Input
+!                                                  ChannelIndex  , &  ! Output     
+!                                                  SfcOptics     , &  ! Output     
+!                                                  IRWSOVariables  )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
 !       Surface:         CRTM_Surface structure containing the surface state
@@ -125,16 +126,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !       SfcOptics:       CRTM_SfcOptics structure containing the surface
 !                        optical properties required for the radiative
@@ -169,14 +160,14 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Water_SfcOptics( Surface     , &  ! Input
-                                       GeometryInfo, &  ! Input
-                                       SensorIndex , &  ! Input
-                                       ChannelIndex, &  ! Input
-                                       SfcOptics   , &  ! Output
-                                       IRWSOV      , &  ! Internal variable output
-                                       Message_Log ) &  ! Error messaging
-                                     RESULT ( Error_Status )
+  FUNCTION Compute_IR_Water_SfcOptics( &
+    Surface     , &  ! Input
+    GeometryInfo, &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    SfcOptics   , &  ! Output
+    IRWSOV      ) &  ! Internal variable output
+  RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
@@ -184,7 +175,6 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
     TYPE(IRWSOVariables_type),    INTENT(IN OUT) :: IRWSOV
-    CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -194,35 +184,30 @@ CONTAINS
     REAL(fp) :: Relative_Azimuth_Radian, brdf
 
 
-    ! ------
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    ! Short name for angle dimensions
+    ! ...Short name for angle dimensions
     nZ = SfcOptics%n_Angles
     iZ = SfcOptics%Index_Sat_Ang
 
-    ! ---------------------------------
+
     ! Compute IR sea surface emissivity
-    ! ---------------------------------
     Error_Status = CRTM_Compute_IRSSEM( Surface%Wind_Speed, &
                                         SC(SensorIndex)%Wavenumber(ChannelIndex), &
                                         SfcOptics%Angle(1:nZ), &
                                         SfcOptics%Emissivity(1:nZ,1), &
-                                        Message_Log=Message_Log )
+                                        IRWSOV%IRSSEM )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing IR sea surface emissivity', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
-    ! Solar direct BRDF
+
+    ! Compute the solar direct BRDF
     IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) )THEN
-    
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
-!!      SfcOptics%Direct_Reflectivity(1:nZ,1) = ONE-SfcOptics%Emissivity(iZ,1)
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &
                                   GeometryInfo%Source_Azimuth_Radian    
         CALL BRDF_Rough_Sea(SC(SensorIndex)%Wavenumber(ChannelIndex), &                       
@@ -259,15 +244,14 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics_TL( Surface               , &  ! Input
-!                                                     SfcOptics             , &  ! Input     
-!                                                     Surface_TL            , &  ! Input
-!                                                     GeometryInfo          , &  ! Input
-!                                                     SensorIndex           , &  ! Input
-!                                                     ChannelIndex          , &  ! Output     
-!                                                     SfcOptics_TL          , &  ! Output     
-!                                                     IRWSOVariables        , &  ! Internal variable input
-!                                                     Message_Log=Message_Log )  ! Error messaging 
+!       Error_Status = Compute_IR_Water_SfcOptics_TL( Surface       , &  ! Input
+!                                                     SfcOptics     , &  ! Input     
+!                                                     Surface_TL    , &  ! Input
+!                                                     GeometryInfo  , &  ! Input
+!                                                     SensorIndex   , &  ! Input
+!                                                     ChannelIndex  , &  ! Output     
+!                                                     SfcOptics_TL  , &  ! Output     
+!                                                     IRWSOVariables  )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Surface:         CRTM_Surface structure containing the surface state
@@ -327,16 +311,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !       SfcOptics_TL:    CRTM_SfcOptics structure containing the tangent-linear
 !                        surface optical properties required for the tangent-
@@ -362,16 +336,16 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Water_SfcOptics_TL( Surface     , &  ! Input
-                                          SfcOptics   , &  ! Input     
-                                          Surface_TL  , &  ! Input
-                                          GeometryInfo, &  ! Input
-                                          SensorIndex , &  ! Input
-                                          ChannelIndex, &  ! Input
-                                          SfcOptics_TL, &  ! Output     
-                                          IRWSOV      , &  ! Internal variable input
-                                          Message_Log ) &  ! Error messaging 
-                                        RESULT ( Error_Status )
+  FUNCTION Compute_IR_Water_SfcOptics_TL( &
+    Surface     , &  ! Input
+    SfcOptics   , &  ! Input
+    Surface_TL  , &  ! Input
+    GeometryInfo, &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    SfcOptics_TL, &  ! Output
+    IRWSOV      ) &  ! Internal variable input
+  RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL
@@ -381,7 +355,6 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
     TYPE(IRWSOVariables_type),    INTENT(IN)     :: IRWSOV
-    CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -390,38 +363,28 @@ CONTAINS
     INTEGER  :: j, nZ, iZ
     REAL(fp) :: Relative_Azimuth_Radian, brdf_TL
 
-    ! ------
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    ! Short name for angle dimensions
+    ! ...Short name for angle dimensions
     nZ = SfcOptics%n_Angles
     iZ = SfcOptics%Index_Sat_Ang
 
-
-    ! ------------------------------------------------
     ! Compute tangent-linear IR sea surface emissivity
-    ! ------------------------------------------------
-    Error_Status = CRTM_Compute_IRSSEM_TL( Surface%Wind_Speed, &
-                                           SC(SensorIndex)%Wavenumber(ChannelIndex), &
-                                           SfcOptics%Angle(1:nZ), &
-                                           Surface_TL%Wind_Speed, &
+    Error_Status = CRTM_Compute_IRSSEM_TL( Surface_TL%Wind_Speed, &
                                            SfcOptics_TL%Emissivity(1:nZ,1), &
-                                           Message_Log=Message_Log )
+                                           IRWSOV%IRSSEM )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing Tangent_linear IR sea surface emissivity', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status  )
       RETURN
     END IF
 
 
-    ! Solar direct BRDF
+    ! Compute the tangent-linear solar direct BRDF
     IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) ) THEN
     
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
-!!      SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = -SfcOptics_TL%Emissivity(iZ,1)
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &  
                                   GeometryInfo%Source_Azimuth_Radian      
         CALL BRDF_Rough_Sea_TL(SC(SensorIndex)%Wavenumber(ChannelIndex), &  
@@ -466,8 +429,7 @@ CONTAINS
 !                                                     SensorIndex           , &  ! Input
 !                                                     ChannelIndex          , &  ! Output     
 !                                                     Surface_AD            , &  ! Output
-!                                                     IRWSOVariables        , &  ! Internal variable input
-!                                                     Message_Log=Message_Log )  ! Error messaging 
+!                                                     IRWSOVariables          )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Surface:         CRTM_Surface structure containing the surface state
@@ -528,16 +490,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !       Surface_AD:      CRTM_Surface structure containing the adjoint
 !                        surface state data.
@@ -566,16 +518,16 @@ CONTAINS
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_IR_Water_SfcOptics_AD( Surface     , &  ! Input
-                                          SfcOptics   , &  ! Input     
-                                          SfcOptics_AD, &  ! Input
-                                          GeometryInfo, &  ! Input
-                                          SensorIndex , &  ! Input
-                                          ChannelIndex, &  ! Input
-                                          Surface_AD  , &  ! Output     
-                                          IRWSOV      , &  ! Internal variable input
-                                          Message_Log ) &  ! Error messaging 
-                                        RESULT ( Error_Status )
+  FUNCTION Compute_IR_Water_SfcOptics_AD( &
+    Surface     , &  ! Input
+    SfcOptics   , &  ! Input     
+    SfcOptics_AD, &  ! Input
+    GeometryInfo, &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    Surface_AD  , &  ! Output     
+    IRWSOV      ) &  ! Internal variable input
+  RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
@@ -585,7 +537,6 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
     TYPE(IRWSOVariables_type),    INTENT(IN)     :: IRWSOV
-    CHARACTER(*), OPTIONAL,       INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -594,12 +545,9 @@ CONTAINS
     INTEGER  :: j, nZ, iZ
     REAL(fp) :: Relative_Azimuth_Radian, brdf_AD
 
-
-    ! ------
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    ! Short name for angle dimensions
+    ! ...Short name for angle dimensions
     nZ = SfcOptics%n_Angles
     iZ = SfcOptics%Index_Sat_Ang
 
@@ -636,20 +584,14 @@ CONTAINS
 
     END IF
  
-    ! ---------------------------------------------
     ! Compute sdjoint IRSSEM sea surface emissivity
-    ! ---------------------------------------------
-    Error_Status = CRTM_Compute_IRSSEM_AD( Surface%Wind_Speed, &
-                                           SC(SensorIndex)%Wavenumber(ChannelIndex), &
-                                           SfcOptics%Angle(1:nZ), &
-                                           SfcOptics_AD%Emissivity(1:nZ,1), &
+    Error_Status = CRTM_Compute_IRSSEM_AD( SfcOptics_AD%Emissivity(1:nZ,1), &
                                            Surface_AD%Wind_Speed, &
-                                           Message_Log=Message_Log )
+                                           IRWSOV%IRSSEM )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing Adjoint IR sea surface emissivity', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status  )
       RETURN
     END IF
 

@@ -542,7 +542,7 @@ CONTAINS
       CALL Interp_2D_AD(z(:,:,i),wlp,xlp,a_AD(i),z_AD(:,:,i),wlp_AD,xlp_AD)
     END DO
   END SUBROUTINE Interp_3D_AD
-       
+
        
 !--------------------------------------------------------------------------------
 !
@@ -581,7 +581,7 @@ CONTAINS
 !                      UNITS:      Same as x.
 !                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
 ! OUTPUT ARGUMENTS
 !       i1, i2:        Begin and end indices in the input x-array to
@@ -612,7 +612,8 @@ CONTAINS
   ! Find indices for regular spacing
   SUBROUTINE Find_Regular_Index(x, dx, x_int, i1, i2, out_of_bounds)
     REAL(fp), INTENT(IN)     :: x(:)
-    REAL(fp), INTENT(IN)     :: dx, x_int
+    REAL(fp), INTENT(IN)     :: dx
+    REAL(fp), INTENT(IN OUT) :: x_int
     INTEGER , INTENT(IN OUT) :: i1, i2
     LOGICAL , INTENT(IN OUT) :: out_of_bounds
     INTEGER :: n
@@ -622,6 +623,11 @@ CONTAINS
     i1 = FLOOR((x_int-x(1))/dx)+1-(NPOLY_PTS/2)
     i1 = MIN(MAX(i1,1),n-NPOLY_PTS)
     i2 = i1 + NPOLY_PTS
+    IF (out_of_bounds .AND. i1==1) THEN
+      x_int = x(1)
+    ELSE IF (out_of_bounds .AND. i2==n) THEN
+      x_int = x(n)
+    END IF 
   END SUBROUTINE Find_Regular_Index
   
   ! Find indices for random spacing.
@@ -629,7 +635,7 @@ CONTAINS
   ! (despite the MIN/MAX test)
   SUBROUTINE Find_Random_Index(x, x_int, i1, i2, out_of_bounds)
     REAL(fp), INTENT(IN)     :: x(:)
-    REAL(fp), INTENT(IN)     :: x_int
+    REAL(fp), INTENT(IN OUT) :: x_int
     INTEGER , INTENT(IN OUT) :: i1, i2
     LOGICAL , INTENT(IN OUT) :: out_of_bounds
     INTEGER :: k, n
@@ -641,6 +647,11 @@ CONTAINS
     END DO
     i1 = MIN(MAX(1,k-1-(NPOLY_PTS/2)),n-NPOLY_PTS)
     i2 = i1 + NPOLY_PTS
+    IF (out_of_bounds .AND. i1==1) THEN
+      x_int = x(1)
+    ELSE IF (out_of_bounds .AND. i2==n) THEN
+      x_int = x(n)
+    END IF 
   END SUBROUTINE Find_Random_Index
 
 
