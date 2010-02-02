@@ -1,9 +1,9 @@
 
      **********************************************************
-                           Example_Forward
+                           Example1_Simple
 
-      Program to provide an example of CRTM Forward function 
-      usage.
+      Program to provide a (relatively) simple example of how 
+      to call the CRTM Forward function.
 
       CRTM Version: alpha.REL-2.0
      **********************************************************
@@ -17,7 +17,7 @@
  Read_SpcCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsre_aqua.SpcCoeff.bin; 
  SpcCoeff RELEASE.VERSION:  7.01  N_CHANNELS=12
  Read_ODAS_Binary(INFORMATION) : FILE: ../Coefficient_Data/amsre_aqua.TauCoeff.bin; 
-   ODAS RELEASE.VERSION:  6.06  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=12  N_Alphas= 3  N_Coeffs=686
+   ODAS RELEASE.VERSION:  7.06  N_PREDICTORS= 6  N_ABSORBERS= 3  N_CHANNELS=12  N_Alphas= 3  N_Coeffs=686
  Read_CloudCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/CloudCoeff.bin; 
  CloudCoeff RELEASE.VERSION:  2.04  N_FREQUENCIES(MW)=  31  N_FREQUENCIES(IR)=  61  N_RADII(MW)=10  N_RADII(IR)=10  N_TEMPERATURES= 5  N_DENSITIES= 3  N_LEGENDRE_TERMS=38  N_PHASE_ELEMENTS= 1
  Read_AerosolCoeff_Binary(INFORMATION) : FILE: ../Coefficient_Data/AerosolCoeff.bin; 
@@ -30,7 +30,6 @@
 
      Channel 1 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.712347E-01
    Up Radiance             :  2.484002E-05
    Down Radiance           :  2.580852E-05
@@ -41,7 +40,6 @@
 
      Channel 2 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.605646E-01
    Up Radiance             :  2.484002E-05
    Down Radiance           :  2.580852E-05
@@ -52,7 +50,6 @@
 
      Channel 3 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.723477E-01
    Up Radiance             :  1.181702E-04
    Down Radiance           :  1.202880E-04
@@ -63,7 +60,6 @@
 
      Channel 4 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.641652E-01
    Up Radiance             :  1.181702E-04
    Down Radiance           :  1.202880E-04
@@ -74,18 +70,16 @@
 
      Channel 5 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.753971E-01
    Up Radiance             :  7.232464E-04
    Down Radiance           :  7.354102E-04
    Down Solar Radiance     :  0.000000E+00
    Surface Planck Radiance :  1.022809E-03
-   Radiance                :  9.343368E-04
+   Radiance                :  9.343367E-04
    Brightness Temperature  :  2.905320E+02
 
      Channel 6 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.696757E-01
    Up Radiance             :  7.232464E-04
    Down Radiance           :  7.354102E-04
@@ -96,7 +90,6 @@
 
      Channel 7 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.770187E-01
    Up Radiance             :  1.365926E-03
    Down Radiance           :  1.404494E-03
@@ -107,7 +100,6 @@
 
      Channel 8 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.719520E-01
    Up Radiance             :  1.365926E-03
    Down Radiance           :  1.404494E-03
@@ -118,18 +110,16 @@
 
      Channel 9 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.797018E-01
    Up Radiance             :  3.426022E-03
    Down Radiance           :  3.542435E-03
    Down Solar Radiance     :  0.000000E+00
    Surface Planck Radiance :  3.891672E-03
-   Radiance                :  3.440343E-03
+   Radiance                :  3.440342E-03
    Brightness Temperature  :  2.812219E+02
 
      Channel 10 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.753349E-01
    Up Radiance             :  3.426022E-03
    Down Radiance           :  3.542435E-03
@@ -140,7 +130,6 @@
 
      Channel 11 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.500000E-01
    Up Radiance             :  2.024214E-02
    Down Radiance           :  2.130645E-02
@@ -151,7 +140,6 @@
 
      Channel 12 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  9.500000E-01
    Up Radiance             :  2.024214E-02
    Down Radiance           :  2.130645E-02
@@ -165,7 +153,6 @@
 
      Channel 1 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  5.487187E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
@@ -176,7 +163,6 @@
 
      Channel 2 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  4.901184E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
@@ -187,7 +173,6 @@
 
      Channel 3 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  5.642737E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
@@ -198,7 +183,6 @@
 
      Channel 4 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  5.061596E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
@@ -209,7 +193,6 @@
 
      Channel 5 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  6.181052E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
@@ -220,7 +203,6 @@
 
      Channel 6 results
  RTSolution OBJECT
-   n_Layers : 0
    Surface Emissivity      :  5.621407E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
@@ -231,8 +213,7 @@
 
      Channel 7 results
  RTSolution OBJECT
-   n_Layers : 0
-   Surface Emissivity      :  6.341761E-01
+   Surface Emissivity      :  6.490084E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
    Down Solar Radiance     :  0.000000E+00
@@ -242,8 +223,7 @@
 
      Channel 8 results
  RTSolution OBJECT
-   n_Layers : 0
-   Surface Emissivity      :  5.626942E-01
+   Surface Emissivity      :  5.787791E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
    Down Solar Radiance     :  0.000000E+00
@@ -253,8 +233,7 @@
 
      Channel 9 results
  RTSolution OBJECT
-   n_Layers : 0
-   Surface Emissivity      :  6.753525E-01
+   Surface Emissivity      :  6.894754E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
    Down Solar Radiance     :  0.000000E+00
@@ -264,8 +243,7 @@
 
      Channel 10 results
  RTSolution OBJECT
-   n_Layers : 0
-   Surface Emissivity      :  6.004274E-01
+   Surface Emissivity      :  6.164541E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
    Down Solar Radiance     :  0.000000E+00
@@ -275,8 +253,7 @@
 
      Channel 11 results
  RTSolution OBJECT
-   n_Layers : 0
-   Surface Emissivity      :  7.655730E-01
+   Surface Emissivity      :  7.768292E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
    Down Solar Radiance     :  0.000000E+00
@@ -286,8 +263,7 @@
 
      Channel 12 results
  RTSolution OBJECT
-   n_Layers : 0
-   Surface Emissivity      :  6.894194E-01
+   Surface Emissivity      :  7.044954E-01
    Up Radiance             :  0.000000E+00
    Down Radiance           :  0.000000E+00
    Down Solar Radiance     :  0.000000E+00
@@ -298,4 +274,4 @@
      Destroying the CRTM...
 
      Comparing calculated results with saved ones...
- Example_Forward(INFORMATION) : RTSolution results are the same!
+ Example1_Simple(INFORMATION) : RTSolution results are the same!

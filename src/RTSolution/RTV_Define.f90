@@ -7,7 +7,7 @@
 ! CREATION HISTORY:
 !       Written by:     Quanhua Liu,    QSS at JCSDA;    Quanhua.Liu@noaa.gov 
 !                       Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!                       Paul van Delst, paul.vandelst@noaa.gov
 !                       08-Jun-2004
 
 MODULE RTV_Define
@@ -16,15 +16,15 @@ MODULE RTV_Define
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,                ONLY: fp
-  USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters,           ONLY: SET, ZERO, ONE, TWO, PI, &
-                                       MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
-                                       DEGREES_TO_RADIANS, &
-                                       SECANT_DIFFUSIVITY, &
-                                       SCATTERING_ALBEDO_THRESHOLD, &
-                                       OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SfcOptics,            ONLY: CRTM_SOVariables_type
+  USE Type_Kinds,      ONLY: fp
+  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters, ONLY: SET, ZERO, ONE, TWO, PI, &
+                             MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
+                             DEGREES_TO_RADIANS, &
+                             SECANT_DIFFUSIVITY, &
+                             SCATTERING_ALBEDO_THRESHOLD, &
+                             OPTICAL_DEPTH_THRESHOLD
+  USE CRTM_SfcOptics,  ONLY: CRTM_SOVariables_type
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -34,45 +34,52 @@ MODULE RTV_Define
   ! --------------------
   ! Everything private by default
   PRIVATE
-
-  ! CRTM_RTSolution structure routines inherited
-  ! from the CRTM_RTSolution_Define module
-
-  PUBLIC :: Allocate_RTV
-  PUBLIC :: Destroy_RTV
-  PUBLIC :: CRTM_RTVariables_type
+  ! Parameters
+  PUBLIC :: ANGLE_THRESHOLD
+  PUBLIC :: PHASE_THRESHOLD
+  PUBLIC :: DELTA_OPTICAL_DEPTH
+  PUBLIC :: MAX_ALBEDO
+  PUBLIC :: SMALL_OD_FOR_SC
+  ! Datatypes
+  PUBLIC :: RTV_type
+  ! Procedures
+  PUBLIC :: RTV_Associated
+  PUBLIC :: RTV_Destroy
+  PUBLIC :: RTV_Create
   
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! RCS Id for the module
+  ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
 
   ! Threshold for determing if an additional stream
   ! angle is required for the satellite zenith angle
-  REAL(fp), PARAMETER, PUBLIC :: ANGLE_THRESHOLD = 1.0e-7_fp
+  REAL(fp), PARAMETER :: ANGLE_THRESHOLD = 1.0e-7_fp
 
   ! Small positive value used to replace negative
   ! values in the computed phase function
-  REAL(fp), PARAMETER, PUBLIC :: PHASE_THRESHOLD = 1.0e-7_fp
-  REAL(fp), PARAMETER, PUBLIC :: DELTA_OPTICAL_DEPTH = 1.0e-8_fp
-  REAL(fp), PARAMETER, PUBLIC :: max_albedo = 0.999999_fp
+  REAL(fp), PARAMETER :: PHASE_THRESHOLD = 1.0e-7_fp
+  
+  REAL(fp), PARAMETER :: DELTA_OPTICAL_DEPTH = 1.0e-8_fp
+  REAL(fp), PARAMETER :: MAX_ALBEDO = 0.999999_fp
   
   ! Threshold layer optical depth for single scattering
-  REAL(fp), PARAMETER :: small_od_for_sc = 1.E-5_fp
+  REAL(fp), PARAMETER :: SMALL_OD_FOR_SC = 1.E-5_fp
+  
+  
   ! --------------------------------------
   ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
   ! --------------------------------------
 
-  TYPE :: CRTM_RTVariables_type
-
+  TYPE :: RTV_type
     ! Dimension information
     INTEGER :: n_Layers       = 0       ! Total number of atmospheric layers
     INTEGER :: n_Added_Layers = 0       ! Number of layers appended to TOA
     INTEGER :: n_Angles       = 0       ! Number of angles to be considered
+
     REAL(fp):: COS_SUN = ZERO           ! Cosine of sun zenith angle
     REAL(fp):: Solar_irradiance = ZERO  ! channel solar iiradiance at TOA 
             
@@ -103,18 +110,18 @@ MODULE RTV_Define
     LOGICAL :: Diffuse_Surface = .TRUE.
 
     ! Scattering, visible model variables    
-    INTEGER :: n_Streams      = 0  !  Number of *hemispheric* stream angles used in RT    
-    INTEGER :: mth_Azi     ! mth fourier component
-    INTEGER :: n_Azi       ! number of fourier components
-    LOGICAL :: Solar_Flag_true = .FALSE.
-    LOGICAL :: Visible_Flag_true 
-    LOGICAL :: Scattering_RT   = .FALSE.
+    INTEGER :: n_Streams         = 0       ! Number of *hemispheric* stream angles used in RT    
+    INTEGER :: mth_Azi                     ! mth fourier component
+    INTEGER :: n_Azi                       ! number of fourier components
+    LOGICAL :: Solar_Flag_true   = .FALSE.
+    LOGICAL :: Visible_Flag_true = .FALSE. 
+    LOGICAL :: Scattering_RT     = .FALSE.
 
     !-------------------------------------------------------
     ! Variables used in the ADA routines
     !-------------------------------------------------------
     ! Flag to indicate the following arrays have all been allocated
-    LOGICAL :: mAllocated = .FALSE.
+    LOGICAL :: Is_Allocated = .FALSE.
      
     ! Phase function variables
     ! Forward and backward scattering phase matrices
@@ -185,7 +192,7 @@ MODULE RTV_Define
     ! The surface optics forward variables
     TYPE(CRTM_SOVariables_type) :: SOV
 
-  END TYPE CRTM_RTVariables_type
+  END TYPE RTV_type
 
 
 CONTAINS
@@ -200,176 +207,205 @@ CONTAINS
 !################################################################################
 !################################################################################
 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RTV_Associated
+!
+! PURPOSE:
+!       Elemental function to test if the allocatable components of an
+!       RTV object have been allocated.
+!
+! CALLING SEQUENCE:
+!       Status = RTV_Associated( RTV )
+!
+! OBJECTS:
+!       RTV:     RTV structure which is to have its member's
+!                status tested.
+!                UNITS:      N/A
+!                TYPE:       RTV_type
+!                DIMENSION:  Scalar or any rank
+!                ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:  The return value is a logical value indicating the
+!                status of the RTV members.
+!                .TRUE.  - if ANY of the RTV allocatable or
+!                          pointer members are in use.
+!                .FALSE. - if ALL of the RTV allocatable or
+!                          pointer members are not in use.
+!                UNITS:      N/A
+!                TYPE:       LOGICAL
+!                DIMENSION:  Same as input RTV argument
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
- ! --------------------------------------------------------!
- !  FUNCTION: allocate structure RTV ALLOCATABLE arrays.       !
- ! --------------------------------------------------------
-  FUNCTION Allocate_RTV( RTV,              &  ! Output
-                         RCS_Id,           &  ! Revision control          
-                         Message_Log )     &  ! Error messaging           
-                       RESULT( Error_Status )                             
-    TYPE(CRTM_RTVariables_type),   INTENT(IN OUT) :: RTV
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
+  ELEMENTAL FUNCTION RTV_Associated( RTV ) RESULT( Status )
+    ! Arguments
+    TYPE(RTV_type), INTENT(IN) :: RTV
     ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_RTV'
-    ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
+    LOGICAL :: Status
 
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    ! Test the structure members
+    Status = RTV%Is_Allocated
 
-    ! Perform the allocation for phase functions
-    ALLOCATE( RTV%Pff(MAX_N_ANGLES, MAX_N_ANGLES+1, MAX_N_LAYERS), &
-              RTV%Pbb(MAX_N_ANGLES, MAX_N_ANGLES+1, MAX_N_LAYERS), &
-              RTV%Pplus (0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES),&
-              RTV%Pminus(0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES),&
-              RTV%Pleg(0:MAX_N_LEGENDRE_TERMS, MAX_N_ANGLES+1),&
-              RTV%Off(MAX_N_ANGLES, MAX_N_ANGLES+1, MAX_N_LAYERS),&
-              RTV%Obb(MAX_N_ANGLES, MAX_N_ANGLES+1, MAX_N_LAYERS),&
-              RTV%n_Factor (MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%sum_fac(0:MAX_N_ANGLES, MAX_N_LAYERS),&
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating RTV data arrays for phase function variables. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+  END FUNCTION RTV_Associated
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RTV_Destroy
+! 
+! PURPOSE:
+!       Elemental subroutine to re-initialize RTV objects.
+!
+! CALLING SEQUENCE:
+!       CALL RTV_Destroy( RTV )
+!
+! OBJECTS:
+!       RTV:          Re-initialized RTV structure.
+!                     UNITS:      N/A
+!                     TYPE:       RTV_type
+!                     DIMENSION:  Scalar OR any rank
+!                     ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE RTV_Destroy( RTV )
+    TYPE(RTV_type), INTENT(OUT) :: RTV
     
-    ! Perform the allocation
-    ALLOCATE( RTV%Inv_Gamma (MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Inv_GammaT(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Refl_Trans(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Layer_Trans(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Layer_Refl (MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Level_Refl_UP(MAX_N_ANGLES, MAX_N_ANGLES, 0:MAX_N_LAYERS),&
-              RTV%s_Level_Rad_UP(MAX_N_ANGLES, 0:MAX_N_LAYERS),&
-              RTV%s_Layer_Source_UP  (MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%s_Layer_Source_DOWN(MAX_N_ANGLES, MAX_N_LAYERS),&
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating RTV data arrays for adding-doubling variables. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Perform the allocation for AMOM layer variables
-    ALLOCATE( RTV%Thermal_C(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%EigVa(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Exp_x( MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%EigValue(MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%HH(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS ),&
-              RTV%PM(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%PP(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS ),&
-              RTV%PPM(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%PPP(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%i_PPM(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%i_PPP(MAX_N_ANGLES,MAX_N_ANGLES,MAX_N_LAYERS),&
-              RTV%EigVe(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Gm(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS ),&
-              RTV%i_Gm(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Gp(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS ),&
-              RTV%EigVeF(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%EigVeVa(MAX_N_ANGLES,MAX_N_ANGLES,MAX_N_LAYERS),&
-              RTV%A1(MAX_N_ANGLES,MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%A2(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%A3(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%A4(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%A5(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%A6(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%Gm_A5(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&
-              RTV%i_Gm_A5(MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS),&  
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating RTV data arrays for AMOM layer variables. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+    ! Belts and braces
+    RTV%Is_Allocated = .FALSE.
     
-    RTV%mAllocated = .TRUE.
-              
-                 
-  END FUNCTION Allocate_RTV
+  END SUBROUTINE RTV_Destroy
 
-
- ! --------------------------------------------------------!
- !  FUNCTION: deallocate structure RTV ALLOCATABLE arrays.     !
- ! --------------------------------------------------------
-  FUNCTION Destroy_RTV( RTV,              &  ! Output
-                        RCS_Id,           &  ! Revision control           
-                        Message_Log )     &  ! Error messaging            
-                        RESULT( Error_Status )                             
-    TYPE(CRTM_RTVariables_type),   INTENT(IN OUT) :: RTV
-    CHARACTER(*),        OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),        OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_RTV'
-    ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Deallocate the variablea
-    DEALLOCATE( RTV%Pff, &
-                RTV%Pbb, &
-                RTV%Pplus,&
-                RTV%Pminus,&
-                RTV%Pleg,&
-                RTV%Off,&
-                RTV%Obb,&
-                RTV%n_Factor,&
-                RTV%sum_fac,&
-                RTV%Inv_Gamma,&
-                RTV%Inv_GammaT,&
-                RTV%Refl_Trans,&
-                RTV%s_Layer_Trans,&
-                RTV%s_Layer_Refl,&
-                RTV%s_Level_Refl_UP,&
-                RTV%s_Level_Rad_UP,&
-                RTV%s_Layer_Source_UP,&
-                RTV%s_Layer_Source_DOWN,&                
-                RTV%Thermal_C,RTV%EigVa,RTV%Exp_x,RTV%EigValue,&
-                RTV%HH,RTV%PM,RTV%PP,RTV%PPM,RTV%PPP,RTV%i_PPM, RTV%i_PPP,&
-                RTV%EigVe,RTV%Gm,RTV%i_Gm,RTV%Gp,RTV%EigVeF,RTV%EigVeVa,&
-                RTV%A1,RTV%A2,RTV%A3,RTV%A4,RTV%A5,RTV%A6,RTV%Gm_A5,RTV%i_Gm_A5,&       
-                STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating RTV structure. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,  &
-                            TRIM(Message), &
-                            Error_Status,  &
-                            Message_Log=Message_Log )
-    END IF
-
-    RTV%mAllocated = .FALSE.
-    
-  END FUNCTION Destroy_RTV
   
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       RTV_Create
+! 
+! PURPOSE:
+!       Elemental subroutine to create an instance of the RTV object.
+!
+! CALLING SEQUENCE:
+!       CALL RTV_Create( RTV, &
+!                        n_Angles        , &
+!                        n_Legendre_Terms, &
+!                        n_Layers          )
+!
+! OBJECTS:
+!       RTV:               RTV structure.
+!                          UNITS:      N/A
+!                          TYPE:       RTV_type
+!                          DIMENSION:  Scalar or any rank
+!                          ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       n_Angles:          Number of 
+!                          Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Same as RTV object
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       n_Legendre_Terms:  Number of 
+!                          Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Same as RTV object
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       n_Layers:          Number of atmospheric layers.
+!                          Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Same as RTV object
+!                          ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
+  ELEMENTAL SUBROUTINE RTV_Create( &
+    RTV, &
+    n_Angles        , &
+    n_Legendre_Terms, &
+    n_Layers          )
+    ! Arguments
+    TYPE(RTV_type), INTENT(OUT) :: RTV
+    INTEGER       , INTENT(IN)  :: n_Angles        
+    INTEGER       , INTENT(IN)  :: n_Legendre_Terms
+    INTEGER       , INTENT(IN)  :: n_Layers        
+    ! Local variables
+    INTEGER :: alloc_stat
+
+    ! Check input
+    IF ( n_Angles < 1 .OR. n_Legendre_Terms < 1 .OR. n_Layers < 1 ) RETURN
+    
+    ! Perform the allocation for phase function variables
+    ALLOCATE( RTV%Pff(n_Angles, n_Angles+1, n_Layers) , &
+              RTV%Pbb(n_Angles, n_Angles+1, n_Layers) , &
+              RTV%Pplus( 0:n_Legendre_Terms, n_Angles), &
+              RTV%Pminus(0:n_Legendre_Terms, n_Angles), &
+              RTV%Pleg(0:n_Legendre_Terms, n_Angles+1), &
+              RTV%Off(n_Angles, n_Angles+1, n_Layers) , &
+              RTV%Obb(n_Angles, n_Angles+1, n_Layers) , &
+              RTV%n_Factor (n_Angles, n_Layers)       , &
+              RTV%sum_fac(0:n_Angles, n_Layers)       , &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Perform the allocation for adding-doubling variables
+    ALLOCATE( RTV%Inv_Gamma( n_Angles, n_Angles, n_Layers)       , &
+              RTV%Inv_GammaT(n_Angles, n_Angles, n_Layers)       , &
+              RTV%Refl_Trans(n_Angles, n_Angles, n_Layers)       , &
+              RTV%s_Layer_Trans(n_Angles, n_Angles, n_Layers)    , &
+              RTV%s_Layer_Refl( n_Angles, n_Angles, n_Layers)    , &
+              RTV%s_Level_Refl_UP(n_Angles, n_Angles, 0:n_Layers), &
+              RTV%s_Level_Rad_UP(n_Angles, 0:n_Layers)           , &
+              RTV%s_Layer_Source_UP(  n_Angles, n_Layers)        , &
+              RTV%s_Layer_Source_DOWN(n_Angles, n_Layers)        , &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Perform the allocation for AMOM variables
+    ALLOCATE( RTV%Thermal_C(n_Angles, n_Layers)        , &
+              RTV%EigVa(n_Angles, n_Layers)            , &
+              RTV%Exp_x(n_Angles, n_Layers)            , &
+              RTV%EigValue(n_Angles, n_Layers)         , &
+              RTV%HH(n_Angles, n_Angles, n_Layers)     , &
+              RTV%PM(n_Angles, n_Angles, n_Layers)     , &
+              RTV%PP(n_Angles, n_Angles, n_Layers)     , &
+              RTV%PPM(n_Angles, n_Angles, n_Layers)    , &
+              RTV%PPP(n_Angles, n_Angles, n_Layers)    , &
+              RTV%i_PPM(n_Angles, n_Angles, n_Layers)  , &
+              RTV%i_PPP(n_Angles,n_Angles,n_Layers)    , &
+              RTV%EigVe(n_Angles, n_Angles, n_Layers)  , &
+              RTV%Gm(n_Angles, n_Angles, n_Layers)     , &
+              RTV%i_Gm(n_Angles, n_Angles, n_Layers)   , &
+              RTV%Gp(n_Angles, n_Angles, n_Layers)     , &
+              RTV%EigVeF(n_Angles, n_Angles, n_Layers) , &
+              RTV%EigVeVa(n_Angles,n_Angles,n_Layers)  , &
+              RTV%A1(n_Angles,n_Angles, n_Layers)      , &
+              RTV%A2(n_Angles, n_Angles, n_Layers)     , &
+              RTV%A3(n_Angles, n_Angles, n_Layers)     , &
+              RTV%A4(n_Angles, n_Angles, n_Layers)     , &
+              RTV%A5(n_Angles, n_Angles, n_Layers)     , &
+              RTV%A6(n_Angles, n_Angles, n_Layers)     , &
+              RTV%Gm_A5(n_Angles, n_Angles, n_Layers)  , &
+              RTV%i_Gm_A5(n_Angles, n_Angles, n_Layers), & 
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Set the allocate flag
+    RTV%Is_Allocated = .TRUE.
+    
+  END SUBROUTINE RTV_Create
+  
 END MODULE RTV_Define

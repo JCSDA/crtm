@@ -240,22 +240,17 @@ CONTAINS
         SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
       END DO
     ELSE
-      ! Call Fastem3
+      ! Call Fastem1
       DO i = 1, SfcOptics%n_Angles
-        CALL Fastem3( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
+        CALL Fastem1( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
                       SfcOptics%Angle(i)                     , & ! Input
-                      Source_Azimuth_Angle                   , & ! Input
                       Surface%Water_Temperature              , & ! Input
                       Surface%Wind_Speed                     , & ! Input
-                      Surface%Wind_Direction                 , & ! Input
-                      INVALID_TRANSMITTANCE                  , & ! Input
-                      FASTEM_VERSION                         , & ! Input
                       SfcOptics%Emissivity(i,:)              , & ! Output
-                      Reflectivity                             ) ! Output
-        SfcOptics%Reflectivity(i,1,i,1) = Reflectivity(1) 
-        SfcOptics%Reflectivity(i,2,i,2) = Reflectivity(2) 
-        SfcOptics%Reflectivity(i,3,i,3) = Reflectivity(3)
-        SfcOptics%Reflectivity(i,4,i,4) = Reflectivity(4)
+                      MWWSOV%dEH_dWindSpeed(i)               , & ! Output
+                      MWWSOV%dEV_dWindSpeed(i)                 ) ! Output
+        SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
+        SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
       END DO
     END IF
 
@@ -493,26 +488,14 @@ CONTAINS
         SfcOptics_TL%Reflectivity(i,2,i,2) = -SfcOptics_TL%Emissivity(i,2)
       END DO
     ELSE
-      ! Call Fastem3
+      ! Call Fastem1
       DO i = 1, SfcOptics%n_Angles
-        CALL Fastem3_TL( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
-                         SfcOptics%Angle(i)                     , & ! Input
-                         Source_Azimuth_Angle                   , & ! Input
-                         Surface%Water_Temperature              , & ! Input
-                         Surface%Wind_Speed                     , & ! Input
-                         Surface%Wind_Direction                 , & ! Input
-                         INVALID_TRANSMITTANCE                  , & ! Input
-                         Surface_TL%Water_Temperature           , & ! Input
-                         Surface_TL%Wind_Speed                  , & ! Input
-                         Surface_TL%Wind_Direction              , & ! Input
-                         Transmittance_TL                       , & ! Input
-                         FASTEM_VERSION                         , & ! Input
-                         SfcOptics_TL%Emissivity(i,:)           , & ! Output
-                         Reflectivity_TL                          ) ! Output
-        SfcOptics_TL%Reflectivity(i,1,i,1) = Reflectivity_TL(1) 
-        SfcOptics_TL%Reflectivity(i,2,i,2) = Reflectivity_TL(2) 
-        SfcOptics_TL%Reflectivity(i,3,i,3) = Reflectivity_TL(3)
-        SfcOptics_TL%Reflectivity(i,4,i,4) = Reflectivity_TL(4)
+        SfcOptics_TL%Emissivity(i,2) = (MWWSOV%dEH_dTs(i)*Surface_TL%Water_Temperature) + &
+                                       (MWWSOV%dEH_dWindSpeed(i)*Surface_TL%Wind_Speed)
+        SfcOptics_TL%Emissivity(i,1) = (MWWSOV%dEV_dTs(i)*Surface_TL%Water_Temperature) + &
+                                       (MWWSOV%dEV_dWindSpeed(i)*Surface_TL%Wind_Speed)
+        SfcOptics_TL%Reflectivity(i,1,i,1) = -SfcOptics_TL%Emissivity(i,1)
+        SfcOptics_TL%Reflectivity(i,2,i,2) = -SfcOptics_TL%Emissivity(i,2)
       END DO
     END IF
 
@@ -735,27 +718,25 @@ CONTAINS
                                      MWWSOV%LF_MWSSEM_Var                     )  ! Internal variable input
       END DO
     ELSE
-      ! Call Fastem3
-      DO i = 1, SfcOptics%n_Angles
-        DO j = 1, 4
-          Reflectivity_AD(j) = SfcOptics_AD%Reflectivity(i,j,i,j)
+      ! Call Fastem1
+      DO i = SfcOptics%n_Angles, 1, -1
+        DO j = 1, 2
+          SfcOptics_AD%Emissivity(i,j) = SfcOptics_AD%Emissivity(i,j) - &
+                                         SfcOptics_AD%Reflectivity(i,j,i,j)
+          SfcOptics_AD%Reflectivity(i,j,i,j) = ZERO
         END DO
-        CALL Fastem3_AD( SC(SensorIndex)%Frequency(ChannelIndex), & ! Input
-                         SfcOptics%Angle(i)                      , & ! Input
-                         Source_Azimuth_Angle                    , & ! Input
-                         Surface%Water_Temperature               , & ! Input
-                         Surface%Wind_Speed                      , & ! Input
-                         Surface%Wind_Direction                  , & ! Input
-                         INVALID_TRANSMITTANCE                   , & ! Input
-                         Emissivity                              , & ! Output
-                         Reflectivity                            , & ! Output
-                         FASTEM_VERSION                          , & ! Input
-                         SfcOptics_AD%Emissivity(i,:)            , & ! Input/Output
-                         Reflectivity_AD                         , & ! Input/Output
-                         Surface_AD%Water_Temperature            , & ! Output
-                         Surface_AD%Wind_Speed                   , & ! Output
-                         Surface_AD%Wind_Direction               , & ! Output
-                         Transmittance_AD                          ) ! Output
+        ! Vertical polarisation component
+        Surface_AD%Water_Temperature  = Surface_AD%Water_Temperature + &
+                                        (MWWSOV%dEV_dTs(i)*SfcOptics_AD%Emissivity(i,1))
+        Surface_AD%Wind_Speed         = Surface_AD%Wind_Speed + &
+                                        (MWWSOV%dEV_dWindSpeed(i)*SfcOptics_AD%Emissivity(i,1))
+        SfcOptics_AD%Emissivity(i,1)  = ZERO
+        ! Horizontal polarization component
+        Surface_AD%Water_Temperature  = Surface_AD%Water_Temperature + &
+                                        (MWWSOV%dEH_dTs(i)*SfcOptics_AD%Emissivity(i,2))
+        Surface_AD%Wind_Speed         = Surface_AD%Wind_Speed + &
+                                        (MWWSOV%dEH_dWindSpeed(i)*SfcOptics_AD%Emissivity(i,2))
+        SfcOptics_AD%Emissivity(i,2)  = ZERO
       END DO
     END IF
     

@@ -61,8 +61,7 @@ MODULE CRTM_Parameters
   ! The maximum number of atmospheric profiles and layers
   ! accepted. These values are arbitrary. Nothing magical
   ! -----------------------------------------------------
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_PROFILES = 129
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_LAYERS   = 129
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_LAYERS   = 200
 
 
   ! -----------------

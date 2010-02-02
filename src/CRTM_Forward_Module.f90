@@ -18,7 +18,7 @@ MODULE CRTM_Forward_Module
   USE Type_Kinds,                 ONLY: fp
   USE Message_Handler,            ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters,            ONLY: SET,NOT_SET,ZERO,ONE, &
-                                        MAX_N_PROFILES      , &
+                                        MAX_N_LAYERS        , &
                                         MAX_N_PHASE_ELEMENTS, &
                                         MAX_N_LEGENDRE_TERMS, &
                                         MAX_N_STOKES        , &
@@ -36,9 +36,7 @@ MODULE CRTM_Forward_Module
   USE CRTM_ChannelInfo_Define,    ONLY: CRTM_ChannelInfo_type
   USE CRTM_Options_Define,        ONLY: CRTM_Options_type, &
                                         CRTM_Options_IsValid
-  USE CRTM_Atmosphere,            ONLY: CRTM_Atmosphere_AddLayers, &
-                                        iAtm_type, &
-                                        iAtm_Destroy
+  USE CRTM_Atmosphere,            ONLY: CRTM_Atmosphere_AddLayers
   USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type, &
                                         CRTM_GeometryInfo_SetValue, &
                                         CRTM_GeometryInfo_GetValue
@@ -74,9 +72,10 @@ MODULE CRTM_Forward_Module
   USE CRTM_RTSolution,            ONLY: CRTM_RTSolution_type    , &
                                         CRTM_Compute_nStreams   , &
                                         CRTM_Compute_RTSolution
-  USE RTV_Define,                 ONLY: CRTM_RTVariables_type   , &
-                                        Allocate_RTV            , &
-                                        Destroy_RTV
+  USE RTV_Define,                 ONLY: RTV_type      , &
+                                        RTV_Associated, &
+                                        RTV_Destroy   , &
+                                        RTV_Create
   USE CRTM_AntCorr,               ONLY: CRTM_Compute_AntCorr
   USE CRTM_MoleculeScatter,       ONLY: CRTM_Compute_MoleculeScatter
   USE CRTM_AncillaryInput_Define, ONLY: CRTM_AncillaryInput_type
@@ -239,13 +238,12 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type)    :: AtmOptics 
     TYPE(CRTM_SfcOptics_type)    :: SfcOptics
     ! Component variable internals
-    TYPE(iAtm_type) :: iAtm             ! Atmosphere
     TYPE(CRTM_APVariables_type) :: APV  ! Predictor
     TYPE(CRTM_AAVariables_type) :: AAV  ! AtmAbsorption
     TYPE(CRTM_CSVariables_type) :: CSV  ! CloudScatter
     TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
-    TYPE(CRTM_RTVariables_type) :: RTV  ! RTSolution
+    TYPE(RTV_type) :: RTV  ! RTSolution
 
  
     ! ------
@@ -280,18 +278,6 @@ CONTAINS
     ! ----------------------------
     ! Number of atmospheric profiles.
     n_Profiles = SIZE(Atmosphere)
-
-    ! Check that the number of profiles is not greater than
-    ! MAX_N_PROFILES. This is simply a limit to restrict the
-    ! size of the input arrays so they're not TOO big.
-    IF ( n_Profiles > MAX_N_PROFILES ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Number of passed profiles (",i0,&
-            &") > maximum number of profiles allowed(",i0,")")') &
-            n_Profiles, MAX_N_PROFILES
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-      RETURN
-    END IF
 
     ! Check the profile dimensionality
     ! of the other mandatory arguments
@@ -396,12 +382,19 @@ CONTAINS
       ! Add extra layers to current atmosphere profile
       ! if necessary to handle upper atmosphere
       ! ----------------------------------------------
-      Error_Status = CRTM_Atmosphere_AddLayers( Atmosphere(m), &  ! Input
-                                                Atm          , &  ! Output
-                                                iAtm           )  ! Internal variable output
+      Error_Status = CRTM_Atmosphere_AddLayers( Atmosphere(m), Atm )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error adding extra layers to profile #",i0)' ) m
+        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        RETURN
+      END IF
+      ! ...Check the total number of Atm layers
+      IF ( Atm%n_Layers > MAX_N_LAYERS ) THEN
+        Error_Status = FAILURE
+        WRITE( Message,'("Added layers [",i0,"] cause total [",i0,"] to exceed the ",&
+               &"maximum allowed [",i0,"] for profile #",i0)' ) &
+               Atm%n_Added_Layers, Atm%n_Layers, MAX_N_LAYERS, m
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
         RETURN
       END IF
@@ -476,15 +469,15 @@ CONTAINS
         IF( Atm%n_Clouds   > 0 .OR. &
             Atm%n_Aerosols > 0 .OR. &
             SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR ) THEN
-          AllocStatus(1) = Allocate_RTV(RTV)
-          IF ( AllocStatus(1) /= SUCCESS ) THEN
+          CALL RTV_Create( RTV, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, Atm%n_Layers )
+          IF ( .NOT. RTV_Associated(RTV) ) THEN
             Error_Status=FAILURE
             WRITE( Message,'("Error allocating RTV structure for profile #",i0, &
                    &" and ",a," sensor.")' ) m, TRIM(SC(SensorIndex)%Sensor_Id)
-            CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+            CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
             RETURN
           END IF
-        ENDIF
+        END IF
 
         
         ! ------------
@@ -682,16 +675,7 @@ CONTAINS
 
         ! Deallocate local sensor dependent data structures
         ! ...RTV structure
-        IF( RTV%mAllocated )THEN
-          AllocStatus(1) = Destroy_RTV( RTV )
-          IF ( AllocStatus(1) /= SUCCESS ) THEN
-            Error_Status=FAILURE
-            WRITE( Message,'("Error deallocating RTV structure for profile #",i0, &
-                   &" and ",a," sensor.")' ) m, TRIM(SC(SensorIndex)%Sensor_Id)
-            CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-            RETURN
-          END IF
-        END IF
+        IF ( RTV_Associated(RTV) ) CALL RTV_Destroy(RTV)
         ! ...Predictor structure
         AllocStatus(1) = CRTM_Destroy_Predictor( SensorIndex, Predictor )                     
         IF ( AllocStatus(1) /= SUCCESS ) THEN
@@ -723,7 +707,6 @@ CONTAINS
     ! Destroy "extra layers" structures
     ! ---------------------------------
     CALL CRTM_Atmosphere_Destroy( Atm )
-    CALL iAtm_Destroy( iAtm )
 
   END FUNCTION CRTM_Forward
 

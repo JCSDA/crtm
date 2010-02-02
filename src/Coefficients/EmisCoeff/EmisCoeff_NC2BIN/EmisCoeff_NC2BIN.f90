@@ -23,6 +23,7 @@ PROGRAM EmisCoeff_NC2BIN
                                  Destroy_EmisCoeff, Equal_EmisCoeff
   USE EmisCoeff_Binary_IO, ONLY: Read_EmisCoeff_Binary, Write_EmisCoeff_Binary
   USE EmisCoeff_netCDF_IO, ONLY: Read_EmisCoeff_netCDF, Write_EmisCoeff_netCDF
+  USE SignalFile_Utility
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -121,6 +122,15 @@ PROGRAM EmisCoeff_NC2BIN
                           'netCDF and Binary file EmisCoeff structures are equal.', &
                           INFORMATION )
   END IF
+  
+  ! Create a signal file indicating success
+  Error_Status = Create_SignalFile( BIN_Filename )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error creating signal file for '//TRIM(BIN_Filename), &
+                          FAILURE )
+    STOP
+  END IF 
 
   ! Destroy the structures
   Error_Status = Destroy_EmisCoeff( EmisCoeff )

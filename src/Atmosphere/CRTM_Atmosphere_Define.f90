@@ -23,6 +23,7 @@ MODULE CRTM_Atmosphere_Define
                                    Compares_Within_Tolerance
   USE CRTM_Parameters      , ONLY: ZERO, POINT_5, ONE, &
                                    NO, YES, SET, &
+                                   MAX_N_LAYERS, &
                                    TOA_PRESSURE
   USE CRTM_Cloud_Define    , ONLY: N_VALID_CLOUD_TYPES, &
                                    INVALID_CLOUD, &
@@ -325,7 +326,7 @@ MODULE CRTM_Atmosphere_Define
     ! Number of added layers
     INTEGER :: n_Added_Layers = 0
     ! Climatology model associated with the profile
-    INTEGER :: Climatology = INVALID_MODEL
+    INTEGER :: Climatology = US_STANDARD_ATMOSPHERE
     ! Absorber ID and units
     INTEGER, ALLOCATABLE :: Absorber_ID(:)    ! J
     INTEGER, ALLOCATABLE :: Absorber_Units(:) ! J
@@ -648,10 +649,10 @@ CONTAINS
     atm_out%Absorber(na+1:nt,:)   = atm%Absorber(1:no,:)
     ! ...Cloud components
     IF ( atm%n_Clouds > 0 ) &
-      atm_out%Cloud = CRTM_Cloud_AddLayerCopy( atm%Cloud, atm%n_Added_Layers )
+      atm_out%Cloud = CRTM_Cloud_AddLayerCopy( atm%Cloud, atm_out%n_Added_Layers )
     ! ...Aerosol components
     IF ( atm%n_Aerosols > 0 ) &
-      atm_out%Aerosol = CRTM_Aerosol_AddLayerCopy( atm%Aerosol, atm%n_Added_Layers )
+      atm_out%Aerosol = CRTM_Aerosol_AddLayerCopy( atm%Aerosol, atm_out%n_Added_Layers )
   
   END FUNCTION CRTM_Atmosphere_AddLayerCopy 
                                
@@ -767,6 +768,13 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       RETURN
     ENDIF
+    IF ( Atm%n_Layers > MAX_N_LAYERS ) THEN
+      WRITE(msg,'("No. of atmosphere structure layers [",i0,"(added:",i0,&
+            &")] is larger than maximum allowed [",i0,"]")') &
+            Atm%n_Layers, Atm%n_Added_Layers, MAX_N_LAYERS
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      RETURN
+    ENDIF
     
     ! Check data
     ! ...Change default so all entries can be checked
@@ -780,6 +788,16 @@ CONTAINS
     ! ...The absorber info
     IF ( ANY(Atm%Absorber_ID < 1) .OR. ANY(Atm%Absorber_ID > N_VALID_ABSORBER_IDS) ) THEN
       msg = 'Invalid absorber ID'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( .NOT. Absorber_Id_IsPresent(H2O_ID) ) THEN
+      msg = ABSORBER_ID_NAME(O3_ID)//' absorber profile must be specified'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( .NOT. Absorber_Id_IsPresent(O3_ID) ) THEN
+      msg = ABSORBER_ID_NAME(O3_ID)//' absorber profile must be specified'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
     ENDIF
@@ -821,6 +839,14 @@ CONTAINS
       END DO
     END IF
 
+  CONTAINS
+  
+    FUNCTION Absorber_Id_IsPresent( Id ) RESULT( IsPresent )
+      INTEGER, INTENT(IN) :: Id
+      LOGICAL :: IsPresent
+      IsPresent = ANY(Atm%Absorber_ID == Id)
+    END FUNCTION Absorber_Id_IsPresent
+    
   END FUNCTION CRTM_Atmosphere_IsValid
 
 

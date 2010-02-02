@@ -588,7 +588,7 @@ CONTAINS
     INTEGER,     OPTIONAL, INTENT(IN) :: n_SigFig
     LOGICAL :: is_comparable
     ! Variables
-    INTEGER :: k, n
+    INTEGER :: n
 
     ! Set up
     is_comparable = .FALSE.
@@ -721,7 +721,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SetLayers_Cloud(scalar)'
     ! Local variables
-    CHARACTER(ML) :: msg
     INTEGER :: m, set_stat
     
     ! Set up

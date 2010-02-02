@@ -10,30 +10,30 @@ MODULE CRTM_Test_Utility
   ! Environment set up
   ! ------------------
   ! Module usage
-  USE Type_Kinds,                ONLY: fp
-  USE File_Utility,              ONLY: Get_Lun, File_Exists
-  USE Binary_File_Utility,       ONLY: Open_Binary_File
-  USE Message_Handler,           ONLY: SUCCESS, Display_Message
-  USE CRTM_Parameters,           ONLY: ZERO, SET
-  USE CRTM_ChannelInfo_Define,   ONLY: CRTM_ChannelInfo_type
-  USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, &
-                                       CLIMATOLOGY_MODEL_NAME, &
-                                       ABSORBER_ID_NAME, &
-                                       CLOUD_TYPE_NAME, &
-                                       AEROSOL_TYPE_NAME
-  USE CRTM_Atmosphere_Binary_IO, ONLY: CRTM_Write_Atmosphere_Binary, &
-                                       CRTM_Read_Atmosphere_Binary
-  USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type, &
-                                       LAND_SURFACE, &
-                                       WATER_SURFACE, &
-                                       SNOW_SURFACE, &
-                                       ICE_SURFACE, &
-                                       SURFACE_TYPE_NAME
-  USE CRTM_Surface_Binary_IO   , ONLY: CRTM_Write_Surface_Binary, &
-                                       CRTM_Read_Surface_Binary
-  USE CRTM_RTSolution_Define,    ONLY: CRTM_RTSolution_type
-  USE CRTM_RTSolution_Binary_IO, ONLY: CRTM_Write_RTSolution_Binary, &
-                                       CRTM_Read_RTSolution_Binary
+  USE Type_Kinds             , ONLY: fp
+  USE File_Utility           , ONLY: Get_Lun, File_Exists
+  USE Binary_File_Utility    , ONLY: Open_Binary_File
+  USE Message_Handler        , ONLY: SUCCESS, Display_Message
+  USE CRTM_Parameters        , ONLY: ZERO, SET
+  USE CRTM_ChannelInfo_Define, ONLY: CRTM_ChannelInfo_type
+  USE CRTM_Atmosphere_Define , ONLY: CRTM_Atmosphere_type, &
+                                     CLIMATOLOGY_MODEL_NAME, &
+                                     ABSORBER_ID_NAME, &
+                                     CLOUD_TYPE_NAME, &
+                                     AEROSOL_TYPE_NAME
+  USE CRTM_Atmosphere_IO     , ONLY: CRTM_Atmosphere_WriteFile, &
+                                     CRTM_Atmosphere_ReadFile
+  USE CRTM_Surface_Define    , ONLY: CRTM_Surface_type, &
+                                     LAND_SURFACE, &
+                                     WATER_SURFACE, &
+                                     SNOW_SURFACE, &
+                                     ICE_SURFACE, &
+                                     SURFACE_TYPE_NAME
+  USE CRTM_Surface_IO        , ONLY: CRTM_Surface_WriteFile, &
+                                     CRTM_Surface_ReadFile
+  USE CRTM_RTSolution_Define , ONLY: CRTM_RTSolution_type
+  USE CRTM_RTSolution_IO     , ONLY: CRTM_RTSolution_WriteFile, &
+                                     CRTM_RTSolution_ReadFile
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -221,9 +221,7 @@ CONTAINS
       Filename = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//TRIM(Experiment)//'.bin'
       
       ! Write the RTSolution data for the current sensor
-      Error_Status = CRTM_Write_RTSolution_Binary( Filename, &
-                                                   RTSolution(l1:l2,:), &
-                                                   Quiet=SET )
+      Error_Status = CRTM_RTSolution_WriteFile( Filename, RTSolution(l1:l2,:), Quiet=.TRUE. )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error writing file '//TRIM(Filename), &
@@ -258,7 +256,7 @@ CONTAINS
     CHARACTER(*),                INTENT(IN)     :: Experiment
     TYPE(CRTM_ChannelInfo_type), INTENT(IN)     :: ChannelInfo(:)   ! N
     TYPE(CRTM_RTSolution_type) , INTENT(IN OUT) :: RTSolution(:,:)  ! L x M
-    INTEGER,           OPTIONAL, INTENT(IN)     :: Quiet
+    LOGICAL,           OPTIONAL, INTENT(IN)     :: Quiet
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_RTSolution_TestFile'
     ! Local variables
@@ -289,9 +287,7 @@ CONTAINS
       Filename = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//TRIM(Experiment)//'.bin.Baseline'
       
       ! Read the RTSolution data for the current sensor
-      Error_Status = CRTM_Read_RTSolution_Binary( Filename, &
-                                                  RTSolution(l1:l2,:), &
-                                                  Quiet=Quiet )
+      Error_Status = CRTM_RTSolution_ReadFile( Filename, RTSolution(l1:l2,:), Quiet=Quiet )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error reading file '//TRIM(Filename), &
@@ -333,9 +329,7 @@ CONTAINS
     ! Write atmosphere data
     ! ---------------------
     AtmFile = RESULT_PATH//'atm'//TRIM(Experiment)//'.bin'
-    Error_Status = CRTM_Write_Atmosphere_Binary( AtmFile, &
-                                                 Atm, &
-                                                 Quiet=SET )
+    Error_Status = CRTM_Atmosphere_WriteFile( AtmFile, Atm, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error writing file '//TRIM(AtmFile), &
@@ -346,9 +340,7 @@ CONTAINS
     ! Write surface data
     ! ------------------
     SfcFile = RESULT_PATH//'sfc'//TRIM(Experiment)//'.bin'
-    Error_Status = CRTM_Write_Surface_Binary( SfcFile, &
-                                              Sfc, &
-                                              Quiet=SET )
+    Error_Status = CRTM_Surface_WriteFile( SfcFile, Sfc, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error writing file '//TRIM(SfcFile), &
@@ -394,9 +386,7 @@ CONTAINS
       
       ! Write the Atmosphere data for the current sensor
       AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.atm'//TRIM(Experiment)//'.bin'
-      Error_Status = CRTM_Write_Atmosphere_Binary( AtmFile, &
-                                                   Atm(l1:l2,:), &
-                                                   Quiet=SET )
+      Error_Status = CRTM_Atmosphere_WriteFile( AtmFile, Atm(l1:l2,:), Quiet=.TRUE. )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error writing file '//TRIM(AtmFile), &
@@ -406,9 +396,7 @@ CONTAINS
 
       ! Write the Atmosphere data for the current sensor
       SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.sfc'//TRIM(Experiment)//'.bin'
-      Error_Status = CRTM_Write_Surface_Binary( SfcFile, &
-                                                Sfc(l1:l2,:), &
-                                                Quiet=SET )
+      Error_Status = CRTM_Surface_WriteFile( SfcFile, Sfc(l1:l2,:), Quiet=.TRUE. )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error writing file '//TRIM(SfcFile), &
@@ -450,9 +438,7 @@ CONTAINS
     ! Read atmosphere data
     ! ---------------------
     AtmFile = RESULT_PATH//'atm'//TRIM(Experiment)//'.bin.Baseline'
-    Error_Status = CRTM_Read_Atmosphere_Binary( AtmFile, &
-                                                Atm, &
-                                                Quiet=SET )
+    Error_Status = CRTM_Atmosphere_ReadFile( AtmFile, Atm, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error reading file '//TRIM(AtmFile), &
@@ -464,9 +450,7 @@ CONTAINS
     ! Read surface data
     ! -----------------
     SfcFile = RESULT_PATH//'sfc'//TRIM(Experiment)//'.bin.Baseline'
-    Error_Status = CRTM_Read_Surface_Binary( SfcFile, &
-                                             Sfc, &
-                                             Quiet=SET )
+    Error_Status = CRTM_Surface_ReadFile( SfcFile, Sfc, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error reading file '//TRIM(SfcFile), &
@@ -512,9 +496,7 @@ CONTAINS
       
       ! Read the Atmosphere data for the current sensor
       AtmFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.atm'//TRIM(Experiment)//'.bin.Baseline'
-      Error_Status = CRTM_Read_Atmosphere_Binary( AtmFile, &
-                                                  Atm(l1:l2,:), &
-                                                  Quiet=SET )
+      Error_Status = CRTM_Atmosphere_ReadFile( AtmFile, Atm(l1:l2,:), Quiet=.TRUE. )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error reading file '//TRIM(AtmFile), &
@@ -524,9 +506,7 @@ CONTAINS
 
       ! Read the Atmosphere data for the current sensor
       SfcFile = RESULT_PATH//TRIM(ChannelInfo(n)%Sensor_ID)//'.sfc'//TRIM(Experiment)//'.bin.Baseline'
-      Error_Status = CRTM_Read_Surface_Binary( SfcFile, &
-                                               Sfc(l1:l2,:), &
-                                               Quiet=SET )
+      Error_Status = CRTM_Surface_ReadFile( SfcFile, Sfc(l1:l2,:), Quiet=.TRUE. )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error reading file '//TRIM(SfcFile), &

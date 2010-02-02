@@ -1,15 +1,20 @@
 !
-! Example_K_Matrix
+! Example2_SSU
 !
-! Program to provide an example of CRTM K-matrix function usage.
+! Example2: Program to provide an example of CRTM Forward function 
+!           usage for running SSU sensors.
+!           The input gases variables include H2O, O3, and CO2
+!           (CO2 is not a variable gas for ODAS, but is a variable gas for ODPS)
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, 01-Feb-2008
+!       Written by:     Paul van Delst, 08-Jan-2009
 !                       paul.vandelst@noaa.gov
+!       Modified by:    Yong Chen, 26-Jan-2010
+!                       yong.chen@noaa.gov
 !
 
-PROGRAM Example_K_Matrix
+PROGRAM Example2_SSU
 
   ! ============================================================================
   ! **** ENVIRONMENT SETUP FOR RTM USAGE ****
@@ -24,24 +29,24 @@ PROGRAM Example_K_Matrix
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Example_K_Matrix'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Example2_SSU'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
     '$Id$'
-
+  REAL(fp), PARAMETER :: TB_THRESHOLD = 1.0e-03_fp
 
 
   ! ============================================================================
   ! 0. **** SOME SET UP PARAMETERS FOR THIS EXAMPLE ****
   !
   ! This example processes TWO profiles of 100 layers and
-  !                                          2 absorbers and
-  !                                          0 clouds and
-  !                                          0 aerosols....
+  !                                          3 absorbers and
+  !                                          1 cloud type and
+  !                                          1 aerosol type....
   INTEGER, PARAMETER :: N_PROFILES  = 2
   INTEGER, PARAMETER :: N_LAYERS    = 100
-  INTEGER, PARAMETER :: N_ABSORBERS = 2
-  INTEGER, PARAMETER :: N_CLOUDS    = 0
-  INTEGER, PARAMETER :: N_AEROSOLS  = 0
+  INTEGER, PARAMETER :: N_ABSORBERS = 3
+  INTEGER, PARAMETER :: N_CLOUDS    = 1
+  INTEGER, PARAMETER :: N_AEROSOLS  = 1
   ! ...but only ONE Sensor at a time
   INTEGER, PARAMETER :: N_SENSORS = 1
 
@@ -61,34 +66,24 @@ PROGRAM Example_K_Matrix
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
   INTEGER :: n_Channels
-  INTEGER :: l, m
+  INTEGER :: k1, k2, l, m
   ! Declarations for RTSolution comparison
-  INTEGER :: n_la, n_ma
-  INTEGER :: n_ls, n_ms
-  CHARACTER(256) :: atmk_File, sfck_File
-  TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: atm_k(:,:)
-  TYPE(CRTM_Surface_type)   , ALLOCATABLE :: sfc_k(:,:)
-
+  INTEGER :: n_l, n_m
+  CHARACTER(256) :: rts_File
+  TYPE(CRTM_RTSolution_type), ALLOCATABLE :: rts(:,:)
 
 
   ! ============================================================================
   ! 1. **** DEFINE THE CRTM INTERFACE STRUCTURES ****
   !
-  TYPE(CRTM_ChannelInfo_type), DIMENSION(N_SENSORS)        :: ChannelInfo
-  TYPE(CRTM_Geometry_type)   , DIMENSION(N_PROFILES)       :: Geometry
-
+  TYPE(CRTM_ChannelInfo_type) , DIMENSION(N_SENSORS)        :: ChannelInfo
+  TYPE(CRTM_Geometry_type)    , DIMENSION(N_PROFILES)       :: Geometry
   ! Define the FORWARD variables
-  TYPE(CRTM_Atmosphere_type) , DIMENSION(N_PROFILES)       :: Atmosphere
-  TYPE(CRTM_Surface_type)    , DIMENSION(N_PROFILES)       :: Surface
-  TYPE(CRTM_RTSolution_type) , DIMENSION(:,:), ALLOCATABLE :: RTSolution
-
-  ! Define the K-MATRIX variables
-  TYPE(CRTM_Atmosphere_type) , DIMENSION(:,:), ALLOCATABLE :: Atmosphere_K
-  TYPE(CRTM_Surface_type)    , DIMENSION(:,:), ALLOCATABLE :: Surface_K
-  TYPE(CRTM_RTSolution_type) , DIMENSION(:,:), ALLOCATABLE :: RTSolution_K
-
+  TYPE(CRTM_Atmosphere_type)  , DIMENSION(N_PROFILES)       :: Atm
+  TYPE(CRTM_Surface_type)     , DIMENSION(N_PROFILES)       :: Sfc
+  TYPE(CRTM_RTSolution_type)  , DIMENSION(:,:), ALLOCATABLE :: RTSolution
   ! Define Options
-  TYPE(CRTM_OPTIONS_type)    , DIMENSION(N_PROFILES)       :: Options
+  TYPE(CRTM_Options_type)     , DIMENSION(N_PROFILES)       :: Options
   ! ============================================================================
 
 
@@ -97,13 +92,14 @@ PROGRAM Example_K_Matrix
   ! --------------
   CALL CRTM_Version( Version )
   CALL Program_Message( PROGRAM_NAME, &
-                        'Program to provide an example of CRTM K-matrix function usage.', &
+                        'Program to provide a (relatively) simple example of how '//&
+                        'to call the CRTM Forward function.', &
                         'CRTM Version: '//TRIM(Version) )
 
 
   ! Get sensor id from user
   ! -----------------------
-  WRITE( *,'(/5x,"Enter sensor id [hirs4_n18, amsua_n18, or mhs_n18]: ")',ADVANCE='NO' )
+  WRITE( *,'(/5x,"Enter sensor id [ssu_n14, or ssu_n06]: ")',ADVANCE='NO' )
   READ( *,'(a)' ) Sensor_Id
   Sensor_Id = ADJUSTL(Sensor_Id)
   WRITE( *,'(//5x,"Running CRTM for ",a," sensor...")' ) TRIM(Sensor_Id)
@@ -119,12 +115,12 @@ PROGRAM Example_K_Matrix
   !           wired for this example.
   ! --------------------------------------------------
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
-  Error_Status = CRTM_Init( ChannelInfo                    , &  ! This is an OUTPUT
-                            Sensor_Id=(/Sensor_Id/)        , &
-                            File_Path='../Coefficient_Data/' )
-  IF ( Error_Status /= SUCCESS ) THEN 
+  Error_Status = CRTM_Init( ChannelInfo                   , &  ! This is an OUTPUT
+                            Sensor_Id=(/Sensor_Id/)       , &
+                            File_Path='../Coefficient_Data/')
+  IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM' 
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
 
@@ -147,33 +143,21 @@ PROGRAM Example_K_Matrix
   ! the number of profiles in the N_PROFILES parameter.
   !
   ! Users can make the number of profiles dynamic also, but
-  ! then the INPUT arrays (Atmosphere, Surface) will also have to be allocated.
-  ALLOCATE( RTSolution( n_Channels, N_PROFILES ), &
-            Atmosphere_K( n_Channels, N_PROFILES ), &
-            Surface_K( n_Channels, N_PROFILES ), &
-            RTSolution_K( n_Channels, N_PROFILES ), &
-            STAT = Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN 
+  ! then the INPUT arrays (Atm, Sfc) will also have to be allocated.
+  ALLOCATE( RTSolution( n_Channels, N_PROFILES ), STAT=Allocate_Status )
+  IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays' 
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
 
   ! 3b. Allocate the STRUCTURES
   ! ---------------------------
   ! The input FORWARD structure
-  CALL CRTM_Atmosphere_Create( Atmosphere, N_LAYERS, N_ABSORBERS, N_CLOUDS, N_AEROSOLS )
-  IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere)) ) THEN
-    Message = 'Error allocating CRTM Atmosphere structure'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
-    STOP
-  END IF
-
-  ! The output K-MATRIX structure
-  CALL CRTM_Atmosphere_Create( Atmosphere_K, N_LAYERS, N_ABSORBERS, N_CLOUDS, N_AEROSOLS )
-  IF ( Error_Status /= SUCCESS ) THEN 
-    Message = 'Error allocating CRTM Atmosphere_K structure'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+  CALL CRTM_Atmosphere_Create( Atm, N_LAYERS, N_ABSORBERS, N_CLOUDS, N_AEROSOLS )
+  IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
+    Message = 'Error allocating CRTM Atmosphere structures'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
   ! ============================================================================
@@ -184,7 +168,7 @@ PROGRAM Example_K_Matrix
   ! ============================================================================
   ! 4. **** ASSIGN INPUT DATA ****
   !
-  ! Fill the Atmosphere structure array. 
+  ! Fill the Atm structure array. 
   ! NOTE: This is an example program for illustrative purposes only.
   !       Typically, one would not assign the data as shown below,
   !       but rather read it from file
@@ -197,24 +181,31 @@ PROGRAM Example_K_Matrix
   ! 4b. GeometryInfo input
   ! ----------------------
   ! All profiles are given the same value
+  !  The Sensor_Scan_Angle is optional.
   CALL CRTM_Geometry_SetValue( Geometry, &
                                Sensor_Zenith_Angle = ZENITH_ANGLE, &
                                Sensor_Scan_Angle   = SCAN_ANGLE )
 
-
+  
   ! 4c. Option input
   ! ----------------
   ! Ancillary Input
   DO m = 1, N_PROFILES
-    ! ...SSU
+    ! SSU, for a given time (using time to search the cell pressure)
     CALL SSU_Input_SetValue( Options(m)%SSU, &
                              Time=1995.5_fp )
-    ! ...SSMIS & AMSUA Zeeman
-    CALL Zeeman_Input_SetValue( Options(m)%Zeeman, &
-                                Field_Strength=0.35_fp, &
-                                COS_ThetaB    =0.5_fp, &
-                                COS_PhiB      =0.5_fp, &
-                                Doppler_Shift =60.0_fp )
+
+    ! Or directly given the channel cell pressure
+!    CALL SSU_Input_SetValue( Options(m)%SSU,           &
+!                             Cell_Pressure = 108.0_fp, & 
+!                             Channel = 1 )
+!    CALL SSU_Input_SetValue( Options(m)%SSU,           &
+!                             Cell_Pressure = 40.5_fp,  &
+!                             Channel = 2 )
+!    CALL SSU_Input_SetValue( Options(m)%SSU,           &
+!                             Cell_Pressure = 15.0_fp,  &
+!                             Channel = 3 )
+
   END DO
   ! ============================================================================
 
@@ -222,37 +213,17 @@ PROGRAM Example_K_Matrix
 
 
   ! ============================================================================
-  ! 5. **** INITIALIZE THE K-MATRIX ARGUMENTS ****
+  ! 5. **** CALL THE CRTM FORWARD MODEL ****
   !
-  ! 5a. Zero the K-matrix OUTPUT structures
-  ! ---------------------------------------
-  CALL CRTM_Atmosphere_Zero( Atmosphere_K )
-  CALL CRTM_Surface_Zero( Surface_K )
-
-  ! 5b. Inintialize the K-matrix INPUT so
-  !     that all the results are dTb/dx
-  ! -------------------------------------
-  RTSolution_K%Brightness_Temperature = ONE
-  ! ============================================================================
-
-
-
-
-  ! ============================================================================
-  ! 6. **** CALL THE CRTM K-MATRIX MODEL ****
-  !
-  Error_Status = CRTM_K_Matrix( Atmosphere  , &  
-                                Surface     , &  
-                                RTSolution_K, &  
-                                Geometry    , &  
-                                ChannelInfo , &  
-                                Atmosphere_K, &  
-                                Surface_K   , &  
-                                RTSolution  , &
-                                Options = Options )
-  IF ( Error_Status /= SUCCESS ) THEN 
-    Message = 'Error in CRTM K_Matrix Model'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+  Error_Status = CRTM_Forward( Atm        , &  
+                               Sfc        , &  
+                               Geometry   , &  
+                               ChannelInfo, &  
+                               RTSolution , &
+                               Options = Options )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error in CRTM Forward Model'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
   ! ============================================================================
@@ -261,19 +232,17 @@ PROGRAM Example_K_Matrix
 
 
   ! ============================================================================
-  ! 7. **** OUTPUT THE RESULTS TO SCREEN ****
+  ! 6. **** OUTPUT THE RESULTS TO SCREEN ****
   !
+  ! User should read the user guide or the source code of the routine
+  ! CRTM_RTSolution_Inspect in the file CRTM_RTSolution_Define.f90 to
+  ! select the needed variables for outputs.  These variables are contained
+  ! in the structure RTSolution.  
   DO m = 1, N_PROFILES
     WRITE( *,'(//7x,"Profile ",i0," output for ",a )') m, TRIM(Sensor_Id)
     DO l = 1, n_Channels
       WRITE( *, '(/5x,"Channel ",i0," results")') ChannelInfo(1)%Sensor_Channel(l)
-      ! FWD output
-      WRITE( *, '(/3x,"FORWARD OUTPUT")')
       CALL CRTM_RTSolution_Inspect(RTSolution(l,m))
-      ! K-MATRIX output
-      WRITE( *, '(/3x,"K-MATRIX OUTPUT")')
-      CALL CRTM_Surface_Inspect(Surface_K(l,m))
-      CALL CRTM_Atmosphere_Inspect(Atmosphere_K(l,m))
     END DO
   END DO
   ! ============================================================================
@@ -282,13 +251,13 @@ PROGRAM Example_K_Matrix
 
   
   ! ============================================================================
-  ! 8. **** DESTROY THE CRTM ****
+  ! 7. **** DESTROY THE CRTM ****
   !
   WRITE( *, '( /5x, "Destroying the CRTM..." )' )
   Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN 
+  IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
     STOP
   END IF
   ! ============================================================================
@@ -297,111 +266,72 @@ PROGRAM Example_K_Matrix
 
 
   ! ============================================================================
-  ! 9. **** COMPARE Atmosphere_K and Surface_K RESULTS TO SAVED VALUES ****
+  ! 8. **** COMPARE RTSolution RESULTS TO SAVED VALUES ****
   !
+  !   Step 8 is not part of the example to show how to use CRTM.        
+  !   It is to check the user results against the results in the CRTM package. 
+  !   
   WRITE( *, '( /5x, "Comparing calculated results with saved ones..." )' )
 
-  ! 9a. Create the output files if they do not exist
-  ! ------------------------------------------------
-  atmk_File = './Results/'//TRIM(Sensor_Id)//'.Atmosphere.bin'
-  sfck_File = './Results/'//TRIM(Sensor_Id)//'.Surface.bin'
-  ! 9a.1 Atmosphere file
-  IF ( .NOT. File_Exists(atmk_File) ) THEN
-    Message = 'Atmosphere_K save file does not exist. Creating...'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), INFORMATION )  
-    Error_Status = CRTM_Atmosphere_WriteFile( atmk_file, Atmosphere_K, Quiet=.TRUE. )
+  ! 8a. Create the output file if it does not exist
+  ! -----------------------------------------------
+  rts_File = './Results/'//TRIM(Sensor_Id)//'.RTSolution.bin'
+  IF ( .NOT. File_Exists(rts_File) ) THEN
+    Message = 'RTSolution save file does not exist. Creating...'
+    CALL Display_Message( PROGRAM_NAME, Message, INFORMATION )  
+    Error_Status = CRTM_RTSolution_WriteFile( rts_File, RTSolution, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error creating Atmosphere_K save file'
-      CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
-      STOP
-    END IF  
-  END IF  
-  ! 9a.2 Surface file
-  IF ( .NOT. File_Exists(sfck_File) ) THEN
-    Message = 'Surface_K save file does not exist. Creating...'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), INFORMATION )  
-    Error_Status = CRTM_Surface_WriteFile( sfck_file, Surface_K, Quiet=.TRUE. )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error creating Surface_K save file'
-      CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+      Message = 'Error creating RTSolution save file'
+      CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
       STOP
     END IF  
   END IF  
 
-  ! 9b. Inquire the saved files
-  ! ---------------------------
-  ! 9b.1 Atmosphere file
-  Error_Status = CRTM_Atmosphere_InquireFile( atmk_File, &
-                                              n_Channels = n_la, &
-                                              n_Profiles = n_ma )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error inquiring Atmosphere_K save file'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
-    STOP
-  END IF
-  ! 9b.2 Surface file
-  Error_Status = CRTM_Surface_InquireFile( sfck_File, &
-                                           n_Channels = n_ls, &
-                                           n_Profiles = n_ms )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error inquiring Surface_K save file'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
-    STOP
-  END IF
-
-  ! 9c. Compare the dimensions
+  ! 8b. Inquire the saved file
   ! --------------------------
-  IF ( n_la /= n_Channels .OR. n_ma /= N_PROFILES .OR. &
-       n_ls /= n_Channels .OR. n_ms /= N_PROFILES      ) THEN
+  Error_Status = CRTM_RTSolution_InquireFile( rts_File, &
+                                              n_Channels = n_l, &
+                                              n_Profiles = n_m )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error inquiring RTSolution save file'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
+    STOP
+  END IF
+
+  ! 8c. Compare the dimensions
+  ! --------------------------
+  IF ( n_l /= n_Channels .OR. n_m /= N_PROFILES ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
 
-  ! 9d. Allocate the structures to read in saved data
-  ! -------------------------------------------------
-  ALLOCATE( atm_k( n_la, n_ma ),  sfc_k( n_ls, n_ms ), STAT=Allocate_Status )
+  ! 8d. Allocate the structure to read in saved data
+  ! ------------------------------------------------
+  ALLOCATE( rts( n_l, n_m ), STAT=Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN
-    Message = 'Error allocating Atmosphere_K and Surface_K saved data arrays'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+    Message = 'Error allocating RTSolution saved data array' 
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
 
-  ! 9e. Read the saved data
+  ! 8e. Read the saved data
   ! -----------------------
-  ! 9e.1 Atmosphere file
-  Error_Status = CRTM_Atmosphere_ReadFile( atmk_File, atm_k, Quiet=.TRUE. )
+  Error_Status = CRTM_RTSolution_ReadFile( rts_File, rts, Quiet=.TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error reading Atmosphere_K save file'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
-    STOP
-  END IF
-  ! 9e.2 Surface file
-  Error_Status = CRTM_Surface_ReadFile( sfck_File, sfc_k, Quiet=.TRUE. )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error reading Surface_K save file'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )  
+    Message = 'Error reading RTSolution save file'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )  
     STOP
   END IF
   
-  ! 9f. Compare some Jacobians
+  ! 8f. Compare the structures
   ! --------------------------
-  ! 9f.1 Atmosphere
-  IF ( ALL(CRTM_Atmosphere_Compare(Atmosphere_K, atm_k, n_SigFig=3)) ) THEN
-    Message = 'Atmosphere_K Jacobians are the same!'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), INFORMATION )
+  IF ( ALL(CRTM_RTSolution_Compare(RTSolution, rts)) ) THEN
+    Message = 'RTSolution results are the same!'
+    CALL Display_Message( PROGRAM_NAME, Message, INFORMATION )
   ELSE
-    Message = 'Atmosphere_K Jacobians are different!'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )
-    STOP
-  END IF
-  ! 9f.2 Surface
-  IF ( ALL(CRTM_Surface_Compare(Surface_K, sfc_k, n_SigFig=5)) ) THEN
-    Message = 'Surface_K Jacobians are the same!'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), INFORMATION )
-  ELSE
-    Message = 'Surface_K Jacobians are different!'
-    CALL Display_Message( PROGRAM_NAME, TRIM(Message), FAILURE )
+    Message = 'RTSolution results are different!'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
     STOP
   END IF
   ! ============================================================================
@@ -410,24 +340,22 @@ PROGRAM Example_K_Matrix
 
 
   ! ============================================================================
-  ! 10. **** CLEAN UP ****
+  ! 9. **** CLEAN UP ****
   !
-  ! 10a. Deallocate the structures.
-  !      These are the explicitly allocated structures.
-  !      Note that in some cases other structures, such as the Sfc
-  !      and RTSolution structures, will also be allocated and thus
-  !      should also be deallocated here.
-  ! ---------------------------------------------------------------
-  CALL CRTM_Atmosphere_Destroy(Atmosphere_K)
-  CALL CRTM_Atmosphere_Destroy(Atmosphere)
+  ! 9a. Deallocate the structures.
+  !     These are the explicitly allocated structures.
+  !     Note that in some cases other structures, such as the Sfc
+  !     and RTSolution structures, will also be allocated and thus
+  !     should also be deallocated here.
+  ! -------------------------------------------------------------
+  CALL CRTM_Atmosphere_Destroy(Atm)
 
-  ! 10b. Deallocate the arrays
-  ! --------------------------
-  DEALLOCATE(RTSolution, RTSolution_K, &
-             Surface_K, Atmosphere_K, &
-             STAT = Allocate_Status)
+  ! 9b. Deallocate the arrays
+  ! -------------------------
+  DEALLOCATE(RTSolution, rts, STAT=Allocate_Status)
   ! ============================================================================
 
+  ! Signal the completion of the program. It is not a necessary step for running CRTM.
   CALL SignalFile_Create()
 
 CONTAINS
@@ -440,15 +368,17 @@ CONTAINS
   
     ! 4a.1 Profile #1
     ! ---------------
-    Surface(1)%Land_Coverage    = 1.0_fp
-    Surface(1)%Land_Type        = SCRUB
-    Surface(1)%Land_Temperature = 318.0_fp
+    ! Surface data
+    Sfc(1)%Land_Coverage    = 1.0_fp
+    Sfc(1)%Land_Type        = SCRUB
+    Sfc(1)%Land_Temperature = 318.0_fp
   
-    Atmosphere(1)%Climatology    = TROPICAL
-    Atmosphere(1)%Absorber_Id    = (/ H2O_ID                 , O3_ID /)
-    Atmosphere(1)%Absorber_Units = (/ MASS_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS /)
-
-    Atmosphere(1)%Level_Pressure = &
+    ! Atmospheric profile data
+    Atm(1)%Climatology    = TROPICAL
+    Atm(1)%Absorber_Id    = (/ H2O_ID                 , O3_ID                    , CO2_ID /)
+    Atm(1)%Absorber_Units = (/ MASS_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS /)
+ 
+    Atm(1)%Level_Pressure = &
     (/0.005_fp,   0.016_fp,   0.038_fp,   0.077_fp,   0.137_fp,   0.224_fp,   0.345_fp,   0.506_fp, &
       0.714_fp,   0.975_fp,   1.297_fp,   1.687_fp,   2.153_fp,   2.701_fp,   3.340_fp,   4.077_fp, &
       4.920_fp,   5.878_fp,   6.957_fp,   8.165_fp,   9.512_fp,  11.004_fp,  12.649_fp,  14.456_fp, &
@@ -463,7 +393,7 @@ CONTAINS
     777.790_fp, 802.371_fp, 827.371_fp, 852.788_fp, 878.620_fp, 904.866_fp, 931.524_fp, 958.591_fp, &
     986.067_fp,1013.948_fp,1042.232_fp,1070.917_fp,1100.000_fp/)
   
-    Atmosphere(1)%Pressure = &
+    Atm(1)%Pressure = &
     (/0.009_fp,   0.026_fp,   0.055_fp,   0.104_fp,   0.177_fp,   0.281_fp,   0.421_fp,   0.604_fp, &
       0.838_fp,   1.129_fp,   1.484_fp,   1.910_fp,   2.416_fp,   3.009_fp,   3.696_fp,   4.485_fp, &
       5.385_fp,   6.402_fp,   7.545_fp,   8.822_fp,  10.240_fp,  11.807_fp,  13.532_fp,  15.423_fp, &
@@ -478,7 +408,7 @@ CONTAINS
     790.017_fp, 814.807_fp, 840.016_fp, 865.640_fp, 891.679_fp, 918.130_fp, 944.993_fp, 972.264_fp, &
     999.942_fp,1028.025_fp,1056.510_fp,1085.394_fp/)
 
-    Atmosphere(1)%Temperature = &
+    Atm(1)%Temperature = &
     (/229.108_fp, 226.979_fp, 235.291_fp, 239.315_fp, 243.873_fp, 250.323_fp, 256.563_fp, 262.182_fp, &
       266.536_fp, 269.608_fp, 270.203_fp, 264.526_fp, 251.578_fp, 240.264_fp, 235.095_fp, 232.959_fp, &
       233.017_fp, 233.897_fp, 234.385_fp, 233.681_fp, 232.436_fp, 231.607_fp, 231.192_fp, 230.808_fp, &
@@ -493,7 +423,7 @@ CONTAINS
       295.609_fp, 298.173_fp, 300.787_fp, 303.379_fp, 305.960_fp, 308.521_fp, 310.916_fp, 313.647_fp, &
       315.244_fp, 315.244_fp, 315.244_fp, 315.244_fp/)
 
-    Atmosphere(1)%Absorber(:,1) = &
+    Atm(1)%Absorber(:,1) = &
     (/1.008E-03_fp,1.219E-03_fp,1.618E-03_fp,1.463E-03_fp,2.563E-03_fp,3.962E-03_fp,3.965E-03_fp,4.043E-03_fp, &
       3.887E-03_fp,3.593E-03_fp,3.055E-03_fp,2.856E-03_fp,2.921E-03_fp,2.555E-03_fp,2.392E-03_fp,2.605E-03_fp, &
       2.573E-03_fp,2.368E-03_fp,2.354E-03_fp,2.333E-03_fp,2.312E-03_fp,2.297E-03_fp,2.287E-03_fp,2.283E-03_fp, &
@@ -508,7 +438,7 @@ CONTAINS
       5.176E+00_fp,4.994E+00_fp,4.884E+00_fp,4.832E+00_fp,4.791E+00_fp,4.760E+00_fp,4.736E+00_fp,6.368E+00_fp, &
       7.897E+00_fp,7.673E+00_fp,7.458E+00_fp,7.252E+00_fp/)
 
-    Atmosphere(1)%Absorber(:,2) = &
+    Atm(1)%Absorber(:,2) = &
     (/1.180E-02_fp,7.742E-02_fp,2.258E-01_fp,5.138E-01_fp,9.237E-01_fp,1.350E+00_fp,1.777E+00_fp,2.221E+00_fp, &
       2.742E+00_fp,3.386E+00_fp,4.164E+00_fp,5.159E+00_fp,6.357E+00_fp,7.430E+00_fp,8.174E+00_fp,8.657E+00_fp, &
       8.930E+00_fp,9.056E+00_fp,9.077E+00_fp,8.988E+00_fp,8.778E+00_fp,8.480E+00_fp,8.123E+00_fp,7.694E+00_fp, &
@@ -523,22 +453,39 @@ CONTAINS
       6.559E-02_fp,6.638E-02_fp,6.722E-02_fp,6.841E-02_fp,6.944E-02_fp,6.720E-02_fp,6.046E-02_fp,4.124E-02_fp, &
       2.624E-02_fp,2.623E-02_fp,2.622E-02_fp,2.622E-02_fp/)
 
+    ! CO2 profile (assuming constant mixing ratio)
+    Atm(1)%Absorber(:,3) = 380.0_fp  
+
+    ! Some pretend cloud data
+    k1 = 83  ! Pressure[k1] = 650.104hPa
+    k2 = 87  ! Pressure[k2] = 741.693hPa
+    Atm(1)%Cloud(1)%Type = WATER_CLOUD
+    Atm(1)%Cloud(1)%Effective_Radius(k1:k2) = 20.0_fp ! microns
+    Atm(1)%Cloud(1)%Water_Content(k1:k2)    = 5.0_fp  ! kg/m^2
+
+    ! Some pretend aerosol data
+    k1 = 91  ! Pressure[k1] = 840.016hPa
+    k2 = 93  ! Pressure[k2] = 891.679hPa
+    Atm(1)%Aerosol(1)%Type = DUST_AEROSOL
+    Atm(1)%Aerosol(1)%Effective_Radius(k1:k2) = 2.0_fp ! microns
+    Atm(1)%Aerosol(1)%Concentration(k1:k2)    = 5.0_fp ! kg/m^2
+
 
     ! 4a.2 Profile #2
     ! ---------------
-    Surface(2)%Land_Coverage     = 0.25_fp
-    Surface(2)%Land_Type         = SAND
-    Surface(2)%Land_Temperature  = 275.0_fp
+    Sfc(2)%Land_Coverage     = 0.25_fp
+    Sfc(2)%Land_Type         = SAND
+    Sfc(2)%Land_Temperature  = 275.0_fp
   
-    Surface(2)%Water_Coverage    = 0.75_fp
-    Surface(2)%Water_Type        = SEA_WATER
-    Surface(2)%Water_Temperature = 272.0_fp
+    Sfc(2)%Water_Coverage    = 0.75_fp
+    Sfc(2)%Water_Type        = SEA_WATER
+    Sfc(2)%Water_Temperature = 272.0_fp
 
-    Atmosphere(2)%Climatology    = US_STANDARD_ATMOSPHERE
-    Atmosphere(2)%Absorber_Id    = (/ H2O_ID                 , O3_ID /)
-    Atmosphere(2)%Absorber_Units = (/ MASS_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS /)
-
-    Atmosphere(2)%Level_Pressure = &
+    Atm(2)%Climatology    = US_STANDARD_ATMOSPHERE
+    Atm(2)%Absorber_Id    = (/ H2O_ID                 , O3_ID                    , CO2_ID /)
+    Atm(2)%Absorber_Units = (/ MASS_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS /)
+ 
+    Atm(2)%Level_Pressure = &
     (/0.005_fp,   0.016_fp,   0.038_fp,   0.077_fp,   0.137_fp,   0.224_fp,   0.345_fp,   0.506_fp, &
       0.714_fp,   0.975_fp,   1.297_fp,   1.687_fp,   2.153_fp,   2.701_fp,   3.340_fp,   4.077_fp, &
       4.920_fp,   5.878_fp,   6.957_fp,   8.165_fp,   9.512_fp,  11.004_fp,  12.649_fp,  14.456_fp, &
@@ -553,7 +500,7 @@ CONTAINS
     777.790_fp, 802.371_fp, 827.371_fp, 852.788_fp, 878.620_fp, 904.866_fp, 931.524_fp, 958.591_fp, &
     986.067_fp,1013.948_fp,1042.232_fp,1070.917_fp,1100.000_fp/)
   
-    Atmosphere(2)%Pressure = &
+    Atm(2)%Pressure = &
     (/0.009_fp,   0.026_fp,   0.055_fp,   0.104_fp,   0.177_fp,   0.281_fp,   0.421_fp,   0.604_fp, &
       0.838_fp,   1.129_fp,   1.484_fp,   1.910_fp,   2.416_fp,   3.009_fp,   3.696_fp,   4.485_fp, &
       5.385_fp,   6.402_fp,   7.545_fp,   8.822_fp,  10.240_fp,  11.807_fp,  13.532_fp,  15.423_fp, &
@@ -568,7 +515,7 @@ CONTAINS
     790.017_fp, 814.807_fp, 840.016_fp, 865.640_fp, 891.679_fp, 918.130_fp, 944.993_fp, 972.264_fp, &
     999.942_fp,1028.025_fp,1056.510_fp,1085.394_fp/)
 
-    Atmosphere(2)%Temperature = &
+    Atm(2)%Temperature = &
     (/175.859_fp, 182.237_fp, 203.251_fp, 222.895_fp, 233.669_fp, 239.987_fp, 248.220_fp, 255.085_fp, &
       256.186_fp, 252.608_fp, 247.762_fp, 243.314_fp, 239.018_fp, 235.282_fp, 233.777_fp, 234.909_fp, &
       237.889_fp, 241.238_fp, 243.194_fp, 243.304_fp, 242.977_fp, 243.133_fp, 242.920_fp, 242.026_fp, &
@@ -583,7 +530,7 @@ CONTAINS
       259.358_fp, 261.010_fp, 262.779_fp, 264.702_fp, 266.711_fp, 268.863_fp, 271.103_fp, 272.793_fp, &
       273.356_fp, 273.356_fp, 273.356_fp, 273.356_fp/)
 
-    Atmosphere(2)%Absorber(:,1) = &
+    Atm(2)%Absorber(:,1) = &
     (/1.612E-03_fp,2.746E-03_fp,3.688E-03_fp,3.914E-03_fp,3.940E-03_fp,4.837E-03_fp,5.271E-03_fp,4.548E-03_fp, &
       4.187E-03_fp,4.401E-03_fp,4.250E-03_fp,3.688E-03_fp,3.516E-03_fp,3.739E-03_fp,3.694E-03_fp,3.449E-03_fp, &
       3.228E-03_fp,3.212E-03_fp,3.245E-03_fp,3.067E-03_fp,2.886E-03_fp,2.796E-03_fp,2.704E-03_fp,2.617E-03_fp, &
@@ -598,7 +545,7 @@ CONTAINS
       1.494E+00_fp,1.690E+00_fp,1.931E+00_fp,2.226E+00_fp,2.574E+00_fp,2.939E+00_fp,3.187E+00_fp,3.331E+00_fp, &
       3.352E+00_fp,3.260E+00_fp,3.172E+00_fp,3.087E+00_fp/)
 
-    Atmosphere(2)%Absorber(:,2) = &
+    Atm(2)%Absorber(:,2) = &
     (/3.513E-01_fp,4.097E-01_fp,5.161E-01_fp,7.225E-01_fp,1.016E+00_fp,1.354E+00_fp,1.767E+00_fp,2.301E+00_fp, &
       3.035E+00_fp,3.943E+00_fp,4.889E+00_fp,5.812E+00_fp,6.654E+00_fp,7.308E+00_fp,7.660E+00_fp,7.745E+00_fp, &
       7.696E+00_fp,7.573E+00_fp,7.413E+00_fp,7.246E+00_fp,7.097E+00_fp,6.959E+00_fp,6.797E+00_fp,6.593E+00_fp, &
@@ -612,16 +559,52 @@ CONTAINS
       6.368E-02_fp,6.070E-02_fp,5.778E-02_fp,5.481E-02_fp,5.181E-02_fp,4.920E-02_fp,4.700E-02_fp,4.478E-02_fp, &
       4.207E-02_fp,3.771E-02_fp,3.012E-02_fp,1.941E-02_fp,9.076E-03_fp,2.980E-03_fp,5.117E-03_fp,1.160E-02_fp, &
       1.428E-02_fp,1.428E-02_fp,1.428E-02_fp,1.428E-02_fp/)
-  
+
+    ! CO2 profile
+    Atm(2)%Absorber(:,3) =  &
+    (/3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &    
+      3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.280e+02_fp,3.200e+02_fp,3.100e+02_fp,2.700e+02_fp,1.950e+02_fp, &
+      1.100e+02_fp,6.000e+01_fp,4.000e+01_fp,3.500e+01_fp /)    
+
+    ! Some pretend cloud data
+    Atm(2)%Cloud(1)%Type = RAIN_CLOUD
+    k1 = 81  ! Pressure[k1] = 606.847hPa
+    k2 = 98  ! Pressure[k2] =1028.025hPa
+    Atm(2)%Cloud(1)%Effective_Radius(k1:k2) = 1000.0_fp ! microns
+    Atm(2)%Cloud(1)%Water_Content(k1:k2)    =    5.0_fp ! kg/m^2
+
+    ! Some pretend aerosol data
+    Atm(2)%Aerosol(1)%Type = ORGANIC_CARBON_AEROSOL
+    k1 = 56  ! Pressure[k1] = 206.459hPa
+    k2 = 63  ! Pressure[k2] = 293.077hPa
+    Atm(2)%Aerosol(1)%Effective_Radius(k1:k2) = 0.09_fp ! microns
+    Atm(2)%Aerosol(1)%Concentration(k1:k2)    = 0.03_fp ! kg/m^2
+    k1 = 86  ! Pressure[k1] = 718.163hPa
+    k2 = 94  ! Pressure[k2] = 918.130hPa
+    Atm(2)%Aerosol(1)%Effective_Radius(k1:k2) = 0.15_fp ! microns
+    Atm(2)%Aerosol(1)%Concentration(k1:k2)    = 0.06_fp ! kg/m^2
+
   END SUBROUTINE Load_AtmSfc_Data
 
 
   SUBROUTINE SignalFile_Create()
+    CHARACTER(256) :: Filename
     INTEGER :: fid
+    Filename = './Results/'//TRIM(Sensor_Id)//'.signal'
     fid = Get_Lun()
-    OPEN( fid, FILE = './Results/'//TRIM(Sensor_Id)//'.signal' )
-    WRITE( fid,* ) TRIM(Message)
+    OPEN( fid, FILE = Filename )
+    WRITE( fid,* ) TRIM(Filename)
     CLOSE( fid )
   END SUBROUTINE SignalFile_Create
   
-END PROGRAM Example_K_Matrix
+END PROGRAM Example2_SSU

@@ -923,20 +923,14 @@ CONTAINS
     ! ------------------------------------------
     ! Read the dimension values
     Error_Status = Inquire_ODAS_netCDF( NC_Filename, &
-                                        n_Predictors   = n_Predictors  , &
-                                        n_Absorbers    = n_Absorbers   , &
-                                        n_Channels     = n_Channels    , &
-                                        n_Alphas       = n_Alphas      , &
-                                        n_Coeffs       = n_Coeffs      , &
-                                        Release        = ODAS%Release  , &
-                                        Version        = ODAS%Version  , &
-                                        Title          = Title         , &
-                                        History        = History       , &
-                                        Comment        = Comment       , &
-                                        Profile_Set_Id = Profile_Set_Id, &
-                                        Message_Log    = Message_Log     )
+                                        n_Predictors = n_Predictors  , &
+                                        n_Absorbers  = n_Absorbers   , &
+                                        n_Channels   = n_Channels    , &
+                                        n_Alphas     = n_Alphas      , &
+                                        n_Coeffs     = n_Coeffs      , &
+                                        Message_Log  = Message_Log     )
     IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining ZTauCoeff dimensions from '//TRIM(NC_Filename)
+      Message = 'Error inquiring the file '//TRIM(NC_Filename)
       CALL Read_Cleanup(); RETURN
     END IF
 
@@ -980,13 +974,6 @@ CONTAINS
                               Message_Log      = Message_Log            )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
-    END IF
-
-    ! Check the release
-    Error_Status = CheckRelease_ODAS( ODAS, Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'ODAS Release check failed for '//TRIM(NC_Filename)
       CALL Read_Cleanup( Close_File=SET, Destroy_Structure=SET ); RETURN
     END IF
 
@@ -1882,6 +1869,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadGAtts'
     ! Local variables
+    CHARACTER(256)  :: msg
     CHARACTER(256)  :: GAttName
     CHARACTER(5000) :: GAttString
     INTEGER :: Algorithm
@@ -1903,7 +1891,14 @@ CONTAINS
                                 NF90_GLOBAL, &
                                 TRIM(GAttName), &
                                 Algorithm )
-    IF ( NF90_Status /= NF90_NOERR .OR. Algorithm /= ODAS_Default%Algorithm ) THEN
+    ! ...netCDF API error
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = TRIM(NF90_STRERROR( NF90_Status ) )
+      CALL ReadGAtts_Cleanup(); RETURN
+    END IF
+    ! ...Invalid algorithm error
+    IF ( Algorithm /= ODAS_Default%Algorithm ) THEN
+      msg = 'Invalid Algorithm ID attribute'
       CALL ReadGAtts_Cleanup(); RETURN
     END IF
 
@@ -1914,7 +1909,14 @@ CONTAINS
                                 NF90_GLOBAL, &
                                 TRIM(GAttName), &
                                 Release )
-    IF ( NF90_Status /= NF90_NOERR .OR. Release /= ODAS_Default%Release) THEN
+    ! ...netCDF API error
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = TRIM(NF90_STRERROR( NF90_Status ) )
+      CALL ReadGAtts_Cleanup(); RETURN
+    END IF
+    ! ...Invalid release error
+    IF ( Release /= ODAS_Default%Release ) THEN
+      msg = 'Invalid Release attribute'
       CALL ReadGAtts_Cleanup(); RETURN
     END IF
 
@@ -1929,6 +1931,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   Version )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
     END IF
@@ -1942,6 +1945,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
       CALL Remove_NULL_Characters( GAttString )
@@ -1956,6 +1960,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   WMO_Satellite_Id )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
     END IF
@@ -1968,6 +1973,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   WMO_Sensor_Id )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
     END IF
@@ -1981,6 +1987,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
       CALL Remove_NULL_Characters( GAttString )
@@ -1996,6 +2003,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
       CALL Remove_NULL_Characters( GAttString )
@@ -2011,6 +2019,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
       CALL Remove_NULL_Characters( GAttString )
@@ -2026,6 +2035,7 @@ CONTAINS
                                   TRIM(GAttName), &
                                   GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = TRIM(NF90_STRERROR( NF90_Status ) )
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
       CALL Remove_NULL_Characters( GAttString )
@@ -2039,7 +2049,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, &
                             'Error reading '//TRIM(GAttName)//&
                             ' attribute from '//TRIM(NC_Filename)//' - '// &
-                            TRIM(NF90_STRERROR( NF90_Status ) ), &
+                            TRIM(msg), &
                             Error_Status, &
                             Message_Log=Message_Log )
     END SUBROUTINE ReadGAtts_CleanUp

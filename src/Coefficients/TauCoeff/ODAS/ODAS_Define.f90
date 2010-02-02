@@ -79,8 +79,8 @@ MODULE ODAS_Define
   INTEGER, PARAMETER :: SL = 20   ! Sensor Id
   INTEGER, PARAMETER :: ML = 256  ! Messages
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: ODAS_RELEASE = 6  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: ODAS_VERSION = 4  ! This is just the data version.
+  INTEGER, PARAMETER :: ODAS_RELEASE = 7  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: ODAS_VERSION = 1  ! This is just the data version.
   ! The optical depth algorithm name
   CHARACTER(*), PARAMETER :: ODAS_ALGORITHM_NAME = 'ODAS'
   ! ASCII codes for Version routine

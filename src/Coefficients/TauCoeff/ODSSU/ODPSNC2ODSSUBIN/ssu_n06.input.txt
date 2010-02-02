@@ -1,0 +1,11 @@
+ssu_n06
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_01.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_02.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_03.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_04.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_05.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_06.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_07.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_08.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_09.TauCoeff.nc
+/jcsda/save/wx23yc/RB-2.0/fix/TauCoeff/ODPS/netCDF/SSU/ssu_n06_10.TauCoeff.nc

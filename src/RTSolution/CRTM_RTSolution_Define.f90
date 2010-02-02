@@ -263,13 +263,13 @@ CONTAINS
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution
     WRITE(*,'(1x,"RTSolution OBJECT")')
     ! Display components
-    WRITE(*,'(3x,"n_Layers :",1x,i0)') RTSolution%n_Layers
     WRITE(*,'(3x,"Surface Emissivity      :",1x,es13.6)') RTSolution%Surface_Emissivity          
     WRITE(*,'(3x,"Up Radiance             :",1x,es13.6)') RTSolution%Up_Radiance                 
     WRITE(*,'(3x,"Down Radiance           :",1x,es13.6)') RTSolution%Down_Radiance               
     WRITE(*,'(3x,"Down Solar Radiance     :",1x,es13.6)') RTSolution%Down_Solar_Radiance         
     WRITE(*,'(3x,"Surface Planck Radiance :",1x,es13.6)') RTSolution%Surface_Planck_Radiance     
     IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
+      WRITE(*,'(3x,"n_Layers :",1x,i0)') RTSolution%n_Layers
       WRITE(*,'(3x,"Upwelling Radiance      :")') 
       WRITE(*,'(5(1x,es13.6,:))') RTSolution%Upwelling_Radiance
       WRITE(*,'(3x,"Layer Optical Depth     :")') 

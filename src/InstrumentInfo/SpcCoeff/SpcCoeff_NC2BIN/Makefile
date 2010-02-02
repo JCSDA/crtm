@@ -4,9 +4,7 @@
 #
 #==============================================================================
 
-# -------------
 # Define macros
-# -------------
 include $(CRTM_SOURCE_ROOT)/make.macros
 
 # This makefile
@@ -14,6 +12,7 @@ MAKE_FILE = Makefile
 
 # Executable files
 EXE_FILE = SpcCoeff_NC2BIN
+SCRIPT_FILE = run_$(EXE_FILE).sh
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -23,6 +22,7 @@ SRC_FILES = Type_Kinds.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
             String_Utility.f90 \
+            SignalFile_Utility.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
@@ -39,7 +39,7 @@ SRC_FILES = Type_Kinds.f90 \
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
-# Library and include macros
+# Include and library definitions
 NC_LIB = $(HOME)/local/netcdf
 INCLUDES = -I$(NC_LIB)/include
 LIBRARIES = -L$(NC_LIB)/lib -lnetcdf
@@ -49,13 +49,17 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source file link creation and removal
 create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
 remove_links:
-	@unlinkfiles $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
+# Script install target
+install_script:
+	@$(COPY) $(SCRIPT_FILE) ${HOME}/bin
+
+# Squeaky clean target
 realclean: remove_links clean
-
 
 # Source dependency lists
 include make.dependencies

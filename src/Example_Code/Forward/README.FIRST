@@ -9,7 +9,7 @@ To build this little example program that calls the CRTM Forward model:
 
    CRTM_DIR
      This tells the compiler where the CRTM library is. Currently it is set
-     to $(HOME)/local/CRTM.
+     to $(CRTM_SOURCE_ROOT)/Build.
    
    FC
      This defines the Fortran95 compiler to use. Change this to use your system
@@ -44,10 +44,15 @@ To build this little example program that calls the CRTM Forward model:
    to run the example program sensor-by-sensor, or
      run_Example_Forward.sh
    to run a script that runs the executable for all the sensors. Coefficient data
-   for three sensors are provided. The sensor id for these three sensors are:
-     hirs4_n18
-     amsua_n18
+   for a number of sensors are provided. The sensor id for these are:
+     amsua_metop-a
      mhs_n18
+     hirs4_n18
+     ssu_n14
+     ssmis_f16
+     v.seviri_m09
+     hirs3_n17
+     amsre_aqua
 
 
 5) Output from the example program for the three test sensors is in the /Results

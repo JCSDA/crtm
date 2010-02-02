@@ -67,7 +67,7 @@ MODULE CRTM_RTSolution
   PUBLIC :: CRTM_RTSolution_Create
   ! RTV structure entities
   ! ...Datatypes
-  PUBLIC :: CRTM_RTVariables_type
+  PUBLIC :: RTV_type
   ! Module procedures
   PUBLIC :: CRTM_Compute_RTSolution
   PUBLIC :: CRTM_Compute_RTSolution_TL
@@ -111,7 +111,7 @@ CONTAINS
 !                                               SensorIndex , &  ! Input
 !                                               ChannelIndex, &  ! Input
 !                                               RTSolution  , &  ! Output
-!                                               RTVariables   )  ! Internal variable output
+!                                               RTV           )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     Structure containing the atmospheric state data.
@@ -176,12 +176,12 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
-!       RTVariables:    Structure containing internal variables required for
+!       RTV:            Structure containing internal variables required for
 !                       subsequent tangent-linear or adjoint model calls.
 !                       The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
+!                       TYPE:       RTV_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(OUT)
 !
@@ -221,7 +221,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution
-    TYPE(CRTM_RTVariables_type),  INTENT(IN OUT) :: RTV
+    TYPE(RTV_type),               INTENT(IN OUT) :: RTV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -569,7 +569,7 @@ CONTAINS
 !                                                 SensorIndex  , &  ! Input
 !                                                 ChannelIndex , &  ! Input
 !                                                 RTSolution_TL, &  ! TL Output
-!                                                 RTVariables    )  ! Internal variable input
+!                                                 RTV            )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     Structure containing the atmospheric state data.
@@ -660,12 +660,12 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       RTVariables:    Structure containing internal forward model variables
+!       RTV:            Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
 !                       calls. The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
+!                       TYPE:       RTV_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(OUT)
 !
@@ -723,7 +723,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: RTSolution_TL
-    TYPE(CRTM_RTVariables_type),  INTENT(IN)     :: RTV
+    TYPE(RTV_type),               INTENT(IN)     :: RTV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -986,7 +986,7 @@ CONTAINS
 !                                                 Surface_AD   , &  ! AD Output
 !                                                 AtmOptics_AD , &  ! AD Output
 !                                                 SfcOptics_AD , &  ! AD Output
-!                                                 RTVariables    )  ! Internal variable input
+!                                                 RTV            )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     Structure containing the atmospheric state data.
@@ -1054,12 +1054,12 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       RTVariables:    Structure containing internal forward model variables
+!       RTV:            Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
 !                       calls. The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
+!                       TYPE:       RTV_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(OUT)
 !
@@ -1140,7 +1140,7 @@ CONTAINS
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
     TYPE(CRTM_AtmOptics_type),    INTENT(IN OUT) :: AtmOptics_AD
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
-    TYPE(CRTM_RTVariables_type),  INTENT(IN)     :: RTV
+    TYPE(RTV_type),               INTENT(IN)     :: RTV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1596,7 +1596,7 @@ CONTAINS
     REAL(fp),                    INTENT(IN)     :: Solar_irradiance
     LOGICAL,                     INTENT(IN)     :: Is_Solar_Channel
     REAL(fp),                    INTENT(IN)     :: Source_Zenith_Radian
-    TYPE(CRTM_RTVariables_type), INTENT(IN OUT) :: RTV
+    TYPE(RTV_type),              INTENT(IN OUT) :: RTV
     ! Local variables
     REAL(fp) :: layer_source_up, cosine_u0 
     INTEGER :: k
@@ -1704,7 +1704,7 @@ CONTAINS
       REAL (fp), INTENT(INOUT) :: up_rad_TL
 
     !   Structure RTV carried in variables from forward calculation. 
-      TYPE(CRTM_RTVariables_type), INTENT( IN) :: RTV
+      TYPE(RTV_type), INTENT( IN) :: RTV
     !  internal variables
       REAL (fp) :: layer_source_up_TL, layer_source_down_TL,a_TL,down_rad_TL
       REAL (fp) :: Total_OD, Total_OD_TL
@@ -1812,7 +1812,7 @@ CONTAINS
       REAL (fp), INTENT(IN OUT), DIMENSION( : ) :: direct_reflectivity_AD
       REAL (fp), INTENT(IN OUT), DIMENSION( 0: ) ::  Planck_Atmosphere_AD
       REAL (fp), INTENT(IN OUT) :: Planck_Surface_AD
-    TYPE(CRTM_RTVariables_type), INTENT( IN) :: RTV
+      TYPE(RTV_type), INTENT( IN) :: RTV
     !  internal variables
       REAL (fp) :: layer_source_up_AD, layer_source_down_AD,a_AD,down_rad_AD
       REAL (fp) :: cosine_u0, up_rad_AD, Total_OD, Total_OD_AD
@@ -1913,7 +1913,7 @@ CONTAINS
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
       INTEGER nZ
-      TYPE(CRTM_RTVariables_type), INTENT( INOUT ) :: RTV
+      TYPE(RTV_type), INTENT( INOUT ) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity, direct_reflectivity
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity 
@@ -2074,7 +2074,7 @@ CONTAINS
 ! ------------------------------------------------------------------------- !
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
-      TYPE(CRTM_RTVariables_type), INTENT(IN) :: RTV
+      TYPE(RTV_type), INTENT(IN) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,direct_reflectivity
       REAL (fp), INTENT(IN) ::  cosmic_background
@@ -2252,7 +2252,7 @@ CONTAINS
 ! ------------------------------------------------------------------------- !
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
-      TYPE(CRTM_RTVariables_type), INTENT(IN) :: RTV
+      TYPE(RTV_type), INTENT(IN) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,direct_reflectivity
       REAL (fp), INTENT(IN) ::  cosmic_background
@@ -2462,7 +2462,7 @@ CONTAINS
 ! ----------------------------------------------------------------------------------------
      IMPLICIT NONE
      INTEGER, INTENT(IN) :: n_streams,nZ,KL
-     TYPE(CRTM_RTVariables_type), INTENT( INOUT ) :: RTV
+     TYPE(RTV_type), INTENT( INOUT ) :: RTV
      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
      REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
      REAL(fp) :: single_albedo,optical_depth,Planck_Func,total_opt
@@ -2712,7 +2712,7 @@ CONTAINS
 ! ----------------------------------------------------------------------------------------
      IMPLICIT NONE
      INTEGER, INTENT(IN) :: n_streams,nZ,KL
-     TYPE(CRTM_RTVariables_type), INTENT( IN ) :: RTV
+     TYPE(RTV_type), INTENT( IN ) :: RTV
      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
      REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
      REAL(fp) :: single_albedo,optical_depth,Planck_Func,total_opt
@@ -3013,7 +3013,7 @@ CONTAINS
 ! ----------------------------------------------------------------------------------------
      IMPLICIT NONE
      INTEGER, INTENT(IN) :: n_streams,nZ,KL
-     TYPE(CRTM_RTVariables_type), INTENT( IN ) :: RTV
+     TYPE(RTV_type), INTENT( IN ) :: RTV
      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
      REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
      REAL(fp) :: single_albedo,optical_depth,Planck_Func,total_opt
@@ -3383,7 +3383,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_Phase_Matrix( AtmOptics,  &  ! Input
-!                               RTVariables )  ! Internal variable
+!                               RTV         )  ! Internal variable
 !
 ! INPUT ARGUMENTS:
 !       AtmOptics:      Structure containing the atmospheric optical
@@ -3393,27 +3393,27 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       RTVariables:    Structure containing internal forward model variables
+!       RTV:            Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
 !                       calls. The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
+!                       TYPE:       RTV_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! OUTPUT ARGUMENTS:
-!       RTVariables:    Structure containing internal forward model variables
+!       RTV:            Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
 !                       calls. The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
+!                       TYPE:       RTV_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
-!       Note that the INTENT on the RTVariables argument is IN OUT as it 
+!       Note that the INTENT on the RTV         argument is IN OUT as it 
 !       contains data prior to this call and is filled with data within this
 !       routine.
 !
@@ -3424,8 +3424,8 @@ CONTAINS
     AtmOptics, &  ! Input
     RTV        )  ! Internal variable
     ! Arguments
-    TYPE(CRTM_AtmOptics_type),   INTENT(IN)     :: AtmOptics
-    TYPE(CRTM_RTVariables_type), INTENT(IN OUT) :: RTV
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AtmOptics
+    TYPE(RTV_type),            INTENT(IN OUT) :: RTV
     ! Local variables
     INTEGER :: i, j, k, l, ifac, jn
 
@@ -3520,7 +3520,7 @@ CONTAINS
 !                                  AtmOptics_TL, &  ! TL  Input
 !                                  Pff_TL,       &  ! TL Output
 !                                  Pff_TL,       &  ! TL Output
-!                                  RTVariables   )  ! Internal variable
+!                                  RTV           )  ! Internal variable
 !
 ! INPUT ARGUMENTS:                                                         
 !       AtmOptics:      Structure containing the atmospheric optical         
@@ -3537,12 +3537,12 @@ CONTAINS
 !                       DIMENSION:  Scalar                                 
 !                       ATTRIBUTES: INTENT(IN)                             
 !
-!       RTVariables:    Structure containing internal forward model variables
+!       RTV:            Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
 !                       calls. The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.               
 !                       UNITS:      N/A                                    
-!                       TYPE:       CRTM_RTVariables_type                    
+!                       TYPE:       RTV_type                    
 !                       DIMENSION:  Scalar                                 
 !                       ATTRIBUTES: INTENT(IN)                             
 !
@@ -3574,7 +3574,7 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type)  , INTENT(IN)  :: AtmOptics_TL
     REAL(fp)                   , INTENT(OUT) :: Pff_TL(:,:,:) ! n_Angles x n_Angles x n_Layers
     REAL(fp)                   , INTENT(OUT) :: Pbb_TL(:,:,:) ! n_Angles x n_Angles x n_Layers
-    TYPE(CRTM_RTVariables_type), INTENT(IN)  :: RTV
+    TYPE(RTV_type)             , INTENT(IN)  :: RTV
     ! Local variables
     INTEGER :: i, j, k, l, nZ, ifac, jn
     REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles+1) :: Lff, Lbb
@@ -3664,7 +3664,7 @@ CONTAINS
 !                                  Pff_AD,       &  ! AD Input
 !                                  Pbb_AD,       &  ! AD Input
 !                                  AtmOptics_AD, &  ! AD Output
-!                                  RTVariables   )  ! Internal variable
+!                                  RTV           )  ! Internal variable
 !
 ! INPUT ARGUMENTS:
 !       AtmOptics:      Structure containing the atmospheric optical
@@ -3692,12 +3692,12 @@ CONTAINS
 !                       DIMENSION:  Rank-3, n_Angles x n_Angles x n_Layers
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
-!       RTVariables:    Structure containing internal forward model variables
+!       RTV:            Structure containing internal forward model variables
 !                       required for subsequent tangent-linear or adjoint model
 !                       calls. The contents of this structure are NOT accessible
 !                       outside of the CRTM_RTSolution module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_RTVariables_type
+!                       TYPE:       RTV_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -3725,11 +3725,11 @@ CONTAINS
     AtmOptics_AD, &  ! AD Output
     RTV           )  ! Internal variable
     ! Arguments
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: AtmOptics
-    REAL(fp)                   , INTENT(IN OUT) :: Pff_AD(:,:,:) ! n_Angles x n_Angles x n_Layers
-    REAL(fp)                   , INTENT(IN OUT) :: Pbb_AD(:,:,:) ! n_Angles x n_Angles x n_Layers
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AtmOptics_AD
-    TYPE(CRTM_RTVariables_type), INTENT(IN)     :: RTV
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AtmOptics
+    REAL(fp)                 , INTENT(IN OUT) :: Pff_AD(:,:,:) ! n_Angles x n_Angles x n_Layers
+    REAL(fp)                 , INTENT(IN OUT) :: Pbb_AD(:,:,:) ! n_Angles x n_Angles x n_Layers
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(RTV_type)           , INTENT(IN)     :: RTV
     ! Local variables
     INTEGER :: i, j, k, l, nZ, ifac, jn
     REAL(fp), DIMENSION(RTV%n_Angles,RTV%n_Angles+1) :: Lff, Lbb
@@ -3817,8 +3817,8 @@ CONTAINS
 
   SUBROUTINE Normalize_Phase( k, RTV )
     ! Arguments
-    INTEGER,                     INTENT(IN)     :: k
-    TYPE(CRTM_RTVariables_type), INTENT(IN OUT) :: RTV
+    INTEGER,        INTENT(IN)     :: k
+    TYPE(RTV_type), INTENT(IN OUT) :: RTV
     ! Local variables
     INTEGER :: i, j, nZ                                           
 
@@ -3866,12 +3866,12 @@ CONTAINS
 
   SUBROUTINE Normalize_Phase_TL( k, RTV, Pff, Pbb, Pff_TL, Pbb_TL )
     ! Arguments
-    INTEGER                    , INTENT(IN)     :: k
-    TYPE(CRTM_RTVariables_type), INTENT(IN)     :: RTV
-    REAL(fp)                   , INTENT(IN)     :: Pff(:,:)
-    REAL(fp)                   , INTENT(IN)     :: Pbb(:,:)
-    REAL(fp)                   , INTENT(IN OUT) :: Pff_TL(:,:)
-    REAL(fp)                   , INTENT(IN OUT) :: Pbb_TL(:,:)
+    INTEGER       , INTENT(IN)     :: k
+    TYPE(RTV_type), INTENT(IN)     :: RTV
+    REAL(fp)      , INTENT(IN)     :: Pff(:,:)
+    REAL(fp)      , INTENT(IN)     :: Pbb(:,:)
+    REAL(fp)      , INTENT(IN OUT) :: Pff_TL(:,:)
+    REAL(fp)      , INTENT(IN OUT) :: Pbb_TL(:,:)
     ! Local variables
     REAL(fp) :: n_Factor_TL
     REAL(fp) :: Sum_Fac_TL(0:RTV%n_Angles)
@@ -3930,12 +3930,12 @@ CONTAINS
 
   SUBROUTINE Normalize_Phase_AD( k, RTV, Pff, Pbb, Pff_AD, Pbb_AD )
     ! Arguments
-    INTEGER                    , INTENT(IN)     :: k
-    TYPE(CRTM_RTVariables_type), INTENT(IN)     :: RTV
-    REAL(fp)                   , INTENT(IN)     :: Pff(:,:)
-    REAL(fp)                   , INTENT(IN)     :: Pbb(:,:)
-    REAL(fp)                   , INTENT(IN OUT) :: Pff_AD(:,:)
-    REAL(fp)                   , INTENT(IN OUT) :: Pbb_AD(:,:)
+    INTEGER       , INTENT(IN)     :: k
+    TYPE(RTV_type), INTENT(IN)     :: RTV
+    REAL(fp)      , INTENT(IN)     :: Pff(:,:)
+    REAL(fp)      , INTENT(IN)     :: Pbb(:,:)
+    REAL(fp)      , INTENT(IN OUT) :: Pff_AD(:,:)
+    REAL(fp)      , INTENT(IN OUT) :: Pbb_AD(:,:)
     ! Local variables
     INTEGER :: i, j, nZ                                           
     REAL(fp) :: n_Factor_AD

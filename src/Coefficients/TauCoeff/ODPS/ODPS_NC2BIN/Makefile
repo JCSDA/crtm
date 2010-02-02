@@ -12,6 +12,7 @@ MAKE_FILE = Makefile
 
 # Executable files
 EXE_FILE = ODPS_NC2BIN
+SCRIPT_FILE = run_ODPS_NC2BIN.sh
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -27,7 +28,8 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Attribute_Utility.f90 \
             ODPS_Define.f90 \
             ODPS_Binary_IO.f90 \
-            ODPS_netCDF_IO.f90
+            ODPS_netCDF_IO.f90 \
+            CRTM_Parameters.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -42,13 +44,20 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source file link creation and removal
 create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
 remove_links:
-	@unlinkfiles $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
-# Squeaky clean target
-realclean: clean remove_links
+# Script install target 
+install_script: 
+	@$(COPY) $(SCRIPT_FILE) ${HOME}/bin
+
+# Squeaky clean targets
+real_clean: clean remove_links
+
+realclean: real_clean
+
 
 # Source dependency lists
 include make.dependencies
