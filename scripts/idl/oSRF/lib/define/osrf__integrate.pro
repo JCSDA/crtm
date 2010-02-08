@@ -1,5 +1,5 @@
 PRO OSRF::Integrate, $
-  Debug=Debug, method=method
+  Debug=Debug
 
   ; Set up
   ; ...OSRF parameters
@@ -23,18 +23,7 @@ PRO OSRF::Integrate, $
       Response  = r, $
       Debug     = Debug
     ; Integrate
-;    Sum = Integral(f, r)
-
-if ( n_elements(method) gt 0 ) then begin
-  case method of
-    1: Sum = new_Integral(f, r)
-    2: Sum = new2_Integral(f, r)
-    3: Sum = new3_Integral(f, r)
-    4: Sum = my_int_tabulated(f, r)
-    else: Sum = Integral(f, r)
-  endcase
-endif else Sum = Integral(f, r)
-
+    Sum = Integral(f, r)
     IF ( Sum LE ZERO ) THEN $
       MESSAGE, "SRF integration for band #"+STRTRIM(Band,2)+" is < zero", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
