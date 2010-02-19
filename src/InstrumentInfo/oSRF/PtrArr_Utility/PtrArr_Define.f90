@@ -5,7 +5,7 @@ MODULE PtrArr_Define
   ! -----------------
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   IMPLICIT NONE
 
 
@@ -19,16 +19,27 @@ MODULE PtrArr_Define
   ! ------------
   ! Visibilities
   ! ------------
+  ! Everything private by default
   PRIVATE
+  ! Operators
+  PUBLIC :: OPERATOR(==)
+  ! Derived type definitions
   PUBLIC :: PtrArr_type
-  PUBLIC :: Allocated_PtrArr
-  PUBLIC :: Create_PtrArr
-  PUBLIC :: Destroy_PtrArr
-  PUBLIC :: Assign_PtrArr
-  PUBLIC :: Equal_PtrArr
-  PUBLIC :: Set_Property_PtrArr
-  PUBLIC :: Get_Property_PtrArr
-  PUBLIC :: Inspect_PtrArr
+  ! Procedures
+  PUBLIC :: PtrArr_Associated
+  PUBLIC :: PtrArr_Destroy
+  PUBLIC :: PtrArr_Create
+  PUBLIC :: PtrArr_SetValue
+  PUBLIC :: PtrArr_GetValue
+  PUBLIC :: PtrArr_Inspect
+
+
+  ! -------------------
+  ! Procedure overloads
+  ! -------------------
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE PtrArr_Equal
+  END INTERFACE OPERATOR(==)
 
 
   ! ---------------
@@ -36,6 +47,7 @@ MODULE PtrArr_Define
   ! ---------------
   TYPE :: PtrArr_type
     INTEGER :: n = 0
+    LOGICAL :: Is_Allocated = .FALSE.
     REAL(fp), ALLOCATABLE :: Arr(:)
   END TYPE PtrArr_type
 
@@ -43,199 +55,154 @@ MODULE PtrArr_Define
 CONTAINS
 
 
-  ELEMENTAL FUNCTION Allocated_PtrArr(self)
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+  ELEMENTAL FUNCTION PtrArr_Associated(self)
     TYPE(PtrArr_type), INTENT(IN) :: self
-    LOGICAL :: Allocated_PtrArr
-    IF ( ALLOCATED( self%Arr ) ) THEN
-        Allocated_PtrArr = .TRUE.
-    ELSE
-        Allocated_PtrArr = .FALSE.
-    END IF
-  END FUNCTION Allocated_PtrArr
+    LOGICAL :: PtrArr_Associated
+    PtrArr_Associated = self%Is_Allocated
+  END FUNCTION PtrArr_Associated
 
 
-  FUNCTION Destroy_PtrArr(self) RESULT(err_status)
-    ! Arguments
+  ELEMENTAL SUBROUTINE PtrArr_Destroy(self)
     TYPE(PtrArr_type), INTENT(OUT) :: self
-    ! Function result
-    INTEGER :: err_status
-    ! Set up
-    err_status = SUCCESS
-    ! Reinitialise
     self%n = 0
-  END FUNCTION Destroy_PtrArr
+    self%Is_Allocated = .FALSE.
+  END SUBROUTINE PtrArr_Destroy
 
 
-  FUNCTION Create_PtrArr(self, n) RESULT(err_status)
+  ELEMENTAL SUBROUTINE PtrArr_Create(self, n)
     ! Arguments
     TYPE(PtrArr_type), INTENT(OUT) :: self
     INTEGER,           INTENT(IN)  :: n
-    ! Function result
-    INTEGER :: err_status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Create_PtrArr'
     ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: alloc_status
-    ! Set up
-    err_status = SUCCESS
+    INTEGER :: alloc_stat
+
+    ! Check input
+    IF ( n < 1 ) RETURN
+    
     ! Allocate
-    ALLOCATE( self%Arr(n), STAT=alloc_status )
-    IF ( alloc_status /= 0 ) THEN
-      err_status = FAILURE
-      WRITE( msg,'("Error allocating. STAT = ",i0)' ) alloc_status
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
+    ALLOCATE( self%Arr(n), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
     ! Initialise
     self%n = n
     self%Arr = ZERO
-  END FUNCTION Create_PtrArr
+    
+    ! Set allocation indicator
+    self%Is_Allocated = .TRUE.
+  END SUBROUTINE PtrArr_Create
 
 
-  FUNCTION Assign_PtrArr(self, copy) RESULT(err_Status)
-    ! Arguments
-    TYPE(PtrArr_type), INTENT(IN)  :: self
-    TYPE(PtrArr_type), INTENT(OUT) :: copy
-    ! Function result
-    INTEGER :: err_status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Assign_PtrArr'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    ! Set up
-    err_status = SUCCESS
-    ! ...ALL *inputs* must be allocated
-    IF ( .NOT. Allocated_PtrArr(self) ) THEN
-      err_status = FAILURE; msg = 'Input not allocated'
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
-    ! Allocate the structure
-    err_status = Create_PtrArr(copy, self%n)
-    IF ( err_status /= SUCCESS ) THEN
-      err_status = FAILURE; msg = 'Error allocating output'
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
-    ! Assign data
-    copy%Arr = self%Arr
-  END FUNCTION Assign_PtrArr
-
-
-  FUNCTION Equal_PtrArr( p_LHS    , &  ! Input
-                         p_RHS    , &  ! Input
-                         ULP_Scale, &  ! Optional input
-                         Check_All) &  ! Optional input
-                       RESULT( err_status )
-    ! Arguments
-    TYPE(PtrArr_type), INTENT(IN) :: p_LHS
-    TYPE(PtrArr_type), INTENT(IN) :: p_RHS
-    INTEGER, OPTIONAL, INTENT(IN) :: ULP_Scale
-    LOGICAL, OPTIONAL, INTENT(IN) :: Check_All
-    ! Function result
-    INTEGER :: err_status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME='Equal_PtrArr'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: ULP
-    LOGICAL :: Check_Once
-    INTEGER :: n
-    ! Set up
-    err_status = SUCCESS
-    ! ...Default precision is a single unit in last place
-    ULP = 1
-    IF ( PRESENT(ULP_Scale) ) ULP = ABS(ULP_Scale)
-    ! ...Default action is to return on ANY difference...
-    Check_Once = .TRUE.
-    IF ( PRESENT(Check_All) ) Check_Once = .NOT. Check_All
-    ! ...Check the structure allocation status
-    IF ( .NOT. Allocated_PtrArr( p_LHS ) .OR. &
-         .NOT. Allocated_PtrArr( p_RHS )      ) THEN
-      err_status = FAILURE; msg = 'Input PtrArr not allocated'
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
-    ! Compare the values
-    DO n = 1, p_RHS%n
-      IF ( .NOT. Compare_Float( p_LHS%Arr(n),p_RHS%Arr(n),ULP=ULP ) ) THEN
-        err_status = FAILURE
-        WRITE( msg,'("Arr component different at index #",i0)' ) n
-        CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-  END FUNCTION Equal_PtrArr
-
-
-  FUNCTION Set_Property_PtrArr(self,Arr) RESULT(err_status)
+  FUNCTION PtrArr_SetValue(self,Arr) RESULT(err_stat)
     ! Arguments
     TYPE(PtrArr_type),  INTENT(IN OUT) :: self
     REAL(fp), OPTIONAL, INTENT(IN)     :: Arr(:)
     ! Function result
-    INTEGER :: err_status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Set_Property_PtrArr'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PtrArr_SetValue'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n
+    
     ! Set up
-    err_status = SUCCESS
+    err_stat = SUCCESS
+    
     ! Set array data
     IF ( PRESENT(Arr) ) THEN
       n = SIZE(Arr)
       ! ...Check sizes are consistent
       IF ( self%n /= n) THEN
-        err_status = FAILURE
+        err_stat = FAILURE
         WRITE( msg, '("Input array has different size, ",i0,&
                      &", from structure, ",i0)' ) n, self%n
-        CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+        CALL Display_Message(ROUTINE_NAME, msg, err_stat)
         RETURN
       END IF
       ! ...Assign data
       self%Arr = Arr
     END IF
-  END FUNCTION Set_Property_PtrArr
+  END FUNCTION PtrArr_SetValue
   
   
-  FUNCTION Get_Property_PtrArr(self,n_Points,Arr) RESULT(err_status)
+  FUNCTION PtrArr_GetValue(self,n_Points,Arr) RESULT(err_stat)
     ! Arguments
     TYPE(PtrArr_type),  INTENT(IN)  :: self
     INTEGER,  OPTIONAL, INTENT(OUT) :: n_Points
     REAL(fp), OPTIONAL, INTENT(OUT) :: Arr(:)
     ! Function result
-    INTEGER :: err_status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Get_Property_PtrArr'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'PtrArr_GetValue'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n
+    
     ! Set up
-    err_status = SUCCESS
+    err_stat = SUCCESS
+    
     ! Get scalar data
     IF ( PRESENT(n_Points) ) n_Points = self%n
+    
     ! Get array data
     IF ( PRESENT(Arr) ) THEN
       n = SIZE(Arr)
       ! ...Check sizes are consistent
       IF ( self%n /= n) THEN
-        err_status = FAILURE
+        err_stat = FAILURE
         WRITE( msg, '("Output array has different size, ",i0,&
                      &", from structure, ",i0)' ) n, self%n
-        CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
+        CALL Display_Message(ROUTINE_NAME, msg, err_stat)
         RETURN
       END IF
       ! ...Assign data
       Arr = self%Arr
     END IF
-  END FUNCTION Get_Property_PtrArr
+  END FUNCTION PtrArr_GetValue
   
   
-  SUBROUTINE Inspect_PtrArr(self)
+  SUBROUTINE PtrArr_Inspect(self)
     TYPE(PtrArr_type), INTENT(IN) :: self
-    WRITE( *,'(4x,"n_Points : ", i0)' ) self%n
-    IF ( self%n > 0 ) WRITE( *,'(4x,"Data : ", /,5(1x,es13.6))' ) self%Arr
-  END SUBROUTINE Inspect_PtrArr
+    ! Output the PtrArr components     
+    WRITE(*,'(1x,"PtrArr OBJECT")')
+    ! Dimensions
+    WRITE(*,'(3x,"n          :",1x,i0)') self%n
+    IF ( self%Is_Allocated ) THEN
+      WRITE(*,'(3x,"Array Data : ")')
+      WRITE(*,'(5(1x,es13.6))' ) self%Arr
+    END IF
+  END SUBROUTINE PtrArr_Inspect  
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+  ELEMENTAL FUNCTION PtrArr_Equal( x, y ) RESULT( is_equal )
+    TYPE(PtrArr_type), INTENT(IN) :: x, y
+    LOGICAL :: is_equal
+    
+    ! Set up
+    is_equal = .FALSE.
+    
+    ! Check the structure association status
+    IF ( (.NOT. PtrArr_Associated(x)) .OR. &
+         (.NOT. PtrArr_Associated(y)) ) RETURN
+    
+    ! Check the contents
+    IF ( (x%n == y%n) .AND. ALL(x%Arr .EqualTo. y%Arr ) ) is_Equal = .TRUE.
+    
+  END FUNCTION PtrArr_Equal
   
 END MODULE PtrArr_Define

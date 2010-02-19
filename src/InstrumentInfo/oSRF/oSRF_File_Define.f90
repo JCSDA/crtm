@@ -14,29 +14,28 @@ MODULE oSRF_File_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,        ONLY: fp
-  USE Message_Handler,   ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
-                               Display_Message
-  USE String_Utility,    ONLY: StrClean
-  USE oSRF_Define,       ONLY: OSRF_RELEASE, &
-                               OSRF_VERSION, &
-                               INVALID_WMO_SATELLITE_ID, &
-                               INVALID_WMO_SENSOR_ID   , &
-                               N_SENSOR_TYPES          , &
-                               INVALID_SENSOR          , &
-                               MICROWAVE_SENSOR        , &
-                               INFRARED_SENSOR         , &
-                               VISIBLE_SENSOR          , &
-                               ULTRAVIOLET_SENSOR      , &
-                               SENSOR_TYPE_NAME        , &
-                               oSRF_type        , &
-                               Allocated_oSRF   , &
-                               Destroy_oSRF     , &
-                               Create_oSRF      , &
-                               Assign_oSRF      , &
-                               Set_Property_oSRF, &
-                               Inspect_oSRF     , &
-                               Info_oSRF
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, &
+                                   Display_Message
+  USE String_Utility       , ONLY: StrClean
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID   , &
+                                   N_SENSOR_TYPES          , &
+                                   INVALID_SENSOR          , &
+                                   MICROWAVE_SENSOR        , &
+                                   INFRARED_SENSOR         , &
+                                   VISIBLE_SENSOR          , &
+                                   ULTRAVIOLET_SENSOR      , &
+                                   SENSOR_TYPE_NAME
+  USE oSRF_Define          , ONLY: OSRF_RELEASE, &
+                                   OSRF_VERSION, &
+                                   oSRF_type      , &
+                                   oSRF_Associated, &
+                                   oSRF_Destroy   , &
+                                   oSRF_Create    , &
+                                   oSRF_SetValue  , &
+                                   oSRF_Inspect   , &
+                                   oSRF_Info
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -50,22 +49,24 @@ MODULE oSRF_File_Define
   ! Derived type definitions
   PUBLIC :: oSRF_File_type
   ! Public procedures
-  PUBLIC :: Allocated_oSRF_File
-  PUBLIC :: Destroy_oSRF_File
-  PUBLIC :: Create_oSRF_File
-  PUBLIC :: Set_Property_oSRF_File
-  PUBLIC :: Get_Property_oSRF_File
-  PUBLIC :: Inspect_oSRF_File
-  PUBLIC :: AddTo_oSRF_File
-  PUBLIC :: GetFrom_oSRF_File
-  PUBLIC :: Read_oSRF_File
+  PUBLIC :: oSRF_File_Associated
+  PUBLIC :: oSRF_File_Destroy
+  PUBLIC :: oSRF_File_Create
+  PUBLIC :: oSRF_File_SetValue
+  PUBLIC :: oSRF_File_GetValue
+  PUBLIC :: oSRF_File_Inspect
+  PUBLIC :: oSRF_File_AddTo
+  PUBLIC :: oSRF_File_GetFrom
+  PUBLIC :: oSRF_File_Info
+  PUBLIC :: oSRF_File_Read
+  PUBLIC :: oSRF_File_DefineVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Module version id
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Invalid flag
   INTEGER, PARAMETER :: INVALID = -1
@@ -80,9 +81,6 @@ MODULE oSRF_File_Define
   INTEGER, PARAMETER :: ML = 512   ! Message length
   INTEGER, PARAMETER :: FL = 512   ! Filename length
   INTEGER, PARAMETER :: GL = 5000  ! Global attribute string length
-  ! ASCII codes for Info routine
-  INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-  INTEGER, PARAMETER :: LINEFEED = 10
 
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: TITLE_GATTNAME            = 'title' 
@@ -182,6 +180,8 @@ MODULE oSRF_File_Define
     ! Release and version information
     INTEGER :: Release = oSRF_RELEASE
     INTEGER :: Version = oSRF_VERSION
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: n_Channels = 0
     ! Channel independent data
@@ -214,13 +214,13 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Allocated_oSRF_File
+!       oSRF_File_Associated
 ! 
 ! PURPOSE:
 !       Elemental function to test if an oSRF_File container has been allocated.
 !
 ! CALLING SEQUENCE:
-!       Allocation_Status = Allocated_oSRF_File( oSRF_File )
+!       Allocation_Status = oSRF_File_Associated( oSRF_File )
 !
 ! OBJECT:
 !       oSRF_File:    oSRF_File structure which is to have its allocatable
@@ -244,33 +244,25 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Allocated_oSRF_File(self) RESULT(alloc_status)
-    ! Arguments
+  ELEMENTAL FUNCTION oSRF_File_Associated(self) RESULT(alloc_status)
     TYPE(oSRF_File_type), INTENT(IN) :: self
-    ! Function result
     LOGICAL :: alloc_status
-    ! Set up
-    alloc_status = .FALSE.
-    ! Test the members
-    IF ( ALLOCATED( self%oSRF ) ) THEN
-      alloc_status = .TRUE.
-    ELSE
-      alloc_status = .FALSE.
-    END IF
-  END FUNCTION Allocated_oSRF_File
+    alloc_status = self%Is_Allocated
+  END FUNCTION oSRF_File_Associated
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Destroy_oSRF_File
+!       oSRF_File_Destroy
 ! 
 ! PURPOSE:
-!       Function to destroy an oSRF_File container and all of its contents.
+!       Elemental Subroutine to destroy an oSRF_File container and all
+!       of its contents.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_oSRF_File(oSRF_File)
+!       CALL oSRF_File_Destroy(oSRF_File)
 !
 ! OBJECT:
 !       oSRF_File:    oSRF_File structure to destroy.
@@ -279,42 +271,27 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure destruction was successful
-!                        == FAILURE an error occurre.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Destroy_oSRF_File(self) RESULT(err_status)
-    ! Arguments
+  ELEMENTAL SUBROUTINE oSRF_File_Destroy(self)
     TYPE(oSRF_File_type), INTENT(OUT) :: self
-    ! Function result
-    INTEGER :: err_status
-    ! Set up
-    err_status = SUCCESS
-    ! Reinitialise
+    self%Is_Allocated = .FALSE.
     self%n_Channels = 0
-  END FUNCTION Destroy_oSRF_File
+  END SUBROUTINE oSRF_File_Destroy
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Create_oSRF_File
+!       oSRF_File_Create
 ! 
 ! PURPOSE:
-!       Function to create an oSRF_File container by allocating its array
-!       members.
+!       Elemental function to create an instance of an oSRF_File container.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Create_oSRF_File(oSRF_File, n_Channels)
+!       CALL oSRF_File_Create(oSRF_File, n_Channels)
 !
 ! OBJECT:
 !       oSRF_File:    oSRF_File structure with allocated members
@@ -323,7 +300,7 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       n_Channels:   The number of channels of data to be placed in the
 !                     container
 !                     UNITS:      N/A
@@ -331,76 +308,63 @@ CONTAINS
 !                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(IN)
 !
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure creation was successful
-!                        == FAILURE an error occurre.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Create_oSRF_File(self, n) RESULT(err_status)
+  ELEMENTAL SUBROUTINE oSRF_File_Create(self, n)
     ! Arguments
     TYPE(oSRF_File_type), INTENT(OUT) :: self
     INTEGER,              INTENT(IN)  :: n
-    ! Function result
-    INTEGER :: err_status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME='oSRF_File::Create'
     ! Local variables
-    CHARACTER(ML) :: msg
     INTEGER :: alloc_status
-    ! Set up
-    err_status = SUCCESS
+
+    ! Check dimension inputs
+    IF ( n < 1 ) RETURN
+    
     ! Allocate
     ALLOCATE( self%oSRF(n), STAT=alloc_status )
-    IF ( alloc_status /= 0 ) THEN
-      err_status = FAILURE
-      WRITE( msg,'("Error allocating. STAT = ",i0)' ) alloc_status
-      CALL Display_Message(ROUTINE_NAME, TRIM(msg), err_status)
-      RETURN
-    END IF
+    IF ( alloc_status /= 0 ) RETURN
+
     ! Initialise
     self%n_Channels = n
-  END FUNCTION Create_oSRF_File
+
+    ! Set the allocation flag
+    self%Is_Allocated = .TRUE.
+     
+  END SUBROUTINE oSRF_File_Create
   
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Set_Property_oSRF_File
+!       oSRF_File_SetValue
 !
 ! PURPOSE:
-!       Function to set the value of a property or a group of properties for
-!       an oSRF_File container.
+!       Function to set the value of an oSRF_File container object component.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = GetProperty_oSRF_File( &
-!         oSRF_File                          , &  ! Object
-!         Filename         = Filename        , &  ! Optional input
-!         Version          = Version         , &  ! Optional input
-!         Sensor_Id        = Sensor_Id       , &  ! Optional input
-!         WMO_Satellite_Id = WMO_Satellite_Id, &  ! Optional input
-!         WMO_Sensor_Id    = WMO_Sensor_Id   , &  ! Optional input
-!         Sensor_Type      = Sensor_Type     , &  ! Optional input
-!         Title            = Title           , &  ! Optional input
-!         History          = History         , &  ! Optional input
-!         Comment          = Comment           )  ! Optional input
+!       Error_Status = oSRF_File_SetValue( &
+!                        oSRF_File                          , &
+!                        Filename         = Filename        , &
+!                        Version          = Version         , &
+!                        Sensor_Id        = Sensor_Id       , &
+!                        WMO_Satellite_Id = WMO_Satellite_Id, &
+!                        WMO_Sensor_Id    = WMO_Sensor_Id   , &
+!                        Sensor_Type      = Sensor_Type     , &
+!                        Title            = Title           , &
+!                        History          = History         , &
+!                        Comment          = Comment           )
 !
 ! OBJECT:
-!       oSRF_File:          oSRF_File structure which is to have its
-!                           properties set.
+!       oSRF_File:          oSRF_File object which is to have its
+!                           properties modifed.
 !                           UNITS:      N/A
 !                           TYPE:       TYPE(oSRF_File_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       Filename:           A character string identifying the filename with
 !                           which the oSRF_File container is associated.
 !                           UNITS:      N/A
@@ -462,19 +426,19 @@ CONTAINS
 !
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error
-!                     status. The error codes are defined in the
-!                     Message_Handler module.
-!                     If == SUCCESS the object property retrieval was successful
-!                        == FAILURE an unrecoverable error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           Message_Handler module.
+!                           If == SUCCESS the object property set was successful
+!                              == FAILURE an unrecoverable error occurred
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Set_Property_oSRF_File( &
+  FUNCTION oSRF_File_SetValue( &
     self            , &  ! In/output
     Filename        , &  ! Optional input
     Version         , &  ! Optional input
@@ -513,42 +477,41 @@ CONTAINS
     IF ( PRESENT(Title           ) ) self%Title            = ADJUSTL(Title)
     IF ( PRESENT(History         ) ) self%History          = ADJUSTL(History)
     IF ( PRESENT(Comment         ) ) self%Comment          = ADJUSTL(Comment)
-  END FUNCTION Set_Property_oSRF_File
+  END FUNCTION oSRF_File_SetValue
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Get_Property_oSRF_File
+!       oSRF_File_GetValue
 !
 ! PURPOSE:
-!       Function to get the value of a property or a group of properties for
-!       an oSRF_File container.
+!       Function to get the value of an oSRF_File container object component.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = GetProperty_oSRF_File( &
-!         oSRF_File                          , &  ! Object
-!         n_Channels       = n_Channels      , &  ! Optional output
-!         Filename         = Filename        , &  ! Optional output
-!         Version          = Version         , &  ! Optional output
-!         Sensor_Id        = Sensor_Id       , &  ! Optional output
-!         WMO_Satellite_Id = WMO_Satellite_Id, &  ! Optional output
-!         WMO_Sensor_Id    = WMO_Sensor_Id   , &  ! Optional output
-!         Sensor_Type      = Sensor_Type     , &  ! Optional output
-!         Title            = Title           , &  ! Optional output
-!         History          = History         , &  ! Optional output
-!         Comment          = Comment           )  ! Optional output
+!       Error_Status = oSRF_File_GetValue( &
+!                        oSRF_File                          , & 
+!                        n_Channels       = n_Channels      , & 
+!                        Filename         = Filename        , & 
+!                        Version          = Version         , & 
+!                        Sensor_Id        = Sensor_Id       , & 
+!                        WMO_Satellite_Id = WMO_Satellite_Id, & 
+!                        WMO_Sensor_Id    = WMO_Sensor_Id   , & 
+!                        Sensor_Type      = Sensor_Type     , & 
+!                        Title            = Title           , & 
+!                        History          = History         , & 
+!                        Comment          = Comment           ) 
 !
 ! OBJECT:
-!       oSRF_File:          oSRF_File structure from which the properties are
-!                           to be obtained.
+!       oSRF_File:          oSRF_File object that is to have its properties
+!                           retrieved.
 !                           UNITS:      N/A
 !                           TYPE:       TYPE(oSRF_File_type)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
+! OPTIONAL OUTPUTS:
 !       n_Channels:         The number of channels the container has been
 !                           allocated to hold.
 !                           UNITS:      N/A
@@ -617,19 +580,19 @@ CONTAINS
 !
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error
-!                     status. The error codes are defined in the
-!                     Message_Handler module.
-!                     If == SUCCESS the object property retrieval was successful
-!                        == FAILURE an unrecoverable error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           Message_Handler module.
+!                           If == SUCCESS the object property retrieval was successful
+!                              == FAILURE an unrecoverable error occurred
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Get_Property_oSRF_File( &
+  FUNCTION oSRF_File_GetValue( &
     self            , &  ! In/output
     n_Channels      , &  ! Optional output
     Filename        , &  ! Optional output
@@ -671,20 +634,20 @@ CONTAINS
     IF ( PRESENT(Title           ) ) Title            = self%Title           
     IF ( PRESENT(History         ) ) History          = self%History         
     IF ( PRESENT(Comment         ) ) Comment          = self%Comment         
-  END FUNCTION Get_Property_oSRF_File
+  END FUNCTION oSRF_File_GetValue
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Inspect_oSRF_File
+!       oSRF_File_Inspect
 !
 ! PURPOSE:
 !       Subroutine to inspect the contents of an oSRF_File container.
 !
 ! CALLING SEQUENCE:
-!       CALL Inspect_oSRF_File( oSRF_File )
+!       CALL oSRF_File_Inspect( oSRF_File )
 !
 ! OBJECT:
 !       oSRF_File:    oSRF_File structure to inspect.
@@ -693,7 +656,7 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       oSRF:         oSRF structure to add to the oSRF_File container.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_type)
@@ -703,72 +666,65 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  SUBROUTINE Inspect_oSRF_File( self, verbose )
+  SUBROUTINE oSRF_File_Inspect( self )
     ! Arguments
     TYPE(oSRF_File_type), INTENT(IN) :: self
-    LOGICAL,    OPTIONAL, INTENT(IN) :: verbose
     ! Local arguments
     INTEGER :: n
-    ! Output the oSRF components     
-    WRITE( *,'(/2x,"oSRF_File INSPECT")' )
-    WRITE( *,'( 2x,"=================")' )
-    WRITE( *,'(2x,"Filename         : ",  a)' ) TRIM(self%Filename)
-    WRITE( *,'(2x,"Release          : ", i0)' ) self%Release
-    WRITE( *,'(2x,"Version          : ", i0)' ) self%Version  
-    WRITE( *,'(2x,"Sensor_Id        : ",  a)' ) TRIM(self%Sensor_Id)       
-    WRITE( *,'(2x,"WMO_Satellite_Id : ", i0)' ) self%WMO_Satellite_Id
-    WRITE( *,'(2x,"WMO_Sensor_Id    : ", i0)' ) self%WMO_Sensor_Id   
-    WRITE( *,'(2x,"Sensor_Type      : ",  a)' ) SENSOR_TYPE_NAME(self%Sensor_Type)
-    WRITE( *,'(2x,"Title            : ",  a)' ) TRIM(self%Title  )
-    WRITE( *,'(2x,"History          : ",  a)' ) TRIM(self%History)
-    WRITE( *,'(2x,"Comment          : ",  a)' ) TRIM(self%Comment)
-    WRITE( *,'(2x,"n_Channels       : ", i0)' ) self%n_Channels
-    IF ( self%n_Channels == 0 ) THEN
-      WRITE( *,'(10x,"Press <ENTER> to continue...")', ADVANCE='NO' )
-      READ(*,*)
-    END IF
-    IF ( PRESENT(verbose) ) THEN
-      IF ( verbose ) THEN
-        DO n = 1, self%n_Channels
-          WRITE( *,'(/2x,"OSRF POSITION NUMBER ",i0)' ) n
-          CALL Inspect_oSRF( self%oSRF(n) )
-        END DO
-      END IF
-    END IF
-  END SUBROUTINE Inspect_oSRF_File
+    ! Output the oSRF_File components     
+    WRITE(*,'(1x,"oSRF_File OBJECT")')
+    ! Dimensions
+    WRITE(*,'(3x,"n_Channels       :",1x,i0)') self%n_Channels
+    ! Scalar data
+    WRITE(*,'(3x,"Filename         : ",  a)' ) TRIM(self%Filename)
+    WRITE(*,'(3x,"Release          : ", i0)' ) self%Release
+    WRITE(*,'(3x,"Version          : ", i0)' ) self%Version  
+    WRITE(*,'(3x,"Sensor_Id        : ",  a)' ) TRIM(self%Sensor_Id)       
+    WRITE(*,'(3x,"WMO_Satellite_Id : ", i0)' ) self%WMO_Satellite_Id
+    WRITE(*,'(3x,"WMO_Sensor_Id    : ", i0)' ) self%WMO_Sensor_Id   
+    WRITE(*,'(3x,"Sensor_Type      : ",  a)' ) SENSOR_TYPE_NAME(self%Sensor_Type)
+    WRITE(*,'(3x,"Title            : ",  a)' ) TRIM(self%Title  )
+    WRITE(*,'(3x,"History          : ",  a)' ) TRIM(self%History)
+    WRITE(*,'(3x,"Comment          : ",  a)' ) TRIM(self%Comment)
+    IF ( self%n_Channels == 0 ) RETURN
+    DO n = 1, self%n_Channels
+      WRITE(*,'(3x,"OSRF POSITION NUMBER ",i0)' ) n
+      CALL oSRF_Inspect( self%oSRF(n) )
+    END DO
+  END SUBROUTINE oSRF_File_Inspect
   
   
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       AddTo_oSRF_File
+!       oSRF_File_AddTo
 !
 ! PURPOSE:
-!       Function to add an oSRF object from an oSRF_File container.
+!       Function to add an oSRF object to an oSRF_File container.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = AddTo_oSRF_File( &
-!         oSRF_File, &  ! Object
-!         oSRF     , &  ! Input
-!         pos = pos  )  ! Optional input
+!       Error_Status = oSRF_File_AddTo( &
+!                        oSRF_File, &
+!                        oSRF     , &
+!                        pos = pos  )
 !
 ! OBJECT:
-!       oSRF_File:    oSRF_File structure to which the oSRF object
+!       oSRF_File:    oSRF_File object to which the oSRF object
 !                     is added.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_File_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
-! INPUT ARGUMENTS:
-!       oSRF:         oSRF structure to add to the oSRF_File container.
+! INPUTS:
+!       oSRF:         oSRF object to add to the oSRF_File container.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       pos:          Set this keyword to the index of the position at which
 !                     oSRF object is to be added to the oSRF_File container.
 !                     If not supplied the default is to add the object to the
@@ -791,10 +747,10 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION AddTo_oSRF_File( &
-    self, &
-    oSRF, &
-    pos ) &
+  FUNCTION oSRF_File_AddTo( &
+    self, &  ! In/output
+    oSRF, &  ! Input
+    pos ) &  ! Optional input
   RESULT( err_status )
     ! Arguments
     TYPE(oSRF_File_type), INTENT(IN OUT) :: self
@@ -807,8 +763,10 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: l_pos
+    
     ! Set up
     err_status = SUCCESS
+    
     ! Check position argument
     IF ( PRESENT(pos) ) THEN
       l_pos = pos
@@ -817,58 +775,59 @@ CONTAINS
     END IF
     IF ( l_pos < 1 .OR. l_pos > self%n_Channels ) THEN
       WRITE( msg,'("Invalid position, ",i0,", specified for oSRF_File")' ) l_pos
-      CALL AddTo_CleanUp(); RETURN
+      CALL CleanUp(); RETURN
     END IF
+    
     ! Copy oSRF to required position
-    IF ( Allocated_oSRF_File(self) ) THEN
-      err_status = Assign_oSRF( oSRF, self%oSRF(l_pos) )
-      IF ( err_status /= SUCCESS ) THEN
+    IF ( oSRF_File_Associated(self) ) THEN
+      self%oSRF(l_pos) = oSRF
+      IF ( .NOT. oSRF_Associated(self%oSRF(l_pos)) ) THEN
         WRITE( msg,'("Error adding oSRF at position ",i0," in oSRF_File")' ) l_pos
-        CALL AddTo_CleanUp(); RETURN
+        CALL CleanUp(); RETURN
       END IF
     END IF
     
   CONTAINS
   
-    SUBROUTINE AddTo_CleanUp()
+    SUBROUTINE CleanUp()
       err_status = FAILURE
       CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
-    END SUBROUTINE AddTo_CleanUp
+    END SUBROUTINE CleanUp
     
-  END FUNCTION AddTo_oSRF_File
+  END FUNCTION oSRF_File_AddTo
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       GetFrom_oSRF_File
+!       oSRF_File_GetFrom
 !
 ! PURPOSE:
 !       Function to retrieve an oSRF object from an oSRF_File container.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = GetFrom_oSRF_File( &
-!         oSRF_File, &  ! Object
-!         oSRF     , &  ! Output
-!         pos = pos  )  ! Optional input
+!       Error_Status = oSRF_File_GetFrom( &
+!                        oSRF_File, &
+!                        oSRF     , &
+!                        pos = pos  )
 !
 ! OBJECT:
-!       oSRF_File:    oSRF_File structure from which an oSRF object
+!       oSRF_File:    oSRF_File container object from which an oSRF object
 !                     is requested.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_File_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       oSRF:         oSRF structure retrieved from the oSRF_File container.
+! OUTPUTS:
+!       oSRF:         oSRF object retrieved from the oSRF_File container.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       pos:          Set this keyword to the index of the position of the
 !                     oSRF object to retrieve from the oSRF_File container.
 !                     If not supplied the default is to return the first oSRF
@@ -891,10 +850,10 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION GetFrom_oSRF_File( &
-    self, &
-    oSRF, &
-    pos ) &
+  FUNCTION oSRF_File_GetFrom( &
+    self, &  ! Input
+    oSRF, &  ! Output
+    pos ) &  ! Optional input
   RESULT( err_status )
     ! Arguments
     TYPE(oSRF_File_type), INTENT(IN)  :: self
@@ -907,8 +866,10 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: l_pos
+    
     ! Set up
     err_status = SUCCESS
+    
     ! Check position argument
     IF ( PRESENT(pos) ) THEN
       l_pos = pos
@@ -917,39 +878,41 @@ CONTAINS
     END IF
     IF ( l_pos < 1 .OR. l_pos > self%n_Channels ) THEN
       WRITE( msg,'("Invalid position, ",i0,", specified for oSRF_File")' ) l_pos
-      CALL GetFrom_CleanUp(); RETURN
+      CALL CleanUp(); RETURN
     END IF
+    
     ! Copy oSRF from requested position
-    IF ( Allocated_oSRF_File(self) ) THEN
-      err_status = Assign_oSRF( self%oSRF(l_pos), oSRF )
-      IF ( err_status /= SUCCESS ) THEN
+    IF ( oSRF_File_Associated(self) ) THEN
+      oSRF = self%oSRF(l_pos)
+      IF ( .NOT. oSRF_Associated(oSRF) ) THEN
         WRITE( msg,'("Error getting oSRF from position ",i0," in oSRF_File")' ) l_pos
-        CALL GetFrom_CleanUp(); RETURN
+        CALL CleanUp(); RETURN
       END IF
     END IF
     
   CONTAINS
   
-    SUBROUTINE GetFrom_CleanUp()
+    SUBROUTINE CleanUp()
+      CALL oSRF_Destroy( oSRF )
       err_status = FAILURE
       CALL Display_Message( ROUTINE_NAME,TRIM(msg),err_status )
-    END SUBROUTINE GetFrom_CleanUp
+    END SUBROUTINE CleanUp
     
-  END FUNCTION GetFrom_oSRF_File
+  END FUNCTION oSRF_File_GetFrom
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Info_oSRF_File
+!       oSRF_File_Info
 !
 ! PURPOSE:
 !       Subroutine to return a string containing version and dimension
 !       information about the oSRF_File object.
 !
 ! CALLING SEQUENCE:
-!       CALL Info_oSRF_File( oSRF_File, Info )
+!       CALL oSRF_File_Info( oSRF_File, Info )
 !
 ! OBJECT:
 !       oSRF_File:     oSRF_File structure.
@@ -958,7 +921,7 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Info:          String containing version and dimension information
 !                      about the passed oSRF data structure.
 !                      UNITS:      N/A
@@ -969,16 +932,19 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Info_oSRF_File( self, Info )
+  SUBROUTINE oSRF_File_Info( self, Info )
     ! Arguments
     TYPE(oSRF_File_type), INTENT(IN)  :: self
     CHARACTER(*)        , INTENT(OUT) :: Info
+    ! Local parameters
+    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+    INTEGER, PARAMETER :: LINEFEED = 10
     ! Local variables
     CHARACTER(2000) :: LongString
 
     ! Setup
     Info = ' '
-    IF ( .NOT. Allocated_oSRF_File(self) ) RETURN
+    IF ( .NOT. oSRF_File_Associated(self) ) RETURN
     
     
     ! Write the required data to the local string
@@ -992,35 +958,64 @@ CONTAINS
 
     ! Trim the output based on the
     ! dummy argument string length
-    Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
+    Info = LongString(1:MIN(LEN(Info), LEN_TRIM(LongString)))
 
-  END SUBROUTINE Info_oSRF_File
+  END SUBROUTINE oSRF_File_Info
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_File_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_File_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE oSRF_File_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE oSRF_File_DefineVersion
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Read_oSRF_File
+!       oSRF_File_Read
 !
 ! PURPOSE:
 !       Function to read oSRF data from file and fill the oSRF_File
 !       container with all the oSRF objects in the file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_oSRF_File( &
-!         oSRF_File    , &  ! Object
-!         Filename     , &  ! Input  
-!         Quiet = Quiet  )  ! Optional input
+!       Error_Status = oSRF_File_Read( &
+!                        oSRF_File    , &
+!                        Filename     , &
+!                        Quiet = Quiet  )
 !
 ! OBJECT:
-!       oSRF_File:    oSRF_File structure to fill with data.
+!       oSRF_File:    oSRF_File object container to fill with data.
 !                     UNITS:      N/A
 !                     TYPE:       TYPE(oSRF_File_type)
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Filename:     Character string specifying the name of the
 !                     oSRF_File data file to read.
 !                     UNITS:      N/A
@@ -1028,7 +1023,7 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       Quiet:        Set this keyword to suppress information messages being
 !                     output.
 !                     If QUIET = .FALSE., info messages are OUTPUT. [*DEFAULT*]
@@ -1051,10 +1046,10 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_oSRF_File( &
-    self    , &
-    Filename, &
-    Quiet   ) &
+  FUNCTION oSRF_File_Read( &
+    self    , &  ! Output
+    Filename, &  ! Input
+    Quiet   ) &  ! Optional input
   RESULT( err_status )
     ! Arguments
     TYPE(oSRF_File_type), INTENT(OUT) :: self
@@ -1107,7 +1102,7 @@ CONTAINS
     IF ( nc_status /= NF90_NOERR ) THEN
       msg = 'Error opening '//TRIM(Filename)//' for read access - '//&
             TRIM(NF90_STRERROR(nc_status))
-      CALL Read_Cleanup(); RETURN
+      CALL Cleanup(); RETURN
     END IF
     
     
@@ -1115,21 +1110,21 @@ CONTAINS
     err_status = Read_Dim( FileId, CHANNEL_DIMNAME, n_Channels )
     IF ( err_status /= SUCCESS ) THEN
       msg = 'Error reading '//CHANNEL_DIMNAME//' dimension from '//TRIM(Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+      CALL Cleanup(Close_File=.TRUE.); RETURN
     END IF
 
 
     ! Allocate the output container
-    err_status = Create_oSRF_File( self, n_Channels )    
-    IF ( err_status /= SUCCESS ) THEN
+    CALL oSRF_File_Create( self, n_Channels )    
+    IF ( .NOT. oSRF_File_Associated( self ) ) THEN
       msg = 'Error allocating oSRF_File output'
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+      CALL Cleanup(Close_File=.TRUE.); RETURN
     END IF
     ! ...Set the filename
-    err_status = Set_Property_oSRF_File( self, Filename = Filename )
+    err_status = oSRF_File_SetValue( self, Filename = Filename )
     IF ( err_status /= SUCCESS ) THEN
       msg = 'Error setting filename property in oSRF_File'
-      CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
     END IF
     
     
@@ -1137,10 +1132,10 @@ CONTAINS
     err_status = Read_GAtts( self, FileId )
     IF ( err_status /= SUCCESS ) THEN
       msg = 'Error reading global attributes from '//TRIM(Filename)
-      CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
     END IF
     ! ...Save them to local variables for insertion into oSRF objects
-    err_status = Get_Property_oSRF_File( &
+    err_status = oSRF_File_GetValue( &
       self, &
       Version          = Version         , &
       Sensor_Id        = Sensor_Id       , &
@@ -1149,7 +1144,7 @@ CONTAINS
       Sensor_Type      = Sensor_Type       )
     IF ( err_status /= SUCCESS ) THEN
       msg = 'Error getting GAtt properties from oSRF_File object.'
-      CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
     END IF
 
 
@@ -1158,7 +1153,7 @@ CONTAINS
     IF ( nc_status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
             ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-      CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
     END IF
 
     ! Loop over the number of channels 
@@ -1169,7 +1164,7 @@ CONTAINS
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error reading sensor channel from'//TRIM(Filename)//' - '//&
               TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
 
 
@@ -1181,7 +1176,7 @@ CONTAINS
       err_status = Read_Dim( FileId, TRIM(n_Bands_DimName), n_Bands )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error reading '//TRIM(n_Bands_DimName)//' dimension from '//TRIM(Filename)
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       
       
@@ -1191,7 +1186,7 @@ CONTAINS
       IF ( alloc_status /= 0 ) THEN
         WRITE( msg, '("Error allocating n_Points array for channel ",i0,". STAT = ",i0)' ) &
                     Channel, alloc_status
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       ! ...Get the number of points for each band
       DO i = 1, n_Bands
@@ -1201,17 +1196,17 @@ CONTAINS
         err_status = Read_Dim( FileId, TRIM(n_Points_DimName), n_Points(i) )
         IF ( err_status /= SUCCESS ) THEN
           msg = 'Error reading '//TRIM(n_Points_DimName)//' dimension from '//TRIM(Filename)
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
       END DO
       ! ...Create the current oSRF object
-      err_status = Create_oSRF( oSRF, n_Points )
-      IF ( err_status /= SUCCESS ) THEN
+      CALL oSRF_Create( oSRF, n_Points )
+      IF ( .NOT. oSRF_Associated( oSRF ) ) THEN
         WRITE( msg, '("Error creating oSRF object for channel ",i0)' ) Channel
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       ! ...Add current properties
-      err_status = Set_Property_oSRF( &
+      err_status = oSRF_SetValue( &
         oSRF, &
         Channel          = Channel         , &
         Version          = Version         , &
@@ -1221,7 +1216,7 @@ CONTAINS
         Sensor_Type      = Sensor_Type       )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error setting general properties of oSRF for channel ",i0)' ) Channel
-        CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
       END IF
       
       
@@ -1231,66 +1226,66 @@ CONTAINS
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//INTEGRATED_SRF_VARNAME//&
               ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_GET_VAR( FileId, VariD, Integral, START=(/n/) )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error reading '//INTEGRATED_SRF_VARNAME//' from'//TRIM(Filename)//' - '//&
               TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
-      err_status = Set_Property_oSRF( oSRF, Integral = Integral )
+      err_status = oSRF_SetValue( oSRF, Integral = Integral )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error setting '//INTEGRATED_SRF_VARNAME//' property in oSRF object'
-        CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
       END IF
       ! ...The processing flags
       nc_status = NF90_INQ_VARID( FileId, FLAGS_VARNAME, VarId )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//FLAGS_VARNAME//&
               ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_GET_VAR( FileId, VariD, Flags, START=(/n/) )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error reading '//FLAGS_VARNAME//' from'//TRIM(Filename)//' - '//&
               TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
-      err_status = Set_Property_oSRF( oSRF, Flags = Flags )
+      err_status = oSRF_SetValue( oSRF, Flags = Flags )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error setting '//FLAGS_VARNAME//' property in oSRF object'
-        CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
       END IF
       ! ...The central frequency
       nc_status = NF90_INQ_VARID( FileId, CENTRAL_FREQUENCY_VARNAME, VarId )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//CENTRAL_FREQUENCY_VARNAME//&
               ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_GET_VAR( FileId, VariD, f0, START=(/n/) )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error reading '//CENTRAL_FREQUENCY_VARNAME//' from'//TRIM(Filename)//' - '//&
               TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
-      err_status = Set_Property_oSRF( oSRF, f0 = f0 )
+      err_status = oSRF_SetValue( oSRF, f0 = f0 )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error setting '//CENTRAL_FREQUENCY_VARNAME//' property in oSRF object'
-        CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
       END IF
       ! ...The Planck coefficients
       err_status = Read_Dim( FileId, PLANCK_COEFFS_DIMNAME, n_Planck_Coeffs )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error reading '//PLANCK_COEFFS_DIMNAME//' dimension from '//TRIM(Filename)
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_INQ_VARID( FileId, PLANCK_COEFFS_VARNAME, VarId )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_COEFFS_VARNAME//&
               ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_GET_VAR( FileId, VariD, Planck_Coeffs(1:n_Planck_Coeffs), &
                                 START=(/1,n/), &
@@ -1298,24 +1293,24 @@ CONTAINS
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error reading '//PLANCK_COEFFS_VARNAME//' from'//TRIM(Filename)//' - '//&
               TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
-      err_status = Set_Property_oSRF( oSRF, Planck_Coeffs = Planck_Coeffs(1:n_Planck_Coeffs) )
+      err_status = oSRF_SetValue( oSRF, Planck_Coeffs = Planck_Coeffs(1:n_Planck_Coeffs) )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error setting '//PLANCK_COEFFS_VARNAME//' property in oSRF object'
-        CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
       END IF
       ! ...The Polychromatic coefficients
       err_status = Read_Dim( FileId, POLYCHROMATIC_COEFFS_DIMNAME, n_Polychromatic_Coeffs )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error reading '//POLYCHROMATIC_COEFFS_DIMNAME//' dimension from '//TRIM(Filename)
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_INQ_VARID( FileId, POLYCHROMATIC_COEFFS_VARNAME, VarId )
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//POLYCHROMATIC_COEFFS_VARNAME//&
               ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       nc_status = NF90_GET_VAR( FileId, VariD, Polychromatic_Coeffs(1:n_Polychromatic_Coeffs), &
                                 START=(/1,n/), &
@@ -1323,12 +1318,12 @@ CONTAINS
       IF ( nc_status /= NF90_NOERR ) THEN
         msg = 'Error reading '//POLYCHROMATIC_COEFFS_VARNAME//' from'//TRIM(Filename)//' - '//&
               TRIM(NF90_STRERROR(nc_status))
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
-      err_status = Set_Property_oSRF( oSRF, Polychromatic_Coeffs = Polychromatic_Coeffs(1:n_Polychromatic_Coeffs) )
+      err_status = oSRF_SetValue( oSRF, Polychromatic_Coeffs = Polychromatic_Coeffs(1:n_Polychromatic_Coeffs) )
       IF ( err_status /= SUCCESS ) THEN
         msg = 'Error setting '//POLYCHROMATIC_COEFFS_VARNAME//' property in oSRF object'
-        CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
       END IF
       
 
@@ -1345,73 +1340,69 @@ CONTAINS
         IF ( alloc_status /= 0 ) THEN
           WRITE( msg, '("Error allocating f/r array for channel ",i0,", band ",i0,". STAT = ",i0)' ) &
                       Channel, i, alloc_status
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
         ! ...Read the frequency data
         nc_status = NF90_INQ_VARID( FileId, TRIM(Frequency_VarName), VarId )
         IF ( nc_status /= NF90_NOERR ) THEN
           msg = 'Error inquiring '//TRIM(Filename)//' for '//TRIM(Frequency_VarName)//&
                 ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
         nc_status = NF90_GET_VAR( FileId, VariD, fr )
         IF ( nc_status /= NF90_NOERR ) THEN
           msg = 'Error reading '//TRIM(Frequency_VarName)//' from'//TRIM(Filename)//' - '//&
                 TRIM(NF90_STRERROR(nc_status))
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
-        err_status = Set_Property_oSRF( oSRF, Band = i, Frequency = fr )
+        err_status = oSRF_SetValue( oSRF, Band = i, Frequency = fr )
         IF ( err_status /= SUCCESS ) THEN
           msg = 'Error setting '//TRIM(Frequency_VarName)//' property in oSRF object'
-          CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
         END IF
         ! ...Read the Response data
         nc_status = NF90_INQ_VARID( FileId, TRIM(Response_VarName), VarId )
         IF ( nc_status /= NF90_NOERR ) THEN
           msg = 'Error inquiring '//TRIM(Filename)//' for '//TRIM(Response_VarName)//&
                 ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
         nc_status = NF90_GET_VAR( FileId, VariD, fr )
         IF ( nc_status /= NF90_NOERR ) THEN
           msg = 'Error reading '//TRIM(Response_VarName)//' from'//TRIM(Filename)//' - '//&
                 TRIM(NF90_STRERROR(nc_status))
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
-        err_status = Set_Property_oSRF( oSRF, Band = i, Response = fr )
+        err_status = oSRF_SetValue( oSRF, Band = i, Response = fr )
         IF ( err_status /= SUCCESS ) THEN
           msg = 'Error setting '//TRIM(Response_VarName)//' property in oSRF object'
-          CALL Read_Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
         END IF
         ! ...Deallocate the data array
         DEALLOCATE( fr, STAT = alloc_status )
         IF ( alloc_status /= 0 ) THEN
           WRITE( msg, '("Error deallocating f/r array for channel ",i0,", band ",i0,". STAT = ",i0)' ) &
                       Channel, i, alloc_status
-          CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
         END IF
       END DO      
       
 
       ! Add the oSRF to the OSRF_File object
-      err_status = AddTo_oSRF_File( self, oSRF, pos = n )
+      err_status = oSRF_File_AddTo( self, oSRF, pos = n )
       IF ( err_status /= SUCCESS ) THEN
         WRITE( msg, '("Error adding channel ",i0," oSRF to oSRF_File container.")' ) Channel
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
 
       
       ! Clean up for next channels
-      err_status = Destroy_oSRF( oSRF )
-      IF ( err_status /= SUCCESS ) THEN
-        WRITE( msg, '("Error destroying oSRF object for channel ",i0)' ) Channel
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
-      END IF
+      CALL oSRF_Destroy( oSRF )
       DEALLOCATE( n_Points, STAT=alloc_status )
       IF ( alloc_status /= 0 ) THEN
         WRITE( msg, '("Error deallocating n_Points array for channel ",i0,". STAT = ",i0)' ) &
                     Channel, alloc_status
-        CALL Read_Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
       END IF
       
     END DO
@@ -1421,13 +1412,13 @@ CONTAINS
     nc_status = NF90_CLOSE( FileId )
     IF ( nc_status /= NF90_NOERR ) THEN
       msg = 'Error closing input file - '//TRIM(NF90_STRERROR(nc_status))
-      CALL Read_Cleanup(); RETURN
+      CALL Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
     IF ( Noisy ) THEN
-      CALL Info_oSRF_File( self, msg )
+      CALL oSRF_File_Info( self, msg )
       CALL Display_Message( ROUTINE_NAME, &
                             'FILE: '//TRIM(Filename)//'; '//TRIM(msg), &
                             INFORMATION )
@@ -1435,7 +1426,7 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE Read_CleanUp( Close_File, Destroy_Obj )
+    SUBROUTINE Cleanup( Close_File, Destroy_Obj )
       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Obj
       ! Close file if necessary
@@ -1450,17 +1441,15 @@ CONTAINS
       ! Destroy oSRF_File object if necessary
       IF ( PRESENT(Destroy_Obj) ) THEN
         IF ( Destroy_Obj ) THEN
-          err_status = Destroy_oSRF_File( self )
-          IF ( err_status /= SUCCESS ) &
-            msg = TRIM(msg)//'; Error destroying oSRF_File object.'
+          CALL oSRF_File_Destroy( self )
         END IF
       END IF
       ! Set error status and print error message
       err_status = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_status )
-    END SUBROUTINE Read_CleanUp
+    END SUBROUTINE Cleanup
 
-  END FUNCTION Read_oSRF_File
+  END FUNCTION oSRF_File_Read
 
 
 
@@ -1493,7 +1482,7 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       FileId:       File id for an open oSRF_File file.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
@@ -1546,7 +1535,7 @@ CONTAINS
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
     ! ...Save it
-    err_status = Set_Property_oSRF_File( self, Version=GAttInteger )
+    err_status = oSRF_File_SetValue( self, Version=GAttInteger )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1561,7 +1550,7 @@ CONTAINS
     END IF
     ! ...Save it
     CALL StrClean( GAttString )
-    err_status = Set_Property_oSRF_File( self, Sensor_Id=GAttString )
+    err_status = oSRF_File_SetValue( self, Sensor_Id=GAttString )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1575,7 +1564,7 @@ CONTAINS
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
     ! ...Save it
-    err_status = Set_Property_oSRF_File( self, WMO_Satellite_Id=GAttInteger )
+    err_status = oSRF_File_SetValue( self, WMO_Satellite_Id=GAttInteger )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1589,7 +1578,7 @@ CONTAINS
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
     ! ...Save it
-    err_status = Set_Property_oSRF_File( self, WMO_Sensor_Id=GAttInteger )
+    err_status = oSRF_File_SetValue( self, WMO_Sensor_Id=GAttInteger )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1604,7 +1593,7 @@ CONTAINS
     END IF
     ! ...Save it
     CALL StrClean( GAttString )
-    err_status = Set_Property_oSRF_File( self, Title=GAttString )
+    err_status = oSRF_File_SetValue( self, Title=GAttString )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1619,7 +1608,7 @@ CONTAINS
     END IF
     ! ...Save it
     CALL StrClean( GAttString )
-    err_status = Set_Property_oSRF_File( self, History=GAttString )
+    err_status = oSRF_File_SetValue( self, History=GAttString )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1634,7 +1623,7 @@ CONTAINS
     END IF
     ! ...Save it
     CALL StrClean( GAttString )
-    err_status = Set_Property_oSRF_File( self, Comment=GAttString )
+    err_status = oSRF_File_SetValue( self, Comment=GAttString )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF
@@ -1815,7 +1804,7 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
+! OPTIONAL OUTPUTS:
 !       DimID:           Id of the requested dimension.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
