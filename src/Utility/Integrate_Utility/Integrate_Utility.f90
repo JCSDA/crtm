@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 27-Aug-2001
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 27-Aug-2001
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Integrate_Utility
@@ -15,10 +15,12 @@ MODULE Integrate_Utility
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds,            ONLY: fp=>fp_kind
+  USE Type_Kinds,            ONLY: fp
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, Display_Message
+  USE Fundamental_Constants, ONLY: PI
   USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE Interpolate_Utility,   ONLY: Polynomial_Interpolate
+  USE Interpolate_Utility,   ONLY: Linear_Interpolate, &
+                                   Spline_Initialize, Spline_Interpolate
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -27,219 +29,267 @@ MODULE Integrate_Utility
   ! Visibilities
   ! ------------
   PRIVATE
-  PUBLIC :: Simpsons_Integral
+  PUBLIC :: Integral
   PUBLIC :: Gauss_Legendre
+  PUBLIC :: Integrate_Utility_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! RCS Id field
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Integrate_Utility.f90,v 1.1 2006/06/08 19:46:40 wd20pd Exp $'
-
-  ! Keyword set value
-  INTEGER,  PARAMETER :: SET = 1
-
+  ! Version Id
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER ::  ONE = 1.0_fp
   REAL(fp), PARAMETER ::  TWO = 2.0_fp
-  REAL(fp), PARAMETER :: FOUR = 4.0_fp
-  REAL(fp), PARAMETER ::  SIX = 6.0_fp
-  REAL(fp), PARAMETER :: ONEonSIX = ONE / SIX
-  REAL(fp), PARAMETER :: ZEROpointTWOFIVE = 0.25_fp
-  REAL(fp), PARAMETER :: ZEROpointFIVE = 0.5_fp
-  REAL(fp), PARAMETER :: PI = 3.141592653589793238462643383279_fp
+  REAL(fp), PARAMETER :: POINT_FIVE = 0.5_fp
+  ! MEssage string length
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Simpsons_Integral
+!       Integral
 ! 
 ! PURPOSE:
-!       Function to integrate tabulated values using Simpson's Rule.
+!       Function to integrate tabulated data.
 !
 ! CALLING SEQUENCE:
-!       Error_Stats = Simpsons_Integral( x, y,                   &  ! Input   
-!                                        Integral_Sum,           &  ! Output
-!                                        Order      =Order,      &  ! Optional input
-!                                        RCS_Id     =RCS_Id,     &  ! Revision control
-!                                        Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Integral( x, y,         &
+!                                Integral_Sum, &
+!                                n_Points     = n_Points    , &
+!                                Force_Spline = Force_Spline  )
 !
 !
-! INPUT ARGUMENTS:
-!       x, y:         The tabulated function to be integrated. The sizes
-!                     of x and y must be the same and be more than one
-!                     element.
-!                     UNITS:      Argument dependent.
-!                     TYPE:       REAL(fp)
-!                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       x, y:          The tabulated function to be integrated. The sizes
+!                      of x and y must be the same and be more than one
+!                      element.
+!                      UNITS:      Argument dependent.
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Rank-1
+!                      ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Order:        The order of the interpolating polynomial to be used in
-!                     computing the mid-point y-value for each interval of
-!                     the input tabulated data.
-!                     This argument is passed to the interpolation procedure.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(IN)
+! OUTPUTS:
+!       Integral_Sum:  The integration result.
+!                      UNITS:      Argument dependent.
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
 !
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       Integral_Sum: The integration result.
-!                     UNITS:      Argument dependent.
-!                     TYPE:       REAL(fp)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT)
+! OPTIONAL INPUTS:
+!       n_Points:      Set this argument to an integer value that selects the
+!                      closed Newton-Cotes quadrature formula to be used.
+!                      Valid values are:
+!                        2: Trapezoidal rule
+!                        3: Simpson's rule [DEFAULT]
+!                        4: Simpson's 3/8 rule
+!                        5: Boole's rule
+!                        6: 6-point rule
+!                        7: 7-point rule
+!                      If not specified, a value of 3 is used.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       Force_Spline:  Set this argument to force spline interpolation to be used.
+!                      Spline interpolation is the default UNLESS the number of
+!                      input x,y points is < 50; then linear interpolation is used.
+!                      If == .FALSE., Interpolation method is determined by the 
+!                                     number of input points. [DEFAULT]
+!                         == .TRUE.,  Spline interpolation is always used.
+!                      If not specified, default is .FALSE.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the function executed normally.
-!                        == FAILURE an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:  The return value is an integer defining the error status.
+!                      The error codes are defined in the Message_Handler module.
+!                      If == SUCCESS the computation was successful.
+!                         == FAILURE an unrecoverable error occurred.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
 !
-! PROCEDURE:
-!       Simpsons rule is can be stated as:
-!
-!                 h
-!         Area = --- ( y1 + 4y2 + y3 )
-!                 3
-!
-!       where y1,y2,y3 are the input tabulated Y values and h is the subinterval
-!       width between the input Y's. In this form the subintervals must have
-!       equal widths and the number of subintervals must be even. To avoid 
-!       having the user pass a equal-spaced tabulated function of an odd number
-!       of points, the following is used:
-!
-!                 ( x2 - x1 )          _
-!         Area = ------------- ( y1 + 4y + y2 )
-!                      6
-!             _                                       _    x1 + x2
-!       where y is the interpolated ordinate value of x = --------- 
-!                                                             2
-!
-!       and x1 and x2 are successive abscissa points in the input array. This
-!       is applied to each subinterval of the input tabulated data.
-!
-!       Generally, a higher interpolation order provides better accuracy when 
-!       performing the integration.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 27-Aug-2001
-!                       paul.vandelst@ssec.wisc.edu
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Simpsons_Integral( x, y,         &  ! Input   
-                              Integral_Sum, &  ! Output
-                              Order,        &  ! Optional input
-                              RCS_Id,       &  ! Revision control
-                              Message_Log ) &  ! Error messaging
-                            RESULT( Error_Status )
+  FUNCTION Integral( &
+    x, y,         &  ! Input   
+    Integral_Sum, &  ! Output
+    n_Points    , &  ! Optional input
+    Force_Spline) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp), DIMENSION(:), INTENT(IN)  :: x
-    REAL(fp), DIMENSION(:), INTENT(IN)  :: y
-    REAL(fp),               INTENT(OUT) :: Integral_Sum
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Order
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),           INTENT(IN)  :: x(:)
+    REAL(fp),           INTENT(IN)  :: y(:)
+    REAL(fp),           INTENT(OUT) :: Integral_Sum
+    INTEGER , OPTIONAL, INTENT(IN)  :: n_Points
+    LOGICAL , OPTIONAL, INTENT(IN)  :: Force_Spline
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME         = 'Simpsons_Integral'
-    REAL(fp),     PARAMETER :: NON_UNIQUE_TOLERANCE = EPSILON( ONE )
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME         = 'Integral'
+    REAL(fp),     PARAMETER :: NON_UNIQUE_TOLERANCE = EPSILON(ONE)
+    INTEGER, PARAMETER :: DEFAULT_N_POINTS = 3
+    INTEGER, PARAMETER :: MIN_N_POINTS = 2
+    INTEGER, PARAMETER :: MAX_N_POINTS = 7
     ! Local variables
-    INTEGER :: n_Points
-    REAL(fp), DIMENSION(SIZE(x)-1) :: dx
-    REAL(fp), DIMENSION(SIZE(x)-1) :: xMid
-    REAL(fp), DIMENSION(SIZE(x)-1) :: yMid
+    CHARACTER(ML) :: msg
+    INTEGER  :: alloc_stat
+    INTEGER  :: i, j, m, n
+    INTEGER  :: idx(MAX_N_POINTS)
+    INTEGER  :: n_Even, n_Jdx
+    LOGICAL  :: Spline_Interpolation
+    REAL(fp) :: dx(SIZE(x)-1)
+    REAL(fp) :: c0, c(MAX_N_POINTS), h
+    REAL(fp), ALLOCATABLE :: xi(:), yi(:)
+    INTEGER , ALLOCATABLE :: jdx(:)
 
 
-    ! ------
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check input vector sizes for agreement
-    n_Points = SIZE(x)
-    IF ( SIZE(y) /= n_Points ) THEN
-      Error_Status = FAILURE
+    err_stat = SUCCESS
+    idx = (/ (i,i=1,MAX_N_POINTS) /)
+    ! ...Check input vector sizes for agreement
+    n = SIZE(x)
+    IF ( SIZE(y) /= n ) THEN
+      err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'X and Y input vectors must be same size.', &
-                            Error_Status, & 
-                            Message_Log=Message_Log )
+                            err_stat )
       RETURN
     END IF
-
-    ! Check that all points in X are unique to avoid division by zero
-    dx = x(2:n_Points) - x(1:n_Points-1)
-    IF ( ANY( ABS(dx) < NON_UNIQUE_TOLERANCE ) ) THEN
-      Error_Status = FAILURE
+    ! ...Check that all points in X are unique to avoid division by zero
+    dx = x(2:n) - x(1:n-1)
+    IF ( ANY(ABS(dx) < NON_UNIQUE_TOLERANCE) ) THEN
+      err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Non-unique X values found.', &
-                            Error_Status, & 
-                            Message_Log=Message_Log )
+                            err_stat )
       RETURN
     END IF
-
-
-    ! -------------------------
-    ! Perform the interpolation
-    ! -------------------------
-    xMid = (ZEROpointFIVE*dx) + x(1:n_Points-1)
-    Error_Status = Polynomial_Interpolate( x, y,        &  ! Input
-                                           xMid,        &  ! Input
-                                           yMid,        &  ! Output
-                                           Order=Order, &  ! Order of interpolating polynomial
-                                           Message_Log=Message_Log )  ! Error messaging
-    IF ( Error_Status /= SUCCESS ) THEN
+    ! ...Check that X is monotonically increasing
+    IF ( ANY(dx < ZERO) ) THEN
+      err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error occured in interpolation function.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            'X values must be monotonically increasing.', &
+                            err_stat )
       RETURN
     END IF
+    ! ...Set interpolation type
+    m = DEFAULT_N_POINTS
+    IF ( PRESENT(n_Points) ) m = n_Points
+    ! ...Set interpolation type based on the number of unique input points
+    IF ( n > 50 ) THEN
+      Spline_Interpolation = .TRUE.
+    ELSE
+      Spline_Interpolation = .FALSE.
+    END IF
+    IF ( PRESENT(Force_Spline) ) Spline_Interpolation = Force_Spline
 
 
-    ! ----------------------
-    ! And do the integration
-    ! ----------------------
-    Integral_Sum = SUM( ONEonSIX * dx * &
-                        ( y(1:n_Points-1) + (FOUR*yMid) + y(2:n_Points) ) )
+    ! Get the interpolation coefficients
+    CALL Newton_Cotes_Coefficients()
+    
+    
+    ! Perform the interpolation
+    ! ...Determine the number of points to interpolate
+    n_Even = n
+    DO
+      IF ( MOD(n_Even-1,m-1) == 0 ) EXIT
+      n_Even = n_Even + 1
+    END DO
+    ! ...Allocate interpolation arrays
+    ALLOCATE( xi(n_Even), yi(n_Even), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      WRITE( msg,'("Error allocating interpolation arrays. STAT = ",i0)' ) alloc_stat
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+    ! ...Construct an evenly spaced abscissa grid
+    xi = (/ (REAL(i,fp), i=0,n_Even-1) /) / REAL(n_Even-1,fp)
+    xi = xi*(x(n)-x(1)) + x(1)
+    ! ...Interpolate data to regular grid
+    IF ( Spline_Interpolation ) THEN
+      err_stat = Spline_Interpolate( x, y, xi, yi )
+    ELSE
+      err_stat = Linear_Interpolate( x, y, xi, yi )
+    END IF
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'Error interpoalting input data', err_stat )
+      RETURN
+    END IF
+      
+    
+    ! Perform the integration
+    ! ...Determine the number of indexing points
+    n_Jdx = (n_Even-1)/(m-1)
+    ! ...Allocate the indexing array
+    ALLOCATE( jdx(n_Jdx), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      WRITE( msg,'("Error allocating integration index array. STAT = ",i0)' ) alloc_stat
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+    ! ...Set the uniform interval
+    h = (xi(n_Even) - xi(1))/REAL(n_Even-1,fp)
+    ! ...Construct the index array to use for integration
+    jdx = (/ (j, j=1,n_Jdx) /) * (m-1)
+    ! ...Integrate
+    Integral_Sum = ZERO
+    DO j = 1, n_Jdx
+      Integral_Sum = Integral_Sum + (c0 * h * SUM(c(1:m) * yi(idx(1:m) + jdx(j) - (m-1))))
+    END DO
 
-  END FUNCTION Simpsons_Integral
+  CONTAINS
+  
+    SUBROUTINE Newton_Cotes_Coefficients()
+      SELECT CASE(m)
+        ! Trapezoidal rule
+        CASE(2)
+          c0 = 1.0_fp/2.0_fp
+          c(1:2) = (/1.0_fp, 1.0_fp/)
+        ! Simpson's 3/8 rule
+        CASE(4)
+          c0 = 3.0_fp/8.0_fp
+          c(1:4) = (/1.0_fp, 3.0_fp, 3.0_fp, 1.0_fp/)
+        ! Boole's rule
+        CASE(5)
+          c0 = 2.0_fp/45.0_fp
+          c(1:5) = (/7.0_fp, 32.0_fp, 12.0_fp, 32.0_fp, 7.0_fp/)
+        ! And higher orders...
+        CASE(6)
+          c0 = 5.0_fp/288.0_fp
+          c(1:6) = (/19.0_fp, 75.0_fp, 50.0_fp, 50.0_fp, 75.0_fp, 19.0_fp/)
+        CASE(7)
+          c0 = 1.0_fp/140.0_fp
+          c(1:7) = (/41.0_fp, 216.0_fp, 27.0_fp, 272.0_fp, 27.0_fp, 216.0_fp, 41.0_fp/)
+        ! Default is regular Simpson's rule
+        CASE DEFAULT
+          c0 = 1.0_fp/3.0_fp
+          c(1:3) = (/1.0_fp, 4.0_fp, 1.0_fp/)
+          m = DEFAULT_N_POINTS
+      END SELECT
+    END SUBROUTINE Newton_Cotes_Coefficients
+
+  END FUNCTION Integral
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Gauss_Legendre
@@ -252,33 +302,10 @@ CONTAINS
 !       Recipes in Fortran", sec.4.5, pg145, 2nd ed, 1992
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Gauss_Legendre( x,                      &  ! Output
-!                                      Weight,                 &  ! Output
-!                                      xInterval  =xInterval,  &  ! Optional Input
-!                                      RCS_Id     =RCS_Id,     &  ! Revision control
-!                                      Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Gauss_Legendre( x, weight,              &
+!                                      x_Interval = x_Interval )
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       xInterval:       A two-element vector containing the interval over which
-!                        the abscissa and weights are to be evaluated.
-!                        xInterval(1) must be > xInterval(2).
-!                        If not supplied the default abscissa and weights are
-!                        returned -- which corresponds to an interval of [-1,1]
-!                        UNITS:      Argument dependent.
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1
-!                        ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       x:               The array of abscissa values to be used in the N-point
 !                        quadrature. The size of this array determines the value
 !                        of N used in computing the abscissae and must be the
@@ -288,7 +315,7 @@ CONTAINS
 !                        DIMENSION:  Rank-1
 !                        ATTRIBUTES: INTENT(OUT)
 !
-!       Weight:          The array of weights to be used in the N-point
+!       weight:          The array of weights to be used in the N-point
 !                        quadrature. The size of this array determines
 !                        the value of N used in computing the abscissae
 !                        and must be the same size as the X argument.
@@ -297,115 +324,79 @@ CONTAINS
 !                        DIMENSION:  Rank-1
 !                        ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+! OPTIONAL INPUTS:
+!       x_Interval:      A two-element vector containing the interval over which
+!                        the abscissa and weights are to be evaluated.
+!                        x_Interval(1) must be > x_Interval(2).
+!                        If not supplied the abscissa and weights are
+!                        returned that correspond to an interval of [-1,1]
+!                        UNITS:      Argument dependent.
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Rank-1
+!                        ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the abscissa and weight computation was successful
-!                           == FAILURE - there was a problem with the arguments, or
-!                                      - the root of the polynomial couldn't be found.
+!                        If == SUCCESS the computation was successful
+!                           == FAILURE an unrecoverable error occurred.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! PROCEDURE:
-!       This function computes the abscissae and weights for the approximation
-!
-!            /\ b                __ N
-!           |                   \
-!           |  W(x).p(x).dx  ~   >  w .p(x )
-!           |                   /__  j    j
-!          \/ a                    j=1
-!
-!       where the function, p, is a polynomial and
-!
-!         W(x) = 1,   -1 < x < 1
-!
-!       The recurrence relation used to determine the polynomial is
-!
-!         j.P  = (2j-1).x.P     - (j-1).P
-!            j             j-1           j-2
-!
-!       The results are scaled to the input interval if it is supplied.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 27-Aug-2001
-!                       paul.vandelst@ssec.wisc.edu
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Gauss_Legendre( x,            &  ! Output
-                           Weight,       &  ! Output
-                           xInterval,    &  ! Optional input
-                           RCS_Id,       &  ! Revision control
-                           Message_Log ) &  ! Error messaging
-                         RESULT( Error_Status )
+  FUNCTION Gauss_Legendre( &
+    x         , &  ! Output
+    Weight    , &  ! Output
+    x_Interval) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp),               DIMENSION(:), INTENT(OUT) :: x
-    REAL(fp),               DIMENSION(:), INTENT(OUT) :: Weight
-    REAL(fp),     OPTIONAL, DIMENSION(2), INTENT(IN)  :: xInterval
-    CHARACTER(*), OPTIONAL,               INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL,               INTENT(IN)  :: Message_Log
+    REAL(fp),          INTENT(OUT) :: x(:)
+    REAL(fp),          INTENT(OUT) :: Weight(:)
+    REAL(fp),OPTIONAL, INTENT(IN)  :: x_Interval(2)
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Gauss_Legendre'
     REAL(fp),     PARAMETER :: TOLERANCE      = EPSILON( ONE )
     INTEGER,      PARAMETER :: MAX_ITERATIONS = 1000
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
     INTEGER  :: i,  j,  m, n
     REAL(fp) :: ir, jr,    nr
-    REAL(fp) :: xLower,   xUpper
-    REAL(fp) :: xAverage, xHalfwidth
+    REAL(fp) :: x_Lower,   x_Upper
+    REAL(fp) :: x_Average, x_Halfwidth
     REAL(fp) :: z, z1
     REAL(fp) :: Pj, Pj_1, Pj_2
     REAL(fp) :: Pj_Prime
     INTEGER :: n_Iterations
 
 
-    ! ------
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! The integration limits
-    IF ( PRESENT( xInterval ) ) THEN
-      ! Check them
-      IF ( xInterval(2) < xInterval(1) .OR. &
-           Compare_Float( xInterval(1), xInterval(2) ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'For input integration interval [a,b], b < or = a.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+    err_stat = SUCCESS
+    ! ...Check the integration limits
+    IF ( PRESENT(x_Interval) ) THEN
+      IF ( x_Interval(2) < x_Interval(1) .OR. &
+           Compare_Float( x_Interval(1), x_Interval(2) ) ) THEN
+        err_stat = FAILURE
+        msg = 'For input integration interval [a,b], b < or = a.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat )
         RETURN
       END IF
-      ! Assign them
-      xLower = xInterval(1)
-      xUpper = xInterval(2)
+      x_Lower = x_Interval(1)
+      x_Upper = x_Interval(2)
     ELSE
-      ! Default interval
-      xLower = -ONE
-      xUpper =  ONE
+      x_Lower = -ONE
+      x_Upper =  ONE
     END IF
-
-    ! The size of the output arrays
-    n = SIZE( x )
-    IF ( SIZE( Weight ) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Size of X and WEIGHT output arrays are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    ! ...Check the size of the output arrays
+    n = SIZE(x)
+    IF ( SIZE(Weight) /= n ) THEN
+      err_stat = FAILURE
+      msg = 'Size of X and WEIGHT output arrays are different.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
       RETURN
     END IF
 
@@ -416,16 +407,16 @@ CONTAINS
     ! The size of the output X and WEIGHT arrays
     ! determine the polynomial order. Need a floating
     ! point representation of that value
-    nr = REAL( n, fp )
+    nr = REAL(n,fp)
 
     ! The roots are symmetric in the interval
     ! so only half need to be determined
-    m = ( n + 1 ) / 2
+    m = (n + 1) / 2
 
     ! The scaling values to convert the computed abscissae from
-    ! the interval (-1,1) to the input interval (xLower, xUpper)
-    xAverage   = ZEROpointFIVE * ( xUpper + xLower )  ! Average X of interval
-    xHalfwidth = ZEROpointFIVE * ( xUpper - xLower )  ! Halfwidth of interval
+    ! the interval (-1,1) to the input interval (x_Lower, x_Upper)
+    x_Average   = POINT_FIVE * ( x_Upper + x_Lower )  ! Average X of interval
+    x_Halfwidth = POINT_FIVE * ( x_Upper - x_Lower )  ! Halfwidth of interval
 
     ! Loop over the roots to find
     Root_Loop: DO i = 1, m
@@ -437,9 +428,8 @@ CONTAINS
       !   z  = COS ( PI * --------- ) 
       !    i       (          n     )
       !
-      ir = REAL( i, fp )
-!      z = COS( PI * ( ir - ZEROpointTWOFIVE ) / ( nr + ZEROpointFIVE ) )
-      z = COS( PI * ( ir - ZEROpointFIVE ) / nr )
+      ir = REAL(i,fp)
+      z = COS(PI * (ir - POINT_FIVE) / nr)
 
       ! Initialise the iteration counter used
       ! to refine the polynomial root value
@@ -451,12 +441,9 @@ CONTAINS
         ! Increment and test the iteration counter
         n_Iterations = n_Iterations + 1
         IF ( n_Iterations > MAX_ITERATIONS ) THEN
-          Error_Status = FAILURE
-          WRITE( Message, '( "Maximum number of iterations exceeded for finding root #", i5 )' ) i
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM( Message ), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
+          err_stat = FAILURE
+          WRITE( msg,'("Maximum number of iterations exceeded for finding root #",i0)' ) i
+          CALL Display_Message( ROUTINE_NAME, msg, err_stat )
           RETURN
         END IF
 
@@ -468,7 +455,7 @@ CONTAINS
         ! the Legendre polynomial evaluated at x
         Recurrence_Loop: DO j = 1, n
 
-          jr = REAL( j, fp )
+          jr = REAL(j,fp)
 
           ! Demote the previous loop's polynomials
           Pj_2 = Pj_1   ! j-2'th polynomial
@@ -486,40 +473,38 @@ CONTAINS
           !
           ! which is equivalent to the form used in (1) except that
           ! the j+1'th polynomial in (2) is the j'th polynomial in (1)
-          Pj = ( ( ( (TWO*jr)-ONE)*z*Pj_1 ) - ( (jr-ONE)*Pj_2 ) ) / jr
+          Pj = ((((TWO * jr) - ONE) * z * Pj_1) - ((jr - ONE) * Pj_2)) / jr
 
         END DO Recurrence_Loop
 
         ! Pj is now the desired Legendre polynomial. Now compute its
         ! derivate, Pj_Prime, using a standard relation involving also
         ! Pj_1, the polynomial of one lower order
-        Pj_Prime = nr * ( ( z * Pj ) - Pj_1 ) / &
-        !               ---------------------
-                          ( ( z*z ) -  ONE )
+        Pj_Prime = nr * ((z * Pj) - Pj_1) / ((z*z) - ONE)
 
         ! Save the previous root value
         z1 = z
 
         ! Update the root approximation
-        z  = z1 - ( Pj / Pj_Prime )
+        z  = z1 - (Pj / Pj_Prime)
 
         ! Exit the root finding loop if the desired
         ! accuracy has been reached
-        IF ( ABS( z - z1 ) < TOLERANCE ) EXIT Root_Find
+        IF ( ABS(z - z1) < TOLERANCE ) EXIT Root_Find
 
       END DO Root_Find
 
 
       ! --------------------------------------------------------
       ! Scale the root value, z, and it's symmetric counterpart
-      ! from the (-1,1) interval to the (xLower,xUpper) interval
+      ! from the (-1,1) interval to (x_Lower,x_Upper)
       !
       ! The input interval and derived quantities:
       !
       !     |                 |                 |
-      !  xLower           xAverage           xUpper
+      !  x_Lower          x_Average          x_Upper
       !                       |                 |
-      !                       |<-- xHalfwidth ->|
+      !                       |<- x_Halfwidth ->|
       !
       !
       ! The computed abscissa for half of the interval:
@@ -533,8 +518,8 @@ CONTAINS
       !    -1                 0
       !
       ! --------------------------------------------------------
-      x(i)     = xAverage - ( xHalfwidth * z )
-      x(n+1-i) = xAverage + ( xHalfwidth * z )
+      x(i)     = x_Average - (x_Halfwidth * z)
+      x(n+1-i) = x_Average + (x_Halfwidth * z)
 
 
       ! --------------------------------------------------------
@@ -546,14 +531,40 @@ CONTAINS
       !    i     (1 - x ^2) . P'(x )^2
       !                i       N  i 
       ! --------------------------------------------------------
-      Weight(i) =          TWO * xHalfwidth          / &
-      !           ----------------------------------
-                  ( ( ONE - (z**2) ) * Pj_Prime**2 )
-
+      Weight(i)     = TWO * x_Halfwidth / ((ONE - (z**2)) * Pj_Prime**2)
       Weight(n+1-i) = Weight(i)
 
     END DO Root_Loop
 
   END FUNCTION Gauss_Legendre
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Integrate_Utility_Version
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL Integrate_Utility_Version( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Integrate_Utility_Version( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE Integrate_Utility_Version
 
 END MODULE Integrate_Utility
