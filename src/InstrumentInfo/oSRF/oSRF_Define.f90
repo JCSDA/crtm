@@ -17,6 +17,7 @@ MODULE oSRF_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Integrate_Utility    , ONLY: Integral
   USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                                    INVALID_WMO_SENSOR_ID   , &
                                    N_SENSOR_TYPES          , &
@@ -67,6 +68,7 @@ MODULE oSRF_Define
   PUBLIC :: oSRF_GetValue
   PUBLIC :: oSRF_Inspect
   PUBLIC :: oSRF_Info
+  PUBLIC :: oSRF_Integrate
   PUBLIC :: oSRF_DefineVersion
 
 
@@ -977,6 +979,120 @@ CONTAINS
     Info = LongString(1:MIN(LEN(Info), LEN_TRIM(LongString)))
 
   END SUBROUTINE oSRF_Info
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_Integrate
+!
+! PURPOSE:
+!       Function to integrate the response and set the integrated value
+!       in an oSRF object.
+!
+! CALLING SEQUENCE:
+!       Error_Status = oSRF_Integrate( oSRF )
+!
+! OBJECT:
+!       oSRF:          oSRF structure.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the integration was successful
+!                        == FAILURE an error occurred processing the input
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       The INTEGRAL component of the oSRF object is set in this function.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION oSRF_Integrate( self ) RESULT( err_stat )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Integrate'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: alloc_stat
+    INTEGER :: n, n_Points
+    REAL(fp), ALLOCATABLE :: f(:), r(:)
+    REAL(fp):: Int_SRF, Int_Band
+
+    ! Setup
+    err_stat = SUCCESS
+    Int_SRF = ZERO
+    ! ...Check object contains something
+    IF ( .NOT. oSRF_Associated(self) ) THEN
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
+      RETURN
+    END IF
+
+
+    ! Sum up band integrals
+    Band_Loop: DO n = 1, self%n_Bands
+    
+      ! Get band response
+      ! ...Number of band points
+      err_stat = oSRF_GetValue( self, n, n_Points=n_Points )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error occurred retrieving band#",i0," n_Points")' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      ! ...Allocate local arrays
+      ALLOCATE( f(n_Points), r(n_Points), STAT=alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        err_stat = FAILURE
+        WRITE( msg,'("Error allocating band#",i0," arrays. STAT=",i0)' ) n, alloc_stat
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      ! ...Number of band points
+      err_stat = oSRF_GetValue( self, n, Frequency=f, Response=r )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error occurred retrieving band#",i0," data")' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      
+      ! Integrate the band
+      err_stat = Integral(f, r, Int_Band)
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error integrating band#",i0," response")' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      
+      ! Accumulate
+      Int_SRF = Int_SRF + Int_Band
+      
+      ! Clean up
+      DEALLOCATE( f, r )
+      
+    END DO Band_Loop
+    
+    
+    ! Save the integrated value
+    err_stat = oSRF_SetValue( self, n, Integral=Int_SRF )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF integral',err_stat )
+      RETURN
+    END IF
+
+  END FUNCTION oSRF_Integrate
 
 
 !--------------------------------------------------------------------------------
