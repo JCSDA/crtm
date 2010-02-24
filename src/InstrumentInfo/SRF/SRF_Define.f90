@@ -21,7 +21,7 @@ MODULE SRF_Define
   USE Type_Kinds,            ONLY: fp
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Compare_Float_Numbers, ONLY: Compare_Float
-  USE Integrate_Utility,     ONLY: Simpsons_Integral
+  USE Integrate_Utility,     ONLY: Integral
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -1499,9 +1499,9 @@ CONTAINS
       
       ! Integration using Simpson's rule
       ! --------------------------------                                            
-      Error_Status = Simpsons_Integral( SRF%Frequency(i1:i2), &
-                                        SRF%Response(i1:i2), &
-                                        Int_SRF )
+      Error_Status = Integral( SRF%Frequency(i1:i2), &
+                               SRF%Response(i1:i2),  &
+                               Int_SRF               )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( msg,'("Error occurred integrating channel ",i0," SRF")' ) SRF%Channel
         CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
