@@ -123,8 +123,8 @@ PROGRAM Create_MW_SRF
     END IF 
     
     ! Cycle if its not a microwave sensor or if the sensor name is SSMIS 
-    IF ( .NOT. (SensorInfo%Sensor_Type==MICROWAVE_SENSOR) .OR. &
-          TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
+    IF ( .NOT. (SensorInfo%Sensor_Type==MICROWAVE_SENSOR) ) CYCLE Sensor_Loop !.OR. &
+    !      TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
           
     ! Name of file to write to for sensor
     NC_Filename= TRIM(SensorInfo%Sensor_Id) // '.srf.nc'
