@@ -59,6 +59,7 @@ MODULE oSRF_File_Define
   PUBLIC :: oSRF_File_GetFrom
   PUBLIC :: oSRF_File_Info
   PUBLIC :: oSRF_File_Read
+  PUBLIC :: oSRF_File_Write
   PUBLIC :: oSRF_File_DefineVersion
 
 
@@ -1451,7 +1452,100 @@ CONTAINS
 
   END FUNCTION oSRF_File_Read
 
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_File_Write
+!
+! PURPOSE:
+!       Function to write oSRF data files given an oSRF_File
+!       container.
+!
+! CALLING SEQUENCE:
+!       Error_Status = oSRF_File_Write( &
+!                        oSRF_File    , &
+!                        Filename     , &
+!                        Quiet = Quiet  )
+!
+! OBJECT:
+!       oSRF_File:    oSRF_File object container filled with data.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(oSRF_File_type)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! INPUTS:
+!       Filename:     Character string specifying the name of the
+!                     oSRF_File data file to write.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Quiet:        Set this keyword to suppress information messages being
+!                     output.
+!                     If QUIET = .FALSE., info messages are OUTPUT. [*DEFAULT*]
+!                        QUIET = .TRUE.,  info messages are SUPPRESSED.
+!                     UNITS:      N/A
+!                     TYPE:       LOGICAL
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error
+!                     status. The error codes are defined in the
+!                     Message_Handler module.
+!                     If == SUCCESS the data read was successful
+!                        == FAILURE an unrecoverable error occurred
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
 
+  FUNCTION oSRF_File_Write( &
+    self      , & ! Input
+    Filename  , & ! Input
+    Quiet     ) & ! Optional Input
+  RESULT ( err_status )  
+    ! Arguments
+    TYPE(oSRF_File_type), INTENT(IN) :: self
+    CHARACTER(*),         INTENT(IN) :: Filename
+    LOGICAL,    OPTIONAL, INTENT(IN) :: Quiet
+    ! Function result
+    INTEGER :: err_status
+    ! Parameter
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Write'
+    ! Local Variables
+    CHARACTER(ML) :: msg
+    INTEGER :: FileId
+    INTEGER :: nc_status
+    LOGICAL :: Noisy 
+
+    ! Set up
+    err_status = SUCCESS
+    ! ...Determine info message output
+    Noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    
+    ! Open the file for writing
+    
+  
+!  CONTAINS
+!    
+!    SUBROUTINE Cleanup( )
+!      ! Set error status and print error message
+!      !err_status = FAILURE
+!      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_status )
+!    END SUBROUTINE Cleanup
+    ! Write the global attributes
+        
+    !Filename = Filename
+  
+  END FUNCTION oSRF_File_Write       
 
 !##################################################################################
 !##################################################################################
