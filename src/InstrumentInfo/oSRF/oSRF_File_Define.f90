@@ -27,15 +27,16 @@ MODULE oSRF_File_Define
                                    VISIBLE_SENSOR          , &
                                    ULTRAVIOLET_SENSOR      , &
                                    SENSOR_TYPE_NAME
-  USE oSRF_Define          , ONLY: OSRF_RELEASE, &
-                                   OSRF_VERSION, &
-                                   oSRF_type      , &
-                                   oSRF_Associated, &
-                                   oSRF_Destroy   , &
-                                   oSRF_Create    , &
-                                   oSRF_SetValue  , &
-                                   oSRF_Inspect   , &
-                                   oSRF_Info
+  USE oSRF_Define          , ONLY: OSRF_RELEASE   , &           
+                                   OSRF_VERSION   , &           
+                                   oSRF_type      , &           
+                                   oSRF_Associated, &           
+                                   oSRF_Destroy   , &           
+                                   oSRF_Create    , &           
+                                   oSRF_SetValue  , &           
+                                   oSRF_Inspect   , &           
+                                   oSRF_Info                 
+                                   
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -1521,26 +1522,295 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Write'
     ! Local Variables
     CHARACTER(ML) :: msg
+    LOGICAL :: Noisy
     INTEGER :: FileId
+    INTEGER :: VarId
     INTEGER :: nc_status
-    LOGICAL :: Noisy 
-
+    INTEGER :: NF90_Status(4)
+    INTEGER :: l, i
+    INTEGER :: Channel_DimID
+    INTEGER :: PolyChromatic_Coeffs_DimID
+    INTEGER :: Planck_Coeffs_DimID
+    INTEGER :: Band_DimID
+    INTEGER :: n_Points_DimID
+    INTEGER :: n_Channels
+    INTEGER :: n_Planck_Coeffs
+    INTEGER :: n_Polychromatic_Coeffs
+    CHARACTER(80) :: n_Bands_DimName
+    CHARACTER(80) :: n_Points_DimName
+    CHARACTER(80) :: f1_Varname
+    CHARACTER(80) :: f2_Varname
+    CHARACTER(80) :: Frequency_Varname
+    CHARACTER(80) :: Response_Varname
+     
     ! Set up
     err_status = SUCCESS
     ! ...Determine info message output
     Noisy = .TRUE.
     IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
     
-    ! Open the file for writing
+    ! Create the output data file
+    ! ---------------------------
+    NF90_Status(1) = NF90_CREATE( Filename,NF90_CLOBBER,FileID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error creating '//TRIM(Filename)//' - '//&
+             TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
     
-  
-!  CONTAINS
-!    
-!    SUBROUTINE Cleanup( )
-!      ! Set error status and print error message
-!      !err_status = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_status )
-!    END SUBROUTINE Cleanup
+    ! Define the dimensions that
+    ! have channel independent names
+    NF90_Status(1) = NF90_DEF_DIM( FileID,CHANNEL_DIMNAME,NF90_UNLIMITED,Channel_DimID )       
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    n_Polychromatic_Coeffs = SIZE(self%oSRF(1)%Polychromatic_Coeffs)
+    n_Planck_Coeffs = SIZE(self%oSRF(1)%Planck_Coeffs)
+    NF90_Status(1) = NF90_DEF_DIM( FileID,POLYCHROMATIC_COEFFS_DIMNAME, &
+                                   n_Polychromatic_Coeffs,              &
+                                   PolyChromatic_Coeffs_DimID           )       
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//POLYCHROMATIC_COEFFS_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    
+    NF90_Status(1) = NF90_DEF_DIM( FileID,PLANCK_COEFFS_DIMNAME,        &
+                                   n_Planck_Coeffs, Planck_Coeffs_DimID )       
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PLANCK_COEFFS_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF 
+    
+    ! Define the variables that have
+    ! channel independent names
+    NF90_Status(1) = NF90_DEF_VAR( FileID,SENSOR_CHANNEL_VARNAME,SENSOR_CHANNEL_TYPE, &
+                                   dimIDs=(/Channel_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,SENSOR_CHANNEL_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,SENSOR_CHANNEL_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,SENSOR_CHANNEL_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,SENSOR_CHANNEL_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Cleanup(); RETURN
+    END IF
+    
+    NF90_Status(1) = NF90_DEF_VAR( FileID,INTEGRATED_SRF_VARNAME,INTEGRATED_SRF_TYPE, &
+                                   dimIDs=(/Channel_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//INTEGRATED_SRF_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,INTEGRATED_SRF_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,INTEGRATED_SRF_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,INTEGRATED_SRF_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,INTEGRATED_SRF_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//INTEGRATED_SRF_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Cleanup(); RETURN
+    END IF   
+    
+    NF90_Status(1) = NF90_DEF_VAR( FileID,FLAGS_VARNAME,FLAGS_TYPE, &
+                                   dimIDs=(/Channel_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//FLAGS_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,FLAGS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,FLAGS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,FLAGS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,FLAGS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//FLAGS_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Cleanup(); RETURN
+    END IF 
+    
+    NF90_Status(1) = NF90_DEF_VAR( FileID,CENTRAL_FREQUENCY_VARNAME,FREQUENCY_TYPE, &
+                                   dimIDs=(/Channel_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//CENTRAL_FREQUENCY_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,CENTRAL_FREQUENCY_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,CENTRAL_FREQUENCY_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,FREQUENCY_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,FREQUENCY_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//CENTRAL_FREQUENCY_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Cleanup(); RETURN
+    END IF
+    
+    NF90_Status(1) = NF90_DEF_VAR( FileID,PLANCK_COEFFS_VARNAME,PLANCK_COEFFS_TYPE, &
+                                   dimIDs=(/Planck_Coeffs_DimID,Channel_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PLANCK_COEFFS_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,PLANCK_COEFFS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,PLANCK_COEFFS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,PLANCK_COEFFS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,PLANCK_COEFFS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//PLANCK_COEFFS_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Cleanup(); RETURN
+    END IF
+    
+    NF90_Status(1) = NF90_DEF_VAR( FileID,POLYCHROMATIC_COEFFS_VARNAME,POLYCHROMATIC_COEFFS_TYPE, &
+                                   dimIDs=(/Polychromatic_Coeffs_DimID,Channel_DimID/),varID=VarID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error defining '//POLYCHROMATIC_COEFFS_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+    NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,POLYCHROMATIC_COEFFS_LONGNAME )
+    NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,POLYCHROMATIC_COEFFS_DESCRIPTION )
+    NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,POLYCHROMATIC_COEFFS_UNITS )
+    NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,POLYCHROMATIC_COEFFS_FILLVALUE )
+    IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+      msg = 'Error writing '//POLYCHROMATIC_COEFFS_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Cleanup(); RETURN
+    END IF
+
+    l=1
+    DO l = l, self%n_Channels
+
+      CALL Create_Names( l, n_Bands_DimName = n_Bands_DimName, &
+                         f1_Varname = f1_Varname, f2_Varname = f2_Varname )
+      
+      ! Define dimensions that
+      ! have channel dependent names
+      NF90_Status(1) = NF90_DEF_DIM( FileID,n_Bands_DimName,        &
+                                     self%oSRF(l)%n_Bands,Band_DimID )       
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error defining '//n_Bands_DimName//' dimension in '//&
+              TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF      
+      
+      ! Define the variables that have
+      ! channel dependent names and dimensions
+      NF90_Status(1) = NF90_DEF_VAR( FileID,f1_Varname,FREQUENCY_TYPE, &
+                                     dimIDs=(/Band_DimID/),varID=VarID )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error defining '//f1_Varname//' variable in '//&
+              TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,F1_LONGNAME )
+      NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,F1_DESCRIPTION )
+      NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,FREQUENCY_UNITS )
+      NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,FREQUENCY_FILLVALUE )
+      IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+        msg = 'Error writing '//f1_Varname//' variable attributes to '//TRIM(Filename)
+        CALL Cleanup(); RETURN
+      END IF
+      
+      NF90_Status(1) = NF90_DEF_VAR( FileID,f2_Varname,FREQUENCY_TYPE, &
+                                     dimIDs=(/Band_DimID/),varID=VarID )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error defining '//f2_Varname//' variable in '//&
+              TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,F2_LONGNAME )
+      NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,F2_DESCRIPTION )
+      NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,FREQUENCY_UNITS )
+      NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,FREQUENCY_FILLVALUE )
+      IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+        msg = 'Error writing '//f2_Varname//' variable attributes to '//TRIM(Filename)
+        CALL Cleanup(); RETURN
+      END IF
+
+      ! Define the band dependent 
+      ! dimensions for the channel
+      DO i = 1, self%oSRF(l)%n_Bands
+      
+        CALL Create_Names( l, Band = i,                           &
+                           n_Points_DimName = n_Points_DimName,   &
+                           Frequency_Varname = Frequency_Varname, &
+                           Response_Varname = Response_Varname    )
+      
+        NF90_Status(1) = NF90_DEF_DIM( FileID, n_Points_DimName, &
+                                       self%oSRF(l)%n_Points(i), n_Points_DimID )       
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error defining '//n_Points_DimName//' dimension in '//&
+                TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        
+        NF90_Status(1) = NF90_DEF_VAR( FileID,Frequency_Varname,FREQUENCY_TYPE, &
+                                       dimIDs=(/n_Points_DimID/),varID=VarID )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error defining '//Frequency_Varname//' variable in '//&
+                TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,FREQUENCY_LONGNAME )
+        NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,FREQUENCY_DESCRIPTION )
+        NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,FREQUENCY_UNITS )
+        NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,FREQUENCY_FILLVALUE )
+        IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+          msg = 'Error writing '//Frequency_Varname//' variable attributes to '//TRIM(Filename)
+          CALL Cleanup(); RETURN
+        END IF
+        
+        NF90_Status(1) = NF90_DEF_VAR( FileID,Response_Varname,RESPONSE_TYPE, &
+                                       dimIDs=(/n_Points_DimID/),varID=VarID )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error defining '//Response_Varname//' variable in '//&
+                TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        NF90_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME,RESPONSE_LONGNAME )
+        NF90_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,RESPONSE_DESCRIPTION )
+        NF90_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME,RESPONSE_UNITS )
+        NF90_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME,RESPONSE_FILLVALUE )
+        IF ( ANY(NF90_Status /= SUCCESS) ) THEN
+          msg = 'Error writing '//Response_Varname//' variable attributes to '//TRIM(Filename)
+          CALL Cleanup(); RETURN
+        END IF
+              
+      END DO 
+      
+    END DO
+
+    ! Take netCDF file out of define mode
+    ! -----------------------------------
+    NF90_Status(1) = NF90_ENDDEF( FileID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error taking '//TRIM(Filename)//' out of define mode.'
+      CALL Cleanup(); RETURN
+    END IF
+    
+    ! Write the data
+    ! --------------
+       
+    
+    ! Close the file
+    NF90_Status(1) = NF90_CLOSE( FileId )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+      CALL Cleanup(); RETURN
+    END IF
+  CONTAINS
+    
+    SUBROUTINE Cleanup( )
+      ! Set error status and print error message
+      err_status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_status )
+    END SUBROUTINE Cleanup
     ! Write the global attributes
         
     !Filename = Filename
@@ -1967,6 +2237,6 @@ CONTAINS
     END SUBROUTINE Read_Dim_CleanUp
     
   END FUNCTION Read_Dim
-
+ 
 END MODULE oSRF_File_Define
  
