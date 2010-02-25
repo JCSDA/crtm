@@ -1909,24 +1909,157 @@ CONTAINS
     
     ! Write the data
     ! --------------
-!    DO l = 1, self%n_Channels
-!    
-!      NF90_Status(1) = NF90_INQ_VARID( FileId,SENSOR_CHANNEL_VARNAME,VarId )
-!      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
-!        msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
-!              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
-!        CALL Cleanup(); RETURN
-!      END IF
-!      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Channel,&
-!                                     start=(/l/) )
-!      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
-!        msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(Filename)//&
-!              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
-!        CALL WriteVar_Cleanup(); RETURN
-!      END IF
-!    END   
-       
-       
+    DO l = 1, self%n_Channels
+    
+      NF90_Status(1) = NF90_INQ_VARID( FileId,SENSOR_CHANNEL_VARNAME,VarId )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Channel,&
+                                     start=(/l/) )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      
+      NF90_Status(1) = NF90_INQ_VARID( FileId,INTEGRATED_SRF_VARNAME,VarId )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//INTEGRATED_SRF_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Integral,&
+                                     start=(/l/) )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error writing '//INTEGRATED_SRF_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      
+      NF90_Status(1) = NF90_INQ_VARID( FileId,FLAGS_VARNAME,VarId )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//FLAGS_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Flags,&
+                                     start=(/l/) )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error writing '//FLAGS_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      
+      NF90_Status(1) = NF90_INQ_VARID( FileId,CENTRAL_FREQUENCY_VARNAME,VarId )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//CENTRAL_FREQUENCY_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%f0,&
+                                     start=(/l/) )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error writing '//CENTRAL_FREQUENCY_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      
+      NF90_Status(1) = NF90_INQ_VARID( FileId,PLANCK_COEFFS_VARNAME,VarId )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_COEFFS_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Planck_Coeffs,&
+                                     start=(/1,l/) )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error writing '//PLANCK_COEFFS_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      
+      NF90_Status(1) = NF90_INQ_VARID( FileId,POLYCHROMATIC_COEFFS_VARNAME,VarId )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//POLYCHROMATIC_COEFFS_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Polychromatic_Coeffs,&
+                                     start=(/1,l/) )
+      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+        msg = 'Error writing '//POLYCHROMATIC_COEFFS_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+        CALL Cleanup(); RETURN
+      END IF
+      
+      DO i = 1, self%oSRF(l)%n_Bands
+      
+        CALL Create_Names( l, Band = i,                            &
+                           f1_Varname        = f1_Varname,         &
+                           f2_Varname        = f2_Varname,         &
+                           Frequency_Varname = Frequency_Varname,  &
+                           Response_Varname  = Response_Varname    )
+        
+        NF90_Status(1) = NF90_INQ_VARID( FileId,f1_Varname,VarId )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//f1_Varname//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%f1(i),&
+                                       start=(/i/) )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error writing '//f1_Varname//' to '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        
+        NF90_Status(1) = NF90_INQ_VARID( FileId,f2_Varname,VarId )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//f2_Varname//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%f2(i),&
+                                       start=(/i/) )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error writing '//f2_Varname//' to '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        
+        NF90_Status(1) = NF90_INQ_VARID( FileId,Frequency_Varname,VarId )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//Frequency_Varname//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Frequency(i)%Arr )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error writing '//Frequency_Varname//' to '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        
+        NF90_Status(1) = NF90_INQ_VARID( FileId,Response_Varname,VarId )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//Response_Varname//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+        NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Response(i)%Arr )
+        IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+          msg = 'Error writing '//Response_Varname//' to '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+          CALL Cleanup(); RETURN
+        END IF
+                
+      END DO
+    END DO  
+              
     ! Close the file
     NF90_Status(1) = NF90_CLOSE( FileId )
     IF ( NF90_Status(1) /= NF90_NOERR ) THEN
