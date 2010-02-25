@@ -1520,6 +1520,9 @@ CONTAINS
     INTEGER :: err_status
     ! Parameter
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Write'
+    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME = 'write_module_history'
+    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time'
+    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY = 'Fortran OSRF_File Writer'
     ! Local Variables
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy
@@ -1542,12 +1545,20 @@ CONTAINS
     CHARACTER(80) :: f2_Varname
     CHARACTER(80) :: Frequency_Varname
     CHARACTER(80) :: Response_Varname
+    CHARACTER(80) :: GAttName
+    CHARACTER(8)  :: cdate
+    CHARACTER(10) :: ctime
+    CHARACTER(5)  :: czone
      
     ! Set up
     err_status = SUCCESS
     ! ...Determine info message output
     Noisy = .TRUE.
     IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    
+    ! Set dim lenghts for n_polychromatic_coeffs and n_planck_coeffs 
+    n_Polychromatic_Coeffs = SIZE(self%oSRF(1)%Polychromatic_Coeffs)
+    n_Planck_Coeffs = SIZE(self%oSRF(1)%Planck_Coeffs)
     
     ! Create the output data file
     ! ---------------------------
@@ -1566,8 +1577,7 @@ CONTAINS
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
       CALL Cleanup(); RETURN
     END IF
-    n_Polychromatic_Coeffs = SIZE(self%oSRF(1)%Polychromatic_Coeffs)
-    n_Planck_Coeffs = SIZE(self%oSRF(1)%Planck_Coeffs)
+
     NF90_Status(1) = NF90_DEF_DIM( FileID,POLYCHROMATIC_COEFFS_DIMNAME, &
                                    n_Polychromatic_Coeffs,              &
                                    PolyChromatic_Coeffs_DimID           )       
@@ -1785,6 +1795,109 @@ CONTAINS
       END DO 
       
     END DO
+    
+    ! Write global attributes
+    GAttName = WRITE_MODULE_HISTORY_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   WRITE_MODULE_HISTORY )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+
+    CALL DATE_AND_TIME( cdate, ctime, czone )
+    GAttName = CREATION_DATE_AND_TIME_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                NF90_GLOBAL, &
+                                TRIM(GAttName), &
+                                cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
+                                ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
+                                czone//'UTC' )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = RELEASE_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%oSRF(1)%Release )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = VERSION_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%oSRF(1)%Version )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = SENSOR_ID_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%oSRF(1)%Sensor_ID )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = WMO_SATELLITE_ID_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%oSRF(1)%WMO_Satellite_Id )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = WMO_SENSOR_ID_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%oSRF(1)%WMO_Sensor_Id )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+
+    GAttName = SENSOR_TYPE_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%oSRF(1)%Sensor_Type )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = TITLE_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%Title )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = HISTORY_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%History )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
+    
+    GAttName = COMMENT_GATTNAME
+    NF90_Status(1) = NF90_PUT_ATT( FileID, &
+                                   NF90_GLOBAL, &
+                                   TRIM(GAttName), &
+                                   self%Comment )
+    IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+      CALL Cleanup(); RETURN
+    END IF
 
     ! Take netCDF file out of define mode
     ! -----------------------------------
@@ -1796,8 +1909,24 @@ CONTAINS
     
     ! Write the data
     ! --------------
+!    DO l = 1, self%n_Channels
+!    
+!      NF90_Status(1) = NF90_INQ_VARID( FileId,SENSOR_CHANNEL_VARNAME,VarId )
+!      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+!        msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+!              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+!        CALL Cleanup(); RETURN
+!      END IF
+!      NF90_Status(1) = NF90_PUT_VAR( FileId,VarID,self%oSRF(l)%Channel,&
+!                                     start=(/l/) )
+!      IF ( NF90_Status(1) /= NF90_NOERR ) THEN
+!        msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(Filename)//&
+!              ' - '//TRIM(NF90_STRERROR( NF90_Status(1) ))
+!        CALL WriteVar_Cleanup(); RETURN
+!      END IF
+!    END   
        
-    
+       
     ! Close the file
     NF90_Status(1) = NF90_CLOSE( FileId )
     IF ( NF90_Status(1) /= NF90_NOERR ) THEN
