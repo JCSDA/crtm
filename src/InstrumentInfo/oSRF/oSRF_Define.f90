@@ -1084,9 +1084,8 @@ CONTAINS
       
     END DO Band_Loop
     
-    
     ! Save the integrated value
-    err_stat = oSRF_SetValue( self, n, Integral=Int_SRF )
+    err_stat = oSRF_SetValue( self, Integral=Int_SRF )
     IF ( err_stat /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF integral',err_stat )
       RETURN
