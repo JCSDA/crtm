@@ -1522,7 +1522,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Write'
     CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME = 'write_module_history'
     CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time'
-    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY = 'Fortran OSRF_File Writer'
     ! Local Variables
     CHARACTER(ML) :: msg
     LOGICAL :: Noisy
@@ -1801,7 +1800,7 @@ CONTAINS
     NF90_Status(1) = NF90_PUT_ATT( FileID, &
                                    NF90_GLOBAL, &
                                    TRIM(GAttName), &
-                                   WRITE_MODULE_HISTORY )
+                                   MODULE_VERSION_ID )
     IF ( NF90_Status(1) /= NF90_NOERR ) THEN
       CALL Cleanup(); RETURN
     END IF
@@ -2073,9 +2072,6 @@ CONTAINS
       err_status = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_status )
     END SUBROUTINE Cleanup
-    ! Write the global attributes
-        
-    !Filename = Filename
   
   END FUNCTION oSRF_File_Write       
 
