@@ -40,7 +40,7 @@ PROGRAM MW_SensorData2oSRF
   
   ! Parameters
   ! ----------
-  CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'MW_SensorData2oSRF'
 
@@ -51,21 +51,20 @@ PROGRAM MW_SensorData2oSRF
   TYPE( SensorInfo_List_type ) :: SensorInfo_List
   TYPE( oSRF_File_type ) :: oSRF_File
   TYPE( SensorInfo_type ) :: SensorInfo
-  INTEGER, DIMENSION(:), ALLOCATABLE :: n_BPoints
+  INTEGER, ALLOCATABLE :: n_BPoints(:)
+  CHARACTER(256)  :: msg
+  CHARACTER(2000) :: History
   CHARACTER(256)  :: SensorInfo_Filename
-  CHARACTER(256)  :: NC_Filename
-  CHARACTER(5000) :: Title, Comment
   INTEGER :: n_Frequencies
   INTEGER :: n_Sensors
-  INTEGER :: n_Bands
-  INTEGER :: n, l, ln
-  INTEGER :: Error_Status
+  INTEGER :: n_Bands, n_Sidebands
+  INTEGER :: i, n, l
+  INTEGER :: Error_Status, alloc_stat
   INTEGER :: Version
-  INTEGER :: Band1_End_Index
-  INTEGER :: Band2_Begin_Index, Band2_End_Index
-  INTEGER :: Band3_Begin_Index, Band3_End_Index
-  INTEGER :: Band4_Begin_Index, Band4_End_Index
+  INTEGER :: bidx(4), eidx(0:4)
+  REAL(fp) :: bf(4), ef(4), f0
   REAL(fp) :: df1, df2
+  REAL(fp) :: fi(2,4)
   
   ! Program header
   ! --------------
@@ -74,29 +73,25 @@ PROGRAM MW_SensorData2oSRF
                         ' in the MW_SensorData_Define module.', &
                         '$Revision$'                             )
   
-  ! Get user specified inputs
-  ! -------------------------
   
-  ! Set a user specified SensorInfo filename
+  ! Read the SensorInfo file
+  ! ... GET filename
   WRITE( *,FMT    ='(/5x,"Enter a SensorInfo filename: ")', &
            ADVANCE='NO' )
   READ( *,FMT='(a)' ) SensorInfo_Filename
   SensorInfo_Filename = ADJUSTL(SensorInfo_Filename)
-  
-  ! Read SensorInfo file
-  Error_Status = Read_SensorInfo( SensorInfo_Filename,  & ! Input
-                                  SensorInfo_List       ) ! Output
+  ! ...Read it
+  Error_Status = Read_SensorInfo( SensorInfo_Filename, SensorInfo_List )
   IF ( Error_Status /= SUCCESS ) THEN
-     CALL Display_Message( PROGRAM_NAME,                     &
-                           'Error reading SensorInfo_file',  &
-                           Error_Status                      )
+    msg = 'Error reading SensorInfo_file'
+    CALL Display_Message( PROGRAM_NAME,msg,Error_Status )
     STOP
   END IF
-  
-  ! Get number of sensors
+  ! ...Get number of sensors
   n_Sensors = Count_SensorInfo_Nodes( SensorInfo_List )
-    
-  ! Set a user specified version for the SRF files to be created
+
+
+  ! Ask for a user specified version for the SRF files to be created
   WRITE( *,FMT='(/5x,"Default oSRF file version is: ",i0, &
                &".  Enter value: ")', &
            ADVANCE='NO' ) oSRF_File%Version
@@ -107,109 +102,135 @@ PROGRAM MW_SensorData2oSRF
                           INFORMATION )
     Version = oSRF_File%Version
   END IF
-  
   oSRF_File%Version = Version
+
 
   ! Get the number of frequency points
   WRITE( *,FMT    ='(/5x,"Enter number of frequencies [256] :")', &
            ADVANCE='NO' )
   READ( *,* ) n_Frequencies
   
+  
+  ! =================
   ! Loop over sensors
-  !--------------------------------
+  ! =================
   Sensor_Loop: DO n = 1, n_Sensors 
     
+
     ! Get SensorInfo for sensor n
     Error_Status = GetFrom_SensorInfo_List( SensorInfo_List,     &  ! Input
                                             n,                   &  ! Input
                                             SensorInfo           )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
-       CALL Display_Message( PROGRAM_NAME,                &
-                             'Error getting sensor node', &
-                             Error_Status                 )
+      WRITE( msg,'("Error getting SensorInfo node #",i0," from list. Cycling loop...")' ) n
+      CALL Display_Message( PROGRAM_NAME,msg,Error_Status )
+      CYCLE Sensor_Loop
     END IF 
     
-    ! Cycle if its not a microwave sensor or if the sensor name is SSMIS 
-    IF ( .NOT. (SensorInfo%Sensor_Type==MICROWAVE_SENSOR) ) CYCLE Sensor_Loop !.OR. &
-    !      TRIM(SensorInfo%Sensor_Name)=='SSMIS' ) CYCLE Sensor_Loop
-     
-    ! Set the title 
-    Title = 'Microwave sensor ' // TRIM(SensorInfo%Sensor_Id) // ' Spectral Response Functions'
-    Comment = 'The oSRF data for this sensor is assumed to be a box car shape.' // &
-              ' This is a temporary state until real data becomes available. The ' // &
-              'files now contain 256 points. Further testing will be performed'    // &
-              ' to determine if this is an adequate number of points' 
+
+    ! Cycle if its not a microwave sensor
+    IF ( .NOT. (SensorInfo%Sensor_Type==MICROWAVE_SENSOR) ) CYCLE Sensor_Loop
+
+
+    WRITE( *,'(/5x,"Creating boxcar oSRF for ",a,"...")' ) TRIM(SensorInfo%Sensor_Id)
+        
     
+    ! Fill the MW_SensorData structure
+    Error_Status = Load_MW_SensorData( MW_SensorData,                  &
+                                       n_Frequencies=n_Frequencies,    &
+                                       Sensor_Id=SensorInfo%Sensor_Id, &
+                                       RCS_ID = History                )
+    IF ( Error_Status /= SUCCESS ) THEN
+      msg = 'Error loading MW_SensorData'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
+      STOP
+    END IF
+
+
     ! Create an instance of oSRF_File
     CALL oSRF_File_Create( oSRF_File,SensorInfo%n_Channels )
-    
-    oSRF_File%Filename         = TRIM(SensorInfo%Sensor_Id) // '.srf.nc'
+    ! ...Copy over other information
+    oSRF_File%Filename         = TRIM(SensorInfo%Sensor_Id) // '.osrf.nc'
     oSRF_File%Sensor_ID        = TRIM(SensorInfo%Sensor_Id)
     oSRF_File%WMO_Satellite_Id = SensorInfo%WMO_Satellite_Id
     oSRF_File%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id
     oSRF_File%Sensor_Type      = MICROWAVE_SENSOR
-    oSRF_File%Title            = Title
-    oSRF_File%Comment          = Comment
-                                           
-    ! Fill the MW_SensorData structure
-    Error_Status = Load_MW_SensorData( MW_SensorData,                  &
-                                       n_Frequencies=n_Frequencies,    &
-                                       Sensor_Id=SensorInfo%Sensor_Id  )
-    IF ( Error_Status /= SUCCESS ) THEN
-       CALL Display_Message( PROGRAM_NAME,                  &
-                             'Error loading MW_SensorData', &
-                             Error_Status                   )
-    END IF
-                                               
+    oSRF_File%Title            = TRIM(SensorInfo%Sensor_Id)//' Boxcar Spectral Response Functions'
+    oSRF_File%History          = PROGRAM_VERSION_ID//'; '//TRIM(History)
+    oSRF_File%Comment          = 'The SRF for this sensor is computed from central frequencies and ' // &
+                                 'intermediate frequencies assuming a boxcar response across the passband-width. ' // &
+                                 'Each channel contains 256 points.' 
+
+
+
+    ! ==================
     ! Loop over channels 
-    ! -------------------------------------------                                    
+    ! ==================
     Channel_Loop: DO l = 1, SensorInfo%n_Channels
+
+      
+      ! Initialise arrays
+      bidx = 0
+      eidx = 0
+      fi = ZERO
+      bf = ZERO
+      ef = ZERO
+
       
       ! Set the number of bands for the channel
+      ! and reorganise the intermediate frequencies
       IF(MW_SensorData%IF_Band(1,1,l)==ZERO) THEN
         n_Bands = 1
+        fi(1,1) = -MW_SensorData%IF_Band(2,1,l)
+        fi(2,1) =  MW_SensorData%IF_Band(2,1,l)
       ELSE  
-        n_Bands = MW_SensorData%n_Sidebands(l)*2
+        n_Sidebands = MW_SensorData%n_Sidebands(l)
+        n_Bands     = n_Sidebands*2
+        fi(1:2,1:n_SideBands)         = -MW_SensorData%IF_Band(2:1:-1,n_SideBands:1:-1,l)
+        fi(1:2,n_SideBands+1:n_Bands) =  MW_SensorData%IF_Band(  1:2 ,1:n_SideBands   ,l)
       END IF 
       
-      ! Allocate band points array
-      ALLOCATE( n_BPoints(n_Bands),  &
-                STAT = Error_Status  )
-      IF ( Error_Status /= SUCCESS ) THEN
-         CALL Display_Message( PROGRAM_NAME,                            &
-                               'Error allocating for n_BPoints array',  &
-                               Error_Status                             )
+
+      ! Fill the band points array for oSRF allocation
+      ! ...Allocate band points array
+      ALLOCATE( n_BPoints(n_Bands), STAT = alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        msg = 'Error allocating n_BPoints array'
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
+        STOP 
       END IF
-      
-      IF (n_Bands==1) THEN
-        n_BPoints(1)=n_Frequencies
-      ELSE IF (n_Bands==2) THEN
-        df1 = MW_SensorData%IF_Band(2,1,l) - MW_SensorData%IF_Band(1,1,l)
-        n_BPoints(1) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
-        n_BPoints(2) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
-        Band1_End_Index   = n_BPoints(1)
-        Band2_Begin_Index = n_BPoints(1) + 1
-        Band2_End_Index   = n_BPoints(1) + n_BPoints(2)
-      ELSE IF (n_Bands==4) THEN
-        df1 = MW_SensorData%IF_Band(2,1,l) - MW_SensorData%IF_Band(1,1,l)
-        df2 = MW_SensorData%IF_Band(2,2,l) - MW_SensorData%IF_Band(1,2,l)
-        n_BPoints(1) = NINT(df2/MW_SensorData%Delta_Frequency(l)) + 1
-        n_BPoints(2) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
-        n_BPoints(3) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
-        n_BPoints(4) = NINT(df2/MW_SensorData%Delta_Frequency(l)) + 1
-        Band1_End_Index   = n_BPoints(1)
-        Band2_Begin_Index = n_BPoints(1) + 1
-        Band2_End_Index   = n_BPoints(1) + n_BPoints(2)
-        Band3_Begin_Index = n_BPoints(1) + n_BPoints(2) + 1
-        Band3_End_Index   = n_BPoints(1) + n_BPoints(2) + n_BPoints(3) 
-        Band4_Begin_Index = n_BPoints(1) + n_BPoints(2) + n_BPoints(3) + 1
-        Band4_End_Index   = n_BPoints(1) + n_BPoints(2) + n_BPoints(3) + n_BPoints(4)
-      END IF
+      ! ...Set the number of points/band
+      SELECT CASE(n_Bands)
+        CASE (1)
+          n_BPoints(1)=n_Frequencies
+        CASE (2)
+          df1 = MW_SensorData%IF_Band(2,1,l) - MW_SensorData%IF_Band(1,1,l)
+          n_BPoints(1) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
+          n_BPoints(2) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
+        CASE (4)
+          df1 = MW_SensorData%IF_Band(2,1,l) - MW_SensorData%IF_Band(1,1,l)
+          df2 = MW_SensorData%IF_Band(2,2,l) - MW_SensorData%IF_Band(1,2,l)
+          n_BPoints(1) = NINT(df2/MW_SensorData%Delta_Frequency(l)) + 1
+          n_BPoints(2) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
+          n_BPoints(3) = NINT(df1/MW_SensorData%Delta_Frequency(l)) + 1
+          n_BPoints(4) = NINT(df2/MW_SensorData%Delta_Frequency(l)) + 1
+        CASE DEFAULT
+          msg = 'Invalid number of bands!'
+          CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
+          STOP     
+      END SELECT
+
+
+      ! Compute the indexing values for each band
+      DO i = 1, n_Bands
+        bidx(i) = eidx(i-1) + 1
+        eidx(i) = SUM(n_BPoints(1:i))
+      END DO
+
       
       ! Create an instance of oSRF in oSRF_File
-      CALL oSRF_Create( oSRF_File%oSRF(l),n_BPoints )
-      ! Assign components to instance of oSRF structure
-      ! -----------------------------------------------                                        
+      CALL oSRF_Create( oSRF_File%oSRF(l), n_BPoints )
+      ! ...Copy over non-srf info
       oSRF_File%oSRF(l)%Channel          = SensorInfo%Sensor_Channel(l)
       oSRF_File%oSRF(l)%Version          = Version
       oSRF_File%oSRF(l)%Sensor_Id        = SensorInfo%Sensor_Id
@@ -217,41 +238,17 @@ PROGRAM MW_SensorData2oSRF
       oSRF_File%oSRF(l)%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID 
       oSRF_File%oSRF(l)%Sensor_Type      = MICROWAVE_SENSOR
       oSRF_File%oSRF(l)%f0               = MW_SensorData%Central_Frequency(l)
+
       
-      ! assign the number of points to corresponding band and 
-      ! assign the bounds for the bands
-      IF (n_Bands==1) THEN
-        oSRF_File%oSRF(l)%f1(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
-        oSRF_File%oSRF(l)%f2(1)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
-        oSRF_File%oSRF(l)%Frequency(1)%Arr = MW_SensorData%Frequency(:,l)
-        oSRF_File%oSRF(l)%Response(1)%Arr  = MW_SensorData%Response(:,l)
-      ELSE IF(n_Bands==2) THEN
-        oSRF_File%oSRF(l)%f1(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
-        oSRF_File%oSRF(l)%f2(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(1,1,l)
-        oSRF_File%oSRF(l)%f1(2)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(1,1,l)
-        oSRF_File%oSRF(l)%f2(2)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
-        oSRF_File%oSRF(l)%Frequency(1)%Arr = MW_SensorData%Frequency(1:Band1_End_Index,l)
-        oSRF_File%oSRF(l)%Response(1)%Arr  = MW_SensorData%Response(1:Band1_End_Index,l)
-        oSRF_File%oSRF(l)%Frequency(2)%Arr = MW_SensorData%Frequency(Band2_Begin_Index:Band2_End_Index,l)
-        oSRF_File%oSRF(l)%Response(2)%Arr  = MW_SensorData%Response(Band2_Begin_Index:Band2_End_Index,l)
-      ELSE IF(n_Bands==4) THEN
-        oSRF_File%oSRF(l)%f1(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,2,l)
-        oSRF_File%oSRF(l)%f2(1)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(1,2,l)
-        oSRF_File%oSRF(l)%f1(2)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(2,1,l)
-        oSRF_File%oSRF(l)%f2(2)=MW_SensorData%Central_Frequency(l)-MW_SensorData%IF_Band(1,1,l)
-        oSRF_File%oSRF(l)%f1(3)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(1,1,l)
-        oSRF_File%oSRF(l)%f2(3)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,1,l)
-        oSRF_File%oSRF(l)%f1(4)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(1,2,l)
-        oSRF_File%oSRF(l)%f2(4)=MW_SensorData%Central_Frequency(l)+MW_SensorData%IF_Band(2,2,l)
-        oSRF_File%oSRF(l)%Frequency(1)%Arr = MW_SensorData%Frequency(1:Band1_End_Index,l)
-        oSRF_File%oSRF(l)%Response(1)%Arr  = MW_SensorData%Response(1:Band1_End_Index,l)
-        oSRF_File%oSRF(l)%Frequency(2)%Arr = MW_SensorData%Frequency(Band2_Begin_Index:Band2_End_Index,l)
-        oSRF_File%oSRF(l)%Response(2)%Arr  = MW_SensorData%Response(Band2_Begin_Index:Band2_End_Index,l)
-        oSRF_File%oSRF(l)%Frequency(3)%Arr = MW_SensorData%Frequency(Band3_Begin_Index:Band3_End_Index,l)
-        oSRF_File%oSRF(l)%Response(3)%Arr  = MW_SensorData%Response(Band3_Begin_Index:Band3_End_Index,l)
-        oSRF_File%oSRF(l)%Frequency(4)%Arr = MW_SensorData%Frequency(Band4_Begin_Index:Band4_End_Index,l)
-        oSRF_File%oSRF(l)%Response(4)%Arr  = MW_SensorData%Response(Band4_Begin_Index:Band4_End_Index,l)
-      END IF
+      ! Fill the frequency and response arrays band-by-band
+      f0 = MW_SensorData%Central_Frequency(l)
+      DO i = 1, n_Bands
+        oSRF_File%oSRF(l)%f1(i) = f0+fi(1,i)
+        oSRF_File%oSRF(l)%f2(i) = f0+fi(2,i)
+        oSRF_File%oSRF(l)%Frequency(i)%Arr = MW_SensorData%Frequency(bidx(i):eidx(i),l)
+        oSRF_File%oSRF(l)%Response(i)%Arr  = MW_SensorData%Response(bidx(i):eidx(i),l)
+      END DO
+
 
       ! Fill the integrated and summation fields
       Error_Status = oSRF_Integrate( oSRF_File%oSRF(l) ) ! In/Output
@@ -260,38 +257,29 @@ PROGRAM MW_SensorData2oSRF
                                'Error Calculating Integrated and Summation SRF',  &
                                Error_Status                                       )
       END IF
+
       
       ! Deallocate Sideband points array
-      DEALLOCATE( n_BPoints,          &
-                  STAT = Error_Status )
-      IF ( Error_Status /= SUCCESS ) THEN
-         CALL Display_Message( PROGRAM_NAME,                              &
-                               'Error deallocating for n_BPoints array',  &
-                               Error_Status                               )
+      DEALLOCATE( n_BPoints, STAT = alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        msg = 'Error deallocating n_BPoints array'
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
       END IF                      
             
     END DO Channel_Loop
 
 
     ! Write the oSRF_File instance to the nc file
-    Error_Status = oSRF_File_Write(  oSRF_File,          &  ! In/Output
-                                     oSRF_File%Filename  )  ! Input
+    Error_Status = oSRF_File_Write( oSRF_File, oSRF_File%Filename )
     IF ( Error_Status /= SUCCESS ) THEN
-       CALL Display_Message( PROGRAM_NAME,                                      &
-                             'Error writing the SRF data to file',              &
-                             Error_Status                                       )
-    END IF 
-  
-    ! Destroy the instance of oSRF_File
+      msg = 'Error writing the SRF data to file'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
+    END IF                      
+
+
+    ! Clean up  
     CALL oSRF_File_Destroy(oSRF_File)
-    
-    ! Destroy MW_SensorData structure
     Error_Status = Destroy_MW_SensorData( MW_SensorData ) 
-    IF ( Error_Status /= SUCCESS ) THEN
-         CALL Display_Message( PROGRAM_NAME,                                      &
-                               'Error destroying MW_SensorData structure',        &
-                               Error_Status                                       )
-    END IF
     
   END DO Sensor_Loop
         
