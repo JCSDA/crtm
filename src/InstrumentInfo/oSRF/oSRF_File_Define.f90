@@ -2276,7 +2276,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL Create_Names( &
 !         Channel                              , &  ! Input
-!         n_Bands           = n_Bands          , &  ! Optional input         
+!         Band              = Band             , &  ! Optional input         
 !         n_Bands_DimName   = n_Bands_DimName  , &  ! Optional output
 !         n_Points_DimName  = n_Points_DimName , &  ! Optional output
 !         f1_VarName        = f1_VarName       , &  ! Optional output

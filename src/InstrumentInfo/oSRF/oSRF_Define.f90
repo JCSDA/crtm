@@ -61,6 +61,7 @@ MODULE oSRF_Define
   PUBLIC :: ULTRAVIOLET_SENSOR  
   PUBLIC :: SENSOR_TYPE_NAME
   ! Procedures
+  PUBLIC :: oSRF_IsFlagSet, oSRF_SetFlag, oSRF_ClearFlag, oSRF_DefaultFlags
   PUBLIC :: oSRF_Associated
   PUBLIC :: oSRF_Destroy
   PUBLIC :: oSRF_Create
@@ -99,6 +100,21 @@ MODULE oSRF_Define
   ! Some internal dimensions
   INTEGER, PARAMETER :: MAX_N_PLANCK_COEFFS = 2
   INTEGER, PARAMETER :: MAX_N_POLYCHROMATIC_COEFFS = 2
+  ! First Planck function constant (C1) scale factors. Units of C1 are W.m^2.
+  ! Length scaling: To convert to W/(m^2.cm^-4) requires a scaling of m->cm,
+  !                 which is 100, to the fourth power, which is 1.0e+08.
+  ! Power scaling:  To convert to mW.m^2 requires a scaling of 1000.
+  REAL(fp), PARAMETER :: C1_LENGTH_SCALE_FACTOR = 1.0e+08_fp
+  REAL(fp), PARAMETER :: C1_POWER_SCALE_FACTOR  = 1.0e+03_fp
+  REAL(fp), PARAMETER :: C1_SCALE_FACTOR = C1_LENGTH_SCALE_FACTOR * C1_POWER_SCALE_FACTOR
+  ! Second Planck function constant (C2) scale factor. Units of C2 are K.m,
+  ! So to convert to K.cm, a scaling of 100 is applied.
+  REAL(fp), PARAMETER :: C2_SCALE_FACTOR = 100.0_fp
+  ! Bit positions of the flags
+  INTEGER, PARAMETER :: INTERPOLATED_FLAG    = 0  ! 0==no    , 1==yes
+  INTEGER, PARAMETER :: INTEGRATED_FLAG      = 1  ! 0==no    , 1==yes
+  INTEGER, PARAMETER :: F0_COMPUTED_FLAG     = 2  ! 0==no    , 1==yes
+  INTEGER, PARAMETER :: FREQUENCY_UNITS_FLAG = 3  ! 0==cm^-1 , 1==GHz
 
 
   ! --------------------------
@@ -143,6 +159,34 @@ CONTAINS
 !################################################################################
 !################################################################################
 
+  ELEMENTAL FUNCTION oSRF_IsFlagSet(self, flag) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: self
+    INTEGER        , INTENT(IN) :: flag
+    LOGICAL :: Is_Set
+    Is_Set = BTEST(self%Flags,flag)
+  END FUNCTION oSRF_IsFlagSet
+
+ 
+  ELEMENTAL SUBROUTINE oSRF_SetFlag(self, flag)
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    INTEGER        , INTENT(IN)     :: flag
+    self%Flags = IBSET(self%Flags,flag)
+  END SUBROUTINE oSRF_SetFlag
+ 
+
+  ELEMENTAL SUBROUTINE oSRF_ClearFlag(self, flag)
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    INTEGER        , INTENT(IN)     :: flag
+    self%Flags = IBCLR(self%Flags,flag)
+  END SUBROUTINE oSRF_ClearFlag
+  
+  
+  ELEMENTAL SUBROUTINE oSRF_DefaultFlags(self)
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    self%Flags = 0
+  END SUBROUTINE oSRF_DefaultFlags
+  
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1090,10 +1134,173 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF integral',err_stat )
       RETURN
     END IF
+    CALL oSRF_SetFlag( self, INTEGRATED_FLAG )
 
   END FUNCTION oSRF_Integrate
 
 
+
+  FUNCTION oSRF_Planck_Coefficients( self ) RESULT( err_stat )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
+    ! Local variables
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check object contains something
+    IF ( .NOT. oSRF_Associated(self) ) THEN
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
+      RETURN
+    END IF
+
+    ! Compute the central frequency if necessary
+    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
+      CALL oSRF_Central_Frequency( self )
+
+
+    ! ...EMPTY STUB...
+
+    
+  END FUNCTION oSRF_Planck_Coefficients
+  
+  
+  
+  FUNCTION oSRF_Central_Frequency( self ) RESULT( err_stat )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Central_Frequency'
+    ! Local variables
+    REAL(fp) :: f0
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check object contains something
+    IF ( .NOT. oSRF_Associated(self) ) THEN
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
+      RETURN
+    END IF
+
+    ! Compute the oSRF first moment
+    err_stat = oSRF_Convolve( self, self%Frequency, f0 )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'Error convolving oSRF with frequency.', err_stat )
+      RETURN
+    END IF
+    
+    ! Save the central frequency value
+    err_stat = oSRF_SetValue( self, f0 = f0 )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF central frequency',err_stat )
+      RETURN
+    END IF
+    CALL oSRF_SetFlag( self, F0_COMPUTED_FLAG )
+    
+  END FUNCTION oSRF_Central_Frequency
+  
+  
+  
+  FUNCTION oSRF_Convolve( self, p, y ) RESULT( err_stat )
+    ! Arguments
+    TYPE(oSRF_type)  , INTENT(IN OUT) :: self
+    TYPE(PtrArr_type), INTENT(IN)     :: p(:)
+    REAL(fp)         , INTENT(OUT)    :: y
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Convolve'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: err_stat
+    INTEGER :: alloc_stat
+    INTEGER :: n, n_Points
+    REAL(fp), ALLOCATABLE :: f(:), r(:)
+    REAL(fp):: Int_SRF, Int_Band
+
+    ! Setup
+    y = ZERO
+    ! ...Check object contains something
+    IF ( .NOT. oSRF_Associated(self) ) RETURN
+    ! ...Check the band count is the same
+    IF ( self%n_Bands /= SIZE(p) ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'Input data does not conform with oSRF.', FAILURE )
+      RETURN
+    END IF
+    ! ...Integrate oSRF if necessary
+    IF ( .NOT. oSRF_IsFlagSet(self, INTEGRATED_FLAG) ) &
+      CALL oSRF_Integrate( self )
+    
+
+    ! Sum up band integrals
+    Band_Loop: DO n = 1, self%n_Bands
+    
+      ! Get band response
+      ! ...Number of band points
+      err_stat = oSRF_GetValue( self, n, n_Points=n_Points )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error occurred retrieving band#",i0," n_Points")' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      ! ...Check that the number of bands agrees with the input
+      IF ( p(n)%n /= n_Points ) THEN
+        WRITE( msg,'("oSRF and input data have different sizes for band#",i0)' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,FAILURE )
+        RETURN
+      END IF
+      ! ...Allocate local arrays
+      ALLOCATE( f(n_Points), r(n_Points), STAT=alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        err_stat = FAILURE
+        WRITE( msg,'("Error allocating band#",i0," arrays. STAT=",i0)' ) n, alloc_stat
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      ! ...The band data
+      err_stat = oSRF_GetValue( self, n, Frequency=f, Response=r )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error occurred retrieving band#",i0," data")' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      
+      ! Integrate the band
+      err_stat = Integral(f, (p(n)%arr * r), Int_Band)
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error integrating band#",i0," response")' ) n
+        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+        RETURN
+      END IF
+      
+      ! Accumulate
+      y = y + Int_Band
+      
+      ! Clean up
+      DEALLOCATE( f, r )
+      
+    END DO Band_Loop
+    
+    
+    ! Normalise the integrated value
+    err_stat = oSRF_GetValue( self, Integral=Int_SRF )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF integral',err_stat )
+      RETURN
+    END IF
+    y = y / Int_SRF
+
+  END FUNCTION oSRF_Convolve
+
+
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
