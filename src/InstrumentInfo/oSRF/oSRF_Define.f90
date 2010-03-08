@@ -35,6 +35,10 @@ MODULE oSRF_Define
                                    PtrArr_SetValue  , &
                                    PtrArr_GetValue  , &
                                    PtrArr_Inspect
+  USE Planck_Functions     , ONLY: Planck_Temperature, &
+                                   Planck_Radiance
+  USE Fundamental_Constants , ONLY: C_1, &
+                                    C_2
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -71,6 +75,10 @@ MODULE oSRF_Define
   PUBLIC :: oSRF_Info
   PUBLIC :: oSRF_Integrate
   PUBLIC :: oSRF_DefineVersion
+  PUBLIC :: oSRF_Central_Frequency
+  PUBLIC :: oSRF_Polychromatic_Coefficients
+  PUBLIC :: oSRF_Convolve
+  
 
 
   ! -------------------
@@ -1137,38 +1145,111 @@ CONTAINS
     CALL oSRF_SetFlag( self, INTEGRATED_FLAG )
 
   END FUNCTION oSRF_Integrate
-
-
-
-  FUNCTION oSRF_Planck_Coefficients( self ) RESULT( err_stat )
-    ! Arguments
-    TYPE(oSRF_type), INTENT(IN OUT) :: self
-    ! Function result
-    INTEGER :: err_stat
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
-    ! Local variables
-
-    ! Set up
-    err_stat = SUCCESS
-    ! ...Check object contains something
-    IF ( .NOT. oSRF_Associated(self) ) THEN
-      err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
-      RETURN
-    END IF
-
-    ! Compute the central frequency if necessary
-    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
-      CALL oSRF_Central_Frequency( self )
-
-
-    ! ...EMPTY STUB...
-
-    
-  END FUNCTION oSRF_Planck_Coefficients
   
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_Planck_Coefficients
+!
+! PURPOSE:
+!       Function to compute Planck coefficients for an oSRF_type.
+!
+! CALLING SEQUENCE:
+!       Error_Status = oSRF_Planck_Coefficients( oSRF )
+!
+! OBJECT:
+!       oSRF:          oSRF structure.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!      
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the integration was successful
+!                        == FAILURE an error occurred processing the input
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       The Planck Coefficient components are set in oSRF.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------    
+
+!  FUNCTION oSRF_Planck_Coefficients( self ) RESULT( err_stat )
+!    ! Arguments
+!    TYPE(oSRF_type), INTENT(IN OUT) :: self
+!    ! Function result
+!    INTEGER :: err_stat
+!    ! Local parameters
+!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
+!    ! Local variables
+!    REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)
+!
+!    ! Set up
+!    err_stat = SUCCESS
+!    ! ...Check object contains something
+!    IF ( .NOT. oSRF_Associated(self) ) THEN
+!      err_stat = FAILURE
+!      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
+!      RETURN
+!    END IF
+!
+!    ! Compute the central frequency if necessary
+!    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
+!      CALL oSRF_Central_Frequency( self )
+!
+!    ! Compute the Planck coefficients
+!    Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( self%f0**3 )
+!    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   self%f0 
+!    ! Save the computed Planck coefficients
+!    err_stat = oSRF_SetValue( self, Planck_Coeffs = Planck_Coeffs )
+!    IF ( err_stat /= SUCCESS ) THEN
+!      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF Planck Coefficients',err_stat )
+!      RETURN
+!    END IF
+!    
+!    
+!  END FUNCTION oSRF_Planck_Coefficients
   
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_Central_Frequency
+!
+! PURPOSE:
+!       Function to compute the central frequency component of an oSRF_type.
+!
+! CALLING SEQUENCE:
+!       Error_Status = oSRF_Central_Frequency( oSRF )
+!
+! OBJECT:
+!       oSRF:          oSRF structure.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!      
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the integration was successful
+!                        == FAILURE an error occurred processing the input
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       The central frequency component is set in oSRF and the corresponding
+!       bit flag is set to 1.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------    
   
   FUNCTION oSRF_Central_Frequency( self ) RESULT( err_stat )
     ! Arguments
@@ -1206,7 +1287,50 @@ CONTAINS
     
   END FUNCTION oSRF_Central_Frequency
   
-  
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_Convolve
+!
+! PURPOSE:
+!       Function to convolve quantities with oSRF.
+!
+! CALLING SEQUENCE:
+!       Error_Status = oSRF_Convolve( oSRF, p, y )
+!
+! OBJECT:
+!       oSRF:          oSRF structure.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUT:
+!       p:             Structure array holding quantities
+!                      to be convolved.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(PtrArr_type)
+!                      DIMENSION:  Rank-1
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUT:    
+!      y:              Convolved quantity
+!                      UNITS:      N/A
+!                      TYPE:       REAL(fp)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!      
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the integration was successful
+!                        == FAILURE an error occurred processing the input
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+!:sdoc-:
+!------------------------------------------------------------------------------  
   
   FUNCTION oSRF_Convolve( self, p, y ) RESULT( err_stat )
     ! Arguments
@@ -1298,9 +1422,353 @@ CONTAINS
     y = y / Int_SRF
 
   END FUNCTION oSRF_Convolve
-
-
   
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_Polychromatic_Coefficients
+!
+! PURPOSE:
+!       Function to compute polychromatic coeffs for an oSRF object.
+!
+! CALLING SEQUENCE:
+!       Error_Status = oSRF_Polychromatic_Coefficients( oSRF )
+!
+! OBJECT:
+!       oSRF:          oSRF structure.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!      
+! FUNCTION RESULT:
+!       Error_Status: The return value is an integer defining the error status.
+!                     The error codes are defined in the Message_Handler module.
+!                     If == SUCCESS the integration was successful
+!                        == FAILURE an error occurred processing the input
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Scalar
+! SIDE EFFECTS:
+!       The polychromatic component of the oSRF object is set.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION oSRF_Polychromatic_Coefficients( self ) RESULT( err_stat )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Polychromatic_Coefficients'
+    INTEGER,  PARAMETER :: N_TEMPERATURES  = 17
+    REAL(fp), PARAMETER :: MIN_TEMPERATURE = 180.0_fp
+    REAL(fp), PARAMETER :: MAX_TEMPERATURE = 340.0_fp
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER  :: alloc_stat
+    INTEGER  :: i, n
+    REAL(fp) :: Convolved_Radiance
+    REAL(fp) :: x_Temperature(N_TEMPERATURES)
+    REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES) 
+    REAL(fp) :: PolyChromatic_Coeffs(MAX_N_POLYCHROMATIC_COEFFS)
+    TYPE(PtrArr_type) :: Radiance(self%n_Bands)
+    
+    ! Setup
+    err_stat = SUCCESS
+    ! ...Check object contains something
+    IF ( .NOT. oSRF_Associated(self) ) THEN
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
+      RETURN
+    END IF
+    
+    ! Generate the monochromatic temperatures
+    ! ---------------------------------------
+    x_Temperature = (/(REAL(i-1,fp),i=1,N_TEMPERATURES)/) / REAL(N_TEMPERATURES-1,fp)
+    x_Temperature = (x_Temperature * ( MAX_TEMPERATURE-MIN_TEMPERATURE )) + MIN_TEMPERATURE
+    
+    ! Allocate the radiance dimensions for each band
+    DO n = 1, self%n_Bands
+      CALL PtrArr_Create(Radiance(n), self%n_Points(n))
+    END DO
+    
+    ! Generate the polychromatic temperatures
+    ! ---------------------------------------
+    Temperature_Loop: DO i = 1, N_TEMPERATURES 
+    
+      ! Compute polychromatic radiances
+      Band_Loop: DO n = 1, self%n_Bands
+        
+        err_stat = Planck_Radiance( self%Frequency(n)%Arr, &
+                                    x_Temperature(i),      &
+                                    Radiance(n)%Arr        )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error calculating radiances at T = ",f5.1," K.")' ) &
+                          x_Temperature(i)
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(msg), &
+                                FAILURE )
+          RETURN
+        END IF    
+        
+      END DO Band_Loop
+      
+      ! Convolve the polychromatic radiances
+      err_stat = oSRF_Convolve( self, Radiance, Convolved_Radiance )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error calculating the convolved radiance at T = ",f5.1," K.")' ) &
+                        x_Temperature(i)
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(msg), &
+                              FAILURE )
+        RETURN
+      END IF    
+      
+      ! ...compute central frequency if necessary
+      IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
+      CALL oSRF_Integrate( self )
+      
+      ! Compute the effective temperature
+      err_stat = Planck_Temperature( self%f0, &
+                                     Convolved_Radiance, &
+                                     y_Effective_Temperature(i) )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error calculating the polychromatic temperature at T = ",f5.1," K.")' ) &
+                        x_Temperature(i)
+        CALL Display_Message( ROUTINE_NAME, &
+                              TRIM(msg), &
+                              FAILURE )
+        RETURN
+      END IF 
+      
+    END DO Temperature_Loop
+      
+    ! Fit the mono- and polychromatic temperatures
+    err_stat = Least_Squares_Linear_Fit( x_Temperature, &
+                                         y_Effective_Temperature, &
+                                         Polychromatic_Coeffs(1), &
+                                         Polychromatic_Coeffs(2)  )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error calculating polychromatic coefficients', &
+                            FAILURE )
+      RETURN
+    END IF
+    
+    ! Save the polychromatic coefficients
+    err_stat = oSRF_SetValue( self, Polychromatic_Coeffs = Polychromatic_Coeffs )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF Polychromatic coeffs',err_stat )
+      RETURN
+    END IF
+    
+  END FUNCTION oSRF_Polychromatic_Coefficients
+    
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       Least_Squares_Linear_Fit
+!
+! PURPOSE:
+!       Function to perform a least squares linear fit on the input 
+!       polychromatic and monochromatic temperature data.
+!
+! CALLING SEQUENCE:
+!       Error_Status = Least_Squares_Linear_Fit( x, y,        &  ! Input
+!                                                a, b,        &  ! Output
+!                                                yFit = yFit, &  ! Optional output
+!                                                SSE  = SSE,  &  ! Optional output
+!                                                MSE  = MSE,  &  ! Optional output
+!                                                Message_Log = Message_Log ) !  Error messaging
+!
+! INPUT ARGUMENTS:
+!       x:               Input ordinate data on which to perform the fit
+!                          y = a + bx
+!                        Corresponds to the true temperature.
+!                        UNITS:      Kelvin (K)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Rank-1
+!                        ATTRIBUTES: INTENT( IN )
+!
+!       y:               Input coordinate data on which to perform the fit
+!                          y = a + bx
+!                        Corresponds to the effective temperature due to
+!                        polychromaticity.
+!                        UNITS:      Kelvin (K)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Rank-1 (Same size as x)
+!                        ATTRIBUTES: INTENT( IN )
+!
+! OUTPUT ARGUMENTS:
+!       a:               Offset coefficient that satisfies the fit criteria
+!                        for the relationship
+!                          y = a + bx
+!                        UNITS:      Kelvin (K)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( OUT )
+!
+!       b:               Slope coefficient that satisfies the fit criteria
+!                        for the relationship
+!                          y = a + bx
+!                        UNITS:      Kelvin/Kelvin (K/K)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT( OUT )
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!       yFit:            Predicted coordinate (effective temperature) data,
+!                          yFit = a + bx
+!                        UNITS:      Kelvin (K)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Rank-1 (Same size as y)
+!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!
+!       SSE:             The residual sum of the squares of the fit to the
+!                        input data,
+!                                 __  N
+!                                \                    2
+!                          SSE =  > ( Y(i) - YFit(i) )
+!                                /__
+!                                    i=1
+!
+!                        UNITS:      Kelvin^2 (K^2)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!
+!       MSE:             The residual mean square of the fit to the
+!                        input data,
+!                                
+!                                 SSE
+!                          MSE = -----
+!                                 N-2
+!
+!                        where N == number of input data points
+!
+!                        UNITS:      Kelvin^2 (K^2)
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the
+!                        error status. The error codes are defined in
+!                        the ERROR_HANDLER module.
+!                        If == SUCCESS the regression fit was successful.
+!                           == FAILURE  an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+  FUNCTION Least_Squares_Linear_Fit( x, y,         &  ! Input
+                                     a, b,         &  ! Output
+                                     yFit,         &  ! Optional output
+                                     SSE,          &  ! Optional output
+                                     MSE,          &  ! Optional output
+                                     Message_Log ) &  ! Error messaging
+                                   RESULT( Error_Status )
+    ! Arguments
+    REAL(fp),                INTENT(IN)  :: x(:)
+    REAL(fp),                INTENT(IN)  :: y(:)
+    REAL(fp),                INTENT(OUT) :: a
+    REAL(fp),                INTENT(OUT) :: b
+    REAL(fp),     OPTIONAL,  INTENT(OUT) :: yFit(:)
+    REAL(fp),     OPTIONAL,  INTENT(OUT) :: SSE
+    REAL(fp),     OPTIONAL,  INTENT(OUT) :: MSE
+    CHARACTER(*), OPTIONAL,  INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Least_Squares_Linear_Fit'
+    REAL(fp),     PARAMETER :: TOLERANCE = EPSILON(1.0_fp)
+    ! Local variables
+    INTEGER :: n
+    REAL(fp) :: xAverage
+    REAL(fp) :: yAverage
+    REAL(fp) :: sum_dx2
+    REAL(fp) :: yCalculated(SIZE(y))
+    REAL(fp) :: Residual_Sum_of_Squares
+    REAL(fp) :: Residual_Mean_Square   
+
+
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+
+    ! Check input
+    n = SIZE(x)
+    IF ( n < 3 ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Input data must be at least 3 points.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+    IF ( SIZE(y) /= n ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Sizes of input X,Y arguments are inconsistent', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+    IF ( PRESENT(yFit) ) THEN
+      IF ( SIZE(yFit) /= n ) THEN
+        Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, &
+                              'Sizes of output YFIT argument is inconsistent', &
+                              Error_Status, &
+                              Message_Log = Message_Log )
+        RETURN
+      END IF
+    END IF
+
+
+    ! Calculate averages
+    ! ------------------
+    xAverage = SUM(x) / REAL(n,fp)
+    yAverage = SUM(y) / REAL(n,fp)
+
+
+    ! Calculate the sums of the square of the mean difference for X
+    ! -------------------------------------------------------------
+    sum_dx2 = SUM(( x-xAverage )**2)
+    IF ( sum_dx2 < TOLERANCE ) THEN
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Sum of the squares of mean difference for X is zero.', &
+                            Error_Status, &
+                            Message_Log = Message_Log )
+      RETURN
+    END IF
+
+
+    ! Calculate coefficients
+    ! ----------------------
+    b = SUM(( x-xAverage )*( y-yAverage )) / sum_dx2
+    a = yAverage - ( b*xAverage )
+
+
+    ! Calculate the regression Y values
+    ! ---------------------------------
+    yCalculated = a + ( b*x )
+    Residual_Sum_of_Squares = SUM(( y-yCalculated )**2)
+    Residual_Mean_Square    = Residual_Sum_of_Squares / REAL(n-2,fp)
+
+
+    ! Assign optional arguments
+    ! -------------------------
+    IF ( PRESENT(yFit) ) yFit = yCalculated
+    IF ( PRESENT(SSE)  ) SSE  = Residual_Sum_of_Squares
+    IF ( PRESENT(MSE)  ) MSE  = Residual_Mean_Square
+
+  END FUNCTION Least_Squares_Linear_Fit      
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
