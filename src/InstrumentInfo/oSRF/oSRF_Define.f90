@@ -1469,7 +1469,7 @@ CONTAINS
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
-
+  
   FUNCTION oSRF_Polychromatic_Coefficients( self ) RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_type), INTENT(IN OUT) :: self
@@ -1488,7 +1488,9 @@ CONTAINS
     REAL(fp) :: x_Temperature(N_TEMPERATURES)
     REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES) 
     REAL(fp) :: PolyChromatic_Coeffs(MAX_N_POLYCHROMATIC_COEFFS)
+    REAL(fp) :: f0
     TYPE(PtrArr_type) :: Radiance(self%n_Bands)
+    TYPE(PtrArr_type) :: Frequency(self%n_Bands)
     
     ! Setup
     err_stat = SUCCESS
@@ -1507,6 +1509,7 @@ CONTAINS
     ! Allocate the radiance dimensions for each band
     DO n = 1, self%n_Bands
       CALL PtrArr_Create(Radiance(n), self%n_Points(n))
+      CALL PtrArr_Create(Frequency(n), self%n_Points(n))
     END DO
     
     ! Generate the polychromatic temperatures
@@ -1516,9 +1519,16 @@ CONTAINS
       ! Compute polychromatic radiances
       Band_Loop: DO n = 1, self%n_Bands
         
-        err_stat = Planck_Radiance( self%Frequency(n)%Arr, &
-                                    x_Temperature(i),      &
-                                    Radiance(n)%Arr        )
+        ! Convert frequencies to inverse cm for the microwave
+        IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) THEN
+          Frequency(n)%Arr = GHz_to_inverse_cm( self%Frequency(n)%Arr )
+        ELSE
+          Frequency(n)%Arr = self%Frequency(n)%Arr
+        END IF
+        
+        err_stat = Planck_Radiance( Frequency(n)%Arr, &
+                                    x_Temperature(i), &
+                                    Radiance(n)%Arr   )
         IF ( err_stat /= SUCCESS ) THEN
           WRITE( msg,'("Error calculating radiances at T = ",f5.1," K.")' ) &
                           x_Temperature(i)
@@ -1545,8 +1555,15 @@ CONTAINS
       IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
       CALL oSRF_Integrate( self )
       
+      ! Convert to inverse cm for the microwave
+      IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) THEN
+        f0 = GHz_to_inverse_cm(self%f0)
+      ELSE
+        f0 = self%f0
+      END IF
+      
       ! Compute the effective temperature
-      err_stat = Planck_Temperature( self%f0, &
+      err_stat = Planck_Temperature( f0, &
                                      Convolved_Radiance, &
                                      y_Effective_Temperature(i) )
       IF ( err_stat /= SUCCESS ) THEN
@@ -1559,7 +1576,7 @@ CONTAINS
       END IF 
       
     END DO Temperature_Loop
-      
+
     ! Fit the mono- and polychromatic temperatures
     err_stat = Least_Squares_Linear_Fit( x_Temperature, &
                                          y_Effective_Temperature, &
