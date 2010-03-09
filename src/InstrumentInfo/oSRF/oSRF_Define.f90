@@ -1211,8 +1211,11 @@ CONTAINS
     END IF
     
     ! Convert to inverse cm for the microwave
-    IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) &
+    IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) THEN
       f0 = GHz_to_inverse_cm(self%f0)
+    ELSE
+      f0 = self%f0
+    END IF
     
     ! Compute the Planck coefficients
     Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( f0**3 )
