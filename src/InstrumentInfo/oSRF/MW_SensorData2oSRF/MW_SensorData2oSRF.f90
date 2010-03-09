@@ -28,7 +28,11 @@ PROGRAM MW_SensorData2oSRF
                                        oSRF_File_Create,        &
                                        oSRF_File_Write,         &
                                        oSRF_File_Destroy
-  USE oSRF_Define,               ONLY: oSRF_Integrate, &
+  USE oSRF_Define,               ONLY: oSRF_SetFlag,                    &
+                                       oSRF_Polychromatic_Coefficients, &
+                                       oSRF_Planck_Coefficients,        &
+                                       oSRF_Central_Frequency,          &
+                                       oSRF_Integrate,                  &
                                        oSRF_Create
   USE SensorInfo_IO,             ONLY: Read_SensorInfo
   USE SensorInfo_LinkedList,     ONLY: SensorInfo_List_type,    &
@@ -43,6 +47,7 @@ PROGRAM MW_SensorData2oSRF
   CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'MW_SensorData2oSRF'
+  INTEGER, PARAMETER :: FREQUENCY_UNITS_FLAG = 3
 
   
   ! Variables
@@ -237,7 +242,6 @@ PROGRAM MW_SensorData2oSRF
       oSRF_File%oSRF(l)%WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID
       oSRF_File%oSRF(l)%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID 
       oSRF_File%oSRF(l)%Sensor_Type      = MICROWAVE_SENSOR
-      oSRF_File%oSRF(l)%f0               = MW_SensorData%Central_Frequency(l)
 
       
       ! Fill the frequency and response arrays band-by-band
@@ -248,7 +252,9 @@ PROGRAM MW_SensorData2oSRF
         oSRF_File%oSRF(l)%Frequency(i)%Arr = MW_SensorData%Frequency(bidx(i):eidx(i),l)
         oSRF_File%oSRF(l)%Response(i)%Arr  = MW_SensorData%Response(bidx(i):eidx(i),l)
       END DO
-
+      
+      ! Set the frequency units bit flag to indicate units of GHz
+      CALL oSRF_SetFlag(oSRF_File%oSRF(l), FREQUENCY_UNITS_FLAG)
 
       ! Fill the integrated and summation fields
       Error_Status = oSRF_Integrate( oSRF_File%oSRF(l) ) ! In/Output
@@ -257,7 +263,30 @@ PROGRAM MW_SensorData2oSRF
                                'Error Calculating Integrated and Summation SRF',  &
                                Error_Status                                       )
       END IF
+      
+      ! Fill the Central Frequency field
+      Error_Status = oSRF_Central_Frequency( oSRF_File%oSRF(l) ) ! In/Output
+      IF ( Error_Status /= SUCCESS ) THEN
+         CALL Display_Message( PROGRAM_NAME,                               &
+                               'Error Calculating the central frequency',  &
+                               Error_Status                                )
+      END IF
+      
+      ! Fill the Polychromatic coefficient field
+      Error_Status = oSRF_Polychromatic_Coefficients( oSRF_File%oSRF(l) ) ! In/Output
+      IF ( Error_Status /= SUCCESS ) THEN
+         CALL Display_Message( PROGRAM_NAME,                                    &
+                               'Error Calculating Polychromatic Coefficients',  &
+                               Error_Status                                     )
+      END IF
 
+      ! Fill the Planck coefficient field
+      Error_Status = oSRF_Planck_Coefficients( oSRF_File%oSRF(l) ) ! In/Output
+      IF ( Error_Status /= SUCCESS ) THEN
+         CALL Display_Message( PROGRAM_NAME,                             &
+                               'Error Calculating Planck Coefficients',  &
+                               Error_Status                              )
+      END IF
       
       ! Deallocate Sideband points array
       DEALLOCATE( n_BPoints, STAT = alloc_stat )
