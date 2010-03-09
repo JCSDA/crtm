@@ -77,6 +77,7 @@ MODULE oSRF_Define
   PUBLIC :: oSRF_DefineVersion
   PUBLIC :: oSRF_Central_Frequency
   PUBLIC :: oSRF_Polychromatic_Coefficients
+  PUBLIC :: oSRF_Planck_Coefficients
   PUBLIC :: oSRF_Convolve
   
 
@@ -1180,41 +1181,45 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------    
 
-!  FUNCTION oSRF_Planck_Coefficients( self ) RESULT( err_stat )
-!    ! Arguments
-!    TYPE(oSRF_type), INTENT(IN OUT) :: self
-!    ! Function result
-!    INTEGER :: err_stat
-!    ! Local parameters
-!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
-!    ! Local variables
-!    REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)
-!
-!    ! Set up
-!    err_stat = SUCCESS
-!    ! ...Check object contains something
-!    IF ( .NOT. oSRF_Associated(self) ) THEN
-!      err_stat = FAILURE
-!      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
-!      RETURN
-!    END IF
-!
-!    ! Compute the central frequency if necessary
-!    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
-!      CALL oSRF_Central_Frequency( self )
-!
-!    ! Compute the Planck coefficients
-!    Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( self%f0**3 )
-!    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   self%f0 
-!    ! Save the computed Planck coefficients
-!    err_stat = oSRF_SetValue( self, Planck_Coeffs = Planck_Coeffs )
-!    IF ( err_stat /= SUCCESS ) THEN
-!      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF Planck Coefficients',err_stat )
-!      RETURN
-!    END IF
-!    
-!    
-!  END FUNCTION oSRF_Planck_Coefficients
+  FUNCTION oSRF_Planck_Coefficients( self ) RESULT( err_stat )
+    ! Arguments
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
+    ! Local variables
+    REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check object contains something
+    IF ( .NOT. oSRF_Associated(self) ) THEN
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
+      RETURN
+    END IF
+
+    ! Compute the central frequency if necessary
+    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
+      err_stat = oSRF_Central_Frequency( self )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error occurred computing the central frequency',err_stat )
+      RETURN
+    END IF
+    
+    ! Compute the Planck coefficients
+    Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( self%f0**3 )
+    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   self%f0 
+
+    ! Save the computed Planck coefficients
+    err_stat = oSRF_SetValue( self, Planck_Coeffs = Planck_Coeffs )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF Planck Coefficients',err_stat )
+      RETURN
+    END IF  
+      
+  END FUNCTION oSRF_Planck_Coefficients
   
 !------------------------------------------------------------------------------
 !:sdoc+:
