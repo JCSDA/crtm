@@ -39,6 +39,7 @@ MODULE oSRF_Define
                                    Planck_Radiance
   USE Fundamental_Constants , ONLY: C_1, &
                                     C_2
+  USE Spectral_Units_Conversion , ONLY: GHz_to_inverse_cm
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -1190,6 +1191,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
     ! Local variables
     REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)
+    REAL(fp) :: f0
 
     ! Set up
     err_stat = SUCCESS
@@ -1208,9 +1210,13 @@ CONTAINS
       RETURN
     END IF
     
+    ! Convert to inverse cm 
+    ! for planck coeff computations
+    f0 = GHz_to_inverse_cm(self%f0)
+    
     ! Compute the Planck coefficients
-    Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( self%f0**3 )
-    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   self%f0 
+    Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( f0**3 )
+    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   f0 
 
     ! Save the computed Planck coefficients
     err_stat = oSRF_SetValue( self, Planck_Coeffs = Planck_Coeffs )
