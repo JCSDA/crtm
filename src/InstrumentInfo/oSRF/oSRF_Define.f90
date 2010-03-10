@@ -1229,7 +1229,8 @@ CONTAINS
     END IF  
       
   END FUNCTION oSRF_Planck_Coefficients
-  
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1357,7 +1358,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Convolve'
     ! Local variables
     CHARACTER(ML) :: msg
-    INTEGER :: err_stat
     INTEGER :: alloc_stat
     INTEGER :: n, n_Points
     REAL(fp), ALLOCATABLE :: f(:), r(:)
@@ -1373,8 +1373,13 @@ CONTAINS
       RETURN
     END IF
     ! ...Integrate oSRF if necessary
-    IF ( .NOT. oSRF_IsFlagSet(self, INTEGRATED_FLAG) ) &
-      CALL oSRF_Integrate( self )
+    IF ( .NOT. oSRF_IsFlagSet(self, INTEGRATED_FLAG) ) THEN
+      err_stat = oSRF_Integrate( self )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error integrating oSRF.', err_stat )
+        RETURN
+      END IF
+    END IF
     
 
     ! Sum up band integrals
@@ -1482,15 +1487,13 @@ CONTAINS
     REAL(fp), PARAMETER :: MAX_TEMPERATURE = 340.0_fp
     ! Local variables
     CHARACTER(ML) :: msg
-    INTEGER  :: alloc_stat
     INTEGER  :: i, n
     REAL(fp) :: Convolved_Radiance
     REAL(fp) :: x_Temperature(N_TEMPERATURES)
     REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES) 
     REAL(fp) :: PolyChromatic_Coeffs(MAX_N_POLYCHROMATIC_COEFFS)
-    REAL(fp) :: f0
     TYPE(PtrArr_type) :: Radiance(self%n_Bands)
-    TYPE(PtrArr_type) :: Frequency(self%n_Bands)
+    TYPE(oSRF_type)   :: new
     
     ! Setup
     err_stat = SUCCESS
@@ -1500,82 +1503,93 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
       RETURN
     END IF
+    ! ...Compute central frequency if necessary
+    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) THEN
+      err_stat = oSRF_Central_Frequency( self )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error computing central frequency.', err_stat )
+        RETURN
+      END IF
+    END IF
+    
+    
+    ! Copy the input oSRF
+    new = self
+    
+    ! Perform conversions to units of inverse centimetres if necessary
+    IF ( oSRF_IsFlagSet(new, FREQUENCY_UNITS_FLAG) ) THEN
+      ! ...Convert frequency arrays
+      DO n = 1, new%n_Bands
+        new%Frequency(n)%Arr = GHz_to_inverse_cm( new%Frequency(n)%Arr )
+      END DO      
+      ! ...Clear the frequency units flag to indicate cm-1
+      CALL oSRF_ClearFlag(new, FREQUENCY_UNITS_FLAG)
+      ! ...Recompute the integral
+      err_stat = oSRF_Integrate( new )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error reintegrating oSRF.', err_stat )
+        RETURN
+      END IF
+      ! ...Recompute central frequency
+      err_stat = oSRF_Central_Frequency( new )
+      IF ( err_stat /= SUCCESS ) THEN
+        CALL Display_Message( ROUTINE_NAME, 'Error recomputing central frequency.', err_stat )
+        RETURN
+      END IF
+    END IF
+
     
     ! Generate the monochromatic temperatures
-    ! ---------------------------------------
     x_Temperature = (/(REAL(i-1,fp),i=1,N_TEMPERATURES)/) / REAL(N_TEMPERATURES-1,fp)
     x_Temperature = (x_Temperature * ( MAX_TEMPERATURE-MIN_TEMPERATURE )) + MIN_TEMPERATURE
     
+
     ! Allocate the radiance dimensions for each band
-    DO n = 1, self%n_Bands
-      CALL PtrArr_Create(Radiance(n), self%n_Points(n))
-      CALL PtrArr_Create(Frequency(n), self%n_Points(n))
+    DO n = 1, new%n_Bands
+      CALL PtrArr_Create(Radiance(n), new%n_Points(n))
     END DO
+
     
     ! Generate the polychromatic temperatures
-    ! ---------------------------------------
     Temperature_Loop: DO i = 1, N_TEMPERATURES 
     
-      ! Compute polychromatic radiances
-      Band_Loop: DO n = 1, self%n_Bands
-        
-        ! Convert frequencies to inverse cm for the microwave
-        IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) THEN
-          Frequency(n)%Arr = GHz_to_inverse_cm( self%Frequency(n)%Arr )
-        ELSE
-          Frequency(n)%Arr = self%Frequency(n)%Arr
-        END IF
-        
-        err_stat = Planck_Radiance( Frequency(n)%Arr, &
+      ! Compute monochromatic radiances
+      Band_Loop: DO n = 1, new%n_Bands
+        err_stat = Planck_Radiance( new%Frequency(n)%Arr, &
                                     x_Temperature(i), &
                                     Radiance(n)%Arr   )
         IF ( err_stat /= SUCCESS ) THEN
           WRITE( msg,'("Error calculating radiances at T = ",f5.1," K.")' ) &
                           x_Temperature(i)
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(msg), &
-                                FAILURE )
+          CALL Display_Message( ROUTINE_NAME, msg, FAILURE )
           RETURN
         END IF    
-        
       END DO Band_Loop
       
-      ! Convolve the polychromatic radiances
-      err_stat = oSRF_Convolve( self, Radiance, Convolved_Radiance )
+      
+      ! Convolve the monochromatic radiances
+      err_stat = oSRF_Convolve( new, Radiance, Convolved_Radiance )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error calculating the convolved radiance at T = ",f5.1," K.")' ) &
                         x_Temperature(i)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(msg), &
-                              FAILURE )
+        CALL Display_Message( ROUTINE_NAME, msg, FAILURE )
         RETURN
       END IF    
       
-      ! ...compute central frequency if necessary
-      IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
-      CALL oSRF_Integrate( self )
-      
-      ! Convert to inverse cm for the microwave
-      IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) THEN
-        f0 = GHz_to_inverse_cm(self%f0)
-      ELSE
-        f0 = self%f0
-      END IF
       
       ! Compute the effective temperature
-      err_stat = Planck_Temperature( f0, &
+      err_stat = Planck_Temperature( new%f0, &
                                      Convolved_Radiance, &
                                      y_Effective_Temperature(i) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error calculating the polychromatic temperature at T = ",f5.1," K.")' ) &
                         x_Temperature(i)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(msg), &
-                              FAILURE )
+        CALL Display_Message( ROUTINE_NAME, msg, FAILURE )
         RETURN
       END IF 
       
     END DO Temperature_Loop
+
 
     ! Fit the mono- and polychromatic temperatures
     err_stat = Least_Squares_Linear_Fit( x_Temperature, &
@@ -1588,15 +1602,18 @@ CONTAINS
                             FAILURE )
       RETURN
     END IF
+
     
     ! Save the polychromatic coefficients
     err_stat = oSRF_SetValue( self, Polychromatic_Coeffs = Polychromatic_Coeffs )
     IF ( err_stat /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF Polychromatic coeffs',err_stat )
+      msg = 'Error occurred saving the polychromatic coefficients'
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
       RETURN
     END IF
     
   END FUNCTION oSRF_Polychromatic_Coefficients
+
     
 !--------------------------------------------------------------------------------
 !
