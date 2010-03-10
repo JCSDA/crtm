@@ -1482,7 +1482,7 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Polychromatic_Coefficients'
-    INTEGER,  PARAMETER :: N_TEMPERATURES  = 19
+    INTEGER,  PARAMETER :: N_TEMPERATURES  = 20
     REAL(fp), PARAMETER :: MIN_TEMPERATURE = 150.0_fp
     REAL(fp), PARAMETER :: MAX_TEMPERATURE = 340.0_fp
     ! Local variables
