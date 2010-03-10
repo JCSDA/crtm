@@ -19,6 +19,8 @@ SRC_FILES = Type_Kinds.f90 \
             String_Utility.f90 \
             Sort_Utility.f90 \
             CRTM_Parameters.f90 \
+            Planck_Functions.f90 \
+            Spectral_Units_Conversion.f90 \
             Fundamental_Constants.f90 \
             ODPS_Define.f90 \
             PtrArr_Define.f90 \
