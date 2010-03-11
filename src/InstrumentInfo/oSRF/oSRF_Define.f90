@@ -121,10 +121,10 @@ MODULE oSRF_Define
   ! So to convert to K.cm, a scaling of 100 is applied.
   REAL(fp), PARAMETER :: C2_SCALE_FACTOR = 100.0_fp
   ! Bit positions of the flags
-  INTEGER, PARAMETER :: INTERPOLATED_FLAG    = 0  ! 0==no    , 1==yes
-  INTEGER, PARAMETER :: INTEGRATED_FLAG      = 1  ! 0==no    , 1==yes
-  INTEGER, PARAMETER :: F0_COMPUTED_FLAG     = 2  ! 0==no    , 1==yes
-  INTEGER, PARAMETER :: FREQUENCY_UNITS_FLAG = 3  ! 0==cm^-1 , 1==GHz
+  INTEGER, PUBLIC, PARAMETER :: INTERPOLATED_FLAG    = 0  ! 0==no    , 1==yes
+  INTEGER, PUBLIC, PARAMETER :: INTEGRATED_FLAG      = 1  ! 0==no    , 1==yes
+  INTEGER, PUBLIC, PARAMETER :: F0_COMPUTED_FLAG     = 2  ! 0==no    , 1==yes
+  INTEGER, PUBLIC, PARAMETER :: FREQUENCY_UNITS_FLAG = 3  ! 0==cm^-1 , 1==GHz
 
 
   ! --------------------------

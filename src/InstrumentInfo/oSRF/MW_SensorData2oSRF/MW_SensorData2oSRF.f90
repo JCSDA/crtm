@@ -33,21 +33,21 @@ PROGRAM MW_SensorData2oSRF
                                        oSRF_Planck_Coefficients,        &
                                        oSRF_Central_Frequency,          &
                                        oSRF_Integrate,                  &
-                                       oSRF_Create
+                                       oSRF_Create,                     &
+                                       FREQUENCY_UNITS_FLAG
+                                       
   USE SensorInfo_IO,             ONLY: Read_SensorInfo
   USE SensorInfo_LinkedList,     ONLY: SensorInfo_List_type,    &
                                        Count_SensorInfo_Nodes,  &
                                        GetFrom_SensorInfo_List
   USE SensorInfo_Define,         ONLY: SensorInfo_type
   USE SensorInfo_Parameters,     ONLY: MICROWAVE_SENSOR
-                                       
-  
+                                         
   ! Parameters
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'MW_SensorData2oSRF'
-  INTEGER, PARAMETER :: FREQUENCY_UNITS_FLAG = 3
 
   
   ! Variables
